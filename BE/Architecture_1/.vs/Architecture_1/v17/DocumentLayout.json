@@ -1,0 +1,863 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{597B304D-2D6D-4808-95AE-8D1191BA448E}|Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.infrastructure\\architecture_1.infrastructure.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{597B304D-2D6D-4808-95AE-8D1191BA448E}|Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj|solutionrelative:architecture_1.infrastructure\\architecture_1.infrastructure.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\architecture_1.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\architecture_1.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.dataaccess\\architecture_1.dataaccess.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|solutionrelative:architecture_1.dataaccess\\architecture_1.dataaccess.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.dataaccess\\entities\\account.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|solutionrelative:architecture_1.dataaccess\\entities\\account.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\services\\dbservices\\userservices\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\services\\dbservices\\userservices\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\controllers\\usercontrollers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\controllers\\usercontrollers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\controllers\\usercontrollers\\accountcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\controllers\\usercontrollers\\accountcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\configurations\\app\\graphqlconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\configurations\\app\\graphqlconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.dataaccess\\repositories\\genericrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|solutionrelative:architecture_1.dataaccess\\repositories\\genericrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.dataaccess\\repositories\\interfaces\\igenericrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|solutionrelative:architecture_1.dataaccess\\repositories\\interfaces\\igenericrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\services\\dbservices\\userservices\\accountservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\services\\dbservices\\userservices\\accountservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\services\\dbservices\\nhapservices\\categorysingletonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\services\\dbservices\\nhapservices\\categorysingletonservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\services\\dbservices\\facilitymajorservices\\majorservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\services\\dbservices\\facilitymajorservices\\majorservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\controllers\\facilitymajorcontrollers\\facilitymajorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\controllers\\facilitymajorcontrollers\\facilitymajorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\controllers\\facilitymajorcontrollers\\facilitymajorservicecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\controllers\\facilitymajorcontrollers\\facilitymajorservicecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\services\\dbservices\\nhapservices\\categoryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\services\\dbservices\\nhapservices\\categoryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\services\\dbservices\\nhapservices\\productservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\services\\dbservices\\nhapservices\\productservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\registrations\\helperregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\registrations\\helperregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\registrations\\dbserviceregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\registrations\\dbserviceregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E37E11E2-8119-4E33-A5AE-6DCCEF10F279}|Architecture_1.Common\\Architecture_1.Common.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.common\\registrations\\configurationregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E37E11E2-8119-4E33-A5AE-6DCCEF10F279}|Architecture_1.Common\\Architecture_1.Common.csproj|solutionrelative:architecture_1.common\\registrations\\configurationregistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\category\\queries\\categoryquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\category\\queries\\categoryquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\product\\queries\\productquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\product\\queries\\productquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\product\\mutations\\productmutation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\product\\mutations\\productmutation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\architecture_1.api.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\architecture_1.api.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\extensions\\graphqltypesregistrationextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\extensions\\graphqltypesregistrationextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\extensions\\graphqlinputregistrationextensions .cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\extensions\\graphqlinputregistrationextensions .cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\configurations\\builder\\graphqlconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\configurations\\builder\\graphqlconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\schema\\mutation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\schema\\mutation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\common\\scalars\\jsondocumenttype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\common\\scalars\\jsondocumenttype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\category\\mutations\\categorymutation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\category\\mutations\\categorymutation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\category\\inputs\\createcategoryinput.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\category\\inputs\\createcategoryinput.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\book\\types\\bookextensiontype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\book\\types\\bookextensiontype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\book\\types\\booktype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\book\\types\\booktype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\registrations\\querytyperegistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\registrations\\querytyperegistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\book\\queries\\bookquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\book\\queries\\bookquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\schema\\query.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\schema\\query.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\common\\scalars\\jtokentype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\common\\scalars\\jtokentype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\json\\queries\\nhapjson_2_query.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\json\\queries\\nhapjson_2_query.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\features\\json\\queries\\nhapjson_1_query.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\features\\json\\queries\\nhapjson_1_query.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\schema\\querygroups\\dbquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\schema\\querygroups\\dbquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\registrations\\mutationtyperegistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\registrations\\mutationtyperegistration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\schema\\mutationgroups\\dbmutation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\schema\\mutationgroups\\dbmutation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\schema\\querygroups\\jsonquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\schema\\querygroups\\jsonquery.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\common\\types\\nhaptype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\common\\types\\nhaptype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\graphql\\common\\types\\complextype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\graphql\\common\\types\\complextype.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.dataaccess\\entities\\category.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{738FF1F7-A1CA-4A5D-A6DA-442810013B05}|Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj|solutionrelative:architecture_1.dataaccess\\entities\\category.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4DEEE43-8594-469F-BC0C-C362DA90D821}|Architecture_1.API\\Architecture_1.API.csproj|solutionrelative:architecture_1.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\architecture_1.businesslogic.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\architecture_1.businesslogic.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.businesslogic\\services\\dbservices\\nhapservices\\categorynoinjectscopedservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\services\\dbservices\\nhapservices\\categorynoinjectscopedservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E37E11E2-8119-4E33-A5AE-6DCCEF10F279}|Architecture_1.Common\\Architecture_1.Common.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\architecture_1\\architecture_1.common\\architecture_1.common.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{E37E11E2-8119-4E33-A5AE-6DCCEF10F279}|Architecture_1.Common\\Architecture_1.Common.csproj|solutionrelative:architecture_1.common\\architecture_1.common.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\JwtAuthConfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{56df62a4-05a3-4e5b-aa1a-99371ccfb997}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Architecture_1.Infrastructure.csproj",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
+              "RelativeDocumentMoniker": "Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
+              "RelativeToolTip": "Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvxgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-26T06:32:25.949Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Account.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Entities\\Account.cs",
+              "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Entities\\Account.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Entities\\Account.cs",
+              "RelativeToolTip": "Architecture_1.DataAccess\\Entities\\Account.cs",
+              "ViewState": "AgIAABEAAAAAAAAAAAA+wBkAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-18T11:59:25.651Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "AccountService.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AccountService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AccountService.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AccountService.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AccountService.cs",
+              "ViewState": "AQIAANkAAAAAAAAAAAAAwMgAAAAMAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-18T09:31:04.909Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "CategorySingletonService.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategorySingletonService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategorySingletonService.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategorySingletonService.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategorySingletonService.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvxEAAAAcAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:32:34.278Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Controllers\\UserControllers\\AuthController.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\Controllers\\UserControllers\\AuthController.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Controllers\\UserControllers\\AuthController.cs",
+              "RelativeToolTip": "Architecture_1.API\\Controllers\\UserControllers\\AuthController.cs",
+              "ViewState": "AQIAABIAAAAAAAAAAAAAABAAAAAZAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T15:19:08.987Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "GenericRepository.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Repositories\\GenericRepository.cs",
+              "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Repositories\\GenericRepository.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Repositories\\GenericRepository.cs",
+              "RelativeToolTip": "Architecture_1.DataAccess\\Repositories\\GenericRepository.cs",
+              "ViewState": "AQIAACUAAAAAAAAAAAAAAD4AAAAeAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-18T10:08:54.839Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Architecture_1.API.csproj",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Architecture_1.API.csproj",
+              "RelativeDocumentMoniker": "Architecture_1.API\\Architecture_1.API.csproj",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Architecture_1.API.csproj",
+              "RelativeToolTip": "Architecture_1.API\\Architecture_1.API.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvyYAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-04-15T14:49:18.432Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Architecture_1.DataAccess.csproj",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
+              "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
+              "RelativeToolTip": "Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
+              "ViewState": "AgIAABUAAAAAAAAAAADwvw0AAABDAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-04-15T10:02:26.439Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AuthService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AuthService.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AuthService.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AuthService.cs",
+              "ViewState": "AQIAAM8AAAAAAAAAAAAuwOUAAAAZAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T15:22:11.497Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "IGenericRepository.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Repositories\\interfaces\\IGenericRepository.cs",
+              "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Repositories\\interfaces\\IGenericRepository.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Repositories\\interfaces\\IGenericRepository.cs",
+              "RelativeToolTip": "Architecture_1.DataAccess\\Repositories\\interfaces\\IGenericRepository.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAwAAAAoAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-18T11:44:30.377Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "GraphQLConfig.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Configurations\\App\\GraphQLConfig.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\Configurations\\App\\GraphQLConfig.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Configurations\\App\\GraphQLConfig.cs",
+              "RelativeToolTip": "Architecture_1.API\\Configurations\\App\\GraphQLConfig.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T12:01:33.89Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "AccountController.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Controllers\\UserControllers\\AccountController.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\Controllers\\UserControllers\\AccountController.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Controllers\\UserControllers\\AccountController.cs",
+              "RelativeToolTip": "Architecture_1.API\\Controllers\\UserControllers\\AccountController.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvwAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T15:22:15.728Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "MajorService.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\FacilityMajorServices\\MajorService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\FacilityMajorServices\\MajorService.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\FacilityMajorServices\\MajorService.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Services\\DbServices\\FacilityMajorServices\\MajorService.cs",
+              "ViewState": "AQIAAKwDAAAAAAAAAAAewMYDAAAQAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-18T10:09:08.034Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "FacilityMajorController.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorController.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorController.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorController.cs",
+              "RelativeToolTip": "Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorController.cs",
+              "ViewState": "AQIAAHsAAAAAAAAAAAAQwJEAAAA4AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-18T10:27:40.413Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "CategoryService.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryService.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryService.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryService.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAuwAYAAAARAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:29:09.688Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "ProductService.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\ProductService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\ProductService.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\ProductService.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\ProductService.cs",
+              "ViewState": "AQIAABgAAAAAAAAAAAA4wC0AAAAhAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:32:25.717Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "HelperRegistration.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Registrations\\HelperRegistration.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Registrations\\HelperRegistration.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Registrations\\HelperRegistration.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Registrations\\HelperRegistration.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvw0AAAAYAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T15:18:02.647Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "FacilityMajorServiceController.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorServiceController.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorServiceController.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorServiceController.cs",
+              "RelativeToolTip": "Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorServiceController.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAUAAABBAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T15:15:19.699Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "DbServiceRegistration.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Registrations\\DbServiceRegistration.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Registrations\\DbServiceRegistration.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Registrations\\DbServiceRegistration.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Registrations\\DbServiceRegistration.cs",
+              "ViewState": "AQIAAAgAAAAAAAAAAADwvxwAAAAuAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:29:23.402Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\appsettings.json",
+              "RelativeDocumentMoniker": "Architecture_1.API\\appsettings.json",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\appsettings.json",
+              "RelativeToolTip": "Architecture_1.API\\appsettings.json",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABUAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-04-15T14:35:51.882Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "ConfigurationRegistration.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.Common\\Registrations\\ConfigurationRegistration.cs",
+              "RelativeDocumentMoniker": "Architecture_1.Common\\Registrations\\ConfigurationRegistration.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.Common\\Registrations\\ConfigurationRegistration.cs",
+              "RelativeToolTip": "Architecture_1.Common\\Registrations\\ConfigurationRegistration.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvw4AAABAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-18T09:20:08.678Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "Architecture_1.API",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Architecture_1.API.csproj",
+              "RelativeDocumentMoniker": "Architecture_1.API\\Architecture_1.API.csproj",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Architecture_1.API.csproj",
+              "RelativeToolTip": "Architecture_1.API\\Architecture_1.API.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-04-18T08:51:36.574Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "GraphQLTypesRegistrationExtensions.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Extensions\\GraphQLTypesRegistrationExtensions.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Extensions\\GraphQLTypesRegistrationExtensions.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Extensions\\GraphQLTypesRegistrationExtensions.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Extensions\\GraphQLTypesRegistrationExtensions.cs",
+              "ViewState": "AQIAAC8AAAAAAAAAAAAgwBgAAAAwAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T12:38:13.44Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "ProductMutation.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Product\\Mutations\\ProductMutation.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Product\\Mutations\\ProductMutation.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Product\\Mutations\\ProductMutation.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Product\\Mutations\\ProductMutation.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAkAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T10:30:36.853Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "GraphQLInputRegistrationExtensions .cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Extensions\\GraphQLInputRegistrationExtensions .cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Extensions\\GraphQLInputRegistrationExtensions .cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Extensions\\GraphQLInputRegistrationExtensions .cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Extensions\\GraphQLInputRegistrationExtensions .cs",
+              "ViewState": "AQIAABMAAAAAAAAAAAAQwBcAAAAsAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T16:29:40.645Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "ProductQuery.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Product\\Queries\\ProductQuery.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Product\\Queries\\ProductQuery.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Product\\Queries\\ProductQuery.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Product\\Queries\\ProductQuery.cs",
+              "ViewState": "AQIAADYAAAAAAAAAAAAYwEwAAAA2AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T10:15:54.478Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "CategoryQuery.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Category\\Queries\\CategoryQuery.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Category\\Queries\\CategoryQuery.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Category\\Queries\\CategoryQuery.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Category\\Queries\\CategoryQuery.cs",
+              "ViewState": "AQIAAC4AAAAAAAAAAAAkwDwAAABJAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T10:32:02.357Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "GraphQLConfig.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\GraphQLConfig.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\Configurations\\Builder\\GraphQLConfig.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\GraphQLConfig.cs",
+              "RelativeToolTip": "Architecture_1.API\\Configurations\\Builder\\GraphQLConfig.cs",
+              "ViewState": "AQIAABwAAAAAAAAAAAAQwC8AAAAmAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:30:56.686Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "JsonDocumentType.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Scalars\\JsonDocumentType.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Common\\Scalars\\JsonDocumentType.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Scalars\\JsonDocumentType.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Common\\Scalars\\JsonDocumentType.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvwgAAAAKAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T14:06:48.805Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "CategoryMutation.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Category\\Mutations\\CategoryMutation.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Category\\Mutations\\CategoryMutation.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Category\\Mutations\\CategoryMutation.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Category\\Mutations\\CategoryMutation.cs",
+              "ViewState": "AQIAAAgAAAAAAAAAAAAxwBoAAAAtAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T10:32:19.126Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "CreateCategoryInput.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Category\\Inputs\\CreateCategoryInput.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Category\\Inputs\\CreateCategoryInput.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Category\\Inputs\\CreateCategoryInput.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Category\\Inputs\\CreateCategoryInput.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABAAAAAxAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T16:48:55.899Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "Mutation.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\Mutation.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\Mutation.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\Mutation.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Schema\\Mutation.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABEAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:34:37.098Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "BookExtensionType.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookExtensionType.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookExtensionType.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookExtensionType.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookExtensionType.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAoAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T14:09:02.295Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "BookType.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookType.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookType.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookType.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookType.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAA8AAABXAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T14:10:21.123Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 35,
+              "Title": "BookQuery.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Book\\Queries\\BookQuery.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Book\\Queries\\BookQuery.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Book\\Queries\\BookQuery.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Book\\Queries\\BookQuery.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAA0AAAAoAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T13:59:53.014Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
+              "Title": "QueryTypeRegistration.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Registrations\\QueryTypeRegistration.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Registrations\\QueryTypeRegistration.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Registrations\\QueryTypeRegistration.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Registrations\\QueryTypeRegistration.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAMAAAAwAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T13:44:56.757Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 36,
+              "Title": "Query.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\Query.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\Query.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\Query.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Schema\\Query.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAEAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:34:41.457Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 38,
+              "Title": "NhapJson_2_Query.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_2_Query.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_2_Query.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_2_Query.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_2_Query.cs",
+              "ViewState": "AQIAAEAAAAAAAAAAAAAwwCAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T11:55:44.791Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 39,
+              "Title": "NhapJson_1_Query.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_1_Query.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_1_Query.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_1_Query.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_1_Query.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAqAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T11:55:08.992Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 37,
+              "Title": "JTokenType.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Scalars\\JTokenType.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Common\\Scalars\\JTokenType.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Scalars\\JTokenType.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Common\\Scalars\\JTokenType.cs",
+              "ViewState": "AQIAAGkAAAAAAAAAAAAowIoAAAA3AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T14:07:11.636Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 40,
+              "Title": "DbQuery.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\DbQuery.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\DbQuery.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\DbQuery.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\DbQuery.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAoAAAAcAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:34:20.283Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 41,
+              "Title": "MutationTypeRegistration.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Registrations\\MutationTypeRegistration.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Registrations\\MutationTypeRegistration.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Registrations\\MutationTypeRegistration.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Registrations\\MutationTypeRegistration.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAEAAAA9AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T13:46:39.678Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 43,
+              "Title": "JsonQuery.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\JsonQuery.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\JsonQuery.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\JsonQuery.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\JsonQuery.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAA4AAAANAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T10:24:06.588Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 42,
+              "Title": "DbMutation.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\MutationGroups\\DbMutation.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\MutationGroups\\DbMutation.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\MutationGroups\\DbMutation.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Schema\\MutationGroups\\DbMutation.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABQAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:34:06.486Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 44,
+              "Title": "NhapType.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Types\\NhapType.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Common\\Types\\NhapType.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Types\\NhapType.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Common\\Types\\NhapType.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAcAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T14:08:00.204Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 45,
+              "Title": "ComplexType.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Types\\ComplexType.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Common\\Types\\ComplexType.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Types\\ComplexType.cs",
+              "RelativeToolTip": "Architecture_1.API\\GraphQL\\Common\\Types\\ComplexType.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAhAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T14:07:46.007Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 51,
+              "Title": "JwtAuthConfig.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\JwtAuthConfig.cs",
+              "RelativeDocumentMoniker": "..\\..\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\JwtAuthConfig.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\JwtAuthConfig.cs",
+              "RelativeToolTip": "..\\..\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\JwtAuthConfig.cs",
+              "ViewState": "AQIAAAQAAAAAAAAAAAAmwDUAAABYAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:35:22.348Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 46,
+              "Title": "Category.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Entities\\Category.cs",
+              "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Entities\\Category.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.DataAccess\\Entities\\Category.cs",
+              "RelativeToolTip": "Architecture_1.DataAccess\\Entities\\Category.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvwMAAAAsAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-16T11:36:09.443Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 47,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Program.cs",
+              "RelativeDocumentMoniker": "Architecture_1.API\\Program.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.API\\Program.cs",
+              "RelativeToolTip": "Architecture_1.API\\Program.cs",
+              "ViewState": "AQIAAAYAAAAAAAAAAADwvyIAAAAHAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T15:13:11.155Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 49,
+              "Title": "CategoryNoInjectScopedService.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryNoInjectScopedService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryNoInjectScopedService.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryNoInjectScopedService.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryNoInjectScopedService.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAADwvwAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-04-15T13:32:36.531Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 48,
+              "Title": "Architecture_1.BusinessLogic.csproj",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABkAAABBAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-04-15T10:01:08.422Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 50,
+              "Title": "Architecture_1.Common.csproj",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj",
+              "RelativeDocumentMoniker": "Architecture_1.Common\\Architecture_1.Common.csproj",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj",
+              "RelativeToolTip": "Architecture_1.Common\\Architecture_1.Common.csproj",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAoAAAAmAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-04-15T10:02:13.083Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\bin\Debug\net8.0\Architecture_1.Infrastructure.deps.json
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\bin\Debug\net8.0\Architecture_1.Infrastructure.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\bin\Debug\net8.0\Architecture_1.Infrastructure.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\bin\Debug\net8.0\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\bin\Debug\net8.0\Architecture_1.Common.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\Architecture_1.Infrastructure.csproj.AssemblyReference.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\Architecture_1.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\Architecture_1.Infrastructure.AssemblyInfoInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\Architecture_1.Infrastructure.AssemblyInfo.cs
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\Architecture_1.Infrastructure.csproj.CoreCompileInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\Architec.B199AB93.Up2Date
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\Architecture_1.Infrastructure.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\refint\Architecture_1.Infrastructure.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\Architecture_1.Infrastructure.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Infrastructure\obj\Debug\net8.0\ref\Architecture_1.Infrastructure.dll
