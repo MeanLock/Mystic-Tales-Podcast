@@ -1,0 +1,12 @@
+.vs/
+SurveyTalkService.API/bin/
+SurveyTalkService.API/obj/
+SurveyTalkService.BusinessLogic/bin/
+SurveyTalkService.BusinessLogic/obj/
+SurveyTalkService.Infrastructure/bin/
+SurveyTalkService.Infrastructure/obj/
+SurveyTalkService.DataAccess/bin/
+SurveyTalkService.DataAccess/obj/
+SurveyTalkService.Common/bin/
+SurveyTalkService.Common/obj/
+

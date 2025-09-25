@@ -1,0 +1,6 @@
+@SurveyTalkService.API_HostAddress = http://localhost:5235
+
+GET {{SurveyTalkService.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

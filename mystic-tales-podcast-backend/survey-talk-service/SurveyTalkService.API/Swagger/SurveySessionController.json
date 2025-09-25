@@ -1,0 +1,38 @@
+[
+    {
+        "method": "GET",
+        "url": "/api/Survey/session/surveys/{SurveyId}/taking-session",
+        "description": "Tạo phiên làm từ survey, check role tuỳ loại (có query Preview)",
+        "completed": true // Chờ data test 
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/session/surveys/{SurveyId}/editing-session",
+        "description": "Lấy xường survey để chạy phiên editing, check role để cho phép edit hay không",
+        "completed": true // Chờ data test 
+    },
+    {
+        "method": "PUT",
+        "url": "/api/Survey/session/surveys/{SurveyId}/editing-auto-trigger",
+        "description": "Cập nhật survey tự động (tool tạo survey mỗi 5s) đối với status editing",
+        "completed": true // Chờ data test
+    },
+    {
+        "method": "PUT",
+        "url": "/api/Survey/session/surveys/{SurveyId}/editing-manual-trigger",
+        "description": "Cập nhật survey thủ công (bằng nút trong tool tạo survey) đối với status publish và là community survey",
+        "completed": true // Chờ data test
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/session/speech-check",
+        "description": "Kiểm tra câu hỏi bằng speech (gửi về Content câu hỏi)",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/session/open-ai/realtime/token",
+        "description": "Lấy token realtime để chạy speech to text",
+        "completed": false
+    }
+]

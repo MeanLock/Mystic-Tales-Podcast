@@ -1,0 +1,58 @@
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.deps.json
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.runtimeconfig.json
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.Common.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.csproj.AssemblyReference.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.GeneratedMSBuildEditorConfig.editorconfig
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.AssemblyInfoInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.AssemblyInfo.cs
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.csproj.CoreCompileInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architec.850B39B1.Up2Date
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\refint\Architecture_1.DataAccess.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.genruntimeconfig.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\ref\Architecture_1.DataAccess.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.deps.json
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.runtimeconfig.json
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.Common.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.csproj.AssemblyReference.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.GeneratedMSBuildEditorConfig.editorconfig
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.AssemblyInfoInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.AssemblyInfo.cs
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.csproj.CoreCompileInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architec.850B39B1.Up2Date
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\refint\Architecture_1.DataAccess.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.genruntimeconfig.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\ref\Architecture_1.DataAccess.dll
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.deps.json
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.runtimeconfig.json
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.dll
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.DataAccess.pdb
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.Common.dll
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\bin\Debug\net8.0\Architecture_1.Common.pdb
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.csproj.AssemblyReference.cache
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.GeneratedMSBuildEditorConfig.editorconfig
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.AssemblyInfoInputs.cache
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.AssemblyInfo.cs
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.csproj.CoreCompileInputs.cache
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.sourcelink.json
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architec.850B39B1.Up2Date
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.dll
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\refint\Architecture_1.DataAccess.dll
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.pdb
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\Architecture_1.DataAccess.genruntimeconfig.cache
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.DataAccess\obj\Debug\net8.0\ref\Architecture_1.DataAccess.dll

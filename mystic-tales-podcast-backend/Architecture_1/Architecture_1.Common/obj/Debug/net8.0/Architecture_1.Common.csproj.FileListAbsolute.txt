@@ -1,0 +1,49 @@
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.deps.json
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.runtimeconfig.json
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.csproj.AssemblyReference.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.GeneratedMSBuildEditorConfig.editorconfig
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.AssemblyInfoInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.AssemblyInfo.cs
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.csproj.CoreCompileInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\refint\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.genruntimeconfig.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\ref\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.deps.json
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.runtimeconfig.json
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.csproj.AssemblyReference.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.GeneratedMSBuildEditorConfig.editorconfig
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.AssemblyInfoInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.AssemblyInfo.cs
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.csproj.CoreCompileInputs.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\refint\Architecture_1.Common.dll
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.pdb
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.genruntimeconfig.cache
+D:\vs\source\NHAP-ASP.NET\ASP.NET Architecture\Microservice_1\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\ref\Architecture_1.Common.dll
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.deps.json
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.runtimeconfig.json
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.dll
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\bin\Debug\net8.0\Architecture_1.Common.pdb
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.csproj.AssemblyReference.cache
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.GeneratedMSBuildEditorConfig.editorconfig
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.AssemblyInfoInputs.cache
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.AssemblyInfo.cs
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.csproj.CoreCompileInputs.cache
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.sourcelink.json
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.dll
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\refint\Architecture_1.Common.dll
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.pdb
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\Architecture_1.Common.genruntimeconfig.cache
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\BE\Architecture_1\Architecture_1.Common\obj\Debug\net8.0\ref\Architecture_1.Common.dll
