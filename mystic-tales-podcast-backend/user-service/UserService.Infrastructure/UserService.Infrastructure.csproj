@@ -34,7 +34,7 @@
 
 	<ItemGroup>
 		<Folder Include="Configurations\" />
-		<!-- <None Update="Configurations\Audio\Hls\ffmpeg\bin\ffmpeg.exe">
+		<None Update="Configurations\Audio\Hls\ffmpeg\bin\ffmpeg.exe">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="Configurations\Audio\Hls\ffmpeg\bin\ffplay.exe">
@@ -42,7 +42,7 @@
 		</None>
 		<None Update="Configurations\Audio\Hls\ffmpeg\bin\ffprobe.exe">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None> -->
+		</None>
 	</ItemGroup>
 
 </Project>
