@@ -1,0 +1,256 @@
+{
+    "Id": 1000000001,
+    "RequesterId": 10,
+    "Title": "Khảo sát mẫu",
+    "Description": "Demo khảo sát có đủ 7 loại câu hỏi",
+    "MarketSurveyVersionStatusId": 1,
+    "SurveyTypeId": 2,
+    "SurveyTopicId": 2,
+    "SurveySpecificTopicId": 5,
+    "SurveyStatusId": 1,
+    "MainImageUrl": "https://www.facebook.com/",
+    "Version": 1,
+    "SecurityModeId": 3,
+    "BackgroundImageUrl": "https://www.facebook.com/",
+    "ConfigJson": {
+        "BackgroundGradient1Color": "#ffffff",
+        "BackgroundGradient2Color": "#f0f0f0",
+        "TitleColor": "#000000",
+        "ContentColor": "#333333",
+        "ButtonBackgroundColor": "#007bff",
+        "ButtonContentColor": "#ffffff",
+        "Password": "123456",
+        "Brightness": 100 //(OPTIONAL)
+    },
+    "Questions": [
+        {
+            "Id": 1,
+            "QuestionTypeId": 6,
+            "Version": 1,
+            "MainImageUrl": "https://www.facebook.com/",
+            "Content": "Rating - Câu hỏi 1",
+            "Description": "Đánh giá mức độ ưu tiên theo sao",
+            "TimeLimit": 10,
+            "IsVoice": false,
+            "Order": 1,
+            "ConfigJson": {
+                "RatingIcon": "StarBorderIcon",
+                "RatingLength": 5,
+                "RequiredAnswer": true, //(OPTIONAL)
+                "NotBack": true, //(OPTIONAL)
+                "ViewNumberQuestion": true, //(OPTIONAL)
+                "JumpLogics": [
+                    {
+                        "Conditions": [
+                            {
+                                "QuestionOrder": 1,
+                                "Conjunction": null,
+                                "Operator": "≥",
+                                "OptionOrder": 0,
+                                "CompareValue": 4
+                            }
+                        ],
+                        "TargetQuestionOrder": 7
+                    }
+                ]
+            },
+            "Options": []
+        },
+        {
+            "Id": 2,
+            "QuestionTypeId": 1,
+            "Version": 1,
+            "MainImageUrl": null,
+            "Content": "Single Choice - Câu hỏi 2",
+            "Description": "Chọn 1 đáp án đúng",
+            "TimeLimit": 15,
+            "IsVoice": false,
+            "Order": 2,
+            "ConfigJson": {
+                "JumpLogics": [
+                    {
+                        "Conditions": [
+                            {
+                                "QuestionOrder": 2,
+                                "Conjunction": null,
+                                "Operator": "Chọn",
+                                "OptionOrder": 2,
+                                "CompareValue": 0
+                            }
+                        ],
+                        "TargetQuestionOrder": 4
+                    }
+                ]
+            },
+            "Options": [
+                {
+                    "SurveyOptionId": 6,
+                    "Content": "Đáp án A",
+                    "Order": 1,
+                    "MainImageUrl": "https://www.facebook.com/"
+                },
+                {
+                    "SurveyOptionId": 7,
+                    "Content": "Đáp án B",
+                    "Order": 2,
+                    "MainImageUrl": "https://www.facebook.com/"
+                }
+            ]
+        },
+        {
+            "Id": 3,
+            "QuestionTypeId": 2,
+            "MainImageUrl": "https://www.facebook.com/",
+            "Version": 1,
+            "Content": "Multiple Choice - Câu hỏi 3",
+            "Description": "Chọn nhiều hơn 1 nếu cần",
+            "TimeLimit": 10,
+            "IsVoice": false,
+            "Order": 3,
+            "ConfigJson": {
+                "RequiredAnswer": true, //(OPTIONAL)
+                "IsChooseMuitiple": true, //(OPTIONAL)
+                "MinChoiceCount": 1,
+                "MaxChoiceCount": 3,
+                "ImageEndQuestion": true, //(OPTIONAL)
+                "JumpLogics": [
+                    {
+                        "Conditions": [
+                            {
+                                "QuestionOrder": 2,
+                                "Conjunction": null,
+                                "Operator": "Không Chọn",
+                                "OptionOrder": 1,
+                                "CompareValue": 0
+                            }
+                        ],
+                        "TargetQuestionOrder": 3
+                    }
+                ]
+            },
+            "Options": [
+                {
+                    "SurveyOptionId": 11,
+                    "Content": "Lựa chọn 1",
+                    "Order": 1,
+                    "MainImageUrl": null
+                },
+                {
+                    "SurveyOptionId": 12,
+                    "Content": "Lựa chọn 2",
+                    "Order": 2,
+                    "MainImageUrl": null
+                },
+                {
+                    "SurveyOptionId": 13,
+                    "Content": "Lựa chọn 3",
+                    "Order": 3,
+                    "MainImageUrl": null
+                }
+            ]
+        },
+        {
+            "Id": 4,
+            "QuestionTypeId": 7,
+            "Version": 1,
+            "MainImageUrl": "https://www.facebook.com/",
+            "Content": "Ranking - Câu hỏi 1",
+            "Description": "Hãy sắp xếp theo thứ tự ưu tiên",
+            "TimeLimit": 7,
+            "IsVoice": false,
+            "Order": 4,
+            "ConfigJson": {
+                "NotBack": true, //(OPTIONAL)
+                "ViewNumberQuestion": true //(OPTIONAL)
+            },
+            "Options": [
+                {
+                    "SurveyOptionId": 14,
+                    "Content": "Ưu tiên 1",
+                    "Order": 1,
+                    "MainImageUrl": "https://www.facebook.com/"
+                },
+                {
+                    "SurveyOptionId": 15,
+                    "Content": "Ưu tiên 2",
+                    "Order": 2,
+                    "MainImageUrl": "https://www.facebook.com/"
+                },
+                {
+                    "SurveyOptionId": 16,
+                    "Content": "Ưu tiên 3",
+                    "Order": 3,
+                    "MainImageUrl": "https://www.facebook.com/"
+                }
+            ]
+        },
+        {
+            "Id": 5,
+            "QuestionTypeId": 5,
+            "Version": 1,
+            "MainImageUrl": null,
+            "Content": "Input - Câu hỏi 5",
+            "Description": "Vui lòng nhập ý kiến",
+            "TimeLimit": 10,
+            "IsVoice": true,
+            "Order": 5,
+            "ConfigJson": {
+                "FieldInputTypeId": 2
+            },
+            "Options": []
+        },
+        {
+            "Id": 6,
+            "QuestionTypeId": 3,
+            "Version": 1,
+            "MainImageUrl": "https://www.facebook.com/",
+            "Content": "Slider - Câu hỏi 6",
+            "Description": "Bạn cảm thấy mức độ hài lòng bao nhiêu?",
+            "TimeLimit": 15,
+            "IsVoice": false,
+            "Order": 6,
+            "ConfigJson": {
+                "Min": 0,
+                "Max": 10,
+                "Step": 1,
+                "Unit": "điểm"
+            },
+            "Options": []
+        },
+        {
+            "Id": 7,
+            "QuestionTypeId": 4,
+            "Version": 1,
+            "MainImageUrl": "https://www.facebook.com/",
+            "Content": "Range Slider - Câu hỏi 7",
+            "Description": "Chọn khoảng giá bạn mong muốn",
+            "TimeLimit": 15,
+            "IsVoice": false,
+            "Order": 7,
+            "ConfigJson": {
+                "Min": 1,
+                "Max": 100,
+                "Step": 5,
+                "Unit": "USD"
+            },
+            "Options": []
+        },
+        {
+            "Id": 8,
+            "QuestionTypeId": 6,
+            "Version": 1,
+            "MainImageUrl": "https://www.facebook.com/",
+            "Content": "Rating lặp lại (không logic) - Câu hỏi 8",
+            "Description": "Câu hỏi đánh giá lại",
+            "TimeLimit": 5,
+            "IsVoice": false,
+            "Order": 8,
+            "ConfigJson": {
+                "RatingIcon": "StarBorderIcon",
+                "RatingLength": 5,
+                "RequiredAnswer": false //(OPTIONAL)
+            },
+            "Options": []
+        }
+    ]
+}

@@ -1,0 +1,12 @@
+.vs/
+SubscriptionService.API/bin/
+SubscriptionService.API/obj/
+SubscriptionService.BusinessLogic/bin/
+SubscriptionService.BusinessLogic/obj/
+SubscriptionService.Infrastructure/bin/
+SubscriptionService.Infrastructure/obj/
+SubscriptionService.DataAccess/bin/
+SubscriptionService.DataAccess/obj/
+SubscriptionService.Common/bin/
+SubscriptionService.Common/obj/
+

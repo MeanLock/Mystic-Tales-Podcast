@@ -1,0 +1,5 @@
+**/ffmpeg/bin/*.exe
+**/ffmpeg/bin/ffmpeg
+**/ffmpeg/bin/ffplay
+**/ffmpeg/bin/ffprobe
+**/ffmpeg/

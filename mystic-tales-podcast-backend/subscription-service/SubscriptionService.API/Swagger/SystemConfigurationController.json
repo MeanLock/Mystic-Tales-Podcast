@@ -1,0 +1,20 @@
+[
+    {
+        "method": "GET",
+        "url": "/api/Configuration/system/config-profiles",
+        "description": "Lấy danh sách profile cấu hình hệ thống",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Configuration/system/config-profiles/{ConfigProfileId}",
+        "description": "Lấy chi tiết cấu hình hệ thống theo ConfigProfileId",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Configuration/system/active/config-profile",
+        "description": "Lấy profile config đang active hiện tại (chứa tất cả các config của profile đó)",
+        "completed": false
+    }
+]

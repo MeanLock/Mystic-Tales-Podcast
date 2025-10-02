@@ -1,0 +1,384 @@
+//json sau khi BE đã kiểm tra và trả về
+{
+    "surveyTakenResult": {
+        "id": 501,
+        "surveyId": 1000000001,
+        "takerId": 1234,
+        "isValid": false,
+        "invalidReason": "Câu 6 Văn bản giọng nói không hợp lệ. Phát hiện thấy đầu vào ẩn. Re-question không hợp lệ.",
+        //"invalidReason": "Text-to-speech check failed. Re-question triggered. isHiddenInputDetected. inputDetectWaitDuration."
+        "moneyEarned": null,
+        "xpEarned": null,
+        "completedAt": "2025-06-11T14:22:00"
+    },
+    "surveyResponses": [
+        {
+            "id": 10001,
+            "surveyQuestionId": 1,
+            "isValid": true,
+            "valueJson": {
+                "questionContent": {
+                    "id": 1,
+                    "version": 1,
+                    "questionImageUrl": "https://www.facebook.com/",
+                    "isReanswerRequired": true,
+                    "questionTypeId": 6,
+                    "content": "Rating - Câu hỏi 1",
+                    "description": "Đánh giá mức độ ưu tiên theo sao",
+                    "configJson": {
+                        "ratingIcon": "StarBorderIcon",
+                        "ratingLength": 5,
+                        "required_answer": true,
+                        "not_back": true,
+                        "view_number_question": true,
+                        "mainImageUrl": "https://www.facebook.com/",                                  
+                    },
+                    "options": []
+                },
+                "questionResponse": {
+                    "input": {
+                        "value": 2,
+                        "valueType": "number"
+                    },
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": null,
+                    "multipleChoice": null,
+                    "speechText": null
+
+
+                }
+            }
+        },
+        {
+            "id": 10002,
+            "surveyTakenResultId": 501,
+            "surveyQuestionId": 2,
+            "isValid": true,
+            "valueJson": {
+                "questionContent": {
+                    "id": 2,
+                    "version": 1,
+                    "questionImageUrl": "https://www.facebook.com/",
+                    "isReanswerRequired": true,
+                    "questionTypeId": 1,
+                    "content": "Single Choice - Câu hỏi 2",
+                    "description": "Chọn 1 đáp án đúng",
+                    "configJson": {},
+                    "options": [
+                        {   
+                            "surveyOptionId": 6,                                                  
+                            "content": "Đáp án A",
+                            "order": 1,
+                             "optionImageUrl": "https://www.facebook",
+                        },
+                        {
+                            "surveyOptionId": 7,
+                            "content": "Đáp án B",
+                            "order": 2,
+                             "optionImageUrl": "https://www.facebook",
+                        }
+
+
+                    ]
+                },
+                "questionResponse": {
+                    "input": null,
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": 7,
+                    "multipleChoice": null,
+                    "speechText": null
+
+
+                }
+            }
+        },
+        { //Invalid isHiddenInputDetected
+            "id": 10003,
+            "surveyTakenResultId": 501,
+            "surveyQuestionId": 4,
+            "isValid": false,
+            "valueJson": {
+                "questionContent": {
+                    "id": 4,
+                    "questionTypeId": 7,
+                    "content": "Ranking - Câu hỏi 1",
+                    "description": "Hãy sắp xếp theo thứ tự ưu tiên",
+                    "configJson": {
+                        "not_back": true,
+                        "view_number_question": true,
+                    },
+                    "options": [
+                        {
+                           "surveyOptionId": 14,
+                            "content": "Ưu tiên 1",
+                            "order": 1,
+                            "optionImageUrl": "https://www.facebook",
+                        },
+                        {                                                                      
+
+
+                            "surveyOptionId": 15,
+                            "content": "Ưu tiên 2",
+                            "order": 2,    
+                            "optionImageUrl": "https://www.facebook",                                                                      
+                        },
+                        {
+                            "surveyOptionId": 16,
+                            "content": "Ưu tiên 3",
+                            "order": 3,
+                            "optionImageUrl": "https://www.facebook",  
+                        }
+                    ]
+                },
+                "questionResponse": {
+                    "input": null,
+                    "ranking": [
+                        {
+                            "surveyOptionId": 14,
+                            "rankIndex": 1
+                        },
+                        {
+                            "surveyOptionId": 15,
+                            "rankIndex": 2
+                        },
+                        {
+                            "surveyOptionId": 16,
+                            "rankIndex": 3
+                        }
+                    ],
+                    "range": null,
+                    "singleChoice": null,
+                    "multipleChoice": null,
+                    "speechText": null
+
+
+                }
+            }
+        },
+        { //Invalid text to speech
+            "id": 10004,
+            "surveyTakenResultId": 501,
+            "surveyQuestionId": 5,
+            "isValid": false,
+            "valueJson": {
+                "questionContent": {
+                    "id": 5,
+                    "version": 1,
+                    "questionTypeId": 5,
+                     "questionImageUrl": "https://www.facebook.com/",  
+                    "content": "Input - Câu hỏi 5 : Bạn bao nhiêu tuổi?",
+                    "description": "Vui lòng nhập ý kiến",
+                    "configJson": {
+                        "fieldInputTypeId": 2
+                    },
+                    "options": []
+                },
+                "questionResponse": {
+                    "input": null,
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": null,
+                    "multipleChoice": null,
+                    "speechText": "Tôi thích màu xanh"
+
+
+ 
+                }
+            }
+        },
+        {
+            "id": 10005,
+            "surveyTakenResultId": 501,
+            "surveyQuestionId": 3,
+            "isValid": true,
+            "valueJson": {
+                "questionContent": {
+                    "id": 3,
+                    "version": 1,
+                    "questionImageUrl": "https://www.facebook.com/",  
+                    "questionTypeId": 5,
+                    "content": "Bạn thích loại đồ uống nào?",
+                    "description": "Nhập câu trả lời của bạn",
+                    "configJson": {},
+                    "options": []
+                },
+                "questionResponse": {
+                    "input": {
+                        "value": "Cà phê",
+                        "valueType": "string"
+                    },
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": null,
+                    "multipleChoice": null,    
+                    "speechText": null,
+
+
+
+
+                }
+            }
+        },
+        { //Invalid re-question
+            "id": 10006,
+            "surveyTakenResultId": 501,
+            "surveyQuestionId": 4,
+            "isValid": false,
+            "valueJson": {
+                "questionContent": {
+                    "id": 3,
+                    "mainImageUrl": "https://www.facebook.com/",
+                    "version": 1,
+                    "questionTypeId": 5,
+                    "content": "Bạn thích loại đồ uống nào?",
+                    "description": "Nhập câu trả lời của bạn",
+                    "configJson": {},
+                    "options": []
+                },
+                "questionResponse": {
+                    "input": {
+                        "value": "Trà sữa",
+                        "valueType": "string"
+                    },
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": null,
+                    "multipleChoice": null,
+                    "speechText": null,
+
+
+                }
+            }
+        }
+    ],
+}
+
+
+
+
+// {
+//     "surveyTakenResult": {
+//         "id": 502,
+//         "surveyId": 1000000001,
+//         "takerId": 4567,
+//         "isValid": false,
+//         "invalidReason": "Thời gian chờ không hợp lệ.",
+//         //"invalidReason": "Text-to-speech check failed. Re-question triggered. isHiddenInputDetected. inputDetectWaitDuration."
+//         "moneyEarned": null,
+//         "xpEarned": null,
+//         "completedAt": "2025-06-12T14:22:00"
+//     },
+//     "surveyResponses": [
+//         {
+//             "id": 10009,
+//             "surveyTakenResultId": 502,
+//             "surveyQuestionId": 2,
+//             "isValid": false,
+//             "valueJson": {
+//                 "questionContent": {
+//                     "id": 2,
+//                     "version": 1,
+//                     "mainImageUrl": "https://www.facebook.com/",
+//                     "isReanswerRequired": true,
+//                     "questionTypeId": 1,
+//                     "content": "Single Choice - Câu hỏi 2",
+//                     "description": "Chọn 1 đáp án đúng",
+//                     "configJson": {},
+//                     "options": [
+//                         {
+//                             "surveyOptionId": 6,
+//                             "content": "Đáp án A",
+//                             "order": 1,
+//                             "mainImageUrl": "https://www.facebook",
+//                         },
+//                         {
+//                             "surveyOptionId": 7,
+//                             "content": "Đáp án B",
+//                             "order": 2,
+//                             "mainImageUrl": "https://www.facebook",
+//                         }
+//                     ]
+//                 },
+//                 "questionResponse": {
+//                     "input": null,
+//                     "range": null,
+//                     "ranking": null,
+//                     "singleChoice": 7,
+//                     "multipleChoice": null,
+//                     "speechText": null,
+
+
+//                 }
+//             }
+//         },
+//         {
+//             "id": 10010,
+//             "surveyQuestionId": 1,
+//             "isValid": true,
+//             "valueJson": {
+//                 "questionContent": {
+//                     "id": 1,
+//                     "questionTypeId": 6,
+//                     "content": "Rating - Câu hỏi 1",
+//                     "description": "Đánh giá mức độ ưu tiên theo sao",
+//                     "configJson": {
+//                         "ratingIcon": "StarBorderIcon",
+//                         "ratingLength": 5,
+//                         "required_answer": true,
+//                         "not_back": true,
+//                         "view_number_question": true,
+//                     },
+//                     "options": []
+//                 },
+//                 "questionResponse": {
+//                     "input": {
+//                         "value": 5,
+//                         "valueType": "number"
+//                     },
+//                     "range": null,
+//                     "ranking": null,
+//                     "singleChoice": null,
+//                     "multipleChoice": null,
+//                     "speechText": null,
+
+
+//                 }
+//             }
+//         },
+//         //invalid timeout
+//         {
+//             "id": 10011,
+//             "surveyTakenResultId": 501,
+//             "surveyQuestionId": 7,
+//             "isValid": false,
+//             "valueJson": {
+//                 "questionContent": {
+//                     "id": 7,
+//                     "questionTypeId": 4,
+//                     "content": "Range Slider - Câu hỏi 7",
+//                     "description": "Chọn khoảng giá bạn mong muốn",
+//                     "configJson": {
+//                         "min": 1,
+//                         "max": 100
+//                     },
+//                     "options": []
+//                 },
+//                 "questionResponse": {
+//                     "input": null,
+//                     "ranking": null,
+//                     "range": {
+//                         "min": 10,
+//                         "max": 60
+//                     },
+//                     "singleChoice": null,
+//                     "multipleChoice": null,
+//                     "speechText": null
+
+
+//                 }
+//             }
+//         }
+//     ],
+// }

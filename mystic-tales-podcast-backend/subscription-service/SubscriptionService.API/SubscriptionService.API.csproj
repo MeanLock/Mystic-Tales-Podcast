@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HotChocolate.AspNetCore" Version="15.1.3" />
+    <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="15.1.3" />
+    <PackageReference Include="HotChocolate.AspNetCore.Playground" Version="10.5.5" />
+    <PackageReference Include="HotChocolate.Data" Version="15.1.3" />
+    <PackageReference Include="HotChocolate.Types" Version="15.1.3" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="StackExchange.Redis" Version="2.8.37" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SubscriptionService.BusinessLogic\SubscriptionService.BusinessLogic.csproj" />
+    <ProjectReference Include="..\SubscriptionService.Infrastructure\SubscriptionService.Infrastructure.csproj" />
+    <ProjectReference Include="..\SubscriptionService.Common\SubscriptionService.Common.csproj" />
+    <ProjectReference Include="..\SubscriptionService.DataAccess\SubscriptionService.DataAccess.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="GraphQL\Common\Inputs\" />
+    <Folder Include="GraphQL\Common\Enums\" />
+    <Folder Include="GraphQL\Features\Book\Filters\" />
+    <Folder Include="GraphQL\Features\Book\Inputs\" />
+    <Folder Include="GraphQL\Features\Book\Mutations\" />
+    <Folder Include="GraphQL\Features\Category\Filters\" />
+    <Folder Include="GraphQL\Features\Category\Types\" />
+    <Folder Include="GraphQL\Features\Json\Filters\" />
+    <Folder Include="GraphQL\Features\Json\Inputs\" />
+    <Folder Include="GraphQL\Features\Json\Mutations\" />
+    <Folder Include="GraphQL\Features\Json\Types\" />
+    <Folder Include="GraphQL\Features\Product\Inputs\" />
+    <Folder Include="GraphQL\Features\Product\Filters\" />
+    <Folder Include="GraphQL\Features\Product\Types\" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,12 @@
+.vs/
+ModerationService.API/bin/
+ModerationService.API/obj/
+ModerationService.BusinessLogic/bin/
+ModerationService.BusinessLogic/obj/
+ModerationService.Infrastructure/bin/
+ModerationService.Infrastructure/obj/
+ModerationService.DataAccess/bin/
+ModerationService.DataAccess/obj/
+ModerationService.Common/bin/
+ModerationService.Common/obj/
+

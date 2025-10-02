@@ -1,0 +1,51 @@
+[
+// AuthController
+    {
+        "method": "POST",
+        "url": "/api/User/auth/login-manual",
+        "description": "Đăng nhập",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/User/auth/login-google",
+        "description": "Đăng nhập bằng Google",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/User/auth/account-verification",
+        "description": "Xác thực tài khoản",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/User/auth/register/customer",
+        "description": "Đăng ký tài khoản customer",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/User/auth/register/staff",
+        "description": "Đăng ký tài khoản staff",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/User/auth/refresh-token",
+        "description": "Làm mới token",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/User/auth/forgot-password",
+        "description": "Gửi yêu cầu đổi mật khẩu",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/User/auth/new-reset-password",
+        "description": "Gửi lại password mới để update",
+        "completed": true
+    }
+]

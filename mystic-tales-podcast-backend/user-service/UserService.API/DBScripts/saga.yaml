@@ -1,0 +1,81 @@
+subscription-registration-flow:
+  topic: "subscription-registration-flow"
+  handle-service: "SagaOrchestratorService"
+  description: "Đăng ký gói dịch vụ"
+  save-file: "MainImageFile"
+  steps:
+    - name: "validate-subscription"
+      topic: "subscription-management"
+      handle-service: "SubscriptionIdService"
+      description: "Nhận thông tin tài khoản để tạo tài khoản"
+      parameters:
+        - Email
+        - Password
+        - FullName
+        - Dob
+        - Gender
+        - Address
+        - Phone
+        - MainImageFileKey
+        - RoleId
+      next-request-data:
+        - Email
+        - Password
+        - FullName
+      response-data:
+        - UserId
+        - SubscriptionId
+      onSuccess:
+        emit: "validate-subscription.success"
+        topic: "subscription-management"
+        handle-service: "SagaOrchestratorService"
+        nextSteps:
+          - name: "process-subscription-payment"
+            topic: "payment-processing"
+            handle-service: "PaymentProcessingService"
+        nextFlows: []
+      onFailure:
+        emit: "validate-subscription.failed"
+        topic: "subscription-management"
+        handle-service: "SagaOrchestratorService"
+        nextSteps: []
+        nextFlows: []
+
+    - name: "process-subscription-payment"
+      topic: "payment-processing"
+      handle-service: "PaymentProcessingService"
+      description: "Xử lý thanh toán cho gói dịch vụ"
+      parameters:
+        - Email
+        - Password
+        - FullName
+        - Dob
+        - Gender
+        - Address
+        - Phone
+        - MainImageFileKey
+        - RoleId
+      next-request-data:
+        - Email
+        - Password
+        - FullName
+      response-data:
+        - UserId
+        - SubscriptionId
+      onSuccess:
+        emit: "process-subscription-payment.success"
+        topic: "payment-processing"
+        handle-service: "SagaOrchestratorService"
+        nextSteps:
+          - name: "register-subscription"
+            topic: "subscription-management"
+        nextFlows: []
+      onFailure:
+        emit: "process-subscription-payment.failed"
+        topic: "payment-processing"
+        handle-service: "SagaOrchestratorService"
+        nextSteps: []
+        nextFlows:
+          - name: "user-notification-flow"
+            topic: "user-notification-flow"
+            handle-service: "SagaOrchestratorService"

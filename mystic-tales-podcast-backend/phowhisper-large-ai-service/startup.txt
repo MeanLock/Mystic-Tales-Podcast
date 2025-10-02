@@ -1,0 +1,5 @@
+# This file tells Azure App Service how to start your FastAPI app
+# You can use this for other cloud providers as well
+
+# Use Uvicorn to run the FastAPI app
+command = "uvicorn main:app --host 0.0.0.0 --port 8000"

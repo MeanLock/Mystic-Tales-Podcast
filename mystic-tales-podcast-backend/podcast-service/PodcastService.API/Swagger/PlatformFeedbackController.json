@@ -1,0 +1,8 @@
+[
+    {
+        "method": "POST",
+        "url": "/api/Misc/platform-feedback",
+        "description": "Số người dùng mới đăng ký trong ngày. Trả về số lượng người đăng ký mới hôm nay và phần trăm thay đổi so với hôm qua.",
+        "completed": true
+    }
+]
