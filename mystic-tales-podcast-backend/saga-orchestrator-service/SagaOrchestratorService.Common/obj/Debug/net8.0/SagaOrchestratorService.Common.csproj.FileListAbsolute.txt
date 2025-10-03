@@ -15,3 +15,21 @@ D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podc
 D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.pdb
 D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.genruntimeconfig.cache
 D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\ref\SagaOrchestratorService.Common.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\bin\Debug\net8.0\SagaOrchestratorService.Common.deps.json
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\bin\Debug\net8.0\SagaOrchestratorService.Common.runtimeconfig.json
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\bin\Debug\net8.0\SagaOrchestratorService.Common.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\bin\Debug\net8.0\SagaOrchestratorService.Common.pdb
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.csproj.AssemblyReference.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.GeneratedMSBuildEditorConfig.editorconfig
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.AssemblyInfoInputs.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.AssemblyInfo.cs
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.csproj.CoreCompileInputs.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.sourcelink.json
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\refint\SagaOrchestratorService.Common.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.pdb
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\SagaOrchestratorService.Common.genruntimeconfig.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\obj\Debug\net8.0\ref\SagaOrchestratorService.Common.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Common\bin\Debug\net8.0\AppConfigurations\Saga\saga-flow.yaml

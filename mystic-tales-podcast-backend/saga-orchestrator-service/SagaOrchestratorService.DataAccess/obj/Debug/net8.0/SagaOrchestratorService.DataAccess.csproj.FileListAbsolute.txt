@@ -18,3 +18,24 @@ D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podc
 D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.pdb
 D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.genruntimeconfig.cache
 D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\ref\SagaOrchestratorService.DataAccess.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\bin\Debug\net8.0\SagaOrchestratorService.DataAccess.deps.json
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\bin\Debug\net8.0\SagaOrchestratorService.DataAccess.runtimeconfig.json
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\bin\Debug\net8.0\SagaOrchestratorService.DataAccess.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\bin\Debug\net8.0\SagaOrchestratorService.DataAccess.pdb
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\bin\Debug\net8.0\SagaOrchestratorService.Common.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\bin\Debug\net8.0\SagaOrchestratorService.Common.pdb
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.csproj.AssemblyReference.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.GeneratedMSBuildEditorConfig.editorconfig
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.AssemblyInfoInputs.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.AssemblyInfo.cs
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.csproj.CoreCompileInputs.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.sourcelink.json
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrch.EE0A2479.Up2Date
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\refint\SagaOrchestratorService.DataAccess.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.pdb
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\SagaOrchestratorService.DataAccess.genruntimeconfig.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\obj\Debug\net8.0\ref\SagaOrchestratorService.DataAccess.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.DataAccess\bin\Debug\net8.0\AppConfigurations\Saga\saga-flow.yaml
