@@ -30,11 +30,8 @@ namespace SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces
         public string Topic { get; set; } = string.Empty;
         public List<SagaStepRefModel> NextSteps { get; set; } = new();
 
-        // Changed: single next flow path (string). YAML key remains "nextFlows".
-        public string? NextFlows { get; set; } // keep YAML alias name for compatibility
-
-        // Convenience accessor (single path only)
-        public string? NextFlow => string.IsNullOrWhiteSpace(NextFlows) ? null : NextFlows;
+        // Changed to support multiple flows like nextSteps
+        public List<string> NextFlows { get; set; } = new();
     }
 
     public class SagaStepRefModel

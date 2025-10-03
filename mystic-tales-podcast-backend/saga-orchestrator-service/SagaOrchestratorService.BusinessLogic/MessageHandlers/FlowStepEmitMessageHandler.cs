@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Text.Json;
 using SagaOrchestratorService.BusinessLogic.Services.MessagingServices.interfaces;
 using SagaOrchestratorService.BusinessLogic.Services.SagaServices.interfaces;
@@ -5,6 +7,8 @@ using SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces;
 using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
 {
@@ -43,10 +47,10 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     return;
                 }
 
-                var outcome = FindOutcomeByEmit(emit);
+                var outcome = await FindOutcomeByEmit(emit, sagaId);
                 if (outcome == null)
                 {
-                    _logger.LogWarning("Emit '{Emit}' not found in any flow", emit);
+                    _logger.LogWarning("Emit '{Emit}' not found in the Saga {SagaId} Instance", emit, sagaId);
                     return;
                 }
 
@@ -97,26 +101,29 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                         await _sagaService.CheckAndUpdateSagaCompletionAsync(currentSagaId);
                     }
 
-                    // 2) Start next flow (single path)
-                    if (!string.IsNullOrWhiteSpace(outcome.Value.NextFlow))
+                    // 2) Start next flows (multiple flows support)
+                    foreach (var nextFlow in outcome.Value.NextFlows)
                     {
-                        var nf = outcome.Value.NextFlow!;
-                        if (!_flowConfig.Flows.TryGetValue(nf, out var flowDef) || string.IsNullOrWhiteSpace(flowDef.Topic))
+                        if (string.IsNullOrWhiteSpace(nextFlow))
+                            continue;
+
+                        if (!_flowConfig.Flows.TryGetValue(nextFlow, out var flowDef) || string.IsNullOrWhiteSpace(flowDef.Topic))
                         {
-                            _logger.LogWarning("Emit '{Emit}' -> unknown next flow '{Flow}'", emit, nf);
+                            _logger.LogWarning("Emit '{Emit}' -> unknown next flow '{Flow}'", emit, nextFlow);
                         }
                         else
                         {
+
                             var start = new StartSagaTriggerMessage
                             {
-                                MessageName = nf,
+                                MessageName = nextFlow,
                                 Data = data,
-                                MessageType = nf
+                                MessageType = nextFlow
                             };
 
                             await _messaging.SendSagaMessageAsync(start, flowDef.Topic, key);
                             _logger.LogInformation("Emit '{Emit}' -> start flow '{Flow}' to '{Topic}'",
-                                emit, nf, flowDef.Topic);
+                                emit, nextFlow, flowDef.Topic);
                         }
                     }
                 }
@@ -142,7 +149,43 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
             }
         }
 
-        private (List<(string Name, string Topic)> NextSteps, string? NextFlow)? FindOutcomeByEmit(string emit)
+        private async Task<(List<(string Name, string Topic)> NextSteps, List<string> NextFlows)?> FindOutcomeByEmit(string emit, Guid? sagaId)
+        {
+            // If no flowName provided, fall back to searching all flows (backward compatibility)
+            var sagaInstance = await _sagaService.GetSagaInstanceAsync(sagaId ?? Guid.Empty);
+
+            var flowName = sagaInstance?.FlowName;
+
+            if (string.IsNullOrWhiteSpace(flowName))
+            {
+                return FindOutcomeByEmitInAllFlows(emit);
+            }
+
+            // Search only in the specified flow
+            if (!_flowConfig.Flows.TryGetValue(flowName, out var flow))
+            {
+                _logger.LogWarning("Flow '{FlowName}' not found in configuration", flowName);
+                return null;
+            }
+
+            foreach (var step in flow.Steps)
+            {
+                if (step.OnSuccess != null && string.Equals(step.OnSuccess.Emit, emit, StringComparison.OrdinalIgnoreCase))
+                {
+                    var steps = (step.OnSuccess.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
+                    return (steps, step.OnSuccess.NextFlows ?? new());
+                }
+                if (step.OnFailure != null && string.Equals(step.OnFailure.Emit, emit, StringComparison.OrdinalIgnoreCase))
+                {
+                    var steps = (step.OnFailure.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
+                    return (steps, step.OnFailure.NextFlows ?? new());
+                }
+            }
+            _logger.LogWarning("Emit '{Emit}' not found in flow '{FlowName}'", emit, flowName);
+            return null;
+        }
+
+        private (List<(string Name, string Topic)> NextSteps, List<string> NextFlows)? FindOutcomeByEmitInAllFlows(string emit)
         {
             foreach (var (_, flow) in _flowConfig.Flows)
             {
@@ -151,12 +194,12 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     if (step.OnSuccess != null && string.Equals(step.OnSuccess.Emit, emit, StringComparison.OrdinalIgnoreCase))
                     {
                         var steps = (step.OnSuccess.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
-                        return (steps, step.OnSuccess.NextFlow);
+                        return (steps, step.OnSuccess.NextFlows ?? new());
                     }
                     if (step.OnFailure != null && string.Equals(step.OnFailure.Emit, emit, StringComparison.OrdinalIgnoreCase))
                     {
                         var steps = (step.OnFailure.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
-                        return (steps, step.OnFailure.NextFlow);
+                        return (steps, step.OnFailure.NextFlows ?? new());
                     }
                 }
             }

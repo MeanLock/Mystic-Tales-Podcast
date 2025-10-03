@@ -17,21 +17,21 @@ build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = SagaOrchestratorService.API
 build_property.RootNamespace = SagaOrchestratorService.API
-build_property.ProjectDir = D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.API\
+build_property.ProjectDir = F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.API\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.API
+build_property.MSBuildProjectDirectory = F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.API
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 8.0
 build_property.EnableCodeStyleSeverity = 
 
-[D:/vscode/MY PROJECT/Mystic Tales Podcast/Mystic-Tales-Podcast/mystic-tales-podcast-backend/saga-orchestrator-service/SagaOrchestratorService.API/Views/ExternalViews/EmailTemplates/Notification.cshtml]
+[F:/Code/Project/Mystic-Tales-Podcast/mystic-tales-podcast-backend/saga-orchestrator-service/SagaOrchestratorService.API/Views/ExternalViews/EmailTemplates/Notification.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRXh0ZXJuYWxWaWV3c1xFbWFpbFRlbXBsYXRlc1xOb3RpZmljYXRpb24uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/vscode/MY PROJECT/Mystic Tales Podcast/Mystic-Tales-Podcast/mystic-tales-podcast-backend/saga-orchestrator-service/SagaOrchestratorService.API/Views/Mail/Notification.cshtml]
+[F:/Code/Project/Mystic-Tales-Podcast/mystic-tales-podcast-backend/saga-orchestrator-service/SagaOrchestratorService.API/Views/Mail/Notification.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTWFpbFxOb3RpZmljYXRpb24uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
