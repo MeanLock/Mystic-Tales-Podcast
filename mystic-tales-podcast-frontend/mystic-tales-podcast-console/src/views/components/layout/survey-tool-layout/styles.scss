@@ -1,0 +1,49 @@
+.survey-tool-header {
+  background-color: #3E5DAB;
+  min-height: 105px;
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(217, 217, 217, 0.4);
+    border-radius: 20px;
+    padding: 0rem 0.85rem;
+  }
+
+  &__nav {
+    
+    .nav-link {
+      color: #ffffff;
+      gap: 1.2rem;
+      transition: all 0.3s ease;
+
+      svg {
+        transition: all 0.3s ease;
+        color: white;
+      }
+
+      &:hover {
+        color: #FFC40D;
+        background: rgba(255, 234, 168, 0.38);
+        border-radius: 1px;
+
+        svg {
+          color: #FFC40D;
+        }
+      }
+
+      &.active {
+        color: #ffc40d;
+        background: rgba(255, 234, 168, 0.38);
+        border-radius: 0;
+
+        svg {
+          color: #FFC40D;
+        }
+      }
+    }
+
+  }
+
+}

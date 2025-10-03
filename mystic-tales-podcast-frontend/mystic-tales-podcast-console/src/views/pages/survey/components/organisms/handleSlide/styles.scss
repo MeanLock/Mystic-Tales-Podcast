@@ -1,0 +1,44 @@
+.startpage-btn {
+    // background     : #156e8a;
+    // color          : #fff;
+    font-size      : 1.25rem;
+    border-radius  : 2rem;
+    padding        : 0.35rem 1rem;
+    font-weight    : 500;
+    transition     : background 0.2s;
+    border         : none;
+    outline        : none;
+    display        : flex;
+    align-items    : center;
+    justify-content: center;
+    margin         : 0 auto;
+    cursor         : pointer;
+    transition     : all 0.2s ease-in-out;
+  }
+  
+  .startpage-btn:hover {
+    transform : translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    transform : scale(1.1);
+  }
+
+  .btn-next{
+    font-size      : 1.25rem;
+    border-radius  : 2rem;
+    padding        : 0.35rem 1rem;
+    font-weight    : 500;
+    transition     : background 0.2s;
+    border         : none;
+    outline        : none;
+    display        : flex;
+    align-items    : center;
+    justify-content: center;
+    cursor         : pointer;
+    transition     : all 0.2s ease-in-out;
+  }
+
+  .btn-next:hover{
+    transform : translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    transform : scale(1.1);
+  }

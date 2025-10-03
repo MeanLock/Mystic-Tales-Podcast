@@ -1,0 +1,134 @@
+.app-sidebar {
+    background-color: #3E5DAB;
+    --cui-sidebar-narrow-width: 5rem;
+
+    &__header {
+        padding: 0.85rem;
+        position: relative;
+
+        &-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(217, 217, 217, 0.4);
+            padding-right: 0.5rem;
+            border-radius: 20px;
+            width: 100%;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 1.5rem;
+            right: 1.5rem;
+            height: 2px;
+            background-color: #ffc40d;
+        }
+
+
+        .sidebar-brand {
+
+            &-narrow,
+            &-full {
+                height: 60px;
+                width: auto;
+                object-fit: contain;
+                max-width: 100%;
+            }
+        }
+
+        .header-toggler-icon {
+            color: #FFC40D !important;
+        }
+    }
+
+
+    &__nav {
+        padding: 1rem;
+
+        .nav-link {
+            color: #ffffff;
+            gap: 2rem;
+            transition: all 0.3s ease;
+
+            svg {
+                transition: all 0.3s ease;
+                color: white;
+            }
+
+            &:hover {
+                color: #FFC40D;
+                background: rgba(255, 234, 168, 0.38);
+                border-radius: 1px;
+
+                svg {
+                    color: #FFC40D;
+                }
+            }
+
+            &.active {
+                color: #ffc40d;
+                background: rgba(255, 234, 168, 0.38);
+                border-radius: 0;
+
+                svg {
+                    color: #FFC40D;
+                }
+            }
+        }
+
+    }
+
+    &.sidebar-narrow {
+
+        .nav-text {
+            display: none;
+        }
+
+        .app-sidebar__header-content {
+            padding: 0rem;
+            justify-content: center;
+        }
+
+    }
+
+
+
+}
+
+.app-header {
+    &__title {
+        color: #000000;
+        font-weight: 600;
+        font-size: 1.25rem;
+
+        [data-coreui-theme="dark"] & {
+            color: #ffffff;
+        }
+    }
+}
+
+.app-breadcrumb {
+    &__item {
+
+        a {
+            text-decoration: none;
+            color: #6c757d;
+
+            &:hover {
+                text-decoration: none;
+                color: #3e5dab;
+            }
+        }
+
+        &.active {
+            color: #000000;
+            font-weight: 500;
+
+            [data-coreui-theme="dark"] & {
+                color: #ffffff;
+            }
+        }
+    }
+}

@@ -1,0 +1,443 @@
+.survey-filter-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .survey-card {
+    width: 100%;
+    max-width: 1000px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+
+    .survey-content {
+      padding: 3rem;
+
+      .survey-header {
+        text-align: center;
+        margin-bottom: 3rem;
+
+        .survey-title {
+          font-size: 2rem;
+          font-weight: 700;
+          color: #2d3748;
+          margin-bottom: 2rem;
+        }
+
+        .progress-steps {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 1rem;
+          flex-wrap: wrap;
+
+          .step-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+
+            .step-circle {
+              width: 50px;
+              height: 50px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 600;
+              font-size: 1.1rem;
+              background: #e2e8f0;
+              color: #64748b;
+              transition: all 0.3s ease;
+              border: 3px solid transparent;
+
+              &.active {
+                background: #3e5dab;
+                color: white;
+              }
+
+              &.current {
+                border-color: #ffc40d;
+                box-shadow: 0 0 0 4px rgba(255, 196, 13, 0.2);
+              }
+
+              &.completed {
+                background: #4caf50 !important;
+                color: white !important;
+                border-color: #4caf50 !important;
+              }
+
+              &.active:not(.completed) {
+                background: #3e5dab;
+                color: white;
+              }
+            }
+
+            .step-label {
+              margin-top: 0.5rem;
+              font-size: 0.875rem;
+              color: #64748b;
+              text-align: center;
+              max-width: 80px;
+              line-height: 1.2;
+            }
+
+            .step-connector {
+              position: absolute;
+              top: 25px;
+              left: 60px;
+              width: 40px;
+              height: 2px;
+              background: #e2e8f0;
+              transition: all 0.3s ease;
+
+              &.active {
+                background: #3e5dab;
+              }
+
+              &.completed {
+                background: #4caf50 !important;
+              }
+            }
+          }
+        }
+      }
+
+      .content-area {
+        min-height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: #f8fafc;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+
+        .step-content {
+          width: 100%;
+          max-width: 600px;
+
+          .question-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 2rem;
+          }
+
+          .rating-subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+          }
+
+          .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            .option-item {
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+              padding: 1rem;
+              background: white;
+              border: 2px solid #e2e8f0;
+              border-radius: 10px;
+              cursor: pointer;
+              transition: all 0.3s ease;
+
+              &:hover {
+                border-color: #3e5dab;
+                background: #f0f4ff;
+              }
+
+              .option-label {
+                cursor: pointer;
+                font-weight: 500;
+                color: #2d3748;
+              }
+            }
+          }
+
+          .address-form {
+            .form-group {
+              margin-bottom: 1.5rem;
+
+              .form-label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-weight: 600;
+                color: #2d3748;
+              }
+
+              .region-options {
+                .option-item {
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                  padding: 0.75rem;
+                  background: white;
+                  border: 2px solid #e2e8f0;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+
+                  &:hover {
+                    border-color: #3e5dab;
+                    background: #f0f4ff;
+                  }
+
+                  .option-label {
+                    cursor: pointer;
+                    font-weight: 500;
+                    color: #2d3748;
+                    font-size: 0.9rem;
+                  }
+                }
+              }
+            }
+          }
+
+          .topics-rating {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+
+            .topic-rating-item {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 1rem;
+              background: white;
+              border: 2px solid #e2e8f0;
+              border-radius: 10px;
+
+              .topic-name {
+                font-weight: 500;
+                color: #2d3748;
+              }
+
+              .rating-stars {
+                display: flex;
+                gap: 0.25rem;
+
+                .star-button {
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  padding: 0.25rem;
+                  transition: all 0.2s ease;
+
+                  .star-icon {
+                    width: 20px;
+                    height: 20px;
+                    color: #e2e8f0;
+                    transition: all 0.2s ease;
+                  }
+
+                  &.active .star-icon {
+                    color: #ffc40d;
+                  }
+
+                  &:hover .star-icon {
+                    color: #ffc40d;
+                    transform: scale(1.1);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      .navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .nav-button {
+          padding: 0.75rem 2rem;
+          font-weight: 600;
+          border-radius: 10px;
+          transition: all 0.3s ease;
+
+          &.prev-button {
+            background: white;
+            border: 2px solid #e2e8f0;
+            color: #64748b;
+
+            &:hover:not(:disabled) {
+              border-color: #3e5dab;
+              color: #3e5dab;
+            }
+          }
+
+          &.next-button,
+          &.submit-button {
+            background: #3e5dab;
+            color: white;
+            border: none;
+
+            &:hover:not(:disabled) {
+              background: #2d4494;
+              transform: translateY(-2px);
+              box-shadow: 0 4px 12px rgba(62, 93, 171, 0.3);
+            }
+          }
+
+          &.submit-button {
+            background: #ffc40d;
+            color: #2d3748;
+
+            &:hover:not(:disabled) {
+              background: #e6b00a;
+            }
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .survey-filter-page {
+    padding: 1rem;
+
+    .survey-card .survey-content {
+      padding: 2rem 1.5rem;
+
+      .survey-header .progress-steps {
+        gap: 0.5rem;
+
+        .step-wrapper {
+          .step-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 0.9rem;
+          }
+
+          .step-label {
+            font-size: 0.75rem;
+            max-width: 60px;
+          }
+
+          .step-connector {
+            width: 30px;
+            left: 50px;
+          }
+        }
+      }
+
+      .content-area {
+        padding: 1.5rem;
+
+        .step-content {
+          .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+
+          .topics-rating {
+            grid-template-columns: 1fr;
+
+            .topic-rating-item {
+              flex-direction: column;
+              gap: 1rem;
+              text-align: center;
+            }
+          }
+        }
+      }
+
+      .navigation {
+        flex-direction: column;
+        gap: 1rem;
+
+        .nav-button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+.options-form {
+  width: 100%;
+
+  .options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .option-item {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0.5rem;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: #3e5dab;
+        background: #f0f4ff;
+      }
+
+      .option-label {
+        margin: 0;
+        width: 100%;
+
+        .MuiFormControlLabel-label {
+          font-weight: 500;
+          color: #2d3748;
+        }
+      }
+    }
+  }
+}
+
+.region-options {
+  //   display: grid;
+  //   gap: 0.75rem;
+  //   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+
+  .option-item {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.25rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #3e5dab;
+      background: #f0f4ff;
+    }
+
+    .option-label {
+      margin: 0;
+      width: 100%;
+
+      .MuiFormControlLabel-label {
+        font-weight: 500;
+        color: #2d3748;
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
+// Loading state for submit button
+.nav-button.submit-button {
+  &:disabled {
+    opacity: 0.7;
+  }
+}

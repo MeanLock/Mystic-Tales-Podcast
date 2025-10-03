@@ -1,0 +1,76 @@
+.level-view {
+    .level-column {
+        flex: 0 0 20%;
+        max-width: 20%;
+        
+        @media (max-width: 992px) {
+            flex: 0 0 33.333333%;
+            max-width: 33.333333%;
+        }
+        
+        @media (max-width: 768px) {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+        
+        @media (max-width: 576px) {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
+}
+
+.level-card {
+    border: none;
+    border-radius: 25px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+    .level-circle-container {
+        text-align: center;
+        padding: 1rem 0;
+        background-color: #F5EFEF;
+        border-radius: 25px 25px 0 0;
+
+
+        .outer-circle {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+
+            .inner-circle {
+                width: 85px;
+                height: 85px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                span {
+                    font-size: 2.5rem;
+                    font-weight: bold;
+                }
+            }
+        }
+
+        .level-title {
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+    }
+
+    .level-info {
+        .info-item {
+            display: flex;
+            gap: 1rem;
+            padding: 0.4rem 1rem;
+
+            span {
+                font-weight: 600;
+            }
+        }
+    }
+}
