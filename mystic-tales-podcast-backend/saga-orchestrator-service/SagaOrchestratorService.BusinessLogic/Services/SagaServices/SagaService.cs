@@ -108,6 +108,18 @@ namespace SagaOrchestratorService.BusinessLogic.Services.SagaServices
             return false;
         }
 
+        public async Task UpdateSagaResultData(Guid sagaId, Dictionary<string, object> resultData)
+        {
+            var sagaInstance = await GetSagaInstanceAsync(sagaId);
+            if (sagaInstance != null)
+            {
+                sagaInstance.ResultData = resultData;
+                sagaInstance.UpdatedAt = DateTime.UtcNow;
+                await _sagaInstanceRepository.UpdateAsync(sagaInstance.SagaId, sagaInstance);
+                _logger.LogInformation("Updated saga result data: {SagaId}", sagaId);
+            }
+        }
+
         public async Task UpdateSagaStatusAsync(Guid sagaId, SagaStatus status, Dictionary<string, object>? resultData = null, string? errorStepName = null, string? errorMessage = null)
         {
             var sagaInstance = await GetSagaInstanceAsync(sagaId);

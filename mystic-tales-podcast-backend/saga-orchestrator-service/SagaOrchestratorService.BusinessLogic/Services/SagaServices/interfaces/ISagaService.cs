@@ -12,5 +12,6 @@ namespace SagaOrchestratorService.BusinessLogic.Services.SagaServices.interfaces
         Task UpdateSagaStatusAsync(Guid sagaId, SagaStatus status, Dictionary<string, object>? resultData = null, string? errorStepName = null, string? errorMessage = null);
         Task<SagaInstance?> GetSagaInstanceAsync(Guid sagaId);
         Task<List<SagaStepExcecution>> GetStepExecutionsAsync(Guid sagaId);
+        Task UpdateSagaResultData(Guid sagaId, Dictionary<string, object> resultData);
     }
 }
