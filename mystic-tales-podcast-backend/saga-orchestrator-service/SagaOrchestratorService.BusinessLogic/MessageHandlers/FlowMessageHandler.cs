@@ -5,6 +5,7 @@ using SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces;
 using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
 {
@@ -46,8 +47,11 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 var first = flowDef.Steps[0];
                 var id = sagaId ?? Guid.NewGuid();
 
+                // Serialize initial data as JSON string
+                string initialDataJson = SerializeToJson(data);
+
                 // Create saga instance and first step execution
-                await _sagaService.CreateSagaInstanceAsync(id, flowName, data, first.Name);
+                await _sagaService.CreateSagaInstanceAsync(id, flowName, initialDataJson, first.Name);
                 await _sagaService.CreateStepExecutionAsync(id, first.Name, first.Topic, data);
 
                 var cmd = new SagaCommandMessage
@@ -55,8 +59,8 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     SagaId = id,
                     FlowName = flowName,
                     MessageName = first.Name,
-                    Data = data,
-                    MessageType = first.Name
+                    RequestData = data,
+                    ResponseData = new Dictionary<string, object>()
                 };
 
                 await _messaging.SendSagaMessageAsync(cmd, first.Topic, key);
@@ -92,10 +96,15 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     foreach (var p in dataEl.EnumerateObject())
                         data[p.Name] = ConvertElement(p.Value);
                 }
+                else if (root.TryGetProperty("RequestData", out var reqDataEl) && reqDataEl.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var p in reqDataEl.EnumerateObject())
+                        data[p.Name] = ConvertElement(p.Value);
+                }
                 else if (root.ValueKind == JsonValueKind.Object)
                 {
                     foreach (var p in root.EnumerateObject())
-                        if (p.Name is not ("MessageType" or "FlowName" or "SagaId"))
+                        if (p.Name is not ("MessageType" or "FlowName" or "SagaId" or "MessageName"))
                             data[p.Name] = ConvertElement(p.Value);
                 }
 

@@ -47,7 +47,7 @@ namespace SagaOrchestratorService.Common.AppConfigurations.Saga
             {
                 var yaml = File.ReadAllText(yamlPath);
                 var deserializer = new DeserializerBuilder()
-                    .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                    .WithNamingConvention(UnderscoredNamingConvention.Instance) // Changed this line
                     .IgnoreUnmatchedProperties()
                     .Build();
 
@@ -68,11 +68,11 @@ namespace SagaOrchestratorService.Common.AppConfigurations.Saga
                         Console.WriteLine($"  Step: {step.Name}, Topic: {step.Topic}");
                         if (step.OnSuccess != null)
                         {
-                            Console.WriteLine($"    OnSuccess NextSteps: {(step.OnSuccess.NextSteps == null ? "None" : string.Join(", ", step.OnSuccess.NextSteps))}, NextFlows: {step.OnSuccess.NextFlows ?? "None"}, Emit: {step.OnSuccess.Emit ?? "None"}");
+                            Console.WriteLine($"    OnSuccess NextSteps: {(step.OnSuccess.NextSteps == null ? "None" : string.Join(", ", step.OnSuccess.NextSteps))}, NextFlows: {(step.OnSuccess.NextFlows == null ? "None" : string.Join(", ", step.OnSuccess.NextFlows))}, Emit: {step.OnSuccess.Emit ?? "None"}");
                         }
                         if (step.OnFailure != null)
                         {
-                            Console.WriteLine($"    OnFailure NextSteps: {(step.OnFailure.NextSteps == null ? "None" : string.Join(", ", step.OnFailure.NextSteps))}, NextFlows: {step.OnFailure.NextFlows ?? "None"}, Emit: {step.OnFailure.Emit ?? "None"}");
+                            Console.WriteLine($"    OnFailure NextSteps: {(step.OnFailure.NextSteps == null ? "None" : string.Join(", ", step.OnFailure.NextSteps))}, NextFlows: {(step.OnSuccess.NextFlows == null ? "None" : string.Join(", ", step.OnSuccess.NextFlows))}, Emit: {step.OnFailure.Emit ?? "None"}");
                         }
                     }
                 }

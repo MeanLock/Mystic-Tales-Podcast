@@ -26,5 +26,44 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 return null;
             }
         }
+
+        protected string SerializeToJson<T>(T data) where T : class
+        {
+            try
+            {
+                return JsonConvert.SerializeObject(data, Formatting.Indented);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to serialize data: {Data}", data);
+                return "{}";
+            }
+        }
+
+        protected string? ExtractResponseDataFromRequest(Dictionary<string, object> requestData)
+        {
+            if (requestData.TryGetValue("ResponseData", out var responseDataObj))
+            {
+                try
+                {
+                    return JsonConvert.SerializeObject(responseDataObj, Formatting.Indented);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to serialize ResponseData from RequestData");
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        protected string? ExtractErrorMessageFromRequest(Dictionary<string, object> requestData)
+        {
+            if (requestData.TryGetValue("ErrorMessage", out var errorMessageObj))
+            {
+                return errorMessageObj?.ToString();
+            }
+            return null;
+        }
     }
 }

@@ -28,20 +28,6 @@ public partial class AppDbContext : DbContext
             WriteIndented = false
         };
 
-        // Non-nullable dictionary (store as JSON)
-        var dictToJson = new ValueConverter<Dictionary<string, object>, string>(
-            v => JsonSerializer.Serialize(v, jsonOptions),
-            v => string.IsNullOrWhiteSpace(v)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(v, jsonOptions)!);
-
-        // Nullable dictionary (store as JSON)
-        var nullableDictToJson = new ValueConverter<Dictionary<string, object>?, string?>(
-            v => v == null ? null : JsonSerializer.Serialize(v, jsonOptions),
-            v => string.IsNullOrWhiteSpace(v)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(v!, jsonOptions)!);
-
         // SagaInstance
         modelBuilder.Entity<SagaInstance>(entity =>
         {
@@ -51,11 +37,9 @@ public partial class AppDbContext : DbContext
                   .IsRequired();
 
             entity.Property(e => e.InitialData)
-                  .HasConversion(dictToJson)
                   .HasColumnType("nvarchar(max)");
 
             entity.Property(e => e.ResultData)
-                  .HasConversion(dictToJson)
                   .HasColumnType("nvarchar(max)");
 
             entity.Property(e => e.FlowStatus)
@@ -88,11 +72,9 @@ public partial class AppDbContext : DbContext
                   .HasConversion<int>(); // store enum as int
 
             entity.Property(e => e.RequestData)
-                  .HasConversion(nullableDictToJson)
                   .HasColumnType("nvarchar(max)");
 
             entity.Property(e => e.responseData)
-                  .HasConversion(nullableDictToJson)
                   .HasColumnType("nvarchar(max)");
 
             entity.Property(e => e.ErrorMessage);

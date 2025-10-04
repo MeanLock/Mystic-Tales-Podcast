@@ -16,3 +16,22 @@ D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podc
 D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\refint\SagaOrchestratorService.Infrastructure.dll
 D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.pdb
 D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\ref\SagaOrchestratorService.Infrastructure.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\AppConfigurations\Jwt\keys\private_key.pem
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\AppConfigurations\Jwt\keys\public_key.pem
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\SagaOrchestratorService.Infrastructure.deps.json
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\SagaOrchestratorService.Infrastructure.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\SagaOrchestratorService.Infrastructure.pdb
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\SagaOrchestratorService.Common.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\SagaOrchestratorService.Common.pdb
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.csproj.AssemblyReference.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.AssemblyInfoInputs.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.AssemblyInfo.cs
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.csproj.CoreCompileInputs.cache
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.sourcelink.json
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrch.D12E7D90.Up2Date
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\refint\SagaOrchestratorService.Infrastructure.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.pdb
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\ref\SagaOrchestratorService.Infrastructure.dll
+F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\AppConfigurations\Saga\saga-flow.yaml
