@@ -85,8 +85,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                             SagaId = currentSagaId,
                             FlowName = string.IsNullOrWhiteSpace(flowName) ? "(unknown)" : flowName!,
                             MessageName = step.Name,
-                            Data = data,
-                            MessageType = step.Name
+                            Data = data
                         };
 
                         await _messaging.SendSagaMessageAsync(cmd, step.Topic, key);
@@ -117,8 +116,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                             var start = new StartSagaTriggerMessage
                             {
                                 MessageName = nextFlow,
-                                Data = data,
-                                MessageType = nextFlow
+                                Data = data
                             };
 
                             await _messaging.SendSagaMessageAsync(start, flowDef.Topic, key);
