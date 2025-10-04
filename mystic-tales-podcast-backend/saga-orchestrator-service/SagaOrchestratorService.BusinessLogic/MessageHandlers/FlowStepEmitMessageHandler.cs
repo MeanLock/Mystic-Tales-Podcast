@@ -86,8 +86,8 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     // Update step execution status to SUCCESS with request and response data
                     await _sagaService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, StepStatus.SUCCESS, requestData, responseData, null);
 
-                    // Update saga result data with ResponseData from RequestData
-                    await _sagaService.UpdateSagaStatusAsync(currentSagaId, SagaStatus.RUNNING, resultDataJson);
+                    // Keep saga status as RUNNING - do not update ResultData yet
+                    await _sagaService.UpdateSagaStatusAsync(currentSagaId, SagaStatus.RUNNING);
 
                     // 1) Fan-out next steps
                     foreach (var step in outcome.Value.NextSteps)
@@ -116,7 +116,15 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     if (outcome.Value.NextSteps.Count == 0)
                     {
                         await _sagaService.UpdateSagaCurrentStepAsync(currentSagaId, null);
-                        await _sagaService.CheckAndUpdateSagaCompletionAsync(currentSagaId);
+                        
+                        // Check if saga is complete and update ResultData only when completing
+                        var isCompleted = await _sagaService.CheckAndUpdateSagaCompletionAsync(currentSagaId);
+                        if (isCompleted)
+                        {
+                            // Update ResultData only when saga completes successfully
+                            await _sagaService.UpdateSagaStatusAsync(currentSagaId, SagaStatus.SUCCESS, resultDataJson);
+                            _logger.LogInformation("Saga completed successfully: {SagaId}, ResultData updated", currentSagaId);
+                        }
                     }
 
                     // 2) Start next flows (multiple flows support)
@@ -149,11 +157,11 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     var stepErrorMessage = errorMessage ?? $"Step failed with emit: {emit}";
                     await _sagaService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, StepStatus.FAILED, requestData, responseData, stepErrorMessage);
 
-                    // Update saga status to FAILED with error message
+                    // Update saga status to FAILED with error message AND ResultData
                     var sagaErrorMessage = errorMessage ?? $"Saga failed at step: {stepName}";
                     await _sagaService.UpdateSagaStatusAsync(currentSagaId, SagaStatus.FAILED, resultDataJson, stepName, sagaErrorMessage);
 
-                    _logger.LogWarning("Saga failed: {SagaId}, Step: {StepName}, Emit: {Emit}, Error: {ErrorMessage}", 
+                    _logger.LogWarning("Saga failed: {SagaId}, Step: {StepName}, Emit: {Emit}, Error: {ErrorMessage}, ResultData updated", 
                         currentSagaId, stepName, emit, sagaErrorMessage);
                 }
                 else

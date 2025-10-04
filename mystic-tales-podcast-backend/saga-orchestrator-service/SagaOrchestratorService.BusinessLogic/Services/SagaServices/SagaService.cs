@@ -113,9 +113,19 @@ namespace SagaOrchestratorService.BusinessLogic.Services.SagaServices
 
             if (allSuccess && !anyRunning)
             {
-                await UpdateSagaStatusAsync(sagaId, SagaStatus.SUCCESS);
-                _logger.LogInformation("Saga completed successfully: {SagaId}", sagaId);
-                return true;
+                // Only update status to SUCCESS, don't update ResultData here
+                // ResultData will be updated by the handler
+                var sagaInstance = await GetSagaInstanceAsync(sagaId);
+                if (sagaInstance != null)
+                {
+                    sagaInstance.FlowStatus = SagaStatus.SUCCESS;
+                    sagaInstance.UpdatedAt = DateTime.UtcNow;
+                    sagaInstance.CompletedAt = DateTime.UtcNow;
+                    await _sagaInstanceRepository.UpdateAsync(sagaInstance.SagaId, sagaInstance);
+                    
+                    _logger.LogInformation("Saga completed successfully: {SagaId}", sagaId);
+                    return true;
+                }
             }
 
             return false;
