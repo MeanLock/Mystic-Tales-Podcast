@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj": {}
+    "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj": {}
   },
   "projects": {
-    "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj": {
+    "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
+        "projectUniqueName": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
         "projectName": "Architecture_1.BusinessLogic",
-        "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
-        "packagesPath": "C:\\Users\\XUAN BACH\\.nuget\\packages\\",
-        "outputPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\obj\\",
+        "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
+        "packagesPath": "C:\\Users\\hangu\\.nuget\\packages\\",
+        "outputPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+          "D:\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\XUAN BACH\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\hangu\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -26,20 +26,21 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj": {
-                "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj"
+              "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj": {
+                "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj"
               },
-              "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj": {
-                "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj"
+              "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj": {
+                "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj"
               },
-              "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj": {
-                "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj"
+              "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj": {
+                "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj"
               }
             }
           }
@@ -113,24 +114,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj": {
+    "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj",
+        "projectUniqueName": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj",
         "projectName": "Architecture_1.Common",
-        "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj",
-        "packagesPath": "C:\\Users\\XUAN BACH\\.nuget\\packages\\",
-        "outputPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\obj\\",
+        "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj",
+        "packagesPath": "C:\\Users\\hangu\\.nuget\\packages\\",
+        "outputPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+          "D:\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\XUAN BACH\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\hangu\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -139,6 +140,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -238,24 +240,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj": {
+    "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
+        "projectUniqueName": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
         "projectName": "Architecture_1.DataAccess",
-        "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
-        "packagesPath": "C:\\Users\\XUAN BACH\\.nuget\\packages\\",
-        "outputPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\obj\\",
+        "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
+        "packagesPath": "C:\\Users\\hangu\\.nuget\\packages\\",
+        "outputPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+          "D:\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\XUAN BACH\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\hangu\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -264,14 +266,15 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj": {
-                "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj"
+              "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj": {
+                "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj"
               }
             }
           }
@@ -383,24 +386,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj": {
+    "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
+        "projectUniqueName": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
         "projectName": "Architecture_1.Infrastructure",
-        "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
-        "packagesPath": "C:\\Users\\XUAN BACH\\.nuget\\packages\\",
-        "outputPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\obj\\",
+        "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\hangu\\.nuget\\packages\\",
+        "outputPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+          "D:\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\XUAN BACH\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\hangu\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -409,14 +412,15 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj": {
-                "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj"
+              "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj": {
+                "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj"
               }
             }
           }
@@ -506,7 +510,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

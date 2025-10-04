@@ -1,11 +1,10 @@
 using System.Text.Json;
 using SagaOrchestratorService.BusinessLogic.Services.MessagingServices.interfaces;
-using SagaOrchestratorService.BusinessLogic.Services.SagaServices.interfaces;
 using SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces;
 using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using SagaOrchestratorService.BusinessLogic.Services.DbServices;
 
 namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
 {
@@ -13,17 +12,17 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
     {
         private readonly IMessagingService _messaging;
         private readonly ISagaFlowConfig _flowConfig;
-        private readonly ISagaService _sagaService;
+        private readonly SagaInstanceService _sagaInstanceService;
 
         public FlowMessageHandler(
             IMessagingService messaging,
             ISagaFlowConfig flowConfig,
-            ISagaService sagaService,
+            SagaInstanceService sagaInstanceService,
             ILogger<FlowMessageHandler> logger) : base(logger)
         {
             _messaging = messaging;
             _flowConfig = flowConfig;
-            _sagaService = sagaService;
+            _sagaInstanceService = sagaInstanceService;
         }
 
         // Invoked via registry wrapper (same signature as Facility handlers)
@@ -51,8 +50,8 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 string initialDataJson = SerializeToJson(data);
 
                 // Create saga instance and first step execution
-                await _sagaService.CreateSagaInstanceAsync(id, flowName, initialDataJson, first.Name);
-                await _sagaService.CreateStepExecutionAsync(id, first.Name, first.Topic, data);
+                await _sagaInstanceService.CreateSagaInstanceAsync(id, flowName, initialDataJson, first.Name);
+                await _sagaInstanceService.CreateStepExecutionAsync(id, first.Name, first.Topic, data);
 
                 var cmd = new SagaCommandMessage
                 {

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SagaOrchestratorService.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+15679dc9acf25c9e5a58b1babb282c24bd75c4f8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0d9db20c595b2a7b814b5cc87c0cb6610f213336")]
 [assembly: System.Reflection.AssemblyProductAttribute("SagaOrchestratorService.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SagaOrchestratorService.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

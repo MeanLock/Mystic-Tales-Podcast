@@ -2,13 +2,14 @@ using System;
 using System.Linq;
 using System.Text.Json;
 using SagaOrchestratorService.BusinessLogic.Services.MessagingServices.interfaces;
-using SagaOrchestratorService.BusinessLogic.Services.SagaServices.interfaces;
 using SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces;
 using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using SagaOrchestratorService.DataAccess.Enums.Saga;
+using SagaOrchestratorService.BusinessLogic.Services.DbServices;
 
 namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
 {
@@ -16,17 +17,17 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
     {
         private readonly IMessagingService _messaging;
         private readonly ISagaFlowConfig _flowConfig;
-        private readonly ISagaService _sagaService;
+        private readonly SagaInstanceService _sagaInstanceService;
 
         public FlowStepEmitMessageHandler(
             IMessagingService messaging,
             ISagaFlowConfig flowConfig,
-            ISagaService sagaService,
+            SagaInstanceService sagaInstanceService,
             ILogger<FlowStepEmitMessageHandler> logger) : base(logger)
         {
             _messaging = messaging;
             _flowConfig = flowConfig;
-            _sagaService = sagaService;
+            _sagaInstanceService = sagaInstanceService;
         }
 
         // Invoked via registry wrapper (same signature as Facility handlers)
@@ -84,19 +85,19 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 if (isSuccess)
                 {
                     // Update step execution status to SUCCESS with request and response data
-                    await _sagaService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, StepStatus.SUCCESS, requestData, responseData, null);
+                    await _sagaInstanceService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, SagaStepStatusEnum.SUCCESS, requestData, responseData, null);
 
                     // Keep saga status as RUNNING - do not update ResultData yet
-                    await _sagaService.UpdateSagaStatusAsync(currentSagaId, SagaStatus.RUNNING);
+                    await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.RUNNING);
 
                     // 1) Fan-out next steps
                     foreach (var step in outcome.Value.NextSteps)
                     {
                         // Create step execution for next step
-                        await _sagaService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, requestData);
+                        await _sagaInstanceService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, requestData);
 
                         // Update saga current step
-                        await _sagaService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
+                        await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
 
                         var cmd = new SagaCommandMessage
                         {
@@ -115,14 +116,14 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     // Check if no more next steps - check for saga completion
                     if (outcome.Value.NextSteps.Count == 0)
                     {
-                        await _sagaService.UpdateSagaCurrentStepAsync(currentSagaId, null);
+                        await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, null);
                         
                         // Check if saga is complete and update ResultData only when completing
-                        var isCompleted = await _sagaService.CheckAndUpdateSagaCompletionAsync(currentSagaId);
+                        var isCompleted = await _sagaInstanceService.CheckAndUpdateSagaCompletionAsync(currentSagaId);
                         if (isCompleted)
                         {
                             // Update ResultData only when saga completes successfully
-                            await _sagaService.UpdateSagaStatusAsync(currentSagaId, SagaStatus.SUCCESS, resultDataJson);
+                            await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.SUCCESS, resultDataJson);
                             _logger.LogInformation("Saga completed successfully: {SagaId}, ResultData updated", currentSagaId);
                         }
                     }
@@ -155,11 +156,11 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 {
                     // Update step execution status to FAILED with request and response data and error message
                     var stepErrorMessage = errorMessage ?? $"Step failed with emit: {emit}";
-                    await _sagaService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, StepStatus.FAILED, requestData, responseData, stepErrorMessage);
+                    await _sagaInstanceService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, SagaStepStatusEnum.FAILED, requestData, responseData, stepErrorMessage);
 
                     // Update saga status to FAILED with error message AND ResultData
                     var sagaErrorMessage = errorMessage ?? $"Saga failed at step: {stepName}";
-                    await _sagaService.UpdateSagaStatusAsync(currentSagaId, SagaStatus.FAILED, resultDataJson, stepName, sagaErrorMessage);
+                    await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.FAILED, resultDataJson, stepName, sagaErrorMessage);
 
                     _logger.LogWarning("Saga failed: {SagaId}, Step: {StepName}, Emit: {Emit}, Error: {ErrorMessage}, ResultData updated", 
                         currentSagaId, stepName, emit, sagaErrorMessage);
@@ -179,7 +180,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
         private async Task<(List<(string Name, string Topic)> NextSteps, List<string> NextFlows)?> FindOutcomeByEmit(string emit, Guid sagaId)
         {
             // If no flowName provided, fall back to searching all flows (backward compatibility)
-            var sagaInstance = await _sagaService.GetSagaInstanceAsync(sagaId);
+            var sagaInstance = await _sagaInstanceService.GetSagaInstanceAsync(sagaId);
 
             var flowName = sagaInstance?.FlowName;
 
