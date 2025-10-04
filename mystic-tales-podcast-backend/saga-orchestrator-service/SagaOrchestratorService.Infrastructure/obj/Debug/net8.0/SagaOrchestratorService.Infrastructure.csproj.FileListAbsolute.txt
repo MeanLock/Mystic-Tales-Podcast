@@ -35,3 +35,4 @@ F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestra
 F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\SagaOrchestratorService.Infrastructure.pdb
 F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\obj\Debug\net8.0\ref\SagaOrchestratorService.Infrastructure.dll
 F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\AppConfigurations\Saga\saga-flow.yaml
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.Infrastructure\bin\Debug\net8.0\AppConfigurations\Saga\saga-flow.yaml

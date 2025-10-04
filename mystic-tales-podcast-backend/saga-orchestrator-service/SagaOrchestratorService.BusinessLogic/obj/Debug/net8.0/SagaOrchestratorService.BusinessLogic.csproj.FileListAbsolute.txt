@@ -43,3 +43,4 @@ F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestra
 F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.BusinessLogic\obj\Debug\net8.0\SagaOrchestratorService.BusinessLogic.pdb
 F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.BusinessLogic\obj\Debug\net8.0\ref\SagaOrchestratorService.BusinessLogic.dll
 F:\Code\Project\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.BusinessLogic\bin\Debug\net8.0\AppConfigurations\Saga\saga-flow.yaml
+D:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\saga-orchestrator-service\SagaOrchestratorService.BusinessLogic\bin\Debug\net8.0\AppConfigurations\Saga\saga-flow.yaml
