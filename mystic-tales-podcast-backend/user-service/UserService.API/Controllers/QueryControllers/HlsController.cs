@@ -20,15 +20,15 @@ namespace UserService.API.Controllers.QueryControllers
     {
 
         private readonly FileIOHelper _fileIOHelper;
-        private readonly HlsService _hlsService;
+        private readonly FFMegLocalHlsService _ffMegLocalHlsService;
         private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
         private readonly IMediaTypeConfig _mediaTypeConfig;
 
-        public HlsController(FileIOHelper fileIOHelper, HlsService hlsService, FFMpegCoreHlsService ffMpegCoreHlsService, IMediaTypeConfig mediaTypeConfig)
+        public HlsController(FileIOHelper fileIOHelper, FFMegLocalHlsService ffMegLocalHlsService, FFMpegCoreHlsService ffMpegCoreHlsService, IMediaTypeConfig mediaTypeConfig)
         {
             _mediaTypeConfig = mediaTypeConfig;
             _fileIOHelper = fileIOHelper;
-            _hlsService = hlsService;
+            _ffMegLocalHlsService = ffMegLocalHlsService;
             _ffMpegCoreHlsService = ffMpegCoreHlsService;
         }
 
@@ -53,7 +53,7 @@ namespace UserService.API.Controllers.QueryControllers
                     return BadRequest(new { error = "Failed to retrieve uploaded file stream" });
                 }
 
-                HlsProcessingResult hlsResult = await _hlsService.ProcessAudioToHlsAsync(stream);
+                HlsProcessingResult hlsResult = await _ffMegLocalHlsService.ProcessAudioToHlsAsync(stream);
                 if (hlsResult.Success == false)
                 {
                     return BadRequest(new { error = hlsResult.ErrorMessage });

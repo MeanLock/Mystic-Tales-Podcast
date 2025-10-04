@@ -18,6 +18,8 @@ namespace UserService.Common.AppConfigurations.App
         public string? FILE_STORAGE_SRC { get; set; }
         public string? TIME_ZONE { get; set; }
         public string? EMBEDDING_VECTOR_API_URL { get; set; }
+        public string? AUDIO_TRANSCRIPTION_API_URL { get; set; }
+        public string? AUDIO_SEPARATION_AI_API_URL { get; set; }
     }
     public class AppConfig : IAppConfig
     {
@@ -29,6 +31,8 @@ namespace UserService.Common.AppConfigurations.App
         public string? FILE_STORAGE_SRC { get; set; }
         public string? TIME_ZONE { get; set; }
         public string? EMBEDDING_VECTOR_API_URL { get; set; }
+        public string? AUDIO_TRANSCRIPTION_API_URL { get; set; }
+        public string? AUDIO_SEPARATION_AI_API_URL { get; set; }
 
 
         public AppConfig(IConfiguration configuration)
@@ -42,7 +46,9 @@ namespace UserService.Common.AppConfigurations.App
             TIME_ZONE = appConfig?.TIME_ZONE;
             RESET_PASSWORD = appConfig?.RESET_PASSWORD;
             EMBEDDING_VECTOR_API_URL = appConfig?.EMBEDDING_VECTOR_API_URL;
-           
+            AUDIO_TRANSCRIPTION_API_URL = appConfig?.AUDIO_TRANSCRIPTION_API_URL;
+            AUDIO_SEPARATION_AI_API_URL = appConfig?.AUDIO_SEPARATION_AI_API_URL;
+
         }
 
         

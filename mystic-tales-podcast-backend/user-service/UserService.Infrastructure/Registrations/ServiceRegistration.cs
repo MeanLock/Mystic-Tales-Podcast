@@ -21,6 +21,7 @@ using Net.payOS;
 using UserService.Infrastructure.Services.Kafka;
 using UserService.Infrastructure.Services.Audio.AcoustID;
 using UserService.Infrastructure.Services.Audio.Hls;
+using UserService.Infrastructure.Services.Audio.Tuning;
 
 namespace UserService.Infrastructure.Registrations
 {
@@ -210,8 +211,13 @@ namespace UserService.Infrastructure.Registrations
             services.AddScoped<AcoustIDAudioFingerprintComparator>();
 
             // HLS Service
-            services.AddScoped<HlsService>();
+            services.AddScoped<FFMegLocalHlsService>();
             services.AddScoped<FFMpegCoreHlsService>();
+
+            // Audio Tuning Services
+            services.AddScoped<EqualizerTuningService>();
+            services.AddScoped<AITuningService>();
+            services.AddScoped<AdvanceTuningService>();
 
 
             return services;

@@ -15,6 +15,7 @@ using UserService.Infrastructure.Configurations.Kafka.interfaces;
 using UserService.Infrastructure.Configurations.Kafka;
 using UserService.Infrastructure.Configurations.Audio.Hls.interfaces;
 using UserService.Infrastructure.Configurations.Audio.Hls;
+using UserService.Infrastructure.Configurations.Audio.Tuning;
 
 namespace UserService.Infrastructure.Registrations
 {
@@ -59,6 +60,7 @@ namespace UserService.Infrastructure.Registrations
 
             // Audio
             services.AddSingleton<IHlsConfig, HlsConfig>();
+            services.AddSingleton<IMoodConfig, MoodConfig>();
 
             return services;
         }
