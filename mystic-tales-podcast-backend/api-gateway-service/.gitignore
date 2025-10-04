@@ -1,0 +1,9 @@
+.vs/
+ApiGatewayService.Application/bin/
+ApiGatewayService.Application/obj/
+ApiGatewayService.Infrastructure/bin/
+ApiGatewayService.Infrastructure/obj/
+ApiGatewayService.Entry/bin/
+ApiGatewayService.Entry/obj/
+ApiGatewayService.Common/bin/
+ApiGatewayService.Common/obj/
