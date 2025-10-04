@@ -4,14 +4,14 @@ namespace SagaOrchestratorService.BusinessLogic.Services.SagaServices.interfaces
 {
     public interface ISagaService
     {
-        Task<SagaInstance> CreateSagaInstanceAsync(Guid sagaId, string flowName, Dictionary<string, object> initialData, string firstStepName);
+        Task<SagaInstance> CreateSagaInstanceAsync(Guid sagaId, string flowName, string initialDataJson, string firstStepName);
         Task<SagaStepExcecution> CreateStepExecutionAsync(Guid sagaId, string stepName, string? topicName, Dictionary<string, object>? requestData);
-        Task UpdateStepExecutionStatusAsync(Guid sagaId, string stepName, StepStatus status, Dictionary<string, object>? responseData = null, string? errorMessage = null);
+        Task UpdateStepExecutionStatusAsync(Guid sagaId, string stepName, StepStatus status, Dictionary<string, object>? requestData = null, Dictionary<string, object>? responseData = null, string? errorMessage = null);
         Task UpdateSagaCurrentStepAsync(Guid sagaId, string? currentStepName);
         Task<bool> CheckAndUpdateSagaCompletionAsync(Guid sagaId);
-        Task UpdateSagaStatusAsync(Guid sagaId, SagaStatus status, Dictionary<string, object>? resultData = null, string? errorStepName = null, string? errorMessage = null);
+        Task UpdateSagaStatusAsync(Guid sagaId, SagaStatus status, string? resultDataJson = null, string? errorStepName = null, string? errorMessage = null);
         Task<SagaInstance?> GetSagaInstanceAsync(Guid sagaId);
         Task<List<SagaStepExcecution>> GetStepExecutionsAsync(Guid sagaId);
-        Task UpdateSagaResultData(Guid sagaId, Dictionary<string, object> resultData);
+        Task UpdateSagaResultData(Guid sagaId, string resultDataJson);
     }
 }
