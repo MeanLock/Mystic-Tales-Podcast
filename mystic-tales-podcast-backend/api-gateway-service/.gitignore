@@ -1,6 +1,5 @@
 .vs/
 ApiGatewayService.Application/bin/
-
 ApiGatewayService.Application/obj/
 ApiGatewayService.Infrastructure/bin/
 ApiGatewayService.Infrastructure/obj/
