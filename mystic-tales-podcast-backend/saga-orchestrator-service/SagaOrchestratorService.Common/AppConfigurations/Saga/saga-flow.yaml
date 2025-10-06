@@ -1720,16 +1720,19 @@ flows:
         description: "Submit/cập nhật audio file cho episode"
         parameters:
           - PodcastEpisodeId
+          - AudioFingerPrint
           - AudioFileKey
           - AudioFileSize
           - AudioLength
         next-request-data:
           - PodcastEpisodeId
+          - AudioFingerPrint
           - AudioFileKey
           - AudioFileSize
           - AudioLength
         response-data:
           - PodcastEpisodeId
+          - AudioFingerPrint 
           - AudioFileKey
           - AudioFileSize
           - AudioLength
