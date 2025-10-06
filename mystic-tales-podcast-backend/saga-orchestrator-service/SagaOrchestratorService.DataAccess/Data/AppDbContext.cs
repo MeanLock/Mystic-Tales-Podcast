@@ -82,7 +82,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                   .HasColumnType("datetime2");
 
-            entity.HasIndex(e => e.SagaId); // helpful for lookups
+            entity.HasIndex(e => e.SagaInstanceId); // helpful for lookups
         });
 
         OnModelCreatingPartial(modelBuilder);

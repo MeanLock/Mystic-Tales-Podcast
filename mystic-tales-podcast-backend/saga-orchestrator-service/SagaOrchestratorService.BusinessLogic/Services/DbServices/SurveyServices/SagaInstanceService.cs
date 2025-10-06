@@ -47,7 +47,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
         {
             var stepExecution = new SagaStepExcecution
             {
-                SagaId = sagaId,
+                SagaInstanceId = sagaId,
                 StepName = stepName,
                 TopicName = topicName,
                 StepStatus = SagaStepStatusEnum.RUNNING,
@@ -185,7 +185,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
         public async Task<List<SagaStepExcecution>> GetStepExecutionsAsync(Guid sagaId)
         {
             var allExecutions = _stepExecutionGenericRepository.FindAll();
-            return allExecutions.Where(s => s.SagaId == sagaId).ToList();
+            return allExecutions.Where(s => s.SagaInstanceId == sagaId).ToList();
         }
     }
 }
