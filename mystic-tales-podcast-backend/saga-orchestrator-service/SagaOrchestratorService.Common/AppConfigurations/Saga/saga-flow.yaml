@@ -502,6 +502,39 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  user-violation-reversal-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hoàn tác vi phạm"
+    save-file: ""
+    steps:
+      - name: "subtract-account-violation-point"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ violation points cho tài khoản"
+        parameters:
+          - AccountId
+          - ViolationPoint
+        next-request-data:
+          - AccountId
+          - ViolationPoint
+        response-data:
+          - AccountId
+          - NewViolationPoint
+          - NewViolationLevel
+        onSuccess:
+          emit: "subtract-account-violation-point.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "subtract-account-violation-point.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   user-violation-threshold-reach-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
