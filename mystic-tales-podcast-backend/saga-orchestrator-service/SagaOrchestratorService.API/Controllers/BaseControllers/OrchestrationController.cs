@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SagaOrchestratorService.BusinessLogic.DTOs.Saga;
-using SagaOrchestratorService.BusinessLogic.Services.DbServices;
+using SagaOrchestratorService.BusinessLogic.Services.DbServices.SagaServices;
 
 namespace SagaOrchestratorService.API.Controllers.BaseControllers
 {
