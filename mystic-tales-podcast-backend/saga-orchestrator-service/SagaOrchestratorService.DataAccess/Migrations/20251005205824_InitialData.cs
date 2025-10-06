@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SagaOrchestratorService.DataAccess.Migrations
 {
     /// <inheritdoc />
-    public partial class AddSagaEntities : Migration
+    public partial class InitialData : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,8 +18,8 @@ namespace SagaOrchestratorService.DataAccess.Migrations
                     SagaId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     FlowName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CurrentStepName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    InitialData = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ResultData = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    InitialData = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ResultData = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     FlowStatus = table.Column<int>(type: "int", nullable: false),
                     ErrorStepName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ErrorMessage = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -43,7 +43,7 @@ namespace SagaOrchestratorService.DataAccess.Migrations
                     TopicName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     StepStatus = table.Column<int>(type: "int", nullable: false),
                     RequestData = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    responseData = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ResponseData = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ErrorMessage = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },

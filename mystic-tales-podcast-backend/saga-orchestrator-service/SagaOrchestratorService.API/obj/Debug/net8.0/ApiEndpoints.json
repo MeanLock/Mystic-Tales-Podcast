@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "ContainingType": "SagaOrchestratorService.API.Controllers.BaseControllers.OrchestrationController",
+    "Method": "GetFlowDetail",
+    "RelativePath": "api/orchestration/flows/{sagaId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "sagaId",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SagaOrchestratorService.API.Controllers.BaseControllers.OrchestrationController",
+    "Method": "GetResponseData",
+    "RelativePath": "api/orchestration/ResultData/{sagaId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "sagaId",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

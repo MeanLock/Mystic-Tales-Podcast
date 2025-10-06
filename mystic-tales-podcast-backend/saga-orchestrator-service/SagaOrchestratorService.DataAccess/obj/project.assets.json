@@ -8455,23 +8455,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\hangu\\.nuget\\packages\\": {},
-    "D:\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\XUAN BACH\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.DataAccess\\SagaOrchestratorService.DataAccess.csproj",
+      "projectUniqueName": "F:\\Code\\Project\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.DataAccess\\SagaOrchestratorService.DataAccess.csproj",
       "projectName": "SagaOrchestratorService.DataAccess",
-      "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.DataAccess\\SagaOrchestratorService.DataAccess.csproj",
-      "packagesPath": "C:\\Users\\hangu\\.nuget\\packages\\",
-      "outputPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.DataAccess\\obj\\",
+      "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.DataAccess\\SagaOrchestratorService.DataAccess.csproj",
+      "packagesPath": "C:\\Users\\XUAN BACH\\.nuget\\packages\\",
+      "outputPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.DataAccess\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "D:\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\hangu\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\XUAN BACH\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -8480,15 +8480,14 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.Common\\SagaOrchestratorService.Common.csproj": {
-              "projectPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.Common\\SagaOrchestratorService.Common.csproj"
+            "F:\\Code\\Project\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.Common\\SagaOrchestratorService.Common.csproj": {
+              "projectPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\saga-orchestrator-service\\SagaOrchestratorService.Common\\SagaOrchestratorService.Common.csproj"
             }
           }
         }
@@ -8606,7 +8605,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

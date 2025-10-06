@@ -3,8 +3,24 @@
   "WorkspaceRootPath": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|f:\\code\\project\\mystic-tales-podcast\\nhap backend\\architecture_1\\architecture_1.businesslogic\\services\\messagingservices\\messagingservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\services\\messagingservices\\messagingservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|f:\\code\\project\\mystic-tales-podcast\\nhap backend\\architecture_1\\architecture_1.businesslogic\\messagehandlers\\facilitymessagehandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{B663BA31-9BB4-449C-8C80-E1F7D2D49A0B}|Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj|solutionrelative:architecture_1.businesslogic\\messagehandlers\\facilitymessagehandler.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{597B304D-2D6D-4808-95AE-8D1191BA448E}|Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj|f:\\code\\project\\mystic-tales-podcast\\nhap backend\\architecture_1\\architecture_1.infrastructure\\services\\kafka\\kafkaproducerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{597B304D-2D6D-4808-95AE-8D1191BA448E}|Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj|solutionrelative:architecture_1.infrastructure\\services\\kafka\\kafkaproducerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{597B304D-2D6D-4808-95AE-8D1191BA448E}|Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj|f:\\code\\project\\mystic-tales-podcast\\nhap backend\\architecture_1\\architecture_1.infrastructure\\services\\kafka\\kafkahealthcheckservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{597B304D-2D6D-4808-95AE-8D1191BA448E}|Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj|solutionrelative:architecture_1.infrastructure\\services\\kafka\\kafkahealthcheckservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{597B304D-2D6D-4808-95AE-8D1191BA448E}|Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj|f:\\code\\project\\mystic-tales-podcast\\nhap backend\\architecture_1\\architecture_1.infrastructure\\services\\kafka\\kafkaconsumerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{597B304D-2D6D-4808-95AE-8D1191BA448E}|Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj|solutionrelative:architecture_1.infrastructure\\services\\kafka\\kafkaconsumerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{597B304D-2D6D-4808-95AE-8D1191BA448E}|Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj|f:\\code\\project\\mystic-tales-podcast\\nhap backend\\architecture_1\\architecture_1.infrastructure\\architecture_1.infrastructure.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
@@ -266,19 +282,69 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "MessagingService.cs",
+              "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\MessagingServices\\MessagingService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\MessagingServices\\MessagingService.cs",
+              "ToolTip": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\MessagingServices\\MessagingService.cs",
+              "RelativeToolTip": "Architecture_1.BusinessLogic\\Services\\MessagingServices\\MessagingService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAG4AAAA8AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-05T07:34:29.571Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "KafkaProducerService.cs",
+              "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Services\\Kafka\\KafkaProducerService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.Infrastructure\\Services\\Kafka\\KafkaProducerService.cs",
+              "ToolTip": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Services\\Kafka\\KafkaProducerService.cs",
+              "RelativeToolTip": "Architecture_1.Infrastructure\\Services\\Kafka\\KafkaProducerService.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAQwDUAAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-05T07:32:21.866Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "KafkaHealthCheckService.cs",
+              "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Services\\Kafka\\KafkaHealthCheckService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.Infrastructure\\Services\\Kafka\\KafkaHealthCheckService.cs",
+              "ToolTip": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Services\\Kafka\\KafkaHealthCheckService.cs",
+              "RelativeToolTip": "Architecture_1.Infrastructure\\Services\\Kafka\\KafkaHealthCheckService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-05T07:32:21.226Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "KafkaConsumerService.cs",
+              "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Services\\Kafka\\KafkaConsumerService.cs",
+              "RelativeDocumentMoniker": "Architecture_1.Infrastructure\\Services\\Kafka\\KafkaConsumerService.cs",
+              "ToolTip": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Services\\Kafka\\KafkaConsumerService.cs",
+              "RelativeToolTip": "Architecture_1.Infrastructure\\Services\\Kafka\\KafkaConsumerService.cs",
+              "ViewState": "AgIAAIcAAAAAAAAAAAAowJcAAABVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-05T07:31:24.432Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
               "Title": "FacilityMessageHandler.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\MessageHandlers\\FacilityMessageHandler.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\MessageHandlers\\FacilityMessageHandler.cs",
               "ToolTip": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\MessageHandlers\\FacilityMessageHandler.cs",
               "RelativeToolTip": "Architecture_1.BusinessLogic\\MessageHandlers\\FacilityMessageHandler.cs",
-              "ViewState": "AgIAABMAAAAAAAAAAAAzwCYAAAA3AAAAAAAAAA==",
+              "ViewState": "AgIAAHwAAAAAAAAAAIAwwJkAAAA0AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-04T11:47:46.512Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 5,
               "Title": "Architecture_1.Infrastructure.csproj",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
               "RelativeDocumentMoniker": "Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
@@ -286,12 +352,11 @@
               "RelativeToolTip": "Architecture_1.Infrastructure\\Architecture_1.Infrastructure.csproj",
               "ViewState": "AgIAAAAAAAAAAAAAAADwvxgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-07-26T06:32:25.949Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-07-26T06:32:25.949Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 8,
               "Title": "Account.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Entities\\Account.cs",
               "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Entities\\Account.cs",
@@ -303,7 +368,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 15,
               "Title": "AccountService.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AccountService.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AccountService.cs",
@@ -315,7 +380,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 16,
               "Title": "CategorySingletonService.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategorySingletonService.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategorySingletonService.cs",
@@ -327,7 +392,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 10,
               "Title": "AuthController.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Controllers\\UserControllers\\AuthController.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\Controllers\\UserControllers\\AuthController.cs",
@@ -339,7 +404,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 13,
               "Title": "GenericRepository.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Repositories\\GenericRepository.cs",
               "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Repositories\\GenericRepository.cs",
@@ -351,7 +416,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 6,
               "Title": "Architecture_1.API.csproj",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Architecture_1.API.csproj",
               "RelativeDocumentMoniker": "Architecture_1.API\\Architecture_1.API.csproj",
@@ -359,12 +424,11 @@
               "RelativeToolTip": "Architecture_1.API\\Architecture_1.API.csproj",
               "ViewState": "AQIAAAAAAAAAAAAAAADwvyYAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-04-15T14:49:18.432Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-04-15T14:49:18.432Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 7,
               "Title": "Architecture_1.DataAccess.csproj",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
               "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
@@ -372,12 +436,11 @@
               "RelativeToolTip": "Architecture_1.DataAccess\\Architecture_1.DataAccess.csproj",
               "ViewState": "AgIAABUAAAAAAAAAAADwvw0AAABDAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-04-15T10:02:26.439Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-04-15T10:02:26.439Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 9,
               "Title": "AuthService.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AuthService.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\UserServices\\AuthService.cs",
@@ -389,7 +452,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 14,
               "Title": "IGenericRepository.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Repositories\\interfaces\\IGenericRepository.cs",
               "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Repositories\\interfaces\\IGenericRepository.cs",
@@ -401,7 +464,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 12,
               "Title": "GraphQLConfig.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Configurations\\App\\GraphQLConfig.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\Configurations\\App\\GraphQLConfig.cs",
@@ -413,7 +476,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 11,
               "Title": "AccountController.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Controllers\\UserControllers\\AccountController.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\Controllers\\UserControllers\\AccountController.cs",
@@ -425,7 +488,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 17,
               "Title": "MajorService.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\FacilityMajorServices\\MajorService.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\FacilityMajorServices\\MajorService.cs",
@@ -437,7 +500,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 18,
               "Title": "FacilityMajorController.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorController.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorController.cs",
@@ -449,7 +512,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 20,
               "Title": "CategoryService.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryService.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryService.cs",
@@ -461,7 +524,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 21,
               "Title": "ProductService.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\ProductService.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\ProductService.cs",
@@ -473,7 +536,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 22,
               "Title": "HelperRegistration.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Registrations\\HelperRegistration.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Registrations\\HelperRegistration.cs",
@@ -485,7 +548,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 19,
               "Title": "FacilityMajorServiceController.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorServiceController.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\Controllers\\FacilityMajorControllers\\FacilityMajorServiceController.cs",
@@ -497,7 +560,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 23,
               "Title": "DbServiceRegistration.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Registrations\\DbServiceRegistration.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Registrations\\DbServiceRegistration.cs",
@@ -509,7 +572,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 24,
               "Title": "appsettings.json",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\appsettings.json",
               "RelativeDocumentMoniker": "Architecture_1.API\\appsettings.json",
@@ -521,7 +584,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
+              "DocumentIndex": 25,
               "Title": "ConfigurationRegistration.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Registrations\\ConfigurationRegistration.cs",
               "RelativeDocumentMoniker": "Architecture_1.Common\\Registrations\\ConfigurationRegistration.cs",
@@ -533,19 +596,18 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 25,
+              "DocumentIndex": 29,
               "Title": "Architecture_1.API",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Architecture_1.API.csproj",
               "RelativeDocumentMoniker": "Architecture_1.API\\Architecture_1.API.csproj",
               "ToolTip": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Architecture_1.API.csproj",
               "RelativeToolTip": "Architecture_1.API\\Architecture_1.API.csproj",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-04-18T08:51:36.574Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-04-18T08:51:36.574Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 26,
+              "DocumentIndex": 30,
               "Title": "GraphQLTypesRegistrationExtensions.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Extensions\\GraphQLTypesRegistrationExtensions.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Extensions\\GraphQLTypesRegistrationExtensions.cs",
@@ -557,7 +619,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 24,
+              "DocumentIndex": 28,
               "Title": "ProductMutation.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Product\\Mutations\\ProductMutation.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Product\\Mutations\\ProductMutation.cs",
@@ -569,7 +631,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 27,
+              "DocumentIndex": 31,
               "Title": "GraphQLInputRegistrationExtensions .cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Extensions\\GraphQLInputRegistrationExtensions .cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Extensions\\GraphQLInputRegistrationExtensions .cs",
@@ -581,7 +643,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 27,
               "Title": "ProductQuery.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Product\\Queries\\ProductQuery.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Product\\Queries\\ProductQuery.cs",
@@ -593,7 +655,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 26,
               "Title": "CategoryQuery.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Category\\Queries\\CategoryQuery.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Category\\Queries\\CategoryQuery.cs",
@@ -605,7 +667,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 28,
+              "DocumentIndex": 32,
               "Title": "GraphQLConfig.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\GraphQLConfig.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\Configurations\\Builder\\GraphQLConfig.cs",
@@ -617,7 +679,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 30,
+              "DocumentIndex": 34,
               "Title": "JsonDocumentType.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Scalars\\JsonDocumentType.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Common\\Scalars\\JsonDocumentType.cs",
@@ -629,7 +691,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 31,
+              "DocumentIndex": 35,
               "Title": "CategoryMutation.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Category\\Mutations\\CategoryMutation.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Category\\Mutations\\CategoryMutation.cs",
@@ -641,7 +703,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 32,
+              "DocumentIndex": 36,
               "Title": "CreateCategoryInput.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Category\\Inputs\\CreateCategoryInput.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Category\\Inputs\\CreateCategoryInput.cs",
@@ -653,7 +715,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 29,
+              "DocumentIndex": 33,
               "Title": "Mutation.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\Mutation.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\Mutation.cs",
@@ -665,7 +727,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 33,
+              "DocumentIndex": 37,
               "Title": "BookExtensionType.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookExtensionType.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookExtensionType.cs",
@@ -677,7 +739,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 34,
+              "DocumentIndex": 38,
               "Title": "BookType.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookType.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Book\\Types\\BookType.cs",
@@ -689,7 +751,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 36,
+              "DocumentIndex": 40,
               "Title": "BookQuery.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Book\\Queries\\BookQuery.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Book\\Queries\\BookQuery.cs",
@@ -701,7 +763,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 35,
+              "DocumentIndex": 39,
               "Title": "QueryTypeRegistration.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Registrations\\QueryTypeRegistration.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Registrations\\QueryTypeRegistration.cs",
@@ -713,7 +775,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 37,
+              "DocumentIndex": 41,
               "Title": "Query.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\Query.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\Query.cs",
@@ -725,7 +787,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 39,
+              "DocumentIndex": 43,
               "Title": "NhapJson_2_Query.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_2_Query.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_2_Query.cs",
@@ -737,7 +799,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 40,
+              "DocumentIndex": 44,
               "Title": "NhapJson_1_Query.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_1_Query.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Features\\Json\\Queries\\NhapJson_1_Query.cs",
@@ -749,7 +811,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 38,
+              "DocumentIndex": 42,
               "Title": "JTokenType.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Scalars\\JTokenType.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Common\\Scalars\\JTokenType.cs",
@@ -761,7 +823,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 41,
+              "DocumentIndex": 45,
               "Title": "DbQuery.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\DbQuery.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\DbQuery.cs",
@@ -773,7 +835,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 42,
+              "DocumentIndex": 46,
               "Title": "MutationTypeRegistration.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Registrations\\MutationTypeRegistration.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Registrations\\MutationTypeRegistration.cs",
@@ -785,7 +847,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 44,
+              "DocumentIndex": 48,
               "Title": "JsonQuery.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\JsonQuery.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\QueryGroups\\JsonQuery.cs",
@@ -797,7 +859,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 43,
+              "DocumentIndex": 47,
               "Title": "DbMutation.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Schema\\MutationGroups\\DbMutation.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Schema\\MutationGroups\\DbMutation.cs",
@@ -809,7 +871,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 45,
+              "DocumentIndex": 49,
               "Title": "NhapType.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Types\\NhapType.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Common\\Types\\NhapType.cs",
@@ -821,7 +883,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 46,
+              "DocumentIndex": 50,
               "Title": "ComplexType.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\GraphQL\\Common\\Types\\ComplexType.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\GraphQL\\Common\\Types\\ComplexType.cs",
@@ -833,7 +895,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 52,
+              "DocumentIndex": 56,
               "Title": "JwtAuthConfig.cs",
               "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\JwtAuthConfig.cs",
               "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Architecture_1\\Architecture_1.API\\Configurations\\Builder\\JwtAuthConfig.cs",
@@ -843,7 +905,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 47,
+              "DocumentIndex": 51,
               "Title": "Category.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.DataAccess\\Entities\\Category.cs",
               "RelativeDocumentMoniker": "Architecture_1.DataAccess\\Entities\\Category.cs",
@@ -855,7 +917,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 48,
+              "DocumentIndex": 52,
               "Title": "Program.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.API\\Program.cs",
               "RelativeDocumentMoniker": "Architecture_1.API\\Program.cs",
@@ -867,7 +929,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 50,
+              "DocumentIndex": 54,
               "Title": "CategoryNoInjectScopedService.cs",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryNoInjectScopedService.cs",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Services\\DbServices\\NhapServices\\CategoryNoInjectScopedService.cs",
@@ -879,7 +941,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 49,
+              "DocumentIndex": 53,
               "Title": "Architecture_1.BusinessLogic.csproj",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
               "RelativeDocumentMoniker": "Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
@@ -887,12 +949,11 @@
               "RelativeToolTip": "Architecture_1.BusinessLogic\\Architecture_1.BusinessLogic.csproj",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAABkAAABBAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-04-15T10:01:08.422Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-04-15T10:01:08.422Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 51,
+              "DocumentIndex": 55,
               "Title": "Architecture_1.Common.csproj",
               "DocumentMoniker": "F:\\Code\\Project\\Mystic-Tales-Podcast\\nhap backend\\Architecture_1\\Architecture_1.Common\\Architecture_1.Common.csproj",
               "RelativeDocumentMoniker": "Architecture_1.Common\\Architecture_1.Common.csproj",
@@ -900,8 +961,7 @@
               "RelativeToolTip": "Architecture_1.Common\\Architecture_1.Common.csproj",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAoAAAAmAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-04-15T10:02:13.083Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-04-15T10:02:13.083Z"
             }
           ]
         },

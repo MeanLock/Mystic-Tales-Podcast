@@ -1,13 +1,7 @@
-using System;
-using System.Linq;
-using System.Text.Json;
 using SagaOrchestratorService.BusinessLogic.Services.MessagingServices.interfaces;
 using SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces;
-using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using SagaOrchestratorService.DataAccess.Enums.Saga;
 using SagaOrchestratorService.BusinessLogic.Services.DbServices;
 
@@ -46,7 +40,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 var sagaId = message.SagaId;
                 var flowName = message.FlowName;
                 var requestData = message.RequestData;
-                var responseData = message.ResponseData;
+                var responseData = message.LastStepResponseData;
 
                 if (string.IsNullOrWhiteSpace(emit))
                 {
@@ -75,17 +69,14 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
 
                 // Extract step name from emit (e.g., "create-order.success" -> "create-order")
                 var stepName = emit.Contains('.') ? emit.Substring(0, emit.LastIndexOf('.')) : emit;
-
-                // Extract ResponseData from RequestData and serialize it
-                var resultDataJson = ExtractResponseDataFromRequest(requestData);
                 
                 // Extract error message from RequestData if present
-                var errorMessage = ExtractErrorMessageFromRequest(requestData);
+                var errorMessage = responseData["errorMessage"]?.ToString();
 
                 if (isSuccess)
                 {
                     // Update step execution status to SUCCESS with request and response data
-                    await _sagaInstanceService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, SagaStepStatusEnum.SUCCESS, requestData, responseData, null);
+                    await _sagaInstanceService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, SagaStepStatusEnum.SUCCESS, SerializeToJson(requestData), SerializeToJson(responseData), null);
 
                     // Keep saga status as RUNNING - do not update ResultData yet
                     await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.RUNNING);
@@ -94,23 +85,21 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     foreach (var step in outcome.Value.NextSteps)
                     {
                         // Create step execution for next step
-                        await _sagaInstanceService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, requestData);
+                        await _sagaInstanceService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, SerializeToJson(requestData));
 
                         // Update saga current step
                         await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
 
-                        var cmd = new SagaCommandMessage
-                        {
-                            SagaId = currentSagaId,
-                            FlowName = string.IsNullOrWhiteSpace(flowName) ? "(unknown)" : flowName!,
-                            MessageName = step.Name,
-                            RequestData = requestData,
-                            ResponseData = new Dictionary<string, object>()
-                        };
-
-                        await _messaging.SendSagaMessageAsync(cmd, step.Topic, key);
-                        _logger.LogInformation("Emit '{Emit}' -> step '{Step}' sent to '{Topic}' (SagaId: {SagaId})",
+                        var result = await _messaging.SendSagaMessageAsync<SagaCommandMessage>(step.Topic, key, requestData, responseData, sagaId, flowName, step.Name);
+                        if(result)
+                            _logger.LogInformation("Emit '{Emit}' -> step '{Step}' sent to '{Topic}' (SagaId: {SagaId})",
                             emit, step.Name, step.Topic, currentSagaId);
+                        else
+                        {
+                            // Add a statement or block here to avoid syntax errors.
+                            _logger.LogWarning("Emit '{Emit}' -> failed to send step '{Step}' to '{Topic}' (SagaId: {SagaId})",
+                            emit, step.Name, step.Topic, currentSagaId);
+                        }
                     }
 
                     // Check if no more next steps - check for saga completion
@@ -122,6 +111,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                         var isCompleted = await _sagaInstanceService.CheckAndUpdateSagaCompletionAsync(currentSagaId);
                         if (isCompleted)
                         {
+                            var resultDataJson = SerializeToJson(responseData);
                             // Update ResultData only when saga completes successfully
                             await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.SUCCESS, resultDataJson);
                             _logger.LogInformation("Saga completed successfully: {SagaId}, ResultData updated", currentSagaId);
@@ -131,24 +121,26 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     // 2) Start next flows (multiple flows support)
                     foreach (var nextFlow in outcome.Value.NextFlows)
                     {
-                        if (string.IsNullOrWhiteSpace(nextFlow))
+                        if (string.IsNullOrWhiteSpace(nextFlow.Name))
                             continue;
 
-                        if (!_flowConfig.Flows.TryGetValue(nextFlow, out var flowDef) || string.IsNullOrWhiteSpace(flowDef.Topic))
+                        if (!_flowConfig.Flows.TryGetValue(nextFlow.Name, out var flowDef) || string.IsNullOrWhiteSpace(flowDef.Topic))
                         {
-                            _logger.LogWarning("Emit '{Emit}' -> unknown next flow '{Flow}'", emit, nextFlow);
+                            _logger.LogWarning("Emit '{Emit}' -> unknown next flow '{Flow}'", emit, nextFlow.Name);
                         }
                         else
                         {
-                            var start = new StartSagaTriggerMessage
+                            // Use the topic from nextFlow if specified, otherwise fallback to flowDef.Topic
+                            var targetTopic = !string.IsNullOrWhiteSpace(nextFlow.Topic) ? nextFlow.Topic : flowDef.Topic;
+                            
+                            var result = await _messaging.SendSagaMessageAsync<StartSagaTriggerMessage>(targetTopic, key, requestData, null, sagaId, nextFlow.Name, nextFlow.Name);
+                            if(result)
+                                _logger.LogInformation("Emit '{Emit}' -> start flow '{Flow}' to '{Topic}'",
+                                    emit, nextFlow.Name, targetTopic);
+                            else
                             {
-                                MessageName = nextFlow,
-                                RequestData = requestData
-                            };
-
-                            await _messaging.SendSagaMessageAsync(start, flowDef.Topic, key);
-                            _logger.LogInformation("Emit '{Emit}' -> start flow '{Flow}' to '{Topic}'",
-                                emit, nextFlow, flowDef.Topic);
+                                _logger.LogWarning("Emit '{Emit}' -> failed to start flow '{Flow}' to '{Topic}'", emit, nextFlow.Name, targetTopic);
+                            }
                         }
                     }
                 }
@@ -156,10 +148,11 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 {
                     // Update step execution status to FAILED with request and response data and error message
                     var stepErrorMessage = errorMessage ?? $"Step failed with emit: {emit}";
-                    await _sagaInstanceService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, SagaStepStatusEnum.FAILED, requestData, responseData, stepErrorMessage);
+                    await _sagaInstanceService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, SagaStepStatusEnum.FAILED, SerializeToJson(requestData), SerializeToJson(responseData), stepErrorMessage);
 
                     // Update saga status to FAILED with error message AND ResultData
                     var sagaErrorMessage = errorMessage ?? $"Saga failed at step: {stepName}";
+                    var resultDataJson = SerializeToJson(responseData);
                     await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.FAILED, resultDataJson, stepName, sagaErrorMessage);
 
                     _logger.LogWarning("Saga failed: {SagaId}, Step: {StepName}, Emit: {Emit}, Error: {ErrorMessage}, ResultData updated", 
@@ -177,7 +170,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
             }
         }
 
-        private async Task<(List<(string Name, string Topic)> NextSteps, List<string> NextFlows)?> FindOutcomeByEmit(string emit, Guid sagaId)
+        private async Task<(List<(string Name, string Topic)> NextSteps, List<(string Name, string Topic)> NextFlows)?> FindOutcomeByEmit(string emit, Guid sagaId)
         {
             // If no flowName provided, fall back to searching all flows (backward compatibility)
             var sagaInstance = await _sagaInstanceService.GetSagaInstanceAsync(sagaId);
@@ -201,19 +194,21 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 if (step.OnSuccess != null && string.Equals(step.OnSuccess.Emit, emit, StringComparison.OrdinalIgnoreCase))
                 {
                     var steps = (step.OnSuccess.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
-                    return (steps, step.OnSuccess.NextFlows ?? new());
+                    var flows = (step.OnSuccess.NextFlows ?? new()).Select(f => (f.Name, f.Topic)).ToList();
+                    return (steps, flows);
                 }
                 if (step.OnFailure != null && string.Equals(step.OnFailure.Emit, emit, StringComparison.OrdinalIgnoreCase))
                 {
                     var steps = (step.OnFailure.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
-                    return (steps, step.OnFailure.NextFlows ?? new());
+                    var flows = (step.OnFailure.NextFlows ?? new()).Select(f => (f.Name, f.Topic)).ToList();
+                    return (steps, flows);
                 }
             }
             _logger.LogWarning("Emit '{Emit}' not found in flow '{FlowName}'", emit, flowName);
             return null;
         }
 
-        private (List<(string Name, string Topic)> NextSteps, List<string> NextFlows)? FindOutcomeByEmitInAllFlows(string emit)
+        private (List<(string Name, string Topic)> NextSteps, List<(string Name, string Topic)> NextFlows)? FindOutcomeByEmitInAllFlows(string emit)
         {
             foreach (var (_, flow) in _flowConfig.Flows)
             {
@@ -222,12 +217,14 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     if (step.OnSuccess != null && string.Equals(step.OnSuccess.Emit, emit, StringComparison.OrdinalIgnoreCase))
                     {
                         var steps = (step.OnSuccess.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
-                        return (steps, step.OnSuccess.NextFlows ?? new());
+                        var flows = (step.OnSuccess.NextFlows ?? new()).Select(f => (f.Name, f.Topic)).ToList();
+                        return (steps, flows);
                     }
                     if (step.OnFailure != null && string.Equals(step.OnFailure.Emit, emit, StringComparison.OrdinalIgnoreCase))
                     {
                         var steps = (step.OnFailure.NextSteps ?? new()).Select(s => (s.Name, s.Topic)).ToList();
-                        return (steps, step.OnFailure.NextFlows ?? new());
+                        var flows = (step.OnFailure.NextFlows ?? new()).Select(f => (f.Name, f.Topic)).ToList();
+                        return (steps, flows);
                     }
                 }
             }

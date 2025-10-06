@@ -68,69 +68,6 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
             _logger.LogInformation("Completed handler registration from assembly. Total handlers: {Count}", _messageHandlers.Count);
         }
 
-        //public void AddRuntimeHandler(string messageType, string topic, Func<string, string, Task> handler)
-        //{
-        //    _messageHandlers[messageType] = handler;
-
-        //    if (!_runtimeTopicMessageTypes.TryGetValue(topic, out var list))
-        //    {
-        //        list = new List<string>();
-        //        _runtimeTopicMessageTypes[topic] = list;
-        //    }
-        //    if (!list.Contains(messageType)) list.Add(messageType);
-
-        //    _logger.LogInformation("Runtime-registered handler for MessageType: {MessageType} on Topic: {Topic}", messageType, topic);
-        //}
-        //public async Task RegisterYamlHandlersAsync(string? yamlPath = null)
-        //{
-        //    try
-        //    {
-        //        using var scope = _serviceProvider.CreateScope();
-        //        var flowConfig = scope.ServiceProvider.GetRequiredService<ISagaFlowConfig>();
-
-        //        if (!flowConfig.Loaded || flowConfig.Flows.Count == 0)
-        //        {
-        //            _logger.LogInformation("SagaFlowConfig not loaded or empty. Skipping saga handler registration.");
-        //            return;
-        //        }
-
-        //        // Flow listen mapping: flowName -> flow.Topic
-        //        var flowHandlerType = typeof(SagaOrchestratorService.BusinessLogic.MessageHandlers.FlowMessageHandler);
-        //        var flowMethod = flowHandlerType.GetMethod("HandleFlowAsync", BindingFlags.Instance | BindingFlags.Public)
-        //                        ?? throw new InvalidOperationException("HandleFlowAsync not found");
-        //        var flowDelegate = CreateHandlerWrapper(flowHandlerType, flowMethod);
-
-        //        foreach (var (flowName, def) in flowConfig.Flows)
-        //        {
-        //            if (!string.IsNullOrWhiteSpace(def.Topic))
-        //                AddRuntimeHandler(flowName, def.Topic, flowDelegate);
-        //        }
-
-        //        // Emit listen mapping: emit -> outcome.Topic (scan all steps)
-        //        var emitHandlerType = typeof(SagaOrchestratorService.BusinessLogic.MessageHandlers.FlowStepEmitMessageHandler);
-        //        var emitMethod = emitHandlerType.GetMethod("HandleEmitAsync", BindingFlags.Instance | BindingFlags.Public)
-        //                        ?? throw new InvalidOperationException("HandleEmitAsync not found");
-        //        var emitDelegate = CreateHandlerWrapper(emitHandlerType, emitMethod);
-
-        //        foreach (var (_, def) in flowConfig.Flows)
-        //        {
-        //            foreach (var step in def.Steps)
-        //            {
-        //                if (step.OnSuccess != null && !string.IsNullOrWhiteSpace(step.OnSuccess.Emit))
-        //                    AddRuntimeHandler(step.OnSuccess.Emit, step.OnSuccess.Topic, emitDelegate);
-        //                if (step.OnFailure != null && !string.IsNullOrWhiteSpace(step.OnFailure.Emit))
-        //                    AddRuntimeHandler(step.OnFailure.Emit, step.OnFailure.Topic, emitDelegate);
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "Failed to register saga flow handlers from SagaFlowConfig");
-        //    }
-
-        //    await Task.CompletedTask;
-        //}
-
         private List<(Type HandlerType, MethodInfo Method, MessageHandlerAttribute Attribute, string Topic)> CollectAllHandlers()
         {
             var result = new List<(Type, MethodInfo, MessageHandlerAttribute, string)>();

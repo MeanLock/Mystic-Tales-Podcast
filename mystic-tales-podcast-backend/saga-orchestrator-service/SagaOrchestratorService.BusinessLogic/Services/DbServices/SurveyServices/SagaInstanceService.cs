@@ -1,8 +1,9 @@
-using SagaOrchestratorService.DataAccess.Entities;
-using SagaOrchestratorService.DataAccess.Repositories.interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.DataAccess.Enums.Saga;
+using SagaOrchestratorService.DataAccess.Repositories.interfaces;
 
 namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
 {
@@ -26,7 +27,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
         {
             var sagaInstance = new SagaInstance
             {
-                SagaId = sagaId,
+                Id = sagaId,
                 FlowName = flowName,
                 CurrentStepName = firstStepName,
                 InitialData = initialDataJson,
@@ -42,7 +43,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
             return created ?? sagaInstance;
         }
 
-        public async Task<SagaStepExcecution> CreateStepExecutionAsync(Guid sagaId, string stepName, string? topicName, Dictionary<string, object>? requestData)
+        public async Task<SagaStepExcecution> CreateStepExecutionAsync(Guid sagaId, string stepName, string? topicName, string? requestData)
         {
             var stepExecution = new SagaStepExcecution
             {
@@ -50,8 +51,8 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
                 StepName = stepName,
                 TopicName = topicName,
                 StepStatus = SagaStepStatusEnum.RUNNING,
-                RequestData = requestData ?? new Dictionary<string, object>(),
-                responseData = new Dictionary<string, object>(),
+                RequestData = requestData,
+                ResponseData = null,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -61,7 +62,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
             return created ?? stepExecution;
         }
 
-        public async Task UpdateStepExecutionStatusAsync(Guid sagaId, string stepName, SagaStepStatusEnum status, Dictionary<string, object>? requestData = null, Dictionary<string, object>? responseData = null, string? errorMessage = null)
+        public async Task UpdateStepExecutionStatusAsync(Guid sagaId, string stepName, SagaStepStatusEnum status, string? requestData, string? responseData, string? errorMessage = null)
         {
             var stepExecutions = await GetStepExecutionsAsync(sagaId);
             var stepExecution = stepExecutions.FirstOrDefault(s => s.StepName == stepName && s.StepStatus == SagaStepStatusEnum.RUNNING);
@@ -76,7 +77,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
                 
                 // Update response data if provided
                 if (responseData != null)
-                    stepExecution.responseData = responseData;
+                    stepExecution.ResponseData = responseData;
                 
                 // Update error message if provided
                 if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -98,7 +99,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
             {
                 sagaInstance.CurrentStepName = currentStepName;
                 sagaInstance.UpdatedAt = DateTime.UtcNow;
-                await _sagaInstanceGenericRepository.UpdateAsync(sagaInstance.SagaId, sagaInstance);
+                await _sagaInstanceGenericRepository.UpdateAsync(sagaInstance.Id, sagaInstance);
                 _logger.LogInformation("Updated saga current step: {SagaId}, Step: {StepName}", sagaId, currentStepName);
             }
         }
@@ -121,7 +122,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
                     sagaInstance.FlowStatus = SagaFlowStatusEnum.SUCCESS;
                     sagaInstance.UpdatedAt = DateTime.UtcNow;
                     sagaInstance.CompletedAt = DateTime.UtcNow;
-                    await _sagaInstanceGenericRepository.UpdateAsync(sagaInstance.SagaId, sagaInstance);
+                    await _sagaInstanceGenericRepository.UpdateAsync(sagaInstance.Id, sagaInstance);
                     
                     _logger.LogInformation("Saga completed successfully: {SagaId}", sagaId);
                     return true;
@@ -138,7 +139,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
             {
                 sagaInstance.ResultData = resultDataJson;
                 sagaInstance.UpdatedAt = DateTime.UtcNow;
-                await _sagaInstanceGenericRepository.UpdateAsync(sagaInstance.SagaId, sagaInstance);
+                await _sagaInstanceGenericRepository.UpdateAsync(sagaInstance.Id, sagaInstance);
                 _logger.LogInformation("Updated saga result data: {SagaId}", sagaId);
             }
         }
@@ -167,7 +168,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
                 if (status == SagaFlowStatusEnum.SUCCESS || status == SagaFlowStatusEnum.FAILED)
                     sagaInstance.CompletedAt = DateTime.UtcNow;
 
-                await _sagaInstanceGenericRepository.UpdateAsync(sagaInstance.SagaId, sagaInstance);
+                await _sagaInstanceGenericRepository.UpdateAsync(sagaInstance.Id, sagaInstance);
                 _logger.LogInformation("Updated saga status: {SagaId}, Status: {Status}", sagaId, status);
             }
             else

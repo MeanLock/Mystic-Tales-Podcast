@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Text.Json;
 
 namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
 {
@@ -38,23 +37,6 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 _logger.LogError(ex, "Failed to serialize data: {Data}", data);
                 return "{}";
             }
-        }
-
-        protected string? ExtractResponseDataFromRequest(Dictionary<string, object> requestData)
-        {
-            if (requestData.TryGetValue("ResponseData", out var responseDataObj))
-            {
-                try
-                {
-                    return JsonConvert.SerializeObject(responseDataObj, Formatting.Indented);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to serialize ResponseData from RequestData");
-                    return null;
-                }
-            }
-            return null;
         }
 
         protected string? ExtractErrorMessageFromRequest(Dictionary<string, object> requestData)

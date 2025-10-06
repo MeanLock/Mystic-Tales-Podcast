@@ -61,6 +61,7 @@ namespace UserService.Infrastructure.Registrations
             // Audio
             services.AddSingleton<IHlsConfig, HlsConfig>();
             services.AddSingleton<IMoodConfig, MoodConfig>();
+            services.AddSingleton<IEqualizerConfig, EqualizerConfig>(); // Add this missing registration
 
             return services;
         }

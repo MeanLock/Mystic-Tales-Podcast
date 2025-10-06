@@ -13,7 +13,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\" />
+    <Folder Include="DTOs\MessageQueue\BookingManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\ChatCommunicationDomain\" />
+    <Folder Include="DTOs\MessageQueue\ContentManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\ContentModerationDomain\" />
+    <Folder Include="DTOs\MessageQueue\DmcaManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\NotificationDomain\" />
+    <Folder Include="DTOs\MessageQueue\PaymentProcessingDomain\" />
+    <Folder Include="DTOs\MessageQueue\PublicReviewManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\ReportManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\SubscriptionManagementDomain\" />
+    <Folder Include="DTOs\MessageQueue\SystemConfigurationDomain\" />
+    <Folder Include="DTOs\MessageQueue\UserManagementDomain\" />
     <Folder Include="Exceptions\" />
     <Folder Include="Services\BackgroundServices\interfaces\" />
     <Folder Include="Services\DbServices\MiscServices\" />

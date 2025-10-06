@@ -5,13 +5,13 @@
     <RestoreTool Condition=" '$(RestoreTool)' == '' ">NuGet</RestoreTool>
     <ProjectAssetsFile Condition=" '$(ProjectAssetsFile)' == '' ">$(MSBuildThisFileDirectory)project.assets.json</ProjectAssetsFile>
     <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">$(UserProfile)\.nuget\packages\</NuGetPackageRoot>
-    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\hangu\.nuget\packages\;D:\Microsoft Visual Studio\Shared\NuGetPackages</NuGetPackageFolders>
+    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">C:\Users\XUAN BACH\.nuget\packages\;C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages</NuGetPackageFolders>
     <NuGetProjectStyle Condition=" '$(NuGetProjectStyle)' == '' ">PackageReference</NuGetProjectStyle>
-    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">6.14.0</NuGetToolVersion>
+    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">6.14.1</NuGetToolVersion>
   </PropertyGroup>
   <ItemGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <SourceRoot Include="C:\Users\hangu\.nuget\packages\" />
-    <SourceRoot Include="D:\Microsoft Visual Studio\Shared\NuGetPackages\" />
+    <SourceRoot Include="C:\Users\XUAN BACH\.nuget\packages\" />
+    <SourceRoot Include="C:\Program Files (x86)\Microsoft Visual Studio\Shared\NuGetPackages\" />
   </ItemGroup>
   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
     <Import Project="$(NuGetPackageRoot)microsoft.extensions.apidescription.server\6.0.5\build\Microsoft.Extensions.ApiDescription.Server.props" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.apidescription.server\6.0.5\build\Microsoft.Extensions.ApiDescription.Server.props')" />
@@ -24,11 +24,11 @@
     <Import Project="$(NuGetPackageRoot)hotchocolate.aspnetcore\15.1.3\build\HotChocolate.AspNetCore.props" Condition="Exists('$(NuGetPackageRoot)hotchocolate.aspnetcore\15.1.3\build\HotChocolate.AspNetCore.props')" />
   </ImportGroup>
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
-    <PkgMicrosoft_Extensions_ApiDescription_Server Condition=" '$(PkgMicrosoft_Extensions_ApiDescription_Server)' == '' ">C:\Users\hangu\.nuget\packages\microsoft.extensions.apidescription.server\6.0.5</PkgMicrosoft_Extensions_ApiDescription_Server>
-    <PkgMicrosoft_CodeAnalysis_Analyzers Condition=" '$(PkgMicrosoft_CodeAnalysis_Analyzers)' == '' ">C:\Users\hangu\.nuget\packages\microsoft.codeanalysis.analyzers\3.3.4</PkgMicrosoft_CodeAnalysis_Analyzers>
-    <PkgMicrosoft_VisualStudio_Azure_Containers_Tools_Targets Condition=" '$(PkgMicrosoft_VisualStudio_Azure_Containers_Tools_Targets)' == '' ">C:\Users\hangu\.nuget\packages\microsoft.visualstudio.azure.containers.tools.targets\1.20.1</PkgMicrosoft_VisualStudio_Azure_Containers_Tools_Targets>
-    <PkgHangfire_SqlServer Condition=" '$(PkgHangfire_SqlServer)' == '' ">C:\Users\hangu\.nuget\packages\hangfire.sqlserver\1.8.18</PkgHangfire_SqlServer>
-    <PkgAWSSDK_Core Condition=" '$(PkgAWSSDK_Core)' == '' ">C:\Users\hangu\.nuget\packages\awssdk.core\3.7.402.30</PkgAWSSDK_Core>
-    <PkgAWSSDK_S3 Condition=" '$(PkgAWSSDK_S3)' == '' ">C:\Users\hangu\.nuget\packages\awssdk.s3\3.7.416</PkgAWSSDK_S3>
+    <PkgMicrosoft_Extensions_ApiDescription_Server Condition=" '$(PkgMicrosoft_Extensions_ApiDescription_Server)' == '' ">C:\Users\XUAN BACH\.nuget\packages\microsoft.extensions.apidescription.server\6.0.5</PkgMicrosoft_Extensions_ApiDescription_Server>
+    <PkgMicrosoft_CodeAnalysis_Analyzers Condition=" '$(PkgMicrosoft_CodeAnalysis_Analyzers)' == '' ">C:\Users\XUAN BACH\.nuget\packages\microsoft.codeanalysis.analyzers\3.3.4</PkgMicrosoft_CodeAnalysis_Analyzers>
+    <PkgMicrosoft_VisualStudio_Azure_Containers_Tools_Targets Condition=" '$(PkgMicrosoft_VisualStudio_Azure_Containers_Tools_Targets)' == '' ">C:\Users\XUAN BACH\.nuget\packages\microsoft.visualstudio.azure.containers.tools.targets\1.20.1</PkgMicrosoft_VisualStudio_Azure_Containers_Tools_Targets>
+    <PkgHangfire_SqlServer Condition=" '$(PkgHangfire_SqlServer)' == '' ">C:\Users\XUAN BACH\.nuget\packages\hangfire.sqlserver\1.8.18</PkgHangfire_SqlServer>
+    <PkgAWSSDK_Core Condition=" '$(PkgAWSSDK_Core)' == '' ">C:\Users\XUAN BACH\.nuget\packages\awssdk.core\3.7.402.30</PkgAWSSDK_Core>
+    <PkgAWSSDK_S3 Condition=" '$(PkgAWSSDK_S3)' == '' ">C:\Users\XUAN BACH\.nuget\packages\awssdk.s3\3.7.416</PkgAWSSDK_S3>
   </PropertyGroup>
 </Project>
