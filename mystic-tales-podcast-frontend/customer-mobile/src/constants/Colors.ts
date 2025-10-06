@@ -1,6 +1,9 @@
 const tintColorLight = "#51710C";
 const tintColorDark = "#AEE339";
 
+export const primaryThemeColor = "#AEE339";
+export const secondaryThemeColor = "#000";
+
 export default {
   link: "#2e78b7",
   light: {

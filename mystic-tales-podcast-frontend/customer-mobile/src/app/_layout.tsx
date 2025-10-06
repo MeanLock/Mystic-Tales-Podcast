@@ -8,11 +8,12 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-
+import { Provider } from "react-redux";
 import { useColorScheme } from "@/src/components/useColorScheme";
 
 // Import your global CSS file
 import "../../global.css";
+import { store } from "../store/store";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -22,6 +23,7 @@ export {
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: "(tabs)",
+  headerShown: false,
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -55,10 +57,12 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+      </ThemeProvider>
+    </Provider>
   );
 }
