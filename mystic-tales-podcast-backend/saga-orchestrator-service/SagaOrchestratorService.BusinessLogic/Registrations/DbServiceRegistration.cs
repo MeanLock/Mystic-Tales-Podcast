@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using SagaOrchestratorService.BusinessLogic.Services.DbServices;
+using SagaOrchestratorService.BusinessLogic.Services.DbServices.SagaServices;
 
 namespace SagaOrchestratorService.BusinessLogic.Registrations
 {
