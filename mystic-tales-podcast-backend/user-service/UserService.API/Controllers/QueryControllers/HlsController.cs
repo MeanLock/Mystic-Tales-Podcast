@@ -98,7 +98,7 @@ namespace UserService.API.Controllers.QueryControllers
             {
                 return BadRequest(new { error = ex.Message });
             }
-           
+
         }
 
         [HttpPost("upload-audio-ffmpegCore")] // upload-audio return file key
@@ -167,7 +167,7 @@ namespace UserService.API.Controllers.QueryControllers
             {
                 return BadRequest(new { error = ex.Message });
             }
-           
+
         }
 
 
@@ -223,7 +223,16 @@ namespace UserService.API.Controllers.QueryControllers
                     if (trimmed.EndsWith(".ts", StringComparison.OrdinalIgnoreCase))
                     {
                         var safe = System.IO.Path.GetFileName(trimmed); // tránh path traversal
-                        rewritten.Add($"/api/hls/segment?s={Uri.EscapeDataString(safe)}");
+                        // lấy folder chứa playlist
+                        var playlistDir = System.IO.Path.GetDirectoryName(playlistPath);
+                        safe = FilePathHelper.CombinePaths(playlistDir, safe);
+                        Console.WriteLine($"Playlist dir: {playlistDir}");
+                        Console.WriteLine($"Playlist dir: {trimmed}");
+
+                        Console.WriteLine($"Segment safe name: {safe}");
+                        safe = Convert.ToBase64String(Encoding.UTF8.GetBytes(safe));
+                        rewritten.Add($"/api/hls/segment?s={Uri.EscapeDataString(safe)}");  
+                        // rewritten.Add($"/api/hls/segment?s={Uri.EscapeDataString(safe)}");
                     }
                     else
                     {
@@ -248,7 +257,7 @@ namespace UserService.API.Controllers.QueryControllers
         {
             try
             {
-                string folderPath = "test_hls/1/playlist";
+                // string folderPath = "test_hls/1/playlist";
 
                 if (string.IsNullOrWhiteSpace(s))
                     return BadRequest("Segment name is required");
@@ -258,7 +267,9 @@ namespace UserService.API.Controllers.QueryControllers
 
                 // Construct the segment file path using the session structure
                 // var segmentFilePath = FilePathHelper.CombinePaths("uploads", "sessions", "hls", s);
-                var segmentFilePath = FilePathHelper.CombinePaths(folderPath, s);
+
+                // var segmentFilePath = FilePathHelper.CombinePaths(folderPath, s);
+                var segmentFilePath = Encoding.UTF8.GetString(Convert.FromBase64String(s));
 
                 // Check if segment file exists using FileIOHelper
                 if (!await _fileIOHelper.FileExistsAsync(segmentFilePath))
