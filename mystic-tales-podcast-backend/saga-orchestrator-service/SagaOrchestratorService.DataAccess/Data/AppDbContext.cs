@@ -60,7 +60,7 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.SagaId)
+            entity.Property(e => e.SagaInstanceId)
                   .IsRequired();
 
             entity.Property(e => e.StepName)

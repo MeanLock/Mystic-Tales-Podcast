@@ -24,7 +24,6 @@
     <Folder Include="DTOs\MessageQueue\ReportManagementDomain\" />
     <Folder Include="DTOs\MessageQueue\SubscriptionManagementDomain\" />
     <Folder Include="DTOs\MessageQueue\SystemConfigurationDomain\" />
-    <Folder Include="DTOs\MessageQueue\UserManagementDomain\" />
     <Folder Include="Exceptions\" />
     <Folder Include="Services\BackgroundServices\interfaces\" />
     <Folder Include="Services\BackgroundServices\MajorScheduleServices\" />
