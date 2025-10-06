@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using SagaOrchestratorService.DataAccess.Enums.Saga;
 using SagaOrchestratorService.BusinessLogic.Services.DbServices;
 using SagaOrchestratorService.BusinessLogic.Services.DbServices.SagaServices;
+using SagaOrchestratorService.Infrastructure.Services.Kafka;
 
 namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
 {
@@ -13,16 +14,19 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
         private readonly IMessagingService _messaging;
         private readonly ISagaFlowConfig _flowConfig;
         private readonly SagaInstanceService _sagaInstanceService;
+        private readonly KafkaProducerService _kafkaProducerService;
 
         public FlowStepEmitMessageHandler(
             IMessagingService messaging,
             ISagaFlowConfig flowConfig,
             SagaInstanceService sagaInstanceService,
+            KafkaProducerService kafkaProducerService,
             ILogger<FlowStepEmitMessageHandler> logger) : base(logger)
         {
             _messaging = messaging;
             _flowConfig = flowConfig;
             _sagaInstanceService = sagaInstanceService;
+            _kafkaProducerService = kafkaProducerService;
         }
 
         // Invoked via registry wrapper (same signature as Facility handlers)
@@ -38,7 +42,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 }
 
                 var emit = message.MessageName;
-                var sagaId = message.SagaId;
+                var sagaId = message.SagaInstanceId;
                 var flowName = message.FlowName;
                 var requestData = message.RequestData;
                 var responseData = message.LastStepResponseData;
@@ -91,7 +95,8 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                         // Update saga current step
                         await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
 
-                        var result = await _messaging.SendSagaMessageAsync<SagaCommandMessage>(step.Topic, key, requestData, responseData, sagaId, flowName, step.Name);
+                        var SagaCommandMessage = _kafkaProducerService.PrepareSagaCommandMessage(step.Topic, requestData, responseData, currentSagaId, flowName, step.Name);
+                        var result = await _messaging.SendSagaMessageAsync(SagaCommandMessage);
                         if(result)
                             _logger.LogInformation("Emit '{Emit}' -> step '{Step}' sent to '{Topic}' (SagaId: {SagaId})",
                             emit, step.Name, step.Topic, currentSagaId);
@@ -134,7 +139,8 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                             // Use the topic from nextFlow if specified, otherwise fallback to flowDef.Topic
                             var targetTopic = !string.IsNullOrWhiteSpace(nextFlow.Topic) ? nextFlow.Topic : flowDef.Topic;
                             
-                            var result = await _messaging.SendSagaMessageAsync<StartSagaTriggerMessage>(targetTopic, key, requestData, null, sagaId, nextFlow.Name, nextFlow.Name);
+                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(targetTopic, requestData, currentSagaId, nextFlow.Name);
+                            var result = await _messaging.SendSagaMessageAsync(startSagaTriggerMessage);
                             if(result)
                                 _logger.LogInformation("Emit '{Emit}' -> start flow '{Flow}' to '{Topic}'",
                                     emit, nextFlow.Name, targetTopic);

@@ -6,6 +6,7 @@ using SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces;
 using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.DataAccess.Enums.Saga;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
+using SagaOrchestratorService.Infrastructure.Services.Kafka;
 using System.Text.Json;
 
 namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
@@ -15,16 +16,19 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
         private readonly IMessagingService _messaging;
         private readonly ISagaFlowConfig _flowConfig;
         private readonly SagaInstanceService _sagaInstanceService;
+        private readonly KafkaProducerService _kafkaProducerService;
 
         public FlowMessageHandler(
             IMessagingService messaging,
             ISagaFlowConfig flowConfig,
             SagaInstanceService sagaInstanceService,
+            KafkaProducerService kafkaProducerService,
             ILogger<FlowMessageHandler> logger) : base(logger)
         {
             _messaging = messaging;
             _flowConfig = flowConfig;
             _sagaInstanceService = sagaInstanceService;
+            _kafkaProducerService = kafkaProducerService;
         }
 
         // Invoked via registry wrapper (same signature as Facility handlers)
@@ -40,7 +44,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 }
 
                 var messageName = message.MessageName;
-                var sagaId = message.SagaId == Guid.Empty ? Guid.NewGuid() : message.SagaId;
+                var sagaId = message.SagaInstanceId == Guid.Empty ? Guid.NewGuid() : message.SagaInstanceId;
                 var requestData = message.RequestData;
                 if (string.IsNullOrWhiteSpace(messageName))
                 {
@@ -63,7 +67,8 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 await _sagaInstanceService.CreateSagaInstanceAsync(sagaId, messageName, initialDataJson, first.Name);
                 await _sagaInstanceService.CreateStepExecutionAsync(sagaId, first.Name, first.Topic, SerializeToJson(requestData));
 
-                var result = await _messaging.SendSagaMessageAsync<SagaCommandMessage>(first.Topic, key, requestData, null, sagaId, messageName, first.Name);
+                var SagaCommandMessage = _kafkaProducerService.PrepareSagaCommandMessage(first.Topic, requestData, null, sagaId, messageName, first.Name);
+                var result = await _messaging.SendSagaMessageAsync(SagaCommandMessage);
                 if(result)
                 _logger.LogInformation("Flow '{Flow}' started -> first step '{Step}' to '{Topic}' (SagaId: {SagaId})",
                     messageName, first.Name, first.Topic, sagaId);

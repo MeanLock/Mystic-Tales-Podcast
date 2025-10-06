@@ -6,6 +6,7 @@ using UserService.BusinessLogic.Enums.Kafka;
 using UserService.BusinessLogic.Services.DbServices.UserServices;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using UserService.Infrastructure.Models.Kafka;
+using UserService.Infrastructure.Services.Kafka;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -13,16 +14,19 @@ namespace UserService.BusinessLogic.MessageHandlers
     {
         private readonly AuthMessagingService _authMessagingService;
         private readonly IMessagingService _messagingService;
+        private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.UserManagementDomain;
 
 
         public AuthMessageHandler(
             AuthMessagingService facilityMessagingService,
             IMessagingService messagingService,
-            ILogger<AuthMessageHandler> logger) : base(messagingService, logger)
+            KafkaProducerService kafkaProducerService,
+            ILogger<AuthMessageHandler> logger) : base(messagingService, kafkaProducerService, logger)
         {
             _authMessagingService = facilityMessagingService;
             _messagingService = messagingService;
+            _kafkaProducerService = kafkaProducerService;
         }
 
         [MessageHandler("ForgotPasswordEvent", "auth-events")]
@@ -83,17 +87,17 @@ namespace UserService.BusinessLogic.MessageHandlers
                     // );
 
                     // Return response as JObject
-                    return JObject.FromObject(new
-                    {
-                        // bookingId = booking.Id,
-                        // accountId = booking.AccountId,
-                        // podcastBuddyId = booking.PodcastBuddyId,
-                        // status = "created"
-                    });
+                    // return await Task.FromResult(JObject.FromObject(new
+                    // {
+                    //     // bookingId = booking.Id,
+                    //     // accountId = booking.AccountId,
+                    //     // podcastBuddyId = booking.PodcastBuddyId,
+                    //     status = "created"
+                    // }));
                 },
                 responseTopic: SAGA_TOPIC,
-                successEmit: "create-booking.success", // From YAML onSuccess.emit
-                failedEmit: "create-booking.failed"    // From YAML onFailure.emit
+                // successEmit: "create-booking.success", // From YAML onSuccess.emit
+                failedEmitMessage: "create-booking.failed"    // From YAML onFailure.emit
             );
         }
 

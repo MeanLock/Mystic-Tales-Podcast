@@ -1,164 +1,141 @@
-// MessageHandlers/BaseSagaStepHandler.cs
+// MessageHandlers/BaseSagaCommandMessageHandler.cs
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using UserService.Infrastructure.Models.Kafka;
+using UserService.Infrastructure.Services.Kafka;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
     public abstract class BaseSagaCommandMessageHandler : BaseMessageHandler
     {
         protected readonly IMessagingService _messagingService;
+        private readonly KafkaProducerService _kafkaProducerService;
 
         protected BaseSagaCommandMessageHandler(
             IMessagingService messagingService,
-            ILogger<BaseSagaCommandMessageHandler> logger) : base(logger)
+            KafkaProducerService kafkaProducerService,
+            ILogger logger) : base(logger)
         {
             _messagingService = messagingService;
+            _kafkaProducerService = kafkaProducerService;
         }
 
         /// <summary>
-        /// Execute saga step with automatic exception handling
+        /// Execute saga command with automatic exception handling.
+        /// Only emits FAILED message on exception. Success emission is business logic's responsibility.
         /// </summary>
-        /// <param name="messageJson">Raw message JSON</param>
-        /// <param name="stepHandler">Business logic handler</param>
-        /// <param name="responseTopic">Topic to send response (default: saga orchestrator topic)</param>
-        /// <param name="successEmit">Success event name from YAML (e.g., "create-booking.success")</param>
-        /// <param name="failedEmit">Failed event name from YAML (e.g., "create-booking.failed")</param>
+        /// <param name="messageJson">Raw Kafka message JSON</param>
+        /// <param name="stepHandler">Business logic handler (should emit success itself)</param>
+        /// <param name="responseTopic">Topic to send failed response (default: saga-orchestrator-events)</param>
+        /// <param name="failedEmitMessage">Failed event name (e.g., "create-booking.failed")</param>
         protected async Task ExecuteSagaCommandMessageAsync(
             string messageJson,
-            Func<SagaCommandMessage, Task<JObject>> stepHandler,
+            Func<SagaCommandMessage, Task> stepHandler,
             string? responseTopic = null,
-            string? successEmit = null,
-            string? failedEmit = null)
+            string? failedEmitMessage = null)
         {
-            SagaCommandMessage command = null;
+            SagaCommandMessage? command = null;
 
             try
             {
                 // Deserialize command message
-                var envelope = DeserializeMessage<MessageEnvelope<SagaCommandMessage>>(messageJson);
-                command = envelope?.Data;
+                var sagaCommandMessage = DeserializeMessage<SagaCommandMessage>(messageJson);
+                command = sagaCommandMessage;
 
                 if (command == null)
                 {
-                    _logger.LogWarning("SagaCommandMessage is null");
+                    _logger.LogWarning("SagaCommandMessage is null, cannot process step");
                     return;
                 }
 
                 _logger.LogInformation(
                     "Executing saga step. SagaId: {SagaId}, MessageName: {MessageName}, FlowName: {FlowName}",
-                    command.SagaId,
+                    command.SagaInstanceId,
                     command.MessageName,
                     command.FlowName);
 
-                // Execute business logic
-                var responseData = await stepHandler(command);
+                // Execute business logic (business logic will emit success itself)
+                await stepHandler(command);
 
-                // Auto-generate emit name if not provided
-                var resolvedSuccessEmit = successEmit ?? $"{command.MessageName}.success";
-                var resolvedTopic = responseTopic ?? "saga-orchestrator-events";
-
-                // Emit success event
-                await EmitSagaEventAsync(
-                    command: command,
-                    responseData: responseData,
-                    eventName: resolvedSuccessEmit,
-                    topic: resolvedTopic,
-                    isSuccess: true,
-                    errorMessage: null
-                );
+                _logger.LogInformation(
+                    "Saga step completed. SagaId: {SagaId}, MessageName: {MessageName}",
+                    command.SagaInstanceId,
+                    command.MessageName);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
-                    "Saga step failed. SagaId: {SagaId}, MessageName: {MessageName}",
-                    command?.SagaId,
+                    "Saga step failed with unhandled exception. SagaId: {SagaId}, MessageName: {MessageName}",
+                    command?.SagaInstanceId,
                     command?.MessageName);
 
                 if (command != null)
                 {
-                    // Auto-generate emit name if not provided
-                    var resolvedFailedEmit = failedEmit ?? $"{command.MessageName}.failed";
+                    // Auto-generate failed emit name if not provided
+                    var resolvedFailedEmitMessage = failedEmitMessage ?? $"{command.MessageName}.failed";
                     var resolvedTopic = responseTopic ?? "saga-orchestrator-events";
 
                     // Emit failed event
-                    await EmitSagaEventAsync(
+                    await EmitFailedSagaEventAsync(
                         command: command,
-                        responseData: null,
-                        eventName: resolvedFailedEmit,
-                        topic: resolvedTopic,
-                        isSuccess: false,
-                        errorMessage: FormatErrorMessage(ex)
+                        errorMessage: ex.Message,
+                        eventName: resolvedFailedEmitMessage,
+                        topic: resolvedTopic
                     );
+                }
+                else
+                {
+                    _logger.LogError(
+                        "Cannot emit failed message: command deserialization failed");
                 }
             }
         }
 
         /// <summary>
-        /// Emit saga event back to orchestrator
+        /// Emit failed saga event back to orchestrator
         /// </summary>
-        private async Task EmitSagaEventAsync(
+        private async Task EmitFailedSagaEventAsync(
             SagaCommandMessage command,
-            JObject? responseData,
+            string errorMessage,
             string eventName,
-            string topic,
-            bool isSuccess,
-            string? errorMessage)
+            string topic)
         {
-            // Merge request data with response data
-            var mergedData = new JObject(command.RequestData);
-            if (command.LastStepResponseData != null && command.LastStepResponseData.HasValues)
+            // Response data chỉ chứa ErrorMessage
+            var responseData = new JObject
             {
-                mergedData.Merge(command.LastStepResponseData);
-            }
+                ["ErrorMessage"] = errorMessage
+            };
 
-            // Prepare response data (null if failed)
-            var finalResponseData = responseData ?? new JObject();
-            if (!isSuccess && !string.IsNullOrEmpty(errorMessage))
-            {
-                finalResponseData["error"] = errorMessage;
-            }
+            _logger.LogDebug(
+                "Emitting failed saga event. SagaId: {SagaId}, Event: {EventName}, Error: {Error}",
+                command.SagaInstanceId,
+                eventName,
+                errorMessage);
+
+            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(topic, command.RequestData, responseData, command.SagaInstanceId, command.FlowName, command.MessageName);
 
             // Send saga event using SendSagaMessageAsync
-            var success = await _messagingService.SendSagaMessageAsync<SagaEventMessage>(
-                topic: topic,
-                key: command.SagaId.ToString(),
-                requestData: mergedData,
-                responseData: finalResponseData,
-                sagaId: command.SagaId,
-                flowName: command.FlowName,
-                messageName: eventName
+            var success = await _messagingService.SendSagaMessageAsync(
+                sagaEventMessage           // Failed emit name
             );
 
             if (success)
             {
-                _logger.LogInformation(
-                    "Emitted saga event. SagaId: {SagaId}, EventName: {EventName}, IsSuccess: {IsSuccess}",
-                    command.SagaId,
+                _logger.LogWarning(
+                    "Emitted failed saga event. SagaId: {SagaId}, EventName: {EventName}, Topic: {Topic}",
+                    command.SagaInstanceId,
                     eventName,
-                    isSuccess);
+                    topic);
             }
             else
             {
                 _logger.LogError(
-                    "Failed to emit saga event. SagaId: {SagaId}, EventName: {EventName}",
-                    command.SagaId,
-                    eventName);
+                    "Failed to emit failed saga event! SagaId: {SagaId}, EventName: {EventName}, Topic: {Topic}",
+                    command.SagaInstanceId,
+                    eventName,
+                    topic);
             }
-        }
-
-        private string FormatErrorMessage(Exception exception)
-        {
-            var errorDetails = new
-            {
-                Type = exception.GetType().Name,
-                Message = exception.Message,
-                StackTrace = _logger.IsEnabled(LogLevel.Debug) ? exception.StackTrace : null,
-                InnerException = exception.InnerException?.Message
-            };
-
-            return System.Text.Json.JsonSerializer.Serialize(errorDetails);
         }
     }
 }
