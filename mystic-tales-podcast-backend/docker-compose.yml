@@ -256,16 +256,13 @@ services:
 
   consul:
     image: hashicorp/consul:latest
-    container_name: consul-dev-001
+    container_name: consul-nhap-1
     ports:
-      - "8500:8500"      # Consul HTTP API & UI
-      - "8600:8600/udp"  # Consul DNS
-    # volumes:
-    #   - consul_data:/consul/data
+      - "8501:8500"      # Consul HTTP API & UI
+      - "8601:8600/udp"  # Consul DNS
     command: agent -dev -client=0.0.0.0
     networks:
       - default
-      - gateway-network
 
   redis:
     image: redis:latest

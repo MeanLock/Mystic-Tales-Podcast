@@ -9,7 +9,7 @@ namespace SagaOrchestratorService.DataAccess.Entities
 {
     public class SagaInstance
     {
-        public Guid SagaId { get; set; }
+        public Guid Id { get; set; }
         public string FlowName { get; set; }
         public string? CurrentStepName { get; set; }
         public string? InitialData { get; set; }

@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
 
 namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices.interfaces
@@ -8,10 +9,10 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices.inter
         // Single core method with nullable key and topic
         Task<bool> SendMessageAsync<T>(T message, string? key = null, string? topic = null) where T : BaseMessage;
         #endregion
-
+        Task<bool> SendSagaMessageAsync<T>(string topic, string? key, JObject requestData, JObject? responseData, Guid? sagaId, string? flowName, string messageName, int maxRetries = 3) where T : BaseMessage;
         #region Convenience Methods
         // With additional features
-        Task<bool> SendSagaMessageAsync<T>(T message, string topic, string? key = null) where T : BaseMessage;
+        //Task<bool> SendSagaMessageAsync<T>(T message, string topic, string? key = null) where T : BaseMessage;
         Task<bool> SendMessageToTopicAsync<T>(T message, string topic, string? key = null) where T : BaseMessage;
         Task<bool> SendMessageWithHeadersAsync<T>(T message, Dictionary<string, string> headers, string? key = null, string? topic = null) where T : BaseMessage;
         Task<bool> SendMessageWithRetryAsync<T>(T message, int maxRetries = 3, string? key = null, string? topic = null) where T : BaseMessage;

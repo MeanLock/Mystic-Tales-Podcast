@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Linq;
 using UserService.Infrastructure.Models.Kafka;
 
 namespace UserService.BusinessLogic.Services.MessagingServices.interfaces
@@ -7,6 +8,8 @@ namespace UserService.BusinessLogic.Services.MessagingServices.interfaces
         #region Core Methods
         // Single core method with nullable key and topic
         Task<bool> SendMessageAsync<T>(T message, string? key = null, string? topic = null) where T : BaseMessage;
+        Task<bool> SendSagaMessageAsync<T>(string topic, string? key, JObject requestData, JObject? responseData, Guid? sagaId, string? flowName, string messageName, int maxRetries = 3) where T : BaseMessage;
+
         #endregion
 
         #region Convenience Methods

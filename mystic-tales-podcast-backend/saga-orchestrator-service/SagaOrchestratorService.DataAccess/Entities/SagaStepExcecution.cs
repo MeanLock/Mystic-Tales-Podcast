@@ -10,12 +10,12 @@ namespace SagaOrchestratorService.DataAccess.Entities
     public class SagaStepExcecution
     {
         public int Id { get; set; }
-        public Guid SagaId { get; set; }
+        public Guid SagaInstanceId { get; set; }
         public string StepName { get; set; }
         public string? TopicName { get; set; }
         public SagaStepStatusEnum StepStatus { get; set; }
-        public Dictionary<string, object>? RequestData { get; set; } = new();
-        public Dictionary<string, object>? responseData { get; set; } = new();
+        public string? RequestData { get; set; }
+        public string? ResponseData { get; set; }
         public string? ErrorMessage { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

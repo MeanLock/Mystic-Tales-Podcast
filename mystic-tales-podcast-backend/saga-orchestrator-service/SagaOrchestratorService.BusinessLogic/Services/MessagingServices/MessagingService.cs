@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using SagaOrchestratorService.BusinessLogic.Services.MessagingServices.interfaces;
 using SagaOrchestratorService.Infrastructure.Services.Kafka;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
+using Newtonsoft.Json.Linq;
 
 namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
 {
@@ -27,9 +28,35 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
             return await SendMessageCoreAsync(message, key, resolvedTopic, null, 1);
         }
 
-        public async Task<bool> SendSagaMessageAsync<T>(T message, string topic, string? key = null) where T : BaseMessage
+        public async Task<bool> SendSagaMessageAsync<T>(string topic, string? key, JObject requestData, JObject? responseData, Guid? sagaId, string? flowName, string messageName,
+            int maxRetries = 1) where T : BaseMessage
         {
-            return await SendSagaMessageCoreAsync(message, key, topic, 1);
+            // Retry logic
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    var result = await _kafkaProducer.SendSagaMessageAsync<T>(topic, key, requestData, responseData, sagaId, flowName, messageName);
+                    if (result.Success)
+                    {
+                        LogSuccess(typeof(T).Name, topic, key, sagaId?.ToString() ?? "N/A", attempt, maxRetries);
+                        return true;
+                    }
+                    LogFailure(typeof(T).Name, topic, key, result.ErrorMessage, attempt, maxRetries);
+                }
+                catch (Exception ex)
+                {
+                    LogException(ex, typeof(T).Name, topic, key, attempt, maxRetries);
+                }
+
+                if (attempt < maxRetries)
+                {
+                    var delay = TimeSpan.FromMilliseconds(Math.Pow(2, attempt) * 1000);
+                    await Task.Delay(delay);
+                }
+            }
+
+            return false;
         }
         #endregion
 
@@ -137,45 +164,45 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
             return false;
         }
 
-        private async Task<bool> SendSagaMessageCoreAsync<T>(
-            T message,
-            string? key,  // Now nullable
-            string topic,
-            int maxRetries = 1) where T : BaseMessage
-        {
-            // Validation (removed key validation since it can be null now)
-            if (!ValidateInput(message) || string.IsNullOrWhiteSpace(topic))
-                return false;
+        //private async Task<bool> SendSagaMessageCoreAsync<T>(
+        //    T message,
+        //    string? key,  // Now nullable
+        //    string topic,
+        //    int maxRetries = 1) where T : BaseMessage
+        //{
+        //    // Validation (removed key validation since it can be null now)
+        //    if (!ValidateInput(message) || string.IsNullOrWhiteSpace(topic))
+        //        return false;
 
-            // Retry logic
-            for (int attempt = 1; attempt <= maxRetries; attempt++)
-            {
-                try
-                {
-                    var result = await _kafkaProducer.SendSagaMessageAsync(topic, key, message);
+        //    // Retry logic
+        //    for (int attempt = 1; attempt <= maxRetries; attempt++)
+        //    {
+        //        try
+        //        {
+        //            var result = await _kafkaProducer.SendSagaMessageAsync(topic, key, message);
 
-                    if (result.Success)
-                    {
-                        LogSuccess(typeof(T).Name, topic, key, message.MessageId, attempt, maxRetries);
-                        return true;
-                    }
+        //            if (result.Success)
+        //            {
+        //                LogSuccess(typeof(T).Name, topic, key, message.MessageId, attempt, maxRetries);
+        //                return true;
+        //            }
 
-                    LogFailure(typeof(T).Name, topic, key, result.ErrorMessage, attempt, maxRetries);
-                }
-                catch (Exception ex)
-                {
-                    LogException(ex, typeof(T).Name, topic, key, attempt, maxRetries);
-                }
+        //            LogFailure(typeof(T).Name, topic, key, result.ErrorMessage, attempt, maxRetries);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            LogException(ex, typeof(T).Name, topic, key, attempt, maxRetries);
+        //        }
 
-                if (attempt < maxRetries)
-                {
-                    var delay = TimeSpan.FromMilliseconds(Math.Pow(2, attempt) * 1000);
-                    await Task.Delay(delay);
-                }
-            }
+        //        if (attempt < maxRetries)
+        //        {
+        //            var delay = TimeSpan.FromMilliseconds(Math.Pow(2, attempt) * 1000);
+        //            await Task.Delay(delay);
+        //        }
+        //    }
 
-            return false;
-        }
+        //    return false;
+        //}
 
         #endregion
 
@@ -251,7 +278,6 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
             _logger.LogError(ex, "Exception while sending message (attempt {Attempt}/{MaxRetries}) - MessageType: {MessageType}, Topic: {Topic}, {KeyInfo}", 
                 attempt, maxRetries, messageType, topic, keyInfo);
         }
-
         #endregion
     }
 }

@@ -31,7 +31,7 @@ public partial class AppDbContext : DbContext
         // SagaInstance
         modelBuilder.Entity<SagaInstance>(entity =>
         {
-            entity.HasKey(e => e.SagaId);
+            entity.HasKey(e => e.Id);
 
             entity.Property(e => e.FlowName)
                   .IsRequired();
@@ -60,7 +60,7 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.SagaId)
+            entity.Property(e => e.SagaInstanceId)
                   .IsRequired();
 
             entity.Property(e => e.StepName)
@@ -74,7 +74,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.RequestData)
                   .HasColumnType("nvarchar(max)");
 
-            entity.Property(e => e.responseData)
+            entity.Property(e => e.ResponseData)
                   .HasColumnType("nvarchar(max)");
 
             entity.Property(e => e.ErrorMessage);

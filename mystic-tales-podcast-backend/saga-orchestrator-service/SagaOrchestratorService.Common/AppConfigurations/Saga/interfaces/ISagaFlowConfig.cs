@@ -39,7 +39,7 @@ namespace SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces
         public List<SagaStepRefModel> NextSteps { get; set; } = new();
 
         // Changed to support multiple flows like nextSteps
-        public List<string> NextFlows { get; set; } = new();
+        public List<SagaStepRefModel> NextFlows { get; set; } = new();
     }
 
     public class SagaStepRefModel
