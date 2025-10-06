@@ -111,23 +111,23 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
         private void RegisterHandlersFromRegistry(KafkaConsumerService kafkaConsumerService)
         {
             var handlers = _handlerRegistry.GetAllHandlers();
-            var topicMessageTypes = _handlerRegistry.GetTopicMessageTypes();
+            var topicMessageNames = _handlerRegistry.GetTopicMessageNames();
 
             foreach (var handler in handlers)
             {
-                var topic = topicMessageTypes.FirstOrDefault(t => t.Value.Contains(handler.Key)).Key;
+                var topic = topicMessageNames.FirstOrDefault(t => t.Value.Contains(handler.Key)).Key;
                 if (!string.IsNullOrEmpty(topic))
                 {
-                    RegisterMessageTypeHandler(kafkaConsumerService, handler.Key, topic, handler.Value);
+                    RegisterMessageNameHandler(kafkaConsumerService, handler.Key, topic, handler.Value);
                 }
                 else
                 {
-                    _logger.LogWarning("No topic found for message type: {MessageType}", handler.Key);
+                    _logger.LogWarning("No topic found for message name: {MessageName}", handler.Key);
                 }
             }
 
             _logger.LogInformation("Registered {HandlerCount} handlers from {TopicCount} topics with KafkaConsumerService",
-                handlers.Count, topicMessageTypes.Count);
+                handlers.Count, topicMessageNames.Count);
         }
 
         private KafkaConsumerService? GetKafkaConsumerService()
@@ -169,15 +169,15 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
             }
         }
 
-        private void RegisterMessageTypeHandler(KafkaConsumerService kafkaConsumerService, string messageType, string topic, Func<string, string, Task> handler)
+        private void RegisterMessageNameHandler(KafkaConsumerService kafkaConsumerService, string messageName, string topic, Func<string, string, Task> handler)
         {
             try
             {
-                kafkaConsumerService.RegisterMessageTypeHandler(messageType, topic, handler);
+                kafkaConsumerService.RegisterMessageNameHandler(messageName, topic, handler);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error registering message type handler for {MessageType}", messageType);
+                _logger.LogError(ex, "Error registering message type handler for {MessageName}", messageName);
             }
         }
 

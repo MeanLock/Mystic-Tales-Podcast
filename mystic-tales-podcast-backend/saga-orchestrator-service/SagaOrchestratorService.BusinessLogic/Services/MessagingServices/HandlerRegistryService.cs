@@ -19,6 +19,7 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
         private readonly Dictionary<string, (Type HandlerType, MethodInfo Method)> _handlerMethods;
         private readonly Dictionary<string, Func<string, string, Task>> _messageHandlers;
         private readonly Dictionary<string, List<string>> _runtimeTopicMessageTypes = new();
+        private readonly Dictionary<string, List<string>> _runtimeTopicMessageNames = new();
 
         public HandlerRegistryService(
             IServiceProvider serviceProvider,
@@ -32,31 +33,31 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
 
         public Dictionary<string, Func<string, string, Task>> GetAllHandlers() => _messageHandlers;
 
-        public Dictionary<string, List<string>> GetTopicMessageTypes()
+        public Dictionary<string, List<string>> GetTopicMessageNames()
         {
-            var topicMessageTypes = new Dictionary<string, List<string>>();
+            var topicMessageNames = new Dictionary<string, List<string>>();
 
             var allHandlers = CollectAllHandlers();
             foreach (var handler in allHandlers)
             {
-                if (!topicMessageTypes.ContainsKey(handler.Topic))
-                    topicMessageTypes[handler.Topic] = new List<string>();
-                if (!topicMessageTypes[handler.Topic].Contains(handler.Attribute.MessageType))
-                    topicMessageTypes[handler.Topic].Add(handler.Attribute.MessageType);
+                if (!topicMessageNames.ContainsKey(handler.Topic))
+                    topicMessageNames[handler.Topic] = new List<string>();
+                if (!topicMessageNames[handler.Topic].Contains(handler.Attribute.MessageName))
+                    topicMessageNames[handler.Topic].Add(handler.Attribute.MessageName);
             }
 
             foreach (var kvp in _runtimeTopicMessageTypes)
             {
-                if (!topicMessageTypes.TryGetValue(kvp.Key, out var list))
+                if (!topicMessageNames.TryGetValue(kvp.Key, out var list))
                 {
                     list = new List<string>();
-                    topicMessageTypes[kvp.Key] = list;
+                    topicMessageNames[kvp.Key] = list;
                 }
                 foreach (var mt in kvp.Value)
                     if (!list.Contains(mt)) list.Add(mt);
             }
 
-            return topicMessageTypes;
+            return topicMessageNames;
         }
 
         public void RegisterAllHandlers()
@@ -122,15 +123,15 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
 
         private void RegisterSingleHandler(Type handlerType, MethodInfo method, MessageHandlerAttribute attribute)
         {
-            var handlerKey = $"{attribute.MessageType}_{attribute.Topic}";
+            var handlerKey = $"{attribute.MessageName}_{attribute.Topic}";
             _handlerMethods[handlerKey] = (handlerType, method);
 
             var wrapperDelegate = CreateHandlerWrapper(handlerType, method);
-            _messageHandlers[attribute.MessageType] = wrapperDelegate;
+            _messageHandlers[attribute.MessageName] = wrapperDelegate;
 
             _logger.LogInformation(
-                "Registered handler: {HandlerType}.{MethodName} for MessageType: {MessageType} on Topic: {Topic}",
-                handlerType.Name, method.Name, attribute.MessageType, attribute.Topic);
+                "Registered handler: {HandlerType}.{MethodName} for MessageName: {MessageName} on Topic: {Topic}",
+                handlerType.Name, method.Name, attribute.MessageName, attribute.Topic);
         }
 
         private Func<string, string, Task> CreateHandlerWrapper(Type handlerType, MethodInfo method)
@@ -144,9 +145,9 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
             };
         }
 
-        public void UnregisterHandler(string messageType)
+        public void UnregisterHandler(string messageName)
         {
-            _logger.LogInformation("Unregistered handler for MessageType: {MessageType}", messageType);
+            _logger.LogInformation("Unregistered handler for MessageName: {MessageName}", messageName);
         }
     }
 }

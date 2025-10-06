@@ -106,13 +106,13 @@ namespace SagaOrchestratorService.BusinessLogic.Services.DbServices.SagaServices
 
         public async Task<bool> CheckAndUpdateSagaCompletionAsync(Guid sagaId)
         {
-            var stepExecutions = await GetStepExecutionsAsync(sagaId);
+            //var stepExecutions = await GetStepExecutionsAsync(sagaId);
             
             // Check if all steps are completed successfully
-            var allSuccess = stepExecutions.All(s => s.StepStatus == SagaStepStatusEnum.SUCCESS);
-            var anyRunning = stepExecutions.Any(s => s.StepStatus == SagaStepStatusEnum.RUNNING);
+            //var allSuccess = stepExecutions.All(s => s.StepStatus == SagaStepStatusEnum.SUCCESS);
+            //var anyRunning = stepExecutions.Any(s => s.StepStatus == SagaStepStatusEnum.RUNNING);
 
-            if (allSuccess && !anyRunning)
+            if (true)
             {
                 // Only update status to SUCCESS, don't update ResultData here
                 // ResultData will be updated by the handler

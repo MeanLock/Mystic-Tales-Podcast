@@ -3,9 +3,9 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices.inter
     public interface IHandlerRegistryService
     {
         void RegisterAllHandlers();
-        void UnregisterHandler(string messageType);
+        void UnregisterHandler(string messageName);
         Dictionary<string, Func<string, string, Task>> GetAllHandlers();
-        Dictionary<string, List<string>> GetTopicMessageTypes();
+        Dictionary<string, List<string>> GetTopicMessageNames();
         //void AddRuntimeHandler(string messageType, string topic, Func<string, string, Task> handler);
         //Task RegisterYamlHandlersAsync(string? yamlPath = null);
     }

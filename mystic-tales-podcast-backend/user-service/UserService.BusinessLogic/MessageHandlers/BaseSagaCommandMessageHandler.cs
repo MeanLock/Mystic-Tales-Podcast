@@ -113,7 +113,7 @@ namespace UserService.BusinessLogic.MessageHandlers
                 eventName,
                 errorMessage);
 
-            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(topic, command.RequestData, responseData, command.SagaInstanceId, command.FlowName, command.MessageName);
+            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(topic, command.RequestData, responseData, command.SagaInstanceId, command.FlowName, eventName);
 
             // Send saga event using SendSagaMessageAsync
             var success = await _messagingService.SendSagaMessageAsync(

@@ -5,6 +5,6 @@ namespace UserService.BusinessLogic.Services.MessagingServices.interfaces
         void RegisterAllHandlers();
         void UnregisterHandler(string messageType);
         Dictionary<string, Func<string, string, Task>> GetAllHandlers();
-        Dictionary<string, List<string>> GetTopicMessageTypes();
+        Dictionary<string, List<string>> GetTopicMessageNames();
     }
 }
