@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SagaOrchestratorService.BusinessLogic")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7261a86f61999b0421f6c3f957a7bae8983bbc6e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+15741e655ace4157902e8f0d817aaea67e23d5ae")]
 [assembly: System.Reflection.AssemblyProductAttribute("SagaOrchestratorService.BusinessLogic")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SagaOrchestratorService.BusinessLogic")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

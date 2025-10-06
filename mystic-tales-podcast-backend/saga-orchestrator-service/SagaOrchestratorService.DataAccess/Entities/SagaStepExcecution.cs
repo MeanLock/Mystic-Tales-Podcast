@@ -10,7 +10,7 @@ namespace SagaOrchestratorService.DataAccess.Entities
     public class SagaStepExcecution
     {
         public int Id { get; set; }
-        public Guid SagaId { get; set; }
+        public Guid SagaInstanceId { get; set; }
         public string StepName { get; set; }
         public string? TopicName { get; set; }
         public SagaStepStatusEnum StepStatus { get; set; }
