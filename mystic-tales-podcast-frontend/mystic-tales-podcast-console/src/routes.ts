@@ -3,8 +3,8 @@ import React from 'react'
 //Admin
 const Dashboard = React.lazy(() => import('./views/role-views/admin/dashboard-view/index'))
 const Customer_View = React.lazy(() => import('./views/role-views/admin/customer-view/index'))
-const Manager_View = React.lazy(() => import('./views/role-views/admin/manager-view/index'))
-const Level_View = React.lazy(() => import('./views/role-views/admin/level-view/index'))
+const Podcaster_View = React.lazy(() => import('./views/role-views/admin/podcaster-view/index'))
+const Staff_View = React.lazy(() => import('./views/role-views/admin/staff-view/index'))
 const PlatformFeedback_View = React.lazy(() => import('./views/role-views/admin/platform-feedback-view/index'))
 
 //Manager
@@ -25,9 +25,9 @@ const Transaction_View = React.lazy(() => import('./views/role-views/manager/tra
 const routes = [
   { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard, role_id: [1] },
-  { path: '/managers/table', name: 'Người Quản Lý', element: Manager_View, role_id: [1] },
-  { path: '/customers/table', name: 'Người Dùng', element: Customer_View, role_id: [1] },
-  { path: '/level-management', name: 'Cấp Độ', element: Level_View, role_id: [1] },
+  { path: '/customers/table', name: 'Customers', element: Customer_View, role_id: [1] },
+  { path: '/staffs/table', name: 'Staffs', element: Staff_View, role_id: [1] },
+  { path: '/podcasters/table', name: 'Podcasters', element: Podcaster_View, role_id: [1] },
   { path: '/platform-feedback/table', name: 'Đánh Giá', element: PlatformFeedback_View, role_id: [1] },
 
   { path: '/community-survey', name: 'Khảo Sát', element: Community_Survey_View, role_id: [2] },

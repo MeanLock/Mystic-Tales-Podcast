@@ -1,22 +1,58 @@
+export type Role = {
+  Id: number;
+  Name: string;
+};
+
 export type Account = {
   Id: number;
   Email: string;
-  FullName: string;
+  Role: Role;
+  Fullname: string;
   Dob: string;
   Gender: string;
   Address: string;
   Phone: string;
   Balance: number;
+  MainImageFileUrl: string;
   IsVerified: boolean;
-  Xp: number;
-  Level: number;
-  ProgressionSurveyCount: number;
-  IsFilterSurveyRequired: boolean;
-  LastFilterSurveyTakenAt: string;
+  GoogleId: string;
+  VerifyCode: string;
+  PodcastListenSlot: number;
+  ViolationPoint: number;
+  ViolationLevel: number;
+  LastViolationPointChanged: string;
+  LastViolationLevelChanged: string;
+  LastPodcastListenSlotChanged: string;
   DeactivatedAt: string | null;
   CreatedAt: string;
   UpdatedAt: string;
-  MainImageUrl: string | null;
+  IsBeingPunish: boolean;
+};
+
+export type CustomerList = {
+  CustomerList: Account[];
+};
+export type StaffList = {
+  StaffList: Account[];
+};
+export type PodcasterList = {
+  PodcasterList: Account[];
+};
+export type PodcasterProfile = {
+  AccountId: number;
+  Description: string;
+  AverageRating: number;
+  RatingCount: number;
+  CommitmentDocumentFileUrl?: string;
+  BuddyAudioFileUrl?: string;
+  OwnedBookingStorageSize: number;
+  UsedBookingStorageSize: number;
+  IsVerified: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+}
+export type Podcaster = {
+  PodcasterProfile: PodcasterProfile;
 }
 
 export type FilterSurvey = {

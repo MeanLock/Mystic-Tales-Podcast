@@ -3,18 +3,18 @@ import './styles.scss'
 import { AgGridReact } from 'ag-grid-react';
 import { CButton, CButtonGroup, CCard, CCol, CRow, CSpinner } from '@coreui/react';
 import { AllCommunityModule, ColDef, ModuleRegistry } from 'ag-grid-community';
-import CustomerUpdate from './CustomerUpdate';
 import { Eye } from 'phosphor-react';
 import Modal_Button from '../../../components/common/modal/ModalButton';
-import { Account, CustomerList } from '../../../../core/types';
+import { Account, PodcasterList } from '../../../../core/types';
 import { getCustomerAccounts } from '../../../../core/services/account/account.service';
 import { adminAxiosInstance } from '../../../../core/api/rest-api/config/instances/v2';
 import SurveyTalkLoading from '../../../components/common/loading';
 import AvatarInput from '../../../components/common/avatar';
 import { formatDate } from '../../../../core/utils/date.util';
+import PodcasterDetailTab from './PodcasterDetailTab';
 
-export const mockCustomerList: CustomerList = {
-  CustomerList: [
+export const mockPodcastersList: PodcasterList = {
+  PodcasterList: [
     {
       Id: 1,
       Email: "user1@example.com",
@@ -69,8 +69,8 @@ export const mockCustomerList: CustomerList = {
 };
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-interface CustomerViewProps { }
-interface CustomerViewContextProps {
+interface PodcasterViewProps { }
+interface PodcasterViewContextProps {
   handleDataChange: () => void;
 }
 interface GridState {
@@ -78,7 +78,7 @@ interface GridState {
   rowData: Account[];
 }
 
-export const CustomerViewContext = createContext<CustomerViewContextProps | null>(null);
+export const PodcasterViewContext = createContext<PodcasterViewContextProps | null>(null);
 
 const state_creator = (table: Account[]) => {
   const state = {
@@ -143,8 +143,8 @@ const state_creator = (table: Account[]) => {
         cellClass: 'd-flex justify-content-center py-0',
         cellRenderer: (params: { data: Account }) => {
           const Modal_props = {
-            updateForm: <CustomerUpdate account={params.data} onClose={() => { }} />,
-            title: 'Customer [ID: #' + params.data.Id + ']',
+            updateForm: <PodcasterDetailTab account={params.data} onClose={() => { }} />,
+            title: 'Podcaster [ID: #' + params.data.Id + ']',
             button: <Eye size={27} color="purple" weight="duotone" />,
             update_button_color: 'white'
           }
@@ -171,7 +171,7 @@ const state_creator = (table: Account[]) => {
   return state
 }
 
-const CustomerView: FC<CustomerViewProps> = () => {
+const PodcasterView: FC<PodcasterViewProps> = () => {
   let [state, setState] = useState<GridState | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -192,7 +192,7 @@ const CustomerView: FC<CustomerViewProps> = () => {
   // }
   const handleDataChange = async () => {
     setIsLoading(false);
-    setState(state_creator(mockCustomerList.CustomerList));
+    setState(state_creator(mockPodcastersList.PodcasterList));
 
   }
   useEffect(() => {
@@ -211,14 +211,14 @@ const CustomerView: FC<CustomerViewProps> = () => {
     };
   }, [])
   return (
-    <CustomerViewContext.Provider value={{ handleDataChange: handleDataChange }}>
-      <CRow >
+    <PodcasterViewContext.Provider value={{ handleDataChange: handleDataChange }}>
+      <CRow>
         <CCol xs={12}>
           {isLoading ? (
             <SurveyTalkLoading />
           ) : (
             <div
-              id="customer-table"
+              id="podcaster-table"
             >
               <AgGridReact
                 columnDefs={state?.columnDefs}
@@ -235,8 +235,8 @@ const CustomerView: FC<CustomerViewProps> = () => {
         </CCol>
       </CRow>
 
-    </CustomerViewContext.Provider>
+    </PodcasterViewContext.Provider>
   )
 }
 
-export default CustomerView;
+export default PodcasterView;

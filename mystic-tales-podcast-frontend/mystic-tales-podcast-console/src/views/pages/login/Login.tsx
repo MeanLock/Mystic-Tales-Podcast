@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
@@ -59,14 +57,14 @@ const Login = () => {
         email: email.current?.value,
         password: password.current?.value,
       }
-
+     
       const response = await login(publicAxiosInstance, login_information)
       if (response.success && response.data) {
         const user = JwtUtil.decodeToken(response.data.AccessToken)
         dispatch(
           setAuthToken({
             token: response.data.AccessToken,
-            user: user,
+            user: user
           }),
         )
         if (user.role_id == 1) {
@@ -88,15 +86,17 @@ const Login = () => {
     <div className="login-page">
       <div className="login-page__background">
         <div className="login-page__floating-element login-page__floating-element--primary"></div>
-        <div className="login-page__floating-element login-page__floating-element--secondary"></div>
         <div className="login-page__floating-element login-page__floating-element--tertiary"></div>
       </div>
 
       <div className="login-page__container">
         <div className="login-form">
           <div className="login-form__header">
-            <img src={logo || "/placeholder.svg"} alt="Survey Talk" className="login-form__logo" />
-            <p className="login-form__subtitle">Đăng nhập để quản lý Survey Talk</p>
+            <div className="flex flex-column align-items-center">
+              <img src={logo} alt="Survey Talk" className="login-form__logo" />
+              <h3>Mystics Tale <span>Podcast</span></h3>
+            </div>
+            <p className="login-form__subtitle">Sign in to manage platform</p>
           </div>
 
           <form
@@ -157,12 +157,12 @@ const Login = () => {
                 {disabled ? (
                   <div className="login-form__loading">
                     <div className="spinner-border spinner-border-sm me-2" role="status">
-                      <span className="visually-hidden">Đang tải...</span>
+                      <span className="visually-hidden">Loading...</span>
                     </div>
-                    Đang đăng nhập...
+                    Signing in...
                   </div>
                 ) : (
-                  "Đăng nhập"
+                  "Sign In"
                 )}
               </button>
             </div>

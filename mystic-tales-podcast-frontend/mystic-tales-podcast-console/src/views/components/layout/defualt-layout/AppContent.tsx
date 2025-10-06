@@ -8,21 +8,14 @@ import { JwtUtil } from '../../../../core/utils/jwt.util'
 import { LocalStorageUtil } from '../../../../core/utils/storage.util'
 
 const AppContent = () => {
-  const authSlice = useSelector((state : RootState) => state.auth);
+  const authSlice = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const [ready, setReady] = useState(false);
-  useEffect(() => {
-    if (authSlice && authSlice.token && JwtUtil.isTokenNotExpired(authSlice.token) ) {
-      setReady(true)
-    } else {
-      setReady(false)
-    }
 
-  }, [authSlice]);
   return (
-    <CContainer className="px-2 py-3" lg>
-      <Suspense fallback={<CSpinner color="primary" />}>
-        <Routes>
+<CContainer fluid className="app-content-container">
+        <Suspense fallback={<CSpinner color="primary" />}>
+        {/* <Routes>
           {routes.map((route, idx) => {
             return (
               route.element && (LocalStorageUtil.getAuthUserFromPersistLocalStorage() && route.role_id?.some(item => item === Number(LocalStorageUtil.getAuthUserFromPersistLocalStorage().role_id))) && (
@@ -37,6 +30,22 @@ const AppContent = () => {
             )
           })}
           <Route path="/" element={<Navigate to="dashboard" replace />} /> 
+        </Routes> */}
+        <Routes>
+          {routes.map((route, idx) => {
+            return (
+              route.element && (route.role_id?.some(item => item === 1)) && (
+                <Route
+                  key={idx}
+                  path={route.path}
+                  // exact={route.exact}
+                  // name={route.name}
+                  element={<route.element />}
+                />
+              )
+            )
+          })}
+          <Route path="/" element={<Navigate to="dashboard" replace />} />
         </Routes>
       </Suspense>
     </CContainer>

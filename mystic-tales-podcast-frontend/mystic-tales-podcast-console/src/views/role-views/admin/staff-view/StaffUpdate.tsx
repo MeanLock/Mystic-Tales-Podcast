@@ -12,19 +12,19 @@ import { Account } from "../../../../core/types";
 import { deactivateAccount, updateAccount } from "../../../../core/services/account/account.service";
 import { adminAxiosInstance } from "../../../../core/api/rest-api/config/instances/v2";
 import { toast } from "react-toastify";
-import { CustomerViewContext } from ".";
 import { formatDate } from "../../../../core/utils/date.util";
+import { StaffViewContext } from ".";
 
-interface CustomerUpdateProps {
+interface StaffUpdateProps {
   account: Account;
   onClose: () => void;
 }
 
-const CustomForm: React.FC<CustomerUpdateProps> = ({ account, onClose }) => {
-  const context = useContext(CustomerViewContext);
+const StaffForm: React.FC<StaffUpdateProps> = ({ account, onClose }) => {
+  const context = useContext(StaffViewContext);
   const fullname = useRef<HTMLInputElement>(null);
   const dob = useRef<HTMLInputElement>(null);
-  const gender = useRef<HTMLSelectElement>(null)
+  const gender = useRef<HTMLSelectElement>(null);
   const phone = useRef<HTMLInputElement>(null);
   const address = useRef<HTMLInputElement>(null);
   const handleSubmit = async (event: React.FormEvent) => {
@@ -286,8 +286,8 @@ const CustomForm: React.FC<CustomerUpdateProps> = ({ account, onClose }) => {
 };
 
 
-const CustomerUpdate: React.FC<CustomerUpdateProps> = (props) => {
-  return <CustomForm {...props} />;
+const StaffUpdate: React.FC<StaffUpdateProps> = (props) => {
+  return <StaffForm {...props} />;
 };
 
-export default CustomerUpdate;
+export default StaffUpdate;

@@ -20,11 +20,7 @@ const Register = React.lazy(() => import('./views/pages/register/Register'))
 const Page404 = React.lazy(() => import('./views/pages/page404/Page404'))
 const Page500 = React.lazy(() => import('./views/pages/page500/Page500'))
 
-//Survey-tool
-const SurveyLayout = React.lazy(() => import('./views/components/layout/survey-tool-layout/index'))
-const SurveyCreatePage = React.lazy(() => import("./views/pages/survey/survey-create-page/index"))
-const SurveyCustomer = React.lazy(() => import("./views/pages/survey/pages/SurveyCustomer/index"))
-const EndSurveyCustomer = React.lazy(() => import("./views/pages/survey/pages/EndSurveyCustomer/index"))
+
 
 const router = createHashRouter([
   {
@@ -42,22 +38,6 @@ const router = createHashRouter([
   {
     path: '/500',
     element: <Page500 />,
-  },
-  {
-    path: '/survey',
-    element: <SurveyLayout />,
-    children: [
-      { path: 'new', element: <SurveyCreatePage /> },
-      { path: ':id/editing', element: <SurveyCreatePage /> },
-    ],
-  },
-  {
-    path: '/survey/:id/taking',
-    element: <SurveyCustomer />
-  },
-  {
-    path: '/survey/:id/end',
-    element: <EndSurveyCustomer />
   },
   {
     path: '*',

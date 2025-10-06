@@ -1,4 +1,3 @@
-"use client"
 
 import { createContext, FC, useState } from "react"
 import { Container, Row, Col, Card, Nav, Button, Tabs, Tab } from "react-bootstrap"

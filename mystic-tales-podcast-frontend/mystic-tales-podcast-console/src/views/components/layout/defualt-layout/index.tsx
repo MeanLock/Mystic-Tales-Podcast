@@ -20,12 +20,12 @@ const DefaultLayout = () => {
   const navigate = useNavigate();
   const authSlice = useSelector((state : RootState) => state.auth);
 
-  useEffect(() => {
-    if ( !authSlice || !authSlice.token || !JwtUtil.isTokenNotExpired(authSlice.token) ) {
-      dispatch(clearAuthToken())
-      navigate('/login');
-    }
-  }, [authSlice, navigate]);
+  // useEffect(() => {
+  //   if ( !authSlice || !authSlice.token || !JwtUtil.isTokenNotExpired(authSlice.token) ) {
+  //     dispatch(clearAuthToken())
+  //     navigate('/login');
+  //   }
+  // }, [authSlice, navigate]);
   return (
     <div>
       <AppSidebar />

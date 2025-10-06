@@ -36,17 +36,22 @@ const AppSidebar = () => {
   const authSlice = useSelector((state: RootState) => state.auth);
 
 
+  // useEffect(() => {
+  //   if (authSlice && authSlice.token) {
+  //     const user = JwtUtil.decodeToken(authSlice.token);
+
+  //     //*[NOTE] Sau có thay đổi role thì gọi lại hàm này
+  //     setNavigation(get_roleNav(user.role_id, user.id));
+
+  //   } else {
+  //     navigate("/login")
+  //   }
+  // }, [authSlice])
   useEffect(() => {
-    if (authSlice && authSlice.token) {
-      const user = JwtUtil.decodeToken(authSlice.token);
+  
+      setNavigation(get_roleNav(0, 2));
 
-      //*[NOTE] Sau có thay đổi role thì gọi lại hàm này
-      setNavigation(get_roleNav(user.role_id, user.id));
-
-    } else {
-      navigate("/login")
-    }
-  }, [authSlice])
+  }, [])
   return (
     <CSidebar
       className={`app-sidebar`}
@@ -61,7 +66,14 @@ const AppSidebar = () => {
                 <img src={logo} alt="Logo" className="sidebar-brand-narrow" />
               </CHeaderToggler>
             ) : (
-              <img src={logo} alt="Logo" className="sidebar-brand-full" />)}
+              <div className="flex align-items-center">
+                <img src={logo} alt="Logo" className="sidebar-brand-full" />
+                <div className="sidebar-brand-text ms-2  d-flex flex-column justify-content-center">
+                  <span className="text-white">Mystics Tale</span>
+                  <span className="fw-bold sidebar-brand-role mt-1">Admin</span>
+                </div>
+              </div>
+            )}
           </CSidebarBrand>
           {!uiSlice.sidebarNarrow && (
             <CHeaderToggler onClick={() => dispatch(setUi({ sidebarNarrow: true }))}>

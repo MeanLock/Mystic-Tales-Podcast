@@ -60,7 +60,6 @@ const AppHeader = () => {
       const regex = new RegExp(`^${pattern}$`);
       return regex.test(pathname);
     });
-
     if (route?.parent) {
       const parentRoute = routes.find(r => r.path === route.parent);
       return parentRoute?.name || route?.name || 'Dashboard';
@@ -180,11 +179,7 @@ const AppHeader = () => {
         ) : (
           <CHeaderNav >
             <CNavItem className='mx-1'>
-              <CButton href="/login" title='login' className='bg-info fw-bold'>
-                LOG IN
-                {/* <SignIn size={32} color="aqua" weight="bold" /> */}
-                <IconNfcOff stroke={1} accentHeight={12} width={100} height={100} />
-              </CButton>
+          
             </CNavItem>
           </CHeaderNav>
 

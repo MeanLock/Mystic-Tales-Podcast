@@ -3,18 +3,17 @@ import './styles.scss'
 import { AgGridReact } from 'ag-grid-react';
 import { CButton, CButtonGroup, CCard, CCol, CRow, CSpinner } from '@coreui/react';
 import { AllCommunityModule, ColDef, ModuleRegistry } from 'ag-grid-community';
-import CustomerUpdate from './CustomerUpdate';
 import { Eye } from 'phosphor-react';
 import Modal_Button from '../../../components/common/modal/ModalButton';
-import { Account, CustomerList } from '../../../../core/types';
-import { getCustomerAccounts } from '../../../../core/services/account/account.service';
+import { Account, StaffList } from '../../../../core/types';
 import { adminAxiosInstance } from '../../../../core/api/rest-api/config/instances/v2';
 import SurveyTalkLoading from '../../../components/common/loading';
 import AvatarInput from '../../../components/common/avatar';
 import { formatDate } from '../../../../core/utils/date.util';
+import StaffUpdate from './StaffUpdate';
 
-export const mockCustomerList: CustomerList = {
-  CustomerList: [
+export const mockAccountList: StaffList = {
+  StaffList: [
     {
       Id: 1,
       Email: "user1@example.com",
@@ -69,8 +68,8 @@ export const mockCustomerList: CustomerList = {
 };
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-interface CustomerViewProps { }
-interface CustomerViewContextProps {
+interface StaffViewProps { }
+interface StaffViewContextProps {
   handleDataChange: () => void;
 }
 interface GridState {
@@ -78,12 +77,12 @@ interface GridState {
   rowData: Account[];
 }
 
-export const CustomerViewContext = createContext<CustomerViewContextProps | null>(null);
+export const StaffViewContext = createContext<StaffViewContextProps | null>(null);
 
 const state_creator = (table: Account[]) => {
   const state = {
     columnDefs: [
-      { headerName: "ID", field: "Id", flex: 0.4 },
+      { headerName: "ID", field: "Id", flex: 0.35 },
       {
         headerName: "Avatar", flex: 0.5,
         cellRenderer: (params: { data: Account }) => {
@@ -143,8 +142,8 @@ const state_creator = (table: Account[]) => {
         cellClass: 'd-flex justify-content-center py-0',
         cellRenderer: (params: { data: Account }) => {
           const Modal_props = {
-            updateForm: <CustomerUpdate account={params.data} onClose={() => { }} />,
-            title: 'Customer [ID: #' + params.data.Id + ']',
+            updateForm: <StaffUpdate account={params.data} onClose={() => { }} />,
+            title: 'Staff [ID: #' + params.data.Id + ']',
             button: <Eye size={27} color="purple" weight="duotone" />,
             update_button_color: 'white'
           }
@@ -171,28 +170,28 @@ const state_creator = (table: Account[]) => {
   return state
 }
 
-const CustomerView: FC<CustomerViewProps> = () => {
+const StaffView: FC<StaffViewProps> = () => {
   let [state, setState] = useState<GridState | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // const handleDataChange = async () => {
   //   setIsLoading(true);
   //   try {
-  //     const accountList = await getCustomerAccounts(adminAxiosInstance);
+  //     const accountList = await getStaffAccounts(adminAxiosInstance);
   //     if (accountList.success) {
   //       setState(state_creator(accountList.data.Accounts));
   //     } else {
   //       console.error('API Error:', accountList.message);
   //     }
   //   } catch (error) {
-  //     console.error('Lỗi khi fetch customer accounts:', error);
+  //     console.error('Lỗi khi fetch Staff accounts:', error);
   //   } finally {
   //     setIsLoading(false);
   //   }
   // }
   const handleDataChange = async () => {
     setIsLoading(false);
-    setState(state_creator(mockCustomerList.CustomerList));
+    setState(state_creator(mockAccountList.StaffList));
 
   }
   useEffect(() => {
@@ -211,14 +210,14 @@ const CustomerView: FC<CustomerViewProps> = () => {
     };
   }, [])
   return (
-    <CustomerViewContext.Provider value={{ handleDataChange: handleDataChange }}>
-      <CRow >
+    <StaffViewContext.Provider value={{ handleDataChange: handleDataChange }}>
+      <CRow>
         <CCol xs={12}>
           {isLoading ? (
             <SurveyTalkLoading />
           ) : (
             <div
-              id="customer-table"
+              id="Staff-table"
             >
               <AgGridReact
                 columnDefs={state?.columnDefs}
@@ -235,8 +234,8 @@ const CustomerView: FC<CustomerViewProps> = () => {
         </CCol>
       </CRow>
 
-    </CustomerViewContext.Provider>
+    </StaffViewContext.Provider>
   )
 }
 
-export default CustomerView;
+export default StaffView;

@@ -1,47 +1,24 @@
-import React from 'react'
-import CIcon from '@coreui/icons-react'
-import {
-  cilBell,
-  cilCalculator,
-  cilChartPie,
-  cilCursor,
-  cilDescription,
-  cilDrop,
-  cilNotes,
-  cilPencil,
-  cilPuzzle,
-  cilSpeedometer,
-  cilStar,
-} from '@coreui/icons'
 import { CNavGroup, CNavTitle, CNavItem } from '@coreui/react'
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined';
-import PollOutlinedIcon from '@mui/icons-material/PollOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import InsertCommentOutlinedIcon from '@mui/icons-material/InsertCommentOutlined';
-
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import InterpreterModeIcon from '@mui/icons-material/InterpreterMode';
 import {
-  HardDrives,
-  MagicWand,
   Gauge,
   Users,
   ShoppingCartSimple,
-  FileText,
   IdentificationCard,
-  Cube,
-  ClipboardText,
-  ShoppingBagOpen,
   ArrowCircleRight
 } from "phosphor-react";
-import { GiDoorRingHandle, GiBigDiamondRing, GiGemPendant, GiCheckeredDiamond, GiMetalBar } from "react-icons/gi";
-import { FcOnlineSupport, FcFactoryBreakdown } from "react-icons/fc";
+import { FcFactoryBreakdown } from "react-icons/fc";
 
 
 
 const get_roleNav = (role_id: number, account_id: number) => {
   const _roleNav = [
-    [],
     // admin: 1   
     [
       {
@@ -52,36 +29,36 @@ const get_roleNav = (role_id: number, account_id: number) => {
       },
       {
         component: CNavItem,
-        name: 'Người Dùng',
+        name: 'Customers',
         to: '/customers/table',
         icon: <Users size={30} weight="duotone" />,
 
       },
-      {
+       {
         component: CNavItem,
-        name: 'Người Quản Lý',
-        to: '/managers/table',
-        icon: <Users size={30} weight="duotone" />,
+        name: 'Podcasters',
+        to: '/podcasters/table',
+        icon: <InterpreterModeIcon sx={{ fontSize: 32 }} />,
 
       },
       {
         component: CNavItem,
-        name: 'Đánh Giá ',
-        to: '/platform-feedback/table',
-        icon: <InsertCommentOutlinedIcon sx={{ fontSize: 29 }} />,
+        name: 'Staffs',
+        to: '/staffs/table',
+        icon: <ManageAccountsIcon sx={{ fontSize: 32 }}/>,
 
       },
       {
         component: CNavItem,
-        name: 'Cấp độ',
+        name: 'DMCA Accusation',
         to: '/level-management',
-        icon: <PollOutlinedIcon sx={{ fontSize: 29 }} />,
+        icon: <AssignmentIcon sx={{ fontSize: 32 }} />,
 
       },
 
       {
         component: CNavItem,
-        name: 'Cài đặt',
+        name: 'System Config',
         to: '/staffs_manager/table11',
         icon: <SettingsOutlinedIcon sx={{ fontSize: 29 }} />,
 
