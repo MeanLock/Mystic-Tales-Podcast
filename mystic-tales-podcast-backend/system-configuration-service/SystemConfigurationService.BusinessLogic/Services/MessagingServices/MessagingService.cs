@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using SystemConfigurationService.BusinessLogic.Services.MessagingServices.interfaces;
-using SystemConfigurationService.Infrastructure.Services.Kafka;
 using SystemConfigurationService.Infrastructure.Models.Kafka;
+using SystemConfigurationService.Infrastructure.Services.Kafka;
 
 namespace SystemConfigurationService.BusinessLogic.Services.MessagingServices
 {
@@ -23,10 +24,40 @@ namespace SystemConfigurationService.BusinessLogic.Services.MessagingServices
         {
             // Resolve topic if not provided
             var resolvedTopic = topic ?? ResolveTopicFromMessageType(typeof(T).Name);
-            
+
             return await SendMessageCoreAsync(message, key, resolvedTopic, null, 1);
         }
 
+        public async Task<bool> SendSagaMessageAsync<T>(string topic, string? key, JObject requestData, JObject? responseData, Guid? sagaId, string? flowName, string messageName,
+            int maxRetries = 1) where T : BaseMessage
+        {
+            // Retry logic
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    var result = await _kafkaProducer.SendSagaMessageAsync<T>(topic, key, requestData, responseData, sagaId, flowName, messageName);
+                    if (result.Success)
+                    {
+                        LogSuccess(typeof(T).Name, topic, key, sagaId?.ToString() ?? "N/A", attempt, maxRetries);
+                        return true;
+                    }
+                    LogFailure(typeof(T).Name, topic, key, result.ErrorMessage, attempt, maxRetries);
+                }
+                catch (Exception ex)
+                {
+                    LogException(ex, typeof(T).Name, topic, key, attempt, maxRetries);
+                }
+
+                if (attempt < maxRetries)
+                {
+                    var delay = TimeSpan.FromMilliseconds(Math.Pow(2, attempt) * 1000);
+                    await Task.Delay(delay);
+                }
+            }
+
+            return false;
+        }
         #endregion
 
         #region Convenience Methods - Delegate to Core
@@ -60,24 +91,24 @@ namespace SystemConfigurationService.BusinessLogic.Services.MessagingServices
         public async Task<bool> SendMessagesAsync<T>(IEnumerable<(T message, string key)> messages, string? topic = null) where T : BaseMessage
         {
             if (messages?.Any() != true) return false;
-            
+
             var resolvedTopic = topic ?? ResolveTopicFromMessageType(typeof(T).Name);
             var results = await Task.WhenAll(
                 messages.Select(m => SendMessageCoreAsync(m.message, m.key, resolvedTopic, null, 1))
             );
-            
+
             return results.All(r => r);
         }
 
         public async Task<bool> SendMessagesAsync<T>(IEnumerable<T> messages, string? topic = null) where T : BaseMessage
         {
             if (messages?.Any() != true) return false;
-            
+
             var resolvedTopic = topic ?? ResolveTopicFromMessageType(typeof(T).Name);
             var results = await Task.WhenAll(
                 messages.Select(m => SendMessageCoreAsync(m, null, resolvedTopic, null, 1))
             );
-            
+
             return results.All(r => r);
         }
 
@@ -90,10 +121,10 @@ namespace SystemConfigurationService.BusinessLogic.Services.MessagingServices
         /// Supports null key for random partition assignment
         /// </summary>
         private async Task<bool> SendMessageCoreAsync<T>(
-            T message, 
+            T message,
             string? key,  // Now nullable
-            string topic, 
-            Dictionary<string, string>? headers = null, 
+            string topic,
+            Dictionary<string, string>? headers = null,
             int maxRetries = 1) where T : BaseMessage
         {
             // Validation (removed key validation since it can be null now)
@@ -109,13 +140,13 @@ namespace SystemConfigurationService.BusinessLogic.Services.MessagingServices
                 try
                 {
                     var result = await _kafkaProducer.SendMessageAsync(topic, key, message);
-                    
+
                     if (result.Success)
                     {
                         LogSuccess(typeof(T).Name, topic, key, message.MessageId, attempt, maxRetries);
                         return true;
                     }
-                    
+
                     LogFailure(typeof(T).Name, topic, key, result.ErrorMessage, attempt, maxRetries);
                 }
                 catch (Exception ex)
@@ -185,29 +216,30 @@ namespace SystemConfigurationService.BusinessLogic.Services.MessagingServices
         private void LogSuccess(string messageType, string topic, string? key, string messageId, int attempt, int maxRetries)
         {
             var keyInfo = key != null ? $"Key: {key}" : "Key: null (random partition)";
-            
+
             if (attempt == 1)
-                _logger.LogDebug("Message sent successfully - MessageType: {MessageType}, Topic: {Topic}, {KeyInfo}, MessageId: {MessageId}", 
+                _logger.LogDebug("Message sent successfully - MessageType: {MessageType}, Topic: {Topic}, {KeyInfo}, MessageId: {MessageId}",
                     messageType, topic, keyInfo, messageId);
             else
-                _logger.LogInformation("Message sent successfully on attempt {Attempt}/{MaxRetries} - MessageType: {MessageType}, {KeyInfo}", 
+                _logger.LogInformation("Message sent successfully on attempt {Attempt}/{MaxRetries} - MessageType: {MessageType}, {KeyInfo}",
                     attempt, maxRetries, messageType, keyInfo);
         }
 
         private void LogFailure(string messageType, string topic, string? key, string error, int attempt, int maxRetries)
         {
             var keyInfo = key != null ? $"Key: {key}" : "Key: null (random partition)";
-            _logger.LogError("Failed to send message (attempt {Attempt}/{MaxRetries}) - MessageType: {MessageType}, Topic: {Topic}, {KeyInfo}, Error: {Error}", 
+            _logger.LogError("Failed to send message (attempt {Attempt}/{MaxRetries}) - MessageType: {MessageType}, Topic: {Topic}, {KeyInfo}, Error: {Error}",
                 attempt, maxRetries, messageType, topic, keyInfo, error);
         }
 
         private void LogException(Exception ex, string messageType, string topic, string? key, int attempt, int maxRetries)
         {
             var keyInfo = key != null ? $"Key: {key}" : "Key: null (random partition)";
-            _logger.LogError(ex, "Exception while sending message (attempt {Attempt}/{MaxRetries}) - MessageType: {MessageType}, Topic: {Topic}, {KeyInfo}", 
+            _logger.LogError(ex, "Exception while sending message (attempt {Attempt}/{MaxRetries}) - MessageType: {MessageType}, Topic: {Topic}, {KeyInfo}",
                 attempt, maxRetries, messageType, topic, keyInfo);
         }
 
         #endregion
     }
+
 }

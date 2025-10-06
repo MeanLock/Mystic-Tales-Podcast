@@ -1065,7 +1065,7 @@ CREATE TABLE BookingStorageTransaction (
 
 -- SagaInstance table
 CREATE TABLE SagaInstance (
-    sagaId UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY,
     flowName NVARCHAR(250) NOT NULL,
     currentStepName NVARCHAR(250) NULL,
     initialData NVARCHAR(MAX) NULL,
@@ -1081,7 +1081,7 @@ CREATE TABLE SagaInstance (
 -- SagaStepExecution table
 CREATE TABLE SagaStepExecution (
     id UNIQUEIDENTIFIER PRIMARY KEY,
-    sagaId UNIQUEIDENTIFIER NOT NULL,
+    sagaInstanceId UNIQUEIDENTIFIER NOT NULL,
     stepName NVARCHAR(250) NOT NULL,
     topicName NVARCHAR(250) NOT NULL,
     stepStatus NVARCHAR(50) NOT NULL,
@@ -1089,5 +1089,5 @@ CREATE TABLE SagaStepExecution (
     responseData NVARCHAR(MAX) NULL,
     errorMessage NVARCHAR(MAX) NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    FOREIGN KEY (sagaId) REFERENCES SagaInstance(sagaId)
+    FOREIGN KEY (sagaInstanceId) REFERENCES SagaInstance(id)
 );

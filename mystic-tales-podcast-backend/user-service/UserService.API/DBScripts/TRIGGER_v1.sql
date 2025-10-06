@@ -554,6 +554,6 @@ BEGIN
     UPDATE SagaInstance
     SET updatedAt = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)
     FROM SagaInstance s
-    INNER JOIN inserted i ON s.sagaId = i.sagaId;
+    INNER JOIN inserted i ON s.id = i.id;
 END;
 GO
