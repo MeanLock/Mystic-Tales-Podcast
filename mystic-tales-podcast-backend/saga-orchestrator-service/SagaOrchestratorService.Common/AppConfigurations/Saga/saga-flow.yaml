@@ -4757,15 +4757,12 @@ flows:
         description: "Staff resolve podcast show report và chạy flow show-deletion-flow nếu có phạt"
         parameters:
           - IsResolved
-          - ResolvedViolationPoint
           - PodcastShowReportReviewSessionId
         next-request-data:
           - IsResolved
-          - ResolvedViolationPoint
           - PodcastShowReportReviewSessionId
         response-data:
           - IsResolved
-          - ResolvedViolationPoint
           - PodcastShowReportReviewSessionId
           - UpdatedAt
         onSuccess:
@@ -4793,15 +4790,12 @@ flows:
         description: "Staff resolve podcast episode report và chạy flow episode-deletion-flow nếu có phạt"
         parameters:
           - IsResolved
-          - ResolvedViolationPoint
           - PodcastEpisodeReportReviewSessionId
         next-request-data:
           - IsResolved
-          - ResolvedViolationPoint
           - PodcastEpisodeReportReviewSessionId
         response-data:
           - IsResolved
-          - ResolvedViolationPoint
           - PodcastEpisodeReportReviewSessionId
           - UpdatedAt
         onSuccess:

@@ -5,7 +5,7 @@ using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.DataAccess.Enums.Saga;
 using SagaOrchestratorService.DataAccess.Repositories.interfaces;
 
-namespace SagaOrchestratorService.BusinessLogic.Services.DbServices
+namespace SagaOrchestratorService.BusinessLogic.Services.DbServices.SagaServices
 {
     public class SagaInstanceService
     {
