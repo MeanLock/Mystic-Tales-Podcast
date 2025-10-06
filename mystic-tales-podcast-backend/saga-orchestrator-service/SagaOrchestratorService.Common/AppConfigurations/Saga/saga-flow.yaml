@@ -5830,3 +5830,122 @@ flows:
         handle-service: "TransactionService"
         nextSteps: []
         nextFlows: []
+
+  test-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Flow test"
+    save-file: ""
+    steps:
+      - name: "step1"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Step test"
+        parameters:
+          - TestParam
+        next-request-data:
+          - TestParam
+        response-data:
+          - TestParam
+        onSuccess:
+          emit: "step1.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "step2"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+            - name: "step111"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "step1.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "step2"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Step test"
+        parameters:
+          - TestParam
+        next-request-data:
+          - TestParam
+        response-data:
+          - TestParam
+        onSuccess:
+          emit: "step2.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "test-flow-2"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+        onFailure:
+          emit: "step2.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "test-flow-3"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+  test-flow-2:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Flow test 2"
+    save-file: ""
+    steps:
+      - name: "step11"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Step test 2"
+        parameters:
+          - TestParam
+        next-request-data:
+          - TestParam
+        response-data:
+          - TestParam
+        onSuccess:
+          emit: "step11.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "step11.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+  test-flow-3:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Flow test 3"
+    save-file: ""
+    steps:
+      - name: "step111"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Step test 3"
+        parameters:
+          - TestParam
+        next-request-data:
+          - TestParam
+        response-data:
+          - TestParam
+        onSuccess:
+          emit: "step111.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "step111.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []

@@ -62,7 +62,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                 var outcome = await FindOutcomeByEmit(emit, sagaId);
                 if (outcome == null)
                 {
-                    _logger.LogWarning("Emit '{Emit}' not found in the Saga {SagaId} Instance", emit, sagaId);
+                    _logger.LogWarning("Something went really wrong");
                     return;
                 }
 
@@ -74,9 +74,9 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
 
                 // Extract step name from emit (e.g., "create-order.success" -> "create-order")
                 var stepName = emit.Contains('.') ? emit.Substring(0, emit.LastIndexOf('.')) : emit;
-                
+
                 // Extract error message from RequestData if present
-                var errorMessage = responseData["errorMessage"]?.ToString();
+                var errorMessage = responseData["ErrorMessage"]?.ToString();
 
                 if (isSuccess)
                 {
@@ -86,33 +86,11 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     // Keep saga status as RUNNING - do not update ResultData yet
                     await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.RUNNING);
 
-                    // 1) Fan-out next steps
-                    foreach (var step in outcome.Value.NextSteps)
-                    {
-                        // Create step execution for next step
-                        await _sagaInstanceService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, SerializeToJson(requestData));
-
-                        // Update saga current step
-                        await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
-
-                        var SagaCommandMessage = _kafkaProducerService.PrepareSagaCommandMessage(step.Topic, requestData, responseData, currentSagaId, flowName, step.Name);
-                        var result = await _messaging.SendSagaMessageAsync(SagaCommandMessage);
-                        if(result)
-                            _logger.LogInformation("Emit '{Emit}' -> step '{Step}' sent to '{Topic}' (SagaId: {SagaId})",
-                            emit, step.Name, step.Topic, currentSagaId);
-                        else
-                        {
-                            // Add a statement or block here to avoid syntax errors.
-                            _logger.LogWarning("Emit '{Emit}' -> failed to send step '{Step}' to '{Topic}' (SagaId: {SagaId})",
-                            emit, step.Name, step.Topic, currentSagaId);
-                        }
-                    }
-
                     // Check if no more next steps - check for saga completion
                     if (outcome.Value.NextSteps.Count == 0)
                     {
                         await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, null);
-                        
+
                         // Check if saga is complete and update ResultData only when completing
                         var isCompleted = await _sagaInstanceService.CheckAndUpdateSagaCompletionAsync(currentSagaId);
                         if (isCompleted)
@@ -123,6 +101,31 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                             _logger.LogInformation("Saga completed successfully: {SagaId}, ResultData updated", currentSagaId);
                         }
                     }
+                    else
+                    {
+                        // Fan-out next steps
+                        foreach (var step in outcome.Value.NextSteps)
+                        {
+                            // Create step execution for next step
+                            await _sagaInstanceService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, SerializeToJson(requestData));
+
+                            // Update saga current step
+                            await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
+
+                            var SagaCommandMessage = _kafkaProducerService.PrepareSagaCommandMessage(step.Topic, requestData, responseData, currentSagaId, flowName, step.Name);
+                            var result = await _messaging.SendSagaMessageAsync(SagaCommandMessage);
+                            if (result)
+                                _logger.LogInformation("Emit '{Emit}' -> step '{Step}' sent to '{Topic}' (SagaId: {SagaId})",
+                                emit, step.Name, step.Topic, currentSagaId);
+                            else
+                            {
+                                _logger.LogWarning("Emit '{Emit}' -> failed to send step '{Step}' to '{Topic}' (SagaId: {SagaId})",
+                                emit, step.Name, step.Topic, currentSagaId);
+                            }
+                        }
+                    }
+
+
 
                     // 2) Start next flows (multiple flows support)
                     foreach (var nextFlow in outcome.Value.NextFlows)
@@ -139,7 +142,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                             // Use the topic from nextFlow if specified, otherwise fallback to flowDef.Topic
                             var targetTopic = !string.IsNullOrWhiteSpace(nextFlow.Topic) ? nextFlow.Topic : flowDef.Topic;
                             
-                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(targetTopic, requestData, currentSagaId, nextFlow.Name);
+                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(targetTopic, requestData, null, nextFlow.Name);
                             var result = await _messaging.SendSagaMessageAsync(startSagaTriggerMessage);
                             if(result)
                                 _logger.LogInformation("Emit '{Emit}' -> start flow '{Flow}' to '{Topic}'",
@@ -162,7 +165,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     var resultDataJson = SerializeToJson(responseData);
                     await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.FAILED, resultDataJson, stepName, sagaErrorMessage);
 
-                    _logger.LogWarning("Saga failed: {SagaId}, Step: {StepName}, Emit: {Emit}, Error: {ErrorMessage}, ResultData updated", 
+                    _logger.LogWarning("Saga failed: {SagaId}, Step: {StepName}, Emit: {Emit}, Error: {ErrorMessage}, ResultData updated",
                         currentSagaId, stepName, emit, sagaErrorMessage);
                 }
                 else

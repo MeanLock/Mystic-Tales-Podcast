@@ -215,7 +215,7 @@ namespace UserService.Infrastructure.Services.Kafka
 
         private string? ExtractMessageTypeFromHeader(Headers headers)
         {
-            if (headers != null && headers.TryGetLastBytes("MessageType", out var messageTypeBytes))
+            if (headers != null && headers.TryGetLastBytes("MessageName", out var messageTypeBytes))
             {
                 return Encoding.UTF8.GetString(messageTypeBytes);
             }
@@ -227,7 +227,7 @@ namespace UserService.Infrastructure.Services.Kafka
             try
             {
                 using var document = JsonDocument.Parse(messageBody);
-                if (document.RootElement.TryGetProperty("MessageType", out var messageTypeElement))
+                if (document.RootElement.TryGetProperty("MessageName", out var messageTypeElement))
                 {
                     return messageTypeElement.GetString();
                 }
