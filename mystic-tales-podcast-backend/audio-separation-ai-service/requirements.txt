@@ -17,7 +17,8 @@ soundfile
 numpy
 
 # For model handling
-onnxruntime
+# onnxruntime
+onnxruntime-gpu
 
 # FFmpeg auto-detection and management (similar to FFMpegCore)
 imageio-ffmpeg
