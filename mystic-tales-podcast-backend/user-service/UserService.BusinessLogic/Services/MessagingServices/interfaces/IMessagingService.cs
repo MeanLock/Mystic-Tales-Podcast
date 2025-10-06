@@ -23,9 +23,10 @@ namespace UserService.BusinessLogic.Services.MessagingServices.interfaces
         #region Batch Methods
         // With keys
         Task<bool> SendMessagesAsync<T>(IEnumerable<(T message, string key)> messages, string? topic = null) where T : BaseMessage;
-        
+
         // Without keys (random partition)
         Task<bool> SendMessagesAsync<T>(IEnumerable<T> messages, string? topic = null) where T : BaseMessage;
         #endregion
     }
+
 }
