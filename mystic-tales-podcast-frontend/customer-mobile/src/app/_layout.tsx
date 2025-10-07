@@ -14,6 +14,7 @@ import { useColorScheme } from "@/src/components/useColorScheme";
 // Import your global CSS file
 import "../../global.css";
 import { store } from "../store/store";
+import { bootstrapAuth } from "../utils/helpers/boostrapHelper";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -56,11 +57,18 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
+  useEffect(() => {
+    bootstrapAuth(store.dispatch);
+  }, []);
+
   return (
     <Provider store={store}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(content)" options={{ headerShown: false }} />
+          <Stack.Screen name="(user)" options={{ headerShown: false }} />
         </Stack>
       </ThemeProvider>
     </Provider>

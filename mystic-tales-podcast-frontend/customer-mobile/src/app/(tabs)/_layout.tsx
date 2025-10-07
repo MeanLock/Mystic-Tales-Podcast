@@ -4,6 +4,7 @@ import React, {
   useState,
   useContext,
   createContext,
+  useEffect,
 } from "react";
 import { Tabs, usePathname, useRouter } from "expo-router";
 import {
@@ -14,14 +15,22 @@ import {
   Platform,
   Animated,
   useWindowDimensions,
+  Image,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import Colors, { primaryThemeColor } from "@/src/constants/Colors";
+import Colors, {
+  primaryThemeColor,
+  secondaryThemeColor,
+  tintColorDark,
+  tintColorLight,
+} from "@/src/constants/Colors";
 import { useColorScheme } from "@/src/components/useColorScheme";
 import { useClientOnlyValue } from "@/src/components/useClientOnlyValue";
+import { useSelector } from "react-redux";
+import { RootState } from "@/src/store/store";
 
 /** ---------- Context: chia sẻ scrollY & headerHeight cho các tab ---------- **/
 type HeaderScrollCtx = {
@@ -63,13 +72,21 @@ function useHeaderMetrics() {
 
 /** ---------- Header sticky đổi nền theo scroll ---------- **/
 function StickyHeader({ scrollY }: { scrollY: Animated.Value }) {
+  const colorScheme = useColorScheme();
   const pathname = usePathname();
   const router = useRouter();
   const { titleSize, paddingH, paddingTopExtra, headerHeight, insetsTop } =
     useHeaderMetrics();
+  const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const user = useSelector((s: RootState) => s.auth.user);
 
-  // const user = useSelector((s: RootState) => s.auth.user);
-  const user = null;
+  useEffect(() => {
+    // Do something with user
+    if (user && user.MainImageFileKey) {
+      const url = `https://i.pinimg.com/736x/10/6f/42/106f420c687f8fbd7ea73250e3c559e9.jpg`;
+      setImgUrl(url);
+    }
+  }, [user]);
 
   const title = useMemo(() => {
     if (pathname.startsWith("/explore")) return "Explore";
@@ -120,7 +137,10 @@ function StickyHeader({ scrollY }: { scrollY: Animated.Value }) {
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: "black", opacity: blackOpacity },
+          {
+            backgroundColor: colorScheme === "dark" ? "black" : "white",
+            opacity: blackOpacity,
+          },
         ]}
       />
 
@@ -130,15 +150,21 @@ function StickyHeader({ scrollY }: { scrollY: Animated.Value }) {
       >
         <BlurView
           intensity={80} // 👈 tăng lên 80 hoặc 90 để “nhòe” hơn
-          tint="dark"
+          tint={colorScheme === "dark" ? "dark" : "light"}
           style={StyleSheet.absoluteFill}
         />
         <View
           style={[
             StyleSheet.absoluteFill,
             {
-              backgroundColor: "rgba(255,255,255,0.1)", // overlay trắng nhẹ
-              borderBottomColor: "rgba(255,255,255,0.25)", // viền sáng hơn
+              backgroundColor:
+                colorScheme === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(255,255,255,0.1)", // overlay trắng nhẹ
+              borderBottomColor:
+                colorScheme === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(255,255,255,0.1)", // viền sáng hơn
               borderBottomWidth: StyleSheet.hairlineWidth,
             },
           ]}
@@ -161,22 +187,43 @@ function StickyHeader({ scrollY }: { scrollY: Animated.Value }) {
             { opacity: rowOpacity, transform: [{ translateY: rowTranslateY }] },
           ]}
         >
-          <Text style={[styles.title, { fontSize: titleSize }]}>{title}</Text>
+          <Text
+            style={[
+              styles.title,
+              {
+                fontSize: titleSize,
+                color: colorScheme === "dark" ? tintColorDark : tintColorLight,
+              },
+            ]}
+          >
+            {title}
+          </Text>
 
           {user ? (
             <Pressable
-              onPress={() => router.push("/(user)/profile/index")}
+              onPress={() => router.push("/(user)/profile")}
               style={styles.userBadge}
             >
-              <MaterialIcons name="person" size={18} />
-              <Text style={styles.userText} numberOfLines={1}>
-                Profile
-              </Text>
+              <Image
+                source={
+                  imgUrl
+                    ? { uri: imgUrl }
+                    : require("@/assets/images/login/logo.png")
+                }
+                style={styles.userAvatar}
+                resizeMode="cover"
+              />
             </Pressable>
           ) : (
             <Pressable
               onPress={() => router.push("/(auth)/login")}
-              style={styles.loginBtn}
+              style={[
+                styles.loginBtn,
+                {
+                  backgroundColor:
+                    colorScheme === "dark" ? tintColorDark : tintColorLight,
+                },
+              ]}
             >
               <Text style={styles.loginText}>Login</Text>
             </Pressable>
@@ -200,7 +247,7 @@ function StickyHeader({ scrollY }: { scrollY: Animated.Value }) {
             style={{
               fontSize: Math.max(18, titleSize * 0.5),
               fontWeight: "800",
-              color: "#fff",
+              color: colorScheme === "dark" ? "#fff" : "#000",
             }}
             numberOfLines={1}
           >
@@ -233,13 +280,11 @@ export default function TabLayout() {
 
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+            tabBarActiveTintColor:
+              Colors[colorScheme ?? "light"].tabIconSelected,
+            tabBarInactiveTintColor:
+              Colors[colorScheme ?? "light"].tabIconDefault,
             headerShown: false,
-
-            // Đẩy content xuống dưới đúng bằng headerHeight
-            sceneStyle: {
-              // paddingTop: headerHeight,
-            },
 
             tabBarStyle: {
               position: "absolute",
@@ -341,23 +386,26 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     fontWeight: "800",
-    color: primaryThemeColor,
   },
   loginBtn: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: primaryThemeColor,
     borderRadius: 10,
   },
   loginText: { fontWeight: "700", color: "#111" },
   userBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
     backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: 10,
+    borderRadius: 9999,
+    padding: 2,
     gap: 6,
+  },
+  userAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.06)", // fallback background while loading
   },
   userText: { color: "#fff", maxWidth: 120 },
   searchBox: {

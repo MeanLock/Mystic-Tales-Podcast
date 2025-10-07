@@ -1,22 +1,31 @@
+// ...existing code...
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { User } from "@/src/types/user";
 
-type AuthState = { user: any | null; isLoggedIn: boolean };
-const initialState: AuthState = { user: null, isLoggedIn: false };
+type AuthType = { user: User | null; accessToken: string | null };
 
-const authSlice = createSlice({
+const initialState: AuthType = { user: null, accessToken: null };
+
+const slice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setLoggedIn(state, action: PayloadAction<any>) {
-      state.user = action.payload; // object user
-      state.isLoggedIn = true;
+    setCredentials: (
+      s,
+      a: PayloadAction<{ user: User | null; accessToken?: string | null }>
+    ) => {
+      s.user = a.payload.user ?? null;
+      // set accessToken if provided (keeps existing if undefined)
+      if (typeof a.payload.accessToken !== "undefined") {
+        s.accessToken = a.payload.accessToken ?? null;
+      }
     },
-    setLoggedOut(state) {
-      state.user = null;
-      state.isLoggedIn = false;
+    logoutLocal: (s) => {
+      s.user = null;
+      s.accessToken = null;
     },
   },
 });
-
-export const { setLoggedIn, setLoggedOut } = authSlice.actions;
-export default authSlice.reducer;
+export const { setCredentials, logoutLocal } = slice.actions;
+export default slice.reducer;
+export type AuthState = ReturnType<typeof slice.getInitialState>;
