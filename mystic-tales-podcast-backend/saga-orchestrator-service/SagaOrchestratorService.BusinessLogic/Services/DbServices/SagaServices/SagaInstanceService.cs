@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SagaOrchestratorService.DataAccess.Entities;
+using SagaOrchestratorService.DataAccess.Entities.SqlServer;
 using SagaOrchestratorService.DataAccess.Enums.Saga;
 using SagaOrchestratorService.DataAccess.Repositories.interfaces;
 

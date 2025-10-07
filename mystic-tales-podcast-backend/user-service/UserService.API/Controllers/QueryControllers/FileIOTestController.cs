@@ -1,12 +1,5 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using UserService.API.Filters.ExceptionFilters;
-using UserService.BusinessLogic.DTOs.Auth;
-using UserService.BusinessLogic.DTOs.Feedback;
-using UserService.BusinessLogic.Services.DbServices.MiscServices;
-using UserService.BusinessLogic.Services.DbServices.UserServices;
-using UserService.DataAccess.Entities;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using System.Text;
 using UserService.Common.AppConfigurations.Media.interfaces;

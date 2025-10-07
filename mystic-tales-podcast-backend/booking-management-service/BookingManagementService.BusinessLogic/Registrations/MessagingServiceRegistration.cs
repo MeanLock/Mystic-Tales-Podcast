@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.BusinessLogic.Services.MessagingServices;
 using BookingManagementService.BusinessLogic.MessageHandlers;
-using BookingManagementService.BusinessLogic.Services.DbServices.BookingManagementServices;
 
 namespace BookingManagementService.BusinessLogic.Registrations
 {
@@ -21,7 +20,6 @@ namespace BookingManagementService.BusinessLogic.Registrations
             services.AddSingleton<IHandlerRegistryService, HandlerRegistryService>();
             services.AddHostedService<HandlerRegistrationHostedService>();
             
-            services.AddScoped<AuthMessagingService>();
             return services;
         }
     }

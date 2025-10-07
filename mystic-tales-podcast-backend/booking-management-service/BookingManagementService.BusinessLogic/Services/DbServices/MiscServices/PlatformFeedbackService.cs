@@ -223,63 +223,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.MiscService
             }
         }
 
-        public async Task ConfirmPayment(WebhookType webhookBody)
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    if (webhookBody == null)
-                    {
-                        throw new Exception("Invalid webhook data.");
-                    }
-                    if (webhookBody.data.description == "VQRIO123")
-                    {
-                        return;
-                    }
-                    // Console.WriteLine("\n\n\n" + JsonConvert.SerializeObject(webhookBody, Formatting.Indented) + "\n\n\n");
-
-                    // Retrieve the payment history record
-                    AccountBalanceTransaction? accountBalanceTransaction = await _unitOfWork.AccountBalanceTransactionRepository.FindByIdAsync((int)webhookBody.data.orderCode);
-                    if (accountBalanceTransaction == null)
-                    {
-                        throw new HttpRequestException("Payment history not found.");
-                    }
-
-                    if (webhookBody.code == "00")
-                    {
-                        accountBalanceTransaction.TransactionStatusId = 2;
-                    }
-                    else
-                    {
-                        accountBalanceTransaction.TransactionStatusId = 4;
-                    }
-
-                    await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
-
-                    if (accountBalanceTransaction.TransactionTypeId == 5)
-                    {
-                        accountBalanceTransaction.Account.Balance += accountBalanceTransaction.Amount;
-                    }
-                    else if (accountBalanceTransaction.TransactionTypeId == 6)
-                    {
-                        accountBalanceTransaction.Account.Balance -= accountBalanceTransaction.Amount;
-                    }
-                    await _accountGenericRepository.UpdateAsync(accountBalanceTransaction.Account.Id, accountBalanceTransaction.Account);
-
-                    // Commit the transaction
-                    await transaction.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine("\n" + ex.StackTrace + "\n");
-                    throw new HttpRequestException("Payment confirmation failed.");
-                }
-            }
-        }
-
         public async Task<List<AccountBalanceTransactionDTO>> GetAccountBalanceDepositHistory(Account account)
         {
             try

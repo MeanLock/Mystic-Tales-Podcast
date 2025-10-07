@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
 using PodcastService.BusinessLogic.Services.MessagingServices;
 using PodcastService.BusinessLogic.MessageHandlers;
-using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 
 namespace PodcastService.BusinessLogic.Registrations
 {
@@ -21,7 +20,6 @@ namespace PodcastService.BusinessLogic.Registrations
             services.AddSingleton<IHandlerRegistryService, HandlerRegistryService>();
             services.AddHostedService<HandlerRegistrationHostedService>();
             
-            services.AddScoped<AuthMessagingService>();
             return services;
         }
     }

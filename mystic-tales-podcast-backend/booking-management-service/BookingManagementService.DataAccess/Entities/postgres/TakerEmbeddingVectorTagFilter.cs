@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using Pgvector;
 
-namespace BookingManagementService.DataAccess.Entities.postgres;
+namespace BookingManagementService.DataAccess.Entities.Postgres;
 
 public partial class TakerEmbeddingVectorTagFilter
 {

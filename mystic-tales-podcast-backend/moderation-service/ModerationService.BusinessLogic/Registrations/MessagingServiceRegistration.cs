@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using ModerationService.BusinessLogic.Services.MessagingServices.interfaces;
 using ModerationService.BusinessLogic.Services.MessagingServices;
 using ModerationService.BusinessLogic.MessageHandlers;
-using ModerationService.BusinessLogic.Services.DbServices.ModerationServices;
 
 namespace ModerationService.BusinessLogic.Registrations
 {
@@ -21,7 +20,6 @@ namespace ModerationService.BusinessLogic.Registrations
             services.AddSingleton<IHandlerRegistryService, HandlerRegistryService>();
             services.AddHostedService<HandlerRegistrationHostedService>();
             
-            services.AddScoped<AuthMessagingService>();
             return services;
         }
     }

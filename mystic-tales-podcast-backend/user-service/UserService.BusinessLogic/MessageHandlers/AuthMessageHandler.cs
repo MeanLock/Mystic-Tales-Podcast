@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using UserService.BusinessLogic.Attributes;
 using UserService.BusinessLogic.Enums.Kafka;
-using UserService.BusinessLogic.Services.DbServices.UserServices;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using UserService.Infrastructure.Models.Kafka;
 using UserService.Infrastructure.Services.Kafka;
@@ -12,19 +11,16 @@ namespace UserService.BusinessLogic.MessageHandlers
 {
     public class AuthMessageHandler : BaseSagaCommandMessageHandler
     {
-        private readonly AuthMessagingService _authMessagingService;
         private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.UserManagementDomain;
 
 
         public AuthMessageHandler(
-            AuthMessagingService facilityMessagingService,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
             ILogger<AuthMessageHandler> logger) : base(messagingService, kafkaProducerService, logger)
         {
-            _authMessagingService = facilityMessagingService;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
         }
@@ -46,7 +42,6 @@ namespace UserService.BusinessLogic.MessageHandlers
                 }
 
                 // Business logic: Process forgot password
-                await _authMessagingService.ForgotPassword(forgotPasswordEvent.Email_Forgot);
 
                 // Example: Send follow-up message after processing
                 var notificationEvent = new EmailNotificationEvent

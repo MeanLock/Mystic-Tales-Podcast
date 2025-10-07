@@ -1,24 +1,28 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using PodcastService.BusinessLogic.Attributes;
-using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
+using PodcastService.BusinessLogic.Enums.Kafka;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
 using PodcastService.Infrastructure.Models.Kafka;
+using PodcastService.Infrastructure.Services.Kafka;
 
 namespace PodcastService.BusinessLogic.MessageHandlers
 {
-    public class AuthMessageHandler : BaseMessageHandler
+    public class AuthMessageHandler : BaseSagaCommandMessageHandler
     {
-        private readonly AuthMessagingService _authMessagingService;
         private readonly IMessagingService _messagingService;
+        private readonly KafkaProducerService _kafkaProducerService;
+        private const string SAGA_TOPIC = KafkaTopicEnum.UserManagementDomain;
+
 
         public AuthMessageHandler(
-            AuthMessagingService facilityMessagingService,
             IMessagingService messagingService,
-            ILogger<AuthMessageHandler> logger) : base(logger)
+            KafkaProducerService kafkaProducerService,
+            ILogger<AuthMessageHandler> logger) : base(messagingService, kafkaProducerService, logger)
         {
-            _authMessagingService = facilityMessagingService;
             _messagingService = messagingService;
+            _kafkaProducerService = kafkaProducerService;
         }
 
         [MessageHandler("ForgotPasswordEvent", "auth-events")]
@@ -27,7 +31,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
             try
             {
                 _logger.LogInformation("Processing ForgotPassword for key: {Key}", key);
-                
+
                 var envelope = DeserializeMessage<MessageEnvelope<ForgotPasswordEvent>>(messageJson);
                 var forgotPasswordEvent = envelope?.Data;
 
@@ -38,7 +42,6 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 }
 
                 // Business logic: Process forgot password
-                await _authMessagingService.ForgotPassword(forgotPasswordEvent.Email_Forgot);
 
                 // Example: Send follow-up message after processing
                 var notificationEvent = new EmailNotificationEvent
@@ -48,7 +51,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                     Message = $"tôi là HUYYYYYYYYYYYYYYYYYYYYY"
                 };
 
-                await _messagingService.SendMessageAsync(notificationEvent,null, "notification-events");
+                await _messagingService.SendMessageAsync(notificationEvent, null, "notification-events");
 
             }
             catch (Exception ex)
@@ -59,7 +62,42 @@ namespace PodcastService.BusinessLogic.MessageHandlers
         }
 
 
-        
+
+        [MessageHandler("create-booking", "booking-management")]
+        public async Task HandleCreateBookingAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    _logger.LogInformation("Creating booking for account {AccountId}",
+                        command.RequestData["accountId"]);
+
+                    // Extract data from RequestData (JObject)
+                    // var booking = await _bookingService.CreateBookingAsync(
+                    //     accountId: command.RequestData["accountId"]!.Value<int>(),
+                    //     podcastBuddyId: command.RequestData["podcastBuddyId"]!.Value<int>(),
+                    //     title: command.RequestData["title"]!.Value<string>()!,
+                    //     description: command.RequestData["description"]!.Value<string>()!
+                    // );
+
+                    // Return response as JObject
+                    // return await Task.FromResult(JObject.FromObject(new
+                    // {
+                    //     // bookingId = booking.Id,
+                    //     // accountId = booking.AccountId,
+                    //     // podcastBuddyId = booking.PodcastBuddyId,
+                    //     status = "created"
+                    // }));
+                },
+                responseTopic: SAGA_TOPIC,
+                // successEmit: "create-booking.success", // From YAML onSuccess.emit
+                failedEmitMessage: "create-booking.failed"    // From YAML onFailure.emit
+            );
+        }
+
+
+
     }
 
     #region Event DTOs
@@ -73,7 +111,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
             MessageType = nameof(ForgotPasswordEvent);
         }
     }
-    
+
     public class EmailNotificationEvent : BaseMessage
     {
         public string To { get; set; } = string.Empty;

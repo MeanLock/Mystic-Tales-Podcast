@@ -28,25 +28,24 @@ namespace SubscriptionService.BusinessLogic.Services.MessagingServices
             return await SendMessageCoreAsync(message, key, resolvedTopic, null, 1);
         }
 
-        public async Task<bool> SendSagaMessageAsync<T>(string topic, string? key, JObject requestData, JObject? responseData, Guid? sagaId, string? flowName, string messageName,
-            int maxRetries = 1) where T : BaseMessage
+        public async Task<bool> SendSagaMessageAsync<T>( T message, string? key = null, int maxRetries = 1) where T : SagaBaseMessage
         {
             // Retry logic
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
                 try
                 {
-                    var result = await _kafkaProducer.SendSagaMessageAsync<T>(topic, key, requestData, responseData, sagaId, flowName, messageName);
+                    var result = await _kafkaProducer.SendSagaMessageAsync<T>(message, key);
                     if (result.Success)
                     {
-                        LogSuccess(typeof(T).Name, topic, key, sagaId?.ToString() ?? "N/A", attempt, maxRetries);
+                        LogSuccess(typeof(T).Name, message.MessageTopic, key, message.ToString() ?? "N/A", attempt, maxRetries);
                         return true;
                     }
-                    LogFailure(typeof(T).Name, topic, key, result.ErrorMessage, attempt, maxRetries);
+                    LogFailure(typeof(T).Name, message.MessageTopic, key, result.ErrorMessage, attempt, maxRetries);
                 }
                 catch (Exception ex)
                 {
-                    LogException(ex, typeof(T).Name, topic, key, attempt, maxRetries);
+                    LogException(ex, typeof(T).Name, message.MessageTopic, key, attempt, maxRetries);
                 }
 
                 if (attempt < maxRetries)
@@ -139,7 +138,7 @@ namespace SubscriptionService.BusinessLogic.Services.MessagingServices
             {
                 try
                 {
-                    var result = await _kafkaProducer.SendMessageAsync(topic, key, message);
+                    var result = await _kafkaProducer.SendMessageAsync(topic, message, key);
 
                     if (result.Success)
                     {

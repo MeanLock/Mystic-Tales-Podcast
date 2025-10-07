@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using Pgvector;
 
-namespace UserService.DataAccess.Entities.postgres;
+namespace UserService.DataAccess.Entities.Postgres;
 
 public partial class SurveyEmbeddingVectorTagFilter
 {

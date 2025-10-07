@@ -3,7 +3,6 @@ using SagaOrchestratorService.BusinessLogic.Services.DbServices;
 using SagaOrchestratorService.BusinessLogic.Services.DbServices.SagaServices;
 using SagaOrchestratorService.BusinessLogic.Services.MessagingServices.interfaces;
 using SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces;
-using SagaOrchestratorService.DataAccess.Entities;
 using SagaOrchestratorService.DataAccess.Enums.Saga;
 using SagaOrchestratorService.Infrastructure.Models.Kafka;
 using SagaOrchestratorService.Infrastructure.Services.Kafka;

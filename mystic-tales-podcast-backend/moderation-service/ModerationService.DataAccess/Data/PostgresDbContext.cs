@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using ModerationService.DataAccess.Entities.postgres;
+using ModerationService.DataAccess.Entities.Postgres;
 
 namespace ModerationService.DataAccess.Data;
 

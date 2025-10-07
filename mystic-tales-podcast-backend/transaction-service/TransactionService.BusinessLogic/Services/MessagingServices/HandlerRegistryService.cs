@@ -29,25 +29,25 @@ namespace TransactionService.BusinessLogic.Services.MessagingServices
             return _messageHandlers;
         }
 
-        public Dictionary<string, List<string>> GetTopicMessageTypes()
+        public Dictionary<string, List<string>> GetTopicMessageNames()
         {
-            var topicMessageTypes = new Dictionary<string, List<string>>();
+            var topicMessageNames = new Dictionary<string, List<string>>();
             
             var allHandlers = CollectAllHandlers();
             foreach (var handler in allHandlers)
             {
-                if (!topicMessageTypes.ContainsKey(handler.Topic))
+                if (!topicMessageNames.ContainsKey(handler.Topic))
                 {
-                    topicMessageTypes[handler.Topic] = new List<string>();
+                    topicMessageNames[handler.Topic] = new List<string>();
                 }
                 
-                if (!topicMessageTypes[handler.Topic].Contains(handler.Attribute.MessageType))
+                if (!topicMessageNames[handler.Topic].Contains(handler.Attribute.MessageName))
                 {
-                    topicMessageTypes[handler.Topic].Add(handler.Attribute.MessageType);
+                    topicMessageNames[handler.Topic].Add(handler.Attribute.MessageName);
                 }
             }
             
-            return topicMessageTypes;
+            return topicMessageNames;
         }
 
         public void RegisterAllHandlers()
@@ -94,18 +94,18 @@ namespace TransactionService.BusinessLogic.Services.MessagingServices
         private void RegisterSingleHandler(Type handlerType, MethodInfo method, MessageHandlerAttribute attribute)
         {
             // Lưu trữ handler type và method info thay vì tạo instance ngay
-            var handlerKey = $"{attribute.MessageType}_{attribute.Topic}";
+            var handlerKey = $"{attribute.MessageName}_{attribute.Topic}";
             _handlerMethods[handlerKey] = (handlerType, method);
 
             // Tạo wrapper delegate để resolve handler khi runtime
             var wrapperDelegate = CreateHandlerWrapper(handlerType, method);
 
             // Lưu trữ handler delegate để KafkaConsumerService có thể lấy
-            _messageHandlers[attribute.MessageType] = wrapperDelegate;
+            _messageHandlers[attribute.MessageName] = wrapperDelegate;
 
             _logger.LogInformation(
-                "Registered handler: {HandlerType}.{MethodName} for MessageType: {MessageType} on Topic: {Topic}",
-                handlerType.Name, method.Name, attribute.MessageType, attribute.Topic);
+                "Registered handler: {HandlerType}.{MethodName} for MessageName: {MessageName} on Topic: {Topic}",
+                handlerType.Name, method.Name, attribute.MessageName, attribute.Topic);
         }
 
         private Func<string, string, Task> CreateHandlerWrapper(Type handlerType, MethodInfo method)
@@ -122,9 +122,9 @@ namespace TransactionService.BusinessLogic.Services.MessagingServices
             };
         }
 
-        public void UnregisterHandler(string messageType)
+        public void UnregisterHandler(string messageName)
         {
-            _logger.LogInformation("Unregistered handler for MessageType: {MessageType}", messageType);
+            _logger.LogInformation("Unregistered handler for MessageName: {MessageName}", messageName);
         }
     }
 }

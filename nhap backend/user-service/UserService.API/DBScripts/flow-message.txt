@@ -1,0 +1,951 @@
+user-registration-flow
+--> Save file: MainImageFile
+create-account
+--> Description: Nhận thông tin tài khoản để tạo tài khoản
+--> Parameters: Email, Password, FullName, Dob, Gender, Address, Phone, MainImageFileKey, RoleId
+--> NextRequestData: Email, Password, Fullname, Dob, Gender, Address, phone, MainImageFileKey, RoleId
+--> ResponseData: AccountId, CreatedAt, VerifyCode, Email
+
+user-email-verification-flow
+verify-account
+--> Description: Nhận verifyCode và email để xác nhận tài khoản
+--> Parameters: VerifyCode, Email
+--> NextRequestData: VerifyCode, Email
+--> ResponseData: VerifyCode, Email
+
+user-manual-login-flow
+login-account-manual
+--> Description: Nhận thông tin đăng nhập để query
+--> Parameters: Email, Password
+--> NextRequestData: Email, Password, JwtToken
+--> ResponseData: JwtToken
+
+user-google-login-flow
+login-account-google
+--> Description: Nhận AuthorizationCode và RedirectUri để login và gửi về token
+Parameters: AuthorizationCode, RedirectUri
+--> NextRequestData: AuthorizationCode, RedirectUri
+--> ResponseData: JwtToken
+
+user-update-flow
+--> Save file: MainImageFile
+update-user
+--> Description: Nhận thông tin account để cập nhật tài khoản
+--> Parameters: AccountId, Email, FullName, Dob, Gender, Address, Phone, MainImageFileKey
+--> NextRequestData: AccountId, Email, FullName, Dob, Gender, Address, Phone, MainImageFileKey
+--> ResponseData: AccountId, Email, FullName, Dob, Gender, Address, Phone, MainImageFileKey, UpdatedAt
+
+forgot-password-flow
+send-reset-password-link
+--> Description: Nhận thông tin account để gửi link reset-password
+--> Parameters: Email
+--> NextRequestData: Email
+--> ResponseData: ResetPasswordLink
+
+password-reset-flow
+reset-account-password
+--> Description: Nhận token, password mới và email để reset-password
+--> Parameters: ResetPasswordToken, Email, NewPassword
+--> NextRequestData: ResetPasswordToken, Email, NewPassword
+--> ResponseData: ResetPasswordToken, Email, NewPassword
+
+podcaster-profile-creation-flow
+--> Save file: CommitmentDocumentFile
+create-podcaster-profile
+--> Description: Tạo profile podcaster cho customer
+--> Parameters: AccountId, Name, Description, CommitmentDocumentFileKey
+--> NextRequestData: AccountId, Name, Description, CommitmentDocumentFileKey
+--> ResponseData: PodcasterProfileId, AccountId, Name, Description, CreatedAt
+
+podcaster-profile-update-flow
+--> Save file: BuddyAudioFile
+update-podcaster-profile
+--> Description: Cập nhật profile của podcaster
+--> Parameters: AccountId, Name, Description, BuddyAudioFileKey
+--> NextRequestData: AccountId, Name, Description, BuddyAudioFileKey
+--> ResponseData: AccountId, Name, Description, BuddyAudioFileKey, UpdatedAt
+
+podcaster-verification-flow
+verify-podcaster
+--> Description: Xác minh podcaster profile bởi staff
+--> Parameters: AccountId, IsVerified
+--> NextRequestData: AccountId, IsVerified
+--> ResponseData: AccountId, IsVerified
+
+podcaster-storage-size-increase-flow
+increase-storage-size
+--> Description: Thêm dung lượng storage cho podcaster
+--> Parameters: StorageSize, AccountId
+--> NextRequestData: StorageSize, AccountId
+--> ResponseData: StorageSize, AccountId, NewStorageSize, UpdatedAt
+
+podcaster-storage-size-decrease-flow
+decrease-storage-size
+--> Description: Giảm dung lượng storage cho podcaster và tăng dưng lượng xài
+--> Parameters: StorageSize, AccountId
+--> NextRequestData: StorageSize, AccountId
+--> ResponseData: StorageSize, AccountId, NewStorageSize, UpdatedAt
+
+user-deactivation-flow
+deactivate-account
+--> Description: Deactivate tài khoản user
+--> Parameters: AccountId, IsDeactivate
+--> NextRequestData: AccountId, IsDeactivate
+--> ResponseData: AccountId, IsDeactivate
+
+user-violation-punishment-flow
+add-account-violation-point
+--> Description: Cộng violation points cho tài khoản
+--> Parameters: AccountId, ViolationPoint
+--> NextRequestData: AccountId, ViolationPoint
+--> ResponseData: AccountId, NewViolationPoint, NewViolationLevel
+
+user-violation-threshold-reach-flow
+check-violation-threshold
+--> Description: Kiểm tra ngưỡng violation để áp dụng punishment
+--> Parameters: AccountId, SystemConfigProfileId
+--> NextRequestData: AccountId, SystemConfigProfileId
+--> ResponseData: AccountId, SystemConfigProfileId, ViolationLevel, PunishmentDays
+
+user-violation-decay-flow
+decrease-account-violation-point
+--> Description: Giảm violation points theo thời gian (automated)
+--> Parameters: AccountId, SystemConfigProfileId
+--> NextRequestData: AccountId, SystemConfigProfileId
+--> ResponseData: AccountId, NewViolationPoint, NewViolationLevel
+
+podcast-listen-tracking-flow (service chạy flow content-statistics-calculation-flow)
+save-episode-history
+--> Description: Lưu lịch sử nghe podcast episode
+--> Parameters: AccountId, PodcastEpisodeId, ListenTimestamp
+--> NextRequestData: AccountId, PodcastEpisodeId, ListenTimestamp
+--> ResponseData: AccountId, PodcastEpisodeId, ListenTimestamp, AccountPodcastListenHistoryId
+
+podcast-buddy-rating-recalculation-flow
+update-podcaster-rating
+--> Description: Tính lại average rating cho podcaster
+--> Parameters: PodcastBuddyId
+--> NextRequestData: PodcastBuddyId
+--> ResponseData: PodcastBuddyId, NewRating
+
+podcaster-follow-flow
+create-podcaster-followed
+--> Description: Follow podcaster
+--> Parameters: AccountId, PodcasterId
+--> NextRequestData: AccountId, PodcasterId
+--> ResponseData: AccountFollowedPodcasterId, CreatedAt
+
+podcaster-unfollow-flow
+delete-podcaster-followed
+--> Description: Unfollow podcaster
+--> Parameters: AccountId, PodcasterId
+--> NextRequestData: AccountId, PodcasterId
+--> ResponseData: AccountId, PodcasterId
+
+account-balance-addition-flow
+add-account-balance-amount
+--> Description: Thêm tiền vô ví
+--> Parameters: AccountId, Amount
+--> NextRequestData: AccountId, Amount
+--> ResponseData: AccountId, Amount, NewBalance
+
+account-balance-subtraction-flow
+subtract-account-balance-amount
+--> Description: Trừ tiền từ ví
+--> Parameters: AccountId, Amount
+--> NextRequestData: AccountId, Amount
+--> ResponseData: AccountId, Amount, NewBalance
+
+notification-single-creation-flow
+create-single-account-notification
+--> Description: Tạo notification
+--> Parameters: AccountId, NotificationTypeId, Content
+--> NextRequestData: AccountId, NotificationTypeId, Content
+--> ResponseData: AccountNotificationId, Content, CreatedAt
+
+channel-creation-flow
+--> Save file: MainImageFile, BackgroundImageFile
+create-channel
+--> Description: Tạo podcast channel mới
+--> Parameters: Name, Description, MainImageFileKey, BackgroundImageFileKey, CategoryId, SubCategoryId, HashtagIds (List), PodcasterId
+--> NextRequestData: Name, Description, MainImageFileKey, BackgroundImageFileKey, CategoryId, SubCategoryId, HashtagIds (List), PodcasterId
+--> ResponseData: PodcastChannelId, Name, Description, MainImageFileKey, BackgroundImageFileKey, CategoryId, SubCategoryId, HashtagIds (List), PodcasterId, CreatedAt
+
+channel-update-flow
+--> Save file: MainImageFile, BackgroundImageFile
+update-channel
+--> Description: Cập nhật thông tin channel
+--> Parameters: PodcastChannelId, Name, Description, MainImageFileKey, BackgroundImageFileKey, CategoryId, SubCategoryId, HashtagIds (List)
+--> NextRequestData: PodcastChannelId, Name, Description, MainImageFileKey, BackgroundImageFileKey, CategoryId, SubCategoryId, HashtagIds (List)
+--> ResponseData: PodcastChannelId, Name, Description, MainImageFileKey, BackgroundImageFileKey, CategoryId, SubCategoryId, HashtagIds (List), UpdatedAt
+
+channel-publish-flow
+publish-channel
+--> Description: Publish channel
+--> Parameters: PodcastChannelId
+--> NextRequestData: PodcastChannelId
+--> ResponseData: PodcastChannelId
+
+channel-unpublish-flow
+unpublish-channel
+--> Description: Nhận PodcastChannelId và PodcastShowId để inactive channel, show, xóa các SubscriptionRegistration và cuối cùng unpublish channel
+--> Parameters: PodcastChannelId, PodcastShowId
+--> NextRequestData: PodcastChannelId, PodcastShowId
+--> ResponseData: PodcastChannelId, PodcastShowId
+refund-channel-subscription-account
+--> Description: Nhận PodcastChannelId và PodcastShowId để lấy các SubscriptionRegistration để lấy các AccountId và giá để cần hoàn tiền
+--> Parameters: PodcastChannelId, PodcastShowId
+--> NextRequestData: PodcastChannelId, PodcastShowId
+--> ResponseData: PodcastChannelId, PodcastShowId
+
+channel-deletion-flow
+delete-channel
+--> Description: Xóa channel
+--> Parameters: PodcastChannelId
+--> NextRequestData: PodcastChannelId
+--> ResponseData: PodcastChannelId, DeletedAt
+
+channel-favorite-flow
+create-channel-favorited
+--> Description: Thêm channel vào danh sách yêu thích
+--> Parameters: AccountId, PodcastChannelId
+--> NextRequestData: AccountId, PodcastChannelId
+--> ResponseData: AccountFavoritedPodcastChannelId, CreatedAt
+
+channel-unfavorite-flow 
+delete-channel-favorited
+--> Description: Xóa channel khỏi danh sách yêu thích
+--> Parameters: AccountId, PodcastChannelId
+--> NextRequestData: AccountId, PodcastChannelId
+--> ResponseData: AccountId, PodcastChannelId
+
+show-creation-flow
+--> Save file: MainImageFile
+create-show
+--> Description: Tạo podcast show mới
+--> Parameters: Name, Description, Language, ReleaseDate, Copyright, UploadFrequency, MainImageFileKey, PodcasterId, CategoryId, SubCategoryId, ChannelId, SubscriptionTypeId, HashtagIds (List)
+--> NextRequestData: Name, Description, Language, ReleaseDate, Copyright, UploadFrequency, MainImageFileKey, PodcasterId, CategoryId, SubCategoryId, ChannelId, SubscriptionTypeId, HashtagIds (List)
+--> ResponseData: PodcastShowId, Name, Description, Language, ReleaseDate, Copyright, UploadFrequency, MainImageFileKey, PodcasterId, CategoryId, SubCategoryId, ChannelId, SubscriptionTypeId, HashtagIds (List), CreatedAt
+
+show-update-flow
+--> Save file: MainImageFile
+update-show
+--> Description: Cập nhật thông tin podcast show
+--> Parameters: PodcastShowId, Name, Description, Language, ReleaseDate, Copyright, UploadFrequency, MainImageFileKey, CategoryId, SubCategoryId, ChannelId, SubscriptionTypeId, HashtagIds (List)
+--> NextRequestData: PodcastShowId, Name, Description, Language, ReleaseDate, Copyright, UploadFrequency, MainImageFileKey, CategoryId, SubCategoryId, ChannelId, SubscriptionTypeId, HashtagIds (List)
+--> ResponseData: PodcastShowId, Name, Description, Language, ReleaseDate, Copyright, UploadFrequency, MainImageFileKey, CategoryId, SubCategoryId, ChannelId, SubscriptionTypeId, HashtagIds (List), UpdatedAt
+
+show-publish-flow
+publish-show
+--> Description: Publish show
+--> Parameters: PodcastShowId
+--> NextRequestData: PodcastShowId
+--> ResponseData: PodcastShowId
+
+show-unpublish-flow
+unpublish-show
+--> Description: Nhận PodcastShowId để inactive show, xóa các SubscriptionRegistration và unpublish show
+--> Parameters: PodcastShowId
+--> NextRequestData: PodcastShowId
+--> ResponseData: PodcastShowId, PodcastSubscriptionId
+refund-podcast-subscription-account
+--> Description: Nhận PodcastSubscriptionId để lấy các SubscriptionRegistration để lấy các AccountId và giá để chạy flow hoàn tiền
+--> Parameters: PodcastSubscriptionId
+--> NextRequestData: PodcastShowId, PodcastSubscriptionId
+--> ResponseData: PodcastShowId, PodcastSubscriptionId
+
+show-deletion-flow
+delete-show
+--> Description: Xóa show
+--> Parameters: PodcastShowId
+--> NextRequestData: PodcastShowId
+--> ResponseData: PodcastShowId, DeletedAt
+
+show-audio-submission-flow
+--> Save file: AudioFile
+submit-audio-file
+--> Description: Submit trailer audio file cho show
+--> Parameters: PodcastShowId, AudioFileKey, AudioFileSize, AudioLength
+--> NextRequestData: PodcastShowId, AudioFileKey, AudioFileSize, AudioLength
+--> ResponseData: PodcastShowId, AudioFileKey, AudioFileSize, AudioLength, UpdatedAt
+
+show-channel-assignment-flow
+assign-show
+--> Description: Gán show vào channel
+--> Parameters: PodcastShowId, PodcastChannelId
+--> NextRequestData: PodcastShowId, PodcastChannelId
+--> ResponseData: PodcastShowId, PodcastChannelId, UpdatedAt
+
+show-rating-recalculation-flow
+update-show-rating
+--> Description: Tính lại average rating cho show
+--> Parameters: PodcastShowId
+--> NextRequestData: PodcastShowId
+--> ResponseData: PodcastShowId, NewRating
+
+show-follow-flow
+create-show-followed
+--> Description: Follow show
+--> Parameters: AccountId, PodcastShowId
+--> NextRequestData: AccountId, PodcastShowId
+--> ResponseData: AccountFollowedPodcastShowId, CreatedAt
+
+show-unfollow-flow
+delete-show-followed
+--> Description: Unfollow show
+--> Parameters: AccountId, PodcastShowId
+--> NextRequestData: AccountId, PodcastShowId
+--> ResponseData: AccountId, PodcastShowId
+
+episode-creation-flow (chạy flow episode-publish-request-flow)
+--> Save file: MainImageFile
+create-episode
+--> Description: Tạo episode mới
+--> Parameters: Title, Description, ExplicitContent, ReleaseDate, MainImageFileKey, EpisodeSubscriptionTypeId, PodcastShowId, SeasonNumber, HashtagIds (List)
+--> NextRequestData: Title, Description, ExplicitContent, ReleaseDate, MainImageFileKey, EpisodeSubscriptionTypeId, PodcastShowId, SeasonNumber, HashtagIds (List)
+--> ResponseData: PodcastEpisodeId, Title, Description, ExplicitContent, ReleaseDate, MainImageFileKey, EpisodeSubscriptionTypeId, PodcastShowId, SeasonNumber, HashtagIds (List), CreatedAt
+
+episode-update-flow
+--> Save file: MainImageFile
+update-episode
+--> Description: Cập nhật thông tin episode (không phải audio)
+--> Parameters: PodcastEpisodeId, Title, Description, ExplicitContent, ReleaseDate, MainImageFileKey, EpisodeSubscriptionTypeId, SeasonNumber, HashtagIds (List)
+--> NextRequestData: PodcastEpisodeId, Title, Description, ExplicitContent, ReleaseDate, MainImageFileKey, EpisodeSubscriptionTypeId, SeasonNumber, HashtagIds (List)
+--> ResponseData: PodcastEpisodeId, Title, Description, ExplicitContent, ReleaseDate, MainImageFileKey, EpisodeSubscriptionTypeId, SeasonNumber, HashtagIds (List), UpdatedAt  
+
+episode-audio-submission-flow
+--> Save file: AudioFile
+submit-audio-file
+--> Description: Submit/cập nhật audio file cho episode
+--> Parameters: PodcastEpisodeId, AudioFileKey, AudioFileSize, AudioLength
+--> NextRequestData: PodcastEpisodeId, AudioFileKey, AudioFileSize, AudioLength
+--> ResponseData: PodcastEpisodeId, AudioFileKey, AudioFingerprint, UpdatedAt
+
+episode-publish-flow (chạy flow episode-publish-request-flow nếu isAudioPublishable là null hoặc false)
+--> Save file: LicenseFile
+publish-episode
+--> Description: Publish episode
+--> Parameters: PodcastEpisodeId, LicenseFileKey
+--> NextRequestData: PodcastEpisodeId
+--> ResponseData: PodcastEpisodeId
+
+episode-unpublish-flow
+unpublish-episode
+--> Description: Unpublish episode
+--> Parameters: PodcastEpisodeId
+--> NextRequestData: PodcastEpisodeId
+--> ResponseData: PodcastEpisodeId
+
+episode-save-flow
+create-episode-saved
+--> Description: Lưu episode vào danh sách saved
+--> Parameters: AccountId, PodcastEpisodeId
+--> NextRequestData: AccountId, PodcastEpisodeId
+--> ResponseData: AccountSavedPodcastEpisodeId, CreatedAt
+
+episode-unsave-flow
+delete-episode-saved
+--> Description: Xóa episode khỏi danh sách saved
+--> Parameters: AccountId, PodcastEpisodeId
+--> NextRequestData: AccountId, PodcastEpisodeId
+--> ResponseData: AccountId, PodcastEpisodeId
+
+episode-publish-request-flow 
+audio-content-automatic-examination (encode audio, check độ tương tự, convert audio qua text và xem xét các từ bị cấm)
+--> Description: Kiểm duyệt nội dung audio để flag episode và tạo review session nếu cần
+--> Parameters: PodcastEpisodeId
+--> NextRequestData: PodcastEpisodeId
+--> ResponseData: PodcastEpisodeId, PodcastEpisodePublishReviewSessionId
+
+episode-content-review-flow
+audio-content-staff-examination
+--> Description: Staff kiểm duyệt nội dung vào quyêt định có cho đăng hay không
+--> Parameters: PodcastEpisodeId, IsAccepted, Note, Deadline
+--> NextRequestData: PodcastEpisodeId, IsAccepted, Note, Deadline
+--> ResponseData: PodcastEpisodeId, IsAccepted, Note, Deadline
+
+episode-deletion-flow
+delete-episode
+--> Description: Xóa episode
+--> Parameters: PodcastEpisodeId
+--> NextRequestData: PodcastEpisodeId
+--> ResponseData: PodcastEpisodeId, DeletedAt
+
+content-dmca-takedown-flow
+takedown-content
+--> Description: Chuyển status của episode hoặc show thành taken down
+--> Parameters: PodcastEpisodeId, PodcastShowId
+--> NextRequestData: PodcastEpisodeId, PodcastShowId
+--> ResponseData: PodcastEpisodeId, PodcastShowId
+
+content-restoration-flow
+restore-content
+--> Description: Chuyển status của episode hoặc show thành status trước kia
+--> Parameters: PodcastEpisodeId, PodcastShowId
+--> NextRequestData: PodcastEpisodeId, PodcastShowId
+--> ResponseData: PodcastEpisodeId, PodcastShowId
+
+hashtags-creation-flow
+create-hashtag
+--> Description: Tạo hashtag mới nếu chưa tồn tại
+--> Parameters: HashtagName
+--> NextRequestData: HashtagName
+--> ResponseData: HashtagId, HashtagName, CreatedAt
+
+content-statistics-calculation-flow
+update-listen-count
+--> Description: Cập nhật số lượt nghe cho episode, channel hoặc show thêm 1
+--> Parameters: PodcastChannelId, PodcastShowId, PodcastEpisodeId
+--> NextRequestData: PodcastChannelId, PodcastShowId, PodcastEpisodeId
+--> ResponseData: PodcastChannelId, PodcastShowId, PodcastEpisodeId
+
+booking-creation-flow
+create-booking
+--> Description: Tạo booking và booking negotiation đầu tiên
+--> Parameters: Title, Description, AccountId, PodcastBuddyId, Deadline, Note, DemoAudioRequired
+--> NextRequestData: Title, Description, AccountId, PodcastBuddyId, Deadline, Note, DemoAudioRequired
+--> ResponseData: BookingId, BookingNegotiationId, Title, Description, AccountId, PodcastBuddyId, Deadline, Note, DemoAudioRequired, CreatedAt
+
+booking-negotiation-flow
+--> Save file: DemoAudioFile
+create-booking-negotiation
+--> Description: Tạo booking negotiation và đổi booking status
+--> Parameters: AccountId, Deadline, Note, DemoAudioRequired, DemoAudioFileKey, Price
+--> NextRequestData: AccountId, Deadline, Note, DemoAudioRequired, DemoAudioFileKey, Price
+--> ResponseData: BookingNegotiationId, CreatedAt
+
+booking-producing-request-creation-flow
+create-producing-request
+--> Description: Tạo producing request cho editing
+--> Parameters: BookingId, Note, Deadline, BookingPodcastTrackIds (List)
+--> NextRequestData: BookingId, Note, Deadline, BookingPodcastTrackIds (List)
+--> ResponseData: BookingProducingRequestId, Note, Deadline, BookingPodcastTrackIds (List), CreatedAt
+
+booking-producing-request-agreement-flow
+agree-producing-request
+--> Description: Cập nhật booking khi podcaster accept/reject producing request
+--> Parameters: BookingId, ProducingRequestId, IsAccepted
+--> NextRequestData: BookingId, ProducingRequestId, IsAccepted
+--> ResponseData: BookingId, ProducingRequestId, IsAccepted
+
+booking-track-submission-flow
+--> Save file: TrackFile
+submit-booking-track
+--> Description: Podcaster submit các track đã hoàn thành và chuyển status booking thành Previewing
+--> Parameters: BookingId, ProducingRequestId, TrackFileKey, TrackFileSize, TrackLength
+--> NextRequestData: BookingId, ProducingRequestId, TrackFileKey, TrackFileSize, TrackLength
+--> ResponseData: BookingId, ProducingRequestId, TrackFileKey, TrackFileSize, TrackLength
+
+booking-track-preview-flow
+update-booking-track
+--> Description: Cập nhật lượng preview còn lại
+--> Parameters: BookingPodcastTrackId
+--> NextRequestData: BookingPodcastTrackId
+--> ResponseData: BookingPodcastTrackId, RemainingPreviewListenSlot
+
+booking-negotiation-agree-flow
+agree-booking-negotiation
+--> Description: Cập nhật lại booking với thông tin booking negotiation gần nhất khi agree
+--> Parameters: BookingId
+--> NextRequestData: BookingId
+--> ResponseData: BookingId
+
+booking-completion-flow
+complete-booking
+--> Description: Chuyển status booking sang complete
+--> Parameters: BookingId
+--> NextRequestData: BookingId
+--> ResponseData: BookingId
+
+booking-cancellation-flow (chạy flow booking-refund-flow nếu có đặt cọc)
+cancel-booking
+--> Description: Cancel hoặc reject booking với lý do
+--> Parameters: BookingId, BookingManualCancelledReason, BookingAutoCancelReason
+--> NextRequestData: BookingId, BookingManualCancelledReason, BookingAutoCancelReason
+--> ResponseData: BookingId, BookingManualCancelledReason, BookingAutoCancelReason
+
+podcast-subscription-creation-flow
+create-podcast-subscription
+--> Description: Tạo gói subscription cho show/channel
+--> Parameters: Name, Description, PodcastShowId, PodcastChannelId, PodcastSubscriptionCycleTypePrice (List Object), PodcastSubscriptionBenefitId, PodcasterId
+--> NextRequestData: Name, Description, PodcastShowId, PodcastChannelId, PodcastSubscriptionCycleTypePrice (List Object), PodcastSubscriptionBenefitId, PodcasterId
+--> ResponseData: PodcastSubscriptionId, Name, Description, PodcastShowId, PodcastChannelId, PodcastSubscriptionCycleTypePrice (List Object), PodcastSubscriptionBenefitId, PodcasterId, CreatedAt
+
+podcast-subscription-update-flow
+update-podcast-subscription (check channel chứa có subscription đang active hay chưa, nếu có, check isactive của show subscription để inactive và chạy flow podcast-subscription-refund-flow)
+--> Description: Cập nhật thông tin subscription và tạo version mới
+--> Parameters: PodcastSubscriptionId, Name, Description, PodcastSubscriptionCycleTypePrice (List Object), PodcastSubscriptionBenefitId
+--> NextRequestData: PodcastSubscriptionId, Name, Description, PodcastSubscriptionCycleTypePrice (List Object), PodcastSubscriptionBenefitId
+--> ResponseData: PodcastSubscriptionId, Name, Description, PodcastSubscriptionCycleTypePrice (List Object), PodcastSubscriptionBenefitId, UpdatedAt, NewVersion
+
+podcast-subscription-set-is-subscribable-flow
+set-podcast-subscription-is-subscribable
+--> Description: Bật/tắt khả năng đăng ký subscription
+--> Parameters: PodcastSubscriptionId, IsSubscribable
+--> NextRequestData: PodcastSubscriptionId, IsSubscribable
+--> ResponseData: PodcastSubscriptionId, IsSubscribable, UpdatedAt
+
+podcast-subscription-active-flow
+active-podcast-subscription
+--> Description: Kích hoạt subscription
+--> Parameters: PodcastSubscriptionId
+--> NextRequestData: PodcastSubscriptionId
+--> ResponseData: PodcastSubscriptionId, IsActive
+
+podcast-subscription-inactive-flow
+inactive-podcast-subscription
+--> Description: Nhận PodcastSubscriptionId để inactive subscription, xóa các SubscriptionRegistration
+--> Parameters: PodcastSubscriptionId
+--> NextRequestData: PodcastSubscriptionId
+--> ResponseData: PodcastSubscriptionId, IsActive
+refund-podcast-subscription-account
+--> Description: Nhận PodcastSubscriptionId để lấy các SubscriptionRegistration để lấy các AccountId và giá để chạy flow podcast-subscription-refund-flow
+--> Parameters: PodcastSubscriptionId
+--> NextRequestData: PodcastSubscriptionId, IsActive
+--> ResponseData: PodcastSubscriptionId, IsActive
+
+podcast-subscription-registration-flow
+create-account-podcast-subscription-registration
+--> Description: Customer đăng ký subscription package
+--> Parameters: AccountId, PodcastSubscriptionId, SubscriptionCycleTypeId
+--> NextRequestData: AccountId, PodcastSubscriptionId, SubscriptionCycleTypeId
+--> ResponseData: PodcastSubscriptionRegistrationId, AccountId, PodcastSubscriptionId, SubscriptionCycleTypeId, CreatedAt
+
+member-subscription-creation-flow
+create-member-subscription
+--> Description: Tạo gói member subscription
+--> Parameters: Name, Description, PricingTiers (List Object), MemberSubscriptionBenefitId
+--> NextRequestData: Name, Description, PricingTiers (List Object), MemberSubscriptionBenefitId
+--> ResponseData: MemberSubscriptionId, Name, Description, PricingTiers (List Object), MemberSubscriptionBenefitId, CreatedAt
+
+member-subscription-update-flow
+update-member-subscription
+--> Description: Cập nhật thông tin member subscription và tạo version mới
+--> Parameters: MemberSubscriptionId, Name, Description, MemberSubscriptionCycleTypePrice (List Object), MemberSubscriptionBenefitId
+--> NextRequestData: MemberSubscriptionId, Name, Description, MemberSubscriptionCycleTypePrice (List Object), MemberSubscriptionBenefitId
+--> ResponseData: MemberSubscriptionId, Name, Description, MemberSubscriptionCycleTypePrice (List Object), MemberSubscriptionBenefitId, UpdatedAt, NewVersion
+
+member-subscription-active-flow
+active-member-subscription
+--> Description: Kích hoạt member subscription
+--> Parameters: MemberSubscriptionId
+--> NextRequestData: MemberSubscriptionId
+--> ResponseData: MemberSubscriptionId, IsActive
+
+member-subscription-inactive-flow
+inactive-member-subscription
+--> Description: Nhận MemberSubscriptionId để inactive subscription, xóa các SubscriptionRegistration
+--> Parameters: MemberSubscriptionId
+--> NextRequestData: MemberSubscriptionId
+--> ResponseData: MemberSubscriptionId, IsActive
+refund-member-subscription-account
+--> Description: Nhận MemberSubscriptionId để lấy các SubscriptionRegistration để lấy các AccountId và giá để chạy flow member-subscription-refund-flow
+--> Parameters: MemberSubscriptionId
+--> NextRequestData: MemberSubscriptionId, IsActive
+--> ResponseData: MemberSubscriptionId, IsActive
+
+member-subscription-registration-flow
+create-account-member-subscription-registration
+--> Description: Customer đăng ký member subscription package
+--> Parameters: AccountId, MemberSubscriptionId, SubscriptionCycleTypeId
+--> NextRequestData: AccountId, MemberSubscriptionId, SubscriptionCycleTypeId
+--> ResponseData: MemberSubscriptionRegistrationId, AccountId, MemberSubscriptionId, SubscriptionCycleTypeId, CreatedAt
+
+member-subscription-set-is-subscribable-flow
+set-member-subscription-is-subscribable
+--> Description: Bật/tắt khả năng đăng ký member subscription
+--> Parameters: MemberSubscriptionId, IsSubscribable
+--> NextRequestData: MemberSubscriptionId, IsSubscribable
+--> ResponseData: MemberSubscriptionId, IsSubscribable, UpdatedAt
+
+subscription-cancellation-flow
+cancel-account-subscription
+--> Description: Hủy đăng ký subscription
+--> Parameters: PodcastSubscriptionRegistrationId, MemberSubscriptionRegistrationId
+--> NextRequestData: PodcastSubscriptionRegistrationId, MemberSubscriptionRegistrationId
+--> ResponseData: PodcastSubscriptionRegistrationId, MemberSubscriptionRegistrationId, CancelAt
+
+subscription-deletion-flow (chỉ delete được các subscription đang isActive = false)
+delete-subscription
+--> Description: Xóa subscription package
+--> Parameters: PodcastSubscriptionId, MemberSubscriptionId
+--> NextRequestData: PodcastSubscriptionId, MemberSubscriptionId
+--> ResponseData: PodcastSubscriptionId, MemberSubscriptionId, deletedAt
+
+account-balance-deposit-flow
+create-payment-link
+--> Description: Tạo account balance transaction và tạo link thanh toán
+--> Parameters: AccountId, Amount, ReturnUrl, CancelUrl, TransactionTypeId
+--> NextRequestData: AccountId, Amount, ReturnUrl, CancelUrl, TransactionTypeId
+--> ResponseData: PaymentLinkUrl, AccountBalanceTransactionId
+confirm-payment (service sẽ không làm gì cả và đợi khi payOs trả về nhận được webhook để confirmpayment sau đó mới gửi success)
+--> Description: Xác nhận thanh toán thành công từ payment gateway, cập nhật status account balance thành success
+--> Parameters: AccountBalanceTransactionId
+--> NextRequestData: AccountId, Amount, ReturnUrl, CancelUrl, TransactionTypeId, AccountBalanceTransactionId
+--> ResponseData: Amount
+add-account-balance-amount
+--> Description: Thêm tiền vô ví
+--> Parameters: AccountId, Amount
+--> NextRequestData: AccountId, Amount, ReturnUrl, CancelUrl, TransactionTypeId, AccountBalanceTransactionId
+--> ResponseData: AccountId, Amount, NewBalance
+
+account-balance-withdrawal-flow (t ngu chổ này)
+create-account-balance-transaction
+--> Description: Tạo record withdrawal transaction
+--> Parameters: AccountId, Amount, TransactionTypeId
+--> NextRequestData: AccountId, Amount
+--> ResponseData: AccountBalanceTransactionId, CreatedAt
+subtract-account-balance-amount
+--> Description: Trừ tiền từ tài khoản khi withdraw
+--> Parameters: AccountId, Amount
+--> NextRequestData: AccountId, Amount, TransactionTypeId
+--> ResponseData: AccountId, NewBalance, UpdatedAt
+
+booking-deposit-payment-flow (chạy flow booking-negotiation-agree-flow)
+create-booking-transaction
+--> Description: Tạo booking transaction record cho deposit
+--> Parameters: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: BookingTransactionId, CreatedAt
+add-account-balance-amount
+--> Description: Thêm tiền vô ví podcaster
+--> Parameters: PodcasterId, Amount
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: PodcasterId, Amount, NewBalance
+subtract-account-balance-amount
+--> Description: Trừ tiền từ ví customer
+--> Parameters: AccountId, Amount
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: AccountId, Amount, NewBalance
+complete-booking-transaction
+--> Description: Cập nhật status thành success cho booking transaction
+--> Parameters: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: BookingTransactionId, BookingId, Amount, AccountId, PodcasterId, TransactionTypeId, UpdatedAt
+
+booking-final-payment-flow (chạy flow booking-completion-flow)
+create-booking-transaction
+--> Description: Tạo booking transaction record cho final payment
+--> Parameters: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId
+--> ResponseData: BookingTransactionId, CreatedAt
+add-account-balance-amount
+--> Description: Thêm tiền vô ví podcaster
+--> Parameters: PodcasterId, Amount
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: PodcasterId, Amount, NewBalance
+subtract-account-balance-amount
+--> Description: Trừ tiền từ ví customer
+--> Parameters: AccountId, Amount
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: AccountId, Amount, NewBalance
+complete-booking-transaction
+--> Description: Cập nhật status thành success cho booking transaction
+--> Parameters: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: BookingTransactionId, BookingId, Amount, AccountId, PodcasterId, TransactionTypeId, UpdatedAt
+
+booking-refund-flow
+create-booking-transaction
+--> Description: Tạo booking transaction record cho final payment
+--> Parameters: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: BookingTransactionId, CreatedAt
+add-account-balance-amount
+--> Description: Thêm tiền vô ví customer
+--> Parameters: AccountId, Amount
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: AccountId, Amount, NewBalance
+subtract-account-balance-amount
+--> Description: Trừ tiền từ ví podcaster
+--> Parameters: PodcasterId, Amount
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: PodcasterId, Amount, NewBalance
+complete-booking-transaction
+--> Description: Cập nhật status thành success cho booking transaction
+--> Parameters: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: BookingId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: BookingTransactionId, BookingId, Amount, AccountId, PodcasterId, TransactionTypeId, UpdatedAt
+
+podcast-subscription-payment-flow
+create-podcast-subscription-transaction
+--> Description: Tạo subscription payment transaction
+--> Parameters: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: PodcastSubscriptionTransactionId, CreatedAt
+add-account-balance-amount
+--> Description: Thêm tiền vô ví podcaster
+--> Parameters: PodcasterId, Amount
+--> NextRequestData: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: PodcasterId, Amount, NewBalance
+subtract-account-balance-amount
+--> Description: Trừ tiền từ ví customer
+--> Parameters: AccountId, Amount
+--> NextRequestData: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: AccountId, Amount, NewBalance
+complete-podcast-subscription-transaction
+--> Description: Cập nhật status thành success cho podcast subscription transaction
+--> Parameters: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: PodcastSubscriptionTransactionId, PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId, UpdatedAt
+
+member-subscription-payment-flow
+create-member-subscription-transaction
+--> Description: Tạo member subscription payment transaction
+--> Parameters: MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId
+--> NextRequestData: MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId
+--> ResponseData: MemberSubscriptionTransactionId, CreatedAt
+subtract-account-balance-amount
+--> Description: Trừ tiền từ ví customer
+--> Parameters: AccountId, Amount
+--> NextRequestData: MemberSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: AccountId, Amount, NewBalance
+complete-member-subscription-transaction
+--> Description: Cập nhật status thành success cho member subscription transaction
+--> Parameters: MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId
+--> NextRequestData: MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId
+--> ResponseData: MemberSubscriptionTransactionId, MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId, UpdatedAt
+
+podcast-subscription-refund-flow
+create-podcast-subscription-transaction
+--> Description: Tạo podcast subscription transaction
+--> Parameters: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: PodcastSubscriptionTransaction, CreatedAt
+add-account-balance-amount
+--> Description: Thêm tiền vô ví customer
+--> Parameters: AccountId, Amount
+--> NextRequestData: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: AccountId, Amount, NewBalance
+subtract-account-balance-amount
+--> Description: Trừ tiền từ ví podcaster
+--> Parameters: PodcasterId, Amount
+--> NextRequestData: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: PodcasterId, Amount, NewBalance
+complete-podcast-subscription-transaction
+--> Description: Cập nhật status thành success cho podcast subscription transaction
+--> Parameters: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> NextRequestData: PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: PodcastSubscriptionTransactionId, PodcastSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId, UpdatedAt
+
+member-subscription-refund-flow
+create-member-subscription-transaction
+--> Description: Tạo member subscription payment transaction
+--> Parameters: MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId
+--> NextRequestData: MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId
+--> ResponseData: MemberSubscriptionTransactionId, CreatedAt
+add-account-balance-amount
+--> Description: Thêm tiền vô ví customer
+--> Parameters: AccountId, Amount
+--> NextRequestData: MemberSubscriptionRegistrationId, Amount, AccountId, PodcasterId, TransactionTypeId
+--> ResponseData: AccountId, Amount, NewBalance
+complete-member-subscription-transaction
+--> Description: Cập nhật status thành success cho member subscription transaction
+--> Parameters: MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId
+--> NextRequestData: MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId
+--> ResponseData: MemberSubscriptionTransactionId, MemberSubscriptionRegistrationId, Amount, AccountId, TransactionTypeId, UpdatedAt
+
+storage-purchase-flow (t ngu)
+calculate-storage-cost 
+update-account-balance
+create-storage-transaction 
+update-podcaster-profile (update storage)
+
+show-review-creation-flow
+create-show-review
+--> Description: Tạo review cho show
+--> Parameters: AccountId, PodcastShowId, Title, Content, Rating
+--> NextRequestData: AccountId, PodcastShowId, Title, Content, Rating
+--> ResponseData: PodcastShowReviewId, AccountId, PodcastShowId, Title, Content, Rating, CreatedAt
+
+show-review-update-flow
+update-show-review
+--> Description: Cập nhật review cho show
+--> Parameters: PodcastShowReviewId, Title, Content, Rating, AccountId
+--> NextRequestData: PodcastShowReviewId, Title, Content, Rating, AccountId
+--> ResponseData: PodcastShowReviewId, Title, Content, Rating, AccountId, UpdatedAt
+
+show-review-deletion-flow
+delete-show-review
+--> Description: Xóa review cho show
+--> Parameters: PodcastShowReviewId
+--> NextRequestData: PodcastShowReviewId
+--> ResponseData: PodcastShowReviewId, DeletedAt
+
+podcast-buddy-review-creation-flow
+create-podcast-buddy-review
+--> Description: Tạo review cho podcast buddy
+--> Parameters: AccountId, PodcastBuddyId, Title, Content, Rating
+--> NextRequestData: AccountId, PodcastBuddyId, Title, Content, Rating
+--> ResponseData: PodcastBuddyReviewId, AccountId, PodcastBuddyId, Title, Content, Rating, CreatedAt
+
+podcast-buddy-review-update-flow
+update-podcast-buddy-review
+--> Description: Cập nhật review cho podcast buddy
+--> Parameters: PodcastBuddyReviewId, Title, Content, Rating, AccountId
+--> NextRequestData: PodcastBuddyReviewId, Title, Content, Rating, AccountId
+--> ResponseData: PodcastBuddyReviewId, PodcastBuddyReviewId, Title, Content, Rating, AccountId, UpdatedAt
+
+podcast-buddy-review-deletion-flow
+delete-podcast-buddy-review
+--> Description: Xóa review cho podcast buddy
+--> Parameters: PodcastBuddyReviewId
+--> NextRequestData: PodcastBuddyReviewId
+--> ResponseData: PodcastBuddyReviewId, DeletedAt
+
+buddy-report-submission-flow (Chạy flow report-review-session-creation-flow nếu vượt ngưỡng)
+create-buddy-report
+--> Description: Tạo report báo cáo podcaster buddy vi phạm
+--> Parameters: AccountId, PodcastBuddyId, PodcastBuddyReportTypeId, Content
+--> NextRequestData: AccountId, PodcastBuddyId, PodcastBuddyReportTypeId, Content
+--> ResponseData: PodcastBuddyReportId, AccountId, PodcastBuddyId, PodcastBuddyReportTypeId, Content, CreatedAt
+
+show-report-submission-flow (Chạy flow report-review-session-creation-flow nếu vượt ngưỡng)
+create-show-report
+--> Description: Tạo report báo cáo show vi phạm
+--> Parameters: AccountId, PodcastShowId, PodcastShowReportTypeId, Content
+--> NextRequestData: AccountId, PodcastShowId, PodcastShowReportTypeId, Content
+--> ResponseData: PodcastShowReportId, AccountId, PodcastShowId, PodcastShowReportTypeId, Content, CreatedAt
+
+episode-report-submission-flow (Chạy flow report-review-session-creation-flow nếu vượt ngưỡng)
+create-episode-report
+--> Description: Tạo report báo cáo episode vi phạm
+--> Parameters: AccountId, PodcastEpisodeId, PodcastEpisodeReportTypeId, Content
+--> NextRequestData: AccountId, PodcastEpisodeId, PodcastEpisodeReportTypeId, Content
+--> ResponseData: PodcastEpisodeReportId, AccountId, PodcastEpisodeId, PodcastEpisodeReportTypeId, Content, CreatedAt
+
+podcast-buddy-report-resolve-flow
+resolve-podcast-buddy-report
+--> Description: Staff resolve podcast buddy report và chạy flow user-violation-punishment-flow nếu có phạt
+--> Parameters: IsResolved, ResolvedViolationPoint, PodcastBuddyReportReviewSessionId
+--> NextRequestData: IsResolved, ResolvedViolationPoint, PodcastBuddyReportReviewSessionId
+--> ResponseData: PodcastBuddyReportReviewSessionId, IsResolved, ResolvedViolationPoint, UpdatedAt
+
+podcast-show-report-resolve-flow
+resolve-podcast-show-report
+--> Description: Staff resolve podcast show report và chạy flow show-deletion-flow ??? nếu có phạt
+--> Parameters: IsResolved, PodcastShowReportReviewSessionId
+--> NextRequestData: IsResolved, PodcastShowReportReviewSessionId
+--> ResponseData: PodcastBuddyReportReviewSessionId, IsResolved, UpdatedAt
+
+podcast-episode-report-resolve-flow
+resolve-podcast-episode-report
+--> Description: Staff resolve podcast episode report và chạy flow episode-deletion-flow ??? nếu có phạt
+--> Parameters: IsResolved, PodcastEpisodeReportReviewSessionId
+--> NextRequestData: IsResolved, PodcastEpisodeReportReviewSessionId
+--> ResponseData: PodcastEpisodeReportReviewSessionId, IsResolved, UpdatedAt
+
+content-dmca-accusation-creation-flow
+--> Save file: DMCANoticeAttachFile
+create-dmca-accusation
+--> Description: Tạo DMCAaccusation và DMCAnotice
+--> Parameters: AccountId, GoodFaithStatement, WorkClaimed, Signature, DMCANoticeAttachFileKeys (List)
+--> NextRequestData: AccountId, GoodFaithStatement, WorkClaimed, Signature, DMCAAttachFileKeys
+--> ResponseData: DMCAAccusationId, DMCANoticeId, AccountId, GoodFaithStatement, WorkClaimed, Signature, DMCAAttachFileKeys, CreatedAt
+
+content-dmca-staff-assignment-flow
+assign-dmca-staff
+--> Description: Admin assign staff xử lý DMCA case
+--> Parameters: DMCAAccusationId, StaffId
+--> NextRequestData: DMCAAccusationId, StaffId
+--> ResponseData: DMCAAccusationId, StaffId, UpdatedAt
+
+content-dmca-counter-notice-creation-flow
+--> Save file: CounterNoticeAttachFile
+create-counter-notice
+--> Description: Tạo CounterNotice
+--> Parameters: AccountId, StatementPerfury, Jurisdiction, Signature, CounterNoticeAttachFileKeys (List)
+--> NextRequestData: AccountId, StatementPerfury, Jurisdiction, Signature, CounterNoticeAttachFileKeys (List)
+--> ResponseData: CounterNoticeId, AccountId, StatementPerfury, Jurisdiction, Signature, CounterNoticeAttachFileKeys, CreatedAt
+
+content-dmca-lawsuit-creation-flow
+--> Save file: LawsuitProofAttachFile
+create-lawsuit-proof
+--> Description: Tạo LawsuitProof
+--> Parameters: AccountId, GoodFaithStatement, CourtName, CaseNumber, FilingDate, Signature, LawsuitProofAttachFileKeys (List)
+--> NextRequestData: AccountId, GoodFaithStatement, CourtName, CaseNumber, FilingDate, Signature, LawsuitProofAttachFileKeys (List)
+--> ResponseData: LawsuitProofId, AccountId, GoodFaithStatement, CourtName, CaseNumber, FilingDate, Signature, LawsuitProofAttachFileKeys, CreatedAt
+
+update-dmca-accusation-status-flow
+update-dmca-accusation (chuyển status)
+--> Description: Cập nhật status của DMCAAccusation và chạy flow dựa status đó
+--> Parameters: DMCAAccusationId, DMCAAccusationAction
+--> NextRequestData: DMCAAccusationId, DMCAAccusationAction
+--> ResponseData: DMCAAccusationId, DMCAAccusationAction, UpdatedAt
+
+config-creation-flow
+create-system-config
+--> Description: Admin tạo một config mới
+--> Parameters: Name, PodcastSubscriptionConfig (List Object), PodcastSuggestionConfig (Object), BookingConfig (Object), AccountConfig (Object), AccountViolationLevelConfig (List Object), ReviewSessionConfig (Object)
+--> NextRequestData: Name, PodcastSubscriptionConfig (List Object), PodcastSuggestionConfig (Object), BookingConfig (Object), AccountConfig (Object), AccountViolationLevelConfig (List Object), ReviewSessionConfig (Object)
+--> ResponseData: SystemConfigProfileId, Name, PodcastSubscriptionConfig (List Object), PodcastSuggestionConfig (Object), BookingConfig (Object), AccountConfig (Object), AccountViolationLevelConfig (List Object), ReviewSessionConfig (Object), CreatedAt
+
+config-update-flow
+update-system-config
+--> Description: Admin cập nhật config
+--> Parameters: SystemConfigProfileId, Name, PodcastSubscriptionConfig (List Object), PodcastSuggestionConfig (Object), BookingConfig (Object), AccountConfig (Object), AccountViolationLevelConfig (List Object), ReviewSessionConfig (Object)
+--> NextRequestData: SystemConfigProfileId, Name, PodcastSubscriptionConfig (List Object), PodcastSuggestionConfig (Object), BookingConfig (Object), AccountConfig (Object), AccountViolationLevelConfig (List Object), ReviewSessionConfig (Object)
+--> ResponseData: SystemConfigProfileId, Name, PodcastSubscriptionConfig (List Object), PodcastSuggestionConfig (Object), BookingConfig (Object), AccountConfig (Object), AccountViolationLevelConfig (List Object), ReviewSessionConfig (Object), UpdatedAt
+
+config-activation-flow
+activate-config
+--> Description: Admin kích hoạt hoặc tắt config
+--> Parameters: SystemConfigProfileId, IsActive
+--> NextRequestData: SystemConfigProfileId, IsActive
+--> ResponseData: SystemConfigProfileId, IsActive, UpdatedAt
+
+config-deletion-flow
+delete-system-config
+--> Description: Admin xóa config
+--> Parameters: SystemConfigProfileId
+--> NextRequestData: SystemConfigProfileId
+--> ResponseData: SystemConfigProfileId, DeletedAt
+
+
+
+Rollback Messages:
+unpublish-show.rollback
+--> Description: Chuyển trạng thái của show lại và xóa deletedAt của các podcast subscription registration
+--> Parameters: PodcastShowId
+--> NextRequestData: PodcastShowId
+--> ResponseData: PodcastShowId
+unpublish-channel.rollback
+--> Description: Chuyển trạng thái của channel và show lại và xóa deletedAt của các podcast subscription registration
+--> Parameters: PodcastChannelId, PodcastShowId
+--> NextRequestData: PodcastChannelId, PodcastShowId
+--> ResponseData: PodcastChannelId, PodcastShowId
+create-payment-link.rollback
+--> Description: Chuyển trạng thái của account balance transaction thành failed
+--> Parameters: AccountBalanceTransactionId
+--> NextRequestData: AccountBalanceTransactionId
+--> ResponseData: AccountBalanceTransactionId, TransactionStatusId
+add-account-balance-amount.rollback
+--> Description: Rút lại tiền đã gửi tới ví (chỉ 1 trong 2 accountid và podcasterid được có id)
+--> Parameters: AccountId, PodcasterId, Amount
+--> NextRequestData: AccountId, PodcasterId, Amount
+--> ResponseData: AccountId, PodcasterId, Amount, NewBalance
+subtract-account-balance-amount.rollback
+--> Description: Thêm lại tiền đã rút từ ví (chỉ 1 trong 2 accountid và podcasterid được có id)
+--> Parameters: AccountId, PodcasterId, Amount
+--> NextRequestData: AccountId, PodcasterId, Amount
+--> ResponseData: AccountId, PodcasterId, Amount, NewBalance
+create-account-balance-transaction.rollback
+--> Description: Chuyển trạng thái của account balance transaction thành failed
+--> Parameters: AccountBalanceTransactionId
+--> NextRequestData: AccountBalanceTransactionId
+--> ResponseData: AccountBalanceTransactionId, TransactionStatusId
+create-booking-transaction.rollback
+--> Description: Chuyển trạng thái của booking transaction thành failed
+--> Parameters: BookingTransactionId
+--> NextRequestData: BookingTransactionId
+--> ResponseData: BookingTransactionId, TransactionStatusId
+create-podcast-subscription-transaction.rollback
+--> Description: Chuyển trạng thái của member subscription transaction thành failed
+--> Parameters: PodcastSubscriptionTransactionId
+--> NextRequestData: PodcastSubscriptionTransactionId
+--> ResponseData: MemberSubscriptionTransactionId, TransactionStatusId
+create-member-subscription-transaction.rollback
+--> Description: Chuyển trạng thái của member subscription transaction thành failed
+--> Parameters: MemberSubscriptionTransactionId
+--> NextRequestData: MemberSubscriptionTransactionId
+--> ResponseData: MemberSubscriptionTransactionId, TransactionStatusId

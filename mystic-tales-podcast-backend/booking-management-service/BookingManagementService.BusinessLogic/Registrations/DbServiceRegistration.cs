@@ -1,9 +1,4 @@
-﻿using BookingManagementService.BusinessLogic.Services.DbServices.BookingManagementServices;
-using Microsoft.Extensions.DependencyInjection;
-using BookingManagementService.BusinessLogic.Services.DbServices.FilterServices;
-using BookingManagementService.BusinessLogic.Services.DbServices.SurveyServices;
-using BookingManagementService.BusinessLogic.Services.DbServices.PaymentServices;
-using BookingManagementService.BusinessLogic.Services.DbServices.ReportServices;
+﻿using Microsoft.Extensions.DependencyInjection;
 using BookingManagementService.BusinessLogic.Services.DbServices.MiscServices;
 
 namespace BookingManagementService.BusinessLogic.Registrations
@@ -12,29 +7,29 @@ namespace BookingManagementService.BusinessLogic.Registrations
     {
         public static IServiceCollection AddDbServices(this IServiceCollection services)
         {
-            // ConfigServices
-            services.AddScoped<SystemConfigService>();
+            // // ConfigServices
+            // services.AddScoped<SystemConfigService>();
 
-            // BookingManagementServices
-            services.AddScoped<AuthService>();
-            services.AddScoped<AccountService>();
+            // // BookingManagementServices
+            // services.AddScoped<AuthService>();
+            // services.AddScoped<AccountService>();
 
-            // PaymentServices
-            services.AddScoped<AccountPaymentService>();
+            // // PaymentServices
+            // services.AddScoped<AccountPaymentService>();
 
-            // SurveyServices
-            services.AddScoped<SurveyCoreService>();
-            services.AddScoped<SurveySessionService>();
-            services.AddScoped<SurveyResponseService>();
-            services.AddScoped<SurveyTransactionService>();
+            // // SurveyServices
+            // services.AddScoped<SurveyCoreService>();
+            // services.AddScoped<SurveySessionService>();
+            // services.AddScoped<SurveyResponseService>();
+            // services.AddScoped<SurveyTransactionService>();
 
-            // FilterServices
-            services.AddScoped<FilterTagService>();
+            // // FilterServices
+            // services.AddScoped<FilterTagService>();
 
-            // ReportServices
-            services.AddScoped<SurveyStatisticsService>();
-            services.AddScoped<TransactionStatisticsService>();
-            services.AddScoped<UserStatisticsService>();
+            // // ReportServices
+            // services.AddScoped<SurveyStatisticsService>();
+            // services.AddScoped<TransactionStatisticsService>();
+            // services.AddScoped<UserStatisticsService>();
 
             // MiscServices
             services.AddScoped<PlatformFeedbackService>();

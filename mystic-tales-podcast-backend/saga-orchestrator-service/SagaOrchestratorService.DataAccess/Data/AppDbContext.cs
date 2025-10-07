@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SagaOrchestratorService.DataAccess.Entities;
+using SagaOrchestratorService.DataAccess.Entities.SqlServer;
 
 namespace SagaOrchestratorService.DataAccess.Data;
 

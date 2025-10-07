@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text;
 using System.Text.Json;
+using BookingManagementService.Common.AppConfigurations.App.interfaces;
 using BookingManagementService.Infrastructure.Configurations.Kafka.interfaces;
 using BookingManagementService.Infrastructure.Models.Kafka;
 
@@ -12,15 +13,18 @@ namespace BookingManagementService.Infrastructure.Services.Kafka
     public class KafkaProducerService : IDisposable
     {
         private readonly IProducer<string, string> _producer;
+        private readonly IAppConfig _appConfig;
         private readonly IKafkaClusterConfig _kafkaClusterConfig;
         private readonly IKafkaProducerConfig _kafkaProducerConfig;
         private readonly ILogger<KafkaProducerService> _logger;
 
         public KafkaProducerService(
+            IAppConfig appConfig,
             IKafkaClusterConfig kafkaClusterConfig,
             IKafkaProducerConfig kafkaProducerConfig,
             ILogger<KafkaProducerService> logger)
         {
+            _appConfig = appConfig;
             _kafkaClusterConfig = kafkaClusterConfig;
             _kafkaProducerConfig = kafkaProducerConfig;
             _logger = logger;
@@ -47,59 +51,61 @@ namespace BookingManagementService.Infrastructure.Services.Kafka
         }
 
         // Fix for CS0029: Change return type from SagaCommandMessage to Task<SagaCommandMessage>
-        private Task<SagaCommandMessage> PrepareSagaCommandMessage(string topic, string? key, JObject requestData, JObject? responseData, Guid? sagaId, string flowName, string messageName)
+        public SagaCommandMessage PrepareSagaCommandMessage(string topic, JObject requestData, JObject? responseData, Guid? sagaInstanceId, string flowName, string messageName, string? key = null)
         {
+
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(_appConfig.TIME_ZONE);
+            DateTime timeZoneNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+
             var message = new SagaCommandMessage
             {
-                SagaId = sagaId ?? Guid.Empty,
+                SagaInstanceId = sagaInstanceId ?? Guid.Empty,
+                MessageTopic = topic,
                 FlowName = flowName,
                 MessageName = messageName,
                 RequestData = requestData,
                 LastStepResponseData = responseData ?? new JObject(),
-                CorrelationId = Guid.NewGuid().ToString(),
-                Metadata = new Dictionary<string, string>()
+                Metadata = new Dictionary<string, string>(),
+                Timestamp = timeZoneNow,
             };
-            message.MessageId ??= Guid.NewGuid().ToString();
-            message.Timestamp = message.Timestamp == default ? DateTime.UtcNow : message.Timestamp;
-            message.MessageType = messageName;
-            return Task.FromResult(message);
+            return message;
         }
 
-        private Task<SagaEventMessage> PrepareSagaEventMessage(string topic, string? key, JObject requestData, JObject responseData, Guid? sagaId, string flowName, string messageName)
+        public SagaEventMessage PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, string? key = null)
         {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(_appConfig.TIME_ZONE);
+            DateTime timeZoneNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
             var message = new SagaEventMessage
             {
-                SagaId = sagaId ?? Guid.Empty,
+                SagaInstanceId = sagaInstanceId ?? Guid.Empty,
+                MessageTopic = topic,
                 FlowName = flowName,
                 MessageName = messageName,
                 RequestData = requestData,
                 LastStepResponseData = responseData,
-                CorrelationId = Guid.NewGuid().ToString(),
-                Metadata = new Dictionary<string, string>()
+                Metadata = new Dictionary<string, string>(),
+                Timestamp = timeZoneNow,
             };
-            message.MessageId ??= Guid.NewGuid().ToString();
-            message.Timestamp = message.Timestamp == default ? DateTime.UtcNow : message.Timestamp;
-            message.MessageType = messageName;
-            return Task.FromResult(message);
+            return message;
         }
 
-        private Task<StartSagaTriggerMessage> PrepareStartSagaTriggerMessage(string topic, string? key, JObject requestData, Guid? sagaId, string messageName)
+        public StartSagaTriggerMessage PrepareStartSagaTriggerMessage(string topic, JObject requestData, Guid? sagaInstanceId, string messageName, string? key = null)
         {
-            var newSagaId = sagaId == null ? Guid.NewGuid() : sagaId;
+            var newSagaId = sagaInstanceId == null ? Guid.NewGuid() : sagaInstanceId;
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(_appConfig.TIME_ZONE);
+            DateTime timeZoneNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
             var message = new StartSagaTriggerMessage
             {
-                SagaId = newSagaId ?? Guid.Empty,
+                SagaInstanceId = newSagaId ?? Guid.Empty,
+                MessageTopic = topic,
                 MessageName = messageName,
                 RequestData = requestData,
-                CorrelationId = Guid.NewGuid().ToString(),
-                Metadata = new Dictionary<string, string>()
+                Metadata = new Dictionary<string, string>(),
+                Timestamp = timeZoneNow,
             };
-            message.MessageId ??= Guid.NewGuid().ToString();
-            message.Timestamp = message.Timestamp == default ? DateTime.UtcNow : message.Timestamp;
-            message.MessageType = messageName;
-            return Task.FromResult(message);
+            return message;
         }
-        public async Task<KafkaMessageResult> SendMessageAsync<T>(string topic, string? key, T message)
+        public async Task<KafkaMessageResult> SendMessageAsync<T>(string topic, T message, string? key = null)
             where T : BaseMessage
         {
             try
@@ -160,62 +166,38 @@ namespace BookingManagementService.Infrastructure.Services.Kafka
             }
         }
 
-        public async Task<KafkaMessageResult> SendSagaMessageAsync<T>(string topic, string? key, JObject requestData, JObject? responseData, Guid? sagaId, string? flowName, string messageName)
-            where T : BaseMessage
+
+
+        public async Task<KafkaMessageResult> SendSagaMessageAsync<T>(T message, string? key = null)
+    where T : SagaBaseMessage
         {
             try
             {
-                T message;
-                var newKey = key;
-                if (typeof(T).Name.Equals("SagaCommandMessage"))
-                {
-                    // Fix CS8604: flowName is nullable, but PrepareSagaCommandMessage expects non-null
-                    if (flowName == null)
-                        throw new ArgumentNullException(nameof(flowName), "flowName cannot be null for SagaCommandMessage.");
-                    message = (T)(object)await PrepareSagaCommandMessage(topic, key, requestData, responseData, sagaId, flowName, messageName);
-                }
-                else if (typeof(T).Name.Equals("SagaEventMessage"))
-                {
-                    if (flowName == null)
-                        throw new ArgumentNullException(nameof(flowName), "flowName cannot be null for SagaEventMessage.");
-                    // responseData is not nullable for SagaEventMessage
-                    if (responseData == null)
-                        throw new ArgumentNullException(nameof(responseData), "responseData cannot be null for SagaEventMessage.");
-                    message = (T)(object)await PrepareSagaEventMessage(topic, key, requestData, responseData, sagaId, flowName, messageName);
-                }
-                else if (typeof(T).Name.Equals("StartSagaTriggerMessage"))
-                {
-                    message = (T)(object)await PrepareStartSagaTriggerMessage(topic, key, requestData, sagaId, messageName);
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Unsupported message type: {typeof(T).Name}");
-                }
 
                 var jsonMessage = SerializeToJson(message);
                 var kafkaMessage = new Message<string, string>
                 {
-                    Key = key ?? newKey, // Can be null for random partitioning
+                    Key = key, // Can be null for random partitioning
                     Value = jsonMessage,
                     Timestamp = new Timestamp(DateTime.UtcNow),
                     Headers = new Headers
                     {
-                        { "MessageType", Encoding.UTF8.GetBytes(message.MessageType) },
-                        { "MessageId", Encoding.UTF8.GetBytes(message.MessageId) },
-                        { "CorrelationId", Encoding.UTF8.GetBytes(message.CorrelationId) }
+                        { "MessageTopic", Encoding.UTF8.GetBytes(message.MessageTopic) },
+                        { "MessageName", Encoding.UTF8.GetBytes(message.MessageName) },
+                        { "SagaInstanceId", Encoding.UTF8.GetBytes(message.SagaInstanceId.ToString()) }
                     }
                 };
 
-                var result = await _producer.ProduceAsync(topic, kafkaMessage);
+                var result = await _producer.ProduceAsync(message.MessageTopic, kafkaMessage);
 
                 var partitionStrategy = key != null ? "keyed partitioning" : "random partitioning";
-                _logger.LogInformation("Message sent successfully - Topic: {Topic}, Partition: {Partition}, Offset: {Offset}, MessageType: {MessageType}, Strategy: {Strategy}",
-                    result.Topic, result.Partition.Value, result.Offset.Value, message.MessageType, partitionStrategy);
+                _logger.LogInformation("Message sent successfully - Topic: {Topic}, Partition: {Partition}, Offset: {Offset},  Strategy: {Strategy}",
+                    result.Topic, result.Partition.Value, result.Offset.Value, partitionStrategy);
 
                 return new KafkaMessageResult
                 {
                     Success = true,
-                    MessageId = message.MessageId,
+                    // MessageId = message.MessageId,
                     Topic = result.Topic,
                     Partition = result.Partition.Value,
                     Offset = result.Offset.Value,
@@ -225,14 +207,14 @@ namespace BookingManagementService.Infrastructure.Services.Kafka
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send message to topic {Topic}, MessageType: {MessageType}",
-                    topic, typeof(T).Name);
+                    message.MessageTopic, typeof(T).Name);
 
                 return new KafkaMessageResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message,
-                    Topic = topic,
-                    MessageId = sagaId.ToString(),
+                    Topic = message.MessageTopic,
+                    // MessageId = message.MessageId,
                     Timestamp = DateTime.UtcNow
                 };
             }

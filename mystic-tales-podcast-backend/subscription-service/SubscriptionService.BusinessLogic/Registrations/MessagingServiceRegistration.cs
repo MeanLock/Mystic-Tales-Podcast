@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using SubscriptionService.BusinessLogic.Services.MessagingServices.interfaces;
 using SubscriptionService.BusinessLogic.Services.MessagingServices;
 using SubscriptionService.BusinessLogic.MessageHandlers;
-using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
 
 namespace SubscriptionService.BusinessLogic.Registrations
 {
@@ -21,7 +20,6 @@ namespace SubscriptionService.BusinessLogic.Registrations
             services.AddSingleton<IHandlerRegistryService, HandlerRegistryService>();
             services.AddHostedService<HandlerRegistrationHostedService>();
             
-            services.AddScoped<AuthMessagingService>();
             return services;
         }
     }
