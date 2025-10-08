@@ -60,8 +60,9 @@ namespace UserService.API.Controllers.BaseControllers
                     await customerRegisterRequestDTO.MainImageFile.CopyToAsync(memoryStream);
                     fileBytes = memoryStream.ToArray();
                 }
-                await _fileIOHelper.UploadBinaryFileAsync(fileBytes, _filePathConfig.ACCOUNT_TEMP_FILE_PATH, $"{Guid.NewGuid()}_{customerRegisterRequestDTO.MainImageFile.FileName}");
-                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, $"{Guid.NewGuid()}_{customerRegisterRequestDTO.MainImageFile.FileName}");
+                string newMainImageFileName = $"{Guid.NewGuid()}_{customerRegisterRequestDTO.MainImageFile.FileName}";
+                await _fileIOHelper.UploadBinaryFileAsync(fileBytes, _filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
 
             }
             JObject requestData = JObject.FromObject(RegisterInfo);
@@ -72,15 +73,24 @@ namespace UserService.API.Controllers.BaseControllers
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {
-                // customerRegisterRequestDTO = customerRegisterRequestDTO.RegisterInfo,
-                // RegisterInfo = RegisterInfo,
-                fileInfo = new
-                {
-                    fileName = customerRegisterRequestDTO.MainImageFile?.FileName,
-                    fileSize = customerRegisterRequestDTO.MainImageFile?.Length,
-                    contentType = customerRegisterRequestDTO.MainImageFile?.ContentType
-                },
-                requestData = requestData,
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+
+        // /api/user-service/api/auth/account-verification
+        [HttpPost("account-verification")]
+        public async Task<IActionResult> AccountVerification([FromBody] AccountVerificationRequestDTO accountVerificationRequestDTO)
+        {
+            var accountVerificationInfo = JsonConvert.DeserializeObject<AccountVerificationInfoDTO>(accountVerificationRequestDTO.AccountVerificationInfo);
+            var requestData = JObject.FromObject(accountVerificationInfo);
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-email-verification-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                accountVerificationRequestDTO,
+                requestData,
                 startSagaTriggerMessage,
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             }

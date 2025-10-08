@@ -4,7 +4,7 @@ using UserService.DataAccess.Repositories.interfaces;
 namespace UserService.DataAccess.UOW;
 public interface IUnitOfWork
 {
-    // IAccountRepository AccountRepository { get; }
+    IAccountRepository AccountRepository { get; }
     // IAccountOnlineTrackingRepository AccountOnlineTrackingRepository { get; }
     // ISurveyRepository SurveyRepository { get; }
     // ISurveyQuestionRepository SurveyQuestionRepository { get; }

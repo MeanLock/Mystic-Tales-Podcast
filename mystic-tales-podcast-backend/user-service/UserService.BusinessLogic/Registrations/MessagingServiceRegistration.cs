@@ -12,6 +12,7 @@ namespace UserService.BusinessLogic.Registrations
         {
             // Message Handlers
             services.AddScoped<AuthMessageHandler>();
+            services.AddScoped<UserManagementDomainMessageHandler>();
             
             // Messaging Services (trong MessagingServices folder)
             services.AddScoped<IMessagingService, MessagingService>();

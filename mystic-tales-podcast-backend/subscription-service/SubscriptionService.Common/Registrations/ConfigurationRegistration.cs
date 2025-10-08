@@ -41,6 +41,7 @@ namespace SubscriptionService.Common.Registrations
             services.AddSingleton<IEmbeddingVectorModelConfig, EmbeddingVectorModelConfig>();
             services.AddSingleton<IAccountConfig, AccountConfig>();
             services.AddSingleton<IFileValidationConfig, FileValidationConfig>();
+            services.AddSingleton<IMailPropertiesConfig, MailPropertiesConfig>();
 
             // SystemService
             services.AddSingleton<ISystemServiceConfig,SystemServiceConfig>();

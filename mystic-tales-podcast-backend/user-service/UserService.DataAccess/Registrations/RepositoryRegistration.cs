@@ -17,7 +17,7 @@ namespace UserService.DataAccess.Registrations
         }
 
         public static IServiceCollection AddDbRepositories (this IServiceCollection services) {
-            // services.AddScoped<IAccountRepository, AccountRepository>();
+            services.AddScoped<IAccountRepository, AccountRepository>();
             // services.AddScoped<IAccountOnlineTrackingRepository, AccountOnlineTrackingRepository>();
             // services.AddScoped<ISurveyRepository, SurveyRepository>();
             // services.AddScoped<ISurveyQuestionRepository, SurveyQuestionRepository>();

@@ -7,7 +7,7 @@ namespace UserService.DataAccess.UOW;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _appDbContext;
-    // public IAccountRepository AccountRepository { get; }
+    public IAccountRepository AccountRepository { get; }
     // public IAccountOnlineTrackingRepository AccountOnlineTrackingRepository { get; }
     // public ISurveyRepository SurveyRepository { get; }
     // public ISurveyQuestionRepository SurveyQuestionRepository { get; }
@@ -25,8 +25,8 @@ public class UnitOfWork : IUnitOfWork
     // public ISurveyCommunityTransactionRepository SurveyCommunityTransactionRepository { get; }
 
     public UnitOfWork(
-        AppDbContext appDbContext
-        // IAccountRepository accountRepository,
+        AppDbContext appDbContext,
+        IAccountRepository accountRepository
         // IAccountOnlineTrackingRepository accountOnlineTrackingRepository,
         // ISurveyRepository surveyRepository,
         // ISurveyQuestionRepository surveyQuestionRepository,
@@ -47,7 +47,7 @@ public class UnitOfWork : IUnitOfWork
     {
         _appDbContext = appDbContext;
 
-        // this.AccountRepository = accountRepository;
+        this.AccountRepository = accountRepository;
         // this.AccountOnlineTrackingRepository = accountOnlineTrackingRepository;
         // this.SurveyRepository = surveyRepository;
         // this.SurveyQuestionRepository = surveyQuestionRepository;

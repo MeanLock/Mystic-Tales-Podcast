@@ -2,7 +2,9 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using UserService.BusinessLogic.Attributes;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
 using UserService.BusinessLogic.Enums.Kafka;
+using UserService.BusinessLogic.Services.DbServices.UserServices;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using UserService.Infrastructure.Models.Kafka;
 using UserService.Infrastructure.Services.Kafka;
@@ -12,17 +14,21 @@ namespace UserService.BusinessLogic.MessageHandlers
     public class UserManagementDomainMessageHandler : BaseSagaCommandMessageHandler
     {
         private readonly IMessagingService _messagingService;
+        private readonly AccountService _accountService;
         private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.UserManagementDomain;
 
 
+
         public UserManagementDomainMessageHandler(
             IMessagingService messagingService,
+            AccountService accountService,
             KafkaProducerService kafkaProducerService,
             ILogger<UserManagementDomainMessageHandler> logger) : base(messagingService, kafkaProducerService, logger)
         {
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
+            _accountService = accountService;
         }
 
         // create-account
@@ -56,18 +62,28 @@ namespace UserService.BusinessLogic.MessageHandlers
         // add-podcaster-balance-amount-rollback
         // subtract-podcaster-balance-amount-rollback
 
-        [MessageHandler("create-account", "user-management-domain")]
+        [MessageHandler("create-account", SAGA_TOPIC )]
         public async Task HandleCreateAccountAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
                 messageJson: messageJson,
                 stepHandler: async (command) =>
                 {
-                    
+                    var createAccountParameterDTO = command.RequestData.ToObject<CreateAccountParameterDTO>();
+                    await _accountService.RegisterCustomer(createAccountParameterDTO);
+                    // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: SAGA_TOPIC,
+                        requestData: command.RequestData,
+                        responseData: command.RequestData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-account.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     
                 },
                 responseTopic: SAGA_TOPIC,
-                // successEmit: "create-booking.success", // From YAML onSuccess.emit
                 failedEmitMessage: "create-account.failed"    // From YAML onFailure.emit
             );
         }
