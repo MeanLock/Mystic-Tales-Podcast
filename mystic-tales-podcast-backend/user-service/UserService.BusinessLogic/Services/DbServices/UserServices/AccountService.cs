@@ -169,12 +169,23 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return ((JArray) result.Results["activeSystemConfigProfile"]).First as JObject;
+            return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
         }
 
         /////////////////////////////////////////////////////////////
-        
-        public async Task MailSending(MailProperty mailProperty)
+
+        public async Task MailSending(MailProperty mailProperty, string toEmail, object viewModel)
+        {
+            try
+            {
+                await _fluentEmail.SendEmail(toEmail, viewModel, mailProperty.TemplateFilePath
+                , mailProperty.Subject);
+            }
+            catch (Exception ex)
+            {
+                throw new HttpRequestException("Gửi mail thất bại, lỗi: " + ex.Message);
+            }
+        }
         public async Task RegisterCustomer(CreateAccountParameterDTO customerRegisterDTO)
         {
 
