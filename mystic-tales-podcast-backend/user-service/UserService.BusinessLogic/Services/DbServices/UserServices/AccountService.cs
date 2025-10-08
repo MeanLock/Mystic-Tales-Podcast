@@ -173,6 +173,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         }
 
         /////////////////////////////////////////////////////////////
+        
+        public async Task MailSending(MailProperty mailProperty)
         public async Task RegisterCustomer(CreateAccountParameterDTO customerRegisterDTO)
         {
 

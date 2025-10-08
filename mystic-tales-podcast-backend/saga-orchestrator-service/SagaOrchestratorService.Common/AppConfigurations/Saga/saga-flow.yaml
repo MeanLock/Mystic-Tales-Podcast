@@ -5188,12 +5188,15 @@ flows:
         parameters:
           - MailTypeName
           - MailObject
+          - To
         next-request-data:
           - MailTypeName
           - MailObject
+          - To
         response-data:
           - MailTypeName
           - MailObject
+          - To
         onSuccess:
           emit: "send-user-service-email.success"
           topic: "user-management-domain"
@@ -5220,12 +5223,15 @@ flows:
         parameters:
           - MailTypeName
           - MailObject
+          - To
         next-request-data:
           - MailTypeName
           - MailObject
+          - To
         response-data:
           - MailTypeName
           - MailObject
+          - To
         onSuccess:
           emit: "send-system-configuration-service-email.success"
           topic: "system-configuration-domain"
@@ -5252,12 +5258,15 @@ flows:
         parameters:
           - MailTypeName
           - MailObject
+          - To
         next-request-data:
           - MailTypeName
           - MailObject
+          - To
         response-data:
           - MailTypeName
           - MailObject
+          - To
         onSuccess:
           emit: "send-booking-management-service-email.success"
           topic: "booking-management-domain"
@@ -5284,12 +5293,15 @@ flows:
         parameters:
           - MailTypeName
           - MailObject
+          - To
         next-request-data:
           - MailTypeName
           - MailObject
+          - To
         response-data:
           - MailTypeName
           - MailObject
+          - To
         onSuccess:
           emit: "send-podcast-service-email.success"
           topic: "content-management-domain"
@@ -5316,12 +5328,15 @@ flows:
         parameters:
           - MailTypeName
           - MailObject
+          - To
         next-request-data:
           - MailTypeName
           - MailObject
+          - To
         response-data:
           - MailTypeName
           - MailObject
+          - To
         onSuccess:
           emit: "send-subscription-service-email.success"
           topic: "subscription-management-domain"
@@ -5348,12 +5363,15 @@ flows:
         parameters:
           - MailTypeName
           - MailObject
+          - To
         next-request-data:
           - MailTypeName
           - MailObject
+          - To
         response-data:
           - MailTypeName
           - MailObject
+          - To
         onSuccess:
           emit: "send-moderation-service-email.success"
           topic: "report-management-domain"
@@ -5380,12 +5398,15 @@ flows:
         parameters:
           - MailTypeName
           - MailObject
+          - To
         next-request-data:
           - MailTypeName
           - MailObject
+          - To
         response-data:
           - MailTypeName
           - MailObject
+          - To
         onSuccess:
           emit: "send-transaction-service-email.success"
           topic: "payment-processing-domain"
