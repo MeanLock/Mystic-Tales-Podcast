@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SagaOrchestratorService.DataAccess.Entities.SqlServer;
+using SagaOrchestratorService.DataAccess.Entities.sqlserver;
 
 namespace SagaOrchestratorService.DataAccess.Data;
 
@@ -17,72 +15,86 @@ public partial class AppDbContext : DbContext
         : base(options)
     {
     }
-    // DbSets
-    public DbSet<SagaInstance> SagaInstances { get; set; } = null!;
-    public DbSet<SagaStepExcecution> SagaStepExcecutions { get; set; } = null!;
+
+    public virtual DbSet<SagaInstance> SagaInstances { get; set; }
+
+    public virtual DbSet<SagaStepExecution> SagaStepExecutions { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Shared JSON converter for Dictionary<string, object>
-        var jsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = false
-        };
-
-        // SagaInstance
         modelBuilder.Entity<SagaInstance>(entity =>
         {
-            entity.HasKey(e => e.Id);
+            entity.HasKey(e => e.Id).HasName("PK__SagaInst__3213E83F9E1EB6A4");
 
-            entity.Property(e => e.FlowName)
-                  .IsRequired();
+            entity.ToTable("SagaInstance", tb => tb.HasTrigger("TR_SagaInstance_UpdatedAt"));
 
-            entity.Property(e => e.InitialData)
-                  .HasColumnType("nvarchar(max)");
-
-            entity.Property(e => e.ResultData)
-                  .HasColumnType("nvarchar(max)");
-
-            entity.Property(e => e.FlowStatus)
-                  .HasConversion<int>(); // store enum as int
-
-            entity.Property(e => e.CreatedAt)
-                  .HasColumnType("datetime2");
-
-            entity.Property(e => e.UpdatedAt)
-                  .HasColumnType("datetime2");
-
+            entity.Property(e => e.Id)
+                .ValueGeneratedNever()
+                .HasColumnName("id");
             entity.Property(e => e.CompletedAt)
-                  .HasColumnType("datetime2");
+                .HasColumnType("datetime")
+                .HasColumnName("completedAt");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.CurrentStepName)
+                .HasMaxLength(250)
+                .HasColumnName("currentStepName");
+            entity.Property(e => e.ErrorMessage).HasColumnName("errorMessage");
+            entity.Property(e => e.ErrorStepName)
+                .HasMaxLength(250)
+                .HasColumnName("errorStepName");
+            entity.Property(e => e.FlowName)
+                .IsRequired()
+                .HasMaxLength(250)
+                .HasColumnName("flowName");
+            entity.Property(e => e.FlowStatus)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnName("flowStatus");
+            entity.Property(e => e.InitialData).HasColumnName("initialData");
+            entity.Property(e => e.ResultData).HasColumnName("resultData");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("updatedAt");
         });
 
-        // SagaStepExcecution
-        modelBuilder.Entity<SagaStepExcecution>(entity =>
+        modelBuilder.Entity<SagaStepExecution>(entity =>
         {
-            entity.HasKey(e => e.Id);
+            entity.HasKey(e => e.Id).HasName("PK__SagaStep__3213E83F6B01D2C5");
 
-            entity.Property(e => e.SagaInstanceId)
-                  .IsRequired();
+            entity.ToTable("SagaStepExecution");
 
-            entity.Property(e => e.StepName)
-                  .IsRequired();
-
-            entity.Property(e => e.TopicName);
-
-            entity.Property(e => e.StepStatus)
-                  .HasConversion<int>(); // store enum as int
-
-            entity.Property(e => e.RequestData)
-                  .HasColumnType("nvarchar(max)");
-
-            entity.Property(e => e.ResponseData)
-                  .HasColumnType("nvarchar(max)");
-
-            entity.Property(e => e.ErrorMessage);
-
+            entity.Property(e => e.Id)
+                .ValueGeneratedNever()
+                .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
-                  .HasColumnType("datetime2");
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.ErrorMessage).HasColumnName("errorMessage");
+            entity.Property(e => e.RequestData).HasColumnName("requestData");
+            entity.Property(e => e.ResponseData).HasColumnName("responseData");
+            entity.Property(e => e.SagaInstanceId).HasColumnName("sagaInstanceId");
+            entity.Property(e => e.StepName)
+                .IsRequired()
+                .HasMaxLength(250)
+                .HasColumnName("stepName");
+            entity.Property(e => e.StepStatus)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnName("stepStatus");
+            entity.Property(e => e.TopicName)
+                .IsRequired()
+                .HasMaxLength(250)
+                .HasColumnName("topicName");
 
-            entity.HasIndex(e => e.SagaInstanceId); // helpful for lookups
+            entity.HasOne(d => d.SagaInstance).WithMany(p => p.SagaStepExecutions)
+                .HasForeignKey(d => d.SagaInstanceId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__SagaStepE__sagaI__3C69FB99");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -2158,27 +2158,17 @@ flows:
           - Description
           - AccountId
           - PodcastBuddyId
-          - Deadline
-          - Note
-          - DemoAudioRequired
         next-request-data:
           - Title
           - Description
           - AccountId
           - PodcastBuddyId
-          - Deadline
-          - Note
-          - DemoAudioRequired
         response-data:
           - BookingId
-          - BookingNegotiationId
           - Title
           - Description
           - AccountId
           - PodcastBuddyId
-          - Deadline
-          - Note
-          - DemoAudioRequired
           - CreatedAt
         onSuccess:
           emit: "create-booking.success"
@@ -2445,7 +2435,7 @@ flows:
       - name: "reject-booking"
         topic: "booking-management-domain"
         handle-service: "BookingManagementService"
-        description: "Reject booking với lý do"
+        description: "Reject booking"
         parameters:
           - BookingId
         next-request-data:

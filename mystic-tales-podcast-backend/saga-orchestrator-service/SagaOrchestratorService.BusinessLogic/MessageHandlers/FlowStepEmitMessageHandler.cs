@@ -84,7 +84,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     await _sagaInstanceService.UpdateStepExecutionStatusAsync(currentSagaId, stepName, SagaStepStatusEnum.SUCCESS, SerializeToJson(requestData), SerializeToJson(responseData), null);
 
                     // Keep saga status as RUNNING - do not update ResultData yet
-                    await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.RUNNING);
+                    await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.RUNNING, null, null, null);
 
                     // Check if no more next steps - check for saga completion
                     if (outcome.Value.NextSteps.Count == 0)
@@ -97,7 +97,7 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                         {
                             var resultDataJson = SerializeToJson(responseData);
                             // Update ResultData only when saga completes successfully
-                            await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.SUCCESS, resultDataJson);
+                            await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.SUCCESS, resultDataJson, null, null);
                             _logger.LogInformation("Saga completed successfully: {SagaId}, ResultData updated", currentSagaId);
                         }
                     }

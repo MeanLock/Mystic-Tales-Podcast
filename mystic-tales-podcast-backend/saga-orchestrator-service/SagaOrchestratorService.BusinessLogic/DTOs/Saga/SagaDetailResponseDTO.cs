@@ -1,6 +1,4 @@
-using System.Text.Json.Serialization;
 using Newtonsoft.Json.Linq;
-using SagaOrchestratorService.DataAccess.Entities.SqlServer;
 using SagaOrchestratorService.DataAccess.Enums.Saga;
 
 namespace SagaOrchestratorService.API.DTOs.Responses
