@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using UserService.BusinessLogic.Services.DbServices.UserServices;
 
 namespace UserService.BusinessLogic.Registrations
 {
@@ -11,7 +12,7 @@ namespace UserService.BusinessLogic.Registrations
 
             // // UserServices
             // services.AddScoped<AuthService>();
-            // services.AddScoped<AccountService>();
+            services.AddScoped<AccountService>();
 
             // // PaymentServices
             // services.AddScoped<AccountPaymentService>();

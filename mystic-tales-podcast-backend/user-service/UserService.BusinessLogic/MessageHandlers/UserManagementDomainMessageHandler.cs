@@ -61,8 +61,34 @@ namespace UserService.BusinessLogic.MessageHandlers
         // subtract-account-balance-amount-rollback
         // add-podcaster-balance-amount-rollback
         // subtract-podcaster-balance-amount-rollback
+        
+        [MessageHandler("send-user-service-email", SAGA_TOPIC )]
+        public async Task HandleSendUserServiceEmailAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var sendUserServiceEmailParameterDTO = command.RequestData.ToObject<SendUserServiceEmailParameterDTO>();
+                    await _accountService.SendUserServiceEmail(sendUserServiceEmailParameterDTO);
+                    // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: SAGA_TOPIC,
+                        requestData: command.RequestData,
+                        responseData: command.RequestData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "send-user-service-email.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "send-user-service-email.failed"    // From YAML onFailure.emit
+            );
+        }
 
-        [MessageHandler("create-account", SAGA_TOPIC )]
+        [MessageHandler("create-account", SAGA_TOPIC)]
         public async Task HandleCreateAccountAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(

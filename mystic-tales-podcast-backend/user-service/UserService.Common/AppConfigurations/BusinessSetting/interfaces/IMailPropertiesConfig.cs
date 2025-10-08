@@ -5,6 +5,7 @@ namespace UserService.Common.AppConfigurations.BusinessSetting.interfaces
     public interface IMailPropertiesConfig
     {
         MailProperty CustomerRegistrationVerification { get; }
+        MailProperty CustomerPasswordReset { get; }
         MailProperty PodcasterRequestConfirmation { get; }
         MailProperty PodcasterRequestResult { get; }
     }

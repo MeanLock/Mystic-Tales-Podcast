@@ -42,10 +42,7 @@ namespace UserService.BusinessLogic.Services.DbServices.MiscServices
         private readonly IUnitOfWork _unitOfWork;
 
         // REPOSITORIES
-        IGenericRepository<Account> _accountGenericRepository;
-        IGenericRepository<AccountBalanceTransaction> _accountBalanceTransactionGenericRepository;
-        IGenericRepository<PlatformFeedback> _platformFeedbackGenericRepository;
-
+        
 
 
         public PlatformFeedbackService(
@@ -55,10 +52,7 @@ namespace UserService.BusinessLogic.Services.DbServices.MiscServices
             JwtHelper jwtHelper,
             IUnitOfWork unitOfWork,
 
-            IGenericRepository<Account> accountGenericRepository,
-            IGenericRepository<AccountBalanceTransaction> accountBalanceTransactionGenericRepository,
-            IGenericRepository<PlatformFeedback> platformFeedbackGenericRepository,
-
+            
             FileIOHelper fileIOHelper,
             IFilePathConfig filePathConfig,
             IAppConfig appConfig,
@@ -71,9 +65,6 @@ namespace UserService.BusinessLogic.Services.DbServices.MiscServices
             _jwtHelper = jwtHelper;
             _unitOfWork = unitOfWork;
 
-            _accountGenericRepository = accountGenericRepository;
-            _accountBalanceTransactionGenericRepository = accountBalanceTransactionGenericRepository;
-            _platformFeedbackGenericRepository = platformFeedbackGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _filePathConfig = filePathConfig;
@@ -90,138 +81,6 @@ namespace UserService.BusinessLogic.Services.DbServices.MiscServices
         }
 
         /////////////////////////////////////////////////////////////
-
-        public async Task CreatePlatformFeedback(PlatformFeedbackRequestDTO platformFeedback, Account account)
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    // Check if the account has already given feedback
-                    var existingFeedback = await _platformFeedbackGenericRepository.FindAll(
-                        predicate: feedback => feedback.AccountId == account.Id
-                    ).FirstOrDefaultAsync();
-                    if (existingFeedback != null)
-                    {
-                        // update
-                        existingFeedback.RatingScore = platformFeedback.Feedback.RatingScore;
-                        existingFeedback.Comment = platformFeedback.Feedback.Comment;
-
-                        await _platformFeedbackGenericRepository.UpdateAsync(existingFeedback.AccountId, existingFeedback);
-                    }
-                    else
-                    {
-                        PlatformFeedback platformFeedbackEntity = new PlatformFeedback
-                        {
-                            AccountId = account.Id,
-                            RatingScore = platformFeedback.Feedback.RatingScore,
-                            Comment = platformFeedback.Feedback.Comment
-                        };
-                        // Save feedback to the database
-                        await _platformFeedbackGenericRepository.CreateAsync(platformFeedbackEntity);
-                    }
-
-
-
-                    // Commit the transaction
-                    await transaction.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine("\n" + ex.StackTrace + "\n");
-                    throw new HttpRequestException("Tạo phản hồi không thành công, lỗi: " + ex.Message);
-                }
-            }
-        }
-        public async Task<string> CreateAccountBalanceDepositPaymentLink(AccountBalanceDepositDTO accountBalanceDepositDTO, int accountId)
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    PayOS payOS = new PayOS(_payosConfig.ClientID, _payosConfig.APIKey, _payosConfig.ChecksumKey);
-
-
-
-
-
-                    AccountBalanceTransaction accountBalanceTransaction = new AccountBalanceTransaction
-                    {
-                        AccountId = accountId,
-                        Amount = accountBalanceDepositDTO.Amount,
-                        TransactionTypeId = 5,
-                        TransactionStatusId = 1,
-                    };
-
-                    // Save payment history to the database
-                    AccountBalanceTransaction newAccountBalanceTransaction = await _accountBalanceTransactionGenericRepository.CreateAsync(accountBalanceTransaction);
-                    long orderCode = newAccountBalanceTransaction.Id;
-
-                    PaymentData paymentData = new PaymentData(orderCode, (int)accountBalanceDepositDTO.Amount, $"SURVEYTALK NAP TIEN",
-                                             [], accountBalanceDepositDTO.CancelUrl, accountBalanceDepositDTO.ReturnUrl);
-
-                    CreatePaymentResult createPayment = await payOS.createPaymentLink(paymentData);
-
-
-                    // Commit the transaction
-                    await transaction.CommitAsync();
-                    return createPayment.checkoutUrl;
-
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine("\n" + ex.StackTrace + "\n");
-                    throw new HttpRequestException("Tạo liên kết thanh toán không thành công.");
-                }
-            }
-
-        }
-
-        public async Task WithdrawAccountBalance(Account account, AccountBalanceWithdrawalDTO accountBalanceWithdrawalDTO)
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    if (account.Balance < accountBalanceWithdrawalDTO.Amount)
-                    {
-                        throw new Exception("Số dư không đủ để rút tiền.");
-                    }
-
-                    // AccountBalanceTransaction accountBalanceTransaction = new AccountBalanceTransaction
-                    // {
-                    //     AccountId = account.Id,
-                    //     Amount = accountBalanceWithdrawalDTO.Amount,
-                    //     TransactionTypeId = 6, // Rút tiền
-                    //     TransactionStatusId = 1, // Chờ xử lý
-                    //     BankAccountNumber = accountBalanceWithdrawalDTO.BankAccountNumber,
-                    //     BankCode = accountBalanceWithdrawalDTO.BankCode,
-                    //     Description = accountBalanceWithdrawalDTO.Description
-                    // };
-
-                    // Save withdrawal request to the database
-                    // await _accountBalanceTransactionGenericRepository.CreateAsync(accountBalanceTransaction);
-
-                    // Update account balance
-                    account.Balance -= accountBalanceWithdrawalDTO.Amount;
-                    await _accountGenericRepository.UpdateAsync(account.Id, account);
-
-                    // Commit the transaction
-                    await transaction.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine("\n" + ex.StackTrace + "\n");
-                    throw new HttpRequestException("Rút tiền không thành công, lỗi: " + ex.Message);
-                }
-            }
-        }
 
 
 

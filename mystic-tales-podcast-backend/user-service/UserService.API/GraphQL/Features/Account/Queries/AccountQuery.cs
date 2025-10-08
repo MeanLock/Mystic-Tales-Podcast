@@ -1,5 +1,4 @@
-﻿using UserService.API.GraphQL.Features.Account.Types;
-
+﻿
 namespace UserService.API.GraphQL.Features.Account.Queries
 {
     public class AccountQuery

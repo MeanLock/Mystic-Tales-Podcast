@@ -23,5 +23,17 @@ namespace BookingManagementService.Common.AppConfigurations.BusinessSetting
             PodcasterRequestResult = mailConfig.PodcasterRequestResult;
         }
 
+
+        public MailProperty GetMailPropertyByType(string mailType)
+        {
+            return mailType.ToLower() switch
+            {
+                "customerregistrationverification" => CustomerRegistrationVerification,
+                "podcasterrequestconfirmation" => PodcasterRequestConfirmation,
+                "podcasterrequestresult" => PodcasterRequestResult,
+                _ => throw new ArgumentException($"Invalid mail type: {mailType}")
+            };
+        }
+
     }
 }

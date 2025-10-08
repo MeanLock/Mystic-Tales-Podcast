@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -6,6 +7,7 @@ using UserService.BusinessLogic.DTOs.Auth;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using UserService.BusinessLogic.Services.DbServices.UserServices;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
 using UserService.Common.AppConfigurations.FilePath.interfaces;
@@ -26,9 +28,10 @@ namespace UserService.API.Controllers.BaseControllers
         private readonly IFileValidationConfig _fileValidationConfig;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
+        private readonly AccountService _accountService;
 
 
-        public AuthController(GenericQueryService genericQueryService, HttpServiceQueryClient httpServiceQueryClient, KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper)
+        public AuthController(GenericQueryService genericQueryService, HttpServiceQueryClient httpServiceQueryClient, KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, AccountService accountService)
         {
             _genericQueryService = genericQueryService;
             _httpServiceQueryClient = httpServiceQueryClient;
@@ -37,9 +40,16 @@ namespace UserService.API.Controllers.BaseControllers
             _fileIOHelper = fileIOHelper;
             _fileValidationConfig = fileValidationConfig;
             _filePathConfig = filePathConfig;
+            _accountService = accountService;
         }
 
-        ///api/user-service/api/auth/register/customer
+        [HttpGet("test")]
+        public async Task<IActionResult> Test()
+        {
+            return Ok(await _accountService.GetActiveSystemConfigProfile());
+        }
+
+        // /api/user-service/api/auth/register/customer
         [HttpPost("register/customer")]
         public async Task<IActionResult> RegisterCustomer([FromForm] CustomerRegisterRequestDTO customerRegisterRequestDTO)
         {

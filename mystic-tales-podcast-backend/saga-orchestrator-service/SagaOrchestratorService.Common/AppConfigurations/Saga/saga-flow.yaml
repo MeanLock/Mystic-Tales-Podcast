@@ -5186,11 +5186,14 @@ flows:
         handle-service: "UserService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - Mail
+          - MailTypeName
+          - MailObject
         next-request-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         response-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         onSuccess:
           emit: "send-user-service-email.success"
           topic: "user-management-domain"
@@ -5215,11 +5218,14 @@ flows:
         handle-service: "SystemConfigurationService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - Mail
+          - MailTypeName
+          - MailObject
         next-request-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         response-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         onSuccess:
           emit: "send-system-configuration-service-email.success"
           topic: "system-configuration-domain"
@@ -5244,11 +5250,14 @@ flows:
         handle-service: "BookingService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - Mail
+          - MailTypeName
+          - MailObject
         next-request-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         response-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         onSuccess:
           emit: "send-booking-management-service-email.success"
           topic: "booking-management-domain"
@@ -5273,11 +5282,14 @@ flows:
         handle-service: "PodcastService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - Mail
+          - MailTypeName
+          - MailObject
         next-request-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         response-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         onSuccess:
           emit: "send-podcast-service-email.success"
           topic: "content-management-domain"
@@ -5302,11 +5314,14 @@ flows:
         handle-service: "SubscriptionService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - Mail
+          - MailTypeName
+          - MailObject
         next-request-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         response-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         onSuccess:
           emit: "send-subscription-service-email.success"
           topic: "subscription-management-domain"
@@ -5331,11 +5346,14 @@ flows:
         handle-service: "ModerationService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - Mail
+          - MailTypeName
+          - MailObject
         next-request-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         response-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         onSuccess:
           emit: "send-moderation-service-email.success"
           topic: "report-management-domain"
@@ -5360,11 +5378,14 @@ flows:
         handle-service: "TransactionService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - Mail
+          - MailTypeName
+          - MailObject
         next-request-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         response-data:
-          - Mail
+          - MailTypeName
+          - MailObject
         onSuccess:
           emit: "send-transaction-service-email.success"
           topic: "payment-processing-domain"
