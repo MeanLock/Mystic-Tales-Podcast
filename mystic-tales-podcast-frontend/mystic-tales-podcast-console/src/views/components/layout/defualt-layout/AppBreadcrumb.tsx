@@ -46,7 +46,7 @@ const AppBreadcrumb = () => {
     if (matchedRoute) {
       breadcrumbs.push({
         pathname: "/",
-        name: "Trang chủ",
+        name: "Home",
         active: false,
       })
 

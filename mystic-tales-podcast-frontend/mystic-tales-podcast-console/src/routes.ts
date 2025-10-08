@@ -5,8 +5,9 @@ const Dashboard = React.lazy(() => import('./views/role-views/admin/dashboard-vi
 const Customer_View = React.lazy(() => import('./views/role-views/admin/customer-view/index'))
 const Podcaster_View = React.lazy(() => import('./views/role-views/admin/podcaster-view/index'))
 const Staff_View = React.lazy(() => import('./views/role-views/admin/staff-view/index'))
-const PlatformFeedback_View = React.lazy(() => import('./views/role-views/admin/platform-feedback-view/index'))
-
+const DMCA_Accusation_View = React.lazy(() => import('./views/role-views/admin/dmca-accusation-view/index'))
+const DMCA_Accusation_Detail_View = React.lazy(() => import('./views/role-views/admin/dmca-accusation-detail-view/index'))
+const SystemConfigView = React.lazy(() => import('./views/role-views/admin/system-config-view/index'))
 //Manager
 const Community_Survey_View = React.lazy(() => import('./views/role-views/manager/community-survey-view/index'))
 const Community_Survey_Detail_View = React.lazy(() => import('./views/role-views/manager/community-survey-detail-view/index'))
@@ -28,8 +29,9 @@ const routes = [
   { path: '/customers/table', name: 'Customers', element: Customer_View, role_id: [1] },
   { path: '/staffs/table', name: 'Staffs', element: Staff_View, role_id: [1] },
   { path: '/podcasters/table', name: 'Podcasters', element: Podcaster_View, role_id: [1] },
-  { path: '/platform-feedback/table', name: 'Đánh Giá', element: PlatformFeedback_View, role_id: [1] },
-
+  { path: '/dmca-accusation/table', name: 'DMCA Accusation', element: DMCA_Accusation_View, role_id: [1] },
+  { path: '/dmca-accusation/detail/:id', name: 'Detail', element: DMCA_Accusation_Detail_View, role_id: [1], parent: '/dmca-accusation/table' },
+  { path: '/system-configuration', name: 'System Configuration', element: SystemConfigView, role_id: [1] },
   { path: '/community-survey', name: 'Khảo Sát', element: Community_Survey_View, role_id: [2] },
   { path: '/community-survey/detail/:id', name: 'Chi Tiết', element: Community_Survey_Detail_View, role_id: [2], parent: '/community-survey' },
   { path: '/data-market', name: 'Data Market', element: Data_Market_View, role_id: [2] },

@@ -68,7 +68,7 @@
 
         .nav-link {
             color: white;
-            gap: 2rem;
+            gap: 1.5rem;
             transition: all 0.3s ease;
 
             svg {
@@ -138,10 +138,10 @@
         a {
             text-decoration: none;
             color: #6c757d;
-
+            font-weight: 500;
             &:hover {
                 text-decoration: none;
-                color: #3e5dab;
+                color: var(--primary-grey);
             }
         }
 

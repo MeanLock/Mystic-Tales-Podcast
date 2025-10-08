@@ -5,6 +5,7 @@
     --primary-grey: #282828;
     --secondary-grey: #999999;
     --primary-green: #AEE339;
+    --secondary-green: #7FB800;
     --white: #ffffff;
     --white-75: rgba(255, 255, 255, 0.75);
     --white-60: rgba(255, 255, 255, 0.6);
@@ -29,3 +30,16 @@ body,
 span {
     color: var(--primary-grey);
 }   
+
+.ag-header-cell-text {
+    color: var(--white);
+}
+.ag-header-container {
+    background-color: var(--primary-grey);
+}
+.ag-icon {
+    color: var(--primary-green);
+}
+.ag-header-cell-resize::after {
+  background-color: var(--primary-green) ;
+}

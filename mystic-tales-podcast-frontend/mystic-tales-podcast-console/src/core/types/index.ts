@@ -2,7 +2,6 @@ export type Role = {
   Id: number;
   Name: string;
 };
-
 export type Account = {
   Id: number;
   Email: string;
@@ -55,144 +54,118 @@ export type Podcaster = {
   PodcasterProfile: PodcasterProfile;
 }
 
-export type FilterSurvey = {
-  Id: number;
-  Title: string;
-  Description: string;
-  SurveyTopicId: number;
-  SurveySpecificTopicId: number;
-  StartDate: string | null;
-  EndDate: string | null;
-  SecurityModeId: number;
-  IsAvailable: boolean;
-  PublishedAt: string | null;
-  TakerBaseRewardPrice: number | null;
-  ConfigJsonString: string;
-  SurveyPrivateData: {
-    RequesterId: number;
-    SurveyTypeId: number;
-    Kpi: number;
-    TheoryPrice: number;
-    ExtraPrice: number;
-    ProfitPrice: number;
-    AllocBaseAmount: number;
-    AllocTimeAmount: number;
-    AllocLevelAmount: number;
-    MaxXp: number;
-    DeletedAt: string;
-    CreatedAt: string;
-    UpdatedAt: string;
-  } | null;
-  SurveyStatusId: number;
-  MainImageUrl: string | null;
-  BackgroundImageUrl: string | null;
-  QuestionCount: number;
-  Questions: Question[];
-};
-
-export type QuestionOption = {
-  Id: string;
-  SurveyQuestionId: string;
-  Content: string;
-  Order: number;
-  MainImageUrl: string | null;
-};
-
-export type QuestionType = {
-  Id: number;
-  Name: String;
-  Price: number;
-  DeactivatedAt: string | null;
-};
-export type FieldInputType = {
-  Id: number;
-  Name: string;
-};
-export type Question = {
-  Id: string;
-  SurveyId: number;
-  QuestionTypeId: number;
-  Content: string;
-  Description: string | null;
-  TimeLimit: number;
-  IsVoiced: boolean;
-  Order: number;
-  ConfigJsonString: string | null;
-  DeletedAt: string | null;
-  Version: number;
-  MainImageUrl: string | null;
-  Options?: QuestionOption[];
-};
-
-export type SurveyTaker = {
+//=========================================DMCA Accusation=========================================
+export type AssignedStaff = {
   Id: number;
   FullName: string;
-  Dob: string;
-  Gender: string;
-  MainImageUrl: string | null;
+  Email: string;
 };
-
-export type SurveyTakenResult = {
-  Id: number;
-  IsValid: boolean;
-  InvalidReason: string | null;
-  MoneyEarned: number;
-  XpEarned: number;
-  CompletedAt: string;
-  Taker: SurveyTaker;
-};
-
-export type SurveyRewardTracking = {
-  Id: number;
-  SurveyId: number;
-  RewardPrice: number;
-  RewardXp: number;
-  CreatedAt: string;
-};
-
-
-export type CommunitySurvey = {
-  Id: number;
+export type PodcastEpisode = {
+  Id: string;
   Title: string;
-  Description: string;
-  SurveyTopicId: number;
-  SurveySpecificTopicId: number;
-  StartDate: string | null;
-  EndDate: string | null;
-  SecurityModeId: number;
-  IsAvailable: boolean;
-  PublishedAt: string | null;
-  TakerBaseRewardPrice: number | null;
-  ConfigJsonString: string | null;
-  SurveyPrivateData: {
-    RequesterId: number;
-    SurveyTypeId: number;
-    Kpi: number;
-    TheoryPrice: number;
-    ExtraPrice: number;
-    ProfitPrice: number;
-    AllocBaseAmount: number;
-    AllocTimeAmount: number;
-    AllocLevelAmount: number;
-    MaxXp: number;
-    DeletedAt: string | null;
-    CreatedAt: string;
-    UpdatedAt: string;
-  } | null;
-  SurveyStatusId: number;
-  MainImageUrl: string | null;
-  BackgroundImageUrl: string | null;
-  QuestionCount: number;
-  Questions: Question[];
-  SurveyTakenResults: SurveyTakenResult[];
-  SurveyRewardTrackings: SurveyRewardTracking[];
+};
+export type PodcastShow = {
+  Id: string;
+  Name: string;
+};
+export type DMCAAccusation = {
+  Id: number;
+  PodcastShow: PodcastShow;
+  PodcastEpisode: PodcastEpisode;
+  AssignedStaff: AssignedStaff;
+  LastLawsuitCheckingAlertAt: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+};
+export type DMCAAccusationDetail = {
+  Id: number;
+  PodcastShowId: string;
+  PodcastEpisodeId: string | null;
+  AssignedStaff: number | null;
+  LastLawsuitCheckingAlertAt: string | null;
+  CreatedAt: string;
+  UpdatedAt: string | null; 
+  DMCANotice?: DMCANotice;
+  CounterNotice?: CounterNotice;
+  LawsuitProof?: LawsuitProof;
+};
+export type DMCANoticeAttachFile = {
+  Id: string;
+  AttachFileUrl: string;
+  CreatedAt: string;
 };
 
-
-export type PlatformFeedback = {
+export type DMCANotice = {
+  Id: string;
+  PodcastShowId: string;
+  PodcastEpisodeId: string;
   AccountId: number;
-  RatingScore: number;
-  Comment: string;
+  AccountEmail: string;
+  AccountPhone: string;
+  GoodFaithStatement: string;
+  WorkClaimed: string;
+  Signature: string;
+  IsValid: boolean;
+  InValidReason: string;
+  ValidatedBy: number;
+  ValidatedAt: string;
+  DmcaAccusationId: number;
   CreatedAt: string;
-  UpdatedAt: string | null;
+  UpdatedAt: string;
+  DMCANoticeAttachFileList: DMCANoticeAttachFile[];
+};
+
+export type CounterNoticeAttachFile = {
+  Id: string;
+  AttachFileUrl: string;
+  CreatedAt: string;
+};
+
+export type CounterNotice = {
+  Id: string;
+  AccountId: number;
+  AccountEmail: string;
+  AccountPhone: string;
+  StatementPerjury: string;
+  Signature: string;
+  DmcaAccusationId: number;
+  Jurisdiction: string;
+  EvidenceFileKey: string;
+  IsValid: boolean;
+  InValidReason: string;
+  ValidatedBy: number;
+  ValidatedAt: string;
+  FiledDate: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  CounterNoticeAttachFileList: CounterNoticeAttachFile[];
+};
+
+export type LawsuitProofAttachFile = {
+  Id: string;
+  AttachFileUrl: string;
+  CreatedAt: string;
+};
+
+export type LawsuitProof = {
+  Id: string;
+  AccountId: number;
+  GoodFaithStatement: string;
+  CourtName: string;
+  CaseNumber: string;
+  FilingDate: string;
+  Signature: string;
+  DmcaAccusationId: number;
+  IsValid: boolean;
+  InValidReason: string;
+  ValidatedBy: number;
+  ValidatedAt: string;
+  JudgmentDetails: string;
+  DateResolved: string;
+  Outcome: string;
+  RulingDocumentFileUrl: string;
+  IsDefendantWon: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+  LawsuitProofAttachFileList: LawsuitProofAttachFile[];
 };

@@ -145,7 +145,7 @@ const state_creator = (table: Account[]) => {
           const Modal_props = {
             updateForm: <PodcasterDetailTab account={params.data} onClose={() => { }} />,
             title: 'Podcaster [ID: #' + params.data.Id + ']',
-            button: <Eye size={27} color="purple" weight="duotone" />,
+            button:  <Eye size={27} color='var(--secondary-green)'  />,
             update_button_color: 'white'
           }
           return (
@@ -212,7 +212,7 @@ const PodcasterView: FC<PodcasterViewProps> = () => {
   }, [])
   return (
     <PodcasterViewContext.Provider value={{ handleDataChange: handleDataChange }}>
-      <CRow>
+      <CRow className="container-test">
         <CCol xs={12}>
           {isLoading ? (
             <SurveyTalkLoading />

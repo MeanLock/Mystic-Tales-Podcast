@@ -51,15 +51,14 @@ const get_roleNav = (role_id: number, account_id: number) => {
       {
         component: CNavItem,
         name: 'DMCA Accusation',
-        to: '/level-management',
+        to: '/dmca-accusation/table',
         icon: <AssignmentIcon sx={{ fontSize: 32 }} />,
 
       },
-
       {
         component: CNavItem,
         name: 'System Config',
-        to: '/staffs_manager/table11',
+        to: '/system-configuration',
         icon: <SettingsOutlinedIcon sx={{ fontSize: 29 }} />,
 
       }

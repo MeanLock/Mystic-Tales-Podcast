@@ -31,7 +31,7 @@ const CommunitySurveyDetailView: FC<CommunitySurveyDetailViewProps> = () => {
     const { id } = useParams<{ id: string }>();
     const [surveyData, setSurveyData] = useState<CommunitySurvey | null>(null);
     const [loading, setLoading] = useState(true)
-        const [activeTab, setActiveTab] = useState("preview-questions");
+    const [activeTab, setActiveTab] = useState("preview-questions");
 
     const handleDataChange = async () => {
         if (id) {
