@@ -27,15 +27,15 @@ namespace UserService.Common.AppConfigurations.BusinessSetting
         }
 
         // hàm nhận vào string mailType, trả về MailProperty tương ứng
-        public MailProperty GetMailPropertyByType(string mailType)
+        public MailProperty GetMailPropertyByTypeName(string mailTypeName)
         {
-            return mailType.ToLower() switch
+            return mailTypeName.ToLower() switch
             {
                 "customerregistrationverification" => CustomerRegistrationVerification,
                 "customerpasswordreset" => CustomerPasswordReset,
                 "podcasterrequestconfirmation" => PodcasterRequestConfirmation,
                 "podcasterrequestresult" => PodcasterRequestResult,
-                _ => throw new ArgumentException($"Invalid mail type: {mailType}")
+                _ => throw new ArgumentException($"Invalid mail type: {mailTypeName}")
             };
         }
 

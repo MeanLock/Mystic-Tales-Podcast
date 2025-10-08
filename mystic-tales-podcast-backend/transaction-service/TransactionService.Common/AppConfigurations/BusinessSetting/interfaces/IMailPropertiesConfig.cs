@@ -7,6 +7,8 @@ namespace TransactionService.Common.AppConfigurations.BusinessSetting.interfaces
         MailProperty CustomerRegistrationVerification { get; }
         MailProperty PodcasterRequestConfirmation { get; }
         MailProperty PodcasterRequestResult { get; }
+
+        MailProperty GetMailPropertyByTypeName(string mailTypeName);
     }
     
     public class MailProperty

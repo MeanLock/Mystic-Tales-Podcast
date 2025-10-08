@@ -7,6 +7,8 @@ namespace BookingManagementService.Common.AppConfigurations.BusinessSetting.inte
         MailProperty CustomerRegistrationVerification { get; }
         MailProperty PodcasterRequestConfirmation { get; }
         MailProperty PodcasterRequestResult { get; }
+
+        MailProperty GetMailPropertyByTypeName(string mailTypeName);
     }
     
     public class MailProperty

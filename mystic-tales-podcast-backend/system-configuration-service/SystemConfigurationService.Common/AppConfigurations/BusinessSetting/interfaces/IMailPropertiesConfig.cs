@@ -7,6 +7,8 @@ namespace SystemConfigurationService.Common.AppConfigurations.BusinessSetting.in
         MailProperty CustomerRegistrationVerification { get; }
         MailProperty PodcasterRequestConfirmation { get; }
         MailProperty PodcasterRequestResult { get; }
+
+        MailProperty GetMailPropertyByTypeName(string mailTypeName);
     }
     
     public class MailProperty

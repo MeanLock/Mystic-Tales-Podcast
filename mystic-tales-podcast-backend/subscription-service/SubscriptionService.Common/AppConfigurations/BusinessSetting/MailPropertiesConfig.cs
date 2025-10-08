@@ -24,14 +24,14 @@ namespace SubscriptionService.Common.AppConfigurations.BusinessSetting
         }
 
 
-        public MailProperty GetMailPropertyByType(string mailType)
+        public MailProperty GetMailPropertyByTypeName(string mailTypeName)
         {
-            return mailType.ToLower() switch
+            return mailTypeName.ToLower() switch
             {
                 "customerregistrationverification" => CustomerRegistrationVerification,
                 "podcasterrequestconfirmation" => PodcasterRequestConfirmation,
                 "podcasterrequestresult" => PodcasterRequestResult,
-                _ => throw new ArgumentException($"Invalid mail type: {mailType}")
+                _ => throw new ArgumentException($"Invalid mail type: {mailTypeName}")
             };
         }
 

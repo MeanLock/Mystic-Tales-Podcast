@@ -6,6 +6,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAcc
 using UserService.BusinessLogic.Enums.Kafka;
 using UserService.BusinessLogic.Services.DbServices.UserServices;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
+using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
 using UserService.Infrastructure.Models.Kafka;
 using UserService.Infrastructure.Services.Kafka;
 
@@ -17,6 +18,7 @@ namespace UserService.BusinessLogic.MessageHandlers
         private readonly AccountService _accountService;
         private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.UserManagementDomain;
+        private readonly IMailPropertiesConfig _mailPropertiesConfig;
 
 
 
@@ -24,11 +26,13 @@ namespace UserService.BusinessLogic.MessageHandlers
             IMessagingService messagingService,
             AccountService accountService,
             KafkaProducerService kafkaProducerService,
-            ILogger<UserManagementDomainMessageHandler> logger) : base(messagingService, kafkaProducerService, logger)
+            ILogger<UserManagementDomainMessageHandler> logger,
+            IMailPropertiesConfig mailPropertiesConfig) : base(messagingService, kafkaProducerService, logger)
         {
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
             _accountService = accountService;
+            _mailPropertiesConfig = mailPropertiesConfig;
         }
 
         // create-account
@@ -70,7 +74,9 @@ namespace UserService.BusinessLogic.MessageHandlers
                 stepHandler: async (command) =>
                 {
                     var sendUserServiceEmailParameterDTO = command.RequestData.ToObject<SendUserServiceEmailParameterDTO>();
-                    await _accountService.SendUserServiceEmail(sendUserServiceEmailParameterDTO);
+                    var mailObject = sendUserServiceEmailParameterDTO.MailObject;
+                    var mailProperty = _mailPropertiesConfig.GetMailProperty(sendUserServiceEmailParameterDTO.MailTypeName);
+                    await _accountService.SendUserServiceEmail(mailProperty, sendUserServiceEmailParameterDTO.ToEmail, mailObject);
                     // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: SAGA_TOPIC,
@@ -96,7 +102,7 @@ namespace UserService.BusinessLogic.MessageHandlers
                 stepHandler: async (command) =>
                 {
                     var createAccountParameterDTO = command.RequestData.ToObject<CreateAccountParameterDTO>();
-                    await _accountService.RegisterCustomer(createAccountParameterDTO);
+                    await _accountService.RegisterCustomer(createAccountParameterDTO, command );
                     // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: SAGA_TOPIC,

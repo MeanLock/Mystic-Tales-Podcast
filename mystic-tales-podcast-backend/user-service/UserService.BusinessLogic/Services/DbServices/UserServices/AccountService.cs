@@ -19,6 +19,9 @@ using UserService.DataAccess.Entities.SqlServer;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using UserService.BusinessLogic.Models.CrossService;
 using Newtonsoft.Json.Linq;
+using UserService.Infrastructure.Services.Kafka;
+using UserService.BusinessLogic.Enums.Kafka;
+using UserService.Infrastructure.Models.Kafka;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -56,6 +59,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         // GOOGLE SERVICE
         private readonly FluentEmailService _fluentEmail;
 
+        // KAFKA SERVICE
+        private readonly KafkaProducerService _kafkaProducerService;
+
         public AccountService(
             ILogger<AccountService> logger,
             AppDbContext appDbContext,
@@ -74,7 +80,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             IAppConfig appConfig,
             IAccountConfig accountConfig,
 
-            HttpServiceQueryClient httpServiceQueryClient
+            HttpServiceQueryClient httpServiceQueryClient,
+            KafkaProducerService kafkaProducerService
             )
         {
             _logger = logger;
@@ -97,6 +104,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _appConfig = appConfig;
 
             _httpServiceQueryClient = httpServiceQueryClient;
+            _kafkaProducerService = kafkaProducerService;
         }
 
         public async Task<Account> GetExistAccountById(int accountId)
@@ -174,7 +182,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         /////////////////////////////////////////////////////////////
 
-        public async Task MailSending(MailProperty mailProperty, string toEmail, object viewModel)
+        public async Task SendUserServiceEmail(MailProperty mailProperty, string toEmail, object viewModel)
         {
             try
             {
@@ -186,7 +194,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 throw new HttpRequestException("Gửi mail thất bại, lỗi: " + ex.Message);
             }
         }
-        public async Task RegisterCustomer(CreateAccountParameterDTO customerRegisterDTO)
+        public async Task RegisterCustomer(CreateAccountParameterDTO customerRegisterDTO, SagaCommandMessage command)
         {
 
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -219,14 +227,31 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             customer.IsVerified = false;
                             customer.VerifyCode = verifyCode;
                             customer.PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold");
-
-                            await _fluentEmail.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
+                            customer.MainImageFileKey = null;
+                            // await _fluentEmail.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
+                            // {
+                            //     Email = registerInfo.Email,
+                            //     FullName = registerInfo.FullName,
+                            //     VerifyCode = verifyCode
+                            // }, _googleMailConfig.AccountVerification_TemplateViewPath
+                            // , _googleMailConfig.AccountVerification_MailSubject);
+                            var mailSendingRequestData = JObject.FromObject(new
                             {
-                                Email = registerInfo.Email,
-                                FullName = registerInfo.FullName,
-                                VerifyCode = verifyCode
-                            }, _googleMailConfig.AccountVerification_TemplateViewPath
-                            , _googleMailConfig.AccountVerification_MailSubject);
+                                MailTypeName = "AccountVerification",
+                                ToEmail = registerInfo.Email,
+                                MailObject = new VerifyCodeEmailViewModel
+                                {
+                                    Email = registerInfo.Email,
+                                    FullName = registerInfo.FullName,
+                                    VerifyCode = verifyCode
+                                }
+                            });
+                            var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.UserManagementDomain,
+                                requestData: mailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "mail-sending-flow");
+
                             await _accountGenericRepository.UpdateAsync(customer.Id, customer);
 
                         }
@@ -248,38 +273,81 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             IsVerified = false,
                             VerifyCode = verifyCode,
                             PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold"),
+                            MainImageFileKey = null,
                         };
 
-                        await _fluentEmail.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
+                        // await _fluentEmail.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
+                        // {
+                        //     Email = registerInfo.Email,
+                        //     FullName = registerInfo.FullName,
+                        //     VerifyCode = verifyCode
+                        // }, _googleMailConfig.AccountVerification_TemplateViewPath
+                        // , _googleMailConfig.AccountVerification_MailSubject);
+                        var mailSendingRequestData = JObject.FromObject(new
                         {
-                            Email = registerInfo.Email,
-                            FullName = registerInfo.FullName,
-                            VerifyCode = verifyCode
-                        }, _googleMailConfig.AccountVerification_TemplateViewPath
-                        , _googleMailConfig.AccountVerification_MailSubject);
+                            MailTypeName = "AccountVerification",
+                            ToEmail = registerInfo.Email,
+                            MailObject = new VerifyCodeEmailViewModel
+                            {
+                                Email = registerInfo.Email,
+                                FullName = registerInfo.FullName,
+                                VerifyCode = verifyCode
+                            }
+                        });
                         await _accountGenericRepository.CreateAsync(customer);
                     }
 
 
 
                     var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + customer.Id;
-
                     if (registerInfo.MainImageFileKey != null && registerInfo.MainImageFileKey != "")
                     {
-                        string fileName = "main";
-                        string base64Data = registerInfo.ImageBase64;
+                        var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image.{FilePathHelper.GetExtension(registerInfo.MainImageFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(registerInfo.MainImageFileKey, MainImageFileKey);
+                        customer.MainImageFileKey = MainImageFileKey;
+                        await _accountGenericRepository.UpdateAsync(customer.Id, customer);
+                    }
 
-                        await _imageHelpers.SaveBase64File(base64Data, folderPath, fileName);
-                    }
-                    else
-                    {
-                        await _imageHelpers.CopyFile(_filePathConfig.ACCOUNt_IMAGE_PATH, "unknown", folderPath, "main");
-                    }
                     await transaction.CommitAsync();
+
+                    var messageNextRequestData = JObject.FromObject(new
+                    { 
+                        Email = customer.Email,
+                        FullName = customer.FullName,
+                        Dob = customer.Dob?.ToString("yyyy-MM-dd"),
+                        Gender = customer.Gender,
+                        Address = customer.Address,
+                        Phone = customer.Phone,
+                        MainImageFileKey = customer.MainImageFileKey,
+                        RoleId = customer.RoleId,
+                        Password = customer.Password,
+                    });
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        AccountId = customer.Id
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-account.success"
+                        );
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: command.LastStepResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-account.failed"
+                        );
+
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                     throw new HttpRequestException("Đăng kí tài khoản thất bại, lỗi: " + ex.Message);
                 }
