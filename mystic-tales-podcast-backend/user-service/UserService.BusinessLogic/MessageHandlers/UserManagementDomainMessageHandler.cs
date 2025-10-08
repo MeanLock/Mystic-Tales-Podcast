@@ -9,20 +9,67 @@ using UserService.Infrastructure.Services.Kafka;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
-    public class AuthMessageHandler : BaseSagaCommandMessageHandler
+    public class UserManagementDomainMessageHandler : BaseSagaCommandMessageHandler
     {
         private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.UserManagementDomain;
 
 
-        public AuthMessageHandler(
+        public UserManagementDomainMessageHandler(
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
-            ILogger<AuthMessageHandler> logger) : base(messagingService, kafkaProducerService, logger)
+            ILogger<UserManagementDomainMessageHandler> logger) : base(messagingService, kafkaProducerService, logger)
         {
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
+        }
+
+        // create-account
+        // verify-account
+        // login-account-manual
+        // login-account-google
+        // update-user
+        // send-reset-password-link
+        // reset-account-password
+        // create-podcaster-profile
+        // update-podcaster-profile
+        // verify-podcaster
+        // increase-storage-size
+        // decrease-storage-size
+        // deactivate-account
+        // add-account-violation-point
+        // subtract-account-violation-point
+        // check-violation-threshold
+        // decrease-account-violation-point
+        // save-episode-history
+        // update-podcaster-rating
+        // create-podcaster-followed
+        // delete-podcaster-followed
+        // add-account-balance-amount
+        // subtract-account-balance-amount
+        // send-user-service-email
+        // add-podcaster-balance-amount
+        // subtract-podcaster-balance-amount
+        // add-account-balance-amount-rollback
+        // subtract-account-balance-amount-rollback
+        // add-podcaster-balance-amount-rollback
+        // subtract-podcaster-balance-amount-rollback
+
+        [MessageHandler("create-account", "user-management-domain")]
+        public async Task HandleCreateAccountAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    
+                    
+                },
+                responseTopic: SAGA_TOPIC,
+                // successEmit: "create-booking.success", // From YAML onSuccess.emit
+                failedEmitMessage: "create-account.failed"    // From YAML onFailure.emit
+            );
         }
 
         // [MessageHandler("ForgotPasswordEvent", "auth-events")]
@@ -97,99 +144,6 @@ namespace UserService.BusinessLogic.MessageHandlers
         // }
 
 
-
     }
-
-    #region Event DTOs
-
-    public class ForgotPasswordEvent : BaseMessage
-    {
-        public string Email_Forgot { get; set; } = string.Empty;
-        public string Email_Noti { get; set; } = string.Empty;
-        public ForgotPasswordEvent()
-        {
-            MessageType = nameof(ForgotPasswordEvent);
-        }
-    }
-
-    public class EmailNotificationEvent : BaseMessage
-    {
-        public string To { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
-        public EmailNotificationEvent()
-        {
-            MessageType = nameof(EmailNotificationEvent);
-        }
-    }
-    public class FacilityCreatedEvent : BaseMessage
-    {
-        public int FacilityId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-
-        public FacilityCreatedEvent()
-        {
-            MessageType = nameof(FacilityCreatedEvent);
-        }
-    }
-
-    public class FacilityUpdatedEvent : BaseMessage
-    {
-        public int FacilityId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-
-        public FacilityUpdatedEvent()
-        {
-            MessageType = nameof(FacilityUpdatedEvent);
-        }
-    }
-
-    public class FacilityDeletedEvent : BaseMessage
-    {
-        public int FacilityId { get; set; }
-
-        public FacilityDeletedEvent()
-        {
-            MessageType = nameof(FacilityDeletedEvent);
-        }
-    }
-
-    public class FacilityNotificationEvent : BaseMessage
-    {
-        public int FacilityId { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public string EventType { get; set; } = string.Empty;
-
-        public FacilityNotificationEvent()
-        {
-            MessageType = nameof(FacilityNotificationEvent);
-        }
-    }
-
-    public class FacilityAuditEvent : BaseMessage
-    {
-        public int FacilityId { get; set; }
-        public string Action { get; set; } = string.Empty;
-        public string Details { get; set; } = string.Empty;
-
-        public FacilityAuditEvent()
-        {
-            MessageType = nameof(FacilityAuditEvent);
-        }
-    }
-
-    public class FacilityCleanupEvent : BaseMessage
-    {
-        public int FacilityId { get; set; }
-        public string CleanupType { get; set; } = string.Empty;
-
-        public FacilityCleanupEvent()
-        {
-            MessageType = nameof(FacilityCleanupEvent);
-        }
-    }
-
-    #endregion
 }
+
