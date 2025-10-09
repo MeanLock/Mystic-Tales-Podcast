@@ -64,16 +64,7 @@ namespace UserService.API.Controllers.BaseControllers
                 {
                     return BadRequest("Invalid image file.");
                 }
-                // byte[] fileBytes;
-                // using (var memoryStream = new MemoryStream())
-                // {
-                //     await customerRegisterRequestDTO.MainImageFile.CopyToAsync(memoryStream);
-                //     fileBytes = memoryStream.ToArray();
-                // }
-                // string newMainImageFileName = $"{Guid.NewGuid()}_{customerRegisterRequestDTO.MainImageFile.FileName}";
-                // await _fileIOHelper.UploadBinaryFileAsync(fileBytes, _filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
 
-                // dùng stream để upload file lên fileIOHelper
 
                 string newMainImageFileName = $"{Guid.NewGuid()}_{customerRegisterRequestDTO.MainImageFile.FileName}";
                 using (var stream = customerRegisterRequestDTO.MainImageFile.OpenReadStream())
@@ -132,14 +123,6 @@ namespace UserService.API.Controllers.BaseControllers
                 {
                     return BadRequest("Invalid image file.");
                 }
-                // byte[] fileBytes;
-                // using (var memoryStream = new MemoryStream())
-                // {
-                //     await staffRegisterRequestDTO.MainImageFile.CopyToAsync(memoryStream);
-                //     fileBytes = memoryStream.ToArray();
-                // }
-                // string newMainImageFileName = $"{Guid.NewGuid()}_{staffRegisterRequestDTO.MainImageFile.FileName}";
-                // await _fileIOHelper.UploadBinaryFileAsync(fileBytes, _filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
 
                 string newMainImageFileName = $"{Guid.NewGuid()}_{staffRegisterRequestDTO.MainImageFile.FileName}";
                 using (var stream = staffRegisterRequestDTO.MainImageFile.OpenReadStream())

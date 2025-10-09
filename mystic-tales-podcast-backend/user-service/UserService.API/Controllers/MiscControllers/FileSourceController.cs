@@ -6,31 +6,19 @@ using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using UserService.DataAccess.Data;
 
-namespace UserService.API.Controllers.BaseControllers
+namespace UserService.API.Controllers.MiscControllers
 {
-    [Route("api/accounts")]
+    [Route("api/misc/file-source")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
-    public class AccountController : ControllerBase
+    public class FileSourceController : ControllerBase
     {
-        private readonly GenericQueryService _genericQueryService;
-        private readonly HttpServiceQueryClient _httpServiceQueryClient;
-        private readonly AppDbContext _appDbContext;
         private readonly FileIOHelper _fileIOHelper;
-        public AccountController(GenericQueryService genericQueryService, HttpServiceQueryClient httpServiceQueryClient, AppDbContext appDbContext, FileIOHelper fileIOHelper)
+        public FileSourceController(FileIOHelper fileIOHelper)
         {
-            _genericQueryService = genericQueryService;
-            _httpServiceQueryClient = httpServiceQueryClient;
-            _appDbContext = appDbContext;
             _fileIOHelper = fileIOHelper;
         }
 
-        [HttpGet("roles")]
-        public async Task<IActionResult> GetRoles()
-        {
-            var roles = await _appDbContext.Roles.ToListAsync();
-            return Ok(roles);
-        }
 
         // /api/user-service/get-file-url/{fileKey}
         [HttpGet("get-file-url/{**fileKey}")]
@@ -38,13 +26,19 @@ namespace UserService.API.Controllers.BaseControllers
         {
             // kiểm tra filkey có phải có pattern là "main_files/Bookings/<BookingId>/<BookingPodcastTrackId>_track_audio.<audio extension>" hoặc "main_files/PodcastEpisodes/<PodcastEpisodeId>/audio.<audio extension>" không, nếu có thì trả về exception 400
             // tức là sẽ có 2 loại fileKey không thể lấy url được từ url , các file còn lại thì được lấy binh thường
+            Console.WriteLine($"[DEBUG] Requested fileKey: {fileKey.StartsWith("main_files/Bookings/")}");
+            Console.WriteLine($"[DEBUG] Requested fileKey: {fileKey.Contains("_track_audio.")}");
+            Console.WriteLine($"[DEBUG] Requested fileKey: {fileKey.StartsWith("main_files/PodcastEpisodes/")}");
+            Console.WriteLine($"[DEBUG] Requested fileKey: {fileKey.Contains("/audio.")}");
+
+
             if (fileKey.StartsWith("main_files/Bookings/") && fileKey.Contains("_track_audio."))
             {
-                return Forbid("Cannot get URL for booking track audio files.");
+                return StatusCode(403, "Cannot get URL for booking track audio files.");
             }
             if (fileKey.StartsWith("main_files/PodcastEpisodes/") && fileKey.Contains("/audio."))
             {
-                return Forbid("Cannot get URL for podcast episode audio files.");
+                return StatusCode(403, "Cannot get URL for podcast episode audio files.");
             }
             var fileUrl = await _fileIOHelper.GeneratePresignedUrlAsync(fileKey);
 

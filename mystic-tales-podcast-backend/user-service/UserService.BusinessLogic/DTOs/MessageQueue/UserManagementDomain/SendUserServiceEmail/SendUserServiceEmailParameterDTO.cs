@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount
+namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserServiceEmail
 {
     public class SendUserServiceEmailParameterDTO
     {

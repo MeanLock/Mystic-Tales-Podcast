@@ -147,7 +147,6 @@ namespace UserService.Infrastructure.Services.AWS.S3
                     _logger.LogWarning($"File not found: {filePath}");
                     throw new FileNotFoundException($"File not found: {filePath}");
                 }
-
                 var request = new GetPreSignedUrlRequest()
                 {
                     BucketName = _bucketName!,

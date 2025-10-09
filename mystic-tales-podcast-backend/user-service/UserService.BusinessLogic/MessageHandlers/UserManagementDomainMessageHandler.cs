@@ -6,6 +6,9 @@ using UserService.BusinessLogic.DTOs.Auth;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.NewResetPassword;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendResetPasswordLink;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserServiceEmail;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
 using UserService.BusinessLogic.DTOs.ViewModels.Mail;
 using UserService.BusinessLogic.Enums.Kafka;
@@ -197,8 +200,8 @@ namespace UserService.BusinessLogic.MessageHandlers
                 messageJson: messageJson,
                 stepHandler: async (command) =>
                 {
-                    var resetPasswordRequestDTO = command.RequestData.ToObject<NewResetPasswordRequestDTO>();
-                    //await _authService.ResetPassword(resetPasswordRequestDTO, command);
+                    var resetPasswordRequestDTO = command.RequestData.ToObject<NewResetPasswordParameterDTO>();
+                    await _authService.ResetPassword(resetPasswordRequestDTO, command);
 
                 },
                 responseTopic: SAGA_TOPIC,

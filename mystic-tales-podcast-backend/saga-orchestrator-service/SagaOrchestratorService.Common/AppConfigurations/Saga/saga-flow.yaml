@@ -215,7 +215,7 @@ flows:
           - ResetPasswordUrl
           - ExpiredAt
         response-data:
-          - ResetPasswordUrl
+          - Message
         onSuccess:
           emit: "send-reset-password-link.success"
           topic: "user-management-domain"
@@ -248,9 +248,7 @@ flows:
           - Email
           - NewPassword
         response-data:
-          - ResetPasswordToken
-          - Email
-          - NewPassword
+          - Message
         onSuccess:
           emit: "reset-account-password.success"
           topic: "user-management-domain"

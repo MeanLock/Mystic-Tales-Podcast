@@ -24,6 +24,8 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAcco
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using UserService.BusinessLogic.DTOs.ViewModels.Mail;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendResetPasswordLink;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.NewResetPassword;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -578,40 +580,64 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         }
 
 
-        // public async Task NewResetPassword(NewResetPasswordRequestDTO newResetPasswordRequest)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var account = await _unitOfWork.AccountRepository.FindByEmailAsync(newResetPasswordRequest.Email);
-        //             if (account == null)
-        //             {
-        //                 throw new HttpRequestException("Tài khoản không tồn tại");
-        //             }
-        //             if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
-        //             {
-        //                 throw new HttpRequestException("Tài khoản đã bị vô hiệu hoá");
-        //             }
+        public async Task ResetPassword(NewResetPasswordParameterDTO newResetPasswordRequest, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var account = await _unitOfWork.AccountRepository.FindByEmailAsync(newResetPasswordRequest.Email);
+                    if (account == null)
+                    {
+                        throw new HttpRequestException("Account does not exist");
+                    }
+                    if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
+                    {
+                        throw new HttpRequestException("Account has been deactivated");
+                    }
 
-        //             var passwordResetToken = await this._unitOfWork.PasswordResetTokenRepository.getValidToken(account.Id, newResetPasswordRequest.PasswordResetToken);
+                    var passwordResetToken = await this._unitOfWork.PasswordResetTokenRepository.getValidToken(account.Id, newResetPasswordRequest.ResetPasswordToken);
 
-        //             account.Password = _bcryptHelper.HashPassword(newResetPasswordRequest.NewPassword);
-        //             await _accountGenericRepository.UpdateAsync(account.Id, account);
+                    account.Password = _bcryptHelper.HashPassword(newResetPasswordRequest.NewPassword);
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
 
-        //             passwordResetToken.IsUsed = true;
-        //             await _passwordResetTokenGenericRepository.UpdateAsync(passwordResetToken.Id, passwordResetToken);
+                    passwordResetToken.IsUsed = true;
+                    await _passwordResetTokenGenericRepository.UpdateAsync(passwordResetToken.Id, passwordResetToken);
 
-        //             await transaction.CommitAsync();
-        //         }
-        //         catch (HttpRequestException ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //             throw new HttpRequestException(ex.Message);
-        //         }
-        //     }
-        // }
+                    await transaction.CommitAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            Message = "Password has been reset successfully"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "reset-account-password.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (HttpRequestException ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                       topic: KafkaTopicEnum.UserManagementDomain,
+                       requestData: command.RequestData,
+                       responseData: JObject.FromObject(new
+                       {
+                           ErrorMessage = $"Reset password process failed, error: {ex.Message}"
+                       }),
+                       sagaInstanceId: command.SagaInstanceId,
+                       flowName: command.FlowName,
+                       messageName: "reset-account-password.failed"
+                       );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
 
 
 
