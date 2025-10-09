@@ -763,7 +763,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -790,13 +790,13 @@ flows:
           - NewBalance
         onSuccess:
           emit: "subtract-account-balance-amount.success"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
           emit: "subtract-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -2210,7 +2210,7 @@ flows:
           - Note
           - DemoAudioRequired
           - DemoAudioFileKey
-          - IsFromCustomer
+          - IsFromCustomer 
           - Price
         response-data:
           - BookingNegotiationId
@@ -3170,7 +3170,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -3228,7 +3228,7 @@ flows:
           - UpdatedAt
         onSuccess:
           emit: "subtract-account-balance-amount.success"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "complete-withdrawal-request"
@@ -3237,7 +3237,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "subtract-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -3304,7 +3304,7 @@ flows:
           - NewBalance
         onSuccess:
           emit: "subtract-account-balance-amount.success"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "complete-booking-transaction"
@@ -3316,7 +3316,7 @@ flows:
               handle-service: "SagaOrchestratorService"
         onFailure:
           emit: "subtract-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -3363,7 +3363,7 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "subtract-account-balance-amount-rollback-flow"
-              topic: "payment-processing-domain"
+              topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
 
   booking-final-payment-flow:
@@ -3425,7 +3425,7 @@ flows:
           - NewBalance
         onSuccess:
           emit: "add-podcaster-balance-amount.success"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "subtract-account-balance-amount"
@@ -3434,7 +3434,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-podcaster-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -3460,7 +3460,7 @@ flows:
           - UpdatedAt
         onSuccess:
           emit: "subtract-account-balance-amount.success"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "complete-booking-transaction"
@@ -3469,7 +3469,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "subtract-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -3589,7 +3589,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "subtract-podcaster-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -3620,7 +3620,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -3667,7 +3667,7 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "payment-processing-domain"
+              topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
             - name: "subtract-podcaster-balance-amount-rollback-flow"
               topic: "user-management-domain"
@@ -3733,7 +3733,7 @@ flows:
           - NewBalance
         onSuccess:
           emit: "add-podcaster-balance-amount.success"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "complete-booking-transaction"
@@ -3742,7 +3742,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-podcaster-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -3841,7 +3841,7 @@ flows:
           - NewBalance
         onSuccess:
           emit: "subtract-account-balance-amount.success"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "complete-podcast-subscription-transaction"
@@ -3850,7 +3850,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "subtract-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -3950,7 +3950,7 @@ flows:
           - NewBalance
         onSuccess:
           emit: "subtract-account-balance-amount.success"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "complete-member-subscription-transaction"
@@ -3959,7 +3959,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "subtract-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -4067,7 +4067,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -4098,12 +4098,12 @@ flows:
           nextFlows: []
         onFailure:
           emit: "subtract-podcaster-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "payment-processing-domain"
+              topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
             - name: "create-podcast-subscription-transaction-rollback-flow"
               topic: "payment-processing-domain"
@@ -4145,7 +4145,7 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "payment-processing-domain"
+              topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
             - name: "subtract-podcaster-balance-amount-rollback-flow"
               topic: "user-management-domain"
@@ -4213,7 +4213,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
@@ -4256,7 +4256,7 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "payment-processing-domain"
+              topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
 
   # storage-purchase-flow:
@@ -5509,7 +5509,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"
-          topic: "payment-processing-domain"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -5537,7 +5537,7 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "payment-processing-domain"
+              topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
 
   unpublish-show-rollback-flow:
@@ -5559,13 +5559,13 @@ flows:
       onSuccess:
         emit: "unpublish-show-rollback.success"
         topic: "content-management-domain"
-        handle-service: "PodcastService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "unpublish-show-rollback.failed"
         topic: "content-management-domain"
-        handle-service: "PodcastService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5591,13 +5591,13 @@ flows:
       onSuccess:
         emit: "unpublish-channel-rollback.success"
         topic: "content-management-domain"
-        handle-service: "PodcastService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "unpublish-channel-rollback.failed"
         topic: "content-management-domain"
-        handle-service: "PodcastService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5621,13 +5621,13 @@ flows:
       onSuccess:
         emit: "create-payment-link-rollback.success"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "create-payment-link-rollback.failed"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5657,13 +5657,13 @@ flows:
       onSuccess:
         emit: "add-account-balance-amount-rollback.success"
         topic: "user-management-domain"
-        handle-service: "UserService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "add-account-balance-amount-rollback.failed"
         topic: "user-management-domain"
-        handle-service: "UserService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5693,13 +5693,13 @@ flows:
       onSuccess:
         emit: "subtract-account-balance-amount-rollback.success"
         topic: "user-management-domain"
-        handle-service: "UserService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "subtract-account-balance-amount-rollback.failed"
         topic: "user-management-domain"
-        handle-service: "UserService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5710,7 +5710,7 @@ flows:
     save-file: ""
     steps:
     - name: "add-podcaster-balance-amount-rollback"
-      topic: "payment-processing-domain"
+      topic: "user-management-domain"
       handle-service: "UserService"
       description: "Rút lại tiền đã gửi tới ví Podcaster"
       parameters:
@@ -5725,14 +5725,14 @@ flows:
         - NewBalance
       onSuccess:
         emit: "add-podcaster-balance-amount-rollback.success"
-        topic: "payment-processing-domain"
+        topic: "user-management-domain"
         handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "add-podcaster-balance-amount-rollback.failed"
         topic: "user-management-domain"
-        handle-service: "UserService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5759,13 +5759,13 @@ flows:
       onSuccess:
         emit: "subtract-podcaster-balance-amount-rollback.success"
         topic: "user-management-domain"
-        handle-service: "UserService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "subtract-podcaster-balance-amount-rollback.failed"
         topic: "user-management-domain"
-        handle-service: "UserService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5789,13 +5789,13 @@ flows:
       onSuccess:
         emit: "create-account-balance-transaction-rollback.success"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "create-account-balance-transaction-rollback.failed"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5819,13 +5819,13 @@ flows:
       onSuccess:
         emit: "create-booking-transaction-rollback.success"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "create-booking-transaction-rollback.failed"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5849,13 +5849,13 @@ flows:
       onSuccess:
         emit: "create-podcast-subscription-transaction-rollback.success"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "create-podcast-subscription-transaction-rollback.failed"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
 
@@ -5879,12 +5879,12 @@ flows:
       onSuccess:
         emit: "create-member-subscription-transaction-rollback.success"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
         emit: "create-member-subscription-transaction-rollback.failed"
         topic: "payment-processing-domain"
-        handle-service: "TransactionService"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
