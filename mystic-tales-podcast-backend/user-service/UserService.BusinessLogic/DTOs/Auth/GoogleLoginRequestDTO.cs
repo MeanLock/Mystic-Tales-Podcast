@@ -1,6 +1,6 @@
 namespace UserService.BusinessLogic.DTOs.Auth
 {
-    public class GoogleLoginDTO
+    public class GoogleLoginRequestDTO
     {
         public required GoogleAuthDTO GoogleAuth { get; set; }
     }

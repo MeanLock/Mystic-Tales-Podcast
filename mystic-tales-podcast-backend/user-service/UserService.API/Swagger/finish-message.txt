@@ -1,0 +1,11 @@
+user-registration-flow
+create-account
+
+user-email-verification-flow
+verify-account
+
+user-manual-login-flow
+login-account-manual
+
+user-google-login-flow
+login-account-google

@@ -64,14 +64,27 @@ namespace UserService.API.Controllers.BaseControllers
                 {
                     return BadRequest("Invalid image file.");
                 }
-                byte[] fileBytes;
-                using (var memoryStream = new MemoryStream())
-                {
-                    await customerRegisterRequestDTO.MainImageFile.CopyToAsync(memoryStream);
-                    fileBytes = memoryStream.ToArray();
-                }
+                // byte[] fileBytes;
+                // using (var memoryStream = new MemoryStream())
+                // {
+                //     await customerRegisterRequestDTO.MainImageFile.CopyToAsync(memoryStream);
+                //     fileBytes = memoryStream.ToArray();
+                // }
+                // string newMainImageFileName = $"{Guid.NewGuid()}_{customerRegisterRequestDTO.MainImageFile.FileName}";
+                // await _fileIOHelper.UploadBinaryFileAsync(fileBytes, _filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+
+                // dùng stream để upload file lên fileIOHelper
+
                 string newMainImageFileName = $"{Guid.NewGuid()}_{customerRegisterRequestDTO.MainImageFile.FileName}";
-                await _fileIOHelper.UploadBinaryFileAsync(fileBytes, _filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+                using (var stream = customerRegisterRequestDTO.MainImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                        newMainImageFileName
+                                    );
+                }
+
                 mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
 
             }
@@ -106,9 +119,9 @@ namespace UserService.API.Controllers.BaseControllers
 
         // /api/user-service/api/auth/register/staff
         [HttpPost("register/staff")]
-        public async Task<IActionResult> RegisterStaff([FromBody] StaffRegisterRequestDTO staffRegisterRequestDTO)
+        public async Task<IActionResult> RegisterStaff([FromForm] StaffRegisterRequestDTO staffRegisterRequestDTO)
         {
-             var RegisterInfo = JsonConvert.DeserializeObject<StaffRegisterInfoDTO>(staffRegisterRequestDTO.RegisterInfo);
+            var RegisterInfo = JsonConvert.DeserializeObject<StaffRegisterInfoDTO>(staffRegisterRequestDTO.RegisterInfo);
 
             string mainImageFileKey = null;
             if (staffRegisterRequestDTO.MainImageFile != null)
@@ -119,14 +132,24 @@ namespace UserService.API.Controllers.BaseControllers
                 {
                     return BadRequest("Invalid image file.");
                 }
-                byte[] fileBytes;
-                using (var memoryStream = new MemoryStream())
-                {
-                    await staffRegisterRequestDTO.MainImageFile.CopyToAsync(memoryStream);
-                    fileBytes = memoryStream.ToArray();
-                }
+                // byte[] fileBytes;
+                // using (var memoryStream = new MemoryStream())
+                // {
+                //     await staffRegisterRequestDTO.MainImageFile.CopyToAsync(memoryStream);
+                //     fileBytes = memoryStream.ToArray();
+                // }
+                // string newMainImageFileName = $"{Guid.NewGuid()}_{staffRegisterRequestDTO.MainImageFile.FileName}";
+                // await _fileIOHelper.UploadBinaryFileAsync(fileBytes, _filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+
                 string newMainImageFileName = $"{Guid.NewGuid()}_{staffRegisterRequestDTO.MainImageFile.FileName}";
-                await _fileIOHelper.UploadBinaryFileAsync(fileBytes, _filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+                using (var stream = staffRegisterRequestDTO.MainImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                        newMainImageFileName
+                                    );
+                }
                 mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
 
             }
@@ -135,6 +158,63 @@ namespace UserService.API.Controllers.BaseControllers
             requestData["RoleId"] = 2;
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-registration-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+
+        // /api/user-service/api/auth/login-manual
+        [HttpPost("login-manual")]
+        public async Task<IActionResult> LoginManual([FromBody] ManualLoginRequestDTO manualLoginRequestDTO)
+        {
+            var requestData = JObject.FromObject(manualLoginRequestDTO.ManualLoginInfo);
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-manual-login-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/user-service/api/auth/login-google
+        [HttpPost("login-google")]
+        public async Task<IActionResult> LoginGoogle([FromBody] GoogleLoginRequestDTO googleLoginRequestDTO)
+        {
+            var requestData = JObject.FromObject(googleLoginRequestDTO.GoogleAuth);
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-google-login-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/user-service/api/auth/forgot-password
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDTO forgotPasswordRequestDTO)
+        {
+            var requestData = JObject.FromObject(forgotPasswordRequestDTO);
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "forgot-password-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/user-service/api/auth/new-reset-password
+        [HttpPost("new-reset-password")]
+        public async Task<IActionResult> NewResetPassword([FromBody] NewResetPasswordRequestDTO newResetPasswordRequestDTO)
+        {
+            var requestData = JObject.FromObject(newResetPasswordRequestDTO.ResetPasswordInfo);
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "password-reset-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {

@@ -14,13 +14,16 @@ using UserService.DataAccess.UOW;
 using UserService.DataAccess.Repositories.interfaces;
 using UserService.DataAccess.Entities.SqlServer;
 using UserService.Infrastructure.Services.Google.Email;
-using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
-using UserService.BusinessLogic.DTOs.Auth;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
 using UserService.Infrastructure.Services.Kafka;
 using UserService.Infrastructure.Models.Kafka;
 using UserService.BusinessLogic.Enums.Kafka;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
+using UserService.BusinessLogic.Models.CrossService;
+using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using UserService.BusinessLogic.DTOs.ViewModels.Mail;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -41,7 +44,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         // HELPERS
         private readonly BcryptHelper _bcryptHelper;
-        private readonly JwtHelper _jwtHelpers;
+        private readonly JwtHelper _jwtHelper;
         private readonly DateHelper _dateHelpers;
         private readonly FileIOHelper _fileIOHelper;
         // UNIT OF WORK
@@ -51,6 +54,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         private readonly IGenericRepository<Account> _accountGenericRepository;
         private readonly IGenericRepository<Role> _roleGenericRepository;
         private readonly IGenericRepository<PasswordResetToken> _passwordResetTokenGenericRepository;
+
+        private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
 
         // GOOGLE SERVICE
@@ -90,6 +95,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
             FluentEmailService fluentEmailService,
 
+            HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService
             )
@@ -105,7 +111,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _appDbContext = appDbContext;
 
             _bcryptHelper = bcryptHelper;
-            _jwtHelpers = jwtHelper;
+            _jwtHelper = jwtHelper;
             _dateHelpers = dateHelpers;
             _fileIOHelper = fileIOHelper;
 
@@ -117,242 +123,291 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
             _fluentEmailService = fluentEmailService;
 
+            _httpServiceQueryClient = httpServiceQueryClient;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
 
         }
 
-        // public async Task<JObject> LoginManual(ManualLoginDTO loginData)
-        // {
-        //     var loginRequest = loginData.LoginInfo;
-        //     //             Login với account chưa verify -> login thất bại (tài khoản không tồn tại)
-        //     // Login với account đã verify -> login bình thường
-        //     // Login với account không tồn tại -> login thất bại (tài khoản không tồn tại)
+        public async Task<JObject> GetActiveSystemConfigProfile()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "activeSystemConfigProfile",
+                            QueryType = "findall",
+                            EntityType = "SystemConfigProfile",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        IsActive = true
+                                    },
+                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
 
-        //     var account = await _unitOfWork.AccountRepository.FindByEmailAsync(loginRequest.Email);
-        //     if (account == null)
-        //     {
-        //         throw new HttpRequestException("Tài khoản không tồn tại");
-        //     }
-        //     if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
-        //     {
-        //         throw new HttpRequestException("Tài khoản đã bị vô hiệu hoá");
-        //     }
+                                }),
+                            Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-        //     if (account.IsVerified == false)
-        //     {
-        //         throw new HttpRequestException("Tài khoản chưa được xác thực");
-        //     }
+            return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
+        }
 
-        //     if (!_bcryptHelpers.VerifyPassword(loginRequest.Password, account.Password))
-        //     {
-        //         throw new HttpRequestException("Email hoặc mật khẩu không chính xác");
-        //     }
+        public async Task LoginManual(LoginAccountManualParameterDTO loginData, SagaCommandMessage command)
+        {
+            var loginRequest = loginData;
+            //             Login với account chưa verify -> login thất bại (tài khoản không tồn tại)
+            // Login với account đã verify -> login bình thường
+            // Login với account không tồn tại -> login thất bại (tài khoản không tồn tại)
 
-        //     try
-        //     {
-        //         var claims = new List<Claim>
-        //         {
-        //             new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
-        //             new Claim(ClaimTypes.Name, account.FullName),
-        //             new Claim(ClaimTypes.Email, account.Email),
-        //             new Claim("id", account.Id.ToString()),
-        //             new Claim("role_id", account.Role.Id.ToString()),
-        //             new Claim(ClaimTypes.Role, account.Role.Name),
-        //             new Claim("balance", account.Balance.ToString()),
-        //             new Claim(ClaimTypes.SerialNumber, Guid.NewGuid().ToString()), // Mã định danh JWT
-        //         };
+            var account = await _unitOfWork.AccountRepository.FindByEmailAsync(loginRequest.Email,
+                includeProperties: a => a.Role
+             );
+            if (account == null)
+            {
+                throw new HttpRequestException("Account does not exist");
+            }
+            if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
+            {
+                throw new HttpRequestException("Account has been deactivated");
+            }
 
-        //         var token = _jwtHelpers.GenerateJWT_TwoPublicPrivateKey(claims, _jwtConfig.Exp);
+            if (account.IsVerified == false)
+            {
+                throw new HttpRequestException("Account has not been verified");
+            }
 
-        //         var user = _jwtHelpers.DecodeToken_TwoPublicPrivateKey(token);
+            if (!_bcryptHelper.VerifyPassword(loginRequest.Password, account.Password))
+            {
+                throw new HttpRequestException("Email or password is incorrect");
+            }
 
-        //         return JObject.FromObject(new
-        //         {
-        //             Token = token,
-        //             // User = new
-        //             // {
+            try
+            {
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+                    new Claim(ClaimTypes.Name, account.FullName),
+                    new Claim(ClaimTypes.Email, account.Email),
+                    new Claim("id", account.Id.ToString()),
+                    new Claim("role_id", account.Role.Id.ToString()),
+                    new Claim(ClaimTypes.Role, account.Role.Name),
+                    new Claim("balance", account.Balance.ToString()),
+                    new Claim(ClaimTypes.SerialNumber, Guid.NewGuid().ToString()), // Mã định danh JWT
+                };
 
-        //             //     Id = user.FindFirst("id")?.Value,
-        //             //     FullName = user.FindFirst(JwtRegisteredClaimNames.Name)?.Value,
-        //             //     Email = user.FindFirst(JwtRegisteredClaimNames.Email)?.Value,
-        //             //     Phone = user.FindFirst("phone")?.Value,
-        //             //     DayOfBirth = user.FindFirst("dayOfBirth")?.Value,
-        //             //     Address = user.FindFirst("address")?.Value,
-        //             //     Role = user.FindFirst(ClaimTypes.Role)?.Value
+                var token = _jwtHelper.GenerateJWT_TwoPublicPrivateKey(claims, _jwtConfig.Exp);
 
-        //             // }
-        //         });
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         throw new HttpRequestException(ex.Message);
-        //         // throw new HttpRequestException("Could not generate JWT");
-        //     }
+                var user = _jwtHelper.DecodeToken_TwoPublicPrivateKey(token);
+
+                // return JObject.FromObject(new
+                // {
+                //     Token = token,
+                // });
+
+                var requestData = command.RequestData;
+                requestData["AccessToken"] = token;
+                var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: requestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            Message = "Login successful",
+                            AccessToken = token,
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "login-account-manual.success"
+                        );
+                await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+            }
+            catch (Exception ex)
+            {
+                var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                       topic: KafkaTopicEnum.UserManagementDomain,
+                       requestData: command.RequestData,
+                       responseData: JObject.FromObject(new
+                       {
+                           ErrorMessage = $"Login failed, error: {ex.Message}"
+                       }),
+                       sagaInstanceId: command.SagaInstanceId,
+                       flowName: command.FlowName,
+                       messageName: "login-account-manual.failed"
+                       );
+                await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                // throw new HttpRequestException(ex.Message);
+                // throw new HttpRequestException("Could not generate JWT");
+            }
 
 
-        // }
+        }
 
-        // public async Task<JObject> LoginGoogleAuthorizationCodeFlow(GoogleLoginDTO googleLoginData)
-        // {
-        //     string authorizationCode = googleLoginData.GoogleAuth.AuthorizationCode;
-        //     string redirectUri = googleLoginData.GoogleAuth.RedirectUri;
-        //     var clientId = _googleOAuth2Config.ClientId;
-        //     var clientSecret = _googleOAuth2Config.ClientSecret;
+        public async Task LoginGoogleAuthorizationCodeFlow(LoginAccountGoogleParameterDTO googleLoginData, SagaCommandMessage command)
+        {
+            string authorizationCode = googleLoginData.AuthorizationCode;
+            string redirectUri = googleLoginData.RedirectUri;
+            var clientId = _googleOAuth2Config.ClientId;
+            var clientSecret = _googleOAuth2Config.ClientSecret;
 
-        //     // 1. Gửi request đổi authorization code lấy access_token và id_token
-        //     using var httpClient = new HttpClient();
-        //     var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "https://oauth2.googleapis.com/token");
-        //     var tokenParams = new Dictionary<string, string>
-        //     {
-        //         { "code", authorizationCode },
-        //         { "client_id", clientId },
-        //         { "client_secret", clientSecret },
-        //         { "redirect_uri", redirectUri },
-        //         { "grant_type", "authorization_code" }
-        //     };
-        //     tokenRequest.Content = new FormUrlEncodedContent(tokenParams);
-        //     var response = await httpClient.SendAsync(tokenRequest);
-        //     if (!response.IsSuccessStatusCode)
-        //         throw new UnauthorizedAccessException("Error exchanging authorization code for tokens");
-        //     var payloadStr = await response.Content.ReadAsStringAsync();
-        //     var payload = JObject.Parse(payloadStr);
-        //     string idToken = payload["id_token"]?.ToString();
-        //     if (string.IsNullOrEmpty(idToken))
-        //         throw new UnauthorizedAccessException("ID Token missing in response");
+            // 1. Gửi request đổi authorization code lấy access_token và id_token
+            using var httpClient = new HttpClient();
+            var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "https://oauth2.googleapis.com/token");
+            var tokenParams = new Dictionary<string, string>
+            {
+                { "code", authorizationCode },
+                { "client_id", clientId },
+                { "client_secret", clientSecret },
+                { "redirect_uri", redirectUri },
+                { "grant_type", "authorization_code" }
+            };
+            tokenRequest.Content = new FormUrlEncodedContent(tokenParams);
+            var response = await httpClient.SendAsync(tokenRequest);
+            if (!response.IsSuccessStatusCode)
+                throw new UnauthorizedAccessException("Error exchanging authorization code for tokens");
+            var payloadStr = await response.Content.ReadAsStringAsync();
+            var payload = JObject.Parse(payloadStr);
+            string idToken = payload["id_token"]?.ToString();
+            if (string.IsNullOrEmpty(idToken))
+                throw new UnauthorizedAccessException("ID Token missing in response");
 
-        //     // 2. Xác thực id_token và trích xuất thông tin người dùng
-        //     var googlePayload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
-        //     {
-        //         Audience = new[] { clientId }
-        //     });
-        //     if (googlePayload == null)
-        //         throw new UnauthorizedAccessException("Invalid ID Token");
+            // 2. Xác thực id_token và trích xuất thông tin người dùng
+            var googlePayload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = new[] { clientId }
+            });
+            if (googlePayload == null)
+                throw new UnauthorizedAccessException("Invalid ID Token");
 
-        //     // 3. Xử lý account
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var account = await _unitOfWork.AccountRepository.FindByEmailAsync(googlePayload.Email);
-        //             if (account == null)
-        //             {
-        //                 // Chưa có account, tạo mới
-        //                 var newAccount = new Account
-        //                 {
-        //                     Email = googlePayload.Email,
-        //                     Password = _bcryptHelpers.HashPassword(Guid.NewGuid().ToString()),
-        //                     FullName = googlePayload.Name ?? googlePayload.Email,
-        //                     RoleId = 4,
-        //                     IsVerified = true,
-        //                     GoogleId = googlePayload.Subject,
-        //                     ProgressionSurveyCount = 0,
-        //                     IsFilterSurveyRequired = true
-        //                 };
-        //                 newAccount = await _accountGenericRepository.CreateAsync(newAccount);
-        //                 var AccountProfile = new AccountProfile
-        //                 {
-        //                     AccountId = newAccount.Id,
-        //                     CountryRegion = null,
-        //                     MaritalStatus = null,
-        //                     AverageIncome = null,
-        //                     EducationLevel = null,
-        //                     JobField = null,
-        //                     ProvinceCode = null,
-        //                     DistrictCode = null,
-        //                     WardCode = null
-        //                 };
-        //                 await _accountProfileGenericRepository.CreateAsync(AccountProfile);
-        //                 await _filterTagService.RegisterFilterTag(newAccount.Id);
+            // 3. Xử lý account
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var account = await _unitOfWork.AccountRepository.FindByEmailAsync(googlePayload.Email);
+                    var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
 
-        //                 account = newAccount;
-        //             }
-        //             else
-        //             {
-        //                 // Đã có account
-        //                 if (string.IsNullOrEmpty(account.GoogleId))
-        //                 {
-        //                     if (account.IsVerified == true)
-        //                     {
-        //                         account.GoogleId = googlePayload.Subject;
-        //                         await _accountGenericRepository.UpdateAsync(account.Id, account);
-        //                     }
-        //                     else
-        //                     {
-        //                         await _accountGenericRepository.DeleteAsync(account.Id);
+                    if (account == null)
+                    {
+                        // Chưa có account, tạo mới
+                        var newAccount = new Account
+                        {
+                            Email = googlePayload.Email,
+                            Password = _bcryptHelper.HashPassword(Guid.NewGuid().ToString()),
+                            FullName = googlePayload.Name ?? googlePayload.Email,
+                            RoleId = 1,
+                            IsVerified = true,
+                            GoogleId = googlePayload.Subject,
+                            PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold")
+                        };
+                        newAccount = await _accountGenericRepository.CreateAsync(newAccount);
 
-        //                         var newAccount = new Account
-        //                         {
-        //                             Email = googlePayload.Email,
-        //                             Password = _bcryptHelpers.HashPassword(Guid.NewGuid().ToString()),
-        //                             FullName = googlePayload.Name ?? googlePayload.Email,
-        //                             RoleId = 4,
-        //                             IsVerified = true,
-        //                             GoogleId = googlePayload.Subject,
-        //                             ProgressionSurveyCount = 0,
-        //                             IsFilterSurveyRequired = true
-        //                         };
-        //                         newAccount = await _accountGenericRepository.CreateAsync(newAccount);
-        //                         var AccountProfile = new AccountProfile
-        //                         {
-        //                             AccountId = newAccount.Id,
-        //                             CountryRegion = null,
-        //                             MaritalStatus = null,
-        //                             AverageIncome = null,
-        //                             EducationLevel = null,
-        //                             JobField = null,
-        //                             ProvinceCode = null,
-        //                             DistrictCode = null,
-        //                             WardCode = null
-        //                         };
-        //                         await _accountProfileGenericRepository.CreateAsync(AccountProfile);
-        //                         await _filterTagService.RegisterFilterTag(newAccount.Id);
-        //                         account = newAccount;
-        //                     }
-        //                 }
-        //                 else if (account.GoogleId != googlePayload.Subject)
-        //                 {
-        //                     throw new HttpRequestException("Tài khoản đã liên kết với Google khác");
-        //                 }
-        //                 else if (account.GoogleId == googlePayload.Subject && !account.IsVerified)
-        //                 {
-        //                     throw new HttpRequestException("Tài khoản Google này chưa được kích hoạt");
-        //                 }
-        //                 // else: GoogleId trùng và đã verify => thành công
-        //             }
+                        account = newAccount;
+                    }
+                    else
+                    {
+                        // Đã có account
+                        if (string.IsNullOrEmpty(account.GoogleId))
+                        {
+                            if (account.IsVerified == true)
+                            {
+                                account.GoogleId = googlePayload.Subject;
+                                await _accountGenericRepository.UpdateAsync(account.Id, account);
+                            }
+                            else
+                            {
+                                await _accountGenericRepository.DeleteAsync(account.Id);
 
-        //             // Check deactivated
-        //             if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
-        //             {
-        //                 throw new HttpRequestException("Tài khoản đã bị vô hiệu hoá");
-        //             }
+                                var newAccount = new Account
+                                {
+                                    Email = googlePayload.Email,
+                                    Password = _bcryptHelper.HashPassword(Guid.NewGuid().ToString()),
+                                    FullName = googlePayload.Name ?? googlePayload.Email,
+                                    RoleId = 4,
+                                    IsVerified = true,
+                                    GoogleId = googlePayload.Subject,
+                                    PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold")
+                                };
+                                newAccount = await _accountGenericRepository.CreateAsync(newAccount);
 
-        //             // Tạo claims và trả về giống LoginManual
-        //             var claims = new List<Claim>
-        //             {
-        //                 new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
-        //                 new Claim(ClaimTypes.Name, account.FullName ?? string.Empty),
-        //                 new Claim(ClaimTypes.Email, account.Email),
-        //                 new Claim("id", account.Id.ToString()),
-        //                 new Claim("role_id", account.RoleId.ToString()),
-        //                 new Claim(ClaimTypes.Role, account.Role?.Name ?? "User"),
-        //                 new Claim("balance", account.Balance.ToString()),
-        //                 new Claim(ClaimTypes.SerialNumber, Guid.NewGuid().ToString()),
-        //             };
-        //             var token = _jwtHelpers.GenerateJWT_TwoPublicPrivateKey(claims, _jwtConfig.Exp);
-        //             await transaction.CommitAsync();
-        //             return JObject.FromObject(new { Token = token });
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //             // throw new HttpRequestException(ex.Message);
-        //             throw new UnauthorizedAccessException("Lỗi đăng nhập bằng Google");
-        //         }
-        //     }
-        // }
+                                account = newAccount;
+                            }
+                        }
+                        else if (account.GoogleId != googlePayload.Subject)
+                        {
+                            throw new HttpRequestException("Account is associated with a different Google account");
+                        }
+                        else if (account.GoogleId == googlePayload.Subject && !account.IsVerified)
+                        {
+                            throw new HttpRequestException("This Google account has not been activated");
+                        }
+                        // else: GoogleId trùng và đã verify => thành công
+                    }
+
+                    // Check deactivated
+                    if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
+                    {
+                        throw new HttpRequestException("Account has been deactivated");
+                    }
+
+                    // Tạo claims và trả về giống LoginManual
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+                        new Claim(ClaimTypes.Name, account.FullName ?? string.Empty),
+                        new Claim(ClaimTypes.Email, account.Email),
+                        new Claim("id", account.Id.ToString()),
+                        new Claim("role_id", account.RoleId.ToString()),
+                        new Claim(ClaimTypes.Role, account.Role?.Name ?? "User"),
+                        new Claim("balance", account.Balance.ToString()),
+                        new Claim(ClaimTypes.SerialNumber, Guid.NewGuid().ToString()),
+                    };
+                    var token = _jwtHelper.GenerateJWT_TwoPublicPrivateKey(claims, _jwtConfig.Exp);
+                    await transaction.CommitAsync();
+                    // return JObject.FromObject(new { Token = token });
+                    var requestData = command.RequestData;
+                    requestData["AccessToken"] = token;
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                            topic: KafkaTopicEnum.UserManagementDomain,
+                            requestData: requestData,
+                            responseData: JObject.FromObject(new
+                            {
+                                Message = "Login successful",
+                                AccessToken = token,
+                            }),
+                            sagaInstanceId: command.SagaInstanceId,
+                            flowName: command.FlowName,
+                            messageName: "login-account-google.success"
+                            );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                       topic: KafkaTopicEnum.UserManagementDomain,
+                       requestData: command.RequestData,
+                       responseData: JObject.FromObject(new
+                       {
+                           ErrorMessage = $"Google Login failed, error: {ex.Message}"
+                       }),
+                       sagaInstanceId: command.SagaInstanceId,
+                       flowName: command.FlowName,
+                       messageName: "login-account-google.failed"
+                       );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    // throw new HttpRequestException(ex.Message);
+                    // throw new UnauthorizedAccessException("Lỗi đăng nhập bằng Google");
+                }
+            }
+        }
 
         public async Task AccountVerification(VerifyAccountParameterDTO verificationData, SagaCommandMessage command)
         {
@@ -363,15 +418,16 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     var account = await _unitOfWork.AccountRepository.FindByEmailAsync(verificationData.Email);
                     if (account == null)
                     {
-                        throw new Exception("không tìm thấy tài khoản với email: " + verificationData.Email);
+                        // throw new Exception("không tìm thấy tài khoản với email: " + verificationData.Email);
+                        throw new HttpRequestException("Account with email does not exist: " + verificationData.Email);
                     }
                     if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
                     {
-                        throw new HttpRequestException("Tài khoản đã bị vô hiệu hoá");
+                        throw new HttpRequestException("Account has been deactivated");
                     }
                     if (account.VerifyCode != verificationData.VerifyCode)
                     {
-                        throw new HttpRequestException("Mã xác thực không chính xác");
+                        throw new HttpRequestException("Verification code is incorrect");
                     }
                     account.IsVerified = true;
                     account.VerifyCode = null;
@@ -386,7 +442,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         requestData: command.RequestData,
                         responseData: JObject.FromObject(new
                         {
-                            Message = "Xác thực tài khoản thành công"
+                            Message = "Account verification successful"
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -404,7 +460,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                        requestData: command.RequestData,
                        responseData: JObject.FromObject(new
                        {
-                           ErrorMessage = $"Xác thực tài khoản thất bại, lỗi: {ex.Message}"
+                           ErrorMessage = $"Account verification failed, error: {ex.Message}"
                        }),
                        sagaInstanceId: command.SagaInstanceId,
                        flowName: command.FlowName,
@@ -419,53 +475,107 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
 
 
-        // public async Task ForgotPassword(string email)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var account = await _unitOfWork.AccountRepository.FindByEmailAsync(email);
-        //             if (account == null)
-        //             {
-        //                 throw new HttpRequestException("Tài khoản không tồn tại");
-        //             }
-        //             if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
-        //             {
-        //                 throw new HttpRequestException("Tài khoản đã bị vô hiệu hoá");
-        //             }
+        public async Task ForgotPassword(SendResetPasswordLinkParameterDTO forgotPasswordData, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var account = await _unitOfWork.AccountRepository.FindByEmailAsync(forgotPasswordData.Email);
+                    if (account == null)
+                    {
+                        throw new HttpRequestException("Account does not exist");
+                    }
+                    if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
+                    {
+                        throw new HttpRequestException("Account has been deactivated");
+                    }
 
-        //             string NewGuid = Guid.NewGuid().ToString();
-        //             await _unitOfWork.PasswordResetTokenRepository.CreateAsync(new PasswordResetToken
-        //             {
-        //                 AccountId = account.Id,
-        //                 Token = NewGuid,
-        //                 ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(_appConfig.RESET_PASSWORD.TokenExpiredInMinutes),
-        //                 IsUsed = false,
-        //                 CreatedAt = _dateHelpers.GetNowByAppTimeZone()
-        //             });
-        //             string resetPasswordUrl = _appConfig.RESET_PASSWORD.Url + "?email=" + email + "&token=" + NewGuid;
-        //             Console.WriteLine("Reset Password URL: " + resetPasswordUrl);
+                    string NewGuid = Guid.NewGuid().ToString();
+                    await _unitOfWork.PasswordResetTokenRepository.CreateAsync(new PasswordResetToken
+                    {
+                        AccountId = account.Id,
+                        Token = NewGuid,
+                        ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(_appConfig.RESET_PASSWORD.TokenExpiredInMinutes),
+                        IsUsed = false,
+                        CreatedAt = _dateHelpers.GetNowByAppTimeZone()
+                    });
+                    string resetPasswordUrl = _appConfig.RESET_PASSWORD.Url + "?email=" + forgotPasswordData.Email + "&token=" + NewGuid;
+                    Console.WriteLine("Reset Password URL: " + resetPasswordUrl);
 
-        //             await _fluentEmailService.SendEmail(email, new ForgotPasswordEmailViewModel
-        //             {
-        //                 Email = email,
-        //                 PasswordResetToken = NewGuid,
-        //                 ResetPasswordUrl = resetPasswordUrl,
-        //                 ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss")
-        //             }, _googleMailConfig.AccountForgotPassword_TemplateViewPath
-        //             , _googleMailConfig.AccountForgotPassword_MailSubject);
-        //             await transaction.CommitAsync();
-        //         }
-        //         catch (HttpRequestException ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //             throw new HttpRequestException(ex.Message);
-        //         }
-        //     }
+                    // await _fluentEmailService.SendEmail(email, new ForgotPasswordEmailViewModel
+                    // {
+                    //     Email = email,
+                    //     PasswordResetToken = NewGuid,
+                    //     ResetPasswordUrl = resetPasswordUrl,
+                    //     ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss")
+                    // }, _googleMailConfig.AccountForgotPassword_TemplateViewPath
+                    // , _googleMailConfig.AccountForgotPassword_MailSubject);
 
-        // }
+                    var mailSendingRequestData = JObject.FromObject(new
+                    {
+                        MailTypeName = "CustomerPasswordReset",
+                        ToEmail = forgotPasswordData.Email,
+                        MailObject = new CustomerPasswordResetMailViewModel
+                        {
+                            Email = forgotPasswordData.Email,
+                            PasswordResetToken = NewGuid,
+                            ResetPasswordUrl = resetPasswordUrl,
+                            ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
+                        }
+                    });
+                    var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: mailSendingRequestData,
+                        sagaInstanceId: null,
+                        messageName: "user-service-mail-sending-flow");
+                    await _messagingService.SendSagaMessageAsync(mailSendingFlow);
+
+                    await transaction.CommitAsync();
+
+                    var requestData = JObject.FromObject(new CustomerPasswordResetMailViewModel
+                    {
+                        Email = forgotPasswordData.Email,
+                        PasswordResetToken = NewGuid,
+                        ResetPasswordUrl = resetPasswordUrl,
+                        ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: requestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            Message = "Forgot password process initiated. Please check your email for the reset link."
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "send-reset-password-link.success"
+                        );
+
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (HttpRequestException ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                       topic: KafkaTopicEnum.UserManagementDomain,
+                       requestData: command.RequestData,
+                       responseData: JObject.FromObject(new
+                       {
+                           ErrorMessage = $"Forgot password process failed, error: {ex.Message}"
+                       }),
+                       sagaInstanceId: command.SagaInstanceId,
+                       flowName: command.FlowName,
+                       messageName: "send-reset-password-link.failed"
+                       );
+
+                   await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    // throw new HttpRequestException(ex.Message);
+                }
+            }
+
+        }
 
 
         // public async Task NewResetPassword(NewResetPasswordRequestDTO newResetPasswordRequest)

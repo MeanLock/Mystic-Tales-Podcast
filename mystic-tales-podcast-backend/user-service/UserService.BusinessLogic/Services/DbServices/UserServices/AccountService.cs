@@ -59,7 +59,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
 
         // GOOGLE SERVICE
-        private readonly FluentEmailService _fluentEmail;
+        private readonly FluentEmailService _fluentEmailService;
 
         // KAFKA SERVICE
         private readonly IMessagingService _messagingService;
@@ -100,7 +100,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _jwtHelper = jwtHelper;
             _bcryptHelper = bcryptHelper;
 
-            _fluentEmail = fluentEmailService;
+            _fluentEmailService = fluentEmailService;
 
             _filePathConfig = filePathConfig;
             _accountConfig = accountConfig;
@@ -191,22 +191,21 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         {
             try
             {
-                await _fluentEmail.SendEmail(toEmail, viewModel, mailProperty.TemplateFilePath
+                await _fluentEmailService.SendEmail(toEmail, viewModel, mailProperty.TemplateFilePath
                 , mailProperty.Subject);
             }
             catch (Exception ex)
             {
-                throw new HttpRequestException("Gửi mail thất bại, lỗi: " + ex.Message);
+                throw new HttpRequestException("Send email failed, error: " + ex.Message);
             }
         }
         public async Task RegisterAccount(CreateAccountParameterDTO accountRegisterDTO, SagaCommandMessage command)
         {
-
+            var registerInfo = accountRegisterDTO;
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    var registerInfo = accountRegisterDTO;
                     var existAccount = await _unitOfWork.AccountRepository.FindByEmailAsync(registerInfo.Email);
 
                     var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
@@ -215,7 +214,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     {
                         if (existAccount.IsVerified == true)
                         {
-                            throw new Exception("Đã tồn tại tài khoản đang sử dụng mail này");
+                            throw new Exception("Account with email " + registerInfo.Email + " already exists and is verified.");
                         }
                         else
                         {
@@ -233,7 +232,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             existAccount.VerifyCode = registerInfo.RoleId == 1 ? verifyCode : null;
                             existAccount.PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold") : null;
                             existAccount.MainImageFileKey = null;
-                            // await _fluentEmail.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
+                            // await _fluentEmailService.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
                             // {
                             //     Email = registerInfo.Email,
                             //     FullName = registerInfo.FullName,
@@ -287,7 +286,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             MainImageFileKey = null,
                         };
 
-                        // await _fluentEmail.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
+                        // await _fluentEmailService.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
                         // {
                         //     Email = registerInfo.Email,
                         //     FullName = registerInfo.FullName,
@@ -324,7 +323,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + existAccount.Id;
                     if (registerInfo.MainImageFileKey != null && registerInfo.MainImageFileKey != "")
                     {
-                        var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image.{FilePathHelper.GetExtension(registerInfo.MainImageFileKey)}");
+                        var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(registerInfo.MainImageFileKey)}");
                         await _fileIOHelper.CopyFileToFileAsync(registerInfo.MainImageFileKey, MainImageFileKey);
                         await _fileIOHelper.DeleteFileAsync(registerInfo.MainImageFileKey);
                         existAccount.MainImageFileKey = MainImageFileKey;
@@ -364,12 +363,18 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 {
                     await transaction.RollbackAsync();
 
+                    // xoá file tạm
+                    if (registerInfo.MainImageFileKey != null && registerInfo.MainImageFileKey != "")
+                    {
+                        await _fileIOHelper.DeleteFileAsync(registerInfo.MainImageFileKey);
+                    }
+
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
                         requestData: command.RequestData,
                         responseData: JObject.FromObject(new
                         {
-                            ErrorMessage = $"Đăng kí tài khoản thất bại, lỗi: {ex.Message}"
+                            ErrorMessage = $"Account registration failed, error: {ex.Message}"
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,

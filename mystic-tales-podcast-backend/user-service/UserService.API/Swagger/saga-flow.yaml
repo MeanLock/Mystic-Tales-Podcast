@@ -97,10 +97,9 @@ flows:
         next-request-data:
           - Email
           - Password
-          - AccessToken
+          - JwtToken
         response-data:
-          - AccessToken
-          - Message
+          - JwtToken
         onSuccess:
           emit: "login-account-manual.success"
           topic: "user-management-domain"
@@ -131,8 +130,7 @@ flows:
           - AuthorizationCode
           - RedirectUri
         response-data:
-          - AccessToken
-          - Message
+          - JwtToken
         onSuccess:
           emit: "login-account-google.success"
           topic: "user-management-domain"
@@ -211,11 +209,8 @@ flows:
           - Email
         next-request-data:
           - Email
-          - PasswordResetToken
-          - ResetPasswordUrl
-          - ExpiredAt
         response-data:
-          - ResetPasswordUrl
+          - ResetPasswordLink
         onSuccess:
           emit: "send-reset-password-link.success"
           topic: "user-management-domain"

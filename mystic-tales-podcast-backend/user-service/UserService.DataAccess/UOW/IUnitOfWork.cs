@@ -9,7 +9,7 @@ public interface IUnitOfWork
     // ISurveyRepository SurveyRepository { get; }
     // ISurveyQuestionRepository SurveyQuestionRepository { get; }
     // ISurveyTopicFavoriteRepository SurveyTopicFavoriteRepository { get; }
-    // IPasswordResetTokenRepository PasswordResetTokenRepository { get; }
+    IPasswordResetTokenRepository PasswordResetTokenRepository { get; }
     // ISurveyTakenResultRepository SurveyTakenResultRepository { get; }
     // ISurveyStatusTrackingRepository SurveyStatusTrackingRepository { get; }
     // IFilterTagRepository FilterTagRepository { get; }

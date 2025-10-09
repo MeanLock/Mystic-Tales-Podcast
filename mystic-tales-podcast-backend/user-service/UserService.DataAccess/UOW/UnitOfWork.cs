@@ -12,7 +12,7 @@ public class UnitOfWork : IUnitOfWork
     // public ISurveyRepository SurveyRepository { get; }
     // public ISurveyQuestionRepository SurveyQuestionRepository { get; }
     // public ISurveyTopicFavoriteRepository SurveyTopicFavoriteRepository { get; }
-    // public IPasswordResetTokenRepository PasswordResetTokenRepository { get; }
+    public IPasswordResetTokenRepository PasswordResetTokenRepository { get; }
     // public ISurveyTakenResultRepository SurveyTakenResultRepository { get; }
     // public ISurveyStatusTrackingRepository SurveyStatusTrackingRepository { get; }
     // public IFilterTagRepository FilterTagRepository { get; }
@@ -26,12 +26,12 @@ public class UnitOfWork : IUnitOfWork
 
     public UnitOfWork(
         AppDbContext appDbContext,
-        IAccountRepository accountRepository
+        IAccountRepository accountRepository,
         // IAccountOnlineTrackingRepository accountOnlineTrackingRepository,
         // ISurveyRepository surveyRepository,
         // ISurveyQuestionRepository surveyQuestionRepository,
         // ISurveyTopicFavoriteRepository surveyTopicFavoriteRepository,
-        // IPasswordResetTokenRepository passwordResetTokenRepository,
+        IPasswordResetTokenRepository passwordResetTokenRepository
         // ISurveyTakenResultRepository surveyTakenResultRepository,
         // ISurveyStatusTrackingRepository surveyStatusTrackingRepository,
         // IFilterTagRepository filterTagRepository,
@@ -52,7 +52,7 @@ public class UnitOfWork : IUnitOfWork
         // this.SurveyRepository = surveyRepository;
         // this.SurveyQuestionRepository = surveyQuestionRepository;
         // this.SurveyTopicFavoriteRepository = surveyTopicFavoriteRepository;
-        // this.PasswordResetTokenRepository = passwordResetTokenRepository;
+        this.PasswordResetTokenRepository = passwordResetTokenRepository;
         // this.SurveyTakenResultRepository = surveyTakenResultRepository;
         // this.SurveyStatusTrackingRepository = surveyStatusTrackingRepository;
         // this.FilterTagRepository = filterTagRepository;

@@ -2,7 +2,10 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using UserService.BusinessLogic.Attributes;
+using UserService.BusinessLogic.DTOs.Auth;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
 using UserService.BusinessLogic.DTOs.ViewModels.Mail;
 using UserService.BusinessLogic.Enums.Kafka;
@@ -136,6 +139,70 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "verify-account.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("login-account-manual", SAGA_TOPIC)]
+        public async Task HandleManualLoginAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var manualLoginRequestDTO = command.RequestData.ToObject<LoginAccountManualParameterDTO>();
+                    await _authService.LoginManual(manualLoginRequestDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "login-account-manual.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("login-account-google", SAGA_TOPIC)]
+        public async Task HandleGoogleLoginAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var googleLoginRequestDTO = command.RequestData.ToObject<LoginAccountGoogleParameterDTO>();
+                    await _authService.LoginGoogleAuthorizationCodeFlow(googleLoginRequestDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "login-account-google.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("send-reset-password-link", "auth-eventssssssssssssss")]
+        public async Task HandleSendResetPasswordLinkAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var forgotPasswordParameterDTO = command.RequestData.ToObject<SendResetPasswordLinkParameterDTO>();
+
+                    await _authService.ForgotPassword(forgotPasswordParameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "send-reset-password-link.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("reset-account-password", SAGA_TOPIC)]
+        public async Task HandleResetAccountPasswordAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var resetPasswordRequestDTO = command.RequestData.ToObject<NewResetPasswordRequestDTO>();
+                    //await _authService.ResetPassword(resetPasswordRequestDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "reset-account-password.failed"    // From YAML onFailure.emit
             );
         }
 

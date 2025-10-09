@@ -5,8 +5,8 @@ namespace UserService.Infrastructure.Configurations.Google
 {
     public class GoogleOAuth2ConfigModel
     {
-        public string ClientId_SurveyTalk { get; set; } = string.Empty;
-        public string ClientSecret_SurveyTalk { get; set; } = string.Empty;
+        public string ClientId_MTP { get; set; } = string.Empty;
+        public string ClientSecret_MTP { get; set; } = string.Empty;
     }
     public class GoogleOAuth2Config : IGoogleOAuth2Config
     {
@@ -19,8 +19,8 @@ namespace UserService.Infrastructure.Configurations.Google
             {
                 // ClientId = googleOAuth2Config.ClientId_generalTest;
                 // ClientSecret = googleOAuth2Config.ClientSecret_generalTest;
-                ClientId = googleOAuth2Config.ClientId_SurveyTalk;
-                ClientSecret = googleOAuth2Config.ClientSecret_SurveyTalk;
+                ClientId = googleOAuth2Config.ClientId_MTP;
+                ClientSecret = googleOAuth2Config.ClientSecret_MTP;
             }
         }
 
