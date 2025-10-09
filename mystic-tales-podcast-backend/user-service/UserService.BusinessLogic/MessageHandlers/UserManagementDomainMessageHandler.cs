@@ -174,7 +174,7 @@ namespace UserService.BusinessLogic.MessageHandlers
             );
         }
 
-        [MessageHandler("send-reset-password-link", "auth-eventssssssssssssss")]
+        [MessageHandler("send-reset-password-link", SAGA_TOPIC)]
         public async Task HandleSendResetPasswordLinkAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(

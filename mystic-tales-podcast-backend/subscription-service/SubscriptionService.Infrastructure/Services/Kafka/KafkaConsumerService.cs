@@ -89,12 +89,12 @@ namespace SubscriptionService.Infrastructure.Services.Kafka
             }
         }
 
-        /// <summary>
-        /// Register a message name handler
-        /// </summary>
+
         public void RegisterMessageNameHandler(string messageName, string topic, Func<string, string, Task> handler)
         {
-            _messageNameHandlers[messageName] = handler;
+            // Tạo composite key: "topic:messageName"
+            var compositeKey = $"{topic}:{messageName}";
+            _messageNameHandlers[compositeKey] = handler;
 
             if (!_topicMessageNames.ContainsKey(topic))
             {
@@ -149,9 +149,7 @@ namespace SubscriptionService.Infrastructure.Services.Kafka
             }
         }
 
-        /// <summary>
-        /// Process a consumed message
-        /// </summary>
+
         public async Task ProcessMessageAsync(ConsumeResult<string, string> result)
         {
             try
@@ -159,25 +157,35 @@ namespace SubscriptionService.Infrastructure.Services.Kafka
                 var messageName = ExtractMessageNameFromHeader(result.Message.Headers)
                                  ?? ExtractMessageNameFromBody(result.Message.Value);
 
-                if (!string.IsNullOrEmpty(messageName) && _messageNameHandlers.ContainsKey(messageName))
+                if (!string.IsNullOrEmpty(messageName))
                 {
-                    _logger.LogInformation("Processing message - Topic: {Topic}, Partition: {Partition}, Offset: {Offset}, MessageName: {MessageName}",
-                        result.Topic, result.Partition.Value, result.Offset.Value, messageName);
+                    // Thử composite key trước
+                    var compositeKey = $"{result.Topic}:{messageName}";
 
-                    await _messageNameHandlers[messageName](result.Message.Key, result.Message.Value);
+                    if (_messageNameHandlers.ContainsKey(compositeKey))
+                    {
+                        _logger.LogInformation("Processing message - Topic: {Topic}, MessageName: {MessageName}",
+                            result.Topic, messageName);
 
-                    _logger.LogInformation("Message processed successfully - MessageName: {MessageName}", messageName);
-                }
-                else
-                {
-                    _logger.LogWarning("No handler found for MessageName: {MessageName} from Topic: {Topic}",
-                        messageName ?? "Unknown", result.Topic);
+                        await _messageNameHandlers[compositeKey](result.Message.Key, result.Message.Value);
+                    }
+                    // Fallback về messageName đơn thuần (backward compatibility)
+                    else if (_messageNameHandlers.ContainsKey(messageName))
+                    {
+                        _logger.LogWarning("Using fallback handler for MessageName: {MessageName}", messageName);
+                        await _messageNameHandlers[messageName](result.Message.Key, result.Message.Value);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No handler found for MessageName: {MessageName} from Topic: {Topic}",
+                            messageName, result.Topic);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing message from Topic: {Topic}, Partition: {Partition}, Offset: {Offset}",
-                    result.Topic, result.Partition.Value, result.Offset.Value);
+                _logger.LogError(ex, "Error processing message from Topic: {Topic}",
+                    result.Topic);
                 throw;
             }
         }

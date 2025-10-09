@@ -117,6 +117,7 @@ namespace UserService.BusinessLogic.Services.MessagingServices
                     // Register each handler with the consumer service
                     foreach (var handler in handlers)
                     {
+                        // Console.WriteLine($"Registering handler for message: {handler.Key}, topic: {string.Join(", ", topicMessageNames.Where(t => t.Value.Contains(handler.Key)).Select(t => t.Key))}");
                         // Find which topic this message type belongs to
                         var topic = topicMessageNames.FirstOrDefault(t => t.Value.Contains(handler.Key)).Key;
                         
