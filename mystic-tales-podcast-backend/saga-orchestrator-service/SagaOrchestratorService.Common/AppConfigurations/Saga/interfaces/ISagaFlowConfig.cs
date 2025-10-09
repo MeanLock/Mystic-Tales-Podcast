@@ -24,9 +24,9 @@ namespace SagaOrchestratorService.Common.AppConfigurations.Saga.interfaces
         public string Topic { get; set; } = string.Empty;
         public string HandleService { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public List<string> Parameters { get; set; } = new();
-        public List<string> NextRequestData { get; set; } = new();
-        public List<string> ResponseData { get; set; } = new();
+        // public List<string> Parameters { get; set; } = new();
+        // public List<string> NextRequestData { get; set; } = new();
+        // public List<string> ResponseData { get; set; } = new();
         public SagaOutcomeDefinitionModel? OnSuccess { get; set; }
         public SagaOutcomeDefinitionModel? OnFailure { get; set; }
     }

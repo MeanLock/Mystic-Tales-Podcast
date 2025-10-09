@@ -85,17 +85,19 @@ namespace UserService.BusinessLogic.MessageHandlers
                 stepHandler: async (command) =>
                 {
                     var sendUserServiceEmailParameterDTO = command.RequestData.ToObject<SendUserServiceEmailParameterDTO>();
-                    object mailModel = sendUserServiceEmailParameterDTO.MailTypeName switch
+                    var mailInfo = sendUserServiceEmailParameterDTO.SendUserServiceEmailMailInfo;
+                    Console.WriteLine("Preparing to send email of type: " + mailInfo.MailTypeName);
+                    object mailModel = mailInfo.MailTypeName switch
                     {
-                        "CustomerRegistrationVerification" => sendUserServiceEmailParameterDTO.MailObject.ToObject<CustomerRegistrationVerificationMailViewModel>(),
-                        "CustomerPasswordReset" => sendUserServiceEmailParameterDTO.MailObject.ToObject<CustomerPasswordResetMailViewModel>(),
-                        "PodcasterRequestConfirmation" => sendUserServiceEmailParameterDTO.MailObject.ToObject<PodcasterRequestConfirmationMailViewModel>(),
-                        "PodcasterRequestResult" => sendUserServiceEmailParameterDTO.MailObject.ToObject<PodcasterRequestResultMailViewModel>(),
-                        _ => sendUserServiceEmailParameterDTO.MailObject.ToObject<object>()
+                        "CustomerRegistrationVerification" => mailInfo.MailObject.ToObject<CustomerRegistrationVerificationMailViewModel>(),
+                        "CustomerPasswordReset" => mailInfo.MailObject.ToObject<CustomerPasswordResetMailViewModel>(),
+                        "PodcasterRequestConfirmation" => mailInfo.MailObject.ToObject<PodcasterRequestConfirmationMailViewModel>(),
+                        "PodcasterRequestResult" => mailInfo.MailObject.ToObject<PodcasterRequestResultMailViewModel>(),
+                        _ => mailInfo.MailObject.ToObject<object>()
                     };
-                    Console.WriteLine("Sending email to: " + sendUserServiceEmailParameterDTO.MailObject["VerifyCode"]);
-                    var mailProperty = _mailPropertiesConfig.GetMailPropertyByTypeName(sendUserServiceEmailParameterDTO.MailTypeName);
-                    await _accountService.SendUserServiceEmail(mailProperty, sendUserServiceEmailParameterDTO.ToEmail, mailModel);
+                    Console.WriteLine("Sending email to: " + mailInfo.MailObject["VerifyCode"]);
+                    var mailProperty = _mailPropertiesConfig.GetMailPropertyByTypeName(mailInfo.MailTypeName);
+                    await _accountService.SendUserServiceEmail(mailProperty, mailInfo.ToEmail, mailModel);
                     // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: SAGA_TOPIC,

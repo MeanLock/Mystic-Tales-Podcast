@@ -488,6 +488,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     {
                         throw new HttpRequestException("Account does not exist");
                     }
+                    if (account.IsVerified == false)
+                    {
+                        throw new HttpRequestException("Account has not been verified");
+                    }
                     if (account.DeactivatedAt != null && account.DeactivatedAt.Value < _dateHelpers.GetNowByAppTimeZone())
                     {
                         throw new HttpRequestException("Account has been deactivated");
@@ -514,16 +518,31 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     // }, _googleMailConfig.AccountForgotPassword_TemplateViewPath
                     // , _googleMailConfig.AccountForgotPassword_MailSubject);
 
-                    var mailSendingRequestData = JObject.FromObject(new
+                    // var mailSendingRequestData = JObject.FromObject(new
+                    // {
+                    //     MailTypeName = "CustomerPasswordReset",
+                    //     ToEmail = forgotPasswordData.Email,
+                    //     MailObject = new CustomerPasswordResetMailViewModel
+                    //     {
+                    //         Email = forgotPasswordData.Email,
+                    //         PasswordResetToken = NewGuid,
+                    //         ResetPasswordUrl = resetPasswordUrl,
+                    //         ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
+                    //     }
+                    // });
+                    var mailSendingRequestData = JObject.FromObject(new 
                     {
-                        MailTypeName = "CustomerPasswordReset",
-                        ToEmail = forgotPasswordData.Email,
-                        MailObject = new CustomerPasswordResetMailViewModel
+                        SendUserServiceEmailMailInfo = new 
                         {
-                            Email = forgotPasswordData.Email,
-                            PasswordResetToken = NewGuid,
-                            ResetPasswordUrl = resetPasswordUrl,
-                            ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
+                            MailTypeName = "CustomerPasswordReset",
+                            ToEmail = forgotPasswordData.Email,
+                            MailObject = JObject.FromObject(new CustomerPasswordResetMailViewModel
+                            {
+                                Email = forgotPasswordData.Email,
+                                PasswordResetToken = NewGuid,
+                                ResetPasswordUrl = resetPasswordUrl,
+                                ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
+                            })
                         }
                     });
                     var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(

@@ -25,31 +25,80 @@ namespace UserService.DataAccess.Repositories
         {
             IQueryable<Account> query = _appDbContext.Accounts;
 
-            foreach (var includeProperty in includeProperties)
+            if (includeProperties.Any())
             {
-                query = query.Include(includeProperty);
+                foreach (var property in includeProperties)
+                {
+                    query = query.Include(property);
+                }
             }
 
             return await query.FirstOrDefaultAsync(account => account.Email == email);
         }
 
-        // public async Task<IEnumerable<Account>> FindByRoleIdAsync(int roleId)
-        // {
-        //     return await _appDbContext.Accounts
-        //         .Include(account => account.Role)
-        //         .Include(account => account.AccountProfile)
-        //         .Include(account => account.AccountNationalVerification)
-        //         .Include(account => account.PlatformFeedback)
-        //         .Where(account => account.RoleId == roleId)
-        //         .ToListAsync();
-        // }
+        public async Task<IEnumerable<Account>> FindByRoleIdAsync(int roleId, Expression<Func<Account, bool>>? predicate = null, params Expression<Func<Account, object>>[] includeProperties)
+        {
+            IQueryable<Account> query = _appDbContext.Accounts;
+
+            if (includeProperties.Any())
+            {
+                foreach (var property in includeProperties)
+                {
+                    query = query.Include(property);
+                }
+            }
+
+
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+
+            return await query
+                .Where(account => account.RoleId == roleId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Account>> FindByRoleIdsAsync(List<int> roleIds, Expression<Func<Account, bool>>? predicate = null, params Expression<Func<Account, object>>[] includeProperties)
+        {
+            IQueryable<Account> query = _appDbContext.Accounts;
+
+            if (includeProperties.Any())
+            {
+                foreach (var property in includeProperties)
+                {
+                    query = query.Include(property);
+                }
+            }
+
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+            return await query
+                .Where(account => roleIds.Contains(account.RoleId))
+                .ToListAsync();
+        }
 
         // public async Task<IEnumerable<Account>> FindByRoleIdsAsync(List<int> roleIds)
         // {
         //     return await _appDbContext.Accounts
         //         .Include(account => account.Role)
         //         .Include(account => account.AccountProfile)
-        //         .Include(account => account.AccountNationalVerification)
+        //         .Include(account => account.PlatformFeedback)
+        //         .Where(account => account.RoleId == roleId)
+        //         .ToListAsync();
+        // }
+
+
+
+        // public async Task<Account> FindByIdAsync(int id)
+        // {
+        //     return await _appDbContext.Accounts
+        //         .Include(account => account.Role)
+        //         .Include(account => account.AccountProfile)
         //         .Include(account => account.PlatformFeedback)
         //         .Where(account => roleIds.Contains(account.RoleId))
         //         .ToListAsync();

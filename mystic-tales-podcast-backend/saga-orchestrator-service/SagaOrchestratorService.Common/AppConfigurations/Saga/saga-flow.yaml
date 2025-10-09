@@ -763,7 +763,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"
-          topic: "user-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -790,13 +790,13 @@ flows:
           - NewBalance
         onSuccess:
           emit: "subtract-account-balance-amount.success"
-          topic: "user-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
           emit: "subtract-account-balance-amount.failed"
-          topic: "user-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -1025,7 +1025,7 @@ flows:
           nextFlows: 
             - name: "unpublish-channel-rollback-flow"
               topic: "content-management-domain"
-              handle-service: "PodcastService"
+              handle-service: "SagaOrchestratorService"
 
   channel-deletion-flow:
     topic: "content-management-domain"
@@ -1367,8 +1367,8 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps:
             - name: "refund-podcast-subscription-account"
-              topic: "content-management-domain"
-              handle-service: "PodcastService"
+              topic: "subscription-management-domain"
+              handle-service: "SubscriptionService"
           nextFlows: []
         onFailure:
           emit: "unpublish-show.failed"
@@ -1402,7 +1402,7 @@ flows:
           nextFlows:
             - name: "unpublish-show-rollback-flow"
               topic: "content-management-domain"
-              handle-service: "PodcastService"
+              handle-service: "SagaOrchestratorService"
 
   show-audio-submission-flow:
     topic: "content-management-domain"
@@ -1968,14 +1968,14 @@ flows:
           - UpdatedAt
         onSuccess:
           emit: "review-podcast-episode-content.success"
-          topic: ""
-          handle-service: ""
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService "
           nextSteps: []
           nextFlows: []
         onFailure:
           emit: "review-podcast-episode-content.failed"
-          topic: ""
-          handle-service: ""
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
 
@@ -2197,18 +2197,20 @@ flows:
         handle-service: "BookingManagementService"
         description: "Tạo booking negotiation và đổi booking status"
         parameters:
-          - AccountId
+          - BookingId
           - Deadline
           - Note
           - DemoAudioRequired
           - DemoAudioFileKey
+          - IsFromCustomer 
           - Price
         next-request-data:
-          - AccountId
+          - BookingId
           - Deadline
           - Note
           - DemoAudioRequired
           - DemoAudioFileKey
+          - IsFromCustomer
           - Price
         response-data:
           - BookingNegotiationId
@@ -2624,8 +2626,8 @@ flows:
     save-file: ""
     steps:
       - name: "activate-podcast-subscription"
-        topic: ""
-        handle-service: ""
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
         description: "Kích hoạt gói đăng ký podcast"
         parameters:
           - PodcastSubscriptionId
@@ -2637,14 +2639,14 @@ flows:
           - UpdatedAt
         onSuccess:
           emit: "activate-podcast-subscription.success"
-          topic: ""
-          handle-service: ""
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
           emit: "activate-podcast-subscription.failed"
-          topic: ""
-          handle-service: ""
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
 
@@ -2672,8 +2674,8 @@ flows:
           handle-service: ""
           nextSteps:
             - name: "refund-podcast-subscription-account"
-              topic: "content-management-domain"
-              handle-service: "PodcastService"
+              topic: "subscription-management-domain"
+              handle-service: "SubscriptionService"
           nextFlows: []
         onFailure:
           emit: "deactivate-podcast-subscription.failed"
@@ -3168,7 +3170,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"
-          topic: "user-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -3315,7 +3317,7 @@ flows:
         onFailure:
           emit: "subtract-account-balance-amount.failed"
           topic: "payment-processing-domain"
-          handle-service: ""
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "create-booking-transaction-rollback-flow"
@@ -3361,7 +3363,7 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "subtract-account-balance-amount-rollback-flow"
-              topic: "user-management-domain"
+              topic: "payment-processing-domain"
               handle-service: "SagaOrchestratorService"
 
   booking-final-payment-flow:
@@ -3401,7 +3403,7 @@ flows:
         onFailure:
           emit: "create-booking-final-transaction.failed"
           topic: "user-management-domain"
-          handle-service: "UserService"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
       - name: "add-podcaster-balance-amount"
@@ -3432,8 +3434,8 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-podcaster-balance-amount.failed"
-          topic: "user-management-domain"
-          handle-service: "UserService"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "create-booking-transaction-rollback-flow"
@@ -3468,7 +3470,7 @@ flows:
         onFailure:
           emit: "subtract-account-balance-amount.failed"
           topic: "payment-processing-domain"
-          handle-service: "TransactionService"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "add-podcaster-balance-amount-rollback-flow"
@@ -3587,8 +3589,8 @@ flows:
           nextFlows: []
         onFailure:
           emit: "subtract-podcaster-balance-amount.failed"
-          topic: "user-management-domain"
-          handle-service: "UserService"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "create-booking-transaction-rollback-flow"
@@ -3619,7 +3621,7 @@ flows:
         onFailure:
           emit: "add-account-balance-amount.failed"
           topic: "payment-processing-domain"
-          handle-service: "TransactionService"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "subtract-podcaster-balance-amount-rollback-flow"
@@ -3665,7 +3667,7 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "user-management-domain"
+              topic: "payment-processing-domain"
               handle-service: "SagaOrchestratorService"
             - name: "subtract-podcaster-balance-amount-rollback-flow"
               topic: "user-management-domain"
@@ -3741,7 +3743,7 @@ flows:
         onFailure:
           emit: "add-podcaster-balance-amount.failed"
           topic: "payment-processing-domain"
-          handle-service: "TransactionService"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "create-booking-transaction-rollback-flow"
@@ -3839,7 +3841,7 @@ flows:
           - NewBalance
         onSuccess:
           emit: "subtract-account-balance-amount.success"
-          topic: "user-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "complete-podcast-subscription-transaction"
@@ -3848,8 +3850,8 @@ flows:
           nextFlows: []
         onFailure:
           emit: "subtract-account-balance-amount.failed"
-          topic: "user-management-domain"
-          handle-service: "UserService"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "create-podcast-subscription-transaction-rollback-flow"
@@ -3948,7 +3950,7 @@ flows:
           - NewBalance
         onSuccess:
           emit: "subtract-account-balance-amount.success"
-          topic: "user-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "complete-member-subscription-transaction"
@@ -3958,7 +3960,7 @@ flows:
         onFailure:
           emit: "subtract-account-balance-amount.failed"
           topic: "payment-processing-domain"
-          handle-service: "TransactionService"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "create-member-subscription-transaction-rollback-flow"
@@ -4065,8 +4067,8 @@ flows:
           nextFlows: []
         onFailure:
           emit: "add-account-balance-amount.failed"
-          topic: "user-management-domain"
-          handle-service: "UserService"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "create-podcast-subscription-transaction-rollback-flow"
@@ -4097,11 +4099,11 @@ flows:
         onFailure:
           emit: "subtract-podcaster-balance-amount.failed"
           topic: "payment-processing-domain"
-          handle-service: "TransactionService"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "user-management-domain"
+              topic: "payment-processing-domain"
               handle-service: "SagaOrchestratorService"
             - name: "create-podcast-subscription-transaction-rollback-flow"
               topic: "payment-processing-domain"
@@ -4143,7 +4145,7 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "user-management-domain"
+              topic: "payment-processing-domain"
               handle-service: "SagaOrchestratorService"
             - name: "subtract-podcaster-balance-amount-rollback-flow"
               topic: "user-management-domain"
@@ -4212,7 +4214,7 @@ flows:
         onFailure:
           emit: "add-account-balance-amount.failed"
           topic: "payment-processing-domain"
-          handle-service: "TransactionService"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
             - name: "create-member-subscription-transaction-rollback-flow" 
@@ -4254,7 +4256,7 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "user-management-domain"
+              topic: "payment-processing-domain"
               handle-service: "SagaOrchestratorService"
 
   # storage-purchase-flow:
@@ -5189,17 +5191,20 @@ flows:
         handle-service: "UserService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendUserServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         next-request-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendUserServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         response-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendUserServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         onSuccess:
           emit: "send-user-service-email.success"
           topic: "user-management-domain"
@@ -5224,17 +5229,20 @@ flows:
         handle-service: "SystemConfigurationService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendSystemConfigurationServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         next-request-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendSystemConfigurationServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         response-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendSystemConfigurationServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         onSuccess:
           emit: "send-system-configuration-service-email.success"
           topic: "system-configuration-domain"
@@ -5259,17 +5267,20 @@ flows:
         handle-service: "BookingService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendBookingManagementServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         next-request-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendBookingManagementServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         response-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendBookingManagementServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         onSuccess:
           emit: "send-booking-management-service-email.success"
           topic: "booking-management-domain"
@@ -5294,17 +5305,20 @@ flows:
         handle-service: "PodcastService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendPodcastServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         next-request-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendPodcastServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         response-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendPodcastServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         onSuccess:
           emit: "send-podcast-service-email.success"
           topic: "content-management-domain"
@@ -5329,17 +5343,20 @@ flows:
         handle-service: "SubscriptionService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendSubscriptionServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         next-request-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendSubscriptionServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         response-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendSubscriptionServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         onSuccess:
           emit: "send-subscription-service-email.success"
           topic: "subscription-management-domain"
@@ -5364,17 +5381,20 @@ flows:
         handle-service: "ModerationService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendModerationServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         next-request-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendModerationServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         response-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendModerationServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         onSuccess:
           emit: "send-moderation-service-email.success"
           topic: "report-management-domain"
@@ -5399,17 +5419,20 @@ flows:
         handle-service: "TransactionService"
         description: "Gửi email với các thông tin cần thiết"
         parameters:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendTransactionServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         next-request-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendTransactionServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject  
+            - ToEmail
         response-data:
-          - MailTypeName
-          - MailObject
-          - ToEmail
+          SendTransactionServiceEmailMailInfo: 
+            - MailTypeName
+            - MailObject
+            - ToEmail
         onSuccess:
           emit: "send-transaction-service-email.success"
           topic: "payment-processing-domain"
@@ -5487,7 +5510,7 @@ flows:
         onFailure:
           emit: "add-account-balance-amount.failed"
           topic: "payment-processing-domain"
-          handle-service: "UserService"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
       - name: "complete-podcast-subscription-transaction"
@@ -5514,8 +5537,8 @@ flows:
           nextSteps: []
           nextFlows: 
             - name: "add-account-balance-amount-rollback-flow"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
 
   unpublish-show-rollback-flow:
     topic: "content-management-domain"
@@ -5687,7 +5710,7 @@ flows:
     save-file: ""
     steps:
     - name: "add-podcaster-balance-amount-rollback"
-      topic: "user-management-domain"
+      topic: "payment-processing-domain"
       handle-service: "UserService"
       description: "Rút lại tiền đã gửi tới ví Podcaster"
       parameters:
@@ -5702,8 +5725,8 @@ flows:
         - NewBalance
       onSuccess:
         emit: "add-podcaster-balance-amount-rollback.success"
-        topic: "user-management-domain"
-        handle-service: "UserService"
+        topic: "payment-processing-domain"
+        handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:

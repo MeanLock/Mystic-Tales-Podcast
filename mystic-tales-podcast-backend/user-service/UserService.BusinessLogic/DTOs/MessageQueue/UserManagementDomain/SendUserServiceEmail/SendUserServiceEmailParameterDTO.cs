@@ -9,9 +9,13 @@ namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendU
 {
     public class SendUserServiceEmailParameterDTO
     {
+        public SendUserServiceEmailMailInfoDTO SendUserServiceEmailMailInfo { get; set; }
+    }
+
+    public class SendUserServiceEmailMailInfoDTO
+    {
         public string MailTypeName { get; set; }
         public JObject MailObject { get; set; }
         public string ToEmail { get; set; }
-
     }
 }

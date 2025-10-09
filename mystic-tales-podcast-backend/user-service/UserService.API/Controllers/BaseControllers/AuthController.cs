@@ -21,8 +21,6 @@ namespace UserService.API.Controllers.BaseControllers
     [TypeFilter(typeof(HttpExceptionFilter))]
     public class AuthController : ControllerBase
     {
-        private readonly GenericQueryService _genericQueryService;
-        private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
         private readonly IFileValidationConfig _fileValidationConfig;
@@ -31,10 +29,8 @@ namespace UserService.API.Controllers.BaseControllers
         private readonly AccountService _accountService;
 
 
-        public AuthController(GenericQueryService genericQueryService, HttpServiceQueryClient httpServiceQueryClient, KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, AccountService accountService)
+        public AuthController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, AccountService accountService)
         {
-            _genericQueryService = genericQueryService;
-            _httpServiceQueryClient = httpServiceQueryClient;
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
             _fileIOHelper = fileIOHelper;

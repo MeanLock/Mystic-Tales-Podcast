@@ -1,9 +1,9 @@
 namespace UserService.BusinessLogic.DTOs.Account
 {
-    public class AccountDetailDTO : AccountListItemDTO
-    {
-        public AccountProfileDTO Profile { get; set; } = new AccountProfileDTO();
-    }
+    // public class AccountDetailDTO : AccountListItemDTO
+    // {
+    //     public AccountProfileDTO Profile { get; set; } = new AccountProfileDTO();
+    // }
 
 
 }

@@ -4,7 +4,12 @@ using UserService.API.Filters.ExceptionFilters;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using UserService.BusinessLogic.Services.DbServices.UserServices;
+using UserService.BusinessLogic.Services.MessagingServices.interfaces;
+using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
+using UserService.Common.AppConfigurations.FilePath.interfaces;
 using UserService.DataAccess.Data;
+using UserService.Infrastructure.Services.Kafka;
 
 namespace UserService.API.Controllers.BaseControllers
 {
@@ -13,24 +18,29 @@ namespace UserService.API.Controllers.BaseControllers
     [TypeFilter(typeof(HttpExceptionFilter))]
     public class AccountController : ControllerBase
     {
-        private readonly GenericQueryService _genericQueryService;
-        private readonly HttpServiceQueryClient _httpServiceQueryClient;
-        private readonly AppDbContext _appDbContext;
+        private readonly KafkaProducerService _kafkaProducerService;
+        private readonly IMessagingService _messagingService;
+        private readonly IFileValidationConfig _fileValidationConfig;
+        private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
-        public AccountController(GenericQueryService genericQueryService, HttpServiceQueryClient httpServiceQueryClient, AppDbContext appDbContext, FileIOHelper fileIOHelper)
+        private readonly AccountService _accountService;
+
+        public AccountController(FileIOHelper fileIOHelper, KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, AccountService accountService)
         {
-            _genericQueryService = genericQueryService;
-            _httpServiceQueryClient = httpServiceQueryClient;
-            _appDbContext = appDbContext;
             _fileIOHelper = fileIOHelper;
+            _kafkaProducerService = kafkaProducerService;
+            _messagingService = messagingService;
+            _fileValidationConfig = fileValidationConfig;
+            _accountService = accountService;
+            _filePathConfig = filePathConfig;
         }
 
-        [HttpGet("roles")]
-        public async Task<IActionResult> GetRoles()
-        {
-            var roles = await _appDbContext.Roles.ToListAsync();
-            return Ok(roles);
-        }
+        // [HttpGet("roles")]
+        // public async Task<IActionResult> GetRoles()
+        // {
+        //     var roles = await _appDbContext.Roles.ToListAsync();
+        //     return Ok(roles);
+        // }
 
         // /api/user-service/get-file-url/{fileKey}
         [HttpGet("get-file-url/{**fileKey}")]
@@ -51,6 +61,36 @@ namespace UserService.API.Controllers.BaseControllers
             return Ok(new { FileUrl = fileUrl });
         }
 
+        // /api/user-service/api/accounts/customers
+        [HttpGet("customers")]
+        public async Task<IActionResult> GetCustomers()
+        {
+            var customers = await _accountService.GetCustomerAccounts();
+
+            return Ok(new { CustomerList = customers });
+        }
+
+        // /api/user-service/api/accounts/staffs?IsDeactivated
+        [HttpGet("staffs")]
+        public async Task<IActionResult> GetStaffs([FromQuery] bool? IsDeactivated = null)
+        {
+            var staffs = await _accountService.GetStaffAccounts(IsDeactivated);
+
+            return Ok(new { StaffList = staffs });
+        }
+
+        // /api/user-service/api/accounts/podcasters
+
+        // /api/user-service/api/accounts/podcast-buddies
+
+        // /api/user-service/api/accounts/podcaster/apply
+        // [HttpPost("podcaster/apply")]
+        // public async Task<IActionResult> ApplyPodcaster([FromBody] PodcasterApplicationDTO applicationDTO)
+        // {
+            
+
+        //     return Ok();
+        // }
 
         //         // /api/user-service/api/auth/register/customer
         // [HttpPost("register/customer")]

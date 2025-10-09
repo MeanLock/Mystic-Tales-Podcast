@@ -24,6 +24,7 @@ using UserService.BusinessLogic.Enums.Kafka;
 using UserService.Infrastructure.Models.Kafka;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using Confluent.Kafka;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserServiceEmail;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -244,13 +245,16 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             {
                                 var mailSendingRequestData = JObject.FromObject(new
                                 {
-                                    MailTypeName = "CustomerRegistrationVerification",
-                                    ToEmail = registerInfo.Email,
-                                    MailObject = new CustomerRegistrationVerificationMailViewModel
+                                    SendUserServiceEmailMailInfo = new
                                     {
-                                        Email = registerInfo.Email,
-                                        FullName = registerInfo.FullName,
-                                        VerifyCode = verifyCode
+                                        MailTypeName = "CustomerRegistrationVerification",
+                                        ToEmail = registerInfo.Email,
+                                        MailObject = new CustomerRegistrationVerificationMailViewModel
+                                        {
+                                            Email = registerInfo.Email,
+                                            FullName = registerInfo.FullName,
+                                            VerifyCode = verifyCode
+                                        }
                                     }
                                 });
                                 var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -296,15 +300,29 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                         if (registerInfo.RoleId == 1)
                         {
+                            // var mailSendingRequestData = JObject.FromObject(new
+                            // {
+                            //     MailTypeName = "CustomerRegistrationVerification",
+                            //     ToEmail = registerInfo.Email,
+                            //     MailObject = new CustomerRegistrationVerificationMailViewModel
+                            //     {
+                            //         Email = registerInfo.Email,
+                            //         FullName = registerInfo.FullName,
+                            //         VerifyCode = verifyCode
+                            //     }
+                            // });
                             var mailSendingRequestData = JObject.FromObject(new
                             {
-                                MailTypeName = "CustomerRegistrationVerification",
-                                ToEmail = registerInfo.Email,
-                                MailObject = new CustomerRegistrationVerificationMailViewModel
+                                SendUserServiceEmailMailInfo = new
                                 {
-                                    Email = registerInfo.Email,
-                                    FullName = registerInfo.FullName,
-                                    VerifyCode = verifyCode
+                                    MailTypeName = "CustomerRegistrationVerification",
+                                    ToEmail = registerInfo.Email,
+                                    MailObject = new CustomerRegistrationVerificationMailViewModel
+                                    {
+                                        Email = registerInfo.Email,
+                                        FullName = registerInfo.FullName,
+                                        VerifyCode = verifyCode
+                                    }
                                 }
                             });
                             var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -389,6 +407,114 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         }
 
+        public async Task<List<AccountListItemResponseDTO>> GetCustomerAccounts()
+        {
+            try
+            {
+                var customers = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1, null, a => a.Role);
+                if (customers == null || !customers.Any())
+                {
+                    throw new Exception("No customer accounts found");
+                }
+
+                var result = customers.Select(item =>
+                {
+                    return new AccountListItemResponseDTO
+                    {
+                        Id = item.Id,
+                        Email = item.Email,
+                        Role = new RoleDTO
+                        {
+                            Id = item.Role.Id,
+                            Name = item.Role.Name
+                        },
+                        FullName = item.FullName,
+                        Dob = item.Dob?.ToString("yyyy-MM-dd"),
+                        Gender = item.Gender,
+                        Address = item.Address,
+                        Phone = item.Phone,
+                        Balance = item.Balance,
+                        IsVerified = item.IsVerified,
+                        PodcastListenSlot = item.PodcastListenSlot,
+                        ViolationPoint = item.ViolationPoint,
+                        ViolationLevel = item.ViolationLevel,
+                        LastPodcastListenSlotChanged = item.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        LastViolationPointChanged = item.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        LastViolationLevelChanged = item.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        MainImageFileKey = item.MainImageFileKey,
+                        DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+
+                    };
+                });
+
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                // throw new HttpRequestException("Lấy danh sách tài khoản khách hàng thất bại, lỗi: " + ex.Message);
+                throw new Exception("Get customer account list failed, error: " + ex.Message);
+            }
+
+        }
+
+        public async Task<List<AccountListItemResponseDTO>> GetStaffAccounts(bool? IsDeactivated = null)
+        {
+            try
+            {
+                List<int> roles = new List<int> { 2 }; // 2: Head, 3: Assignee
+                var staffs = await _unitOfWork.AccountRepository.FindByRoleIdsAsync(roles,
+                    predicate: IsDeactivated.HasValue ? (a => (IsDeactivated == true ? a.DeactivatedAt != null : a.DeactivatedAt == null)) : null
+                , a => a.Role);
+                if (staffs == null || !staffs.Any())
+                {
+                    throw new Exception("No staff accounts found");
+                }
+
+                var result = staffs.Select(item =>
+                {
+                    return new AccountListItemResponseDTO
+                    {
+                        Id = item.Id,
+                        Email = item.Email,
+                        Role = new RoleDTO
+                        {
+                            Id = item.Role.Id,
+                            Name = item.Role.Name
+                        },
+                        FullName = item.FullName,
+                        Dob = item.Dob?.ToString("yyyy-MM-dd"),
+                        Gender = item.Gender,
+                        Address = item.Address,
+                        Phone = item.Phone,
+                        Balance = item.Balance,
+                        IsVerified = item.IsVerified,
+                        PodcastListenSlot = item.PodcastListenSlot,
+                        ViolationPoint = item.ViolationPoint,
+                        ViolationLevel = item.ViolationLevel,
+                        LastPodcastListenSlotChanged = item.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        LastViolationPointChanged = item.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        LastViolationLevelChanged = item.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        MainImageFileKey = item.MainImageFileKey,
+                        DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    };
+                });
+
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get staff account list failed, error: " + ex.Message);
+            }
+
+        }
+
+
 
         // public async Task RegisterStaff(StaffRegisterDTO staffRegisterInfo)
         // {
@@ -444,107 +570,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         //     }
 
         // }
-        // public async Task<List<AccountListItemDTO>> GetCustomerAccounts()
-        // {
-        //     try
-        //     {
-        //         var customers = await _unitOfWork.AccountRepository.FindByRoleIdAsync(4);
-        //         if (customers == null || !customers.Any())
-        //         {
-        //             throw new Exception("Không tìm thấy tài khoản khách hàng nào");
-        //         }
 
-        //         var result = await Task.WhenAll(customers.Select(async item =>
-        //         {
-        //             return new AccountListItemDTO
-        //             {
-        //                 Id = item.Id,
-        //                 Email = item.Email,
-        //                 Role = new RoleDTO
-        //                 {
-        //                     Id = item.Role.Id,
-        //                     Name = item.Role.Name
-        //                 },
-        //                 FullName = item.FullName,
-        //                 Dob = item.Dob?.ToString("yyyy-MM-dd"),
-        //                 Gender = item.Gender,
-        //                 Address = item.Address,
-        //                 Phone = item.Phone,
-        //                 Balance = item.Balance,
-        //                 IsVerified = item.IsVerified,
-        //                 Xp = item.Xp,
-        //                 Level = item.Level,
-        //                 ProgressionSurveyCount = item.ProgressionSurveyCount,
-        //                 IsFilterSurveyRequired = item.IsFilterSurveyRequired,
-        //                 LastFilterSurveyTakenAt = item.LastFilterSurveyTakenAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-        //                 DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-        //                 CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-        //                 UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-        //                 MainImageUrl = await _imageHelpers.GenerateImageUrl(_filePathConfig.ACCOUNt_IMAGE_PATH, item.Id.ToString(), "main"),
-        //                 IsPlatformFeedbackGiven = item.PlatformFeedback != null,
-        //             };
-        //         }));
-
-        //         return result.ToList();
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         throw new HttpRequestException("Lấy danh sách tài khoản khách hàng thất bại, lỗi: " + ex.Message);
-        //     }
-
-        // }
-
-        // public async Task<List<AccountListItemDTO>> GetStaffAccounts()
-        // {
-        //     try
-        //     {
-        //         List<int> roles = new List<int> { 2, 3 }; // 2: Head, 3: Assignee
-        //         var staffs = await _unitOfWork.AccountRepository.FindByRoleIdsAsync(roles);
-        //         if (staffs == null || !staffs.Any())
-        //         {
-        //             throw new Exception("Không tìm thấy tài khoản nhân viên nào");
-        //         }
-
-        //         var result = await Task.WhenAll(staffs.Select(async item =>
-        //         {
-        //             return new AccountListItemDTO
-        //             {
-        //                 Id = item.Id,
-        //                 Email = item.Email,
-        //                 Role = new RoleDTO
-        //                 {
-        //                     Id = item.Role.Id,
-        //                     Name = item.Role.Name
-        //                 },
-        //                 FullName = item.FullName,
-        //                 Dob = item.Dob?.ToString("yyyy-MM-dd"),
-        //                 Gender = item.Gender,
-        //                 Address = item.Address,
-        //                 Phone = item.Phone,
-        //                 Balance = item.Balance,
-        //                 IsVerified = item.IsVerified,
-        //                 Xp = item.Xp,
-        //                 Level = item.Level,
-        //                 ProgressionSurveyCount = item.ProgressionSurveyCount,
-        //                 IsFilterSurveyRequired = item.IsFilterSurveyRequired,
-        //                 LastFilterSurveyTakenAt = item.LastFilterSurveyTakenAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-        //                 DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-        //                 CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-        //                 UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-        //                 MainImageUrl = await _imageHelpers.GenerateImageUrl(_filePathConfig.ACCOUNt_IMAGE_PATH, item.Id.ToString(), "main")
-        //             };
-        //         }));
-
-        //         return result.ToList();
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         throw new HttpRequestException("Lấy danh sách tài khoản nhân viên thất bại, lỗi: " + ex.Message);
-        //     }
-
-        // }
 
         // public async Task<AccountDetailDTO> GetAccountById(int accountId)
         // {
