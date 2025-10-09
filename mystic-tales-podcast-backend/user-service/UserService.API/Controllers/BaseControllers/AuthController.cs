@@ -93,15 +93,51 @@ namespace UserService.API.Controllers.BaseControllers
         [HttpPost("account-verification")]
         public async Task<IActionResult> AccountVerification([FromBody] AccountVerificationRequestDTO accountVerificationRequestDTO)
         {
-            var accountVerificationInfo = JsonConvert.DeserializeObject<AccountVerificationInfoDTO>(accountVerificationRequestDTO.AccountVerificationInfo);
-            var requestData = JObject.FromObject(accountVerificationInfo);
+            // var accountVerificationInfo = JsonConvert.DeserializeObject<AccountVerificationInfoDTO>(accountVerificationRequestDTO.AccountVerificationInfo);
+            var requestData = JObject.FromObject(accountVerificationRequestDTO.AccountVerificationInfo);
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-email-verification-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {
-                accountVerificationRequestDTO,
-                requestData,
-                startSagaTriggerMessage,
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/user-service/api/auth/register/staff
+        [HttpPost("register/staff")]
+        public async Task<IActionResult> RegisterStaff([FromBody] StaffRegisterRequestDTO staffRegisterRequestDTO)
+        {
+             var RegisterInfo = JsonConvert.DeserializeObject<StaffRegisterInfoDTO>(staffRegisterRequestDTO.RegisterInfo);
+
+            string mainImageFileKey = null;
+            if (staffRegisterRequestDTO.MainImageFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidImage = _fileValidationConfig.IsValidFile("Account.mainImageFileKey", staffRegisterRequestDTO.MainImageFile.FileName, staffRegisterRequestDTO.MainImageFile.Length, staffRegisterRequestDTO.MainImageFile.ContentType);
+                if (!isValidImage)
+                {
+                    return BadRequest("Invalid image file.");
+                }
+                byte[] fileBytes;
+                using (var memoryStream = new MemoryStream())
+                {
+                    await staffRegisterRequestDTO.MainImageFile.CopyToAsync(memoryStream);
+                    fileBytes = memoryStream.ToArray();
+                }
+                string newMainImageFileName = $"{Guid.NewGuid()}_{staffRegisterRequestDTO.MainImageFile.FileName}";
+                await _fileIOHelper.UploadBinaryFileAsync(fileBytes, _filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+
+            }
+            JObject requestData = JObject.FromObject(RegisterInfo);
+            requestData["MainImageFileKey"] = mainImageFileKey;
+            requestData["RoleId"] = 2;
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-registration-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             }
             );

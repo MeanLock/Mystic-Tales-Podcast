@@ -11,7 +11,7 @@ namespace UserService.BusinessLogic.Registrations
             // services.AddScoped<SystemConfigService>();
 
             // // UserServices
-            // services.AddScoped<AuthService>();
+            services.AddScoped<AuthService>();
             services.AddScoped<AccountService>();
 
             // // PaymentServices

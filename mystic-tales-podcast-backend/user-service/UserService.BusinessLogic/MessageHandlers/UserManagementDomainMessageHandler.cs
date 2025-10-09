@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using UserService.BusinessLogic.Attributes;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
+using UserService.BusinessLogic.DTOs.ViewModels.Mail;
 using UserService.BusinessLogic.Enums.Kafka;
 using UserService.BusinessLogic.Services.DbServices.UserServices;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -16,6 +18,7 @@ namespace UserService.BusinessLogic.MessageHandlers
     {
         private readonly IMessagingService _messagingService;
         private readonly AccountService _accountService;
+        private readonly AuthService _authService;
         private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.UserManagementDomain;
         private readonly IMailPropertiesConfig _mailPropertiesConfig;
@@ -25,6 +28,7 @@ namespace UserService.BusinessLogic.MessageHandlers
         public UserManagementDomainMessageHandler(
             IMessagingService messagingService,
             AccountService accountService,
+            AuthService authService,
             KafkaProducerService kafkaProducerService,
             ILogger<UserManagementDomainMessageHandler> logger,
             IMailPropertiesConfig mailPropertiesConfig) : base(messagingService, kafkaProducerService, logger)
@@ -32,6 +36,7 @@ namespace UserService.BusinessLogic.MessageHandlers
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
             _accountService = accountService;
+            _authService = authService;
             _mailPropertiesConfig = mailPropertiesConfig;
         }
 
@@ -65,8 +70,8 @@ namespace UserService.BusinessLogic.MessageHandlers
         // subtract-account-balance-amount-rollback
         // add-podcaster-balance-amount-rollback
         // subtract-podcaster-balance-amount-rollback
-        
-        [MessageHandler("send-user-service-email", SAGA_TOPIC )]
+
+        [MessageHandler("send-user-service-email", SAGA_TOPIC)]
         public async Task HandleSendUserServiceEmailAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -74,9 +79,17 @@ namespace UserService.BusinessLogic.MessageHandlers
                 stepHandler: async (command) =>
                 {
                     var sendUserServiceEmailParameterDTO = command.RequestData.ToObject<SendUserServiceEmailParameterDTO>();
-                    var mailObject = sendUserServiceEmailParameterDTO.MailObject;
-                    var mailProperty = _mailPropertiesConfig.GetMailProperty(sendUserServiceEmailParameterDTO.MailTypeName);
-                    await _accountService.SendUserServiceEmail(mailProperty, sendUserServiceEmailParameterDTO.ToEmail, mailObject);
+                    object mailModel = sendUserServiceEmailParameterDTO.MailTypeName switch
+                    {
+                        "CustomerRegistrationVerification" => sendUserServiceEmailParameterDTO.MailObject.ToObject<CustomerRegistrationVerificationMailViewModel>(),
+                        "CustomerPasswordReset" => sendUserServiceEmailParameterDTO.MailObject.ToObject<CustomerPasswordResetMailViewModel>(),
+                        "PodcasterRequestConfirmation" => sendUserServiceEmailParameterDTO.MailObject.ToObject<PodcasterRequestConfirmationMailViewModel>(),
+                        "PodcasterRequestResult" => sendUserServiceEmailParameterDTO.MailObject.ToObject<PodcasterRequestResultMailViewModel>(),
+                        _ => sendUserServiceEmailParameterDTO.MailObject.ToObject<object>()
+                    };
+                    Console.WriteLine("Sending email to: " + sendUserServiceEmailParameterDTO.MailObject["VerifyCode"]);
+                    var mailProperty = _mailPropertiesConfig.GetMailPropertyByTypeName(sendUserServiceEmailParameterDTO.MailTypeName);
+                    await _accountService.SendUserServiceEmail(mailProperty, sendUserServiceEmailParameterDTO.ToEmail, mailModel);
                     // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: SAGA_TOPIC,
@@ -87,7 +100,7 @@ namespace UserService.BusinessLogic.MessageHandlers
                         messageName: "send-user-service-email.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-                    
+
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "send-user-service-email.failed"    // From YAML onFailure.emit
@@ -102,21 +115,27 @@ namespace UserService.BusinessLogic.MessageHandlers
                 stepHandler: async (command) =>
                 {
                     var createAccountParameterDTO = command.RequestData.ToObject<CreateAccountParameterDTO>();
-                    await _accountService.RegisterCustomer(createAccountParameterDTO, command );
-                    // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
-                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: SAGA_TOPIC,
-                        requestData: command.RequestData,
-                        responseData: command.RequestData,
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: "create-account.success"
-                    );
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-                    
+                    await _accountService.RegisterAccount(createAccountParameterDTO, command);
+
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-account.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("verify-account", SAGA_TOPIC)]
+        public async Task HandleVerifyAccountAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var verifyAccountParameterDTO = command.RequestData.ToObject<VerifyAccountParameterDTO>();
+                    await _authService.AccountVerification(verifyAccountParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "verify-account.failed"    // From YAML onFailure.emit
             );
         }
 

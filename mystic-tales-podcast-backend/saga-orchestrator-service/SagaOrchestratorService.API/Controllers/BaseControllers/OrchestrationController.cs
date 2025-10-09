@@ -21,7 +21,7 @@ namespace SagaOrchestratorService.API.Controllers.BaseControllers
             // Implement your logic here
             return Ok();
         }
-        [HttpGet("ResultData/{sagaId}")]
+        [HttpGet("result-data/{sagaId}")]
         public async Task<IActionResult> GetResponseData(Guid sagaId)
         {
             var sagaInstance = await _sagaInstanceService.GetSagaInstanceAsync(sagaId);

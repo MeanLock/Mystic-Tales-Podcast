@@ -22,6 +22,8 @@ using Newtonsoft.Json.Linq;
 using UserService.Infrastructure.Services.Kafka;
 using UserService.BusinessLogic.Enums.Kafka;
 using UserService.Infrastructure.Models.Kafka;
+using UserService.BusinessLogic.Services.MessagingServices.interfaces;
+using Confluent.Kafka;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -60,6 +62,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         private readonly FluentEmailService _fluentEmail;
 
         // KAFKA SERVICE
+        private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
 
         public AccountService(
@@ -81,6 +84,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             IAccountConfig accountConfig,
 
             HttpServiceQueryClient httpServiceQueryClient,
+            IMessagingService messagingService,
             KafkaProducerService kafkaProducerService
             )
         {
@@ -104,6 +108,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _appConfig = appConfig;
 
             _httpServiceQueryClient = httpServiceQueryClient;
+            _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
         }
 
@@ -194,21 +199,21 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 throw new HttpRequestException("Gửi mail thất bại, lỗi: " + ex.Message);
             }
         }
-        public async Task RegisterCustomer(CreateAccountParameterDTO customerRegisterDTO, SagaCommandMessage command)
+        public async Task RegisterAccount(CreateAccountParameterDTO accountRegisterDTO, SagaCommandMessage command)
         {
 
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    var registerInfo = customerRegisterDTO;
-                    var customer = await _unitOfWork.AccountRepository.FindByEmailAsync(registerInfo.Email);
+                    var registerInfo = accountRegisterDTO;
+                    var existAccount = await _unitOfWork.AccountRepository.FindByEmailAsync(registerInfo.Email);
 
                     var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
 
-                    if (customer != null)
+                    if (existAccount != null)
                     {
-                        if (customer.IsVerified == true)
+                        if (existAccount.IsVerified == true)
                         {
                             throw new Exception("Đã tồn tại tài khoản đang sử dụng mail này");
                         }
@@ -216,18 +221,18 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         {
                             string verifyCode = GenerateRandomVerifyCode(_accountConfig.VerifyCodeLength);
 
-                            customer.Email = registerInfo.Email;
-                            customer.Password = _bcryptHelper.HashPassword(registerInfo.Password);
-                            customer.FullName = registerInfo.FullName;
-                            customer.RoleId = 4; // RoleId 4: Customer
-                            customer.Dob = DateOnly.FromDateTime(registerInfo.Dob);
-                            customer.Gender = registerInfo.Gender;
-                            customer.Address = registerInfo.Address;
-                            customer.Phone = registerInfo.Phone;
-                            customer.IsVerified = false;
-                            customer.VerifyCode = verifyCode;
-                            customer.PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold");
-                            customer.MainImageFileKey = null;
+                            existAccount.Email = registerInfo.Email;
+                            existAccount.Password = _bcryptHelper.HashPassword(registerInfo.Password);
+                            existAccount.FullName = registerInfo.FullName;
+                            existAccount.RoleId = registerInfo.RoleId;
+                            existAccount.Dob = DateOnly.FromDateTime(registerInfo.Dob);
+                            existAccount.Gender = registerInfo.Gender;
+                            existAccount.Address = registerInfo.Address;
+                            existAccount.Phone = registerInfo.Phone;
+                            existAccount.IsVerified = registerInfo.RoleId == 1 ? false : true;
+                            existAccount.VerifyCode = registerInfo.RoleId == 1 ? verifyCode : null;
+                            existAccount.PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold") : null;
+                            existAccount.MainImageFileKey = null;
                             // await _fluentEmail.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
                             // {
                             //     Email = registerInfo.Email,
@@ -235,24 +240,30 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             //     VerifyCode = verifyCode
                             // }, _googleMailConfig.AccountVerification_TemplateViewPath
                             // , _googleMailConfig.AccountVerification_MailSubject);
-                            var mailSendingRequestData = JObject.FromObject(new
-                            {
-                                MailTypeName = "AccountVerification",
-                                ToEmail = registerInfo.Email,
-                                MailObject = new VerifyCodeEmailViewModel
-                                {
-                                    Email = registerInfo.Email,
-                                    FullName = registerInfo.FullName,
-                                    VerifyCode = verifyCode
-                                }
-                            });
-                            var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.UserManagementDomain,
-                                requestData: mailSendingRequestData,
-                                sagaInstanceId: null,
-                                messageName: "mail-sending-flow");
 
-                            await _accountGenericRepository.UpdateAsync(customer.Id, customer);
+                            if (registerInfo.RoleId == 1)
+                            {
+                                var mailSendingRequestData = JObject.FromObject(new
+                                {
+                                    MailTypeName = "CustomerRegistrationVerification",
+                                    ToEmail = registerInfo.Email,
+                                    MailObject = new CustomerRegistrationVerificationMailViewModel
+                                    {
+                                        Email = registerInfo.Email,
+                                        FullName = registerInfo.FullName,
+                                        VerifyCode = verifyCode
+                                    }
+                                });
+                                var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.UserManagementDomain,
+                                    requestData: mailSendingRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "user-service-mail-sending-flow");
+                                await _messagingService.SendSagaMessageAsync(mailSendingFlow);
+                            }
+
+
+                            await _accountGenericRepository.UpdateAsync(existAccount.Id, existAccount);
 
                         }
                     }
@@ -260,19 +271,19 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     {
                         string verifyCode = GenerateRandomVerifyCode(_accountConfig.VerifyCodeLength);
 
-                        customer = new Account
+                        existAccount = new Account
                         {
                             Email = registerInfo.Email,
                             Password = _bcryptHelper.HashPassword(registerInfo.Password),
                             FullName = registerInfo.FullName,
-                            RoleId = 4,
+                            RoleId = registerInfo.RoleId,
                             Dob = DateOnly.FromDateTime(registerInfo.Dob),
                             Gender = registerInfo.Gender,
                             Address = registerInfo.Address,
                             Phone = registerInfo.Phone,
-                            IsVerified = false,
-                            VerifyCode = verifyCode,
-                            PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold"),
+                            IsVerified = registerInfo.RoleId == 1 ? false : true,
+                            VerifyCode = registerInfo.RoleId == 1 ? verifyCode : null,
+                            PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold") : null,
                             MainImageFileKey = null,
                         };
 
@@ -283,48 +294,61 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         //     VerifyCode = verifyCode
                         // }, _googleMailConfig.AccountVerification_TemplateViewPath
                         // , _googleMailConfig.AccountVerification_MailSubject);
-                        var mailSendingRequestData = JObject.FromObject(new
+
+                        if (registerInfo.RoleId == 1)
                         {
-                            MailTypeName = "AccountVerification",
-                            ToEmail = registerInfo.Email,
-                            MailObject = new VerifyCodeEmailViewModel
+                            var mailSendingRequestData = JObject.FromObject(new
                             {
-                                Email = registerInfo.Email,
-                                FullName = registerInfo.FullName,
-                                VerifyCode = verifyCode
-                            }
-                        });
-                        await _accountGenericRepository.CreateAsync(customer);
+                                MailTypeName = "CustomerRegistrationVerification",
+                                ToEmail = registerInfo.Email,
+                                MailObject = new CustomerRegistrationVerificationMailViewModel
+                                {
+                                    Email = registerInfo.Email,
+                                    FullName = registerInfo.FullName,
+                                    VerifyCode = verifyCode
+                                }
+                            });
+                            var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.UserManagementDomain,
+                                    requestData: mailSendingRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "user-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(mailSendingFlow);
+                        }
+
+                        await _accountGenericRepository.CreateAsync(existAccount);
                     }
 
 
 
-                    var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + customer.Id;
+                    var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + existAccount.Id;
                     if (registerInfo.MainImageFileKey != null && registerInfo.MainImageFileKey != "")
                     {
                         var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image.{FilePathHelper.GetExtension(registerInfo.MainImageFileKey)}");
                         await _fileIOHelper.CopyFileToFileAsync(registerInfo.MainImageFileKey, MainImageFileKey);
-                        customer.MainImageFileKey = MainImageFileKey;
-                        await _accountGenericRepository.UpdateAsync(customer.Id, customer);
+                        await _fileIOHelper.DeleteFileAsync(registerInfo.MainImageFileKey);
+                        existAccount.MainImageFileKey = MainImageFileKey;
+                        await _accountGenericRepository.UpdateAsync(existAccount.Id, existAccount);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = JObject.FromObject(new
-                    { 
-                        Email = customer.Email,
-                        FullName = customer.FullName,
-                        Dob = customer.Dob?.ToString("yyyy-MM-dd"),
-                        Gender = customer.Gender,
-                        Address = customer.Address,
-                        Phone = customer.Phone,
-                        MainImageFileKey = customer.MainImageFileKey,
-                        RoleId = customer.RoleId,
-                        Password = customer.Password,
+                    {
+                        Email = existAccount.Email,
+                        FullName = existAccount.FullName,
+                        Dob = existAccount.Dob?.ToString("yyyy-MM-dd"),
+                        Gender = existAccount.Gender,
+                        Address = existAccount.Address,
+                        Phone = existAccount.Phone,
+                        MainImageFileKey = existAccount.MainImageFileKey,
+                        RoleId = existAccount.RoleId,
+                        Password = existAccount.Password,
                     });
                     var messageResponseData = JObject.FromObject(new
                     {
-                        AccountId = customer.Id
+                        AccountId = existAccount.Id,
+                        Message = "Register account successfully"
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -334,6 +358,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         flowName: command.FlowName,
                         messageName: "create-account.success"
                         );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                 }
                 catch (Exception ex)
                 {
@@ -342,14 +367,18 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
                         requestData: command.RequestData,
-                        responseData: command.LastStepResponseData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Đăng kí tài khoản thất bại, lỗi: {ex.Message}"
+                        }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "create-account.failed"
                         );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
-                    throw new HttpRequestException("Đăng kí tài khoản thất bại, lỗi: " + ex.Message);
+                    // throw new HttpRequestException("Đăng kí tài khoản thất bại, lỗi: " + ex.Message);
                 }
             }
 

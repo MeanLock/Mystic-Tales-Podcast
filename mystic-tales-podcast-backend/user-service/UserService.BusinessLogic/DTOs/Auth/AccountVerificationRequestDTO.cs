@@ -2,7 +2,7 @@ namespace UserService.BusinessLogic.DTOs.Auth
 {
     public class AccountVerificationRequestDTO
     {
-        public required string AccountVerificationInfo { get; set; }
+        public required AccountVerificationInfoDTO AccountVerificationInfo { get; set; }
     }
     public class AccountVerificationInfoDTO
     {
