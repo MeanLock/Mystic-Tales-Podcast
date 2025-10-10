@@ -15,7 +15,6 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAcc
 using UserService.BusinessLogic.Helpers.AuthHelpers;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Helpers.DateHelpers;
-using UserService.DataAccess.Entities.SqlServer;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using UserService.BusinessLogic.Models.CrossService;
 using Newtonsoft.Json.Linq;
@@ -29,6 +28,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAcc
 using UserService.Infrastructure.Services.Redis;
 using UserService.BusinessLogic.DTOs.Cache;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
+using UserService.DataAccess.Entities.SqlServer;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -58,6 +58,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         // REPOSITORIES
         private readonly IGenericRepository<Account> _accountGenericRepository;
         private readonly IGenericRepository<Role> _roleGenericRepository;
+        private readonly IGenericRepository<PodcasterProfile> _podcasterProfileGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
@@ -84,6 +85,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             IServiceProvider serviceProvider,
             IGenericRepository<Account> accountGenericRepository,
             IGenericRepository<Role> roleGenericRepository,
+            IGenericRepository<PodcasterProfile> podcasterProfileGenericRepository,
 
             FileIOHelper fileIOHelper,
             IFilePathConfig filePathConfig,
@@ -105,6 +107,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
             _accountGenericRepository = accountGenericRepository;
             _roleGenericRepository = roleGenericRepository;
+            _podcasterProfileGenericRepository = podcasterProfileGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -612,31 +615,61 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
-                    var account = await GetExistAccountById(createPodcasterProfileParameter.AccountId);
-                    if (account.RoleId != 1)
+                    var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
+                    var account = await _accountGenericRepository.FindByIdAsync(createPodcasterProfileParameter.AccountId, includeProperties: a => a.PodcasterProfile);
+                    if (account.PodcasterProfile != null)
                     {
-                        throw new Exception("Only customer accounts can create podcaster profile");
-                    }
-                    if (account.IsVerified == false)
-                    {
-                        throw new Exception("Unverified account cannot create podcaster profile");
+                        throw new Exception("Podcaster profile for account id " + createPodcasterProfileParameter.AccountId + " already exists");
                     }
 
-                    var result = await _redisSharedCacheService.KeySetAsync<PodcasterProfileCreationCache>($"podcaster-profile:creation:{account.Id}", new PodcasterProfileCreationCache
+
+                    var podcasterProfile = new PodcasterProfile
                     {
                         AccountId = account.Id,
-                        FullName = account.FullName,
-                        Email = account.Email,
-                        CreatedAt = DateTime.UtcNow
-                    },
-                    // set cache expiry to 1 hour (khi hết hạn key-value này sẽ bị xoá khỏi redis)
-                    TimeSpan.FromHours(1)
-                    );
+                        Name = createPodcasterProfileParameter.Name,
+                        Description = createPodcasterProfileParameter.Description,
+                        BuddyAudioFileKey = null,
+                        CommitmentDocumentFileKey = null,
+                        IsVerified = false,
+                        OwnedBookingStorageSize = activeSystemConfigProfile["BookingConfig"].Value<double>("FreeInitialBookingStorageSize"),
+                        UsedBookingStorageSize = 0,
+                        RatingCount = 0
+                    };
 
-                    if (result == false)
+                    var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + account.Id;
+                    if (createPodcasterProfileParameter.CommitmentDocumentFileKey != null && createPodcasterProfileParameter.CommitmentDocumentFileKey != "")
                     {
-                        throw new Exception("Create podcaster profile failed, cannot set podcaster profile creation cache in redis");
+                        var CommitmentDocumentFileKey = FilePathHelper.CombinePaths(folderPath, $"buddy_commitment_document{FilePathHelper.GetExtension(createPodcasterProfileParameter.CommitmentDocumentFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(createPodcasterProfileParameter.CommitmentDocumentFileKey, CommitmentDocumentFileKey);
+                        await _fileIOHelper.DeleteFileAsync(createPodcasterProfileParameter.CommitmentDocumentFileKey);
+                        podcasterProfile.CommitmentDocumentFileKey = CommitmentDocumentFileKey;
+
                     }
+
+
+                    await _podcasterProfileGenericRepository.CreateAsync(podcasterProfile);
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = JObject.FromObject(createPodcasterProfileParameter);
+                    messageNextRequestData["CommitmentDocumentFileKey"] = podcasterProfile.CommitmentDocumentFileKey;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Create podcaster profile successfully",
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-podcaster-profile.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(podcasterProfile.AccountId);
+                    
+
+
                 }
                 catch (Exception ex)
                 {
@@ -1019,3 +1052,4 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         }
     }
+}

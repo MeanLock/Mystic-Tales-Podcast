@@ -64,7 +64,7 @@ CREATE TABLE PodcasterProfile (
     averageRating FLOAT NOT NULL DEFAULT 0,
     ratingCount INT NOT NULL DEFAULT 0,
     commitmentDocumentFileKey NVARCHAR(MAX) NOT NULL,
-    buddyAudioFileKey NVARCHAR(MAX) NOT NULL,
+    buddyAudioFileKey NVARCHAR(MAX) NULL,
     ownedBookingStorageSize FLOAT NOT NULL,
     usedBookingStorageSize FLOAT NOT NULL,
     isVerified BIT NULL DEFAULT 0,

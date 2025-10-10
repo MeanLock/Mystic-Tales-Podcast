@@ -17,7 +17,7 @@ public partial class PodcasterProfile
 
     public string CommitmentDocumentFileKey { get; set; } = null!;
 
-    public string BuddyAudioFileKey { get; set; } = null!;
+    public string? BuddyAudioFileKey { get; set; }
 
     public double OwnedBookingStorageSize { get; set; }
 

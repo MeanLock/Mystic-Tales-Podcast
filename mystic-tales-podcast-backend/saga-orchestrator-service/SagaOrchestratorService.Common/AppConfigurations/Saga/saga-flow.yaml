@@ -283,7 +283,6 @@ flows:
           - Description
           - CommitmentDocumentFileKey
         response-data:
-          - PodcasterProfileId
           - AccountId
           - Name
           - Description

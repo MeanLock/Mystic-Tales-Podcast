@@ -96,6 +96,7 @@ namespace UserService.API.Controllers.BaseControllers
 
         // /api/user-service/get-file-url/{fileKey}
         [HttpGet("get-file-url/{**fileKey}")]
+        [Authorize]
         public async Task<IActionResult> GetFileUrl(string fileKey)
         {
             // kiểm tra filkey có phải có pattern là "main_files/Bookings/<BookingId>/<BookingPodcastTrackId>_track_audio.<audio extension>" hoặc "main_files/PodcastEpisodes/<PodcastEpisodeId>/audio.<audio extension>" không, nếu có thì trả về exception 400
@@ -137,6 +138,7 @@ namespace UserService.API.Controllers.BaseControllers
 
         // /api/user-service/api/accounts/podcaster/apply
         [HttpPost("podcaster/apply")]
+        [Authorize(Policy = "Customer.NoViolationAccess.NonPodcasterAccess")]
 
         public async Task<IActionResult> ApplyPodcaster([FromBody] PodcasterProfileRequestDTO podcasterProfileRequestDTO)
         {
@@ -169,7 +171,7 @@ namespace UserService.API.Controllers.BaseControllers
             JObject requestData = JObject.FromObject(podcasterProfileRequestInfo);
             requestData["AccountId"] = account.Id;
             requestData["CommitmentDocumentFileKey"] = commitmentDocumentFileKey;
-            
+
 
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "podcaster-profile-creation-flow");

@@ -24,6 +24,7 @@ namespace UserService.API.Configurations.Builder
             builder.Services.AddScoped<IAuthorizationHandler, AccountBasicAccessHandler>();
             builder.Services.AddScoped<IAuthorizationHandler, AccountNoViolationAccessHandler>();
             builder.Services.AddScoped<IAuthorizationHandler, AccountPodcasterAccessHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, AccountNonPodcasterAccessHandler>();
         }
 
         public static void AddDefaultAuthorization(this WebApplicationBuilder builder)
@@ -79,6 +80,12 @@ namespace UserService.API.Configurations.Builder
                 {
                     policy.RequireRole("Staff");
                     policy.Requirements.Add(new AccountPodcasterAccessRequirement());
+                });
+                options.AddPolicy("Customer.NoViolationAccess.NonPodcasterAccess", policy =>
+                {
+                    policy.RequireRole("Customer");
+                    policy.Requirements.Add(new AccountNoViolationAccessRequirement());
+                    policy.Requirements.Add(new AccountNonPodcasterAccessRequirement());
                 });
                 options.AddPolicy("Customer.NoViolationAccess.PodcasterAccess", policy =>
                 {
