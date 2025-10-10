@@ -832,6 +832,42 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  account-status-change-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Thay đổi trạng thái tài khoản"
+    save-file: ""
+    steps:
+      - name: "change-account-status"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thay đổi trạng thái tài khoản"
+        parameters:
+          - AccountId
+          - ViolationPoint
+          - DeactivatedAt
+        next-request-data:
+          - AccountId
+          - ViolationPoint
+          - DeactivatedAt
+        response-data:
+          - AccountId
+          - ViolationPoint
+          - DeactivatedAt
+          - UpdatedAt
+        onSuccess:
+          emit: "change-account-status.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "change-account-status.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   channel-creation-flow:
     topic: "content-management-domain"
     handle-service: "SagaOrchestratorService"
