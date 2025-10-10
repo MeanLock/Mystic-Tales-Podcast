@@ -37,7 +37,7 @@ INSERT INTO PodcastSuggestionConfig (configProfileId, behaviorLookbackDayCount, 
 (1, 30, 10, 10);
 
 -- BookingConfig
-INSERT INTO BookingConfig (configProfileId, profitRate, depositRate, podcastTrackPreviewListenSlot, previewResponseAllowedDays, producingRequestResponseAllowedDays, chatRoomExpiredHours, chatRoomFileMessageExpiredHours, freeInitalBookingStorageSize, singleStorageUnitPurchasePrice) VALUES
+INSERT INTO BookingConfig (configProfileId, profitRate, depositRate, podcastTrackPreviewListenSlot, previewResponseAllowedDays, producingRequestResponseAllowedDays, chatRoomExpiredHours, chatRoomFileMessageExpiredHours, FreeInitialBookingStorageSize, singleStorageUnitPurchasePrice) VALUES
 (1, 0.3, 0.5, 3, 30, 1, 5, 5, 1, 5000);
 
 -- AccountConfig

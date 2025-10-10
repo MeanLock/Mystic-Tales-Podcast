@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SystemConfigurationService.DataAccess.Entities.sqlserver;
+namespace SystemConfigurationService.DataAccess.Entities.SqlServer;
 
 public partial class AccountConfig
 {

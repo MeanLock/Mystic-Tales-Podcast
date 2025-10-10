@@ -189,7 +189,7 @@ CREATE TABLE BookingConfig (
     producingRequestResponseAllowedDays INT NOT NULL,
     chatRoomExpiredHours INT NOT NULL,
     chatRoomFileMessageExpiredHours INT NOT NULL,
-    freeInitalBookingStorageSize FLOAT NOT NULL,
+    freeInitialBookingStorageSize FLOAT NOT NULL,
     singleStorageUnitPurchasePrice DECIMAL(18,2) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),

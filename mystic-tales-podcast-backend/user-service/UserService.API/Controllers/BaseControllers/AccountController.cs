@@ -140,7 +140,7 @@ namespace UserService.API.Controllers.BaseControllers
         [HttpPost("podcaster/apply")]
         [Authorize(Policy = "Customer.NoViolationAccess.NonPodcasterAccess")]
 
-        public async Task<IActionResult> ApplyPodcaster([FromBody] PodcasterProfileRequestDTO podcasterProfileRequestDTO)
+        public async Task<IActionResult> ApplyPodcaster([FromForm] PodcasterProfileRequestDTO podcasterProfileRequestDTO)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
@@ -150,22 +150,22 @@ namespace UserService.API.Controllers.BaseControllers
             if (podcasterProfileRequestDTO.CommitmentDocumentFile != null)
             {
                 // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
-                var isValidImage = _fileValidationConfig.IsValidFile("PodcasterProfile.commitmentDocumentFileKey", podcasterProfileRequestDTO.CommitmentDocumentFile.FileName, podcasterProfileRequestDTO.CommitmentDocumentFile.Length, podcasterProfileRequestDTO.CommitmentDocumentFile.ContentType);
-                if (!isValidImage)
+                var isValidFile = _fileValidationConfig.IsValidFile("PodcasterProfile.commitmentDocumentFileKey", podcasterProfileRequestDTO.CommitmentDocumentFile.FileName, podcasterProfileRequestDTO.CommitmentDocumentFile.Length, podcasterProfileRequestDTO.CommitmentDocumentFile.ContentType);
+                if (!isValidFile)
                 {
-                    return BadRequest("Invalid image file.");
+                    return BadRequest("Invalid upload file.");
                 }
 
-                string newMainImageFileName = $"{Guid.NewGuid()}_{podcasterProfileRequestDTO.CommitmentDocumentFile.FileName}";
+                string newCommitmentDocumentFileName = $"{Guid.NewGuid()}_{podcasterProfileRequestDTO.CommitmentDocumentFile.FileName}";
                 using (var stream = podcasterProfileRequestDTO.CommitmentDocumentFile.OpenReadStream())
                 {
                     await _fileIOHelper.UploadBinaryFileWithStreamAsync(
                                         stream,
                                         _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
-                                        newMainImageFileName
+                                        newCommitmentDocumentFileName
                                     );
                 }
-                commitmentDocumentFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+                commitmentDocumentFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newCommitmentDocumentFileName);
 
             }
             JObject requestData = JObject.FromObject(podcasterProfileRequestInfo);

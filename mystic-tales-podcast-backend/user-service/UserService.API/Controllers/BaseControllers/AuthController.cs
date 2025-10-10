@@ -55,10 +55,10 @@ namespace UserService.API.Controllers.BaseControllers
             if (customerRegisterRequestDTO.MainImageFile != null)
             {
                 // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
-                var isValidImage = _fileValidationConfig.IsValidFile("Account.mainImageFileKey", customerRegisterRequestDTO.MainImageFile.FileName, customerRegisterRequestDTO.MainImageFile.Length, customerRegisterRequestDTO.MainImageFile.ContentType);
-                if (!isValidImage)
+                var isValidFile = _fileValidationConfig.IsValidFile("Account.mainImageFileKey", customerRegisterRequestDTO.MainImageFile.FileName, customerRegisterRequestDTO.MainImageFile.Length, customerRegisterRequestDTO.MainImageFile.ContentType);
+                if (!isValidFile)
                 {
-                    return BadRequest("Invalid image file.");
+                    return BadRequest("Invalid upload file.");
                 }
 
 
@@ -114,10 +114,10 @@ namespace UserService.API.Controllers.BaseControllers
             if (staffRegisterRequestDTO.MainImageFile != null)
             {
                 // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
-                var isValidImage = _fileValidationConfig.IsValidFile("Account.mainImageFileKey", staffRegisterRequestDTO.MainImageFile.FileName, staffRegisterRequestDTO.MainImageFile.Length, staffRegisterRequestDTO.MainImageFile.ContentType);
-                if (!isValidImage)
+                var isValidFile = _fileValidationConfig.IsValidFile("Account.mainImageFileKey", staffRegisterRequestDTO.MainImageFile.FileName, staffRegisterRequestDTO.MainImageFile.Length, staffRegisterRequestDTO.MainImageFile.ContentType);
+                if (!isValidFile)
                 {
-                    return BadRequest("Invalid image file.");
+                    return BadRequest("Invalid upload file.");
                 }
 
                 string newMainImageFileName = $"{Guid.NewGuid()}_{staffRegisterRequestDTO.MainImageFile.FileName}";

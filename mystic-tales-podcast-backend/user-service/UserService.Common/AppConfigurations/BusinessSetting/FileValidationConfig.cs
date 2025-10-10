@@ -68,6 +68,14 @@ namespace UserService.Common.AppConfigurations.BusinessSetting
             if (rule == null)
                 return false;
 
+            Console.WriteLine($"[DEBUG] Validating file for field '{fieldName}':");
+            Console.WriteLine($"[DEBUG] - FileName: {fileName}");
+            Console.WriteLine($"[DEBUG] - FileSizeBytes: {fileSizeBytes}");
+            Console.WriteLine($"[DEBUG] - MimeType: {mimeType}");
+            Console.WriteLine($"[DEBUG] - Rule MaxSizeBytes: {rule.MaxSizeBytes}");
+            Console.WriteLine($"[DEBUG] - Rule AllowedExtensions: {string.Join(", ", rule.AllowedExtensions)}");
+            Console.WriteLine($"[DEBUG] - Rule AllowedMimeTypes: {string.Join(", ", rule.AllowedMimeTypes)}");
+            
             // Check file size
             if (fileSizeBytes > rule.MaxSizeBytes)
                 return false;

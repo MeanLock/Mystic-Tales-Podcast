@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using SystemConfigurationService.DataAccess.Entities.sqlserver;
+using SystemConfigurationService.DataAccess.Entities.SqlServer;
 
 namespace SystemConfigurationService.DataAccess.Data;
 
@@ -106,7 +106,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
             entity.Property(e => e.DepositRate).HasColumnName("depositRate");
-            entity.Property(e => e.FreeInitalBookingStorageSize).HasColumnName("freeInitalBookingStorageSize");
+            entity.Property(e => e.FreeInitialBookingStorageSize).HasColumnName("freeInitialBookingStorageSize");
             entity.Property(e => e.PodcastTrackPreviewListenSlot).HasColumnName("podcastTrackPreviewListenSlot");
             entity.Property(e => e.PreviewResponseAllowedDays).HasColumnName("previewResponseAllowedDays");
             entity.Property(e => e.ProducingRequestResponseAllowedDays).HasColumnName("producingRequestResponseAllowedDays");

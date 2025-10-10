@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SystemConfigurationService.DataAccess.Entities.sqlserver;
+namespace SystemConfigurationService.DataAccess.Entities.SqlServer;
 
 public partial class BookingConfig
 {
@@ -21,7 +21,7 @@ public partial class BookingConfig
 
     public int ChatRoomFileMessageExpiredHours { get; set; }
 
-    public double FreeInitalBookingStorageSize { get; set; }
+    public double FreeInitialBookingStorageSize { get; set; }
 
     public decimal SingleStorageUnitPurchasePrice { get; set; }
 
