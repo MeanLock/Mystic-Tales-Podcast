@@ -336,17 +336,42 @@ namespace UserService.BusinessLogic.Services.DbServices
                         {
                             if(booking.AccountId == parameter.AccountId)
                             {
-                                var Amount = booking.Price - booking.Price * systemConfig["BookingConfig"].Value<int?>("ProfitRate");
-
+                                var Amount = booking.Price * systemConfig["BookingConfig"].Value<int?>("DepositRate") - booking.Price * systemConfig["BookingConfig"].Value<int?>("ProfitRate");
+                                var refundMessageName = "booking-refund-flow";
                                 var newRequestData = new JObject
                                 {
                                     { "BookingId", booking.Id },
-                                    { "AccountId", parameter.AccountId },
                                     { "Amount", Amount },
-                                    { "Reason", "Booking manual cancelled by customer" },
-                                    { "ProfitRate", systemConfig["BookingConfig"].Value<int?>("ProfitRate") }
+                                    { "AccountId", parameter.AccountId },
+                                    { "PodcasterId", booking.PodcastBuddyId },
+                                    { "TransactionTypeId", 4 }
                                 };
-                                
+                                var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.BookingManagementDomain,
+                                    requestData: command.RequestData,
+                                    sagaInstanceId: null,
+                                    messageName: refundMessageName);
+                                await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, sagaId.ToString());
+                                _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                            } else
+                            {
+                                var Amount = booking.Price * systemConfig["BookingConfig"].Value<int?>("DepositRate");
+                                var refundMessageName = "booking-refund-flow";
+                                var newRequestData = new JObject
+                                {
+                                    { "BookingId", booking.Id },
+                                    { "Amount", Amount },
+                                    { "AccountId", parameter.AccountId },
+                                    { "PodcasterId", booking.AccountId },
+                                    { "TransactionTypeId", 4 }
+                                };
+                                var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.BookingManagementDomain,
+                                    requestData: command.RequestData,
+                                    sagaInstanceId: null,
+                                    messageName: refundMessageName);
+                                await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, sagaId.ToString());
+                                _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
                             }
                         }
 
