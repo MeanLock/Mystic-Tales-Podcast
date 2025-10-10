@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UserService.API.Filters.ExceptionFilters;
+using UserService.BusinessLogic.DTOs.Account;
+using UserService.BusinessLogic.DTOs.Cache;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -41,6 +45,27 @@ namespace UserService.API.Controllers.BaseControllers
         //     var roles = await _appDbContext.Roles.ToListAsync();
         //     return Ok(roles);
         // }
+
+        [HttpGet("test-account-status")]
+        public async Task<IActionResult> TestAccountStatus()
+        {
+            var requestData = JObject.FromObject(new AccountStatusCache
+            {
+                Id = 123,
+                IsVerified = true,
+                ViolationPoint = 0,
+                ViolationLevel = 0,
+                DeactivatedAt = null
+
+            });
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "forgot-password-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
 
         // /api/user-service/get-file-url/{fileKey}
         [HttpGet("get-file-url/{**fileKey}")]
@@ -84,13 +109,49 @@ namespace UserService.API.Controllers.BaseControllers
         // /api/user-service/api/accounts/podcast-buddies
 
         // /api/user-service/api/accounts/podcaster/apply
-        // [HttpPost("podcaster/apply")]
-        // public async Task<IActionResult> ApplyPodcaster([FromBody] PodcasterApplicationDTO applicationDTO)
-        // {
-            
+        [HttpPost("podcaster/apply")]
 
-        //     return Ok();
-        // }
+        public async Task<IActionResult> ApplyPodcaster([FromBody] PodcasterProfileRequestDTO podcasterProfileRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var podcasterProfileRequestInfo = JsonConvert.DeserializeObject<PodcasterProfileRequestInfoDTO>(podcasterProfileRequestDTO.PodcasterProfileRequestInfo);
+
+            string commitmentDocumentFileKey = null;
+            if (podcasterProfileRequestDTO.CommitmentDocumentFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidImage = _fileValidationConfig.IsValidFile("PodcasterProfile.commitmentDocumentFileKey", podcasterProfileRequestDTO.CommitmentDocumentFile.FileName, podcasterProfileRequestDTO.CommitmentDocumentFile.Length, podcasterProfileRequestDTO.CommitmentDocumentFile.ContentType);
+                if (!isValidImage)
+                {
+                    return BadRequest("Invalid image file.");
+                }
+
+                string newMainImageFileName = $"{Guid.NewGuid()}_{podcasterProfileRequestDTO.CommitmentDocumentFile.FileName}";
+                using (var stream = podcasterProfileRequestDTO.CommitmentDocumentFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                        newMainImageFileName
+                                    );
+                }
+                commitmentDocumentFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+
+            }
+            JObject requestData = JObject.FromObject(podcasterProfileRequestInfo);
+            requestData["CommitmentDocumentFileKey"] = commitmentDocumentFileKey;
+            requestData["RoleId"] = 2;
+
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "forgot-password-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
 
         //         // /api/user-service/api/auth/register/customer
         // [HttpPost("register/customer")]

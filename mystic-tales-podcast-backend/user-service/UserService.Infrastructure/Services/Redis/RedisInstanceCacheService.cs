@@ -11,10 +11,10 @@ using Newtonsoft.Json;
 
 namespace UserService.Infrastructure.Services.Redis
 {
-    public class RedisCacheService
+    public class RedisInstanceCacheService
     {
         // LOGGER
-        private readonly ILogger<RedisCacheService> _logger;
+        private readonly ILogger<RedisInstanceCacheService> _logger;
 
         // CONFIG
         private readonly IRedisDefaultConfig _redisDefaultConfig;
@@ -31,7 +31,7 @@ namespace UserService.Infrastructure.Services.Redis
         private readonly IServer _redisServer;
         private readonly string _redisPrefix;
 
-        public RedisCacheService(
+        public RedisInstanceCacheService(
             IRedisDefaultConfig redisDefaultConfig,
             IRedisCacheConfig redisCacheConfig,
             IRedisSessionConfig redisSessionConfig,
@@ -40,7 +40,7 @@ namespace UserService.Infrastructure.Services.Redis
             IRedisLockConfig redisLockConfig,
             IRedisAnalyticsConfig redisAnalyticsConfig,
             IConnectionMultiplexer redis,
-            ILogger<RedisCacheService> logger)
+            ILogger<RedisInstanceCacheService> logger)
         {
             _logger = logger;
 
@@ -54,7 +54,7 @@ namespace UserService.Infrastructure.Services.Redis
 
             _redis = redis;
             _redisDb = redis.GetDatabase();
-            _redisPrefix = $"{_redisDefaultConfig.InstanceName}:{_redisDefaultConfig.DefaultDatabase}:{_redisCacheConfig.KeyPrefix}";
+            _redisPrefix = $"{_redisDefaultConfig.InstanceKeyName}:{_redisDefaultConfig.DefaultDatabase}:{_redisCacheConfig.KeyPrefix}";
             _redisServer = redis.GetServer(_redisDefaultConfig.ConnectionString);
         }
 

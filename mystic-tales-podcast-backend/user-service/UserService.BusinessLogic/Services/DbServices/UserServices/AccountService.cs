@@ -25,6 +25,7 @@ using UserService.Infrastructure.Models.Kafka;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using Confluent.Kafka;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserServiceEmail;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -512,6 +513,53 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 throw new HttpRequestException("Get staff account list failed, error: " + ex.Message);
             }
 
+        }
+
+
+        public async Task ChangeAccountStatus(ChangeAccountStatusParameterDTO changeAccountStatusParameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var account = await GetExistAccountById(changeAccountStatusParameter.AccountId);
+                    
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        AccountId = account.Id,
+                        Message = "Change account status successfully"
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: command.RequestData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "change-account-status.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Change account status failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "change-account-status.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+            
         }
 
 

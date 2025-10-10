@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using UserService.BusinessLogic.Attributes;
 using UserService.BusinessLogic.DTOs.Auth;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
@@ -208,6 +209,22 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "reset-account-password.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("change-account-status", SAGA_TOPIC)]
+        public async Task HandleChangeAccountStatusAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var changeAccountStatusParameterDTO = command.RequestData.ToObject<ChangeAccountStatusParameterDTO>();
+                    await _accountService.ChangeAccountStatus(changeAccountStatusParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "change-account-status.failed"    // From YAML onFailure.emit
             );
         }
 
