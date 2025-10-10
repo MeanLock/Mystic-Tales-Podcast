@@ -236,6 +236,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
             var requestData = new JObject
             {
+                { "AccountId", accountId },
                 { "BookingId", BookingId },
                 { "BookingManualCancelledReason", request.ManualBookingCancelledReason }
             };

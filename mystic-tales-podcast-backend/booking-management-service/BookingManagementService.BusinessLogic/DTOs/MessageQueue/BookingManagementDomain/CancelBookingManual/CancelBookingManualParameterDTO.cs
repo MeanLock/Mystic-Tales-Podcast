@@ -8,6 +8,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
 {
     public class CancelBookingManualParameterDTO
     {
+        public int AccountId { get; set; }
         public int BookingId { get; set; }
         public string BookingManualCancelledReason { get; set; }
     }

@@ -2501,12 +2501,15 @@ flows:
         handle-service: "BookingManagementService"
         description: "Cancel hoặc reject booking với lý do"
         parameters:
+          - AccountId
           - BookingId
           - BookingManualCancelledReason
         next-request-data:
+          - AccountId
           - BookingId
           - BookingManualCancelledReason
         response-data:
+          - AccountId
           - BookingId
           - BookingManualCancelledReason
           - UpdatedAt

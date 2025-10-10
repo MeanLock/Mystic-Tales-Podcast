@@ -2,6 +2,7 @@
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateProducingRequest;
@@ -30,7 +31,6 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
         private readonly ILogger<BookingManagementDomainMessageHandler> _logger;
         private readonly BookingService _bookingService;
         private readonly BookingProducingRequestService _bookingProducingRequestService;
-        private const string SAGA_TOPIC = KafkaTopicEnum.BookingManagementDomain;
         public BookingManagementDomainMessageHandler(
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
@@ -160,6 +160,19 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "agree-producing-request.failed"
             );
         }
-        [MessageHandler("")]
+        [MessageHandler("complete-booking", "booking-management-domain")]
+        public async Task HandleCompleteBookingAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var bookingId = command.RequestData.ToObject<CompleteBookingParameterDTO>();
+                    await _bookingService.CompleteBookingAsync(bookingId, command);
+                },
+                responseTopic: "booking-management-domain",
+                failedEmitMessage: "complete-booking.failed"
+            );
+        }
     }
 }

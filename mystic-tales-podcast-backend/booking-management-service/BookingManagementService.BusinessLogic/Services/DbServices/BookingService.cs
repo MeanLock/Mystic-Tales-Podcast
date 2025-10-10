@@ -4,6 +4,7 @@ using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
@@ -304,6 +305,8 @@ namespace UserService.BusinessLogic.Services.DbServices
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var systemConfig = await GetActiveSystemConfigProfile();
+
                     var booking = await _bookingGenericRepository.FindByIdWithPaths(
                         bookingId,
                         "BookingStatusTrackings"
@@ -311,7 +314,7 @@ namespace UserService.BusinessLogic.Services.DbServices
                     if (booking != null)
                     {
                         var newBookingStatusId = 0;
-                        if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId <= 4)
+                        if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId < 5)
                         {
                             newBookingStatusId = 4;
                         }
@@ -324,9 +327,28 @@ namespace UserService.BusinessLogic.Services.DbServices
                             CreatedAt = DateTime.Now,
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+
                         booking.UpdatedAt = DateTime.UtcNow;
                         booking.BookingManualCancelledReason = bookingManualCancelledReason;
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+
+                        if(newBookingStatusId == 10)
+                        {
+                            if(booking.AccountId == parameter.AccountId)
+                            {
+                                var Amount = booking.Price - booking.Price * systemConfig["BookingConfig"].Value<int?>("ProfitRate");
+
+                                var newRequestData = new JObject
+                                {
+                                    { "BookingId", booking.Id },
+                                    { "AccountId", parameter.AccountId },
+                                    { "Amount", Amount },
+                                    { "Reason", "Booking manual cancelled by customer" },
+                                    { "ProfitRate", systemConfig["BookingConfig"].Value<int?>("ProfitRate") }
+                                };
+                                
+                            }
+                        }
 
                         var newResponseData = new JObject
                         {
@@ -595,6 +617,71 @@ namespace UserService.BusinessLogic.Services.DbServices
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogError("Booking negotiation agree failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
+        public async Task CompleteBookingAsync(CompleteBookingParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var bookingId = parameter.BookingId;
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                        bookingId,
+                        "BookingStatusTrackings"
+                    );
+                    var newBookingStatusTracking = new BookingStatusTracking
+                    {
+                        BookingId = bookingId,
+                        BookingStatusId = 8,
+                        CreatedAt = DateTime.Now,
+                    };
+                    await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+
+                    booking.UpdatedAt = DateTime.Now;
+                    await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = new JObject
+                    {
+                        { "BookingId", bookingId },
+                        { "UpdatedAt", booking.UpdatedAt }
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Booking completed successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while completing booking for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject
+                    {
+                        { "ErrorMessage", "Complete booking failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogError("Booking completion failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
         }
