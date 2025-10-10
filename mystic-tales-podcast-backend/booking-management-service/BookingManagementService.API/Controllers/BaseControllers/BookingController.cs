@@ -17,12 +17,14 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Security.Claims;
 using BookingManagementService.BusinessLogic.Services.DbServices;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
 {
     [Route("api/bookings")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "Customer.NoViolationAccess")]
     public class BookingController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;

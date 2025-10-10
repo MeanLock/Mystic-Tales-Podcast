@@ -10,6 +10,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
+using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Models.CrossService;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -20,7 +21,9 @@ using BookingManagementService.DataAccess.Entities.sqlserver;
 using BookingManagementService.DataAccess.Repositories.interfaces;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
@@ -32,6 +35,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
         private readonly IGenericRepository<BookingStatusTracking> _bookingStatusTrackingGenericRepository;
         private readonly IGenericRepository<BookingProducingRequest> _bookingProducingRequestGenericRepository;
         private readonly IGenericRepository<BookingNegotiation> _bookingNegotiationGenericRepository;
+        private readonly IGenericRepository<BookingChatRoom> _bookingChatRoomGenericRepository;
+        private readonly IGenericRepository<BookingChatMember> _bookingChatMemberGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly IMessagingService _messagingService;
@@ -41,24 +46,30 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
         private readonly AppDbContext _appDbContext;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
+        private readonly DateHelper _dateHelper;
         public BookingService(
             IGenericRepository<Booking> bookingGenericRepository,
             IGenericRepository<BookingStatusTracking> bookingStatusTrackingGenericRepository,
             IGenericRepository<BookingProducingRequest> bookingProducingRequestGenericRepository,
             IGenericRepository<BookingNegotiation> bookingNegotiationGenericRepository,
+            IGenericRepository<BookingChatRoom> bookingChatRoomGenericRepository,
+            IGenericRepository<BookingChatMember> bookingChatMemberGenericRepository,
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
             ILogger<BookingService> logger,
             AppDbContext appDbContext,
             IFilePathConfig filePathConfig,
-            FileIOHelper fileIOHelper
+            FileIOHelper fileIOHelper,
+            DateHelper dateHelper
             )
         {
             _bookingGenericRepository = bookingGenericRepository;
             _bookingStatusTrackingGenericRepository = bookingStatusTrackingGenericRepository;
             _bookingProducingRequestGenericRepository = bookingProducingRequestGenericRepository;
             _bookingNegotiationGenericRepository = bookingNegotiationGenericRepository;
+            _bookingChatRoomGenericRepository = bookingChatRoomGenericRepository;
+            _bookingChatMemberGenericRepository = bookingChatMemberGenericRepository;
             _httpServiceQueryClient = httpServiceQueryClient;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
@@ -66,6 +77,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
             _appDbContext = appDbContext;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
+            _dateHelper = dateHelper;
         }
         public async Task<List<BookingListItemResponseDTO>> GetAllBookingsAsync()
         {
@@ -152,8 +164,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         Description = parameter.Description,
                         AccountId = parameter.AccountId,
                         PodcastBuddyId = parameter.PodcastBuddyId,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                        UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
 
                     await _bookingGenericRepository.CreateAsync(newBooking);
@@ -163,7 +175,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         Id = Guid.NewGuid(),
                         BookingId = newBooking.Id,
                         BookingStatusId = 1,
-                        CreatedAt = DateTime.Now,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     });
 
                     await transaction.CommitAsync();
@@ -190,6 +202,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                 }
                 catch (Exception ex)
                 {
+                    await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while creating booking for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                     {
@@ -248,10 +261,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     {
                         BookingId = bookingId,
                         BookingStatusId = 3,
-                        CreatedAt = DateTime.Now,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     };
                     await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
-                    booking.UpdatedAt = DateTime.UtcNow;
+                    booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                     await transaction.CommitAsync();
@@ -274,6 +287,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                 }
                 catch (Exception ex)
                 {
+                    await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while rejecting booking for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                     {
@@ -324,11 +338,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         {
                             BookingId = bookingId,
                             BookingStatusId = newBookingStatusId,
-                            CreatedAt = DateTime.Now,
+                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
 
-                        booking.UpdatedAt = DateTime.UtcNow;
+                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         booking.BookingManualCancelledReason = bookingManualCancelledReason;
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
@@ -399,6 +413,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                 }
                 catch (Exception ex)
                 {
+                    await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while cancelling booking for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                     {
@@ -447,7 +462,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         DemoAudioFileKey = null,
                         IsCompleted = false,
                         IsFromCustomer = isFromCustomer,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
                     await _bookingNegotiationGenericRepository.CreateAsync(newBookingNegotiation);
 
@@ -475,10 +490,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         {
                             BookingId = booking.Id,
                             BookingStatusId = 1,
-                            CreatedAt = DateTime.Now,
+                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
-                        booking.UpdatedAt = DateTime.UtcNow;
+                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
                     }
                     else if(currentStatus == 1 && !newBookingNegotiation.IsFromCustomer)
@@ -487,10 +502,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         {
                             BookingId = booking.Id,
                             BookingStatusId = 2,
-                            CreatedAt = DateTime.Now,
+                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
-                        booking.UpdatedAt = DateTime.UtcNow;
+                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
                     }
                     else
@@ -519,6 +534,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                 }
                 catch (Exception ex)
                 {
+                    await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while cancelling booking for SagaId: {SagaId}", command.SagaInstanceId);
 
                     if (parameter.DemoAudioFileKey != null && parameter.DemoAudioFileKey != "")
@@ -585,13 +601,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     await _fileIOHelper.DeleteFileAsync(bookingNegotiation.DemoAudioFileKey);
                     booking.DemoAudioFileKey = DemoAudioFileKey;
 
-                    booking.UpdatedAt = DateTime.UtcNow;
+                    booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
                     var newBookingStatusTracking = new BookingStatusTracking
                     {
                         BookingId = booking.Id,
                         BookingStatusId = 5,
-                        CreatedAt = DateTime.Now,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     };
                     await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
 
@@ -602,8 +618,25 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         Note = bookingNegotiation.Note,
                         Deadline = booking.Deadline ?? default(DateOnly),
                         IsAccepted = true,
-                        FinishedAt = DateTime.Now,
-                        CreatedAt = DateTime.Now
+                        FinishedAt = _dateHelper.GetNowByAppTimeZone(),
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                    });
+
+                    var chatRoom = await _bookingChatRoomGenericRepository.CreateAsync(new BookingChatRoom
+                    {
+                        Id = Guid.NewGuid(),
+                        BookingId = booking.Id,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                    });
+                    await _bookingChatMemberGenericRepository.CreateAsync(new BookingChatMember
+                    {
+                        ChatRoomId = chatRoom.Id,
+                        AccountId = booking.AccountId
+                    });
+                    await _bookingChatMemberGenericRepository.CreateAsync(new BookingChatMember
+                    {
+                        ChatRoomId = chatRoom.Id,
+                        AccountId = booking.PodcastBuddyId,
                     });
 
                     await transaction.CommitAsync();
@@ -627,6 +660,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                 }
                 catch (Exception ex)
                 {
+                    await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while agreeing booking negotiation for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                     {
@@ -665,11 +699,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     {
                         BookingId = bookingId,
                         BookingStatusId = 8,
-                        CreatedAt = DateTime.Now,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     };
                     await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
 
-                    booking.UpdatedAt = DateTime.Now;
+                    booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                     await transaction.CommitAsync();
@@ -692,6 +726,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                 }
                 catch (Exception ex)
                 {
+                    await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while completing booking for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                     {
@@ -707,6 +742,115 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogError("Booking completion failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
+        public async Task BookingDayResponseAllowedChecking()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var systemConfig = await GetActiveSystemConfigProfile();
+                    var previewResponseAllowedDays = systemConfig["BookingConfig"].Value<int?>("PreviewResponseAllowedDays");
+                    var producingRequestResponseAllowedDays = systemConfig["BookingConfig"].Value<int?>("ProducingRequestResponseAllowedDays");
+                    var profitRate = systemConfig["BookingConfig"].Value<int?>("ProfitRate");
+                    var depositRate = systemConfig["BookingConfig"].Value<int?>("DepositRate");
+
+
+                    var currentDateTime = _dateHelper.GetNowByAppTimeZone();
+                    var previewingBookingList = _bookingGenericRepository.FindAll()
+                        .Include(b => b.BookingProducingRequests)
+                        .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == 6 &&
+                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt.HasValue &&
+                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt.Value.AddDays(previewResponseAllowedDays ?? 0) < currentDateTime)
+                        .ToList();
+
+                    var producingRequestBookingList = _bookingGenericRepository.FindAll()
+                        .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == 7 &&
+                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().IsAccepted == null &&
+                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().CreatedAt.AddDays(producingRequestResponseAllowedDays ?? 0) < currentDateTime)
+                        .Include(b => b.BookingProducingRequests)
+                        .ToList();
+                    foreach (var booking in previewingBookingList)
+                    {
+                        var newBookingStatusTracking = new BookingStatusTracking
+                        {
+                            BookingId = booking.Id,
+                            BookingStatusId = 9,
+                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                        };
+                        await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        booking.BookingAutoCancelReason = "ExpiredPreview (quá thời hạn preview và pay the rest)";
+                        await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+
+                        var Amount = booking.Price * depositRate - booking.Price * profitRate;
+                        var refundMessageName = "booking-deposit-compenstation-flow";
+                        var newRequestData = new JObject
+                        {
+                            { "BookingId", booking.Id },
+                            { "Amount", Amount },
+                            { "AccountId", booking.AccountId },
+                            { "PodcasterId", booking.PodcastBuddyId },
+                            { "TransactionTypeId", 5 }
+                        };
+                        var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.BookingManagementDomain,
+                            requestData: newRequestData,
+                            sagaInstanceId: null,
+                            messageName: refundMessageName);
+                        await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, booking.Id.ToString());
+                        _logger.LogInformation("Booking deposit compensation message send successfully for BookingId: {BookingId}", booking.Id);
+                    }
+                    foreach (var booking in producingRequestBookingList)
+                    {
+                        var newBookingStatusTracking = new BookingStatusTracking
+                        {
+                            BookingId = booking.Id,
+                            BookingStatusId = 9,
+                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                        };
+                        await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        booking.BookingAutoCancelReason = "Reason: PodcastBuddyNoResponse (không phản hồi producing request)";
+                        await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+
+                        var startFirstSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.BookingManagementDomain,
+                            requestData: new JObject
+                            {
+                                { "AccountId", booking.PodcastBuddyId },
+                                { "ViolationPoint", 1 },
+                            },
+                            sagaInstanceId: null,
+                            messageName: "user-violation-punishment-flow");
+                        await _messagingService.SendSagaMessageAsync(startFirstSagaTriggerMessage, booking.Id.ToString());
+                        _logger.LogInformation("User violation punishment message send successfully to AccountId: {AccountId} for BookingId: {BookingId}", booking.PodcastBuddyId, booking.Id);
+
+                        var Amount = booking.Price * depositRate;
+                        var newRequestData = new JObject
+                        {
+                            { "BookingId", booking.Id },
+                            { "Amount", Amount },
+                            { "AccountId", booking.AccountId },
+                            { "PodcasterId", booking.PodcastBuddyId },
+                            { "TransactionTypeId", 4 }
+                        };
+                        var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.BookingManagementDomain,
+                            requestData: newRequestData,
+                            sagaInstanceId: null,
+                            messageName: "booking-refund-flow");
+                        await _messagingService.SendSagaMessageAsync(startSecondSagaTriggerMessage, booking.Id.ToString());
+                        _logger.LogInformation("Booking refund message send successfully for BookingId: {BookingId}", booking.Id);
+                    }
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while checking booking deadlines");
                 }
             }
         }

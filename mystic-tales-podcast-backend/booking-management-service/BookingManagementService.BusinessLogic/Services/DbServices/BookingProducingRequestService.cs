@@ -4,6 +4,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
+using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Models.CrossService;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -35,6 +36,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
         private readonly AppDbContext _appDbContext;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
+        private readonly DateHelper _dateHelper;
         public BookingProducingRequestService(
             IGenericRepository<BookingProducingRequest> bookingProducingRequestGenericRepository,
             IGenericRepository<BookingProducingRequestPodcastTrackToEdit> bookingProducingRequestPodcastTrackToEditGenericRepository,
@@ -47,7 +49,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
             ILogger<BookingService> logger,
             AppDbContext appDbContext,
             IFilePathConfig filePathConfig,
-            FileIOHelper fileIOHelper
+            FileIOHelper fileIOHelper,
+            DateHelper dateHelper
             )
         {
             _bookingProducingRequestGenericRepository = bookingProducingRequestGenericRepository;
@@ -62,6 +65,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
             _appDbContext = appDbContext;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
+            _dateHelper = dateHelper;
         }
         public async Task<BookingProducingRequestResponseDTO?> GetProducingRequestByIdAsync(Guid id)
         {
@@ -112,7 +116,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         Deadline = parameter.Deadline,
                         IsAccepted = null,
                         FinishedAt = null,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
                     foreach (var trackToEdit in parameter.BookingPodcastTrackIds)
                     {
@@ -138,7 +142,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                             Id = Guid.NewGuid(),
                             BookingId = booking.Id,
                             BookingStatusId = 7,
-                            CreatedAt = DateTime.Now
+                            CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         });
                     } else
                     {
@@ -169,10 +173,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     }
                     else
                     {
+                        await transaction.RollbackAsync();
                         _logger.LogError("Something Went Wrong");
                     }
                 } catch (Exception ex)
                 {
+                    await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while creating booking producing request for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                         {
@@ -242,15 +248,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                             Id = Guid.NewGuid(),
                             BookingId = booking.Id,
                             BookingStatusId = 6,
-                            CreatedAt = DateTime.Now
+                            CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         });
                     }
                     else
                     {
+                        await transaction.RollbackAsync();
                         throw new Exception("Current booking status is not valid for submitting podcast track");
                     }
 
-                    bookingProducingRequest.FinishedAt = DateTime.Now;
+                    bookingProducingRequest.FinishedAt = _dateHelper.GetNowByAppTimeZone();
                     await _bookingProducingRequestGenericRepository.UpdateAsync(bookingProducingRequest.Id, bookingProducingRequest);
 
                     await transaction.CommitAsync();
@@ -264,7 +271,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                             { "AudioFileKey", bookingPodcastTrack.AudioFileKey},
                             { "AudioFileSize", bookingPodcastTrack.AudioFileSize },
                             { "AudioFileLength", bookingPodcastTrack.AudioLength },
-                            { "CreatedAt", DateTime.Now }
+                            { "CreatedAt", _dateHelper.GetNowByAppTimeZone() }
                         };
                         var newMessageName = messageName + ".success";
                         var SagaCommandMessage = _kafkaProducerService.PrepareSagaEventMessage(
@@ -280,6 +287,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                 }
                 catch (Exception ex)
                 {
+                    await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while submitting booking tracks for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                         {
@@ -329,7 +337,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                                 Id = Guid.NewGuid(),
                                 BookingId = booking.Id,
                                 BookingStatusId = 5,
-                                CreatedAt = DateTime.Now
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             });
                         } else
                         {
@@ -338,12 +346,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                                 Id = Guid.NewGuid(),
                                 BookingId = booking.Id,
                                 BookingStatusId = 6,
-                                CreatedAt = DateTime.Now
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             });
                         }
                     }
                     else
                     {
+                        await transaction.RollbackAsync();
                         throw new Exception("Current booking status is not valid for agreeing to producing");
                     }
 
@@ -353,7 +362,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     {
                         { "BookingProducingRequestId", bookingProducingRequestId},
                         { "IsAccepted", isAccepted },
-                        { "UpdatedAt", DateTime.Now }
+                        { "UpdatedAt", _dateHelper.GetNowByAppTimeZone() }
                     };
                     var newMessageName = messageName + ".success";
                     var SagaCommandMessage = _kafkaProducerService.PrepareSagaEventMessage(
@@ -367,6 +376,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     _logger.LogInformation("Booking producing request agreement successfully for SagaId: {SagaId}", command.SagaInstanceId);
                 } catch (Exception ex)
                 {
+                    await transaction.RollbackAsync();
                     var newResponseData = new JObject
                     {
                         { "ErrorMessage", "Booking producing request agreement failed, error: " + ex.Message}

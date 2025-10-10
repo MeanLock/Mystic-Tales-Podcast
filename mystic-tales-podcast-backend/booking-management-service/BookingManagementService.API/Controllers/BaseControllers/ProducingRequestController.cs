@@ -17,6 +17,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
     [Route("api/producing-requests")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "Customer.NoViolationAccess")]
     public class ProducingRequestController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;

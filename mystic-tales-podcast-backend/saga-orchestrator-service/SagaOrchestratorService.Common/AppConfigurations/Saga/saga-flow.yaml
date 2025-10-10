@@ -1596,6 +1596,36 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  show-remove-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gỡ chương trình"
+    save-file: ""
+    steps:
+      - name: "remove-show"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Gỡ show"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - PodcastShowId
+        response-data:
+          - PodcastShowId
+          - UpdatedAt
+        onSuccess:
+          emit: "remove-show.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "remove-show.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   episode-creation-flow:
     topic: "content-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -1700,6 +1730,36 @@ flows:
           nextFlows: []
         onFailure:
           emit: "update-episode.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-remove-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gỡ tập podcast"
+    save-file: ""
+    steps:
+      - name: "remove-episode"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Gỡ episode"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - PodcastEpisodeId
+        response-data:
+          - PodcastEpisodeId
+          - UpdatedAt
+        onSuccess:
+          emit: "remove-episode.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "remove-episode.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
