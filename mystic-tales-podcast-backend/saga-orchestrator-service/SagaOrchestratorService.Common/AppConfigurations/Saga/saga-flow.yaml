@@ -2234,19 +2234,19 @@ flows:
         description: "Tạo booking negotiation và đổi booking status"
         parameters:
           - BookingId
+          - AccountId
           - Deadline
           - Note
           - DemoAudioRequired
           - DemoAudioFileKey
-          - IsFromCustomer 
           - Price
         next-request-data:
           - BookingId
+          - AccountId
           - Deadline
           - Note
           - DemoAudioRequired
           - DemoAudioFileKey
-          - IsFromCustomer 
           - Price
         response-data:
           - BookingNegotiationId
