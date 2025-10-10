@@ -843,18 +843,11 @@ flows:
         handle-service: "UserService"
         description: "Thay đổi trạng thái tài khoản"
         parameters:
-          - AccountId
-          - ViolationPoint
-          - DeactivatedAt
+          - Id
         next-request-data:
-          - AccountId
-          - ViolationPoint
-          - DeactivatedAt
+          - Id
         response-data:
-          - AccountId
-          - ViolationPoint
-          - DeactivatedAt
-          - UpdatedAt
+          - Id
         onSuccess:
           emit: "change-account-status.success"
           topic: "user-management-domain"
