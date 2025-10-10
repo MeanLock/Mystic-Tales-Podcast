@@ -2308,13 +2308,13 @@ flows:
         handle-service: "BookingManagementService"
         description: "Cập nhật booking khi podcaster accept/reject producing request"
         parameters:
-          - BookingProducingRequestId
+          - BookingId
           - IsAccepted
         next-request-data:
-          - BookingProducingRequestId
+          - BookingId
           - IsAccepted
         response-data:
-          - BookingProducingRequestId
+          - BookingId
           - IsAccepted
           - UpdatedAt
         onSuccess:
@@ -2411,11 +2411,11 @@ flows:
         handle-service: "BookingManagementService"
         description: "Cập nhật lại booking với thông tin booking negotiation gần nhất khi agree"
         parameters:
-          - BookingNegotiationId
+          - BookingId
         next-request-data:
-          - BookingNegotiationId
+          - BookingId
         response-data:
-          - BookingNegotiationId
+          - BookingId
           - UpdatedAt
         onSuccess:
           emit: "agree-booking-negotiation.success"
