@@ -22,7 +22,7 @@ namespace SagaOrchestratorService.API.Controllers.BaseControllers
             return Ok();
         }
         [HttpGet("result-data/{sagaId}")]
-        public async Task<IActionResult> GetResponseData(Guid sagaId)
+        public async Task<IActionResult> GetResponseData([FromRoute] Guid sagaId)
         {
             var sagaInstance = await _sagaInstanceService.GetSagaInstanceAsync(sagaId);
             if (sagaInstance == null)
