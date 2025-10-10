@@ -133,8 +133,24 @@ namespace UserService.API.Controllers.BaseControllers
         }
 
         // /api/user-service/api/accounts/podcasters
+        [HttpGet("podcasters")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> GetPodcasters()
+        {
+            var podcasters = await _accountService.GetPodcasterAccounts();
+
+            return Ok(new { PodcasterList = podcasters });
+        }
 
         // /api/user-service/api/accounts/podcast-buddies
+        [HttpGet("podcast-buddies")]
+        [Authorize]
+        public async Task<IActionResult> GetPodcastBuddies()
+        {
+            var podcastBuddies = await _accountService.GetPodcastBuddyAccounts();
+
+            return Ok(new { PodcastBuddyList = podcastBuddies });
+        }
 
         // /api/user-service/api/accounts/podcaster/apply
         [HttpPost("podcaster/apply")]

@@ -438,7 +438,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         {
             try
             {
-                var customers = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1, null, a => a.Role);
+                var customers = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1, null, a => a.Include(ac => ac.Role));
                 if (customers == null || !customers.Any())
                 {
                     throw new Exception("No customer accounts found");
@@ -494,7 +494,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 List<int> roles = new List<int> { 2 }; // 2: Head, 3: Assignee
                 var staffs = await _unitOfWork.AccountRepository.FindByRoleIdsAsync(roles,
                     predicate: IsDeactivated.HasValue ? (a => (IsDeactivated == true ? a.DeactivatedAt != null : a.DeactivatedAt == null)) : null
-                , a => a.Role);
+                , a => a.Include(ac => ac.Role));
                 if (staffs == null || !staffs.Any())
                 {
                     throw new Exception("No staff accounts found");
@@ -541,6 +541,219 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         }
 
+        public async Task<List<PodcasterListItemResponseDTO>> GetPodcasterAccounts()
+        {
+            try
+            {
+                // var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+                // predicate: a => a.PodcasterProfile != null,
+                // includeProperties: a => { a.Role; a.PodcasterProfile; });
+                // var podcastersEnumerable = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+                //     predicate: a => a.PodcasterProfile != null,
+                //         a => a.Role,              // Expression riêng biệt
+                //         a => a.PodcasterProfile,   // Expression riêng biệt
+                //         a => a.PodcastBuddyReviewPodcastBuddies,
+                //         a => a.PodcastBuddyReviewPodcastBuddies.Select(r => r.Account)
+                //     );
+
+                var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+                    predicate: a => a.PodcasterProfile != null,
+                        a => a.Include(ac => ac.Role)
+                                .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+                                .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
+                                .ThenInclude(r => r.Account)
+                    );
+                // var podcasters = podcastersEnumerable.ToList();
+                // foreach (var podcaster in podcasters)
+                // {
+                //     Console.WriteLine($"Podcaster ID: {podcaster.PodcastBuddyReviewPodcastBuddies?.Any()}");
+                //     if (podcaster.PodcastBuddyReviewPodcastBuddies?.Any() == true)
+                //     {
+                //         await _appDbContext.Entry(podcaster)
+                //             .Collection(p => p.PodcastBuddyReviewPodcastBuddies)
+                //             .Query()
+                //             .Include(r => r.Account) // Bao gồm thông tin tài khoản của người đánh giá
+                //             .Where(r => r.DeletedAt == null) // Lọc các đánh giá chưa bị xóa
+                //             .LoadAsync();
+                //         foreach (var review in podcaster.PodcastBuddyReviewPodcastBuddies)
+                //         {
+                //             Console.WriteLine($"Review ID: {(review.Account != null ? review.Account.Id.ToString() : null)}, Rating: {review.Rating}, Content: {review.Content}");
+                //         }
+                //     }
+                // }
+
+                // đếm số review
+                if (podcasters == null || !podcasters.Any())
+                {
+                    throw new Exception("No podcaster accounts found");
+                }
+
+                var result = podcasters.Select(item =>
+                {
+                    Console.WriteLine("Số podcaster tìm thấy: " + (item.PodcastBuddyReviewPodcastBuddies.Count > 0 ? item.PodcastBuddyReviewPodcastBuddies.Count : 0));
+
+                    return new PodcasterListItemResponseDTO
+                    {
+                        Id = item.Id,
+                        Email = item.Email,
+                        Role = new RoleDTO
+                        {
+                            Id = item.Role.Id,
+                            Name = item.Role.Name
+                        },
+                        FullName = item.FullName,
+                        Dob = item.Dob?.ToString("yyyy-MM-dd"),
+                        Gender = item.Gender,
+                        PodcastListenSlot = item.PodcastListenSlot,
+                        ViolationPoint = item.ViolationPoint,
+                        ViolationLevel = item.ViolationLevel,
+                        LastPodcastListenSlotChanged = item.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        LastViolationPointChanged = item.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        LastViolationLevelChanged = item.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        Address = item.Address,
+                        Phone = item.Phone,
+                        Balance = item.Balance,
+                        IsVerified = item.IsVerified,
+                        MainImageFileKey = item.MainImageFileKey,
+                        DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        PodcasterProfile = new PodcasterProfileDTO
+                        {
+                            AccountId = item.PodcasterProfile.AccountId,
+                            Name = item.PodcasterProfile.Name,
+                            Description = item.PodcasterProfile.Description,
+                            AverageRating = item.PodcasterProfile.AverageRating,
+                            RatingCount = item.PodcasterProfile.RatingCount,
+                            CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
+                            BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
+                            OwnedBookingStorageSize = item.PodcasterProfile.OwnedBookingStorageSize,
+                            UsedBookingStorageSize = item.PodcasterProfile.UsedBookingStorageSize,
+                            IsVerified = item.PodcasterProfile.IsVerified,
+                            CreatedAt = item.PodcasterProfile.CreatedAt,
+                            UpdatedAt = item.PodcasterProfile.UpdatedAt,
+                        },
+                        ReviewList = item.PodcastBuddyReviewPodcastBuddies?
+                        .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                        {
+                            Id = r.Id,
+                            Account = new AccountSnippetDTO
+                            {
+                                Id = r.Account.Id,
+                                FullName = r.Account.FullName,
+                                Email = r.Account.Email,
+                                MainImageFileKey = r.Account.MainImageFileKey
+                            },
+                            Rating = r.Rating,
+                            Content = r.Content,
+                            DeletedAt = r.DeletedAt,
+                            PodcastBuddyId = r.PodcastBuddyId,
+                            Title = r.Title,
+                            UpdatedAt = r.UpdatedAt
+                        }).ToList()
+                    };
+                });
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get podcaster account list failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<List<PodcasterListItemResponseDTO>> GetPodcastBuddyAccounts()
+        {
+            try
+            {
+
+                var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.IsVerified == true,
+                        a => a.Include(ac => ac.Role)
+                                .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+                                .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
+                                .ThenInclude(r => r.Account)
+                    );
+
+                // đếm số review
+                if (podcasters == null || !podcasters.Any())
+                {
+                    throw new Exception("No podcaster accounts found");
+                }
+
+                var result = podcasters.Select(item =>
+                {
+                    Console.WriteLine("Số podcaster tìm thấy: " + (item.PodcastBuddyReviewPodcastBuddies.Count > 0 ? item.PodcastBuddyReviewPodcastBuddies.Count : 0));
+
+                    return new PodcasterListItemResponseDTO
+                    {
+                        Id = item.Id,
+                        Email = item.Email,
+                        Role = new RoleDTO
+                        {
+                            Id = item.Role.Id,
+                            Name = item.Role.Name
+                        },
+                        FullName = item.FullName,
+                        Dob = item.Dob?.ToString("yyyy-MM-dd"),
+                        Gender = item.Gender,
+                        PodcastListenSlot = item.PodcastListenSlot,
+                        ViolationPoint = item.ViolationPoint,
+                        ViolationLevel = item.ViolationLevel,
+                        LastPodcastListenSlotChanged = item.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        LastViolationPointChanged = item.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        LastViolationLevelChanged = item.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        Address = item.Address,
+                        Phone = item.Phone,
+                        Balance = item.Balance,
+                        IsVerified = item.IsVerified,
+                        MainImageFileKey = item.MainImageFileKey,
+                        DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        PodcasterProfile = new PodcasterProfileDTO
+                        {
+                            AccountId = item.PodcasterProfile.AccountId,
+                            Name = item.PodcasterProfile.Name,
+                            Description = item.PodcasterProfile.Description,
+                            AverageRating = item.PodcasterProfile.AverageRating,
+                            RatingCount = item.PodcasterProfile.RatingCount,
+                            CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
+                            BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
+                            OwnedBookingStorageSize = item.PodcasterProfile.OwnedBookingStorageSize,
+                            UsedBookingStorageSize = item.PodcasterProfile.UsedBookingStorageSize,
+                            IsVerified = item.PodcasterProfile.IsVerified,
+                            CreatedAt = item.PodcasterProfile.CreatedAt,
+                            UpdatedAt = item.PodcasterProfile.UpdatedAt,
+                        },
+                        ReviewList = item.PodcastBuddyReviewPodcastBuddies?
+                        .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                        {
+                            Id = r.Id,
+                            Account = new AccountSnippetDTO
+                            {
+                                Id = r.Account.Id,
+                                FullName = r.Account.FullName,
+                                Email = r.Account.Email,
+                                MainImageFileKey = r.Account.MainImageFileKey
+                            },
+                            Rating = r.Rating,
+                            Content = r.Content,
+                            DeletedAt = r.DeletedAt,
+                            PodcastBuddyId = r.PodcastBuddyId,
+                            Title = r.Title,
+                            UpdatedAt = r.UpdatedAt
+                        }).ToList()
+                    };
+                });
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get podcaster account list failed, error: " + ex.Message);
+            }
+        }
 
         public async Task ChangeAccountStatus(ChangeAccountStatusParameterDTO changeAccountStatusParameter, SagaCommandMessage command)
         {
@@ -667,7 +880,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     await SendChangeAccountStatusMessage(podcasterProfile.AccountId);
-                    
+
 
 
                 }

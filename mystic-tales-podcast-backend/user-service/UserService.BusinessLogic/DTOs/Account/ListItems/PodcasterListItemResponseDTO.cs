@@ -1,6 +1,6 @@
 namespace UserService.BusinessLogic.DTOs.Account
 {
-    public class AccountListItemResponseDTO
+    public class PodcasterListItemResponseDTO
     {
         public int Id { get; set; }
         public string Email { get; set; } = null!;
@@ -22,6 +22,9 @@ namespace UserService.BusinessLogic.DTOs.Account
         public string? DeactivatedAt { get; set; }
         public string CreatedAt { get; set; }
         public string UpdatedAt { get; set; }
+        public PodcasterProfileDTO PodcasterProfile { get; set; } = null!;
+        public List<ReviewListItemDTO> ReviewList { get; set; } = new List<ReviewListItemDTO>();
+
     }
 
 

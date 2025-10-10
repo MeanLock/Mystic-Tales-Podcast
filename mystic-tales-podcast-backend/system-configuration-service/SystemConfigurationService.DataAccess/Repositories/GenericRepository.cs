@@ -37,6 +37,26 @@ namespace SystemConfigurationService.DataAccess.Repositories
             return items;
         }
 
+        public IQueryable<T> FindAll(
+            Expression<Func<T, bool>>? predicate = null,
+            Func<IQueryable<T>, IQueryable<T>>? includeFunc = null)
+        {
+            IQueryable<T> items = _appDbContext.Set<T>();
+
+            // Apply includes using func
+            if (includeFunc != null)
+            {
+                items = includeFunc(items);
+            }
+
+            // Apply predicate
+            if (predicate != null)
+            {
+                items = items.Where(predicate);
+            }
+
+            return items;
+        }
         public async Task<T?> FindByIdAsync(object id, params Expression<Func<T, object>>[] includeProperties)
         {
             var query = _appDbContext.Set<T>().AsQueryable();
@@ -99,6 +119,67 @@ namespace SystemConfigurationService.DataAccess.Repositories
             }
         }
 
+        public async Task<T?> FindByIdAsync(object id, Func<IQueryable<T>, IQueryable<T>>? includeFunc = null)
+        {
+            var query = _appDbContext.Set<T>().AsQueryable();
+
+            // Apply includes using func
+            if (includeFunc != null)
+            {
+                query = includeFunc(query);
+            }
+
+            // Get Id property info
+            var idProperty = typeof(T).GetProperty("Id");
+            if (idProperty == null)
+                throw new InvalidOperationException($"Entity {typeof(T).Name} does not have an 'Id' property");
+
+            var idType = Nullable.GetUnderlyingType(idProperty.PropertyType) ?? idProperty.PropertyType;
+
+            // Handle specific problematic types that can't be compared implicitly
+            if (idType == typeof(Guid))
+            {
+                var guidId = id is Guid g ? g :
+                            Guid.TryParse(id?.ToString(), out var parsed) ? parsed :
+                            throw new ArgumentException($"Cannot convert '{id}' to Guid", nameof(id));
+                return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == guidId);
+            }
+
+            if (idType == typeof(DateTime))
+            {
+                var dateId = id is DateTime dt ? dt :
+                            DateTime.TryParse(id?.ToString(), out var parsed) ? parsed :
+                            throw new ArgumentException($"Cannot convert '{id}' to DateTime", nameof(id));
+                return await query.FirstOrDefaultAsync(e => EF.Property<DateTime>(e, "Id") == dateId);
+            }
+
+            if (idType == typeof(decimal))
+            {
+                var decId = id is decimal dec ? dec :
+                           decimal.TryParse(id?.ToString(), out var parsed) ? parsed :
+                           throw new ArgumentException($"Cannot convert '{id}' to decimal", nameof(id));
+                return await query.FirstOrDefaultAsync(e => EF.Property<decimal>(e, "Id") == decId);
+            }
+
+            // For safe types (int, long, string, etc.) - use generic approach
+            try
+            {
+                var convertedId = Convert.ChangeType(id, idType);
+
+                // Create expression: e => e.Id == convertedId
+                var parameter = Expression.Parameter(typeof(T), "e");
+                var property = Expression.Property(parameter, "Id");
+                var constant = Expression.Constant(convertedId, idProperty.PropertyType);
+                var equality = Expression.Equal(property, constant);
+                var lambda = Expression.Lambda<Func<T, bool>>(equality, parameter);
+                return await query.FirstOrDefaultAsync(lambda);
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException($"Cannot convert id '{id}' of type {id?.GetType().Name} to {idType.Name}: {ex.Message}", nameof(id));
+            }
+        }
+        
         public async Task<T?> FindByIdWithPaths(object id, params string[] includePaths)
         {
             IQueryable<T> query = _dbSet;
@@ -224,5 +305,6 @@ namespace SystemConfigurationService.DataAccess.Repositories
 
 
     }
+
 
 }

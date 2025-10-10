@@ -21,55 +21,46 @@ namespace UserService.DataAccess.Repositories
         }
 
 
-        public async Task<Account> FindByEmailAsync(string email, params Expression<Func<Account, object>>[] includeProperties)
+        public async Task<Account> FindByEmailAsync(string email, Func<IQueryable<Account>, IQueryable<Account>>? includeFunc = null)
         {
             IQueryable<Account> query = _appDbContext.Accounts;
 
-            if (includeProperties.Any())
+            if (includeFunc != null)
             {
-                foreach (var property in includeProperties)
-                {
-                    query = query.Include(property);
-                }
+                query = includeFunc(query);
             }
 
             return await query.FirstOrDefaultAsync(account => account.Email == email);
         }
 
-        public async Task<IEnumerable<Account>> FindByRoleIdAsync(int roleId, Expression<Func<Account, bool>>? predicate = null, params Expression<Func<Account, object>>[] includeProperties)
+
+
+        public async Task<IEnumerable<Account>> FindByRoleIdAsync(int roleId, Expression<Func<Account, bool>>? predicate = null, Func<IQueryable<Account>, IQueryable<Account>>? includeFunc = null)
         {
             IQueryable<Account> query = _appDbContext.Accounts;
 
-            if (includeProperties.Any())
+            if (includeFunc != null)
             {
-                foreach (var property in includeProperties)
-                {
-                    query = query.Include(property);
-                }
+                query = includeFunc(query);
             }
-
 
             if (predicate != null)
             {
                 query = query.Where(predicate);
             }
 
-
             return await query
                 .Where(account => account.RoleId == roleId)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Account>> FindByRoleIdsAsync(List<int> roleIds, Expression<Func<Account, bool>>? predicate = null, params Expression<Func<Account, object>>[] includeProperties)
+        public async Task<IEnumerable<Account>> FindByRoleIdsAsync(List<int> roleIds, Expression<Func<Account, bool>>? predicate = null, Func<IQueryable<Account>, IQueryable<Account>>? includeFunc = null)
         {
             IQueryable<Account> query = _appDbContext.Accounts;
 
-            if (includeProperties.Any())
+            if (includeFunc != null)
             {
-                foreach (var property in includeProperties)
-                {
-                    query = query.Include(property);
-                }
+                query = includeFunc(query);
             }
 
             if (predicate != null)

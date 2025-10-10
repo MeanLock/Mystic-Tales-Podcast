@@ -26,6 +26,7 @@ using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using UserService.BusinessLogic.DTOs.ViewModels.Mail;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendResetPasswordLink;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.NewResetPassword;
+using Microsoft.EntityFrameworkCore;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -180,7 +181,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             // Login với account không tồn tại -> login thất bại (tài khoản không tồn tại)
 
             var account = await _unitOfWork.AccountRepository.FindByEmailAsync(loginRequest.Email,
-                includeProperties: a => a.Role
+            a => a.Include(ac => ac.Role)
              );
             if (account == null)
             {
