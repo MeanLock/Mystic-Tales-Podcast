@@ -160,6 +160,18 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
         }
 
+        public async Task<Guid> SendChangeAccountStatusMessage(int id)
+        {
+            var requestData = JObject.FromObject(new
+            {
+                Id = id
+            });
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "account-status-change-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return startSagaTriggerMessage.SagaInstanceId;
+        }
+
+        /////////////////////////////////////////////////////////////
         public async Task LoginManual(LoginAccountManualParameterDTO loginData, SagaCommandMessage command)
         {
             var loginRequest = loginData;
@@ -227,6 +239,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         messageName: "login-account-manual.success"
                         );
                 await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                await SendChangeAccountStatusMessage(account.Id);
             }
             catch (Exception ex)
             {
@@ -387,6 +400,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             messageName: "login-account-google.success"
                             );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(account.Id);
                 }
                 catch (Exception ex)
                 {
@@ -451,6 +465,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         messageName: "verify-account.success"
                         );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(account.Id);
 
                 }
                 catch (Exception ex)
@@ -530,9 +545,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     //         ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
                     //     }
                     // });
-                    var mailSendingRequestData = JObject.FromObject(new 
+                    var mailSendingRequestData = JObject.FromObject(new
                     {
-                        SendUserServiceEmailMailInfo = new 
+                        SendUserServiceEmailMailInfo = new
                         {
                             MailTypeName = "CustomerPasswordReset",
                             ToEmail = forgotPasswordData.Email,
@@ -590,7 +605,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                        messageName: "send-reset-password-link.failed"
                        );
 
-                   await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                     // throw new HttpRequestException(ex.Message);
                 }
@@ -637,6 +652,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         messageName: "reset-account-password.success"
                         );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(account.Id);
                 }
                 catch (HttpRequestException ex)
                 {

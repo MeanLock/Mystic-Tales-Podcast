@@ -10,6 +10,7 @@ namespace PodcastService.BusinessLogic.DTOs.Cache
         public bool IsVerified { get; set; }
         public int ViolationLevel { get; set; }
         public int ViolationPoint { get; set; }
+        public bool HasVerifiedPodcasterProfile { get; set; }
 
         [JsonConverter(typeof(NullableDateTimeJsonConverter))]
         public DateTime? LastViolationPointChanged { get; set; }

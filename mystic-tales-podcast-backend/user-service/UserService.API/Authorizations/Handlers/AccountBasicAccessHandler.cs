@@ -12,16 +12,13 @@ namespace UserService.API.Authorizations.Handlers
 {
     public class AccountBasicAccessHandler : AuthorizationHandler<AccountBasicAccessRequirement>
     {
-        private readonly IAccountRepository _accountRepository;
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly RedisSharedCacheService _redisSharedCacheService;
         public AccountBasicAccessHandler(
-            IAccountRepository accountRepository,
             HttpServiceQueryClient httpServiceQueryClient,
             RedisSharedCacheService redisSharedCacheService
             )
         {
-            _accountRepository = accountRepository;
             _httpServiceQueryClient = httpServiceQueryClient;
             _redisSharedCacheService = redisSharedCacheService;
         }

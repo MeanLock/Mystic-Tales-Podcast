@@ -28,6 +28,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserS
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
 using UserService.Infrastructure.Services.Redis;
 using UserService.BusinessLogic.DTOs.Cache;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -119,7 +120,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _httpServiceQueryClient = httpServiceQueryClient;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
-            
+
             _redisSharedCacheService = redisSharedCacheService;
         }
 
@@ -129,7 +130,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             var account = await _accountGenericRepository.FindByIdAsync(accountId);
             if (account == null)
             {
-                throw new Exception("không tìm thấy tài khoản có id " + accountId);
+                throw new Exception("Account with id " + accountId + " does not exist");
             }
             return account;
         }
@@ -196,6 +197,17 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
         }
 
+        public async Task<Guid> SendChangeAccountStatusMessage(int id)
+        {
+            var requestData = JObject.FromObject(new
+            {
+                Id = id
+            });
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "account-status-change-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return startSagaTriggerMessage.SagaInstanceId;
+        }
+
         /////////////////////////////////////////////////////////////
 
         public async Task SendUserServiceEmail(MailProperty mailProperty, string toEmail, object viewModel)
@@ -210,6 +222,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 throw new HttpRequestException("Send email failed, error: " + ex.Message);
             }
         }
+
         public async Task RegisterAccount(CreateAccountParameterDTO accountRegisterDTO, SagaCommandMessage command)
         {
             var registerInfo = accountRegisterDTO;
@@ -386,6 +399,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         messageName: "create-account.success"
                         );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(existAccount.Id);
                 }
                 catch (Exception ex)
                 {
@@ -531,9 +545,13 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
-                    var account = await GetExistAccountById(changeAccountStatusParameter.Id);
-                    
-                    var result= await _redisSharedCacheService.KeySetAsync<AccountStatusCache>($"account:status:{account.Id}", new AccountStatusCache
+                    var account = await _accountGenericRepository.FindByIdAsync(changeAccountStatusParameter.Id, includeProperties: a => a.PodcasterProfile);
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + changeAccountStatusParameter.Id + " does not exist");
+                    }
+
+                    var result = await _redisSharedCacheService.KeySetAsync<AccountStatusCache>($"account:status:{account.Id}", new AccountStatusCache
                     {
                         Id = account.Id,
                         IsVerified = account.IsVerified,
@@ -542,13 +560,14 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         LastViolationLevelChanged = account.LastViolationLevelChanged,
                         LastViolationPointChanged = account.LastViolationPointChanged,
                         ViolationLevel = account.ViolationLevel,
-                        ViolationPoint = account.ViolationPoint
-                    }, 
+                        ViolationPoint = account.ViolationPoint,
+                        HasVerifiedPodcasterProfile = account.RoleId == 1 && account.PodcasterProfile != null && account.PodcasterProfile.IsVerified == true ? true : false
+                    },
                     // set cache expiry to 1 hour (khi hết hạn key-value này sẽ bị xoá khỏi redis)
                     TimeSpan.FromHours(1)
                     );
 
-                    if(result == false)
+                    if (result == false)
                     {
                         throw new Exception("Change account status failed, cannot update account status cache in redis");
                     }
@@ -584,369 +603,419 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }
             }
-            
+
         }
 
+        public async Task CreatePodcasterProfile(CreatePodcasterProfileParameterDTO createPodcasterProfileParameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var account = await GetExistAccountById(createPodcasterProfileParameter.AccountId);
+                    if (account.RoleId != 1)
+                    {
+                        throw new Exception("Only customer accounts can create podcaster profile");
+                    }
+                    if (account.IsVerified == false)
+                    {
+                        throw new Exception("Unverified account cannot create podcaster profile");
+                    }
+
+                    var result = await _redisSharedCacheService.KeySetAsync<PodcasterProfileCreationCache>($"podcaster-profile:creation:{account.Id}", new PodcasterProfileCreationCache
+                    {
+                        AccountId = account.Id,
+                        FullName = account.FullName,
+                        Email = account.Email,
+                        CreatedAt = DateTime.UtcNow
+                    },
+                    // set cache expiry to 1 hour (khi hết hạn key-value này sẽ bị xoá khỏi redis)
+                    TimeSpan.FromHours(1)
+                    );
+
+                    if (result == false)
+                    {
+                        throw new Exception("Create podcaster profile failed, cannot set podcaster profile creation cache in redis");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create podcaster profile failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-podcaster-profile.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+            // public async Task RegisterStaff(StaffRegisterDTO staffRegisterInfo)
+            // {
+            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //     {
+            //         try
+            //         {
+            //             var registerInfo = staffRegisterInfo.RegisterInfo;
+            //             var staff = await _unitOfWork.AccountRepository.FindByEmailAsync(registerInfo.Email);
+            //             if (staff != null)
+            //             {
+            //                 throw new Exception("email đã tồn tại: " + registerInfo.Email);
+            //             }
+            //             var role = await this.GetExistRoleById(registerInfo.RoleId);
+
+            //             staff = new Account
+            //             {
+            //                 Email = registerInfo.Email,
+            //                 Password = _bcryptHelpers.HashPassword(registerInfo.Password),
+            //                 FullName = registerInfo.FullName,
+            //                 RoleId = registerInfo.RoleId,
+            //                 Dob = DateOnly.FromDateTime(registerInfo.Dob),
+            //                 Gender = registerInfo.Gender,
+            //                 Address = registerInfo.Address,
+            //                 Phone = registerInfo.Phone,
+            //                 IsFilterSurveyRequired = false,
+            //                 IsVerified = true,
+            //             };
+            //             await _accountGenericRepository.CreateAsync(staff);
+
+            //             var folderPath = _filePathConfig.ACCOUNt_IMAGE_PATH + "\\" + staff.Id;
+            //             if (registerInfo.ImageBase64 != null && registerInfo.ImageBase64 != "")
+            //             {
+            //                 string fileName = "main";
+            //                 string base64Data = registerInfo.ImageBase64;
+
+            //                 await _imageHelpers.SaveBase64File(base64Data, folderPath, fileName);
+            //             }
+            //             else
+            //             {
+            //                 await _imageHelpers.CopyFile(_filePathConfig.ACCOUNt_IMAGE_PATH, "unknown", folderPath, "main");
+            //             }
+
+            //             await transaction.CommitAsync();
+
+            //         }
+            //         catch (Exception ex)
+            //         {
+            //             await transaction.RollbackAsync();
+            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+            //             throw new HttpRequestException("Đăng kí tài khoản thất bại, lỗi: " + ex.Message);
+            //         }
+            //     }
+
+            // }
 
 
-        // public async Task RegisterStaff(StaffRegisterDTO staffRegisterInfo)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var registerInfo = staffRegisterInfo.RegisterInfo;
-        //             var staff = await _unitOfWork.AccountRepository.FindByEmailAsync(registerInfo.Email);
-        //             if (staff != null)
-        //             {
-        //                 throw new Exception("email đã tồn tại: " + registerInfo.Email);
-        //             }
-        //             var role = await this.GetExistRoleById(registerInfo.RoleId);
-
-        //             staff = new Account
-        //             {
-        //                 Email = registerInfo.Email,
-        //                 Password = _bcryptHelpers.HashPassword(registerInfo.Password),
-        //                 FullName = registerInfo.FullName,
-        //                 RoleId = registerInfo.RoleId,
-        //                 Dob = DateOnly.FromDateTime(registerInfo.Dob),
-        //                 Gender = registerInfo.Gender,
-        //                 Address = registerInfo.Address,
-        //                 Phone = registerInfo.Phone,
-        //                 IsFilterSurveyRequired = false,
-        //                 IsVerified = true,
-        //             };
-        //             await _accountGenericRepository.CreateAsync(staff);
-
-        //             var folderPath = _filePathConfig.ACCOUNt_IMAGE_PATH + "\\" + staff.Id;
-        //             if (registerInfo.ImageBase64 != null && registerInfo.ImageBase64 != "")
-        //             {
-        //                 string fileName = "main";
-        //                 string base64Data = registerInfo.ImageBase64;
-
-        //                 await _imageHelpers.SaveBase64File(base64Data, folderPath, fileName);
-        //             }
-        //             else
-        //             {
-        //                 await _imageHelpers.CopyFile(_filePathConfig.ACCOUNt_IMAGE_PATH, "unknown", folderPath, "main");
-        //             }
-
-        //             await transaction.CommitAsync();
-
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //             throw new HttpRequestException("Đăng kí tài khoản thất bại, lỗi: " + ex.Message);
-        //         }
-        //     }
-
-        // }
+            // public async Task<AccountDetailDTO> GetAccountById(int accountId)
+            // {
+            //     try
+            //     {
+            //         var account = await this.GetExistAccountById(accountId);
+            //         return new AccountDetailDTO
+            //         {
+            //             Id = account.Id,
+            //             Email = account.Email,
+            //             Role = new RoleDTO
+            //             {
+            //                 Id = account.Role.Id,
+            //                 Name = account.Role.Name
+            //             },
+            //             FullName = account.FullName,
+            //             Dob = account.Dob?.ToString("yyyy-MM-dd"),
+            //             Gender = account.Gender,
+            //             Address = account.Address,
+            //             Phone = account.Phone,
+            //             Balance = account.Balance,
+            //             IsVerified = account.IsVerified,
+            //             Xp = account.Xp,
+            //             Level = account.Level,
+            //             ProgressionSurveyCount = account.ProgressionSurveyCount,
+            //             IsFilterSurveyRequired = account.IsFilterSurveyRequired,
+            //             LastFilterSurveyTakenAt = account.LastFilterSurveyTakenAt?.ToString(),
+            //             DeactivatedAt = account.DeactivatedAt?.ToString(),
+            //             CreatedAt = account.CreatedAt.ToString(),
+            //             UpdatedAt = account.UpdatedAt.ToString(),
+            //             MainImageUrl = await _imageHelpers.GenerateImageUrl(_filePathConfig.ACCOUNt_IMAGE_PATH, account.Id.ToString(), "main"),
+            //             Profile = new AccountProfileDTO
+            //             {
+            //                 CountryRegion = account.AccountProfile?.CountryRegion,
+            //                 MaritalStatus = account.AccountProfile?.MaritalStatus,
+            //                 AverageIncome = account.AccountProfile?.AverageIncome,
+            //                 EducationLevel = account.AccountProfile?.EducationLevel,
+            //                 JobField = account.AccountProfile?.JobField,
+            //                 ProvinceCode = account.AccountProfile?.ProvinceCode,
+            //                 DistrictCode = account.AccountProfile?.DistrictCode,
+            //                 WardCode = account.AccountProfile?.WardCode
+            //             }
+            //         };
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         Console.WriteLine("\n" + ex.StackTrace + "\n");
+            //         throw new HttpRequestException("Lấy thông tin tài khoản thất bại, lỗi: " + ex.Message);
+            //     }
 
 
-        // public async Task<AccountDetailDTO> GetAccountById(int accountId)
-        // {
-        //     try
-        //     {
-        //         var account = await this.GetExistAccountById(accountId);
-        //         return new AccountDetailDTO
-        //         {
-        //             Id = account.Id,
-        //             Email = account.Email,
-        //             Role = new RoleDTO
-        //             {
-        //                 Id = account.Role.Id,
-        //                 Name = account.Role.Name
-        //             },
-        //             FullName = account.FullName,
-        //             Dob = account.Dob?.ToString("yyyy-MM-dd"),
-        //             Gender = account.Gender,
-        //             Address = account.Address,
-        //             Phone = account.Phone,
-        //             Balance = account.Balance,
-        //             IsVerified = account.IsVerified,
-        //             Xp = account.Xp,
-        //             Level = account.Level,
-        //             ProgressionSurveyCount = account.ProgressionSurveyCount,
-        //             IsFilterSurveyRequired = account.IsFilterSurveyRequired,
-        //             LastFilterSurveyTakenAt = account.LastFilterSurveyTakenAt?.ToString(),
-        //             DeactivatedAt = account.DeactivatedAt?.ToString(),
-        //             CreatedAt = account.CreatedAt.ToString(),
-        //             UpdatedAt = account.UpdatedAt.ToString(),
-        //             MainImageUrl = await _imageHelpers.GenerateImageUrl(_filePathConfig.ACCOUNt_IMAGE_PATH, account.Id.ToString(), "main"),
-        //             Profile = new AccountProfileDTO
-        //             {
-        //                 CountryRegion = account.AccountProfile?.CountryRegion,
-        //                 MaritalStatus = account.AccountProfile?.MaritalStatus,
-        //                 AverageIncome = account.AccountProfile?.AverageIncome,
-        //                 EducationLevel = account.AccountProfile?.EducationLevel,
-        //                 JobField = account.AccountProfile?.JobField,
-        //                 ProvinceCode = account.AccountProfile?.ProvinceCode,
-        //                 DistrictCode = account.AccountProfile?.DistrictCode,
-        //                 WardCode = account.AccountProfile?.WardCode
-        //             }
-        //         };
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         throw new HttpRequestException("Lấy thông tin tài khoản thất bại, lỗi: " + ex.Message);
-        //     }
+            // }
+
+            // public async Task<AccountDetailDTO> GetMe(int accountId)
+            // {
+            //     try
+            //     {
+            //         var account = await this.GetExistAccountById(accountId);
+            //         return new AccountDetailDTO
+            //         {
+            //             Id = account.Id,
+            //             Email = account.Email,
+            //             Role = new RoleDTO
+            //             {
+            //                 Id = account.Role.Id,
+            //                 Name = account.Role.Name
+            //             },
+            //             FullName = account.FullName,
+            //             Dob = account.Dob?.ToString("yyyy-MM-dd"),
+            //             Gender = account.Gender,
+            //             Address = account.Address,
+            //             Phone = account.Phone,
+            //             Balance = account.Balance,
+            //             IsVerified = account.IsVerified,
+            //             Xp = account.Xp,
+            //             Level = account.Level,
+            //             ProgressionSurveyCount = account.ProgressionSurveyCount,
+            //             IsFilterSurveyRequired = account.IsFilterSurveyRequired,
+            //             LastFilterSurveyTakenAt = account.LastFilterSurveyTakenAt?.ToString(),
+            //             DeactivatedAt = account.DeactivatedAt?.ToString(),
+            //             CreatedAt = account.CreatedAt.ToString(),
+            //             UpdatedAt = account.UpdatedAt.ToString(),
+            //             MainImageUrl = await _imageHelpers.GenerateImageUrl(_filePathConfig.ACCOUNt_IMAGE_PATH, account.Id.ToString(), "main"),
+            //             Profile = new AccountProfileDTO
+            //             {
+            //                 CountryRegion = account.AccountProfile?.CountryRegion,
+            //                 MaritalStatus = account.AccountProfile?.MaritalStatus,
+            //                 AverageIncome = account.AccountProfile?.AverageIncome,
+            //                 EducationLevel = account.AccountProfile?.EducationLevel,
+            //                 JobField = account.AccountProfile?.JobField,
+            //                 ProvinceCode = account.AccountProfile?.ProvinceCode,
+            //                 DistrictCode = account.AccountProfile?.DistrictCode,
+            //                 WardCode = account.AccountProfile?.WardCode
+            //             },
+            //             IsPlatformFeedbackGiven = account.PlatformFeedback != null
+            //         };
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         Console.WriteLine("\n" + ex.StackTrace + "\n");
+            //         throw new HttpRequestException("Lấy thông tin tài khoản thất bại, lỗi: " + ex.Message);
+            //     }
 
 
-        // }
+            // }
 
-        // public async Task<AccountDetailDTO> GetMe(int accountId)
-        // {
-        //     try
-        //     {
-        //         var account = await this.GetExistAccountById(accountId);
-        //         return new AccountDetailDTO
-        //         {
-        //             Id = account.Id,
-        //             Email = account.Email,
-        //             Role = new RoleDTO
-        //             {
-        //                 Id = account.Role.Id,
-        //                 Name = account.Role.Name
-        //             },
-        //             FullName = account.FullName,
-        //             Dob = account.Dob?.ToString("yyyy-MM-dd"),
-        //             Gender = account.Gender,
-        //             Address = account.Address,
-        //             Phone = account.Phone,
-        //             Balance = account.Balance,
-        //             IsVerified = account.IsVerified,
-        //             Xp = account.Xp,
-        //             Level = account.Level,
-        //             ProgressionSurveyCount = account.ProgressionSurveyCount,
-        //             IsFilterSurveyRequired = account.IsFilterSurveyRequired,
-        //             LastFilterSurveyTakenAt = account.LastFilterSurveyTakenAt?.ToString(),
-        //             DeactivatedAt = account.DeactivatedAt?.ToString(),
-        //             CreatedAt = account.CreatedAt.ToString(),
-        //             UpdatedAt = account.UpdatedAt.ToString(),
-        //             MainImageUrl = await _imageHelpers.GenerateImageUrl(_filePathConfig.ACCOUNt_IMAGE_PATH, account.Id.ToString(), "main"),
-        //             Profile = new AccountProfileDTO
-        //             {
-        //                 CountryRegion = account.AccountProfile?.CountryRegion,
-        //                 MaritalStatus = account.AccountProfile?.MaritalStatus,
-        //                 AverageIncome = account.AccountProfile?.AverageIncome,
-        //                 EducationLevel = account.AccountProfile?.EducationLevel,
-        //                 JobField = account.AccountProfile?.JobField,
-        //                 ProvinceCode = account.AccountProfile?.ProvinceCode,
-        //                 DistrictCode = account.AccountProfile?.DistrictCode,
-        //                 WardCode = account.AccountProfile?.WardCode
-        //             },
-        //             IsPlatformFeedbackGiven = account.PlatformFeedback != null
-        //         };
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         throw new HttpRequestException("Lấy thông tin tài khoản thất bại, lỗi: " + ex.Message);
-        //     }
+            // public async Task<Account> UpdateAccount(int accountId, AccountUpdateDTO accountUpdateDto)
+            // {
+            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //     {
+            //         try
+            //         {
+            //             var account = await this.GetExistAccountById(accountId);
 
+            //             // Cập nhật thông tin tài khoản
+            //             account.FullName = accountUpdateDto.FullName;
+            //             account.Dob = accountUpdateDto.Dob;
+            //             account.Gender = accountUpdateDto.Gender;
+            //             account.Address = accountUpdateDto.Address;
+            //             account.Phone = accountUpdateDto.Phone;
 
-        // }
+            //             await _accountGenericRepository.UpdateAsync(account.Id, account);
 
-        // public async Task<Account> UpdateAccount(int accountId, AccountUpdateDTO accountUpdateDto)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var account = await this.GetExistAccountById(accountId);
+            //             // Cập nhật ảnh đại diện
+            //             var folderPath = _filePathConfig.ACCOUNt_IMAGE_PATH + "\\" + account.Id;
+            //             if (accountUpdateDto.ImageBase64 != null && accountUpdateDto.ImageBase64 != "")
+            //             {
+            //                 string fileName = "main";
+            //                 string base64Data = accountUpdateDto.ImageBase64;
 
-        //             // Cập nhật thông tin tài khoản
-        //             account.FullName = accountUpdateDto.FullName;
-        //             account.Dob = accountUpdateDto.Dob;
-        //             account.Gender = accountUpdateDto.Gender;
-        //             account.Address = accountUpdateDto.Address;
-        //             account.Phone = accountUpdateDto.Phone;
+            //                 await _imageHelpers.SaveBase64File(base64Data, folderPath, fileName);
+            //             }
+            //             await transaction.CommitAsync();
+            //             return account;
 
-        //             await _accountGenericRepository.UpdateAsync(account.Id, account);
+            //         }
+            //         catch (Exception ex)
+            //         {
+            //             await transaction.RollbackAsync();
+            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+            //             throw new HttpRequestException("Cập nhật tài khoản thất bại, lỗi: " + ex.Message);
+            //         }
+            //     }
+            // }
 
-        //             // Cập nhật ảnh đại diện
-        //             var folderPath = _filePathConfig.ACCOUNt_IMAGE_PATH + "\\" + account.Id;
-        //             if (accountUpdateDto.ImageBase64 != null && accountUpdateDto.ImageBase64 != "")
-        //             {
-        //                 string fileName = "main";
-        //                 string base64Data = accountUpdateDto.ImageBase64;
+            // public async Task UpdateAccountProfile(int accountId, AccountProfileUpdateDTO accountUpdateProfileDto)
+            // {
+            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //     {
+            //         try
+            //         {
+            //             var account = await this.GetExistAccountById(accountId);
 
-        //                 await _imageHelpers.SaveBase64File(base64Data, folderPath, fileName);
-        //             }
-        //             await transaction.CommitAsync();
-        //             return account;
+            //             var accountProfile = await this.GetExistAccountProfileByAccountId(accountId);
+            //             // Cập nhật thông tin tài khoản
+            //             accountProfile.CountryRegion = accountUpdateProfileDto.AccountProfile.CountryRegion;
+            //             accountProfile.MaritalStatus = accountUpdateProfileDto.AccountProfile.MaritalStatus;
+            //             accountProfile.AverageIncome = accountUpdateProfileDto.AccountProfile.AverageIncome;
+            //             accountProfile.EducationLevel = accountUpdateProfileDto.AccountProfile.EducationLevel;
+            //             accountProfile.JobField = accountUpdateProfileDto.AccountProfile.JobField;
+            //             accountProfile.ProvinceCode = accountUpdateProfileDto.AccountProfile.ProvinceCode;
+            //             accountProfile.DistrictCode = accountUpdateProfileDto.AccountProfile.DistrictCode;
+            //             accountProfile.WardCode = accountUpdateProfileDto.AccountProfile.WardCode;
+            //             await _unitOfWork.AccountProfileRepository.UpdateAsync(accountProfile);
+            //             // Cập nhật sở thích chủ đề khảo sát
+            //             if (accountUpdateProfileDto.SurveyTopicFavorites != null && accountUpdateProfileDto.SurveyTopicFavorites.Any())
+            //             {
+            //                 // Xoá tất cả sở thích cũ
+            //                 await this._unitOfWork.SurveyTopicFavoriteRepository.DeleteByAccountIdAsync(accountId);
 
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //             throw new HttpRequestException("Cập nhật tài khoản thất bại, lỗi: " + ex.Message);
-        //         }
-        //     }
-        // }
+            //                 // Thêm sở thích mới
+            //                 foreach (var favoriteDto in accountUpdateProfileDto.SurveyTopicFavorites)
+            //                 {
 
-        // public async Task UpdateAccountProfile(int accountId, AccountProfileUpdateDTO accountUpdateProfileDto)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var account = await this.GetExistAccountById(accountId);
-
-        //             var accountProfile = await this.GetExistAccountProfileByAccountId(accountId);
-        //             // Cập nhật thông tin tài khoản
-        //             accountProfile.CountryRegion = accountUpdateProfileDto.AccountProfile.CountryRegion;
-        //             accountProfile.MaritalStatus = accountUpdateProfileDto.AccountProfile.MaritalStatus;
-        //             accountProfile.AverageIncome = accountUpdateProfileDto.AccountProfile.AverageIncome;
-        //             accountProfile.EducationLevel = accountUpdateProfileDto.AccountProfile.EducationLevel;
-        //             accountProfile.JobField = accountUpdateProfileDto.AccountProfile.JobField;
-        //             accountProfile.ProvinceCode = accountUpdateProfileDto.AccountProfile.ProvinceCode;
-        //             accountProfile.DistrictCode = accountUpdateProfileDto.AccountProfile.DistrictCode;
-        //             accountProfile.WardCode = accountUpdateProfileDto.AccountProfile.WardCode;
-        //             await _unitOfWork.AccountProfileRepository.UpdateAsync(accountProfile);
-        //             // Cập nhật sở thích chủ đề khảo sát
-        //             if (accountUpdateProfileDto.SurveyTopicFavorites != null && accountUpdateProfileDto.SurveyTopicFavorites.Any())
-        //             {
-        //                 // Xoá tất cả sở thích cũ
-        //                 await this._unitOfWork.SurveyTopicFavoriteRepository.DeleteByAccountIdAsync(accountId);
-
-        //                 // Thêm sở thích mới
-        //                 foreach (var favoriteDto in accountUpdateProfileDto.SurveyTopicFavorites)
-        //                 {
-
-        //                     var surveyTopicFavorite = new SurveyTopicFavorite
-        //                     {
-        //                         AccountId = accountId,
-        //                         SurveyTopicId = favoriteDto.SurveyTopicId,
-        //                         FavoriteScore = favoriteDto.FavoriteScore
-        //                     };
-        //                     await _surveyTopicFavoriteGenericRepository.CreateAsync(surveyTopicFavorite);
-        //                 }
-        //             }
+            //                     var surveyTopicFavorite = new SurveyTopicFavorite
+            //                     {
+            //                         AccountId = accountId,
+            //                         SurveyTopicId = favoriteDto.SurveyTopicId,
+            //                         FavoriteScore = favoriteDto.FavoriteScore
+            //                     };
+            //                     await _surveyTopicFavoriteGenericRepository.CreateAsync(surveyTopicFavorite);
+            //                 }
+            //             }
 
 
-        //             await transaction.CommitAsync();
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //             throw new HttpRequestException("Cập nhật thông tin tài khoản thất bại, lỗi: " + ex.Message);
-        //         }
-        //     }
-        // }
+            //             await transaction.CommitAsync();
+            //         }
+            //         catch (Exception ex)
+            //         {
+            //             await transaction.RollbackAsync();
+            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+            //             throw new HttpRequestException("Cập nhật thông tin tài khoản thất bại, lỗi: " + ex.Message);
+            //         }
+            //     }
+            // }
 
-        // public async Task DeactivateAccount(int accountId, bool isDeactivate)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var account = await this.GetExistAccountById(accountId);
-        //             // if (isDeactivate == false)
-        //             // {
-        //             //     account.DeactivatedAt = null;
-        //             // }else
-        //             // {
-        //             //     account.DeactivatedAt = this._dateHelpers.GetNowByAppTimeZone();
-        //             // }
+            // public async Task DeactivateAccount(int accountId, bool isDeactivate)
+            // {
+            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //     {
+            //         try
+            //         {
+            //             var account = await this.GetExistAccountById(accountId);
+            //             // if (isDeactivate == false)
+            //             // {
+            //             //     account.DeactivatedAt = null;
+            //             // }else
+            //             // {
+            //             //     account.DeactivatedAt = this._dateHelpers.GetNowByAppTimeZone();
+            //             // }
 
-        //             await this._unitOfWork.AccountRepository.DeactivateAsync(account.Id, isDeactivate);
-        //             // Cập nhật thông tin tài khoản
+            //             await this._unitOfWork.AccountRepository.DeactivateAsync(account.Id, isDeactivate);
+            //             // Cập nhật thông tin tài khoản
 
-        //             await transaction.CommitAsync();
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //             throw new HttpRequestException("Vô hiệu hoá tài khoản thất bại, lỗi: " + ex.Message);
-        //         }
-        //     }
-        // }
+            //             await transaction.CommitAsync();
+            //         }
+            //         catch (Exception ex)
+            //         {
+            //             await transaction.RollbackAsync();
+            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+            //             throw new HttpRequestException("Vô hiệu hoá tài khoản thất bại, lỗi: " + ex.Message);
+            //         }
+            //     }
+            // }
 
-        // public async Task AccountLvlXPDeduction()
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var config = await _unitOfWork.SystemConfigProfileRepository.FindActiveProfileAsync();
-        //             var accountGeneralConfig = config.AccountGeneralConfig;
-        //             var accountLevelSettingConfigs = config.AccountLevelSettingConfigs.ToList();
-        //             var accounts = await _accountGenericRepository.FindAll(
-        //                 predicate: account => account.DeactivatedAt == null && account.IsVerified == true && account.RoleId == 4 && account.Level > 1 && account.Xp > 0,
-        //                 includeProperties: account => account.AccountProfile
-        //                 ).ToListAsync();
+            // public async Task AccountLvlXPDeduction()
+            // {
+            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //     {
+            //         try
+            //         {
+            //             var config = await _unitOfWork.SystemConfigProfileRepository.FindActiveProfileAsync();
+            //             var accountGeneralConfig = config.AccountGeneralConfig;
+            //             var accountLevelSettingConfigs = config.AccountLevelSettingConfigs.ToList();
+            //             var accounts = await _accountGenericRepository.FindAll(
+            //                 predicate: account => account.DeactivatedAt == null && account.IsVerified == true && account.RoleId == 4 && account.Level > 1 && account.Xp > 0,
+            //                 includeProperties: account => account.AccountProfile
+            //                 ).ToListAsync();
 
-        //             foreach (var account in accounts)
-        //             {
-        //                 account.Xp -= accountLevelSettingConfigs.Where(x => x.Level == account.Level).First().DailyReductionXp;
-        //                 //account.Xp -= accountLevelSettingConfigs[account.Level - 1].DailyReductionXp; Use this for performance but only if the list is in order of level
-        //                 if (account.Xp < account.Level * accountGeneralConfig.XpLevelThreshold)
-        //                 {
-        //                     account.ProgressionSurveyCount = 0;
-        //                     account.Level = (int)Math.Floor((decimal)account.Xp / (decimal)accountGeneralConfig.XpLevelThreshold);
-        //                 }
-        //                 await _accountGenericRepository.UpdateAsync(account.Id, account);
-        //             }
-        //             await transaction.CommitAsync();
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //             throw new HttpRequestException("Giảm Xp hàng ngày của account thất bại, lỗi: " + ex.Message);
-        //         }
-        //     }
-        // }
+            //             foreach (var account in accounts)
+            //             {
+            //                 account.Xp -= accountLevelSettingConfigs.Where(x => x.Level == account.Level).First().DailyReductionXp;
+            //                 //account.Xp -= accountLevelSettingConfigs[account.Level - 1].DailyReductionXp; Use this for performance but only if the list is in order of level
+            //                 if (account.Xp < account.Level * accountGeneralConfig.XpLevelThreshold)
+            //                 {
+            //                     account.ProgressionSurveyCount = 0;
+            //                     account.Level = (int)Math.Floor((decimal)account.Xp / (decimal)accountGeneralConfig.XpLevelThreshold);
+            //                 }
+            //                 await _accountGenericRepository.UpdateAsync(account.Id, account);
+            //             }
+            //             await transaction.CommitAsync();
+            //         }
+            //         catch (Exception ex)
+            //         {
+            //             await transaction.RollbackAsync();
+            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+            //             throw new HttpRequestException("Giảm Xp hàng ngày của account thất bại, lỗi: " + ex.Message);
+            //         }
+            //     }
+            // }
 
-        // public async Task AccountFilterSurveyRequiredChecking()
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var config = await _unitOfWork.SystemConfigProfileRepository.FindActiveProfileAsync();
-        //             var accountGeneralConfig = config.AccountGeneralConfig;
-        //             var accountLevelSettingConfigs = config.AccountLevelSettingConfigs.ToList();
-        //             var accounts = await _accountGenericRepository.FindAll(
-        //                 predicate: account => account.DeactivatedAt == null && account.IsVerified == true && account.RoleId == 4 && !account.IsFilterSurveyRequired,
-        //                 includeProperties: account => account.AccountProfile
-        //                 ).ToListAsync();
+            // public async Task AccountFilterSurveyRequiredChecking()
+            // {
+            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //     {
+            //         try
+            //         {
+            //             var config = await _unitOfWork.SystemConfigProfileRepository.FindActiveProfileAsync();
+            //             var accountGeneralConfig = config.AccountGeneralConfig;
+            //             var accountLevelSettingConfigs = config.AccountLevelSettingConfigs.ToList();
+            //             var accounts = await _accountGenericRepository.FindAll(
+            //                 predicate: account => account.DeactivatedAt == null && account.IsVerified == true && account.RoleId == 4 && !account.IsFilterSurveyRequired,
+            //                 includeProperties: account => account.AccountProfile
+            //                 ).ToListAsync();
 
-        //             foreach (var account in accounts)
-        //             {
-        //                 var timeCheck = _dateHelpers.GetNowByAppTimeZone().AddDays(-accountGeneralConfig.FilterSurveyCycle);
-        //                 if (timeCheck >= account.LastFilterSurveyTakenAt)
-        //                 {
-        //                     account.IsFilterSurveyRequired = true;
-        //                 }
-        //                 else
-        //                 {
-        //                     account.IsFilterSurveyRequired = false;
-        //                 }
+            //             foreach (var account in accounts)
+            //             {
+            //                 var timeCheck = _dateHelpers.GetNowByAppTimeZone().AddDays(-accountGeneralConfig.FilterSurveyCycle);
+            //                 if (timeCheck >= account.LastFilterSurveyTakenAt)
+            //                 {
+            //                     account.IsFilterSurveyRequired = true;
+            //                 }
+            //                 else
+            //                 {
+            //                     account.IsFilterSurveyRequired = false;
+            //                 }
 
-        //                 await _accountGenericRepository.UpdateAsync(account.Id, account);
-        //             }
-        //             await transaction.CommitAsync();
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //             throw new HttpRequestException("Giảm Xp hàng ngày của account thất bại, lỗi: " + ex.Message);
-        //         }
-        //     }
-        // }
+            //                 await _accountGenericRepository.UpdateAsync(account.Id, account);
+            //             }
+            //             await transaction.CommitAsync();
+            //         }
+            //         catch (Exception ex)
+            //         {
+            //             await transaction.RollbackAsync();
+            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+            //             throw new HttpRequestException("Giảm Xp hàng ngày của account thất bại, lỗi: " + ex.Message);
+            //         }
+            //     }
+            // }
 
 
 
 
 
+        }
     }
-}

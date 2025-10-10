@@ -9,11 +9,11 @@ using UserService.Infrastructure.Services.Redis;
 
 namespace UserService.API.Authorizations.Handlers
 {
-    public class AccountNoViolationAccessHandler : AuthorizationHandler<AccountNoViolationAccessRequirement>
+    public class AccountPodcasterAccessHandler : AuthorizationHandler<AccountPodcasterAccessRequirement>
     {
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly RedisSharedCacheService _redisSharedCacheService;
-        public AccountNoViolationAccessHandler(
+        public AccountPodcasterAccessHandler(
             HttpServiceQueryClient httpServiceQueryClient,
             RedisSharedCacheService redisSharedCacheService
             )
@@ -77,7 +77,7 @@ namespace UserService.API.Authorizations.Handlers
             return cachedData;
         }
 
-        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, AccountNoViolationAccessRequirement requirement)
+        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, AccountPodcasterAccessRequirement requirement)
         {
             string userId = context.User.FindFirst("id")?.Value;
             string roleId = context.User.FindFirst("role_id")?.Value;
@@ -127,9 +127,9 @@ namespace UserService.API.Authorizations.Handlers
                 Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account is deactivated: {account.DeactivatedAt}");
                 context.Fail();
             }
-            else if (account.ViolationLevel > 0)
+            else if (account.HasVerifiedPodcasterProfile == false)
             {
-                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account has violations: {account.ViolationLevel}");
+                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account has not verified podcaster profile: {account.HasVerifiedPodcasterProfile}");
                 context.Fail();
             }
             else

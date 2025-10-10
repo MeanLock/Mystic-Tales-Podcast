@@ -1,19 +1,19 @@
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json.Linq;
-using UserService.API.Authorizations.Requirements;
-using UserService.BusinessLogic.DTOs.Cache;
-using UserService.BusinessLogic.Models.CrossService;
-using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
-using UserService.DataAccess.Repositories.interfaces;
-using UserService.Infrastructure.Services.Redis;
+using TransactionService.API.Authorizations.Requirements;
+using TransactionService.BusinessLogic.DTOs.Cache;
+using TransactionService.BusinessLogic.Models.CrossService;
+using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using TransactionService.DataAccess.Repositories.interfaces;
+using TransactionService.Infrastructure.Services.Redis;
 
-namespace UserService.API.Authorizations.Handlers
+namespace TransactionService.API.Authorizations.Handlers
 {
-    public class AccountNoViolationAccessHandler : AuthorizationHandler<AccountNoViolationAccessRequirement>
+    public class AccountPodcasterAccessHandler : AuthorizationHandler<AccountPodcasterAccessRequirement>
     {
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly RedisSharedCacheService _redisSharedCacheService;
-        public AccountNoViolationAccessHandler(
+        public AccountPodcasterAccessHandler(
             HttpServiceQueryClient httpServiceQueryClient,
             RedisSharedCacheService redisSharedCacheService
             )
@@ -65,7 +65,7 @@ namespace UserService.API.Authorizations.Handlers
                     }
                 }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
             return result.Results["account"] as JObject;
         }
 
@@ -77,7 +77,7 @@ namespace UserService.API.Authorizations.Handlers
             return cachedData;
         }
 
-        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, AccountNoViolationAccessRequirement requirement)
+        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, AccountPodcasterAccessRequirement requirement)
         {
             string userId = context.User.FindFirst("id")?.Value;
             string roleId = context.User.FindFirst("role_id")?.Value;
@@ -127,9 +127,9 @@ namespace UserService.API.Authorizations.Handlers
                 Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account is deactivated: {account.DeactivatedAt}");
                 context.Fail();
             }
-            else if (account.ViolationLevel > 0)
+            else if (account.HasVerifiedPodcasterProfile == false)
             {
-                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account has violations: {account.ViolationLevel}");
+                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account has not verified podcaster profile: {account.HasVerifiedPodcasterProfile}");
                 context.Fail();
             }
             else

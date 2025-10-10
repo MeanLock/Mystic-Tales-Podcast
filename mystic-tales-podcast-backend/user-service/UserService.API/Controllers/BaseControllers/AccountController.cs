@@ -167,11 +167,12 @@ namespace UserService.API.Controllers.BaseControllers
 
             }
             JObject requestData = JObject.FromObject(podcasterProfileRequestInfo);
+            requestData["AccountId"] = account.Id;
             requestData["CommitmentDocumentFileKey"] = commitmentDocumentFileKey;
-            requestData["RoleId"] = 2;
+            
 
 
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "forgot-password-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "podcaster-profile-creation-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {

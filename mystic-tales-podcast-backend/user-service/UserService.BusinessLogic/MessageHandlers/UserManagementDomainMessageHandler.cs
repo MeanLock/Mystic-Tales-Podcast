@@ -5,6 +5,7 @@ using UserService.BusinessLogic.Attributes;
 using UserService.BusinessLogic.DTOs.Auth;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.NewResetPassword;
@@ -225,6 +226,22 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "change-account-status.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("create-podcaster-profile", SAGA_TOPIC)]
+        public async Task HandleCreatePodcasterProfileAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var createPodcasterProfileParameterDTO = command.RequestData.ToObject<CreatePodcasterProfileParameterDTO>();
+                    await _accountService.CreatePodcasterProfile(createPodcasterProfileParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-podcaster-profile.failed"    // From YAML onFailure.emit
             );
         }
 
