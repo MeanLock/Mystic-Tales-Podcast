@@ -1,3 +1,6 @@
+using Newtonsoft.Json;
+using UserService.BusinessLogic.Helpers.JsonHelpers;
+
 namespace UserService.BusinessLogic.DTOs.Cache
 {
     public class AccountStatusCache
@@ -7,8 +10,14 @@ namespace UserService.BusinessLogic.DTOs.Cache
         public bool IsVerified { get; set; }
         public int ViolationLevel { get; set; }
         public int ViolationPoint { get; set; }
+
+        [JsonConverter(typeof(NullableDateTimeJsonConverter))]
         public DateTime? LastViolationPointChanged { get; set; }
+
+        [JsonConverter(typeof(NullableDateTimeJsonConverter))]
         public DateTime? LastViolationLevelChanged { get; set; }
+
+        [JsonConverter(typeof(NullableDateTimeJsonConverter))]
         public DateTime? DeactivatedAt { get; set; }
     }
 

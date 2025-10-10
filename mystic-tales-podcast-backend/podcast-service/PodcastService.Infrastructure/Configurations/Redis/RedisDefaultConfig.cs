@@ -7,7 +7,8 @@ namespace PodcastService.Infrastructure.Configurations.Redis
     public class RedisDefaultConfigModel
     {
         public string ConnectionString { get; set; } = string.Empty;
-        public string InstanceName { get; set; } = string.Empty;
+        public string InstanceKeyName { get; set; } = string.Empty;
+        public string SharedKeyName { get; set; } = string.Empty;
         public int DefaultDatabase { get; set; }
         public int ConnectTimeout { get; set; }
         public int SyncTimeout { get; set; }
@@ -20,7 +21,8 @@ namespace PodcastService.Infrastructure.Configurations.Redis
     public class RedisDefaultConfig : IRedisDefaultConfig
     {
         public string ConnectionString { get; set; } = string.Empty;
-        public string InstanceName { get; set; } = string.Empty;
+        public string InstanceKeyName { get; set; } = string.Empty;
+        public string SharedKeyName { get; set; } = string.Empty;
         public int DefaultDatabase { get; set; }
         public int ConnectTimeout { get; set; }
         public int SyncTimeout { get; set; }
@@ -38,7 +40,8 @@ namespace PodcastService.Infrastructure.Configurations.Redis
                 if (redisDefaultConfig != null)
                 {
                     ConnectionString = redisDefaultConfig.ConnectionString;
-                    InstanceName = redisDefaultConfig.InstanceName;
+                    InstanceKeyName = redisDefaultConfig.InstanceKeyName;
+                    SharedKeyName = redisDefaultConfig.SharedKeyName;
                     DefaultDatabase = redisDefaultConfig.DefaultDatabase;
                     ConnectTimeout = redisDefaultConfig.ConnectTimeout;
                     SyncTimeout = redisDefaultConfig.SyncTimeout;

@@ -3,7 +3,8 @@ namespace ModerationService.Infrastructure.Configurations.Redis.interfaces
     public interface IRedisDefaultConfig
     {
         string ConnectionString { get; set; }
-        string InstanceName { get; set; }
+        string InstanceKeyName { get; set; }
+        string SharedKeyName { get; set; }
         int DefaultDatabase { get; set; }
         int ConnectTimeout { get; set; }
         int SyncTimeout { get; set; }

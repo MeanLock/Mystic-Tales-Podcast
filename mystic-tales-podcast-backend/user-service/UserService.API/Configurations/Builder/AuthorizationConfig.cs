@@ -1,13 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.AspNetCore.Authorization;
 using UserService.API.Authorizations.Handlers;
 using UserService.API.Authorizations.Requirements;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using SystemIO = System.IO;
 
 
 namespace UserService.API.Configurations.Builder
@@ -43,10 +37,9 @@ namespace UserService.API.Configurations.Builder
         {
             builder.Services.AddAuthorization(options =>
             {
-                options.AddPolicy("AllRole", policy =>
+                options.AddPolicy("BasicAccess", policy =>
                 {
                     policy.RequireAuthenticatedUser();
-                    policy.RequireRole("Admin", "Staff", "Customer");
                     policy.Requirements.Add(new AccountBasicAccessRequirement());
                 });
             });

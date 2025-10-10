@@ -2227,19 +2227,19 @@ flows:
         description: "Tạo booking negotiation và đổi booking status"
         parameters:
           - BookingId
+          - AccountId
           - Deadline
           - Note
           - DemoAudioRequired
           - DemoAudioFileKey
-          - IsFromCustomer 
           - Price
         next-request-data:
           - BookingId
+          - AccountId
           - Deadline
           - Note
           - DemoAudioRequired
           - DemoAudioFileKey
-          - IsFromCustomer 
           - Price
         response-data:
           - BookingNegotiationId
@@ -2308,13 +2308,13 @@ flows:
         handle-service: "BookingManagementService"
         description: "Cập nhật booking khi podcaster accept/reject producing request"
         parameters:
-          - BookingProducingRequestId
+          - BookingId
           - IsAccepted
         next-request-data:
-          - BookingProducingRequestId
+          - BookingId
           - IsAccepted
         response-data:
-          - BookingProducingRequestId
+          - BookingId
           - IsAccepted
           - UpdatedAt
         onSuccess:
@@ -2411,11 +2411,11 @@ flows:
         handle-service: "BookingManagementService"
         description: "Cập nhật lại booking với thông tin booking negotiation gần nhất khi agree"
         parameters:
-          - BookingNegotiationId
+          - BookingId
         next-request-data:
-          - BookingNegotiationId
+          - BookingId
         response-data:
-          - BookingNegotiationId
+          - BookingId
           - UpdatedAt
         onSuccess:
           emit: "agree-booking-negotiation.success"
@@ -2501,12 +2501,15 @@ flows:
         handle-service: "BookingManagementService"
         description: "Cancel hoặc reject booking với lý do"
         parameters:
+          - AccountId
           - BookingId
           - BookingManualCancelledReason
         next-request-data:
+          - AccountId
           - BookingId
           - BookingManualCancelledReason
         response-data:
+          - AccountId
           - BookingId
           - BookingManualCancelledReason
           - UpdatedAt

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using BookingManagementService.BusinessLogic.Services.DbServices.MiscServices;
+using UserService.BusinessLogic.Services.DbServices;
+using BookingManagementService.BusinessLogic.Services.DbServices;
 
 namespace BookingManagementService.BusinessLogic.Registrations
 {
@@ -32,10 +33,9 @@ namespace BookingManagementService.BusinessLogic.Registrations
             // services.AddScoped<UserStatisticsService>();
 
             // MiscServices
-            services.AddScoped<PlatformFeedbackService>();
 
-
-
+            services.AddScoped<BookingService>(); 
+            services.AddScoped<BookingProducingRequestService>();
 
             return services;
         }

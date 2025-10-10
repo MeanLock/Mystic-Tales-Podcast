@@ -127,7 +127,8 @@ namespace PodcastService.Infrastructure.Registrations
             IConfiguration configuration)
         {
             // Register Redis service
-            services.AddScoped<RedisCacheService>();
+            services.AddScoped<RedisInstanceCacheService>();
+            services.AddScoped<RedisSharedCacheService>();
 
             // Configure Redis connection
             services.AddSingleton<IConnectionMultiplexer>(sp =>

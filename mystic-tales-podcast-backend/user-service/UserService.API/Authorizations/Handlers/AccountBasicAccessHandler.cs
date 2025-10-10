@@ -26,60 +26,52 @@ namespace UserService.API.Authorizations.Handlers
             _redisSharedCacheService = redisSharedCacheService;
         }
 
-        // public async Task<JObject> GetAccountById(int accountId)
-        // {
-        //     var batchRequest = new BatchQueryRequest
-        //     {
-        //         Queries = new List<BatchQueryItem>
-        //         {
-        //             new BatchQueryItem
-        //             {
-        //                 Key = "account",
-        //                 QueryType = "findbyid",
-        //                 EntityType = "Account",
-        //                 Parameters = JObject.FromObject(new
-        //                 {
-        //                     id = accountId
-        //                 }),
-        //                 Fields = new[] {
-        //                     "Id",
-        //                     "Email",
-        //                     "Password",
-        //                     "RoleId",
-        //                     "FullName",
-        //                     "Dob",
-        //                     "Gender",
-        //                     "Address",
-        //                     "Phone",
-        //                     "Balance",
-        //                     "MainImageFileKey",
-        //                     "IsVerified",
-        //                     "GoogleId",
-        //                     "VerifyCode",
-        //                     "PodcastListenSlot",
-        //                     "ViolationPoint",
-        //                     "ViolationLevel",
-        //                     "LastViolationPointChanged",
-        //                     "LastViolationLevelChanged",
-        //                     "LastPodcastListenSlotChanged",
-        //                     "DeactivatedAt",
-        //                     "CreatedAt",
-        //                     "UpdatedAt"
-        //                 }
-        //             }
-        //         }
-        //     };
-        //     var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
-
-        //     // Lấy account từ kết quả
-        //     var accountData = result.Results["account"];
-        //     if (accountData is JArray accountArray && accountArray.Count > 0)
-        //     {
-        //         return accountArray.First as JObject;
-        //     }
-
-        //     return null;
-        // }
+        public async Task<JObject> GetAccountById(int accountId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                {
+                    new BatchQueryItem
+                    {
+                        Key = "account",
+                        QueryType = "findbyid",
+                        EntityType = "Account",
+                        Parameters = JObject.FromObject(new
+                        {
+                            id = accountId
+                        }),
+                        Fields = new[] {
+                            "Id",
+                            "Email",
+                            "Password",
+                            "RoleId",
+                            "FullName",
+                            "Dob",
+                            "Gender",
+                            "Address",
+                            "Phone",
+                            "Balance",
+                            "MainImageFileKey",
+                            "IsVerified",
+                            "GoogleId",
+                            "VerifyCode",
+                            "PodcastListenSlot",
+                            "ViolationPoint",
+                            "ViolationLevel",
+                            "LastViolationPointChanged",
+                            "LastViolationLevelChanged",
+                            "LastPodcastListenSlotChanged",
+                            "DeactivatedAt",
+                            "CreatedAt",
+                            "UpdatedAt"
+                        }
+                    }
+                }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+            return result.Results["account"] as JObject;
+        }
 
         public async Task<AccountStatusCache> GetAccountStatusCacheById(int accountId)
         {
@@ -93,7 +85,7 @@ namespace UserService.API.Authorizations.Handlers
         {
             string userId = context.User.FindFirst("id")?.Value;
             string roleId = context.User.FindFirst("role_id")?.Value;
-            // Console.WriteLine($"000000000000000000000000000000000000000000000000000000000UserId: {userId}, RoleId: {roleId}");
+            Console.WriteLine($"000000000000000000000000000000000000000000000000000000000UserId: {userId}, RoleId: {roleId}");
             if (roleId == null || !int.TryParse(roleId, out _))
             {
                 context.Fail();
@@ -107,22 +99,36 @@ namespace UserService.API.Authorizations.Handlers
 
             if (account == null)
             {
-                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account not found: {userId}");
+                Console.WriteLine($"Fetching account status from database for account id: {userId}");
+                account = (await GetAccountById(int.Parse(userId)))?.ToObject<AccountStatusCache>();
+                if (account == null)
+                {
+                    Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account not found: {userId}");
+                    context.Fail();
+                    return;
+                }
+                else
+                {
+                    Console.WriteLine($"Caching account status to redis for account id: {userId}");
+                    await _redisSharedCacheService.KeySetAsync<AccountStatusCache>($"account:status:{account.Id}", account, null);
+                }
+            }
+
+            Console.WriteLine($"Account fetched: Id={account.Id}, RoleId={account.RoleId}, IsVerified={account.IsVerified}, DeactivatedAt={account.DeactivatedAt}");
+
+            if (account.RoleId != int.Parse(roleId))
+            {
+                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account role mismatch: {account.RoleId} != {roleId}");
                 context.Fail();
             }
-            else if (account["RoleId"].Value<int>() != int.Parse(roleId))
+            else if (account.IsVerified == false)
             {
-                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account role mismatch: {account["RoleId"]} != {roleId}");
+                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account is not verified: {account.IsVerified}");
                 context.Fail();
             }
-            else if (account["IsVerified"].Value<bool>() == false)
+            else if (account.DeactivatedAt != null)
             {
-                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account is not verified: {account["IsVerified"]}");
-                context.Fail();
-            }
-            else if (account["DeactivatedAt"] != null)
-            {
-                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account is deactivated: {account["DeactivatedAt"]}");
+                Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account is deactivated: {account.DeactivatedAt}");
                 context.Fail();
             }
             else

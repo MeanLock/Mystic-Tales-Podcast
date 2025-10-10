@@ -26,6 +26,8 @@ using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using Confluent.Kafka;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserServiceEmail;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
+using UserService.Infrastructure.Services.Redis;
+using UserService.BusinessLogic.DTOs.Cache;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -67,6 +69,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
 
+        // REDIS SERVICE
+        private readonly RedisSharedCacheService _redisSharedCacheService;
+
         public AccountService(
             ILogger<AccountService> logger,
             AppDbContext appDbContext,
@@ -87,7 +92,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
-            KafkaProducerService kafkaProducerService
+            KafkaProducerService kafkaProducerService,
+
+            RedisSharedCacheService redisSharedCacheService
             )
         {
             _logger = logger;
@@ -112,6 +119,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _httpServiceQueryClient = httpServiceQueryClient;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
+            
+            _redisSharedCacheService = redisSharedCacheService;
         }
 
         public async Task<Account> GetExistAccountById(int accountId)
@@ -522,16 +531,32 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
-                    var account = await GetExistAccountById(changeAccountStatusParameter.AccountId);
+                    var account = await GetExistAccountById(changeAccountStatusParameter.Id);
                     
-                    var messageResponseData = JObject.FromObject(new
+                    var result= await _redisSharedCacheService.KeySetAsync<AccountStatusCache>($"account:status:{account.Id}", new AccountStatusCache
                     {
-                        AccountId = account.Id,
-                        Message = "Change account status successfully"
-                    });
+                        Id = account.Id,
+                        IsVerified = account.IsVerified,
+                        DeactivatedAt = account.DeactivatedAt,
+                        RoleId = account.RoleId,
+                        LastViolationLevelChanged = account.LastViolationLevelChanged,
+                        LastViolationPointChanged = account.LastViolationPointChanged,
+                        ViolationLevel = account.ViolationLevel,
+                        ViolationPoint = account.ViolationPoint
+                    }, 
+                    // set cache expiry to 1 hour (khi hết hạn key-value này sẽ bị xoá khỏi redis)
+                    TimeSpan.FromHours(1)
+                    );
+
+                    if(result == false)
+                    {
+                        throw new Exception("Change account status failed, cannot update account status cache in redis");
+                    }
+
+
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: messageNextRequestData,
+                        requestData: command.RequestData,
                         responseData: command.RequestData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,

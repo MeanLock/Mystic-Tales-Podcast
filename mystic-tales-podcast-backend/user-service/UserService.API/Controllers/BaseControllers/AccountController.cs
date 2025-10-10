@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -14,6 +15,7 @@ using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
 using UserService.Common.AppConfigurations.FilePath.interfaces;
 using UserService.DataAccess.Data;
 using UserService.Infrastructure.Services.Kafka;
+using UserService.Infrastructure.Services.Redis;
 
 namespace UserService.API.Controllers.BaseControllers
 {
@@ -28,8 +30,10 @@ namespace UserService.API.Controllers.BaseControllers
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
         private readonly AccountService _accountService;
+        private readonly RedisInstanceCacheService _redisInstanceCacheService;
+        private readonly RedisSharedCacheService _redisSharedCacheService;
 
-        public AccountController(FileIOHelper fileIOHelper, KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, AccountService accountService)
+        public AccountController(FileIOHelper fileIOHelper, KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, AccountService accountService, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService)
         {
             _fileIOHelper = fileIOHelper;
             _kafkaProducerService = kafkaProducerService;
@@ -37,6 +41,8 @@ namespace UserService.API.Controllers.BaseControllers
             _fileValidationConfig = fileValidationConfig;
             _accountService = accountService;
             _filePathConfig = filePathConfig;
+            _redisInstanceCacheService = redisInstanceCacheService;
+            _redisSharedCacheService = redisSharedCacheService;
         }
 
         // [HttpGet("roles")]
@@ -46,25 +52,46 @@ namespace UserService.API.Controllers.BaseControllers
         //     return Ok(roles);
         // }
 
-        [HttpGet("test-account-status")]
-        public async Task<IActionResult> TestAccountStatus()
+        [HttpGet("get-all-redis-instance-key-values")]
+        public async Task<IActionResult> GetAllRedisInstanceKeyValues()
         {
-            var requestData = JObject.FromObject(new AccountStatusCache
-            {
-                Id = 123,
-                IsVerified = true,
-                ViolationPoint = 0,
-                ViolationLevel = 0,
-                DeactivatedAt = null
+            var keys = await _redisInstanceCacheService.GetAllKeyValuesAsync();
+            return Ok(keys);
+        }
 
+        [HttpGet("get-all-redis-shared-key-values")]
+        public async Task<IActionResult> GetAllRedisSharedKeyValues()
+        {
+            var keys = await _redisSharedCacheService.GetAllKeyValuesAsync();
+            return Ok(keys);
+        }
+
+        [HttpPost("test-account-status")]
+        public async Task<IActionResult> TestAccountStatus([FromBody] JToken changeAccountStatusParameter)
+        {
+            var requestData = JObject.FromObject(new 
+            {
+                Id = changeAccountStatusParameter["Id"]
             });
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "forgot-password-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "account-status-change-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             }
             );
+        }
+
+        [HttpGet("test-get-account-status")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
+        public async Task<IActionResult> TestGetAccountStatus()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            return Ok(new
+            {
+                Account = account,
+                Message = $"Hello, your account ID is {account.Id}, RoleId is {account.RoleId}, ViolationLevel is {account.ViolationLevel}, ViolationPoint is {account.ViolationPoint}, IsVerified is {account.IsVerified}, DeactivatedAt is {account.DeactivatedAt}, LastViolationLevelChanged is {account.LastViolationLevelChanged}, LastViolationPointChanged is {account.LastViolationPointChanged}"
+            });
         }
 
         // /api/user-service/get-file-url/{fileKey}
