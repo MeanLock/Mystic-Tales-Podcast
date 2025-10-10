@@ -16,7 +16,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Security.Claims;
-using UserService.BusinessLogic.Services.DbServices;
+using BookingManagementService.BusinessLogic.Services.DbServices;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
 {

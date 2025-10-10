@@ -8,19 +8,10 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
-using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Services.DbServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Infrastructure.Services.Kafka;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UserService.BusinessLogic.Services.DbServices;
 
 namespace BookingManagementService.BusinessLogic.MessageHandlers
 {

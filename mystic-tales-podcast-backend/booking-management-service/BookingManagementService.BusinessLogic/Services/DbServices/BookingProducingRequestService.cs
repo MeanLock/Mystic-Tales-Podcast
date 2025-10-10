@@ -1,5 +1,4 @@
-﻿using Amazon.Runtime.Internal;
-using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
+﻿using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
@@ -15,11 +14,8 @@ using BookingManagementService.DataAccess.Entities.sqlserver;
 using BookingManagementService.DataAccess.Repositories.interfaces;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-using UserService.BusinessLogic.Services.DbServices;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace BookingManagementService.BusinessLogic.Services.DbServices
 {

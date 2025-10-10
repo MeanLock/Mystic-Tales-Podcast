@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using UserService.BusinessLogic.Services.DbServices;
 using BookingManagementService.BusinessLogic.Services.DbServices;
 
 namespace BookingManagementService.BusinessLogic.Registrations
