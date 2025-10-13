@@ -69,7 +69,7 @@ namespace UserService.API.Controllers.BaseControllers
         [HttpPost("test-account-status")]
         public async Task<IActionResult> TestAccountStatus([FromBody] JToken changeAccountStatusParameter)
         {
-            var requestData = JObject.FromObject(new 
+            var requestData = JObject.FromObject(new
             {
                 Id = changeAccountStatusParameter["Id"]
             });
@@ -144,10 +144,11 @@ namespace UserService.API.Controllers.BaseControllers
 
         // /api/user-service/api/accounts/podcast-buddies
         [HttpGet("podcast-buddies")]
-        [Authorize]
+        [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
         public async Task<IActionResult> GetPodcastBuddies()
         {
-            var podcastBuddies = await _accountService.GetPodcastBuddyAccounts();
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var podcastBuddies = await _accountService.GetPodcastBuddyAccounts(account.RoleId);
 
             return Ok(new { PodcastBuddyList = podcastBuddies });
         }
@@ -198,6 +199,164 @@ namespace UserService.API.Controllers.BaseControllers
             }
             );
         }
+
+        // /api/user-service/api/accounts/podcaster/{AccountId}
+        [HttpGet("podcaster/{AccountId}")]
+        [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
+        public async Task<IActionResult> GetPodcasterProfileByAccountId(int AccountId)
+        {
+            var podcasterProfile = await _accountService.GetPodcasterProfileByAccountId(AccountId);
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (account.RoleId == 1 && podcasterProfile.Id != account.Id)
+            {
+                return StatusCode(403, "Customer accounts can only view their own podcaster profiles.");
+            }
+            return Ok(podcasterProfile);
+        }
+
+        // /api/user-service/api/accounts/podcast-buddies/{AccountId}
+        [HttpGet("podcast-buddies/{AccountId}")]
+        [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastBuddyProfileByAccountId(int AccountId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var podcastBuddyProfile = await _accountService.GetPodcastBuddyProfileByAccountId(AccountId, account.RoleId);
+
+            return Ok(podcastBuddyProfile);
+        }
+
+        // /api/user-service/api/accounts/podcaster/{AccountId}
+        [HttpPut("podcaster/{AccountId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> UpdatePodcasterProfileByAccountId(PodcasterProfileUpdateRequestDTO podcasterProfileUpdateRequestDTO, int AccountId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (account.RoleId != 1)
+            {
+                return StatusCode(403, "Only customer accounts can update their podcaster profiles.");
+            }
+            else if (account.Id != AccountId)
+            {
+                return StatusCode(403, "You can only update your own podcaster profile.");
+            }
+
+            var podcasterProfileRequestInfo = JsonConvert.DeserializeObject<PodcasterProfileRequestInfoDTO>(podcasterProfileUpdateRequestDTO.PodcasterProfileRequestInfo);
+
+            string buddyAudioFileKey = null;
+            if (podcasterProfileUpdateRequestDTO.BuddyAudioFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidFile = _fileValidationConfig.IsValidFile("PodcasterProfile.buddyAudioFileKey", podcasterProfileUpdateRequestDTO.BuddyAudioFile.FileName, podcasterProfileUpdateRequestDTO.BuddyAudioFile.Length, podcasterProfileUpdateRequestDTO.BuddyAudioFile.ContentType);
+                if (!isValidFile)
+                {
+                    return BadRequest("Invalid upload file.");
+                }
+
+                string newBuddyAudioFileName = $"{Guid.NewGuid()}_{podcasterProfileUpdateRequestDTO.BuddyAudioFile.FileName}";
+                using (var stream = podcasterProfileUpdateRequestDTO.BuddyAudioFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                        newBuddyAudioFileName
+                                    );
+                }
+                buddyAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newBuddyAudioFileName);
+
+            }
+            JObject requestData = JObject.FromObject(podcasterProfileRequestInfo);
+            requestData["BuddyAudioFileKey"] = buddyAudioFileKey;
+            requestData["AccountId"] = AccountId;
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "podcaster-profile-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+
+        // /api/user-service/api/accounts/{AccountId}
+        [HttpGet("{AccountId}")]
+        [Authorize]
+        public async Task<IActionResult> GetAccountById(int AccountId)
+        {
+            var account = await _accountService.GetAccountById(AccountId);
+            var requestingAccount = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (requestingAccount.RoleId == 1 && account.Id != requestingAccount.Id)
+            {
+                return StatusCode(403, "Customer accounts can only view their own account details.");
+            }
+            return Ok(account);
+        }
+
+        // /api/user-service/api/accounts/{AccountId}
+        [HttpPut("{AccountId}")]
+        [Authorize(Policy = "AdminOrCustomer.BasicAccess")]
+        public async Task<IActionResult> UpdateAccountById(AccountUpdateRequestDTO accountUpdateRequestDTO, int AccountId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (account.RoleId == 1 && account.Id != AccountId)
+            {
+                return StatusCode(403, "Customer accounts can only update their own account details.");
+            }
+            var accountUpdateInfo = JsonConvert.DeserializeObject<AccountUpdateInfoDTO>(accountUpdateRequestDTO.AccountUpdateInfo);
+
+            string mainImageFileKey = null;
+            if (accountUpdateRequestDTO.MainImageFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidImage = _fileValidationConfig.IsValidFile("Account.mainImageFileKey", accountUpdateRequestDTO.MainImageFile.FileName, accountUpdateRequestDTO.MainImageFile.Length, accountUpdateRequestDTO.MainImageFile.ContentType);
+                if (!isValidImage)
+                {
+                    return BadRequest("Invalid image file.");
+                }
+
+                string newMainImageFileName = $"{Guid.NewGuid()}_{accountUpdateRequestDTO.MainImageFile.FileName}";
+                using (var stream = accountUpdateRequestDTO.MainImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                        newMainImageFileName
+                                    );
+                }
+                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+
+            }
+            JObject requestData = JObject.FromObject(accountUpdateInfo);
+            requestData["MainImageFileKey"] = mainImageFileKey;
+            requestData["AccountId"] = AccountId;
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/user-service/api/accounts/{AccountId}/deactivate/{IsDeactivate}
+        [HttpPut("{AccountId}/deactivate/{IsDeactivate}")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> DeactivateAccountById(int AccountId, bool IsDeactivate)
+        { 
+            var requestData = JObject.FromObject(new
+            {
+                AccountId = AccountId
+            });
+            var deactivationFlowName = IsDeactivate ? "user-deactivation-flow" : "user-activation-flow";
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, deactivationFlowName);
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
 
         //         // /api/user-service/api/auth/register/customer
         // [HttpPost("register/customer")]

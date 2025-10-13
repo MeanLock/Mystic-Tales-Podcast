@@ -3,14 +3,18 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using UserService.BusinessLogic.Attributes;
 using UserService.BusinessLogic.DTOs.Auth;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeactivateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.NewResetPassword;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendResetPasswordLink;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserServiceEmail;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcasterProfile;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUser;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
 using UserService.BusinessLogic.DTOs.ViewModels.Mail;
 using UserService.BusinessLogic.Enums.Kafka;
@@ -242,6 +246,70 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-podcaster-profile.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("update-podcaster-profile", SAGA_TOPIC)]
+        public async Task HandleUpdatePodcasterProfileAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var updatePodcasterProfileParameterDTO = command.RequestData.ToObject<UpdatePodcasterProfileParameterDTO>();
+                    await _accountService.UpdatePodcasterProfile(updatePodcasterProfileParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "update-podcaster-profile.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("update-user", SAGA_TOPIC)]
+        public async Task HandleUpdateUserAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var updateUserParameterDTO = command.RequestData.ToObject<UpdateUserParameterDTO>();
+                    await _accountService.UpdateUser(updateUserParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "update-user.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("deactivate-account", SAGA_TOPIC)]
+        public async Task HandleDeactivateAccountAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deactivateAccountParameterDTO = command.RequestData.ToObject<DeactivateAccountParameterDTO>();
+                    await _accountService.DeactivateAccount(deactivateAccountParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "deactivate-account.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("activate-account", SAGA_TOPIC)]
+        public async Task HandleActivateAccountAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var activateAccountParameterDTO = command.RequestData.ToObject<ActivateAccountParameterDTO>();
+                    await _accountService.ActivateAccount(activateAccountParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "activate-account.failed"    // From YAML onFailure.emit
             );
         }
 

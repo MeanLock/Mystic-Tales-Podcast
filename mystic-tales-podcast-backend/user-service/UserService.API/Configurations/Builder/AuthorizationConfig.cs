@@ -71,6 +71,16 @@ namespace UserService.API.Configurations.Builder
                     policy.RequireRole("Admin", "Staff");
                     policy.Requirements.Add(new AccountBasicAccessRequirement());
                 });
+                options.AddPolicy("AdminOrCustomer.BasicAccess", policy =>
+                {
+                    policy.RequireRole("Admin", "Customer");
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
+                });
+                options.AddPolicy("AdminOrStaffOrCustomer.BasicAccess", policy =>
+                {
+                    policy.RequireRole("Admin", "Staff", "Customer");
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
+                });
                 options.AddPolicy("Customer.NoViolationAccess", policy =>
                 {
                     policy.RequireRole("Customer");

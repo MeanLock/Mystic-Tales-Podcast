@@ -29,6 +29,10 @@ using UserService.Infrastructure.Services.Redis;
 using UserService.BusinessLogic.DTOs.Cache;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
 using UserService.DataAccess.Entities.SqlServer;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcasterProfile;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUser;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeactivateAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateAccount;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -88,6 +92,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             IGenericRepository<PodcasterProfile> podcasterProfileGenericRepository,
 
             FileIOHelper fileIOHelper,
+            DateHelper dateHelper,
+
             IFilePathConfig filePathConfig,
             IGoogleMailConfig googleMailConfig,
             IAppConfig appConfig,
@@ -112,6 +118,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
             _bcryptHelper = bcryptHelper;
+            _dateHelper = dateHelper;
 
             _fluentEmailService = fluentEmailService;
 
@@ -439,10 +446,6 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             try
             {
                 var customers = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1, null, a => a.Include(ac => ac.Role));
-                if (customers == null || !customers.Any())
-                {
-                    throw new Exception("No customer accounts found");
-                }
 
                 var result = customers.Select(item =>
                 {
@@ -495,10 +498,6 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 var staffs = await _unitOfWork.AccountRepository.FindByRoleIdsAsync(roles,
                     predicate: IsDeactivated.HasValue ? (a => (IsDeactivated == true ? a.DeactivatedAt != null : a.DeactivatedAt == null)) : null
                 , a => a.Include(ac => ac.Role));
-                if (staffs == null || !staffs.Any())
-                {
-                    throw new Exception("No staff accounts found");
-                }
 
                 var result = staffs.Select(item =>
                 {
@@ -545,16 +544,6 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         {
             try
             {
-                // var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
-                // predicate: a => a.PodcasterProfile != null,
-                // includeProperties: a => { a.Role; a.PodcasterProfile; });
-                // var podcastersEnumerable = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
-                //     predicate: a => a.PodcasterProfile != null,
-                //         a => a.Role,              // Expression riêng biệt
-                //         a => a.PodcasterProfile,   // Expression riêng biệt
-                //         a => a.PodcastBuddyReviewPodcastBuddies,
-                //         a => a.PodcastBuddyReviewPodcastBuddies.Select(r => r.Account)
-                //     );
 
                 var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
                     predicate: a => a.PodcasterProfile != null,
@@ -563,30 +552,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                                 .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
                                 .ThenInclude(r => r.Account)
                     );
-                // var podcasters = podcastersEnumerable.ToList();
-                // foreach (var podcaster in podcasters)
-                // {
-                //     Console.WriteLine($"Podcaster ID: {podcaster.PodcastBuddyReviewPodcastBuddies?.Any()}");
-                //     if (podcaster.PodcastBuddyReviewPodcastBuddies?.Any() == true)
-                //     {
-                //         await _appDbContext.Entry(podcaster)
-                //             .Collection(p => p.PodcastBuddyReviewPodcastBuddies)
-                //             .Query()
-                //             .Include(r => r.Account) // Bao gồm thông tin tài khoản của người đánh giá
-                //             .Where(r => r.DeletedAt == null) // Lọc các đánh giá chưa bị xóa
-                //             .LoadAsync();
-                //         foreach (var review in podcaster.PodcastBuddyReviewPodcastBuddies)
-                //         {
-                //             Console.WriteLine($"Review ID: {(review.Account != null ? review.Account.Id.ToString() : null)}, Rating: {review.Rating}, Content: {review.Content}");
-                //         }
-                //     }
-                // }
 
-                // đếm số review
-                if (podcasters == null || !podcasters.Any())
-                {
-                    throw new Exception("No podcaster accounts found");
-                }
 
                 var result = podcasters.Select(item =>
                 {
@@ -662,56 +628,34 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             }
         }
 
-        public async Task<List<PodcasterListItemResponseDTO>> GetPodcastBuddyAccounts()
+        public async Task<List<PodcastBuddyListItemResponseDTO>> GetPodcastBuddyAccounts(int requestRoleId)
         {
             try
             {
 
                 var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
-                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.IsVerified == true,
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.IsVerified == true && a.IsVerified == true,
                         a => a.Include(ac => ac.Role)
                                 .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
                                 .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
                                 .ThenInclude(r => r.Account)
                     );
 
-                // đếm số review
-                if (podcasters == null || !podcasters.Any())
+                // nếu requestRoleId là 1 thì loại bỏ các account có DeactivatedAt khác null và violation level != 0
+                if (requestRoleId == 1)
                 {
-                    throw new Exception("No podcaster accounts found");
+                    podcasters = podcasters.Where(p => p.DeactivatedAt == null && (p.ViolationLevel == 0 || p.ViolationLevel == null)).ToList();
                 }
+
+
 
                 var result = podcasters.Select(item =>
                 {
                     Console.WriteLine("Số podcaster tìm thấy: " + (item.PodcastBuddyReviewPodcastBuddies.Count > 0 ? item.PodcastBuddyReviewPodcastBuddies.Count : 0));
 
-                    return new PodcasterListItemResponseDTO
+                    return new PodcastBuddyListItemResponseDTO
                     {
-                        Id = item.Id,
-                        Email = item.Email,
-                        Role = new RoleDTO
-                        {
-                            Id = item.Role.Id,
-                            Name = item.Role.Name
-                        },
-                        FullName = item.FullName,
-                        Dob = item.Dob?.ToString("yyyy-MM-dd"),
-                        Gender = item.Gender,
-                        PodcastListenSlot = item.PodcastListenSlot,
-                        ViolationPoint = item.ViolationPoint,
-                        ViolationLevel = item.ViolationLevel,
-                        LastPodcastListenSlotChanged = item.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                        LastViolationPointChanged = item.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                        LastViolationLevelChanged = item.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                        Address = item.Address,
-                        Phone = item.Phone,
-                        Balance = item.Balance,
-                        IsVerified = item.IsVerified,
-                        MainImageFileKey = item.MainImageFileKey,
-                        DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                        CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                        UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                        PodcasterProfile = new PodcasterProfileDTO
+                        PodcastBuddyProfile = new PodcastBuddyProfileDTO
                         {
                             AccountId = item.PodcasterProfile.AccountId,
                             Name = item.PodcasterProfile.Name,
@@ -720,11 +664,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             RatingCount = item.PodcasterProfile.RatingCount,
                             CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
-                            OwnedBookingStorageSize = item.PodcasterProfile.OwnedBookingStorageSize,
-                            UsedBookingStorageSize = item.PodcasterProfile.UsedBookingStorageSize,
                             IsVerified = item.PodcasterProfile.IsVerified,
-                            CreatedAt = item.PodcasterProfile.CreatedAt,
-                            UpdatedAt = item.PodcasterProfile.UpdatedAt,
                         },
                         ReviewList = item.PodcastBuddyReviewPodcastBuddies?
                         .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
@@ -751,7 +691,166 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             catch (Exception ex)
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get podcast buddy account list failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<PodcasterListItemResponseDTO> GetPodcasterProfileByAccountId(int accountId)
+        {
+            try
+            {
+                var podcaster = (await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.AccountId == accountId,
+                        a => a.Include(ac => ac.Role)
+                                .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+                                .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
+                                .ThenInclude(r => r.Account)
+                    )).FirstOrDefault();
+
+                // đếm số review
+                if (podcaster == null)
+                {
+                    throw new Exception("Podcaster account with id " + accountId + " not found");
+                }
+
+                Console.WriteLine("Số podcaster tìm thấy: " + (podcaster.PodcastBuddyReviewPodcastBuddies.Count > 0 ? podcaster.PodcastBuddyReviewPodcastBuddies.Count : 0));
+
+                return new PodcasterListItemResponseDTO
+                {
+                    Id = podcaster.Id,
+                    Email = podcaster.Email,
+                    Role = new RoleDTO
+                    {
+                        Id = podcaster.Role.Id,
+                        Name = podcaster.Role.Name
+                    },
+                    FullName = podcaster.FullName,
+                    Dob = podcaster.Dob?.ToString("yyyy-MM-dd"),
+                    Gender = podcaster.Gender,
+                    PodcastListenSlot = podcaster.PodcastListenSlot,
+                    ViolationPoint = podcaster.ViolationPoint,
+                    ViolationLevel = podcaster.ViolationLevel,
+                    LastPodcastListenSlotChanged = podcaster.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    LastViolationPointChanged = podcaster.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    LastViolationLevelChanged = podcaster.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    Address = podcaster.Address,
+                    Phone = podcaster.Phone,
+                    Balance = podcaster.Balance,
+                    IsVerified = podcaster.IsVerified,
+                    MainImageFileKey = podcaster.MainImageFileKey,
+                    DeactivatedAt = podcaster.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    CreatedAt = podcaster.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    UpdatedAt = podcaster.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    PodcasterProfile = new PodcasterProfileDTO
+                    {
+                        AccountId = podcaster.PodcasterProfile.AccountId,
+                        Name = podcaster.PodcasterProfile.Name,
+                        Description = podcaster.PodcasterProfile.Description,
+                        AverageRating = podcaster.PodcasterProfile.AverageRating,
+                        RatingCount = podcaster.PodcasterProfile.RatingCount,
+                        CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
+                        BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
+                        OwnedBookingStorageSize = podcaster.PodcasterProfile.OwnedBookingStorageSize,
+                        UsedBookingStorageSize = podcaster.PodcasterProfile.UsedBookingStorageSize,
+                        IsVerified = podcaster.PodcasterProfile.IsVerified,
+                        CreatedAt = podcaster.PodcasterProfile.CreatedAt,
+                        UpdatedAt = podcaster.PodcasterProfile.UpdatedAt,
+                    },
+                    ReviewList = podcaster.PodcastBuddyReviewPodcastBuddies?
+                    .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                    {
+                        Id = r.Id,
+                        Account = new AccountSnippetDTO
+                        {
+                            Id = r.Account.Id,
+                            FullName = r.Account.FullName,
+                            Email = r.Account.Email,
+                            MainImageFileKey = r.Account.MainImageFileKey
+                        },
+                        Rating = r.Rating,
+                        Content = r.Content,
+                        DeletedAt = r.DeletedAt,
+                        PodcastBuddyId = r.PodcastBuddyId,
+                        Title = r.Title,
+                        UpdatedAt = r.UpdatedAt
+                    }).ToList()
+                };
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
                 throw new HttpRequestException("Get podcaster account list failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<PodcastBuddyListItemResponseDTO> GetPodcastBuddyProfileByAccountId(int accountId, int requestRoleId)
+        {
+            try
+            {
+                var podcaster = (await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.AccountId == accountId && a.PodcasterProfile.IsVerified == true && a.IsVerified == true,
+                        a => a.Include(ac => ac.Role)
+                                .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+                                .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
+                                .ThenInclude(r => r.Account)
+                    )).FirstOrDefault();
+
+                // đếm số review
+                if (podcaster == null)
+                {
+                    throw new Exception("Podcaster account with id " + accountId + " not found");
+                }
+
+                // nếu requestRoleId là 1 thì loại bỏ các account có DeactivatedAt khác null và violation level != 0
+                if (requestRoleId == 1 && (podcaster.DeactivatedAt != null || podcaster.ViolationLevel != 0))
+                {
+                    throw new Exception("Podcaster account with id " + accountId + " not found");
+                }
+
+
+
+
+                Console.WriteLine("Số podcaster tìm thấy: " + (podcaster.PodcastBuddyReviewPodcastBuddies.Count > 0 ? podcaster.PodcastBuddyReviewPodcastBuddies.Count : 0));
+
+                return new PodcastBuddyListItemResponseDTO
+                {
+                    PodcastBuddyProfile = new PodcastBuddyProfileDTO
+                    {
+                        AccountId = podcaster.PodcasterProfile.AccountId,
+                        Name = podcaster.PodcasterProfile.Name,
+                        Description = podcaster.PodcasterProfile.Description,
+                        AverageRating = podcaster.PodcasterProfile.AverageRating,
+                        RatingCount = podcaster.PodcasterProfile.RatingCount,
+                        CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
+                        BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
+                        IsVerified = podcaster.PodcasterProfile.IsVerified,
+                    },
+                    ReviewList = podcaster.PodcastBuddyReviewPodcastBuddies?
+                    .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                    {
+                        Id = r.Id,
+                        Account = new AccountSnippetDTO
+                        {
+                            Id = r.Account.Id,
+                            FullName = r.Account.FullName,
+                            Email = r.Account.Email,
+                            MainImageFileKey = r.Account.MainImageFileKey
+                        },
+                        Rating = r.Rating,
+                        Content = r.Content,
+                        DeletedAt = r.DeletedAt,
+                        PodcastBuddyId = r.PodcastBuddyId,
+                        Title = r.Title,
+                        UpdatedAt = r.UpdatedAt
+                    }).ToList()
+                };
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get podcast buddy account failed, error: " + ex.Message);
             }
         }
 
@@ -904,365 +1003,305 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }
             }
-            // public async Task RegisterStaff(StaffRegisterDTO staffRegisterInfo)
-            // {
-            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            //     {
-            //         try
-            //         {
-            //             var registerInfo = staffRegisterInfo.RegisterInfo;
-            //             var staff = await _unitOfWork.AccountRepository.FindByEmailAsync(registerInfo.Email);
-            //             if (staff != null)
-            //             {
-            //                 throw new Exception("email đã tồn tại: " + registerInfo.Email);
-            //             }
-            //             var role = await this.GetExistRoleById(registerInfo.RoleId);
+        }
 
-            //             staff = new Account
-            //             {
-            //                 Email = registerInfo.Email,
-            //                 Password = _bcryptHelpers.HashPassword(registerInfo.Password),
-            //                 FullName = registerInfo.FullName,
-            //                 RoleId = registerInfo.RoleId,
-            //                 Dob = DateOnly.FromDateTime(registerInfo.Dob),
-            //                 Gender = registerInfo.Gender,
-            //                 Address = registerInfo.Address,
-            //                 Phone = registerInfo.Phone,
-            //                 IsFilterSurveyRequired = false,
-            //                 IsVerified = true,
-            //             };
-            //             await _accountGenericRepository.CreateAsync(staff);
+        public async Task<AccountListItemResponseDTO> GetAccountById(int accountId)
+        {
+            try
+            {
+                var account = await _accountGenericRepository.FindByIdAsync(accountId, includeProperties: a => a.Role);
 
-            //             var folderPath = _filePathConfig.ACCOUNt_IMAGE_PATH + "\\" + staff.Id;
-            //             if (registerInfo.ImageBase64 != null && registerInfo.ImageBase64 != "")
-            //             {
-            //                 string fileName = "main";
-            //                 string base64Data = registerInfo.ImageBase64;
-
-            //                 await _imageHelpers.SaveBase64File(base64Data, folderPath, fileName);
-            //             }
-            //             else
-            //             {
-            //                 await _imageHelpers.CopyFile(_filePathConfig.ACCOUNt_IMAGE_PATH, "unknown", folderPath, "main");
-            //             }
-
-            //             await transaction.CommitAsync();
-
-            //         }
-            //         catch (Exception ex)
-            //         {
-            //             await transaction.RollbackAsync();
-            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-            //             throw new HttpRequestException("Đăng kí tài khoản thất bại, lỗi: " + ex.Message);
-            //         }
-            //     }
-
-            // }
-
-
-            // public async Task<AccountDetailDTO> GetAccountById(int accountId)
-            // {
-            //     try
-            //     {
-            //         var account = await this.GetExistAccountById(accountId);
-            //         return new AccountDetailDTO
-            //         {
-            //             Id = account.Id,
-            //             Email = account.Email,
-            //             Role = new RoleDTO
-            //             {
-            //                 Id = account.Role.Id,
-            //                 Name = account.Role.Name
-            //             },
-            //             FullName = account.FullName,
-            //             Dob = account.Dob?.ToString("yyyy-MM-dd"),
-            //             Gender = account.Gender,
-            //             Address = account.Address,
-            //             Phone = account.Phone,
-            //             Balance = account.Balance,
-            //             IsVerified = account.IsVerified,
-            //             Xp = account.Xp,
-            //             Level = account.Level,
-            //             ProgressionSurveyCount = account.ProgressionSurveyCount,
-            //             IsFilterSurveyRequired = account.IsFilterSurveyRequired,
-            //             LastFilterSurveyTakenAt = account.LastFilterSurveyTakenAt?.ToString(),
-            //             DeactivatedAt = account.DeactivatedAt?.ToString(),
-            //             CreatedAt = account.CreatedAt.ToString(),
-            //             UpdatedAt = account.UpdatedAt.ToString(),
-            //             MainImageUrl = await _imageHelpers.GenerateImageUrl(_filePathConfig.ACCOUNt_IMAGE_PATH, account.Id.ToString(), "main"),
-            //             Profile = new AccountProfileDTO
-            //             {
-            //                 CountryRegion = account.AccountProfile?.CountryRegion,
-            //                 MaritalStatus = account.AccountProfile?.MaritalStatus,
-            //                 AverageIncome = account.AccountProfile?.AverageIncome,
-            //                 EducationLevel = account.AccountProfile?.EducationLevel,
-            //                 JobField = account.AccountProfile?.JobField,
-            //                 ProvinceCode = account.AccountProfile?.ProvinceCode,
-            //                 DistrictCode = account.AccountProfile?.DistrictCode,
-            //                 WardCode = account.AccountProfile?.WardCode
-            //             }
-            //         };
-            //     }
-            //     catch (Exception ex)
-            //     {
-            //         Console.WriteLine("\n" + ex.StackTrace + "\n");
-            //         throw new HttpRequestException("Lấy thông tin tài khoản thất bại, lỗi: " + ex.Message);
-            //     }
-
-
-            // }
-
-            // public async Task<AccountDetailDTO> GetMe(int accountId)
-            // {
-            //     try
-            //     {
-            //         var account = await this.GetExistAccountById(accountId);
-            //         return new AccountDetailDTO
-            //         {
-            //             Id = account.Id,
-            //             Email = account.Email,
-            //             Role = new RoleDTO
-            //             {
-            //                 Id = account.Role.Id,
-            //                 Name = account.Role.Name
-            //             },
-            //             FullName = account.FullName,
-            //             Dob = account.Dob?.ToString("yyyy-MM-dd"),
-            //             Gender = account.Gender,
-            //             Address = account.Address,
-            //             Phone = account.Phone,
-            //             Balance = account.Balance,
-            //             IsVerified = account.IsVerified,
-            //             Xp = account.Xp,
-            //             Level = account.Level,
-            //             ProgressionSurveyCount = account.ProgressionSurveyCount,
-            //             IsFilterSurveyRequired = account.IsFilterSurveyRequired,
-            //             LastFilterSurveyTakenAt = account.LastFilterSurveyTakenAt?.ToString(),
-            //             DeactivatedAt = account.DeactivatedAt?.ToString(),
-            //             CreatedAt = account.CreatedAt.ToString(),
-            //             UpdatedAt = account.UpdatedAt.ToString(),
-            //             MainImageUrl = await _imageHelpers.GenerateImageUrl(_filePathConfig.ACCOUNt_IMAGE_PATH, account.Id.ToString(), "main"),
-            //             Profile = new AccountProfileDTO
-            //             {
-            //                 CountryRegion = account.AccountProfile?.CountryRegion,
-            //                 MaritalStatus = account.AccountProfile?.MaritalStatus,
-            //                 AverageIncome = account.AccountProfile?.AverageIncome,
-            //                 EducationLevel = account.AccountProfile?.EducationLevel,
-            //                 JobField = account.AccountProfile?.JobField,
-            //                 ProvinceCode = account.AccountProfile?.ProvinceCode,
-            //                 DistrictCode = account.AccountProfile?.DistrictCode,
-            //                 WardCode = account.AccountProfile?.WardCode
-            //             },
-            //             IsPlatformFeedbackGiven = account.PlatformFeedback != null
-            //         };
-            //     }
-            //     catch (Exception ex)
-            //     {
-            //         Console.WriteLine("\n" + ex.StackTrace + "\n");
-            //         throw new HttpRequestException("Lấy thông tin tài khoản thất bại, lỗi: " + ex.Message);
-            //     }
-
-
-            // }
-
-            // public async Task<Account> UpdateAccount(int accountId, AccountUpdateDTO accountUpdateDto)
-            // {
-            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            //     {
-            //         try
-            //         {
-            //             var account = await this.GetExistAccountById(accountId);
-
-            //             // Cập nhật thông tin tài khoản
-            //             account.FullName = accountUpdateDto.FullName;
-            //             account.Dob = accountUpdateDto.Dob;
-            //             account.Gender = accountUpdateDto.Gender;
-            //             account.Address = accountUpdateDto.Address;
-            //             account.Phone = accountUpdateDto.Phone;
-
-            //             await _accountGenericRepository.UpdateAsync(account.Id, account);
-
-            //             // Cập nhật ảnh đại diện
-            //             var folderPath = _filePathConfig.ACCOUNt_IMAGE_PATH + "\\" + account.Id;
-            //             if (accountUpdateDto.ImageBase64 != null && accountUpdateDto.ImageBase64 != "")
-            //             {
-            //                 string fileName = "main";
-            //                 string base64Data = accountUpdateDto.ImageBase64;
-
-            //                 await _imageHelpers.SaveBase64File(base64Data, folderPath, fileName);
-            //             }
-            //             await transaction.CommitAsync();
-            //             return account;
-
-            //         }
-            //         catch (Exception ex)
-            //         {
-            //             await transaction.RollbackAsync();
-            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-            //             throw new HttpRequestException("Cập nhật tài khoản thất bại, lỗi: " + ex.Message);
-            //         }
-            //     }
-            // }
-
-            // public async Task UpdateAccountProfile(int accountId, AccountProfileUpdateDTO accountUpdateProfileDto)
-            // {
-            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            //     {
-            //         try
-            //         {
-            //             var account = await this.GetExistAccountById(accountId);
-
-            //             var accountProfile = await this.GetExistAccountProfileByAccountId(accountId);
-            //             // Cập nhật thông tin tài khoản
-            //             accountProfile.CountryRegion = accountUpdateProfileDto.AccountProfile.CountryRegion;
-            //             accountProfile.MaritalStatus = accountUpdateProfileDto.AccountProfile.MaritalStatus;
-            //             accountProfile.AverageIncome = accountUpdateProfileDto.AccountProfile.AverageIncome;
-            //             accountProfile.EducationLevel = accountUpdateProfileDto.AccountProfile.EducationLevel;
-            //             accountProfile.JobField = accountUpdateProfileDto.AccountProfile.JobField;
-            //             accountProfile.ProvinceCode = accountUpdateProfileDto.AccountProfile.ProvinceCode;
-            //             accountProfile.DistrictCode = accountUpdateProfileDto.AccountProfile.DistrictCode;
-            //             accountProfile.WardCode = accountUpdateProfileDto.AccountProfile.WardCode;
-            //             await _unitOfWork.AccountProfileRepository.UpdateAsync(accountProfile);
-            //             // Cập nhật sở thích chủ đề khảo sát
-            //             if (accountUpdateProfileDto.SurveyTopicFavorites != null && accountUpdateProfileDto.SurveyTopicFavorites.Any())
-            //             {
-            //                 // Xoá tất cả sở thích cũ
-            //                 await this._unitOfWork.SurveyTopicFavoriteRepository.DeleteByAccountIdAsync(accountId);
-
-            //                 // Thêm sở thích mới
-            //                 foreach (var favoriteDto in accountUpdateProfileDto.SurveyTopicFavorites)
-            //                 {
-
-            //                     var surveyTopicFavorite = new SurveyTopicFavorite
-            //                     {
-            //                         AccountId = accountId,
-            //                         SurveyTopicId = favoriteDto.SurveyTopicId,
-            //                         FavoriteScore = favoriteDto.FavoriteScore
-            //                     };
-            //                     await _surveyTopicFavoriteGenericRepository.CreateAsync(surveyTopicFavorite);
-            //                 }
-            //             }
-
-
-            //             await transaction.CommitAsync();
-            //         }
-            //         catch (Exception ex)
-            //         {
-            //             await transaction.RollbackAsync();
-            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-            //             throw new HttpRequestException("Cập nhật thông tin tài khoản thất bại, lỗi: " + ex.Message);
-            //         }
-            //     }
-            // }
-
-            // public async Task DeactivateAccount(int accountId, bool isDeactivate)
-            // {
-            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            //     {
-            //         try
-            //         {
-            //             var account = await this.GetExistAccountById(accountId);
-            //             // if (isDeactivate == false)
-            //             // {
-            //             //     account.DeactivatedAt = null;
-            //             // }else
-            //             // {
-            //             //     account.DeactivatedAt = this._dateHelpers.GetNowByAppTimeZone();
-            //             // }
-
-            //             await this._unitOfWork.AccountRepository.DeactivateAsync(account.Id, isDeactivate);
-            //             // Cập nhật thông tin tài khoản
-
-            //             await transaction.CommitAsync();
-            //         }
-            //         catch (Exception ex)
-            //         {
-            //             await transaction.RollbackAsync();
-            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-            //             throw new HttpRequestException("Vô hiệu hoá tài khoản thất bại, lỗi: " + ex.Message);
-            //         }
-            //     }
-            // }
-
-            // public async Task AccountLvlXPDeduction()
-            // {
-            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            //     {
-            //         try
-            //         {
-            //             var config = await _unitOfWork.SystemConfigProfileRepository.FindActiveProfileAsync();
-            //             var accountGeneralConfig = config.AccountGeneralConfig;
-            //             var accountLevelSettingConfigs = config.AccountLevelSettingConfigs.ToList();
-            //             var accounts = await _accountGenericRepository.FindAll(
-            //                 predicate: account => account.DeactivatedAt == null && account.IsVerified == true && account.RoleId == 4 && account.Level > 1 && account.Xp > 0,
-            //                 includeProperties: account => account.AccountProfile
-            //                 ).ToListAsync();
-
-            //             foreach (var account in accounts)
-            //             {
-            //                 account.Xp -= accountLevelSettingConfigs.Where(x => x.Level == account.Level).First().DailyReductionXp;
-            //                 //account.Xp -= accountLevelSettingConfigs[account.Level - 1].DailyReductionXp; Use this for performance but only if the list is in order of level
-            //                 if (account.Xp < account.Level * accountGeneralConfig.XpLevelThreshold)
-            //                 {
-            //                     account.ProgressionSurveyCount = 0;
-            //                     account.Level = (int)Math.Floor((decimal)account.Xp / (decimal)accountGeneralConfig.XpLevelThreshold);
-            //                 }
-            //                 await _accountGenericRepository.UpdateAsync(account.Id, account);
-            //             }
-            //             await transaction.CommitAsync();
-            //         }
-            //         catch (Exception ex)
-            //         {
-            //             await transaction.RollbackAsync();
-            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-            //             throw new HttpRequestException("Giảm Xp hàng ngày của account thất bại, lỗi: " + ex.Message);
-            //         }
-            //     }
-            // }
-
-            // public async Task AccountFilterSurveyRequiredChecking()
-            // {
-            //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            //     {
-            //         try
-            //         {
-            //             var config = await _unitOfWork.SystemConfigProfileRepository.FindActiveProfileAsync();
-            //             var accountGeneralConfig = config.AccountGeneralConfig;
-            //             var accountLevelSettingConfigs = config.AccountLevelSettingConfigs.ToList();
-            //             var accounts = await _accountGenericRepository.FindAll(
-            //                 predicate: account => account.DeactivatedAt == null && account.IsVerified == true && account.RoleId == 4 && !account.IsFilterSurveyRequired,
-            //                 includeProperties: account => account.AccountProfile
-            //                 ).ToListAsync();
-
-            //             foreach (var account in accounts)
-            //             {
-            //                 var timeCheck = _dateHelpers.GetNowByAppTimeZone().AddDays(-accountGeneralConfig.FilterSurveyCycle);
-            //                 if (timeCheck >= account.LastFilterSurveyTakenAt)
-            //                 {
-            //                     account.IsFilterSurveyRequired = true;
-            //                 }
-            //                 else
-            //                 {
-            //                     account.IsFilterSurveyRequired = false;
-            //                 }
-
-            //                 await _accountGenericRepository.UpdateAsync(account.Id, account);
-            //             }
-            //             await transaction.CommitAsync();
-            //         }
-            //         catch (Exception ex)
-            //         {
-            //             await transaction.RollbackAsync();
-            //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-            //             throw new HttpRequestException("Giảm Xp hàng ngày của account thất bại, lỗi: " + ex.Message);
-            //         }
-            //     }
-            // }
-
-
-
+                return new AccountListItemResponseDTO
+                {
+                    Id = account.Id,
+                    Email = account.Email,
+                    Role = new RoleDTO
+                    {
+                        Id = account.Role.Id,
+                        Name = account.Role.Name
+                    },
+                    FullName = account.FullName,
+                    Dob = account.Dob?.ToString("yyyy-MM-dd"),
+                    Gender = account.Gender,
+                    Address = account.Address,
+                    Phone = account.Phone,
+                    Balance = account.Balance,
+                    IsVerified = account.IsVerified,
+                    PodcastListenSlot = account.PodcastListenSlot,
+                    ViolationPoint = account.ViolationPoint,
+                    CreatedAt = account.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    UpdatedAt = account.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    MainImageFileKey = account.MainImageFileKey,
+                    DeactivatedAt = account.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    ViolationLevel = account.ViolationLevel,
+                    LastViolationPointChanged = account.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    LastViolationLevelChanged = account.LastViolationLevelChanged?.ToString("yyyy-MM-ddTH:mm:ss.fffZ"),
+                    LastPodcastListenSlotChanged = account.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTH:mm:ss.fffZ"),
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get account by id failed, error: " + ex.Message);
+            }
 
 
         }
+
+
+        public async Task UpdatePodcasterProfile(UpdatePodcasterProfileParameterDTO updatePodcasterProfileParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
+                        predicate: a => a.AccountId == updatePodcasterProfileParameterDTO.AccountId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+
+
+                    if (podcasterProfile == null)
+                    {
+                        throw new Exception("Podcaster profile with id " + updatePodcasterProfileParameterDTO.AccountId + " does not exist");
+                    }
+                    else if (podcasterProfile.IsVerified == false)
+                    {
+                        throw new Exception("Podcaster profile with id " + updatePodcasterProfileParameterDTO.AccountId + " is not verified, cannot update");
+                    }
+
+
+
+
+                    podcasterProfile.Name = updatePodcasterProfileParameterDTO.Name;
+                    podcasterProfile.Description = updatePodcasterProfileParameterDTO.Description;
+
+                    var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + podcasterProfile.AccountId;
+                    if (updatePodcasterProfileParameterDTO.BuddyAudioFileKey != null && updatePodcasterProfileParameterDTO.BuddyAudioFileKey != "")
+                    {
+                        await _fileIOHelper.DeleteFileAsync(podcasterProfile.BuddyAudioFileKey);
+                        var BuddyAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"buddy_trailer_audio{FilePathHelper.GetExtension(updatePodcasterProfileParameterDTO.BuddyAudioFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(updatePodcasterProfileParameterDTO.BuddyAudioFileKey, BuddyAudioFileKey);
+                        await _fileIOHelper.DeleteFileAsync(updatePodcasterProfileParameterDTO.BuddyAudioFileKey);
+                        podcasterProfile.BuddyAudioFileKey = BuddyAudioFileKey;
+
+                    }
+
+                    await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
+                    await transaction.CommitAsync();
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Update podcaster profile successfully",
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-podcaster-profile.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(podcasterProfile.AccountId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Update podcaster profile failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-podcaster-profile.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task UpdateUser(UpdateUserParameterDTO updateUserParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var updateUserInfo = updateUserParameterDTO;
+                    var account = await _accountGenericRepository.FindByIdAsync(updateUserInfo.AccountId);
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + updateUserInfo.AccountId + " does not exist");
+                    }
+                    account.FullName = updateUserInfo.FullName;
+                    account.Dob = DateOnly.FromDateTime(updateUserInfo.Dob);
+                    account.Gender = updateUserInfo.Gender;
+                    account.Address = updateUserInfo.Address;
+                    account.Phone = updateUserInfo.Phone;
+
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + account.Id;
+                    if (updateUserInfo.MainImageFileKey != null && updateUserInfo.MainImageFileKey != "")
+                    {
+                        await _fileIOHelper.DeleteFileAsync(account.MainImageFileKey);
+                        var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(updateUserInfo.MainImageFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(updateUserInfo.MainImageFileKey, MainImageFileKey);
+                        await _fileIOHelper.DeleteFileAsync(updateUserInfo.MainImageFileKey);
+                        account.MainImageFileKey = MainImageFileKey;
+                        await _accountGenericRepository.UpdateAsync(account.Id, account);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Update user successfully",
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-user.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(account.Id);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Update user failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-user.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeactivateAccount(DeactivateAccountParameterDTO deactivateAccountParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var account = await this.GetExistAccountById(deactivateAccountParameterDTO.AccountId);
+                    account.DeactivatedAt = _dateHelper.GetNowByAppTimeZone();
+
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    await transaction.CommitAsync();
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Deactivate account successfully"
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "deactivate-account.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(account.Id);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Deactivate account failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "deactivate-account.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task ActivateAccount(ActivateAccountParameterDTO activateAccountParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var account = await this.GetExistAccountById(activateAccountParameterDTO.AccountId);
+                    account.DeactivatedAt = null;
+
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    await transaction.CommitAsync();
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Activate account successfully"
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "activate-account.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(account.Id);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Activate account failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "activate-account.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
     }
 }
+
+
+

@@ -470,6 +470,35 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+  
+  user-activation-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Kích hoạt tài khoản"
+    save-file: ""
+    steps:
+      - name: "activate-account"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Activate tài khoản user"
+        parameters:
+          - AccountId
+        next-request-data:
+          - AccountId
+        response-data:
+          - AccountId
+        onSuccess:
+          emit: "activate-account.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "activate-account.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
 
   user-violation-punishment-flow:
     topic: "user-management-domain"
