@@ -360,7 +360,23 @@ namespace UserService.API.Controllers.BaseControllers
 
         // /api/user-service/api/accounts/{AccountId}/violation-points/add
         [HttpPut("{AccountId}/violation-points/add")]
-        [Authorize(Policy = "AdminOrStaff.BasicAccess")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> AddViolationPointsToAccountById(ViolationPointChangeRequestDTO violationPointChangeRequestDTO, int AccountId)
+        {
+            var requestData = JObject.FromObject(new
+            {
+                AccountId = AccountId,
+                ViolationPoint = violationPointChangeRequestDTO.ViolationPoint
+            });
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-violation-punishment-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
 
 
         //         // /api/user-service/api/auth/register/customer

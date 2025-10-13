@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using UserService.BusinessLogic.Attributes;
 using UserService.BusinessLogic.DTOs.Auth;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountViolationPoint;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
@@ -310,6 +311,22 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "activate-account.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("add-account-violation-point", SAGA_TOPIC)]
+        public async Task HandleAddAccountViolationPointAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var addAccountViolationPointParameterDTO = command.RequestData.ToObject<AddAccountViolationPointParameterDTO>();
+                    await _accountService.AddAccountViolationPoint(addAccountViolationPointParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "add-account-violation-point.failed"    // From YAML onFailure.emit
             );
         }
 

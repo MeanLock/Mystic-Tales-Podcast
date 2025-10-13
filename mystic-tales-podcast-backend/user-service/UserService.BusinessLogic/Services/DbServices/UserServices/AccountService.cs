@@ -33,6 +33,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePod
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUser;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeactivateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountViolationPoint;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -1292,6 +1293,78 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "activate-account.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+
+        public async Task AddAccountViolationPoint(AddAccountViolationPointParameterDTO addAccountViolationPointParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var account = await this.GetExistAccountById(addAccountViolationPointParameterDTO.AccountId);
+                    account.ViolationPoint += addAccountViolationPointParameterDTO.ViolationPoint;
+                    account.LastViolationPointChanged = _dateHelper.GetNowByAppTimeZone();
+
+                    // cập nhật violation level
+                    if (account.ViolationPoint >= 100)
+                    {
+                        account.ViolationLevel = 3;
+                    }
+                    else if (account.ViolationPoint >= 50)
+                    {
+                        account.ViolationLevel = 2;
+                    }
+                    else if (account.ViolationPoint >= 20)
+                    {
+                        account.ViolationLevel = 1;
+                    }
+                    else
+                    {
+                        account.ViolationLevel = 0;
+                    }
+                    account.LastViolationLevelChanged = _dateHelper.GetNowByAppTimeZone();
+
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    await transaction.CommitAsync();
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Add account violation point successfully"
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-account-violation-point.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(account.Id);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Add account violation point failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-account-violation-point.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
