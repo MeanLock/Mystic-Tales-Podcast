@@ -341,7 +341,7 @@ namespace UserService.API.Controllers.BaseControllers
         [HttpPut("{AccountId}/deactivate/{IsDeactivate}")]
         [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> DeactivateAccountById(int AccountId, bool IsDeactivate)
-        { 
+        {
             var requestData = JObject.FromObject(new
             {
                 AccountId = AccountId
@@ -356,6 +356,11 @@ namespace UserService.API.Controllers.BaseControllers
             }
             );
         }
+
+
+        // /api/user-service/api/accounts/{AccountId}/violation-points/add
+        [HttpPut("{AccountId}/violation-points/add")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess")]
 
 
         //         // /api/user-service/api/auth/register/customer

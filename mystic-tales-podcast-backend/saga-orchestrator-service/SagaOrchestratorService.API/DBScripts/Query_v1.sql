@@ -1,0 +1,2 @@
+Select flowName, initialData, resultData, flowStatus from SagaInstance order by completedAt DESC
+Select sagaInstanceId , stepName, stepStatus, requestData, responseData from SagaStepExecution order by createdAt DESC
