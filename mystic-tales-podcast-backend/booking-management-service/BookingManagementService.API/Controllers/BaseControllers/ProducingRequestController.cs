@@ -82,6 +82,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             return Ok("Booking producing request create successfully.");
         }
         [HttpPut("{BookingProducingRequestId}/submit")]
+        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
         public async Task<IActionResult> SubmitAudioTrack(
             [FromRoute] Guid BookingProducingRequestId,
             [FromForm] BookingPodcastTrackRequestDTO request

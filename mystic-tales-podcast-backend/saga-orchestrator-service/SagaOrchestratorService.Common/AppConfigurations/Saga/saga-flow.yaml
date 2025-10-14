@@ -763,35 +763,6 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  podcaster-of-podcaster-unfollow-flow:
-    topic: "user-management-domain"
-    handler-service: "SagaOrchestratorService"
-    description: "Bỏ theo dõi tất cả podcaster thuộc về podcaster"
-    save-file: ""
-    steps:
-      - name: "delete-podcasters-of-podcaster-followed"
-        topic: "user-management-domain"
-        handle-service: "UserService"
-        description: "Xóa tất cả podcaster của podcaster khỏi danh sách theo dõi"
-        parameters:
-          - PodcastBuddyId
-        next-request-data:
-          - PodcastBuddyId
-        response-data:
-          - PodcastBuddyId
-        onSuccess:
-          emit: "delete-podcasters-of-podcaster-followed.success"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "delete-podcasters-of-podcaster-followed.failed"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
   account-balance-addition-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -1015,35 +986,6 @@ channel-unfavorite-flow:
         nextSteps: []
         nextFlows: []
 
-  channel-of-podcaster-unfavorite-flow:
-    topic: "user-management-domain"
-    handler-service: "SagaOrchestratorService"
-    description: "Bỏ yêu thích tất cả kênh thuộc về podcaster"
-    save-file: ""
-    steps:
-      - name: "delete-channels-of-podcaster-favorited"
-        topic: "user-management-domain"
-        handle-service: "PodcastService"
-        description: "Xóa tất cả channel của podcaster khỏi danh sách yêu thích"
-        parameters:
-          - PodcastChannelId
-        next-request-data:
-          - PodcastChannelId
-        response-data:
-          - PodcastChannelId
-        onSuccess:
-          emit: "delete-channels-of-podcaster-favorited.success"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "delete-channels-of-podcaster-favorited.failed"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
   show-follow-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -1108,35 +1050,6 @@ channel-unfavorite-flow:
           nextSteps: []
           nextFlows: []
 
-  show-of-podcaster-unfollow-flow:
-    topic: "user-management-domain"
-    handler-service: "SagaOrchestratorService"
-    description: "Bỏ theo dõi tất cả chương trình thuộc về podcaster"
-    save-file: ""
-    steps:
-      - name: "delete-shows-of-podcaster-followed"
-        topic: "user-management-domain"
-        handle-service: "PodcastService"
-        description: "Xóa tất cả show của podcaster khỏi danh sách theo dõi"
-        parameters:
-          - PodcastShowId
-        next-request-data:
-          - PodcastShowId
-        response-data:
-          - PodcastShowId
-        onSuccess:
-          emit: "delete-shows-of-podcaster-followed.success"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "delete-shows-of-podcaster-followed.failed"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
   episode-save-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -1196,35 +1109,6 @@ channel-unfavorite-flow:
           nextFlows: []
         onFailure:
           emit: "delete-episode-saved.failed"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
-  episode-of-podcaster-unsaved-flow:
-    topic: "user-management-domain"
-    handler-service: "SagaOrchestratorService"
-    description: "Bỏ lưu tất cả tập thuộc về podcaster"
-    save-file: ""
-    steps:
-      - name: "delete-episodes-of-podcaster-saved"
-        topic: "user-management-domain"
-        handle-service: "PodcastService"
-        description: "Xóa tất cả episode của podcaster khỏi danh sách đã lưu"
-        parameters:
-          - PodcastEpisodeId
-        next-request-data:
-          - PodcastEpisodeId
-        response-data:
-          - PodcastEpisodeId
-        onSuccess:
-          emit: "delete-episodes-of-podcaster-saved.success"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "delete-episodes-of-podcaster-saved.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -1424,35 +1308,6 @@ channel-unfavorite-flow:
             - name: "unpublish-channel-rollback-flow"
               topic: "content-management-domain"
               handle-service: "SagaOrchestratorService"
-
-  channel-of-podcaster-unpublish-flow:
-    topic: "content-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Hủy xuất bản tất cả kênh của podcaster"
-    save-file: ""
-    steps:
-      - name: "unpublish-channel-of-podcaster"
-        topic: "content-management-domain"
-        handle-service: "PodcastService"
-        description: "Nhận PodcasterId để inactive tất cả channel, show, xóa các SubscriptionRegistration và cuối cùng unpublish tất cả channel của podcaster"
-        parameters:
-          - PodcasterId
-        next-request-data:
-          - PodcasterId
-        response-data:
-          - PodcasterId
-        onSuccess:
-          emit: "unpublish-channel-of-podcaster.success"
-          topic: "content-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "unpublish-channel-of-podcaster.failed"
-          topic: "content-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
 
   channel-deletion-flow:
     topic: "content-management-domain"
@@ -1766,35 +1621,6 @@ channel-unfavorite-flow:
             - name: "unpublish-show-rollback-flow"
               topic: "content-management-domain"
               handle-service: "SagaOrchestratorService"
-
-  show-of-podcaster-taken-down-flow:
-    topic: "content-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Gỡ tất cả chương trình của podcaster"
-    save-file: ""
-    steps:
-      - name: "take-down-shows-of-podcaster"
-        topic: "content-management-domain"
-        handle-service: "PodcastService"
-        description: "Nhận PodcasterId để inactive tất cả show, xóa các SubscriptionRegistration và cuối cùng unpublish tất cả show của podcaster"
-        parameters:
-          - PodcasterId
-        next-request-data:
-          - PodcasterId
-        response-data:
-          - PodcasterId
-        onSuccess:
-          emit: "take-down-shows-of-podcaster.success"
-          topic: "content-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "take-down-shows-of-podcaster.failed"
-          topic: "content-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
 
   show-audio-submission-flow:
     topic: "content-management-domain"
@@ -2234,35 +2060,6 @@ channel-unfavorite-flow:
           nextSteps: []
           nextFlows: []
 
-  episode-of-podcaster-taken-down-flow:
-    topic: "content-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Gỡ tất cả tập của podcaster"
-    save-file: ""
-    steps:
-      - name: "take-down-episodes-of-podcaster"
-        topic: "content-management-domain"
-        handle-service: "PodcastService"
-        description: "Nhận PodcasterId để inactive tất cả episode và cuối cùng unpublish tất cả episode của podcaster, và discard các episode publish review session"
-        parameters:
-          - PodcasterId
-        next-request-data:
-          - PodcasterId
-        response-data:
-          - PodcasterId
-        onSuccess:
-          emit: "take-down-episodes-of-podcaster.success"
-          topic: "content-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "take-down-episodes-of-podcaster.failed"
-          topic: "content-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
   episode-publish-request-flow:
     topic: "content-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -2495,6 +2292,160 @@ channel-unfavorite-flow:
         onFailure:
           emit: "update-listen-count.failed"
           topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  content-of-podcaster-termination-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa tất cả nội dung của podcaster"
+    save-file: ""
+    steps:
+      - name: "terminate-booking-content-of-podcaster"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Hủy tất cả booking liên quan đến podcaster"
+        parameters:
+          - PodcasterId
+        next-request-data:
+          - PodcasterId
+        response-data:
+          - PodcasterId
+        onSuccess:
+          emit: "terminate-booking-content-of-podcaster.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "terminate-content-of-podcaster"
+              topic: "content-management-domain"
+              handle-service: "SagaOrchestratorService"
+          nextFlows: []
+        onFailure:
+          emit: "terminate-booking-content-of-podcaster.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "terminate-content-of-podcaster"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Nhận PodcasterId để inactive tất cả channel, show, episode và cuối cùng unpublish tất cả channel , taken dowm show và episode của podcaster"
+        parameters:
+          - PodcasterId
+        next-request-data:
+          - PodcasterId
+        response-data:
+          - PodcasterId
+        onSuccess:
+          emit: "terminate-content-of-podcaster.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "terminate-follow-content-involve-podcaster"
+              topic: "content-management-domain"
+              handle-service: "SagaOrchestratorService"
+          nextFlows: []
+        onFailure:
+          emit: "terminate-content-of-podcaster.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "terminate-follow-content-involve-podcaster"
+        topic: "user-management-service"
+        handle-service: "UserService"
+        description: "Xóa các list theo dõi podcaster hoặc show, yêu thích channel, lưu episode thuộc về podcaster đó"
+        parameters:
+          - PodcasterId
+        next-request-data:
+          - PodcasterId
+        response-data:
+          - PodcasterId
+        onSuccess:
+          emit: "terminate-follow-content-involve-podcaster.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "terminate-podcast-subscription-registration-involve-podcaster"
+              topic: "subscription-management-domain"
+              handle-service: "SagaOrchestratorService"
+          nextFlows: []
+        onFailure:
+          emit: "terminate-follow-content-involve-podcaster.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "terminate-podcast-subscription-registration-involve-podcaster"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Hủy tất cả đăng ký podcast show/channel liên quan đến podcaster"
+        parameters:
+          - PodcasterId
+        next-request-data:
+          - PodcasterId
+        response-data:
+          - PodcasterId
+        onSuccess:
+          emit: "terminate-podcast-subscription-registration-involve-podcaster.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "terminate-podcast-report-involve-podcaster"
+              topic: "report-management-domain"
+              handle-service: "SagaOrchestratorService"
+          nextFlows: []
+        onFailure:
+          emit: "terminate-podcast-subscription-registration-involve-podcaster.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "terminate-podcast-report-involve-podcaster"
+        topic: "report-management-domain"
+        handle-service: "ReportService"
+        description: "Xóa tất cả báo cáo liên quan đến podcaster"
+        parameters:
+          - PodcasterId
+        next-request-data:
+          - PodcasterId
+        response-data:
+          - PodcasterId
+        onSuccess:
+          emit: "terminate-podcast-report-involve-podcaster.success"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+           - name: "terminate-content-dmca-involve-podcaster"
+             topic: "dmca-management-domain"
+             handle-service: "SagaOrchestratorService"
+          nextFlows: []
+        onFailure:
+          emit: "terminate-podcast-report-involve-podcaster.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "terminate-content-dmca-involve-podcaster"
+        topic: "dmca-management-domain"
+        handle-service: "ModerationService"
+        description: "Xóa tất cả khiếu nại bản quyền liên quan đến podcaster"
+        parameters:
+          - PodcasterId
+        next-request-data:
+          - PodcasterId
+        response-data:
+          - PodcasterId 
+        onSuccess:
+          emit: "terminate-content-dmca-involve-podcaster.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "terminate-content-dmca-involve-podcaster.failed"
+          topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -2883,35 +2834,6 @@ channel-unfavorite-flow:
           nextSteps: []
           nextFlows: []
 
-  booking-of-podcaster-remove-flow:
-    topic: "booking-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Xóa tất cả booking của podcaster"
-    save-file: ""
-    steps:
-      - name: "remove-booking-of-podcaster"
-        topic: "booking-management-domain"
-        handle-service: "BookingManagementService"
-        description: "Xóa tất cả booking của podcaster khi podcaster bị xóa"
-        parameters:
-          - PodcasterId
-        next-request-data:
-          - PodcasterId
-        response-data:
-          - PodcasterId
-        onSuccess:
-          emit: "remove-booking-of-podcaster.success"
-          topic: "booking-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "remove-booking-of-podcaster.failed"
-          topic: "booking-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
   podcast-subscription-creation-flow:
     topic: "subscription-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -3125,35 +3047,6 @@ channel-unfavorite-flow:
           nextFlows: []
         onFailure:
           emit: "create-account-podcast-subscription-registration.failed"
-          topic: "subscription-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
-  podcaster-subscription-registration-of-pocaster-deletion-flow:
-    topic: "subscription-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Xóa tất cả đăng ký của podcaster"
-    save-file: ""
-    steps:
-      - name: "remove-podcaster-subscription-registration-of-podcaster"
-        topic: "subscription-management-domain"
-        handle-service: "SubscriptionService"
-        description: "Xóa tất cả đăng ký của podcaster khi podcaster bị xóa"
-        parameters:
-          - PodcasterId
-        next-request-data:
-          - PodcasterId
-        response-data:
-          - PodcasterId
-        onSuccess:
-          emit: "remove-podcaster-subscription-registration-of-podcaster.success"
-          topic: "subscription-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "remove-podcaster-subscription-registration-of-podcaster.failed"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -5126,35 +5019,6 @@ channel-unfavorite-flow:
           nextSteps: []
           nextFlows: []
 
-  podcast-buddy-report-of-podcaster-resolve-flow:
-    topic: "report-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Xử lý báo cáo podcast buddy thuộc về podcaster"
-    save-file: ""
-    steps:
-      - name: "resolve-podcast-buddy-report-of-podcaster"
-        topic: "report-management-domain"
-        handle-service: "ModerationService"
-        description: "Staff resolve podcast buddy report của podcaster và chạy flow user-violation-punishment-flow nếu có phạt"
-        parameters:
-        - PodcasterId
-        next-request-data:
-        - PodcasterId
-        response-data:
-        - PodcasterId
-        onSuccess:
-          emit: "resolve-buddy-report-of-podcaster.success"
-          topic: "report-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "resolve-buddy-report-of-podcaster.failed"
-          topic: "report-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
   podcast-show-report-resolve-flow:
     topic: "report-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -5188,35 +5052,6 @@ channel-unfavorite-flow:
           nextSteps: []
           nextFlows: []
 
-  podcast-show-report-of-podcaster-resolve-flow:
-    topic: "report-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Xử lý báo cáo podcast show thuộc về podcaster"
-    save-file: ""
-    steps:
-      - name: "resolve-podcast-show-report-of-podcaster"
-        topic: "report-management-domain"
-        handle-service: "ModerationService"
-        description: "Resolve hết các podcast show report thuộc về podcaster"
-        parameters:
-        - PodcasterId
-        next-request-data:
-        - PodcasterId
-        response-data:
-        - PodcasterId
-        onSuccess:
-          emit: "resolve-show-report-of-podcaster.success"
-          topic: "report-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "resolve-show-report-of-podcaster.failed"
-          topic: "report-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
   podcast-episode-report-resolve-flow:
     topic: "report-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -5245,35 +5080,6 @@ channel-unfavorite-flow:
           nextFlows: []
         onFailure:
           emit: "resolve-episode-report.failed"
-          topic: "report-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
-  podcast-episode-report-of-podcaster-resolve-flow:
-    topic: "report-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Xử lý báo cáo podcast episode thuộc về podcaster"
-    save-file: ""
-    steps:
-      - name: "resolve-podcast-episode-report-of-podcaster"
-        topic: "report-management-domain"
-        handle-service: "ModerationService"
-        description: "Resolve hết các podcast episode report thuộc về podcaster"
-        parameters:
-        - PodcasterId
-        next-request-data:
-        - PodcasterId
-        response-data:
-        - PodcasterId
-        onSuccess:
-          emit: "resolve-episode-report-of-podcaster.success"
-          topic: "report-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "resolve-episode-report-of-podcaster.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -5482,35 +5288,6 @@ channel-unfavorite-flow:
           nextFlows: []
         onFailure:
           emit: "update-dmca-accusation-status.failed"
-          topic: "dmca-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
-  content-dmca-of-podcaster-dismissal-flow:
-    topic: "dmca-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Xử lý cáo buộc DMCA thuộc về podcaster"
-    save-file: ""
-    steps:
-      - name: "dismiss-dmca-accusation-of-podcaster"
-        topic: "dmca-management-domain"
-        handle-service: "ModerationService"
-        description: "Dismiss hết các DMCAAccusation thuộc về podcaster"
-        parameters:
-        - PodcasterId
-        next-request-data:
-        - PodcasterId
-        response-data:
-        - PodcasterId
-        onSuccess:
-          emit: "dismiss-dmca-accusation-of-podcaster.success"
-          topic: "dmca-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "dismiss-dmca-accusation-of-podcaster.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []

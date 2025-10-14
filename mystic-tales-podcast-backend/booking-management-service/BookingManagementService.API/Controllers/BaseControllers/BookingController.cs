@@ -117,37 +117,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         {
             try
             {
-                Console.WriteLine("Received BookingNegotiationInfo: " + bookingNegotiationRequestDTO.BookingNegotiationInfo);
-                Console.WriteLine("Received DemoAudioFile: " + (bookingNegotiationRequestDTO.DemoAudioFile != null ? bookingNegotiationRequestDTO.DemoAudioFile.FileName : "No file uploaded"));
                 var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
                 var accountId = account.Id;
 
-                //var batchRequest = new BatchQueryRequest
-                //{
-                //    Queries = new List<BatchQueryItem>
-                //    {
-                //        new BatchQueryItem
-                //        {
-                //            Key = "accounts",
-                //            EntityType = "Account",
-                //            QueryType = "FindById",
-                //            Parameters = new JObject
-                //            {
-                //                { "Id", accountId },
-                //                { "include", "Role" }
-                //            },
-                //            Fields = new string[] { "Id", "Email", "RoleId", "Role" }
-                //        }
-                //    }
-                //};
-                //var queryResult = await _httpServiceQueryClient.ExecuteBatchAsync("user-service", batchRequest);
-
-                //var cc = queryResult.Results["accounts"][0]["Role"];
-                //Console.WriteLine("-----------------------------------\n"+JsonConvert.SerializeObject(queryResult) + "\n-----------------------------------");
-
                 // Parse the JSON BookingNegotiationInfo
                 var negotiationRequestInfo = JsonConvert.DeserializeObject<BookingNegotiationInfoDTO>(bookingNegotiationRequestDTO.BookingNegotiationInfo);
-                Console.WriteLine("We are hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
                 if (negotiationRequestInfo == null)
                 {
                     return BadRequest("Invalid BookingNegotiationInfo format.");
@@ -156,34 +130,24 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 string demoAudioFileKey = null;
                 if (bookingNegotiationRequestDTO.DemoAudioFile != null)
                 {
-                    Console.WriteLine("We are DMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM");
                     var isValidAudioFile = _fileValidationConfig.IsValidFile(
                         "BookingNegotiation.demoAudioFileKey", 
                         bookingNegotiationRequestDTO.DemoAudioFile.FileName, 
                         bookingNegotiationRequestDTO.DemoAudioFile.Length, 
                         bookingNegotiationRequestDTO.DemoAudioFile.ContentType);
-                    Console.WriteLine("Is valid audio file: " + isValidAudioFile);
-                    Console.WriteLine("File Name: " + bookingNegotiationRequestDTO.DemoAudioFile.FileName);
-                    Console.WriteLine("File Length: " + bookingNegotiationRequestDTO.DemoAudioFile.Length);
-                    Console.WriteLine("File ContentType: " + bookingNegotiationRequestDTO.DemoAudioFile.ContentType);
                     if (!isValidAudioFile)
                     {
                         return BadRequest("Invalid audio file. Please ensure the file type and size are correct.");
                     }
                     string newDemoAudioFileName = $"{Guid.NewGuid()}_{bookingNegotiationRequestDTO.DemoAudioFile.FileName}";
-                    Console.WriteLine("\n ngu 1 \n");
                     using (var memoryStream = bookingNegotiationRequestDTO.DemoAudioFile.OpenReadStream())
-                    {
-                        Console.WriteLine("\n ngu 2 \n");
+                    {                        
                         await _fileIOHelper.UploadBinaryFileWithStreamAsync(
                             memoryStream,
                             _filePathConfig.BOOKING_TEMP_FILE_PATH,
-                            newDemoAudioFileName);
-                        Console.WriteLine("\n ngu 3 \n");
-                    }
+                            newDemoAudioFileName);                    }
                     demoAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newDemoAudioFileName);
                 }
-                Console.WriteLine("We a33333333333333333333333333333333333333re hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
                 JObject requestData = JObject.FromObject(negotiationRequestInfo);
                 requestData["AccountId"] = accountId;
                 requestData["BookingId"] = BookingId;

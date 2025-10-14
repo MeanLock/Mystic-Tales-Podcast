@@ -467,6 +467,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         throw new Exception($"Booking with ID {parameter.BookingId} not found");
                     }
 
+                    if(booking.AccountId != parameter.AccountId && booking.PodcastBuddyId != parameter.AccountId)
+                    {
+                        throw new Exception("Only customer or podcast buddy can create negotiation");
+                    }
+
                     bool isFromCustomer = booking.AccountId == parameter.AccountId;
 
                     var newBookingNegotiation = new BookingNegotiation()

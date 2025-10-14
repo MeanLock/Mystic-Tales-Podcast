@@ -15,6 +15,7 @@ using BookingManagementService.DataAccess.Entities.sqlserver;
 using BookingManagementService.DataAccess.Repositories.interfaces;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
+using HotChocolate.Authorization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
