@@ -2629,8 +2629,8 @@ flows:
             - AudioLength
         response-data:
           - BookingProducingRequestId
-          - BookingPodcastTrackId
           - Tracks:
+            - BookingPodcastTrackId
             - AudioFileKey
             - AudioFileSize
             - AudioLength

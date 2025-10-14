@@ -110,7 +110,7 @@ namespace BookingManagementService.API.Authorizations.Handlers
                 }
             }
 
-            Console.WriteLine($"Account fetched: Id={account.Id}, RoleId={account.RoleId}, IsVerified={account.IsVerified}, DeactivatedAt={account.DeactivatedAt}");
+            Console.WriteLine($"Account fetched: Id={account.Id}, RoleId={account.RoleId}, IsVerified={account.IsVerified}, HasPodcasterVerified={account.HasVerifiedPodcasterProfile}, DeactivatedAt={account.DeactivatedAt}");
 
             if (account.RoleId != int.Parse(roleId))
             {

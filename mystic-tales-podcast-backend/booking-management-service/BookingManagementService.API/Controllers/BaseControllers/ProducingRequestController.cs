@@ -1,18 +1,19 @@
 ﻿using BookingManagementService.API.Filters.ExceptionFilters;
+using BookingManagementService.BusinessLogic.DTOs.Cache;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
+using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using BookingManagementService.BusinessLogic.Services.DbServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.BusinessSetting.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
-using BookingManagementService.Infrastructure.Services.Kafka;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
 using BookingManagementService.Infrastructure.Models.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Services.Audio.AcoustID;
-using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
+using BookingManagementService.Infrastructure.Services.Kafka;
 using Microsoft.AspNetCore.Authorization;
-using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
 {
@@ -95,8 +96,15 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             [FromForm] BookingPodcastTrackRequestDTO request
             )
         {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var isValid = await _bookingProducingRequestService.ValidateProducingRequestPodcasterAsync(BookingProducingRequestId, accountId);
+            if(!isValid)
+            {
+                return Forbid("You are not authorized to submit tracks for this booking producing request.");
+            }
             // Validate all audio files first
-            foreach(var audioFile in request.AudioFiles)
+            foreach (var audioFile in request.AudioFiles)
             {
                 var isValidAudioFile = _fileValidationConfig.IsValidFile("BookingPodcastTrack.audioFileKey", audioFile.FileName, audioFile.Length, audioFile.ContentType);
                 if (!isValidAudioFile)
@@ -105,21 +113,17 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 }
             }
 
-            var trackSubmissions = new List<BookingTrackSubmissionItem>();
+            var trackSubmissions = new List<JObject>();
 
             // Process all audio files and prepare track submission items
             foreach (var audioFile in request.AudioFiles)
             {
                 string newTrackAudioFileName = $"{Guid.NewGuid()}_{audioFile.FileName}";
+                Console.WriteLine($"Generated new audio file name: {newTrackAudioFileName}");
                 AcoustIDAudioFingerprintGeneratedResult? audioMetadata = null;
 
                 using (var memoryStream = audioFile.OpenReadStream())
                 {
-                    // Upload the file first
-                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(memoryStream, _filePathConfig.BOOKING_TEMP_FILE_PATH, newTrackAudioFileName);
-
-                    // Reset stream position and extract audio metadata
-                    memoryStream.Position = 0;
                     try
                     {
                         audioMetadata = await _audioFingerprintGenerator.GenerateFingerprintAsync(memoryStream);
@@ -133,29 +137,29 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                             FingerprintData = string.Empty
                         };
                     }
+
+                    // Upload the file first
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(memoryStream, _filePathConfig.BOOKING_TEMP_FILE_PATH, newTrackAudioFileName);
+
+                    //// Reset stream position and extract audio metadata
+                    //memoryStream.Position = 0;
                 }
 
                 var trackAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newTrackAudioFileName);
 
                 // Add to track submissions list
-                trackSubmissions.Add(new BookingTrackSubmissionItem
+                trackSubmissions.Add(new JObject
                 {
-                    AudioFileKey = trackAudioFileKey,
-                    AudioFileSize = audioFile.Length,
-                    AudioLength = (int)(audioMetadata?.Duration ?? 0)
+                    { "AudioFileKey", trackAudioFileKey },
+                    { "AudioFileSize", audioFile.Length },
+                    { "AudioLength", (int)(audioMetadata?.Duration ?? 0) }
                 });
             }
-
             // Create a single saga message with all tracks
             var requestData = new JObject
             {
                 { "BookingProducingRequestId", BookingProducingRequestId },
-                { "Tracks", JArray.FromObject(trackSubmissions.Select(track => new JObject
-                    {
-                        { "AudioFileKey", track.AudioFileKey },
-                        { "AudioFileSize", track.AudioFileSize },
-                        { "AudioLength", track.AudioLength }
-                    })) }
+                { "Tracks", JArray.FromObject(trackSubmissions) }
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-track-submission-flow");
@@ -168,11 +172,16 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 {
                     try
                     {
-                        await _fileIOHelper.DeleteFileAsync(track.AudioFileKey);
+                        var audioFileKey = track["AudioFileKey"]?.ToString();
+                        if (!string.IsNullOrEmpty(audioFileKey))
+                        {
+                            await _fileIOHelper.DeleteFileAsync(audioFileKey);
+                        }
                     }
                     catch
                     {
-                        _logger.LogError($"Failed to delete temporary file: {track.AudioFileKey}");
+                        var audioFileKey = track["AudioFileKey"]?.ToString();
+                        _logger.LogError($"Failed to delete temporary file: {audioFileKey}");
                     }
                 }
                 return StatusCode(500, "Failed to initiate booking producing request submission process.");

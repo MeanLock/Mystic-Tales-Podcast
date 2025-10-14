@@ -220,14 +220,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     // Process each track
                     foreach (var trackInfo in parameter.Tracks)
                     {
-                        var bookingPodcastTrackId = Guid.NewGuid();
 
                         var newBookingPodcastTrack = new BookingPodcastTrack()
                         {
-                            Id = bookingPodcastTrackId,
                             BookingId = bookingProducingRequest.BookingId,
                             BookingProducingRequestId = bookingProducingRequest.Id,
-                            AudioFileKey = null,
+                            AudioFileKey = trackInfo.AudioFileKey,
                             AudioFileSize = trackInfo.AudioFileSize,
                             AudioLength = trackInfo.AudioLength,
                             RemainingPreviewListenSlot = remainingPreviewListenSlot.Value
@@ -238,7 +236,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + bookingProducingRequest.BookingId;
                         if (trackInfo.AudioFileKey != null && trackInfo.AudioFileKey != "")
                         {
-                            var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"{bookingPodcastTrackId}_track_audio{FilePathHelper.GetExtension(trackInfo.AudioFileKey)}");
+                            var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"{bookingPodcastTrack.Id}_track_audio{FilePathHelper.GetExtension(trackInfo.AudioFileKey)}");
                             await _fileIOHelper.CopyFileToFileAsync(trackInfo.AudioFileKey, TrackAudioFileKey);
                             await _fileIOHelper.DeleteFileAsync(trackInfo.AudioFileKey);
                             newBookingPodcastTrack.AudioFileKey = TrackAudioFileKey;
@@ -287,8 +285,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         var newResponseData = new JObject
                         {
                             { "BookingProducingRequestId", bookingProducingRequest.Id },
-                            { "SubmittedTracks", JArray.FromObject(trackSubmissionResults) },
-                            { "TotalTracksSubmitted", createdTracks.Count },
+                            { "Tracks", JArray.FromObject(trackSubmissionResults) },
                             { "CreatedAt", _dateHelper.GetNowByAppTimeZone() }
                         };
                         var newMessageName = messageName + ".success";
@@ -311,7 +308,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         {
                             { "ErrorMessage", "Submit booking tracks failed, error: " + ex.Message}
                         };
-                    var newMessageName = command.MessageName + ".success";
+                    var newMessageName = command.MessageName + ".failed";
                     var SagaCommandMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.BookingManagementDomain,
                         requestData: command.RequestData,
@@ -473,6 +470,18 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     _logger.LogInformation("Booking podcast track preview listen update failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
+        }
+        public async Task<bool> ValidateProducingRequestPodcasterAsync(Guid BookingProducingRequestId, int accountId)
+        {
+            var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdWithPaths(
+                BookingProducingRequestId,
+                "Booking"
+                );
+            if (bookingProducingRequest == null)
+                return false;
+            if (bookingProducingRequest.Booking.PodcastBuddyId != accountId)
+                return false;
+            return true;
         }
         public async Task<JObject> GetActiveSystemConfigProfile()
         {
