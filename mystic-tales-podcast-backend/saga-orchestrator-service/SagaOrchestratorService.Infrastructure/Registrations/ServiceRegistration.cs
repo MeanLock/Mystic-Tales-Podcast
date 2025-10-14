@@ -12,6 +12,8 @@ using FluentEmail.Core;
 using FluentEmail.Razor;
 using FluentEmail.Smtp;
 using SagaOrchestratorService.Infrastructure.Services.Consul;
+using SagaOrchestratorService.Infrastructure.Services.Redis;
+using SagaOrchestratorService.Infrastructure.Configurations.Redis;
 
 namespace SagaOrchestratorService.Infrastructure.Registrations
 {
@@ -22,6 +24,7 @@ namespace SagaOrchestratorService.Infrastructure.Registrations
             // Add service groups
             services.AddKafkaServices(configuration);
             services.AddConsulServices(configuration);
+            services.AddRedisServices(configuration);
 
             return services;
         }
@@ -69,6 +72,44 @@ namespace SagaOrchestratorService.Infrastructure.Registrations
 
             return services;
         }
+
+                private static IServiceCollection AddRedisServices(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            // Register Redis service
+            services.AddScoped<RedisInstanceCacheService>();
+            services.AddScoped<RedisSharedCacheService>();
+
+            // Configure Redis connection
+            services.AddSingleton<IConnectionMultiplexer>(sp =>
+            {
+                var config = configuration.GetSection("Infrastructure:Redis:Default").Get<RedisDefaultConfigModel>();
+
+                if (config != null && !string.IsNullOrEmpty(config.ConnectionString))
+                {
+                    var options = new ConfigurationOptions
+                    {
+                        EndPoints = { config.ConnectionString },
+                        Password = config.Password,
+                        ConnectTimeout = config.ConnectTimeout,
+                        SyncTimeout = config.SyncTimeout,
+                        AbortOnConnectFail = config.AbortOnConnectFail,
+                        ConnectRetry = config.ConnectRetry,
+                        Ssl = config.UseSsl,
+                        DefaultDatabase = config.DefaultDatabase
+                    };
+
+                    return ConnectionMultiplexer.Connect(options);
+                }
+
+                // Fallback configuration if config is null
+                return ConnectionMultiplexer.Connect("localhost:6379");
+            });
+
+            return services;
+        }
+
 
     }
 }

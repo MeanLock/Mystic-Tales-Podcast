@@ -399,6 +399,38 @@ namespace UserService.API.Controllers.BaseControllers
             );
         }
 
+        // /api/user-service/api/accounts/{AccountId}/podcast-buddy-reviews
+        [HttpPost("{AccountId}/podcast-buddy-reviews")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
+        public async Task<IActionResult> GetPodcastBuddyReviewsByAccountId(PodcastBuddyReviewRequestDTO podcastBuddyReviewRequestDTO, int AccountId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (account.Id == AccountId)
+            {
+                return StatusCode(403, "You cannot review yourself as a podcast buddy.");
+            }
+            if(podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating <0 || podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating >5)
+            {
+                return BadRequest("Rating must be between 0 and 5.");
+            }
+            var requestData = JObject.FromObject(new
+            {
+                AccountId = account.Id,
+                PodcastBuddyId = AccountId,
+                Title = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Title,
+                Content = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Content,
+                Rating = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating
+            });
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("public-review-management-domain", requestData, null, "podcast-buddy-review-creation-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
 
         //         // /api/user-service/api/auth/register/customer
         // [HttpPost("register/customer")]

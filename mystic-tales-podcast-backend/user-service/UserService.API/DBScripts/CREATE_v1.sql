@@ -67,7 +67,7 @@ CREATE TABLE PodcasterProfile (
     buddyAudioFileKey NVARCHAR(MAX) NULL,
     ownedBookingStorageSize FLOAT NOT NULL,
     usedBookingStorageSize FLOAT NOT NULL,
-    isVerified BIT NULL DEFAULT 0,
+    isVerified BIT NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (accountId) REFERENCES Account(id)

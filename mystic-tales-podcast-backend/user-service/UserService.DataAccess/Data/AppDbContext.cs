@@ -348,7 +348,7 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValue("")
                 .HasColumnName("description");
             entity.Property(e => e.IsVerified)
-                .HasDefaultValue(false)
+                .HasDefaultValueSql("(NULL)")
                 .HasColumnName("isVerified");
             entity.Property(e => e.Name)
                 .HasMaxLength(250)

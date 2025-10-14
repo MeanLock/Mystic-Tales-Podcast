@@ -35,6 +35,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Deactivat
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountViolationPoint;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyPodcaster;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -65,6 +66,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         private readonly IGenericRepository<Account> _accountGenericRepository;
         private readonly IGenericRepository<Role> _roleGenericRepository;
         private readonly IGenericRepository<PodcasterProfile> _podcasterProfileGenericRepository;
+        private readonly IGenericRepository<PodcastBuddyReview> _podcastBuddyReviewGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
@@ -92,6 +94,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             IGenericRepository<Account> accountGenericRepository,
             IGenericRepository<Role> roleGenericRepository,
             IGenericRepository<PodcasterProfile> podcasterProfileGenericRepository,
+            IGenericRepository<PodcastBuddyReview> podcastBuddyReviewGenericRepository,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -116,6 +119,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _accountGenericRepository = accountGenericRepository;
             _roleGenericRepository = roleGenericRepository;
             _podcasterProfileGenericRepository = podcasterProfileGenericRepository;
+            _podcastBuddyReviewGenericRepository = podcastBuddyReviewGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -224,6 +228,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         {
             int violationLevel = 0;
             accountViolationLevelConfigs = new JArray(accountViolationLevelConfigs.OrderBy(c => c.Value<int>("ViolationPointThreshold")));
+            int maxLevelPointThreshold = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationPointThreshold"));
+            if (violationPoint > maxLevelPointThreshold)
+            {
+                violationLevel = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationLevel"));
+                return violationLevel;
+            }
             foreach (var config in accountViolationLevelConfigs)
             {
                 int level = config.Value<int>("ViolationLevel");
@@ -235,6 +245,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     break;
                 }
             }
+
             return violationLevel;
         }
 
@@ -949,6 +960,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 {
                     var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
                     var account = await _accountGenericRepository.FindByIdAsync(createPodcasterProfileParameter.AccountId, includeProperties: a => a.PodcasterProfile);
+                    // Console.WriteLine("Tìm thấy account: " + (account.PodcasterProfile.IsVerified == null ? "null" : account.PodcasterProfile.IsVerified.ToString()));
                     if (account.PodcasterProfile != null)
                     {
                         if (account.PodcasterProfile.IsVerified == true)
@@ -962,10 +974,11 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         else
                         {
                             // xoá profile cũ
+                            Console.WriteLine("Xoá podcaster profile cũ cho account id: " + account.Id);
                             await _podcasterProfileGenericRepository.DeleteAsync(account.PodcasterProfile.AccountId);
                         }
                     }
-                    
+
 
 
                     var podcasterProfile = new PodcasterProfile
@@ -980,6 +993,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         UsedBookingStorageSize = 0,
                         RatingCount = 0
                     };
+
 
                     var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + account.Id;
                     if (createPodcasterProfileParameter.CommitmentDocumentFileKey != null && createPodcasterProfileParameter.CommitmentDocumentFileKey != "")
@@ -1350,11 +1364,13 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     account.ViolationPoint += addAccountViolationPointParameterDTO.ViolationPoint;
                     account.LastViolationPointChanged = _dateHelper.GetNowByAppTimeZone();
 
-                    // cập nhật violation level
-                    var newViolationLevel = CalculateViolationLevel(account.ViolationPoint, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray);
-                    account.ViolationLevel = newViolationLevel;
-                    account.LastViolationLevelChanged = _dateHelper.GetNowByAppTimeZone();
-
+                    // cập nhật violation level nếu account violation level hiện tại là 0
+                    if (account.ViolationLevel == 0)
+                    {
+                        var newViolationLevel = CalculateViolationLevel(account.ViolationPoint, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray);
+                        account.ViolationLevel = newViolationLevel;
+                        account.LastViolationLevelChanged = _dateHelper.GetNowByAppTimeZone();
+                    }
                     await _accountGenericRepository.UpdateAsync(account.Id, account);
 
                     await transaction.CommitAsync();
@@ -1414,7 +1430,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     }
                     else if (podcasterProfile.IsVerified != null)
                     {
-                        throw new Exception("Podcaster profile with id " + verifyPodcasterParameterDTO.AccountId + " is already " + (verifyPodcasterParameterDTO.IsVerified == true ? "verified" : "unverified"));
+                        throw new Exception("Podcaster profile with id " + verifyPodcasterParameterDTO.AccountId + " is already in verification process, cannot verify again");
                     }
 
                     podcasterProfile.IsVerified = verifyPodcasterParameterDTO.IsVerified;
@@ -1458,7 +1474,74 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
             }
         }
-        
+
+        public async Task CreatePodcastBuddyReview(CreatePodcastBuddyReviewParameterDTO createPodcastBuddyReviewParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                   var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
+                        predicate: a => a.AccountId == createPodcastBuddyReviewParameterDTO.PodcastBuddyId && a.IsVerified == true,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (podcasterProfile == null)
+                    {
+                        throw new Exception("Podcast buddy with id " + createPodcastBuddyReviewParameterDTO.PodcastBuddyId + " does not exist");
+                    }
+
+                    
+                    var podcastBuddyReview = new PodcastBuddyReview
+                    {
+                        AccountId = createPodcastBuddyReviewParameterDTO.AccountId,
+                        PodcastBuddyId = createPodcastBuddyReviewParameterDTO.PodcastBuddyId,
+                        Title = createPodcastBuddyReviewParameterDTO.Title,
+                        Content = createPodcastBuddyReviewParameterDTO.Content,
+                        Rating = createPodcastBuddyReviewParameterDTO.Rating,
+                    };
+
+                    await _podcastBuddyReviewGenericRepository.CreateAsync(podcastBuddyReview);
+                    // cập nhật rating count cho podcaster profile
+                    podcasterProfile.RatingCount += 1;
+                    podcasterProfile.AverageRating = ((podcasterProfile.AverageRating * (podcasterProfile.RatingCount - 1)) + createPodcastBuddyReviewParameterDTO.Rating) / podcasterProfile.RatingCount;
+                    await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
+
+                    await transaction.CommitAsync();
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Create podcast buddy review successfully",
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-podcast-buddy-review.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create podcast buddy review failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-podcast-buddy-review.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
     }
 }
 

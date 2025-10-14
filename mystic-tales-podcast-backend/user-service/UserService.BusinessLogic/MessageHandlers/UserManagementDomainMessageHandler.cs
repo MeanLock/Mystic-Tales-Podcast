@@ -7,6 +7,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateA
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountViolationPoint;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeactivateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
@@ -346,6 +347,9 @@ namespace UserService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "verify-podcaster.failed"    // From YAML onFailure.emit
             );
         }
+
+
+
 
         // [MessageHandler("ForgotPasswordEvent", "auth-events")]
         // public async Task HandleForgotPasswordAsync(string key, string messageJson)

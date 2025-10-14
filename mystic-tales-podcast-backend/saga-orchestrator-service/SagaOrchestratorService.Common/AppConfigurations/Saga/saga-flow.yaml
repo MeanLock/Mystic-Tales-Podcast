@@ -954,37 +954,37 @@ flows:
           nextSteps: []
           nextFlows: []
 
-channel-unfavorite-flow:
-  topic: "user-management-domain"
-  handle-service: "SagaOrchestratorService"
-  description: "Bỏ yêu thích kênh podcast"
-  save-file: ""
-  steps:
-    - name: "delete-channel-favorited"
-      topic: "user-management-domain"
-      handle-service: "PodcastService"
-      description: "Xóa channel khỏi danh sách yêu thích"
-      parameters:
-        - AccountId
-        - PodcastChannelId
-      next-request-data:
-        - AccountId
-        - PodcastChannelId
-      response-data:
-        - AccountId
-        - PodcastChannelId
-      onSuccess:
-        emit: "delete-channel-favorited.success"
+  channel-unfavorite-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Bỏ yêu thích kênh podcast"
+    save-file: ""
+    steps:
+      - name: "delete-channel-favorited"
         topic: "user-management-domain"
-        handle-service: "SagaOrchestratorService"
-        nextSteps: []
-        nextFlows: []
-      onFailure:
-        emit: "delete-channel-favorited.failed"
-        topic: "user-management-domain"
-        handle-service: "SagaOrchestratorService"
-        nextSteps: []
-        nextFlows: []
+        handle-service: "PodcastService"
+        description: "Xóa channel khỏi danh sách yêu thích"
+        parameters:
+          - AccountId
+          - PodcastChannelId
+        next-request-data:
+          - AccountId
+          - PodcastChannelId
+        response-data:
+          - AccountId
+          - PodcastChannelId
+        onSuccess:
+          emit: "delete-channel-favorited.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-channel-favorited.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
 
   show-follow-flow:
     topic: "user-management-domain"
@@ -2296,13 +2296,13 @@ channel-unfavorite-flow:
           nextSteps: []
           nextFlows: []
 
-  content-of-podcaster-termination-flow:
+  activities-of-podcaster-termination-flow:
     topic: "content-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Xóa tất cả nội dung của podcaster"
     save-file: ""
     steps:
-      - name: "terminate-booking-content-of-podcaster"
+      - name: "terminate-bookings-of-podcaster"
         topic: "booking-management-domain"
         handle-service: "BookingManagementService"
         description: "Hủy tất cả booking liên quan đến podcaster"
@@ -2405,7 +2405,7 @@ channel-unfavorite-flow:
       - name: "terminate-podcast-report-involve-podcaster"
         topic: "report-management-domain"
         handle-service: "ReportService"
-        description: "Xóa tất cả báo cáo liên quan đến podcaster"
+        description: "Xóa tất cả báo cáo liên quan đến podcaster bao gồm cả cá buddyReviewSession và showReviewSession và episodeReviewSession"
         parameters:
           - PodcasterId
         next-request-data:
