@@ -33,7 +33,6 @@ flows:
           - RoleId
         response-data:
           - AccountId
-          - CreatedAt
           - VerifyCode
           - Email
         onSuccess:
@@ -183,7 +182,6 @@ flows:
           - Address
           - Phone
           - MainImageFileKey
-          - UpdatedAt
         onSuccess:
           emit: "update-user.success"
           topic: "user-management-domain"
@@ -286,7 +284,7 @@ flows:
           - AccountId
           - Name
           - Description
-          - CreatedAt
+          - CommitmentDocumentFileKey
         onSuccess:
           emit: "create-podcaster-profile.success"
           topic: "user-management-domain"
@@ -325,7 +323,6 @@ flows:
           - Name
           - Description
           - BuddyAudioFileKey
-          - UpdatedAt
         onSuccess:
           emit: "update-podcaster-profile.success"
           topic: "user-management-domain"
@@ -451,13 +448,10 @@ flows:
         description: "Deactivate tài khoản user"
         parameters:
           - AccountId
-          - IsDeactivate
         next-request-data:
           - AccountId
-          - IsDeactivate
         response-data:
           - AccountId
-          - IsDeactivate
         onSuccess:
           emit: "deactivate-account.success"
           topic: "user-management-domain"
@@ -716,8 +710,8 @@ flows:
           - AccountId
           - PodcastBuddyId
         response-data:
-          - AccountFollowedPodcasterId
-          - CreatedAt
+          - FollowedPodcasterId
+          - AccountId
         onSuccess:
           emit: "create-podcaster-followed.success"
           topic: "user-management-domain"
@@ -749,7 +743,7 @@ flows:
           - PodcastBuddyId
         response-data:
           - AccountId
-          - PodcastBuddyId
+          - UnfollowedPodcasterId
         onSuccess:
           emit: "delete-podcaster-followed.success"
           topic: "user-management-domain"
@@ -4681,7 +4675,6 @@ flows:
           - Title
           - Content
           - Rating
-          - CreatedAt
         onSuccess:
           emit: "create-podcast-buddy-review.success"
           topic: "public-review-management-domain"
@@ -4723,7 +4716,6 @@ flows:
           - Title
           - Content
           - Rating
-          - UpdatedAt
         onSuccess:
           emit: "update-podcast-buddy-review.success"
           topic: "public-review-management-domain"
@@ -4756,7 +4748,6 @@ flows:
         response-data:
           - PodcastBuddyReviewId
           - AccountId
-          - DeletedAt
         onSuccess:
           emit: "delete-podcast-buddy-review.success"
           topic: "public-review-management-domain"

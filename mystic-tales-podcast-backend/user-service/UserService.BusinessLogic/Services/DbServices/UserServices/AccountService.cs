@@ -38,6 +38,8 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyPod
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcastBuddyReview;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterFollowed;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcasterFollowed;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -69,6 +71,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         private readonly IGenericRepository<Role> _roleGenericRepository;
         private readonly IGenericRepository<PodcasterProfile> _podcasterProfileGenericRepository;
         private readonly IGenericRepository<PodcastBuddyReview> _podcastBuddyReviewGenericRepository;
+        private readonly IGenericRepository<AccountFollowedPodcaster> _accountFollowedPodcasterGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
@@ -97,6 +100,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             IGenericRepository<Role> roleGenericRepository,
             IGenericRepository<PodcasterProfile> podcasterProfileGenericRepository,
             IGenericRepository<PodcastBuddyReview> podcastBuddyReviewGenericRepository,
+            IGenericRepository<AccountFollowedPodcaster> accountFollowedPodcasterGenericRepository,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -122,6 +126,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _roleGenericRepository = roleGenericRepository;
             _podcasterProfileGenericRepository = podcasterProfileGenericRepository;
             _podcastBuddyReviewGenericRepository = podcastBuddyReviewGenericRepository;
+            _accountFollowedPodcasterGenericRepository = accountFollowedPodcasterGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -431,7 +436,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     var messageResponseData = JObject.FromObject(new
                     {
                         AccountId = existAccount.Id,
-                        Message = "Register account successfully"
+                        // Message = "Register account successfully"
+                        VerifyCode = existAccount.VerifyCode,
+                        Email = existAccount.Email
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -1016,7 +1023,11 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Create podcaster profile successfully",
+                        // Message = "Create podcaster profile successfully",
+                        AccountId = podcasterProfile.AccountId,
+                        Name = podcasterProfile.Name,
+                        Description = podcasterProfile.Description,
+                        CommitmentDocumentFileKey = podcasterProfile.CommitmentDocumentFileKey
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -1141,7 +1152,11 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Update podcaster profile successfully",
+                        // Message = "Update podcaster profile successfully",
+                        AccountId = podcasterProfile.AccountId,
+                        Name = podcasterProfile.Name,
+                        Description = podcasterProfile.Description,
+                        BuddyAudioFileKey = podcasterProfile.BuddyAudioFileKey
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -1211,7 +1226,15 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Update user successfully",
+                        // Message = "Update user successfully",
+                        AccountId = account.Id,
+                        Email = account.Email,
+                        FullName = account.FullName,
+                        Dob = account.Dob?.ToString("yyyy-MM-dd"),
+                        Gender = account.Gender,
+                        Address = account.Address,
+                        Phone = account.Phone,
+                        MainImageFileKey = account.MainImageFileKey
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -1262,7 +1285,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Deactivate account successfully"
+                        // Message = "Deactivate account successfully"
+                        AccountId = account.Id,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -1314,7 +1338,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Activate account successfully"
+                        // Message = "Activate account successfully"
+                        AccountId = account.Id,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -1379,7 +1404,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Add account violation point successfully"
+                        // Message = "Add account violation point successfully"
+                        AccountId = account.Id,
+                        NewViolationPoint = account.ViolationPoint,
+                        NewViolationLevel = account.ViolationLevel
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -1440,7 +1468,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await transaction.CommitAsync();
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Verify podcaster profile successfully",
+                        // Message = "Verify podcaster profile successfully",
+                        AccountId = podcasterProfile.AccountId,
+                        IsVerified = podcasterProfile.IsVerified
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -1518,7 +1548,13 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await transaction.CommitAsync();
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Create podcast buddy review successfully",
+                        // Message = "Create podcast buddy review successfully",
+                        PodcastBuddyReviewId = podcastBuddyReview.Id,
+                        AccountId = podcastBuddyReview.AccountId,
+                        PodcastBuddyId = podcastBuddyReview.PodcastBuddyId,
+                        Title = podcastBuddyReview.Title,
+                        Content = podcastBuddyReview.Content,
+                        Rating = podcastBuddyReview.Rating
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.PublicReviewManagementDomain,
@@ -1595,7 +1631,13 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await transaction.CommitAsync();
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Create podcast buddy review successfully",
+                        // Message = "Create podcast buddy review successfully",
+                        PodcastBuddyReviewId = existingReview.Id,
+                        AccountId = existingReview.AccountId,
+                        Title = existingReview.Title,
+                        Content = existingReview.Content,
+                        Rating = existingReview.Rating
+
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.PublicReviewManagementDomain,
@@ -1639,7 +1681,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     if (existingReview == null)
                     {
                         throw new Exception("Podcast buddy review not found");
-                    } else if (existingReview.AccountId != deletePodcastBuddyReviewParameterDTO.AccountId)
+                    }
+                    else if (existingReview.AccountId != deletePodcastBuddyReviewParameterDTO.AccountId)
                     {
                         throw new Exception("Account with id " + deletePodcastBuddyReviewParameterDTO.AccountId + " is not the owner of podcast buddy review with id " + deletePodcastBuddyReviewParameterDTO.PodcastBuddyReviewId);
                     }
@@ -1662,7 +1705,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await transaction.CommitAsync();
                     var messageResponseData = JObject.FromObject(new
                     {
-                        Message = "Delete podcast buddy review successfully",
+                        // Message = "Delete podcast buddy review successfully",
+                        PodcastBuddyReviewId = existingReview.Id,
+                        AccountId = existingReview.AccountId,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.PublicReviewManagementDomain,
@@ -1688,6 +1733,131 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "delete-podcast-buddy-review.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+
+        public async Task CreatePodcasterFollowed(CreatePodcasterFollowedParameterDTO createPodcasterFollowedParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
+                         predicate: a => a.AccountId == createPodcasterFollowedParameterDTO.PodcastBuddyId && a.IsVerified == true,
+                         includeFunc: null
+                         ).ToListAsync()).FirstOrDefault();
+                    if (podcasterProfile == null)
+                    {
+                        throw new Exception("Podcast buddy with id " + createPodcasterFollowedParameterDTO.PodcastBuddyId + " does not exist");
+                    }
+                    var existingFollow = (await _accountFollowedPodcasterGenericRepository.FindAll(
+                        predicate: a => a.AccountId == createPodcasterFollowedParameterDTO.AccountId && a.PodcasterId == createPodcasterFollowedParameterDTO.PodcastBuddyId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (existingFollow != null)
+                    {
+                        throw new Exception("Account with id " + createPodcasterFollowedParameterDTO.AccountId + " has already followed podcast buddy with id " + createPodcasterFollowedParameterDTO.PodcastBuddyId);
+                    }
+
+                    var podcasterFollowed = new AccountFollowedPodcaster
+                    {
+                        AccountId = createPodcasterFollowedParameterDTO.AccountId,
+                        PodcasterId = createPodcasterFollowedParameterDTO.PodcastBuddyId,
+                    };
+
+                    await _accountFollowedPodcasterGenericRepository.CreateAsync(podcasterFollowed);
+
+                    await transaction.CommitAsync();
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Create podcaster followed successfully",
+                        FollowedPodcasterId = podcasterFollowed.PodcasterId,
+                        AccountId = podcasterFollowed.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-podcaster-followed.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create podcaster followed failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-podcaster-followed.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeletePodcasterFollowed(DeletePodcasterFollowedParameterDTO deletePodcasterFollowedParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingFollow = (await _accountFollowedPodcasterGenericRepository.FindAll(
+                        predicate: a => a.AccountId == deletePodcasterFollowedParameterDTO.AccountId && a.PodcasterId == deletePodcasterFollowedParameterDTO.PodcastBuddyId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (existingFollow == null)
+                    {
+                        throw new Exception("Account with id " + deletePodcasterFollowedParameterDTO.AccountId + " has not followed podcast buddy with id " + deletePodcasterFollowedParameterDTO.PodcastBuddyId);
+                    }
+                    await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByAccountIdAndPodcasterIdAsync(deletePodcasterFollowedParameterDTO.AccountId, deletePodcasterFollowedParameterDTO.PodcastBuddyId);
+
+                    await transaction.CommitAsync();
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete podcaster followed successfully",
+                        UnfollowedPodcasterId = deletePodcasterFollowedParameterDTO.PodcastBuddyId,
+                        AccountId = deletePodcasterFollowedParameterDTO.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-podcaster-followed.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete podcaster followed failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-podcaster-followed.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
