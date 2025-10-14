@@ -25,19 +25,22 @@ const parseSagaResultData = (raw: any) => {
 export async function pollSagaResult({
   sagaId,
   axiosInstance,
-  maxAttempts = 30,
-  intervalMs = 2000,
+  timeoutSeconds = 60, // Mặc định gọi trong 60 giây
+  intervalSeconds = 2, // Mặc định 2 giây mỗi lần gọi
   abortRef,
 }: {
   sagaId: string
   axiosInstance: AxiosInstance
-  maxAttempts?: number
-  intervalMs?: number
+  timeoutSeconds?: number
+  intervalSeconds?: number
   abortRef?: { current: boolean }
 }): Promise<SagaResult> {
-  let attempt = 0
 
-  while (attempt < maxAttempts) {
+  const startTime = Date.now()
+  const timeoutMs = timeoutSeconds * 1000
+  const intervalMs = intervalSeconds * 1000
+
+  while (Date.now() - startTime < timeoutMs) {
     if (abortRef?.current) return { status: "TIMEOUT", error: "Aborted" }
 
     try {
@@ -56,7 +59,6 @@ export async function pollSagaResult({
     }
 
     await new Promise((resolve) => setTimeout(resolve, intervalMs))
-    attempt++
   }
 
   return { status: "TIMEOUT", error: "Saga polling timeout" }

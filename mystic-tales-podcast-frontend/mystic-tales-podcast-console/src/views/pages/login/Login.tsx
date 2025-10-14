@@ -23,6 +23,8 @@ const Login = () => {
   const [disabled, setDisabled] = useState(false)
 
   const { startPolling } = useSagaPolling({
+    timeoutSeconds: 120, // Chờ tối đa 120 giây (2 phút)
+    intervalSeconds: 2, // Gọi lại mỗi 2 giây
     onSuccess: (data) => {
       const token = data?.AccessToken
       if (!token) return toast.error("Không nhận được token từ Saga")

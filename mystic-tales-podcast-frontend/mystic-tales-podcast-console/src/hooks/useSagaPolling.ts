@@ -6,6 +6,8 @@ export interface UseSagaPollingOptions {
   onSuccess?: (data: any) => void
   onFailure?: (error: string) => void
   onTimeout?: () => void
+  timeoutSeconds?: number // Thời gian chờ tối đa (giây)
+  intervalSeconds?: number // Khoảng thời gian giữa các lần gọi (giây)
 }
 
 export function useSagaPolling(options?: UseSagaPollingOptions) {
@@ -21,6 +23,8 @@ export function useSagaPolling(options?: UseSagaPollingOptions) {
     const result: SagaResult = await pollSagaResult({
       sagaId,
       axiosInstance,
+      timeoutSeconds: options?.timeoutSeconds,
+      intervalSeconds: options?.intervalSeconds,
       abortRef,
     })
 
