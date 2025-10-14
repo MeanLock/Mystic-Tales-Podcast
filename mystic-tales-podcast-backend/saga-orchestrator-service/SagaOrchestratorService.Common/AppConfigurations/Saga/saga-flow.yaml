@@ -2617,20 +2617,23 @@ flows:
         description: "Submit audio file cho booking track"
         parameters:
           - BookingProducingRequestId
-          - AudioFileKey
-          - AudioFileSize
-          - AudioLength
+          - Tracks:
+            - AudioFileKey
+            - AudioFileSize
+            - AudioLength
         next-request-data:
           - BookingProducingRequestId
-          - AudioFileKey
-          - AudioFileSize
-          - AudioLength
+          - Tracks:
+            - AudioFileKey
+            - AudioFileSize
+            - AudioLength
         response-data:
           - BookingProducingRequestId
           - BookingPodcastTrackId
-          - AudioFileKey
-          - AudioFileSize
-          - AudioLength
+          - Tracks:
+            - AudioFileKey
+            - AudioFileSize
+            - AudioLength
           - CreatedAt
         onSuccess:
           emit: "submit-booking-track.success"

@@ -3,6 +3,7 @@ using BookingManagementService.API.Filters.ExceptionFilters;
 using BookingManagementService.BusinessLogic.Models.CrossService;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using BookingManagementService.BusinessLogic.Services.DbServices;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
 {
@@ -23,6 +24,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpGet("bookings/{BookingId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetChatMessageByBookingId([FromRoute] int BookingId)
         {
             var chatMessage = await _chatRoomService.GetAllChatRoomByBookingIdAsync(BookingId);

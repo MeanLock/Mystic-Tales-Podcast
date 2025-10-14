@@ -1,4 +1,4 @@
-﻿using BookingManagementService.DataAccess.Entities.sqlserver;
+﻿using BookingManagementService.DataAccess.Entities.SqlServer;
 using BookingManagementService.DataAccess.Repositories.interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;

@@ -25,7 +25,6 @@ namespace BookingManagementService.API.Controllers.BaseControllers
     [Route("api/bookings")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
-    [Authorize(Policy = "Customer.BasicAccess")]
     public class BookingController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -61,6 +60,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetAllBookings()
         {
             var result = await _bookingService.GetAllBookingsAsync();
@@ -73,6 +73,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpGet("{BookingId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetBookingById(int BookingId)
         {
             var result = await _bookingService.GetBookingByIdAsync(BookingId);
@@ -84,6 +85,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> CreateBooking([FromBody] BookingRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -111,6 +113,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
         // NEW: Booking Negotiation Multipart Endpoint
         [HttpPost("{BookingId}/book-negotiations")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> CreateBookingNegotiation(
             [FromRoute] int BookingId,
             [FromForm] BookingNegotiationRequestDTO bookingNegotiationRequestDTO)
@@ -151,7 +154,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 JObject requestData = JObject.FromObject(negotiationRequestInfo);
                 requestData["AccountId"] = accountId;
                 requestData["BookingId"] = BookingId;
-                requestData["DemoFileAudioFileKey"] = demoAudioFileKey;
+                requestData["DemoAudioFileKey"] = demoAudioFileKey;
 
                 var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-negotiation-flow");
                 var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
@@ -180,6 +183,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpGet("me")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetMyBookings()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -194,6 +198,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpPut("{BookingId}/reject")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> RejectBooking([FromRoute] int BookingId)
         {
             var requestData = new JObject
@@ -214,6 +219,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpPut("{BookingId}/cancel")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> CancelBooking([FromRoute] int BookingId, [FromBody] BookingCancelRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;

@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="DTOs\MessageQueue\BookingManagementDomain\UpdateBookingTrackPreviewListenSlot\UpdateBookingTrackPreviewListenSlotParameterDTO.cs" />
+    <Compile Remove="DTOs\MessageQueue\BookingManagementDomain\UpdateBookingTrackPreviewListenSlot\**" />
+    <EmbeddedResource Remove="DTOs\MessageQueue\BookingManagementDomain\UpdateBookingTrackPreviewListenSlot\**" />
+    <None Remove="DTOs\MessageQueue\BookingManagementDomain\UpdateBookingTrackPreviewListenSlot\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\MessageQueue\BookingManagementDomain\UpdateBookingTrackPreviewListenSlot\" />
     <Folder Include="Exceptions\" />
     <Folder Include="Services\BackgroundServices\interfaces\" />
     <Folder Include="Services\DbServices\MiscServices\" />

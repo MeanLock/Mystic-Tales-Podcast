@@ -1,5 +1,4 @@
 ﻿using BookingManagementService.DataAccess.DTOs.Booking.ListItems;
-using BookingManagementService.DataAccess.Entities.sqlserver;
 using System;
 using System.Collections.Generic;
 using System.Linq;

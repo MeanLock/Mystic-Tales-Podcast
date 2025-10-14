@@ -12,13 +12,13 @@ using BookingManagementService.Infrastructure.Models.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Services.Audio.AcoustID;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
 using Microsoft.AspNetCore.Authorization;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
 {
     [Route("api/producing-requests")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
-    [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
     public class ProducingRequestController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -30,7 +30,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
         private readonly AcoustIDAudioFingerprintGenerator _audioFingerprintGenerator;
-
+        private readonly ILogger<ProducingRequestController> _logger;
         public ProducingRequestController(
             GenericQueryService genericQueryService, 
             HttpServiceQueryClient httpServiceQueryClient,
@@ -40,7 +40,8 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             IFileValidationConfig fileValidationConfig,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
-            AcoustIDAudioFingerprintGenerator audioFingerprintGenerator)
+            AcoustIDAudioFingerprintGenerator audioFingerprintGenerator,
+            ILogger<ProducingRequestController> logger)
         {
             _genericQueryService = genericQueryService;
             _httpServiceQueryClient = httpServiceQueryClient;
@@ -51,8 +52,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
             _audioFingerprintGenerator = audioFingerprintGenerator;
+            _logger = logger;
         }
+        
         [HttpGet("{BookingProducingRequestId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetProducingRequestById([FromRoute] Guid BookingProducingRequestId)
         {
             var result = await _bookingProducingRequestService.GetProducingRequestByIdAsync(BookingProducingRequestId);
@@ -62,7 +66,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
             return Ok(result);
         }
+        
         [HttpPost("bookings/{BookingId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> CreateProducingRequest([FromRoute] int BookingId, [FromBody] BookingProducingRequestRequestDTO request)
         {
             var requestData = new JObject
@@ -81,23 +87,27 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
             return Ok("Booking producing request create successfully.");
         }
+        
         [HttpPut("{BookingProducingRequestId}/submit")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> SubmitAudioTrack(
             [FromRoute] Guid BookingProducingRequestId,
             [FromForm] BookingPodcastTrackRequestDTO request
             )
         {
-            bool allMessagesSuccessful = true;
-            
+            // Validate all audio files first
             foreach(var audioFile in request.AudioFiles)
             {
                 var isValidAudioFile = _fileValidationConfig.IsValidFile("BookingPodcastTrack.audioFileKey", audioFile.FileName, audioFile.Length, audioFile.ContentType);
                 if (!isValidAudioFile)
                 { 
-                    return BadRequest($"Invalid audio file. Please ensure all of the audio file type and size are correct.");
+                    return BadRequest($"Invalid audio file '{audioFile.FileName}'. Please ensure all audio files have correct type and size.");
                 }
             }
 
+            var trackSubmissions = new List<BookingTrackSubmissionItem>();
+
+            // Process all audio files and prepare track submission items
             foreach (var audioFile in request.AudioFiles)
             {
                 string newTrackAudioFileName = $"{Guid.NewGuid()}_{audioFile.FileName}";
@@ -116,6 +126,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                     }
                     catch (Exception ex)
                     {
+                        // Log the error but continue with default metadata
                         audioMetadata = new AcoustIDAudioFingerprintGeneratedResult
                         {
                             Duration = 0,
@@ -126,31 +137,57 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
                 var trackAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newTrackAudioFileName);
 
-                var requestData = new JObject
+                // Add to track submissions list
+                trackSubmissions.Add(new BookingTrackSubmissionItem
                 {
-                    { "BookingProducingRequestId", BookingProducingRequestId },
-                    { "AudioFileKey", trackAudioFileKey },
-                    { "AudioFileSize", audioFile.Length }, // File size in bytes
-                    { "AudioLength", audioMetadata?.Duration ?? 0 } // Audio duration in seconds
-                };
-
-                var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-track-submission-flow");
-                var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-
-                if (!result)
-                {
-                    allMessagesSuccessful = false;
-                }
+                    AudioFileKey = trackAudioFileKey,
+                    AudioFileSize = audioFile.Length,
+                    AudioLength = (int)(audioMetadata?.Duration ?? 0)
+                });
             }
 
-            if (!allMessagesSuccessful)
+            // Create a single saga message with all tracks
+            var requestData = new JObject
             {
+                { "BookingProducingRequestId", BookingProducingRequestId },
+                { "Tracks", JArray.FromObject(trackSubmissions.Select(track => new JObject
+                    {
+                        { "AudioFileKey", track.AudioFileKey },
+                        { "AudioFileSize", track.AudioFileSize },
+                        { "AudioLength", track.AudioLength }
+                    })) }
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-track-submission-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+
+            if (!result)
+            {
+                // If saga message fails, clean up uploaded files
+                foreach (var track in trackSubmissions)
+                {
+                    try
+                    {
+                        await _fileIOHelper.DeleteFileAsync(track.AudioFileKey);
+                    }
+                    catch
+                    {
+                        _logger.LogError($"Failed to delete temporary file: {track.AudioFileKey}");
+                    }
+                }
                 return StatusCode(500, "Failed to initiate booking producing request submission process.");
             }
             
-            return Ok("Booking producing request submitted successfully.");
+            return Ok(new
+            {
+                Message = "Booking producing request submitted successfully.",
+                TracksSubmitted = trackSubmissions.Count,
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
         }
+        
         [HttpPut("{BookingProducingRequestId}/accept/{isAccepted}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> BookingProducingRequestAcceptance(
             [FromRoute] Guid BookingProducingRequestId,
             [FromRoute] bool isAccepted)
@@ -172,8 +209,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
             );
         }
+        
         [HttpPut("{BookingPodcastTrackId}")]
-        public async Task<IActionResult> UpdateBookingPodcastTrackDetails(
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> UpdateBookingPodcastTrackPreviewListenSlot(
             [FromRoute] Guid BookingPodcastTrackId)
         {
             var requestData = new JObject

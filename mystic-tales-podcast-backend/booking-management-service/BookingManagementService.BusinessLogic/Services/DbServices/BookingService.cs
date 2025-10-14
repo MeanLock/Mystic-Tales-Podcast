@@ -17,7 +17,7 @@ using BookingManagementService.BusinessLogic.Services.CrossServiceServices.Query
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.DataAccess.Data;
-using BookingManagementService.DataAccess.Entities.sqlserver;
+using BookingManagementService.DataAccess.Entities.SqlServer;
 using BookingManagementService.DataAccess.Repositories.interfaces;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
@@ -490,8 +490,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     await _bookingNegotiationGenericRepository.CreateAsync(newBookingNegotiation);
 
                     var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + newBookingNegotiation.BookingId;
-                    if (!string.IsNullOrEmpty(parameter.DemoAudioFileKey))
+                    Console.WriteLine("sadfghjkljhgfdszdgsdgsfbfhdghdgwretgefsdfsdfsd " + parameter.DemoAudioFileKey);
+                    Console.WriteLine("cccccccccccccccccccccccccccccccc " + folderPath);
+                    if (!string.IsNullOrEmpty(parameter.DemoAudioFileKey) && !isFromCustomer)
                     {
+                        Console.WriteLine("dddddddddddddddddddddddddddddddd " + parameter.DemoAudioFileKey);
                         var DemoAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"{bookingNegotitationId}_negotiation_demo_audio{FilePathHelper.GetExtension(parameter.DemoAudioFileKey)}");
                         await _fileIOHelper.CopyFileToFileAsync(parameter.DemoAudioFileKey, DemoAudioFileKey);
                         await _fileIOHelper.DeleteFileAsync(parameter.DemoAudioFileKey);
@@ -512,7 +515,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
 
                     var currentStatus = booking.BookingStatusTrackings?.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
 
-                    if (currentStatus == 2 && !newBookingNegotiation.IsFromCustomer)
+                    if (currentStatus == 2 && newBookingNegotiation.IsFromCustomer)
                     {
                         var newBookingStatusTracking = new BookingStatusTracking
                         {
@@ -525,7 +528,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
                     }
-                    else if(currentStatus == 1 && newBookingNegotiation.IsFromCustomer)
+                    else if(currentStatus == 1 && !newBookingNegotiation.IsFromCustomer)
                     {
                         var newBookingStatusTracking = new BookingStatusTracking
                         {

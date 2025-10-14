@@ -12,7 +12,7 @@ using BookingManagementService.BusinessLogic.Services.CrossServiceServices.Query
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.DataAccess.Data;
-using BookingManagementService.DataAccess.Entities.sqlserver;
+using BookingManagementService.DataAccess.Entities.SqlServer;
 using BookingManagementService.DataAccess.Repositories.interfaces;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
@@ -214,29 +214,38 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdAsync(parameter.BookingProducingRequestId);
                     var config = await GetActiveSystemConfigProfile();
                     var remainingPreviewListenSlot = config["BookingConfig"]?.Value<int?>("PodcastTrackPreviewListenSlot");
-                    var bookingPodcastTrackId = Guid.NewGuid();
 
-                    var newBookingPodcastTrack = new BookingPodcastTrack()
+                    var createdTracks = new List<BookingPodcastTrack>();
+
+                    // Process each track
+                    foreach (var trackInfo in parameter.Tracks)
                     {
-                        Id = bookingPodcastTrackId,
-                        BookingId = bookingProducingRequest.BookingId,
-                        BookingProducingRequestId = bookingProducingRequest.Id,
-                        AudioFileKey = null,
-                        AudioFileSize = parameter.AudioFileSize,
-                        AudioLength = parameter.AudioLength,
-                        RemainingPreviewListenSlot = remainingPreviewListenSlot.Value
-                    };
+                        var bookingPodcastTrackId = Guid.NewGuid();
 
-                    var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.CreateAsync(newBookingPodcastTrack);
+                        var newBookingPodcastTrack = new BookingPodcastTrack()
+                        {
+                            Id = bookingPodcastTrackId,
+                            BookingId = bookingProducingRequest.BookingId,
+                            BookingProducingRequestId = bookingProducingRequest.Id,
+                            AudioFileKey = null,
+                            AudioFileSize = trackInfo.AudioFileSize,
+                            AudioLength = trackInfo.AudioLength,
+                            RemainingPreviewListenSlot = remainingPreviewListenSlot.Value
+                        };
 
-                    var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + bookingProducingRequest.BookingId;
-                    if (parameter.AudioFileKey != null && parameter.AudioFileKey != "")
-                    {
-                        var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"{bookingPodcastTrackId}_track_audio{FilePathHelper.GetExtension(parameter.AudioFileKey)}");
-                        await _fileIOHelper.CopyFileToFileAsync(parameter.AudioFileKey, TrackAudioFileKey);
-                        await _fileIOHelper.DeleteFileAsync(parameter.AudioFileKey);
-                        newBookingPodcastTrack.AudioFileKey = TrackAudioFileKey;
-                        await _bookingPodcastTrackGenericRepository.UpdateAsync(newBookingPodcastTrack.Id, newBookingPodcastTrack);
+                        var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.CreateAsync(newBookingPodcastTrack);
+
+                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + bookingProducingRequest.BookingId;
+                        if (trackInfo.AudioFileKey != null && trackInfo.AudioFileKey != "")
+                        {
+                            var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"{bookingPodcastTrackId}_track_audio{FilePathHelper.GetExtension(trackInfo.AudioFileKey)}");
+                            await _fileIOHelper.CopyFileToFileAsync(trackInfo.AudioFileKey, TrackAudioFileKey);
+                            await _fileIOHelper.DeleteFileAsync(trackInfo.AudioFileKey);
+                            newBookingPodcastTrack.AudioFileKey = TrackAudioFileKey;
+                            await _bookingPodcastTrackGenericRepository.UpdateAsync(newBookingPodcastTrack.Id, newBookingPodcastTrack);
+                        }
+
+                        createdTracks.Add(newBookingPodcastTrack);
                     }
 
                     var booking = await _bookingGenericRepository.FindByIdWithPaths(
@@ -265,15 +274,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
 
                     await transaction.CommitAsync();
 
-                    if (bookingPodcastTrack != null)
+                    if (createdTracks.Any())
                     {
+                        var trackSubmissionResults = createdTracks.Select(track => new JObject
+                        {
+                            { "BookingPodcastTrackId", track.Id },
+                            { "AudioFileKey", track.AudioFileKey },
+                            { "AudioFileSize", track.AudioFileSize },
+                            { "AudioFileLength", track.AudioLength }
+                        }).ToArray();
+
                         var newResponseData = new JObject
                         {
-                            { "BookingProducingRequestId", bookingPodcastTrack.BookingProducingRequestId },
-                            { "BookingPodcastTrackId" , bookingPodcastTrack.Id },
-                            { "AudioFileKey", bookingPodcastTrack.AudioFileKey},
-                            { "AudioFileSize", bookingPodcastTrack.AudioFileSize },
-                            { "AudioFileLength", bookingPodcastTrack.AudioLength },
+                            { "BookingProducingRequestId", bookingProducingRequest.Id },
+                            { "SubmittedTracks", JArray.FromObject(trackSubmissionResults) },
+                            { "TotalTracksSubmitted", createdTracks.Count },
                             { "CreatedAt", _dateHelper.GetNowByAppTimeZone() }
                         };
                         var newMessageName = messageName + ".success";
@@ -285,7 +300,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                             flowName: flowName,
                             messageName: newMessageName);
                         var result = await _messagingService.SendSagaMessageAsync(SagaCommandMessage, sagaId.ToString());
-                        _logger.LogInformation("Booking track submit successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                        _logger.LogInformation("Booking tracks submitted successfully for SagaId: {SagaId}. Total tracks: {TrackCount}", command.SagaInstanceId, createdTracks.Count);
                     }
                 }
                 catch (Exception ex)
@@ -294,7 +309,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     _logger.LogError(ex, "Error occurred while submitting booking tracks for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                         {
-                            { "ErrorMessage", "Submit booking track failed, error: " + ex.Message}
+                            { "ErrorMessage", "Submit booking tracks failed, error: " + ex.Message}
                         };
                     var newMessageName = command.MessageName + ".success";
                     var SagaCommandMessage = _kafkaProducerService.PrepareSagaEventMessage(
@@ -305,7 +320,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         flowName: command.FlowName,
                         messageName: newMessageName);
                     var result = await _messagingService.SendSagaMessageAsync(SagaCommandMessage, command.SagaInstanceId.ToString());
-                    _logger.LogError("Booking track submit failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
+                    _logger.LogError("Booking tracks submit failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
         }
