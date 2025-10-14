@@ -8,6 +8,10 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking
 {
     public class BookingRequestDTO
     {
+        public BookingInfoDTO BookingInfo { get; set; } = new BookingInfoDTO();
+    }
+    public class BookingInfoDTO
+    {
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int PodcastBuddyId { get; set; }

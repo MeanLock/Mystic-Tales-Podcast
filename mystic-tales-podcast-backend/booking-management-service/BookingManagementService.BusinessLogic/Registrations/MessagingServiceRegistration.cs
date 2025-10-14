@@ -11,7 +11,7 @@ namespace BookingManagementService.BusinessLogic.Registrations
         public static IServiceCollection AddMessagingServices(this IServiceCollection services)
         {
             // Message Handlers
-            services.AddScoped<AuthMessageHandler>();
+            services.AddScoped<BookingManagementDomainMessageHandler>();
             
             // Messaging Services (trong MessagingServices folder)
             services.AddScoped<IMessagingService, MessagingService>();

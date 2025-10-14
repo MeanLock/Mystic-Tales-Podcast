@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
+using BookingManagementService.BusinessLogic.Services.BackgroundServices.BookingScheduleServices;
 
 namespace BookingManagementService.BusinessLogic.Registrations
 {
@@ -15,7 +16,8 @@ namespace BookingManagementService.BusinessLogic.Registrations
 
             // services.AddHostedService<MinuteBaseRequestCancellationService>();
             // services.AddHostedService<HourBaseRequestCancellationService>();
-            
+            services.AddHostedService<HourlyDeadlineBookingCheckingServices>();
+
             services.Configure<HostOptions>(options =>
             {
                 options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;

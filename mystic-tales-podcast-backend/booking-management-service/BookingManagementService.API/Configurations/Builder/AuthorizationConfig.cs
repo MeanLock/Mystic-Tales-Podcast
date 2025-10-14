@@ -86,7 +86,11 @@ namespace BookingManagementService.API.Configurations.Builder
                     policy.Requirements.Add(new AccountNoViolationAccessRequirement());
                     policy.Requirements.Add(new AccountPodcasterAccessRequirement());
                 });
-
+                options.AddPolicy("AdminOrStaffOrCustomer.NoViolationAccess", policy =>
+                {
+                    policy.RequireRole("Admin", "Staff", "Customer");
+                    policy.Requirements.Add(new AccountNoViolationAccessRequirement());
+                });
 
 
             });

@@ -11,13 +11,14 @@ using Newtonsoft.Json.Linq;
 using BookingManagementService.Infrastructure.Models.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Services.Audio.AcoustID;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
 {
     [Route("api/producing-requests")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
-    [Authorize(Policy = "Customer.NoViolationAccess")]
+    [Authorize(Policy = "AdminOrStaffOrCustomer.NoViolationAccess")]
     public class ProducingRequestController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -67,9 +68,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "BookingId", BookingId },
-                { "Note", request.Note },
-                { "Deadline", request.Deadline.ToString("dd-MM-yyyy") }, // Convert DateOnly to string
-                { "PodcastTrackIds", JArray.FromObject(request.BookingPodcastTrackIds) }
+                { "Note", request.BookingProducingRequestInfo.Note },
+                { "Deadline", request.BookingProducingRequestInfo.Deadline.ToString("dd-MM-yyyy") }, // Convert DateOnly to string
+                { "PodcastTrackIds", JArray.FromObject(request.BookingProducingRequestInfo.BookingPodcastTrackIds) }
             };
 
             var SagaCommandMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-producing-request-creation-flow");

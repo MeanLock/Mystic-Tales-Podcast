@@ -35,6 +35,7 @@ namespace BookingManagementService.BusinessLogic.Registrations
 
             services.AddScoped<BookingService>(); 
             services.AddScoped<BookingProducingRequestService>();
+            services.AddScoped<ChatRoomService>();
 
             return services;
         }

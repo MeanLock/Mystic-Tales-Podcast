@@ -1,30 +1,31 @@
 ﻿using BookingManagementService.API.Filters.ExceptionFilters;
 using BookingManagementService.BusinessLogic.DTOs.Booking;
+using BookingManagementService.BusinessLogic.DTOs.Booking;
+using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.Helpers.AuthHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Models.CrossService;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using BookingManagementService.BusinessLogic.Services.DbServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.BusinessSetting.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
-using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Security.Claims;
-using BookingManagementService.BusinessLogic.Services.DbServices;
-using Microsoft.AspNetCore.Authorization;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
 {
     [Route("api/bookings")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
-    [Authorize(Policy = "Customer.NoViolationAccess")]
+    [Authorize(Policy = "AdminOrStaffOrCustomer.NoViolationAccess")]
     public class BookingController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -85,15 +86,15 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         [HttpPost]
         public async Task<IActionResult> CreateBooking([FromBody] BookingRequestDTO request)
         {
-            // Extract AccountId from JWT token
-            var accountId = GetAccountIdFromToken();
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
 
             var requestData = new JObject
             {
-                { "Title", request.Title },
-                { "Description", request.Description },
+                { "Title", request.BookingInfo.Title },
+                { "Description", request.BookingInfo.Description },
                 { "AccountId", accountId },
-                { "PodcastBuddyId", request.PodcastBuddyId }
+                { "PodcastBuddyId", request.BookingInfo.PodcastBuddyId }
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-creation-flow");
@@ -116,8 +117,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         {
             try
             {
-                // Extract AccountId from JWT token
-                var accountId = GetAccountIdFromToken(); //Check coi có 
+                Console.WriteLine("Received BookingNegotiationInfo: " + bookingNegotiationRequestDTO.BookingNegotiationInfo);
+                Console.WriteLine("Received DemoAudioFile: " + (bookingNegotiationRequestDTO.DemoAudioFile != null ? bookingNegotiationRequestDTO.DemoAudioFile.FileName : "No file uploaded"));
+                var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+                var accountId = account.Id;
 
                 //var batchRequest = new BatchQueryRequest
                 //{
@@ -144,7 +147,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
                 // Parse the JSON BookingNegotiationInfo
                 var negotiationRequestInfo = JsonConvert.DeserializeObject<BookingNegotiationInfoDTO>(bookingNegotiationRequestDTO.BookingNegotiationInfo);
-
+                Console.WriteLine("We are hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
                 if (negotiationRequestInfo == null)
                 {
                     return BadRequest("Invalid BookingNegotiationInfo format.");
@@ -153,19 +156,34 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 string demoAudioFileKey = null;
                 if (bookingNegotiationRequestDTO.DemoAudioFile != null)
                 {
-                    var isValidAudioFile = _fileValidationConfig.IsValidFile("BookingNegotiation.demoAudioFileKey", bookingNegotiationRequestDTO.DemoAudioFile.FileName, bookingNegotiationRequestDTO.DemoAudioFile.Length, bookingNegotiationRequestDTO.DemoAudioFile.ContentType);
-                    if(!isValidAudioFile)
+                    Console.WriteLine("We are DMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM");
+                    var isValidAudioFile = _fileValidationConfig.IsValidFile(
+                        "BookingNegotiation.demoAudioFileKey", 
+                        bookingNegotiationRequestDTO.DemoAudioFile.FileName, 
+                        bookingNegotiationRequestDTO.DemoAudioFile.Length, 
+                        bookingNegotiationRequestDTO.DemoAudioFile.ContentType);
+                    Console.WriteLine("Is valid audio file: " + isValidAudioFile);
+                    Console.WriteLine("File Name: " + bookingNegotiationRequestDTO.DemoAudioFile.FileName);
+                    Console.WriteLine("File Length: " + bookingNegotiationRequestDTO.DemoAudioFile.Length);
+                    Console.WriteLine("File ContentType: " + bookingNegotiationRequestDTO.DemoAudioFile.ContentType);
+                    if (!isValidAudioFile)
                     {
                         return BadRequest("Invalid audio file. Please ensure the file type and size are correct.");
                     }
                     string newDemoAudioFileName = $"{Guid.NewGuid()}_{bookingNegotiationRequestDTO.DemoAudioFile.FileName}";
+                    Console.WriteLine("\n ngu 1 \n");
                     using (var memoryStream = bookingNegotiationRequestDTO.DemoAudioFile.OpenReadStream())
                     {
-                        await _fileIOHelper.UploadBinaryFileWithStreamAsync(memoryStream, _filePathConfig.BOOKING_TEMP_FILE_PATH, newDemoAudioFileName);
+                        Console.WriteLine("\n ngu 2 \n");
+                        await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                            memoryStream,
+                            _filePathConfig.BOOKING_TEMP_FILE_PATH,
+                            newDemoAudioFileName);
+                        Console.WriteLine("\n ngu 3 \n");
                     }
                     demoAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newDemoAudioFileName);
                 }
-
+                Console.WriteLine("We a33333333333333333333333333333333333333re hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
                 JObject requestData = JObject.FromObject(negotiationRequestInfo);
                 requestData["AccountId"] = accountId;
                 requestData["BookingId"] = BookingId;
@@ -200,9 +218,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         [HttpGet("me")]
         public async Task<IActionResult> GetMyBookings()
         {
-            // Extract AccountId from JWT token
-            var accountId = GetAccountIdFromToken();
-            
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
             var result = await _bookingService.GetBookingsByAccountIdAsync(accountId);
             if (result == null || !result.Any())
             {
@@ -234,7 +252,8 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         [HttpPut("{BookingId}/cancel")]
         public async Task<IActionResult> CancelBooking([FromRoute] int BookingId, [FromBody] BookingCancelRequestDTO request)
         {
-            var accountId = GetAccountIdFromToken();
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
 
             var requestData = new JObject
             {
@@ -253,50 +272,6 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
-        }
-        // Helper method to extract AccountId from JWT token
-        private int GetAccountIdFromToken()
-        {
-            try
-            {
-                // Get Authorization header
-                var authorizationHeader = Request.Headers["Authorization"].FirstOrDefault();
-                
-                if (string.IsNullOrEmpty(authorizationHeader))
-                {
-                    throw new UnauthorizedAccessException("Authorization header is missing");
-                }
-
-                // Extract token from "Bearer {token}" format
-                var token = JwtHelper.ExtractAuthorizationHeaderToken(authorizationHeader);
-
-                // Decode token (use the appropriate method based on your JWT configuration)
-                ClaimsPrincipal claimsPrincipal;
-                
-                // If using secret key (adjust based on your configuration)
-                claimsPrincipal = _jwtHelper.DecodeToken_OneSecretKey(token);
-                
-                // If using public/private key, use this instead:
-                // claimsPrincipal = _jwtHelper.DecodeToken_TwoPublicPrivateKey(token);
-
-                // Extract AccountId from claims
-                var accountIdClaim = claimsPrincipal.FindFirst("AccountId") ?? 
-                                   claimsPrincipal.FindFirst("accountId") ?? 
-                                   claimsPrincipal.FindFirst("Id") ?? 
-                                   claimsPrincipal.FindFirst("id") ??
-                                   claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier);
-
-                if (accountIdClaim == null || !int.TryParse(accountIdClaim.Value, out var accountId))
-                {
-                    throw new UnauthorizedAccessException("Invalid token: AccountId not found or invalid");
-                }
-
-                return accountId;
-            }
-            catch (Exception ex)
-            {
-                throw new UnauthorizedAccessException($"Token validation failed: {ex.Message}");
-            }
         }
     }
 }

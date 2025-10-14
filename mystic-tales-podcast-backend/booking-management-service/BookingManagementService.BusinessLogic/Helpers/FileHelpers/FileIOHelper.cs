@@ -70,6 +70,8 @@ namespace BookingManagementService.BusinessLogic.Helpers.FileHelpers
             if (_appConfig.FILE_STORAGE_SRC == "awsS3")
             {
                 var normalizedFolderPath = FilePathHelper.NormalizeFolderPath(folderPath);
+                Console.WriteLine("We innnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+
                 await _awsS3BinaryFileService.UploadBinaryFileWithStreamAsync(fileStream, normalizedFolderPath, fileName, mimeType);
                 return;
             }
