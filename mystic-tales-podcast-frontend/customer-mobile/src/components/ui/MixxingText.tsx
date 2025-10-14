@@ -22,9 +22,8 @@ export const MixxingText: React.FC<MixxingTextProps> = ({
   ...props
 }) => {
   const colorScheme = useColorScheme();
-  const baseColor = colorScheme === "dark" ? "#fff" : "#000";
-  const highlightColor =
-    colorScheme === "dark" ? tintColorDark : tintColorLight;
+  const baseColor = "#fff";
+  const highlightColor = tintColorDark;
 
   // Tách đoạn text thành 3 phần: trước, tô màu, sau
   const parts = originalText.split(coloredText);

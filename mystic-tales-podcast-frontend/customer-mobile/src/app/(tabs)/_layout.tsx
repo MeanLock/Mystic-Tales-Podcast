@@ -32,6 +32,17 @@ import { useClientOnlyValue } from "@/src/components/useClientOnlyValue";
 import { useSelector } from "react-redux";
 import { RootState } from "@/src/store/store";
 
+const HEADER_LARGE = 70; // chiều cao phần body lớn (không tính safeTop)
+const HEADER_COMPACT = 56; // compact height (Android/iOS giống nhau)
+
+const libChildTitles: Record<string, string> = {
+  shows: "My Shows",
+  channels: "Channels",
+  favorites: "Favorites",
+  downloads: "Downloads",
+  bookings: "Bookings",
+};
+
 /** ---------- Context: chia sẻ scrollY & headerHeight cho các tab ---------- **/
 type HeaderScrollCtx = {
   onScroll: (e: any) => void;
@@ -50,223 +61,31 @@ function useHeaderMetrics() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
-  // title size: responsive theo chiều ngang
   const titleSize = Math.max(26, Math.min(34, width * 0.085));
-  const titleLine = titleSize * 1.2;
+  const paddingH = 16;
+  const paddingTopExtra = 12;
 
-  const verticalGap = 10; // khoảng cách giữa các hàng
-  const paddingH = 16; // padding ngang
-  const paddingTopExtra = 12; // khoảng extra dưới safe-area
-
-  const headerBodyHeight = titleLine + verticalGap + verticalGap; // 2 hàng
-  const headerHeight = insets.top + paddingTopExtra + headerBodyHeight;
+  const headerLarge = insets.top + paddingTopExtra + HEADER_LARGE;
+  const headerCompact = insets.top + paddingTopExtra + HEADER_COMPACT;
 
   return {
     insetsTop: insets.top,
     titleSize,
     paddingH,
     paddingTopExtra,
-    headerHeight,
+    headerLarge,
+    headerCompact,
   };
 }
 
-/** ---------- Header sticky đổi nền theo scroll ---------- **/
-function StickyHeader({ scrollY }: { scrollY: Animated.Value }) {
-  const colorScheme = useColorScheme();
-  const pathname = usePathname();
-  const router = useRouter();
-  const { titleSize, paddingH, paddingTopExtra, headerHeight, insetsTop } =
-    useHeaderMetrics();
-  const [imgUrl, setImgUrl] = useState<string | null>(null);
-  const user = useSelector((s: RootState) => s.auth.user);
-
-  useEffect(() => {
-    // Do something with user
-    if (user && user.MainImageFileKey) {
-      const url = `https://i.pinimg.com/736x/10/6f/42/106f420c687f8fbd7ea73250e3c559e9.jpg`;
-      setImgUrl(url);
-    }
-  }, [user]);
-
-  const title = useMemo(() => {
-    if (pathname.startsWith("/explore")) return "Explore";
-    if (pathname.startsWith("/library")) return "Library";
-    if (pathname.startsWith("/search")) return "Search";
-    return "Home";
-  }, [pathname]);
-
-  // ===== Scroll → progress 0..1
-  const THRESH = 40;
-  const END = THRESH + 60;
-  const collapseProgress = scrollY.interpolate({
-    inputRange: [0, THRESH, END],
-    outputRange: [0, 0.5, 1],
-    extrapolate: "clamp",
-  });
-
-  // ===== Background
-  const blackOpacity = collapseProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0],
-  });
-  const glassOpacity = collapseProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 0.85],
-  });
-
-  // ===== Expanded row (title-left + auth)
-  const rowOpacity = collapseProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0],
-  });
-  const rowTranslateY = collapseProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -12],
-  });
-
-  // ===== Center title (only when collapsed)
-  const centerOpacity = collapseProgress;
-  const centerTranslateY = collapseProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [20, 0], // nhẹ nhàng trồi lên giữa
-  });
-
-  return (
-    <View style={[styles.headerContainer, { height: headerHeight }]}>
-      {/* nền đen lúc đầu */}
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: colorScheme === "dark" ? "black" : "white",
-            opacity: blackOpacity,
-          },
-        ]}
-      />
-
-      {/* nền glass sau khi scroll */}
-      <Animated.View
-        style={[StyleSheet.absoluteFill, { opacity: glassOpacity }]}
-      >
-        <BlurView
-          intensity={80} // 👈 tăng lên 80 hoặc 90 để “nhòe” hơn
-          tint={colorScheme === "dark" ? "dark" : "light"}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              backgroundColor:
-                colorScheme === "dark"
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(255,255,255,0.1)", // overlay trắng nhẹ
-              borderBottomColor:
-                colorScheme === "dark"
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(255,255,255,0.1)", // viền sáng hơn
-              borderBottomWidth: StyleSheet.hairlineWidth,
-            },
-          ]}
-        />
-      </Animated.View>
-
-      {/* content header */}
-      <View
-        style={{
-          paddingTop: insetsTop + paddingTopExtra,
-          paddingHorizontal: paddingH,
-          height: headerHeight,
-          justifyContent: "flex-start",
-        }}
-      >
-        {/* Expanded row: Title trái + Login/Profile */}
-        <Animated.View
-          style={[
-            styles.row,
-            { opacity: rowOpacity, transform: [{ translateY: rowTranslateY }] },
-          ]}
-        >
-          <Text
-            style={[
-              styles.title,
-              {
-                fontSize: titleSize,
-                color: colorScheme === "dark" ? tintColorDark : tintColorLight,
-              },
-            ]}
-          >
-            {title}
-          </Text>
-
-          {user ? (
-            <Pressable
-              onPress={() => router.push("/(user)/profile")}
-              style={styles.userBadge}
-            >
-              <Image
-                source={
-                  imgUrl
-                    ? { uri: imgUrl }
-                    : require("@/assets/images/login/logo.png")
-                }
-                style={styles.userAvatar}
-                resizeMode="cover"
-              />
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={() => router.push("/(auth)/login")}
-              style={[
-                styles.loginBtn,
-                {
-                  backgroundColor:
-                    colorScheme === "dark" ? tintColorDark : tintColorLight,
-                },
-              ]}
-            >
-              <Text style={styles.loginText}>Login</Text>
-            </Pressable>
-          )}
-        </Animated.View>
-
-        {/* Collapsed title: giữa màn hình, không có nút */}
-        <Animated.View
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: insetsTop + paddingTopExtra,
-            alignItems: "center",
-            opacity: centerOpacity,
-            transform: [{ translateY: centerTranslateY }],
-          }}
-        >
-          <Text
-            style={{
-              fontSize: Math.max(18, titleSize * 0.5),
-              fontWeight: "800",
-              color: colorScheme === "dark" ? "#fff" : "#000",
-            }}
-            numberOfLines={1}
-          >
-            {title}
-          </Text>
-        </Animated.View>
-      </View>
-    </View>
-  );
-}
-
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const { headerHeight } = useHeaderMetrics();
-  const insets = useSafeAreaInsets();
-  // Animated scrollY — các tab sẽ bắn sự kiện vào đây
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const { headerLarge, headerCompact } = useHeaderMetrics();
+  const pathname = usePathname();
+  const isLibraryChild = pathname.startsWith("/library/");
 
-  // Context cung cấp onScroll cho các tab
+  const effectiveHeaderHeight = isLibraryChild ? headerCompact : headerLarge;
+
+  const scrollY = useRef(new Animated.Value(0)).current;
   const onScroll = (e: any) => {
     Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
       useNativeDriver: false,
@@ -274,16 +93,14 @@ export default function TabLayout() {
   };
 
   return (
-    <HeaderScrollContext.Provider value={{ onScroll, headerHeight }}>
+    <HeaderScrollContext.Provider
+      value={{ onScroll, headerHeight: effectiveHeaderHeight }}
+    >
       <View style={{ flex: 1 }}>
-        <StickyHeader scrollY={scrollY} />
-
         <Tabs
           screenOptions={{
-            tabBarActiveTintColor:
-              Colors[colorScheme ?? "light"].tabIconSelected,
-            tabBarInactiveTintColor:
-              Colors[colorScheme ?? "light"].tabIconDefault,
+            tabBarActiveTintColor: tintColorDark,
+            tabBarInactiveTintColor: Colors.dark.tabIconDefault,
             headerShown: false,
 
             tabBarStyle: {
