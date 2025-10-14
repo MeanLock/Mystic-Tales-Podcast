@@ -2,6 +2,7 @@
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateTrackListenSlot;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
@@ -18,6 +19,7 @@ using BookingManagementService.Infrastructure.Services.Kafka;
 using HotChocolate.Authorization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace BookingManagementService.BusinessLogic.Services.DbServices
 {
@@ -392,6 +394,68 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         messageName: newMessageName);
                     var result = await _messagingService.SendSagaMessageAsync(SagaCommandMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Booking producing request agreement failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
+        public async Task UpdateBookingPodcastTrackPreviewListenSlot(UpdateTrackListenSlotParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var bookingPodcastTrackId = parameter.BookingPodcastTrackId;
+                    var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindByIdAsync(bookingPodcastTrackId);
+                    if (bookingPodcastTrack == null)
+                    {
+                        throw new Exception("Booking podcast track not found");
+                    }
+                    if(bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                    {
+                        throw new Exception("No remaining preview listen slot");
+                    }
+                    bookingPodcastTrack.RemainingPreviewListenSlot -= 1;
+                    await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
+                    await transaction.CommitAsync();
+                    
+                    var newMessageName = messageName + ".success";
+                    var newResponseData = new JObject
+                    {
+                        { "BookingPodcastTrackId", bookingPodcastTrack.Id },
+                        { "RemainingPreviewListenSlot", bookingPodcastTrack.RemainingPreviewListenSlot }
+                    };
+                    var SagaCommandMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    var result = await _messagingService.SendSagaMessageAsync(SagaCommandMessage, sagaId.ToString());
+                    _logger.LogInformation("Booking podcast track preview listen update successfully for SagaId: {SagaId}", command.SagaInstanceId);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var newResponseData = new JObject
+                    {
+                        { "ErrorMessage", "Booking podcast track preview listen update failed, error: " + ex.Message}
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var SagaCommandMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    var result = await _messagingService.SendSagaMessageAsync(SagaCommandMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Booking podcast track preview listen update failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
         }

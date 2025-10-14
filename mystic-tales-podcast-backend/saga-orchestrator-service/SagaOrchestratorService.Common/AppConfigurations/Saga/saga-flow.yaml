@@ -2651,7 +2651,7 @@ channel-unfavorite-flow:
     description: "Cập nhật lượng preview còn lại của một booking track"
     save-file: ""
     steps:
-      - name: "update-booking-track"
+      - name: "update-track-listen-slot"
         topic: "booking-management-domain"
         handle-service: "BookingManagementService"
         description: "Cập nhật lượng preview còn lại"
@@ -2663,13 +2663,13 @@ channel-unfavorite-flow:
           - BookingPodcastTrackId
           - RemainingPreviewListenSlot
         onSuccess:
-          emit: "update-booking-track.success"
+          emit: "update-track-listen-slot.success"
           topic: "booking-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "update-booking-track.failed"
+          emit: "update-track-listen-slot.failed"
           topic: "booking-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
