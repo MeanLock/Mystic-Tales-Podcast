@@ -271,14 +271,14 @@ export default function Login() {
       </TouchableWithoutFeedback>
       <View className="w-full absolute bottom-20 flex-row justify-center items-center">
         <RNText className="text-gray-500">Don't have an account? </RNText>
-        <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
+        <TouchableOpacity onPress={() => router.push("/(auth)/streamTest")}>
           <RNText
             style={{
               color: colorScheme === "dark" ? tintColorDark : tintColorLight,
             }}
             className="font-bold"
           >
-            Register
+            Test Stream
           </RNText>
         </TouchableOpacity>
       </View>

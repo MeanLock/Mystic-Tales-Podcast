@@ -3,6 +3,7 @@ import { View } from "@/src/components/ui/View";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Image, Pressable, StyleSheet } from "react-native";
 import { useMemo } from "react";
+import { useRouter } from "expo-router";
 
 type Episode = {
   Id: string;
@@ -103,8 +104,13 @@ const formatAudioLength = (seconds: number): string => {
 
 // Episode Component
 const EpisodeComponent = ({ episode }: { episode: Episode }) => {
+  const router = useRouter();
+
   return (
-    <View style={[style.episodeContainer, style.borderBottom]}>
+    <Pressable
+      onPress={() => router.push(`/(content)/episodes/details/${episode.Id}`)}
+      style={[style.episodeContainer, style.borderBottom]}
+    >
       <View className="w-[70%] justify-between">
         <Text style={style.dateText}>{formatDate(episode.ReleaseDate)}</Text>
         <View className="w-full gap-2">
@@ -138,7 +144,7 @@ const EpisodeComponent = ({ episode }: { episode: Episode }) => {
           </Pressable>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 };
 

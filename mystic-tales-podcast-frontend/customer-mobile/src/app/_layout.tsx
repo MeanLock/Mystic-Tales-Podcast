@@ -11,10 +11,10 @@ import { useEffect } from "react";
 import { Provider } from "react-redux";
 import { useColorScheme } from "@/src/components/useColorScheme";
 
-// Import your global CSS file
 import "../../global.css";
 import { store } from "../store/store";
 import { bootstrapAuth } from "../utils/helpers/boostrapHelper";
+import SetUp from "./setUp";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -63,6 +63,7 @@ function RootLayoutNav() {
 
   return (
     <Provider store={store}>
+      <SetUp />
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

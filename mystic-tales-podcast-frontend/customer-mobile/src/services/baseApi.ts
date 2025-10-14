@@ -7,6 +7,7 @@ import type { RootState } from "@/src/store/store";
 
 export const baseApi = createApi({
   reducerPath: "api",
+  tagTypes: ["FileUrl", "Episodes"] as const,
   baseQuery: fetchBaseQuery({
     baseUrl: "https://api.yourdomain.com",
     prepareHeaders: (headers, { getState }) => {

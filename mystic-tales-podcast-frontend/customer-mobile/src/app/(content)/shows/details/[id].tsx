@@ -9,6 +9,7 @@ import EpisodeList from "./components/EpisodeList";
 import RatingAndReview from "./components/RatingAndReview";
 import ShowDescription from "./components/ShowDescription";
 import MoreInformations from "./components/MoreInformations";
+import Suggesstion from "./components/Suggesstion";
 
 export type ShowDetails = {
   Id: number;
@@ -321,6 +322,8 @@ const showData: ShowDetails = {
   RatingCount: 0,
   ImageUrl:
     "https://i.pinimg.com/1200x/80/d3/47/80d347028b34fe1db485a00ecc1c409f.jpg",
+  // ImageUrl:
+  //   "https://i.pinimg.com/1200x/3a/fd/ab/3afdabfb407e251c19093ee875499a7b.jpg",
   TrailerAudioFileKey: "string",
   TotalFollow: 0,
   ListenCount: 0,
@@ -666,6 +669,44 @@ const showData: ShowDetails = {
   ],
 };
 
+const suggesstionData = [
+  {
+    Id: "uuid1",
+    Name: "Show 1",
+    ImageUrl:
+      "https://i.pinimg.com/1200x/18/0a/91/180a91cf15f65bb31f729b4488119eae.jpg",
+    UploadFrequency: "Daily",
+  },
+  {
+    Id: "uuid2",
+    Name: "Show 2",
+    ImageUrl:
+      "https://i.pinimg.com/1200x/4a/9b/8d/4a9b8d86f5f5da147e030b11398ccc78.jpg",
+    UploadFrequency: "Monthly",
+  },
+  {
+    Id: "uuid3",
+    Name: "Show 3",
+    ImageUrl:
+      "https://i.pinimg.com/1200x/d2/30/f3/d230f3c8e238b76ac7c16efed5f88b6e.jpg",
+    UploadFrequency: "Daily",
+  },
+  {
+    Id: "uuid4",
+    Name: "Show 4",
+    ImageUrl:
+      "https://i.pinimg.com/1200x/d1/25/2a/d1252ae0bd823fa0fc052572d992f4a6.jpg",
+    UploadFrequency: "Every Even Days",
+  },
+  {
+    Id: "uuid5",
+    Name: "Show 5",
+    ImageUrl:
+      "https://i.pinimg.com/1200x/09/90/93/099093e23510ec24d8e747bb57d62fbe.jpg",
+    UploadFrequency: "Daily",
+  },
+];
+
 export default function ShowDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -722,6 +763,7 @@ export default function ShowDetailsScreen() {
             ShowEpisodeList={show.ShowEpisodeList}
           />
         </View>
+        <Suggesstion shows={suggesstionData} />
       </ScrollView>
     );
   }
