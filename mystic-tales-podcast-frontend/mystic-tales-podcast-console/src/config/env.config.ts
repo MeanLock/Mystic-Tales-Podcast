@@ -1,7 +1,7 @@
-const NODE_ENV = import.meta.env.MODE || "development";
-const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_REST_API_URL;
-const GRAPHQL_API_BASE_URL = import.meta.env.VITE_BACKEND_GRAPHQL_API_URL;
-const GRAPHQL_API_WS_URL = import.meta.env.VITE_BACKEND_GRAPHQL_API_URL_WS;
+const NODE_ENV = (import.meta as any).env.MODE || "development";
+const REST_API_BASE_URL = (import.meta as any).env.VITE_BACKEND_REST_API_URL;
+const GRAPHQL_API_BASE_URL = (import.meta as any).env.VITE_BACKEND_GRAPHQL_API_URL;
+const GRAPHQL_API_WS_URL = (import.meta as any).env.VITE_BACKEND_GRAPHQL_API_URL_WS;
 
 export const ENV_CONFIG = {
   NODE_ENV,

@@ -10,6 +10,8 @@ import { login } from "../../../core/services/auth/auth.service"
 import { toast } from "react-toastify"
 import logo from "../../../assets/brand/logo.png"
 import "./styles.scss"
+import axios from "axios"
+import { useSagaPolling } from "@/hooks/useSagaPolling"
 
 const Login = () => {
   const email = useRef<HTMLInputElement>(null)
@@ -20,6 +22,22 @@ const Login = () => {
   const [validated, setValidated] = useState<boolean>(false)
   const [disabled, setDisabled] = useState(false)
 
+  const { startPolling } = useSagaPolling({
+    onSuccess: (data) => {
+      const token = data?.AccessToken
+      if (!token) return toast.error("Không nhận được token từ Saga")
+      const user = JwtUtil.decodeToken(token)
+      dispatch(setAuthToken({ token, user }))
+      if (user.role_id == 3) {
+        navigate("/dashboard")
+      } else if (user.role_id == 2) {
+        navigate("/community-survey")
+      }
+      toast.success("Login successfully!")
+    },
+    onFailure: (err) => toast.error(err || "Saga failed!"),
+    onTimeout: () => toast.error("System not responding, please try again."),
+  })
   const handleLogout = () => {
     dispatch(clearAuthToken())
   }
@@ -31,7 +49,7 @@ const Login = () => {
   useEffect(() => {
     if (authSlice && authSlice.token != null && JwtUtil.isTokenNotExpired(authSlice.token)) {
       const user = JwtUtil.decodeToken(authSlice.token)
-      if (user.role_id == 1) {
+      if (user.role_id == 3) {
         navigate("/dashboard")
       } else if (user.role_id == 2) {
         navigate("/community-survey")
@@ -39,6 +57,48 @@ const Login = () => {
     }
   }, [authSlice])
 
+  // const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  //   setValidated(true)
+  //   const form = event.currentTarget
+  //   if (form.checkValidity() === false) {
+  //     event.preventDefault()
+  //     event.stopPropagation()
+  //   } else {
+  //     event.preventDefault()
+  //     setDisabled(true)
+  //     if (email.current?.value == "" || password.current?.value == "") {
+  //       setDisabled(false)
+  //       return
+  //     }
+
+  //     const login_information = {
+  //       email: email.current?.value,
+  //       password: password.current?.value,
+  //     }
+
+  //     const response = await login(publicAxiosInstance, login_information)
+  //     if (response.success && response.data) {
+  //       const user = JwtUtil.decodeToken(response.data.AccessToken)
+  //       dispatch(
+  //         setAuthToken({
+  //           token: response.data.AccessToken,
+  //           user: user
+  //         }),
+  //       )
+  //       if (user.role_id == 1) {
+  //         navigate("/dashboard")
+  //         toast.success("Đăng nhập thành công !")
+  //       } else if (user.role_id == 2) {
+  //         navigate("/community-survey")
+  //         toast.success("Đăng nhập thành công !")
+  //       }
+  //     } else {
+  //       //console.log(response.message)
+  //       toast.error(response.message.content || "Đăng nhập thất bại, vui lòng thử lại !")
+  //     }
+  //     setDisabled(false)
+  //   }
+  // }
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     setValidated(true)
     const form = event.currentTarget
@@ -48,40 +108,29 @@ const Login = () => {
     } else {
       event.preventDefault()
       setDisabled(true)
-      if (email.current?.value == "" || password.current?.value == "") {
-        setDisabled(false)
-        return
-      }
+      if (!email.current?.value || !password.current?.value) return
 
-      const login_information = {
-        email: email.current?.value,
-        password: password.current?.value,
-      }
-     
-      const response = await login(publicAxiosInstance, login_information)
-      if (response.success && response.data) {
-        const user = JwtUtil.decodeToken(response.data.AccessToken)
-        dispatch(
-          setAuthToken({
-            token: response.data.AccessToken,
-            user: user
-          }),
-        )
-        if (user.role_id == 1) {
-          navigate("/dashboard")
-          toast.success("Đăng nhập thành công !")
-        } else if (user.role_id == 2) {
-          navigate("/community-survey")
-          toast.success("Đăng nhập thành công !")
+      setDisabled(true)
+      try {
+        const response = await login(publicAxiosInstance, {
+          email: email.current.value,
+          password: password.current.value,
+        })
+
+        const sagaId = response?.data?.SagaInstanceId
+        if (!sagaId) {
+          toast.error("Đăng nhập thất bại, vui lòng thử lại.")
+          setDisabled(false)
+          return
         }
-      } else {
-        //console.log(response.message)
-        toast.error(response.message.content || "Đăng nhập thất bại, vui lòng thử lại !")
+        await startPolling(sagaId, publicAxiosInstance)
+      } catch (err) {
+        toast.error("Lỗi kết nối máy chủ.")
+      } finally {
+        setDisabled(false)
       }
-      setDisabled(false)
     }
   }
-
   return (
     <div className="login-page">
       <div className="login-page__background">

@@ -8,7 +8,7 @@ export const login = async (instance: AxiosInstance, data : {
 } | any) => {
 
     const bodyData = {
-        LoginInfo: {
+        ManualLoginInfo: {
             Email : data.email,
             Password : data.password,
         }

@@ -34,7 +34,7 @@ const AppContent = () => {
         <Routes>
           {routes.map((route, idx) => {
             return (
-              route.element && (route.role_id?.some(item => item === 1)) && (
+              route.element && (route.role_id?.some(item => item === 2)) && (
                 <Route
                   key={idx}
                   path={route.path}

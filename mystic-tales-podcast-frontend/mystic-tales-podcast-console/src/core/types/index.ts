@@ -12,7 +12,7 @@ export type Account = {
   Address: string;
   Phone: string;
   Balance: number;
-  MainImageFileUrl: string;
+  MainImageFileKey: string;
   IsVerified: boolean;
   GoogleId: string;
   VerifyCode: string;
@@ -42,7 +42,7 @@ export type PodcasterProfile = {
   Description: string;
   AverageRating: number;
   RatingCount: number;
-  CommitmentDocumentFileUrl?: string;
+  CommitmentDocumentFileKey?: string;
   BuddyAudioFileUrl?: string;
   OwnedBookingStorageSize: number;
   UsedBookingStorageSize: number;
@@ -51,6 +51,7 @@ export type PodcasterProfile = {
   UpdatedAt: string;
 }
 export type Podcaster = {
+  Account: Account;
   PodcasterProfile: PodcasterProfile;
 }
 

@@ -291,7 +291,7 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                         <div className="staff-info">
                             <div className="staff-info__header">
                                 <img
-                                    src={assignedStaff.MainImageFileUrl || "/placeholder.svg"}
+                                    src={assignedStaff.MainImageFileKey || "/placeholder.svg"}
                                     alt={assignedStaff.Fullname}
                                     className="staff-info__avatar"
                                 />
@@ -329,7 +329,7 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                         onClick={() => setSelectedStaffId(staff.Id)}
                                     >
                                         <img
-                                            src={staff.MainImageFileUrl || "/placeholder.svg"}
+                                            src={staff.MainImageFileKey || "/placeholder.svg"}
                                             alt={staff.Fullname}
                                             className="staff-assign__avatar"
                                         />

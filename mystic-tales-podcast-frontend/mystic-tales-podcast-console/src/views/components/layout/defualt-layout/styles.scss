@@ -63,7 +63,6 @@
 
         .nav-text {
             color: white;
-
         }
 
         .nav-link {
@@ -74,6 +73,9 @@
             svg {
                 transition: all 0.3s ease;
                 color: white;
+                min-width: 20px; // Đảm bảo width tối thiểu
+                min-height: 20px; // Đảm bảo height tối thiểu
+                flex-shrink: 0
             }
 
             &:hover {
@@ -103,6 +105,85 @@
             }
         }
 
+        // Thêm styles cho CNavGroup
+        .nav-group {
+            .nav-group-toggle {
+                color: white;
+                gap: 1.5rem;
+                transition: all 0.3s ease;
+
+                svg {
+                    color: white;
+                    transition: all 0.3s ease;
+                }
+
+                &:hover {
+                    background: rgba(100, 105, 99, 0.25);
+                    border-radius: 1px;
+
+                    svg {
+                        color: var(--primary-green);
+                    }
+
+                    .nav-text {
+                        color: var(--primary-green);
+                    }
+                       &::after {
+                    background-color: var(--primary-green);
+                }
+                }
+
+                &.active {
+                    background: rgba(100, 105, 99, 0.25);
+
+                    .nav-text {
+                        color: var(--primary-green);
+                    }
+
+                    svg {
+                        color: var(--primary-green);
+                    }
+                }
+
+                &::after {
+                    background-color: var(--white);
+                }
+
+            }
+
+            .nav-group-items {
+                .nav-link {
+                    padding-left: 3rem; // Indent cho sub items
+                    font-size: 0.9rem;
+                    color: rgba(255, 255, 255, 0.8);
+
+                    svg {
+                        color: rgba(255, 255, 255, 0.6);
+                        min-width: 16px; // Đảm bảo width cho parent icon
+                        min-height: 16px; // Đảm bảo height cho parent icon
+                        flex-shrink: 0;
+                    }
+
+                    &:hover {
+                        background: rgba(100, 105, 99, 0.15);
+                        color: var(--primary-green);
+
+                        svg {
+                            color: var(--primary-green);
+                        }
+                    }
+
+                    &.active {
+                        background: rgba(100, 105, 99, 0.2);
+                        color: var(--primary-green);
+
+                        svg {
+                            color: var(--primary-green);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     &.sidebar-narrow {
@@ -139,6 +220,7 @@
             text-decoration: none;
             color: #6c757d;
             font-weight: 500;
+
             &:hover {
                 text-decoration: none;
                 color: var(--primary-grey);
@@ -155,39 +237,48 @@
         }
     }
 }
+
 .app-content-container {
-  box-sizing: border-box;
-  width: 100%;
-  margin: 0 auto;    /* căn giữa trong vùng hiển thị */
-  padding: 1.25rem;  /* khoảng cách an toàn với sidebar / cạnh màn hình */
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 auto;
+    /* căn giữa trong vùng hiển thị */
+    padding: 1.25rem;
+    /* khoảng cách an toàn với sidebar / cạnh màn hình */
 
- 
+
 }
- .app-sidebar.sidebar-narrow + .wrapper .body .app-content-container {
-  padding-left: 2.5rem; /* sidebar narrow width (≈5rem) + small gap */
+
+.app-sidebar.sidebar-narrow+.wrapper .body .app-content-container {
+    padding-left: 2.5rem;
+    /* sidebar narrow width (≈5rem) + small gap */
 }
 
 
 
- @media (max-width: 1200px) {
-  .app-content-container {
-    max-width: 920px;
-    padding: 1rem;
-  }
-  .app-sidebar.sidebar-narrow + .wrapper .body .app-content-container {
-    padding-left: 3rem;
-  }
+@media (max-width: 1200px) {
+    .app-content-container {
+        max-width: 920px;
+        padding: 1rem;
+    }
+
+    .app-sidebar.sidebar-narrow+.wrapper .body .app-content-container {
+        padding-left: 3rem;
+    }
 }
 
 @media (max-width: 768px) {
-  .wrapper .body {
-    justify-content: flex-start; /* mobile: fill width */
-  }
-  .app-content-container {
-    max-width: 100%;
-    padding: 0.75rem;
-  }
-  .app-sidebar.sidebar-narrow + .wrapper .body .app-content-container {
-    padding-left: 1rem;
-  }
+    .wrapper .body {
+        justify-content: flex-start;
+        /* mobile: fill width */
+    }
+
+    .app-content-container {
+        max-width: 100%;
+        padding: 0.75rem;
+    }
+
+    .app-sidebar.sidebar-narrow+.wrapper .body .app-content-container {
+        padding-left: 1rem;
+    }
 }

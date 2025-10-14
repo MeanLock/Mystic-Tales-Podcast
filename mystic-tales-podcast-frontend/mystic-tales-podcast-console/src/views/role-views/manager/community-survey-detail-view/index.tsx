@@ -51,7 +51,7 @@ const CommunitySurveyDetailView: FC<CommunitySurveyDetailViewProps> = () => {
             }
         }
     }
-        const handleTabChange = async (tabKey: string) => {
+    const handleTabChange = async (tabKey: string) => {
         //console.log("Tab changed to:", tabKey);
         setActiveTab(tabKey);
         await handleDataChange();
@@ -67,7 +67,7 @@ const CommunitySurveyDetailView: FC<CommunitySurveyDetailViewProps> = () => {
             </div>
         )
     }
-     if (!surveyData) {
+    if (!surveyData) {
         return <div>No survey data found</div>;
     }
     return (

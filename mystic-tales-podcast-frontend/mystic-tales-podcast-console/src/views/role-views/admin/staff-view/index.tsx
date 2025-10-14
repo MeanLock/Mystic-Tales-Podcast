@@ -11,6 +11,7 @@ import SurveyTalkLoading from '../../../components/common/loading';
 import AvatarInput from '../../../components/common/avatar';
 import { formatDate } from '../../../../core/utils/date.util';
 import StaffUpdate from './StaffUpdate';
+import StaffRegister from './StaffRegister';
 
 export const mockAccountList: StaffList = {
   StaffList: [
@@ -24,7 +25,7 @@ export const mockAccountList: StaffList = {
       Address: "123 Main Street, Hanoi",
       Phone: "0123456789",
       Balance: 100000,
-      MainImageFileUrl: "https://picsum.photos/200/200?1",
+      MainImageFileKey: "main_image_key_123",
       IsVerified: true,
       GoogleId: "google-1111",
       VerifyCode: "ABC123",
@@ -49,7 +50,7 @@ export const mockAccountList: StaffList = {
       Address: "456 Nguyen Trai, HCMC",
       Phone: "0987654321",
       Balance: 250000,
-      MainImageFileUrl: "https://picsum.photos/200/200?2",
+      MainImageFileKey: "https://picsum.photos/200/200?2",
       IsVerified: false,
       GoogleId: "google-2222",
       VerifyCode: "XYZ456",
@@ -87,7 +88,7 @@ const state_creator = (table: Account[]) => {
         headerName: "Avatar", flex: 0.5,
         cellRenderer: (params: { data: Account }) => {
           return (
-            <AvatarInput size={50} src={params.data.MainImageFileUrl ?? ''} />)
+            <AvatarInput size={50} src={params.data.MainImageFileKey ?? ''} />)
         },
       },
       { headerName: "Fullname", field: "Fullname" },
@@ -144,7 +145,7 @@ const state_creator = (table: Account[]) => {
           const Modal_props = {
             updateForm: <StaffUpdate account={params.data} onClose={() => { }} />,
             title: 'Staff [ID: #' + params.data.Id + ']',
-            button: <Eye size={27} color='var(--secondary-green)'  />,
+            button: <Eye size={27} color='var(--secondary-green)' />,
             update_button_color: 'white'
           }
           return (
@@ -211,6 +212,19 @@ const StaffView: FC<StaffViewProps> = () => {
   }, [])
   return (
     <StaffViewContext.Provider value={{ handleDataChange: handleDataChange }}>
+      <div className="staff-view__header">
+        <h2 className="staff-view__title">Staff Management</h2>
+        <div>
+          <Modal_Button
+            disabled={false}
+            title=""
+            content={<span className="staff-view__add-btn ">Add Staff</span>}
+            color="white"
+          >
+            <StaffRegister onClose={() => { }} />
+          </Modal_Button>
+        </div>
+      </div>
       <CRow>
         <CCol xs={12}>
           {isLoading ? (

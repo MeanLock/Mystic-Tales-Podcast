@@ -49,7 +49,7 @@ const AppSidebar = () => {
   // }, [authSlice])
   useEffect(() => {
   
-      setNavigation(get_roleNav(0, 2));
+      setNavigation(get_roleNav(1, 2));
 
   }, [])
   return (

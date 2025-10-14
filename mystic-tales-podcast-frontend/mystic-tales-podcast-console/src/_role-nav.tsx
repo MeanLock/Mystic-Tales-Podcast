@@ -9,9 +9,12 @@ import InterpreterModeIcon from '@mui/icons-material/InterpreterMode';
 import {
   Gauge,
   Users,
-  ShoppingCartSimple,
+  ApplePodcastsLogo,
   IdentificationCard,
-  ArrowCircleRight
+  ArrowCircleRight,
+  Queue,
+  Playlist,
+  Warning
 } from "phosphor-react";
 import { FcFactoryBreakdown } from "react-icons/fc";
 
@@ -21,6 +24,87 @@ const get_roleNav = (role_id: number, account_id: number) => {
   const _roleNav = [
     // admin: 1   
     [
+    ],
+    // staff ID: 2
+    [
+      {
+        component: CNavItem,
+        name: 'Podcasters',
+        to: '/staff/podcaster/table',
+        icon: <InterpreterModeIcon sx={{ fontSize: 32 }} />,
+
+      },
+      {
+        component: CNavGroup,
+        name: 'Report',
+        to: '/report',
+        icon: <Warning size={30} weight="duotone" />,
+        items: [
+          {
+            component: CNavItem,
+            name: 'Show',
+            to: '/report/show',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+          {
+            component: CNavItem,
+            name: 'Episode',
+            to: '/report/episode',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+          {
+            component: CNavItem,
+            name: 'Buddy',
+            to: '/report/buddy',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+        ],
+      },
+      {
+        component: CNavItem,
+        name: 'Episode Publish',
+        to: '/staff/episode/publish-review-sessions',
+        icon: <Playlist size={30} weight="duotone" />
+      },
+      {
+        component: CNavItem,
+        name: 'DMCA Accusation',
+        to: '/staff/dmca-accusation/table',
+        icon: <AssignmentIcon sx={{ fontSize: 32 }} />,
+
+      },
+      // {
+      //   component: CNavItem,
+      //   name: 'Khảo Sát',
+      //   to: '/community-survey',
+      //   icon: <IdentificationCard size={30} weight="duotone" />,
+
+      // },
+      // {
+      //   component: CNavItem,
+      //   name: 'Data Market',
+      //   to: '/data-market',
+      //   icon: <StorefrontIcon sx={{ fontSize: 28 }} />,
+
+      // },
+      // {
+      //   component: CNavItem,
+      //   name: 'Khảo Sát Đầu Vào',
+      //   to: '/filter-survey/table',
+      //   icon: <DescriptionOutlinedIcon sx={{ fontSize: 29 }} />,
+
+      // },
+      {
+        component: CNavItem,
+        name: 'Transactions',
+        to: '/transactions/table',
+        icon: <PaidOutlinedIcon sx={{ fontSize: 29 }} />,
+
+      }
+
+    ],
+    // admin: 3
+    [
       {
         component: CNavItem,
         name: 'Dashboard',
@@ -29,24 +113,90 @@ const get_roleNav = (role_id: number, account_id: number) => {
       },
       {
         component: CNavItem,
-        name: 'Customers',
-        to: '/customers/table',
+        name: 'Customer',
+        to: '/customer/table',
         icon: <Users size={30} weight="duotone" />,
 
       },
-       {
+      {
         component: CNavItem,
-        name: 'Podcasters',
-        to: '/podcasters/table',
+        name: 'Podcaster',
+        to: '/podcaster/table',
         icon: <InterpreterModeIcon sx={{ fontSize: 32 }} />,
 
       },
       {
         component: CNavItem,
-        name: 'Staffs',
-        to: '/staffs/table',
-        icon: <ManageAccountsIcon sx={{ fontSize: 32 }}/>,
+        name: 'Staff',
+        to: '/staff/table',
+        icon: <ManageAccountsIcon sx={{ fontSize: 32 }} />,
 
+      },
+      {
+        component: CNavGroup,
+        name: 'Show',
+        to: '/show',
+        icon: <Queue size={30} weight="duotone" />,
+        items: [
+          {
+            component: CNavItem,
+            name: 'Report',
+            to: '/show/report',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+          {
+            component: CNavItem,
+            name: 'Report Review',
+            to: '/show/report-review-sessions',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+        ],
+      },
+      {
+        component: CNavGroup,
+        name: 'Episode',
+        to: '/episode',
+        icon: <Playlist size={30} weight="duotone" />,
+        items: [
+          {
+            component: CNavItem,
+            name: 'Report',
+            to: '/episode/report',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+          {
+            component: CNavItem,
+            name: 'Report Review',
+            to: '/episode/report-review-sessions',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+          {
+            component: CNavItem,
+            name: 'Publish Review',
+            to: '/episode/publish-review-sessions',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+        ],
+      },
+      {
+        component: CNavGroup,
+        name: 'Buddy',
+        to: '/buddy',
+        icon: <ApplePodcastsLogo size={30} weight="duotone" />,
+        items: [
+          {
+            component: CNavItem,
+            name: 'Report',
+            to: '/buddy/report',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+          {
+            component: CNavItem,
+            name: 'Report Review',
+            to: '/buddy/report-review-sessions',
+            icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+          },
+        ],
       },
       {
         component: CNavItem,
@@ -61,107 +211,6 @@ const get_roleNav = (role_id: number, account_id: number) => {
         to: '/system-configuration',
         icon: <SettingsOutlinedIcon sx={{ fontSize: 29 }} />,
 
-      }
-
-    ],
-    // manager ID: 2
-    [
-      {
-        component: CNavItem,
-        name: 'Khảo Sát',
-        to: '/community-survey',
-        icon: <IdentificationCard size={30} weight="duotone" />,
-
-      },
-      {
-        component: CNavItem,
-        name: 'Data Market',
-        to: '/data-market',
-        icon: <StorefrontIcon sx={{ fontSize: 28 }} />,
-
-      },
-      {
-        component: CNavItem,
-        name: 'Khảo Sát Đầu Vào',
-        to: '/filter-survey/table',
-        icon: <DescriptionOutlinedIcon sx={{ fontSize: 29 }} />,
-
-      },
-      {
-        component: CNavItem,
-        name: 'Giao dịch',
-        to: '/transactions/table',
-        icon: <PaidOutlinedIcon sx={{ fontSize: 29 }} />,
-
-      }
-
-    ],
-    // design_staff ID: 3
-    [
-      // {
-      //   component: CNavItem,
-      //   name: 'Dashboard',
-      //   to: '/dashboard',
-      //   // icon: <Gauge size={30}  weight="duotone" />,
-      // },
-      {
-        component: CNavTitle,
-        name: 'Orders Management',
-      },
-      {
-        component: CNavGroup,
-        show: true,
-        name: 'Assigned Orders',
-        to: '/orders_design_staff',
-        icon: <ShoppingCartSimple size={30} weight="duotone" />,
-        items: [
-          {
-            component: CNavItem,
-            name: 'Main Orders List',
-            to: '/orders_design_staff/table',
-            icon: <ArrowCircleRight size={13} color="lightsalmon" weight="duotone" />
-          },
-          {
-            component: CNavItem,
-            name: 'Design Processes',
-            to: '/orders_design_staff/design_process',
-            icon: <ArrowCircleRight size={13} color="lightsalmon" weight="duotone" />
-          },
-        ],
-      }
-    ],
-    // production_staff ID: 4
-    [
-      // {
-      //   component: CNavItem,
-      //   name: 'Dashboard',
-      //   to: '/dashboard',
-      //   // icon: <Gauge size={30}  weight="duotone" />,
-      // },
-      {
-        component: CNavTitle,
-        name: 'Orders Management',
-      },
-      {
-        component: CNavGroup,
-        show: true,
-        name: 'dcm',
-        to: '/orders_production_staff',
-        icon: <FcFactoryBreakdown size={30} fontWeight="duotone" />,
-        items: [
-          {
-            component: CNavItem,
-            name: 'Main Orders List',
-            to: '/orders_production_staff/table',
-            icon: <ArrowCircleRight size={13} color="lightsalmon" weight="duotone" />
-          },
-          {
-            component: CNavItem,
-            name: 'Completed Orders',
-            to: '/orders_design_staff/completed_orders',
-            icon: <ArrowCircleRight size={13} color="lightsalmon" weight="duotone" />
-          },
-        ],
       }
 
     ],

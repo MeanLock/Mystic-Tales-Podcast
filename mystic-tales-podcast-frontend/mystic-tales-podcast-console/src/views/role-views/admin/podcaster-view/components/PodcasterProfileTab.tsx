@@ -4,14 +4,14 @@ import type { Account, Podcaster, PodcasterProfile } from "@/core/types"
 import { formatDate } from "@/core/utils/date.util"
 import React, { type FC, useEffect } from "react"
 
-export const mockPodcaster: Podcaster = {
+export const mockPodcaster: any = {
   PodcasterProfile: {
     AccountId: 1,
     Description:
       "Podcaster chuyên về tâm lý học và phát triển bản thân, chia sẻ những câu chuyện đời thường và bài học ý nghĩa.",
     AverageRating: 4.8,
     RatingCount: 256,
-    CommitmentDocumentFileUrl: "https://example.com/docs/commitment1.pdf",
+    CommitmentDocumentFileKey: "https://example.com/docs/commitment1.pdf",
     BuddyAudioFileUrl: "https://example.com/audio/intro1.mp3",
     OwnedBookingStorageSize: 5000,
     UsedBookingStorageSize: 2350,
@@ -121,7 +121,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, refre
               <div className="podcaster-profile__document-info">
                 <div className="podcaster-profile__document-name">Commitment Document</div>
                 <a
-                  href={podcasterProfile.CommitmentDocumentFileUrl}
+                  href={podcasterProfile.CommitmentDocumentFileKey}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="podcaster-profile__document-link"

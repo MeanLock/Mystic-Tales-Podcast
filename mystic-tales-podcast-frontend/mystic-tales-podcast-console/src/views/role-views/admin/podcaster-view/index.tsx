@@ -25,7 +25,7 @@ export const mockPodcastersList: PodcasterList = {
       Address: "123 Main Street, Hanoi",
       Phone: "0123456789",
       Balance: 100000,
-      MainImageFileUrl: "https://picsum.photos/200/200?1",
+      MainImageFileKey: "https://picsum.photos/200/200?1",
       IsVerified: true,
       GoogleId: "google-1111",
       VerifyCode: "ABC123",
@@ -50,7 +50,7 @@ export const mockPodcastersList: PodcasterList = {
       Address: "456 Nguyen Trai, HCMC",
       Phone: "0987654321",
       Balance: 250000,
-      MainImageFileUrl: "https://picsum.photos/200/200?2",
+      MainImageFileKey: "https://picsum.photos/200/200?2",
       IsVerified: false,
       GoogleId: "google-2222",
       VerifyCode: "XYZ456",
@@ -88,7 +88,7 @@ const state_creator = (table: Account[]) => {
         headerName: "Avatar", flex: 0.5,
         cellRenderer: (params: { data: Account }) => {
           return (
-            <AvatarInput size={50} src={params.data.MainImageFileUrl ?? ''} />)
+            <AvatarInput size={50} src={params.data.MainImageFileKey ?? ''} />)
         },
       },
       { headerName: "Fullname", field: "Fullname" },

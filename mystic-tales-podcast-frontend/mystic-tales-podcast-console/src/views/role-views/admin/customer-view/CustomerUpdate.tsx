@@ -65,7 +65,7 @@ const CustomForm: React.FC<CustomerUpdateProps> = ({ account, onClose }) => {
     <div className="account-info">
       <div className="account-info__header">
         <div className="account-info__profile">
-          <img src={account.MainImageFileUrl || "/placeholder.svg"} alt="Avatar" className="account-info__avatar" />
+          <img src={account.MainImageFileKey || "/placeholder.svg"} alt="Avatar" className="account-info__avatar" />
           <div className="account-info__identity">
             <h2 className="account-info__name">{account.Fullname || "N/A"}</h2>
             <p className="account-info__email">{account.Email}</p>
