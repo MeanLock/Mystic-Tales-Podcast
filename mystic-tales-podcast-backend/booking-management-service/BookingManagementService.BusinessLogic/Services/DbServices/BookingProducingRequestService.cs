@@ -116,7 +116,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     {
                         BookingId = parameter.BookingId,
                         Note = parameter.Note,
-                        Deadline = parameter.Deadline,
+                        Deadline = DateOnly.FromDateTime(parameter.Deadline),
                         IsAccepted = null,
                         FinishedAt = null,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -154,6 +154,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
 
                     if (producingRequest != null)
                     {
+                        await transaction.CommitAsync();
                         var newResponseData = new JObject
                         {
                             { "BookingProducingRequestId", producingRequest.Id },
@@ -342,6 +343,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     );
 
                     bookingProducingRequest.IsAccepted = parameter.IsAccepted;
+                    bookingProducingRequest = await _bookingProducingRequestGenericRepository.UpdateAsync(bookingProducingRequest.Id, bookingProducingRequest);
 
                     if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == 7)
                     {
@@ -473,10 +475,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
         }
         public async Task<bool> ValidateProducingRequestPodcasterAsync(Guid BookingProducingRequestId, int accountId)
         {
+            Console.WriteLine(BookingProducingRequestId + "---------------------------------------");
+            Console.WriteLine("DDCMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM");
             var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdWithPaths(
                 BookingProducingRequestId,
                 "Booking"
                 );
+            Console.WriteLine("DDCMMMMMMMMMMMMMMMMMMMMMMMMMMMafasdasdasdasdasfasfasfsafMMMMMMMMMMMMMMMMMMMMM");
             if (bookingProducingRequest == null)
                 return false;
             if (bookingProducingRequest.Booking.PodcastBuddyId != accountId)

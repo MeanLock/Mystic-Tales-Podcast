@@ -10,7 +10,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
     {
         public int BookingId { get; set; }
         public string Note { get; set; }
-        public DateOnly Deadline { get; set; }
+        public DateTime Deadline { get; set; }
         public List<Guid> BookingPodcastTrackIds { get; set; }
     }
 }

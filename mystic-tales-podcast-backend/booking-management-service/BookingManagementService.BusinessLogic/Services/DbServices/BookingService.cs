@@ -916,6 +916,15 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                 }
             }
         }
+        public async Task<bool> ValidateBookingAccountAsync(int bookingId, int accountId)
+        {
+            var booking = await _bookingGenericRepository.FindByIdAsync(bookingId);
+            if (booking == null)
+            {
+                return false;
+            }
+            return booking.AccountId == accountId;
+        }
         private async Task<JObject?> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
