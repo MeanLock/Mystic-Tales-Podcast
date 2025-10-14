@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SagaOrchestratorService.DataAccess.Entities.sqlserver;
+namespace SagaOrchestratorService.DataAccess.Entities.SqlServer;
 
 public partial class SagaInstance
 {
     public Guid Id { get; set; }
 
-    public string FlowName { get; set; }
+    public string FlowName { get; set; } = null!;
 
     public string? CurrentStepName { get; set; }
 
-    public string InitialData { get; set; }
+    public string? InitialData { get; set; }
 
     public string? ResultData { get; set; }
 
-    public string FlowStatus { get; set; }
+    public string FlowStatus { get; set; } = null!;
 
     public string? ErrorStepName { get; set; }
 

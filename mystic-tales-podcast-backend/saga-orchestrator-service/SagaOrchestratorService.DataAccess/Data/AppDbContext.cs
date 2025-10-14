@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using SagaOrchestratorService.DataAccess.Entities.sqlserver;
+using SagaOrchestratorService.DataAccess.Entities.SqlServer;
 
 namespace SagaOrchestratorService.DataAccess.Data;
 
@@ -20,16 +20,20 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<SagaStepExecution> SagaStepExecutions { get; set; }
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=localhost,1434;Database=MTP_SagaOrchestratorDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=True;");
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<SagaInstance>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__SagaInst__3213E83F9E1EB6A4");
+            entity.HasKey(e => e.Id).HasName("PK__SagaInst__3213E83F725C9204");
 
             entity.ToTable("SagaInstance", tb => tb.HasTrigger("TR_SagaInstance_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("datetime")
@@ -46,11 +50,9 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(250)
                 .HasColumnName("errorStepName");
             entity.Property(e => e.FlowName)
-                .IsRequired()
                 .HasMaxLength(250)
                 .HasColumnName("flowName");
             entity.Property(e => e.FlowStatus)
-                .IsRequired()
                 .HasMaxLength(50)
                 .HasColumnName("flowStatus");
             entity.Property(e => e.InitialData).HasColumnName("initialData");
@@ -63,12 +65,12 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<SagaStepExecution>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__SagaStep__3213E83F6B01D2C5");
+            entity.HasKey(e => e.Id).HasName("PK__SagaStep__3213E83FF147036E");
 
             entity.ToTable("SagaStepExecution");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
@@ -79,22 +81,19 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ResponseData).HasColumnName("responseData");
             entity.Property(e => e.SagaInstanceId).HasColumnName("sagaInstanceId");
             entity.Property(e => e.StepName)
-                .IsRequired()
                 .HasMaxLength(250)
                 .HasColumnName("stepName");
             entity.Property(e => e.StepStatus)
-                .IsRequired()
                 .HasMaxLength(50)
                 .HasColumnName("stepStatus");
             entity.Property(e => e.TopicName)
-                .IsRequired()
                 .HasMaxLength(250)
                 .HasColumnName("topicName");
 
             entity.HasOne(d => d.SagaInstance).WithMany(p => p.SagaStepExecutions)
                 .HasForeignKey(d => d.SagaInstanceId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__SagaStepE__sagaI__3C69FB99");
+                .HasConstraintName("FK__SagaStepE__sagaI__4E88ABD4");
         });
 
         OnModelCreatingPartial(modelBuilder);

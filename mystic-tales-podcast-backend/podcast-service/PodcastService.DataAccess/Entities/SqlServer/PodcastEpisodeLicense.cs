@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PodcastService.DataAccess.Entities.sqlserver;
+namespace PodcastService.DataAccess.Entities.SqlServer;
 
 public partial class PodcastEpisodeLicense
 {

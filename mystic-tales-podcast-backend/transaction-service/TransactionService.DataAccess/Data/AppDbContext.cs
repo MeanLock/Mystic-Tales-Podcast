@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using TransactionService.DataAccess.Entities.sqlserver;
+using TransactionService.DataAccess.Entities.SqlServer;
 
 namespace TransactionService.DataAccess.Data;
 
@@ -43,7 +43,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("AccountBalanceTransaction", tb => tb.HasTrigger("TR_AccountBalanceTransaction_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.Amount)
@@ -79,7 +79,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("BookingStorageTransaction", tb => tb.HasTrigger("TR_BookingStorageTransaction_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.Amount)
@@ -115,7 +115,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("BookingTransaction", tb => tb.HasTrigger("TR_BookingTransaction_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.Amount)
                 .HasColumnType("decimal(18, 2)")
@@ -153,7 +153,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("MemberSubscriptionTransaction", tb => tb.HasTrigger("TR_MemberSubscriptionTransaction_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.Amount)
                 .HasColumnType("decimal(18, 2)")
@@ -188,7 +188,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastSubscriptionTransaction", tb => tb.HasTrigger("TR_PodcastSubscriptionTransaction_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.Amount)
                 .HasColumnType("decimal(18, 2)")

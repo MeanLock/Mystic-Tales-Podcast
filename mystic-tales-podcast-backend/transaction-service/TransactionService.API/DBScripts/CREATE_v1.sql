@@ -16,7 +16,7 @@ CREATE TABLE TransactionStatus (
 
 -- AccountBalanceTransaction table
 CREATE TABLE AccountBalanceTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT NOT NULL,
     orderCode NVARCHAR(MAX) NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE AccountBalanceTransaction (
 
 -- PodcastSubscriptionTransaction table
 CREATE TABLE PodcastSubscriptionTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastSubscriptionRegistrationId INT NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     profit DECIMAL(18,2) NULL,
@@ -44,7 +44,7 @@ CREATE TABLE PodcastSubscriptionTransaction (
 
 -- MemberSubscriptionTransaction table
 CREATE TABLE MemberSubscriptionTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     memberSubscriptionRegistrationId INT NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     transactionTypeId INT NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE MemberSubscriptionTransaction (
 
 -- BookingTransaction table
 CREATE TABLE BookingTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     profit DECIMAL(18,2) NULL,
@@ -71,7 +71,7 @@ CREATE TABLE BookingTransaction (
 
 -- BookingStorageTransaction table
 CREATE TABLE BookingStorageTransaction (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     transactionTypeId INT NOT NULL,

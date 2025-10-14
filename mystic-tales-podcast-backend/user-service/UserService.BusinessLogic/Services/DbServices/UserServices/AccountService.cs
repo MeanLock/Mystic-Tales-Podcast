@@ -1489,7 +1489,14 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     {
                         throw new Exception("Podcast buddy with id " + createPodcastBuddyReviewParameterDTO.PodcastBuddyId + " does not exist");
                     }
-
+                    var existingReview = (await _podcastBuddyReviewGenericRepository.FindAll(
+                        predicate: a => a.AccountId == createPodcastBuddyReviewParameterDTO.AccountId && a.PodcastBuddyId == createPodcastBuddyReviewParameterDTO.PodcastBuddyId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (existingReview != null)
+                    {
+                        throw new Exception("Account with id " + createPodcastBuddyReviewParameterDTO.AccountId + " has already reviewed podcast buddy with id " + createPodcastBuddyReviewParameterDTO.PodcastBuddyId);
+                    }
                     
                     var podcastBuddyReview = new PodcastBuddyReview
                     {

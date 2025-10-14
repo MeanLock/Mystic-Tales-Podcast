@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TransactionService.DataAccess.Entities.sqlserver;
+namespace TransactionService.DataAccess.Entities.SqlServer;
 
 public partial class TransactionStatus
 {

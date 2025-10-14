@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using SubscriptionService.DataAccess.Entities.sqlserver;
+using SubscriptionService.DataAccess.Entities.SqlServer;
 
 namespace SubscriptionService.DataAccess.Data;
 

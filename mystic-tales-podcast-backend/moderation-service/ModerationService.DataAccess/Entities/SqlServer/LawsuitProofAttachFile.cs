@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ModerationService.DataAccess.Entities.sqlserver;
+namespace ModerationService.DataAccess.Entities.SqlServer;
 
 public partial class LawsuitProofAttachFile
 {

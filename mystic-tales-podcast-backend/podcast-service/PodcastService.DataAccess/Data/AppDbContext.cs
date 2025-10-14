@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using PodcastService.DataAccess.Entities.sqlserver;
+using PodcastService.DataAccess.Entities.SqlServer;
 
 namespace PodcastService.DataAccess.Data;
 
@@ -99,7 +99,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastChannel", tb => tb.HasTrigger("TR_PodcastChannel_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.BackgroundImageFileKey).HasColumnName("backgroundImageFileKey");
             entity.Property(e => e.CreatedAt)
@@ -176,7 +176,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastChannelStatusTracking");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
@@ -203,7 +203,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastEpisode", tb => tb.HasTrigger("TR_PodcastEpisode_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AudioFileKey).HasColumnName("audioFileKey");
             entity.Property(e => e.AudioFileSize).HasColumnName("audioFileSize");
@@ -305,7 +305,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastEpisodeLicense");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
@@ -390,7 +390,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastEpisodePublishReviewSessionStatusTracking");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
@@ -431,7 +431,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastEpisodeStatusTracking");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
@@ -486,7 +486,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastShow", tb => tb.HasTrigger("TR_PodcastShow_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AverageRating).HasColumnName("averageRating");
             entity.Property(e => e.Copyright)
@@ -574,7 +574,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastShowReview", tb => tb.HasTrigger("TR_PodcastShowReview_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.Content).HasColumnName("content");
@@ -623,7 +623,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastShowStatusTracking");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")

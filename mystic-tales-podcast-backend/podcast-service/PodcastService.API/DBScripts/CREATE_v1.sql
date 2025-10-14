@@ -66,7 +66,7 @@ CREATE TABLE PodcastEpisodePublishReviewSessionStatus (
 
 -- PodcastChannel table
 CREATE TABLE PodcastChannel (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     name NVARCHAR(250) NOT NULL,
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     backgroundImageFileKey NVARCHAR(MAX) NULL,
@@ -85,7 +85,7 @@ CREATE TABLE PodcastChannel (
 
 -- PodcastShow table
 CREATE TABLE PodcastShow (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     name NVARCHAR(250) NOT NULL,
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     language NVARCHAR(50) NOT NULL,
@@ -116,7 +116,7 @@ CREATE TABLE PodcastShow (
 
 -- PodcastEpisode table
 CREATE TABLE PodcastEpisode (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     title NVARCHAR(250) NOT NULL,
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     explicitContent BIT NOT NULL DEFAULT 0,
@@ -143,7 +143,7 @@ CREATE TABLE PodcastEpisode (
 
 -- PodcastEpisodeLicense table
 CREATE TABLE PodcastEpisodeLicense (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     licenseDocumentFileKey NVARCHAR(MAX) NOT NULL,
     podcastEpisodeLicenseTypeId INT NOT NULL,
@@ -178,7 +178,7 @@ CREATE TABLE PodcastEpisodePublishReviewSession (
 
 -- PodcastEpisodePublishReviewSessionStatusTracking table
 CREATE TABLE PodcastEpisodePublishReviewSessionStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastEpisodePublishReviewSessionId INT NOT NULL,
     podcastEpisodePublishReviewSessionStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -188,7 +188,7 @@ CREATE TABLE PodcastEpisodePublishReviewSessionStatusTracking (
 
 -- PodcastChannelStatusTracking table
 CREATE TABLE PodcastChannelStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastChannelId UNIQUEIDENTIFIER NOT NULL,
     podcastChannelStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -198,7 +198,7 @@ CREATE TABLE PodcastChannelStatusTracking (
 
 -- PodcastShowStatusTracking table
 CREATE TABLE PodcastShowStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     podcastShowStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -208,7 +208,7 @@ CREATE TABLE PodcastShowStatusTracking (
 
 -- PodcastEpisodeStatusTracking table
 CREATE TABLE PodcastEpisodeStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     podcastEpisodeStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -218,7 +218,7 @@ CREATE TABLE PodcastEpisodeStatusTracking (
 
 -- PodcastShowReview table
 CREATE TABLE PodcastShowReview (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     title NVARCHAR(250) NULL,
     content NVARCHAR(MAX) NULL,
     rating FLOAT NOT NULL,

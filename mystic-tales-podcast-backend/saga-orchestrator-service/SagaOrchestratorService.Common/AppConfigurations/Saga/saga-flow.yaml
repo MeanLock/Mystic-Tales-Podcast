@@ -4680,13 +4680,13 @@ flows:
           - Rating
           - CreatedAt
         onSuccess:
-          emit: "create-buddy-review.success"
+          emit: "create-podcast-buddy-review.success"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "create-buddy-review.failed"
+          emit: "create-podcast-buddy-review.failed"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -4719,13 +4719,13 @@ flows:
           - Rating
           - UpdatedAt
         onSuccess:
-          emit: "update-buddy-review.success"
+          emit: "update-podcast-buddy-review.success"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "update-buddy-review.failed"
+          emit: "update-podcast-buddy-review.failed"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -4749,19 +4749,19 @@ flows:
           - PodcastBuddyReviewId
           - DeletedAt
         onSuccess:
-          emit: "delete-buddy-review.success"
+          emit: "delete-podcast-buddy-review.success"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "delete-buddy-review.failed"
+          emit: "delete-podcast-buddy-review.failed"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
 
-  buddy-report-submission-flow:
+  podcast-buddy-report-submission-flow:
     topic: "report-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Báo cáo podcast buddy"

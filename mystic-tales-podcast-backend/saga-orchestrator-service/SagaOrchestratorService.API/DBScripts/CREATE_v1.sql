@@ -4,7 +4,7 @@
 
 -- SagaInstance table
 CREATE TABLE SagaInstance (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     flowName NVARCHAR(250) NOT NULL,
     currentStepName NVARCHAR(250) NULL,
     initialData NVARCHAR(MAX) NULL,
@@ -19,7 +19,7 @@ CREATE TABLE SagaInstance (
 
 -- SagaStepExecution table
 CREATE TABLE SagaStepExecution (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     sagaInstanceId UNIQUEIDENTIFIER NOT NULL,
     stepName NVARCHAR(250) NOT NULL,
     topicName NVARCHAR(250) NOT NULL,

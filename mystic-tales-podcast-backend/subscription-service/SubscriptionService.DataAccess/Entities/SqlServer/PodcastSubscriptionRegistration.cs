@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SubscriptionService.DataAccess.Entities.sqlserver;
+namespace SubscriptionService.DataAccess.Entities.SqlServer;
 
 public partial class PodcastSubscriptionRegistration
 {

@@ -193,7 +193,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("AccountNotification");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.Content).HasColumnName("content");
@@ -295,7 +295,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastBuddyReview", tb => tb.HasTrigger("TR_PodcastBuddyReview_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.Content).HasColumnName("content");

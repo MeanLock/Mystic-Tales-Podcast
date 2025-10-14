@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using BookingManagementService.DataAccess.Entities.sqlserver;
+using BookingManagementService.DataAccess.Entities.SqlServer;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookingManagementService.DataAccess.Data;
@@ -98,7 +98,7 @@ public partial class AppDbContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__BookingC__3213E83FB506977F");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AudioFileKey).HasColumnName("audioFileKey");
             entity.Property(e => e.ChatRoomId).HasColumnName("chatRoomId");
@@ -122,7 +122,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("BookingChatRoom");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.BookingId).HasColumnName("bookingId");
             entity.Property(e => e.CreatedAt)
@@ -143,7 +143,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("BookingNegotiation");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.BookingId).HasColumnName("bookingId");
             entity.Property(e => e.CreatedAt)
@@ -191,7 +191,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("BookingPodcastTrack");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AudioFileKey).HasColumnName("audioFileKey");
             entity.Property(e => e.AudioFileSize).HasColumnName("audioFileSize");
@@ -218,7 +218,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("BookingProducingRequest");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.BookingId).HasColumnName("bookingId");
             entity.Property(e => e.CreatedAt)
@@ -248,7 +248,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("BookingProducingRequestPodcastTrackToEdit");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.BookingPodcastTrackId).HasColumnName("bookingPodcastTrackId");
             entity.Property(e => e.BookingProducingRequestId).HasColumnName("bookingProducingRequestId");
@@ -271,7 +271,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("BookingRequirementAttachFile");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AttachFileKey).HasColumnName("attachFileKey");
             entity.Property(e => e.BookingId).HasColumnName("bookingId");
@@ -306,7 +306,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("BookingStatusTracking");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.BookingId).HasColumnName("bookingId");
             entity.Property(e => e.BookingStatusId).HasColumnName("bookingStatusId");

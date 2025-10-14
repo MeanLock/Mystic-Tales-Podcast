@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SagaOrchestratorService.DataAccess.Entities.sqlserver;
+namespace SagaOrchestratorService.DataAccess.Entities.SqlServer;
 
 public partial class SagaStepExecution
 {
@@ -9,11 +9,11 @@ public partial class SagaStepExecution
 
     public Guid SagaInstanceId { get; set; }
 
-    public string StepName { get; set; }
+    public string StepName { get; set; } = null!;
 
-    public string? TopicName { get; set; }
+    public string TopicName { get; set; } = null!;
 
-    public string StepStatus { get; set; }
+    public string StepStatus { get; set; } = null!;
 
     public string? RequestData { get; set; }
 
@@ -23,5 +23,5 @@ public partial class SagaStepExecution
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual SagaInstance SagaInstance { get; set; }
+    public virtual SagaInstance SagaInstance { get; set; } = null!;
 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using ModerationService.DataAccess.Entities.sqlserver;
+using ModerationService.DataAccess.Entities.SqlServer;
 
 namespace ModerationService.DataAccess.Data;
 
@@ -65,7 +65,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("CounterNotice", tb => tb.HasTrigger("TR_CounterNotice_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountEmail).HasColumnName("accountEmail");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
@@ -106,7 +106,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("CounterNoticeAttachFile");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AttachFileKey).HasColumnName("attachFileKey");
             entity.Property(e => e.CounterNoticeId).HasColumnName("counterNoticeId");
@@ -166,7 +166,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("DMCAAccusationStatusTracking");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
@@ -193,7 +193,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("DMCANotice", tb => tb.HasTrigger("TR_DMCANotice_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountEmail).HasColumnName("accountEmail");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
@@ -235,7 +235,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("DMCANoticeAttachFile");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AttachFileKey).HasColumnName("attachFileKey");
             entity.Property(e => e.CreatedAt)
@@ -257,7 +257,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("LawsuitProof", tb => tb.HasTrigger("TR_LawsuitProof_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.CaseNumber)
@@ -312,7 +312,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("LawsuitProofAttachFile");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AttachFileKey).HasColumnName("attachFileKey");
             entity.Property(e => e.CreatedAt)
@@ -334,7 +334,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastBuddyReport");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.Content).HasColumnName("content");
@@ -362,7 +362,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastBuddyReportReviewSession", tb => tb.HasTrigger("TR_PodcastBuddyReportReviewSession_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AssignedStaff).HasColumnName("assignedStaff");
             entity.Property(e => e.CreatedAt)
@@ -401,7 +401,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastEpisodeReport");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.Content).HasColumnName("content");
@@ -429,7 +429,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastEpisodeReportReviewSession", tb => tb.HasTrigger("TR_PodcastEpisodeReportReviewSession_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AssignedStaff).HasColumnName("assignedStaff");
             entity.Property(e => e.CreatedAt)
@@ -465,7 +465,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastShowReport");
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.Content).HasColumnName("content");
@@ -493,7 +493,7 @@ public partial class AppDbContext : DbContext
             entity.ToTable("PodcastShowReportReviewSession", tb => tb.HasTrigger("TR_PodcastShowReportReviewSession_UpdatedAt"));
 
             entity.Property(e => e.Id)
-                .ValueGeneratedNever()
+                .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
             entity.Property(e => e.AssignedStaff).HasColumnName("assignedStaff");
             entity.Property(e => e.CreatedAt)

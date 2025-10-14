@@ -28,7 +28,7 @@ CREATE TABLE DMCAAccusationStatus (
 
 -- PodcastBuddyReport table
 CREATE TABLE PodcastBuddyReport (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     content NVARCHAR(MAX) NULL,
     accountId INT NOT NULL,
     podcastBuddyId INT NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE PodcastBuddyReport (
 
 -- PodcastShowReport table
 CREATE TABLE PodcastShowReport (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     content NVARCHAR(MAX) NULL,
     accountId INT NOT NULL,
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE PodcastShowReport (
 
 -- PodcastEpisodeReport table
 CREATE TABLE PodcastEpisodeReport (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     content NVARCHAR(MAX) NULL,
     accountId INT NOT NULL,
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE PodcastEpisodeReport (
 
 -- PodcastBuddyReportReviewSession table
 CREATE TABLE PodcastBuddyReportReviewSession (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastBuddyId INT NOT NULL,
     assignedStaff INT NOT NULL,
     resolvedViolationPoint INT NOT NULL DEFAULT 1,
@@ -75,7 +75,7 @@ CREATE TABLE PodcastBuddyReportReviewSession (
 
 -- PodcastShowReportReviewSession table
 CREATE TABLE PodcastShowReportReviewSession (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     assignedStaff INT NOT NULL,
     isResolved BIT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE PodcastShowReportReviewSession (
 
 -- PodcastEpisodeReportReviewSession table
 CREATE TABLE PodcastEpisodeReportReviewSession (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     assignedStaff INT NOT NULL,
     isResolved BIT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE DMCAAccusation (
 
 -- CounterNotice table
 CREATE TABLE CounterNotice (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT NOT NULL,
     accountEmail NVARCHAR(MAX) NOT NULL,
     accountPhone NVARCHAR(MAX) NOT NULL,
@@ -126,7 +126,7 @@ CREATE TABLE CounterNotice (
 
 -- DMCANotice table
 CREATE TABLE DMCANotice (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     podcastShowId UNIQUEIDENTIFIER NULL,
     podcastEpisodeId UNIQUEIDENTIFIER NULL,
     accountId INT NOT NULL,
@@ -147,7 +147,7 @@ CREATE TABLE DMCANotice (
 
 -- LawsuitProof table
 CREATE TABLE LawsuitProof (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT NOT NULL,
     goodFaithStatement NVARCHAR(MAX) NOT NULL,
     courtName NVARCHAR(MAX) NOT NULL,
@@ -171,7 +171,7 @@ CREATE TABLE LawsuitProof (
 
 -- DMCAAccusationStatusTracking table
 CREATE TABLE DMCAAccusationStatusTracking (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaAccusationId INT NOT NULL,
     dmcaAccusationStatusId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -181,7 +181,7 @@ CREATE TABLE DMCAAccusationStatusTracking (
 
 -- CounterNoticeAttachFile table
 CREATE TABLE CounterNoticeAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     counterNoticeId UNIQUEIDENTIFIER NOT NULL,
     attachFileKey NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -190,7 +190,7 @@ CREATE TABLE CounterNoticeAttachFile (
 
 -- DMCANoticeAttachFile table
 CREATE TABLE DMCANoticeAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     dmcaNoticeId UNIQUEIDENTIFIER NOT NULL,
     attachFileKey NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
@@ -199,7 +199,7 @@ CREATE TABLE DMCANoticeAttachFile (
 
 -- LawsuitProofAttachFile table
 CREATE TABLE LawsuitProofAttachFile (
-    id UNIQUEIDENTIFIER PRIMARY KEY,
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     lawsuitProofId UNIQUEIDENTIFIER NOT NULL,
     attachFileKey NVARCHAR(MAX) NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
