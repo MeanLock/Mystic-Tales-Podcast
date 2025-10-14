@@ -34,6 +34,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUse
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeactivateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountViolationPoint;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyPodcaster;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -217,6 +218,24 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "account-status-change-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return startSagaTriggerMessage.SagaInstanceId;
+        }
+
+        public int CalculateViolationLevel(int violationPoint, JArray accountViolationLevelConfigs)
+        {
+            int violationLevel = 0;
+            accountViolationLevelConfigs = new JArray(accountViolationLevelConfigs.OrderBy(c => c.Value<int>("ViolationPointThreshold")));
+            foreach (var config in accountViolationLevelConfigs)
+            {
+                int level = config.Value<int>("ViolationLevel");
+                int pointThreshold = config.Value<int>("ViolationPointThreshold");
+                // Console.WriteLine($"Checking level {level} with threshold {pointThreshold} against violation point {violationPoint}");
+                if (violationPoint <= pointThreshold)
+                {
+                    violationLevel = level;
+                    break;
+                }
+            }
+            return violationLevel;
         }
 
         /////////////////////////////////////////////////////////////
@@ -932,8 +951,21 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     var account = await _accountGenericRepository.FindByIdAsync(createPodcasterProfileParameter.AccountId, includeProperties: a => a.PodcasterProfile);
                     if (account.PodcasterProfile != null)
                     {
-                        throw new Exception("Podcaster profile for account id " + createPodcasterProfileParameter.AccountId + " already exists");
+                        if (account.PodcasterProfile.IsVerified == true)
+                        {
+                            throw new Exception("Podcaster profile for account id " + createPodcasterProfileParameter.AccountId + " is already verified, cannot create another one");
+                        }
+                        else if (account.PodcasterProfile.IsVerified == null)
+                        {
+                            throw new Exception("Podcaster profile for account id " + createPodcasterProfileParameter.AccountId + " is pending verification, cannot create another one");
+                        }
+                        else
+                        {
+                            // xoá profile cũ
+                            await _podcasterProfileGenericRepository.DeleteAsync(account.PodcasterProfile.AccountId);
+                        }
                     }
+                    
 
 
                     var podcasterProfile = new PodcasterProfile
@@ -943,7 +975,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         Description = createPodcasterProfileParameter.Description,
                         BuddyAudioFileKey = null,
                         CommitmentDocumentFileKey = null,
-                        IsVerified = false,
+                        IsVerified = null,
                         OwnedBookingStorageSize = activeSystemConfigProfile["BookingConfig"].Value<double>("FreeInitialBookingStorageSize"),
                         UsedBookingStorageSize = 0,
                         RatingCount = 0
@@ -1226,6 +1258,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     await SendChangeAccountStatusMessage(account.Id);
+                    // [CHỈNH SỬA SAU] CHẠY CÁC FLOW XOÁ TRONG booking, chanel/show/episode (AccountFavoritedPodcastChannel/AccountFollowedPodcastShow/AccountSavedPodcastEpisode), podcast subscription, Report review session, publish review session, DMCA Accusation, AccountFollowedPodcaster
 
                 }
                 catch (Exception ex)
@@ -1308,27 +1341,18 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
+                    if (addAccountViolationPointParameterDTO.ViolationPoint <= 0)
+                    {
+                        throw new Exception("Violation point to add must be greater than 0");
+                    }
+                    var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
                     var account = await this.GetExistAccountById(addAccountViolationPointParameterDTO.AccountId);
                     account.ViolationPoint += addAccountViolationPointParameterDTO.ViolationPoint;
                     account.LastViolationPointChanged = _dateHelper.GetNowByAppTimeZone();
 
                     // cập nhật violation level
-                    if (account.ViolationPoint >= 100)
-                    {
-                        account.ViolationLevel = 3;
-                    }
-                    else if (account.ViolationPoint >= 50)
-                    {
-                        account.ViolationLevel = 2;
-                    }
-                    else if (account.ViolationPoint >= 20)
-                    {
-                        account.ViolationLevel = 1;
-                    }
-                    else
-                    {
-                        account.ViolationLevel = 0;
-                    }
+                    var newViolationLevel = CalculateViolationLevel(account.ViolationPoint, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray);
+                    account.ViolationLevel = newViolationLevel;
                     account.LastViolationLevelChanged = _dateHelper.GetNowByAppTimeZone();
 
                     await _accountGenericRepository.UpdateAsync(account.Id, account);
@@ -1349,6 +1373,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     await SendChangeAccountStatusMessage(account.Id);
+                    // [CHỈNH SỬA SAU] NẾU ACCOUNT VIOLATION LEVEL == MAX VIOLATION LEVEL THÌ CHẠY CÁC FLOW XOÁ TRONG booking, chanel/show/episode (AccountFavoritedPodcastChannel/AccountFollowedPodcastShow/AccountSavedPodcastEpisode), podcast subscription, Report review session, publish review session, DMCA Accusation, AccountFollowedPodcaster
 
                 }
                 catch (Exception ex)
@@ -1373,6 +1398,67 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             }
         }
 
+        public async Task VerifyPodcaster(VerifyPodcasterParameterDTO verifyPodcasterParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
+                        predicate: a => a.AccountId == verifyPodcasterParameterDTO.AccountId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (podcasterProfile == null)
+                    {
+                        throw new Exception("Podcaster profile with id " + verifyPodcasterParameterDTO.AccountId + " does not exist");
+                    }
+                    else if (podcasterProfile.IsVerified != null)
+                    {
+                        throw new Exception("Podcaster profile with id " + verifyPodcasterParameterDTO.AccountId + " is already " + (verifyPodcasterParameterDTO.IsVerified == true ? "verified" : "unverified"));
+                    }
+
+                    podcasterProfile.IsVerified = verifyPodcasterParameterDTO.IsVerified;
+                    await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
+                    await transaction.CommitAsync();
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Verify podcaster profile successfully",
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "verify-podcaster.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(podcasterProfile.AccountId);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Verify podcaster profile failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "verify-podcaster.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+
+            }
+        }
+        
     }
 }
 

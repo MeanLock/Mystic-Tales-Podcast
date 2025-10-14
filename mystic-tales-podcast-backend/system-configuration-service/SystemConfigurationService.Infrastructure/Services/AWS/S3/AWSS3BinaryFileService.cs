@@ -257,6 +257,7 @@ namespace SystemConfigurationService.Infrastructure.Services.AWS.S3
 
                 // Delete old files with same name if exists
                 string fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+                string? fileKey = null;
                 if (!fileNameWithoutExt.Contains("."))
                 {
                     fileKey = await GetFullFileKeyAsync(folderPath + "/" + fileNameWithoutExt);

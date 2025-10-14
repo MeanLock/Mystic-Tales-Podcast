@@ -17,6 +17,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserS
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcasterProfile;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUser;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyPodcaster;
 using UserService.BusinessLogic.DTOs.ViewModels.Mail;
 using UserService.BusinessLogic.Enums.Kafka;
 using UserService.BusinessLogic.Services.DbServices.UserServices;
@@ -327,6 +328,22 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "add-account-violation-point.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("verify-podcaster", SAGA_TOPIC)]
+        public async Task HandleVerifyPodcasterAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var verifyPodcasterParameterDTO = command.RequestData.ToObject<VerifyPodcasterParameterDTO>();
+                    await _accountService.VerifyPodcaster(verifyPodcasterParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "verify-podcaster.failed"    // From YAML onFailure.emit
             );
         }
 

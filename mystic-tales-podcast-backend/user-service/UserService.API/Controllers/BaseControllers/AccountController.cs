@@ -379,6 +379,27 @@ namespace UserService.API.Controllers.BaseControllers
         }
 
 
+        // /api/user-service/api/accounts/podcasters/{AccountId}/verify/{IsVerify}
+        [HttpPut("podcasters/{AccountId}/verify/{IsVerify}")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess")]
+        public async Task<IActionResult> VerifyPodcasterById(int AccountId, bool IsVerify)
+        {
+            var requestData = JObject.FromObject(new
+            {
+                AccountId = AccountId,
+                IsVerified = IsVerify
+            });
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "podcaster-verification-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+
         //         // /api/user-service/api/auth/register/customer
         // [HttpPost("register/customer")]
         // public async Task<IActionResult> RegisterCustomer([FromForm] CustomerRegisterRequestDTO customerRegisterRequestDTO)

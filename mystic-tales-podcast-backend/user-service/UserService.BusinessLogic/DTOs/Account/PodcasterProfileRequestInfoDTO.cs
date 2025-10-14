@@ -5,7 +5,7 @@ namespace UserService.BusinessLogic.DTOs.Account
     public class PodcasterProfileRequestDTO
     {
         public required string PodcasterProfileRequestInfo { get; set; }
-        public IFormFile? CommitmentDocumentFile { get; set; } 
+        public required IFormFile CommitmentDocumentFile { get; set; } 
     }
 
     public class PodcasterProfileRequestInfoDTO
