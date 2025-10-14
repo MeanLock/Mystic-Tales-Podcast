@@ -4704,16 +4704,19 @@ flows:
         description: "Cập nhật review cho podcast buddy"
         parameters:
           - PodcastBuddyReviewId
+          - AccountId
           - Title
           - Content
           - Rating
         next-request-data:
           - PodcastBuddyReviewId
+          - AccountId
           - Title
           - Content
           - Rating
         response-data:
           - PodcastBuddyReviewId
+          - AccountId
           - Title
           - Content
           - Rating
@@ -4743,10 +4746,13 @@ flows:
         description: "Xóa review cho podcast buddy"
         parameters:
           - PodcastBuddyReviewId
+          - AccountId
         next-request-data:
           - PodcastBuddyReviewId
+          - AccountId
         response-data:
           - PodcastBuddyReviewId
+          - AccountId
           - DeletedAt
         onSuccess:
           emit: "delete-podcast-buddy-review.success"

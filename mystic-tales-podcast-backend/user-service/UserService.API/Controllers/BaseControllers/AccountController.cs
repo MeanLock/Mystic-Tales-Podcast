@@ -409,7 +409,7 @@ namespace UserService.API.Controllers.BaseControllers
             {
                 return StatusCode(403, "You cannot review yourself as a podcast buddy.");
             }
-            if(podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating <0 || podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating >5)
+            if (podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating < 0 || podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating > 5)
             {
                 return BadRequest("Rating must be between 0 and 5.");
             }
@@ -423,6 +423,77 @@ namespace UserService.API.Controllers.BaseControllers
             });
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("public-review-management-domain", requestData, null, "podcast-buddy-review-creation-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/user-service/api/accounts/podcast-buddy-reviews/{PodcastBuddyReviewId}
+        [HttpPut("podcast-buddy-reviews/{PodcastBuddyReviewId}")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
+        public async Task<IActionResult> UpdatePodcastBuddyReviewById(PodcastBuddyReviewRequestDTO podcastBuddyReviewRequestDTO, Guid PodcastBuddyReviewId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var requestData = JObject.FromObject(new
+            {
+                PodcastBuddyReviewId = PodcastBuddyReviewId,
+                AccountId = account.Id,
+                Title = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Title,
+                Content = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Content,
+                Rating = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating
+            });
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("public-review-management-domain", requestData, null, "podcast-buddy-review-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/user-service/api/accounts/podcast-buddy-reviews/{PodcastBuddyReviewId}
+        [HttpDelete("podcast-buddy-reviews/{PodcastBuddyReviewId}")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
+        public async Task<IActionResult> DeletePodcastBuddyReviewById(Guid PodcastBuddyReviewId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var requestData = JObject.FromObject(new
+            {
+                PodcastBuddyReviewId = PodcastBuddyReviewId,
+                AccountId = account.Id
+            });
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("public-review-management-domain", requestData, null, "podcast-buddy-review-deletion-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/user-service/api/accounts/{AccountId}/{IsFollow}
+        [HttpPut("{AccountId}/follow/{IsFollow}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> FollowOrUnfollowPodcaster(int AccountId, bool IsFollow)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (account.Id == AccountId)
+            {
+                return StatusCode(403, "You cannot follow/unfollow yourself.");
+            }
+            var requestData = JObject.FromObject(new
+            {
+                FollowerAccountId = account.Id,
+                FollowingAccountId = AccountId,
+                IsFollow = IsFollow
+            });
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "podcaster-follow-unfollow-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {

@@ -10,11 +10,13 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAcc
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeactivateAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.NewResetPassword;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendResetPasswordLink;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendUserServiceEmail;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcasterProfile;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUser;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
@@ -327,7 +329,7 @@ namespace UserService.BusinessLogic.MessageHandlers
                 stepHandler: async (command) =>
                 {
                     var createPodcastBuddyReviewParameterDTO = command.RequestData.ToObject<CreatePodcastBuddyReviewParameterDTO>();
-                    Console.WriteLine("Received CreatePodcastBuddyReviewParameterDTO: " +command.FlowName);
+                    Console.WriteLine("Received CreatePodcastBuddyReviewParameterDTO: " + command.FlowName);
                     await _accountService.CreatePodcastBuddyReview(createPodcastBuddyReviewParameterDTO, command);
 
                 },
@@ -336,7 +338,38 @@ namespace UserService.BusinessLogic.MessageHandlers
             );
         }
 
-       
+        [MessageHandler("update-podcast-buddy-review", SAGA_TOPIC)]
+        public async Task HandleUpdatePodcastBuddyReviewAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var updatePodcastBuddyReviewParameterDTO = command.RequestData.ToObject<UpdatePodcastBuddyReviewParameterDTO>();
+                    Console.WriteLine("Received UpdatePodcastBuddyReviewParameterDTO: " + command.FlowName);
+                    await _accountService.UpdatePodcastBuddyReview(updatePodcastBuddyReviewParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "update-podcast-buddy-review.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-podcast-buddy-review", SAGA_TOPIC)]
+        public async Task HandleDeletePodcastBuddyReviewAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deletePodcastBuddyReviewParameterDTO = command.RequestData.ToObject<DeletePodcastBuddyReviewParameterDTO>();
+                    await _accountService.DeletePodcastBuddyReview(deletePodcastBuddyReviewParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-podcast-buddy-review.failed"    // From YAML onFailure.emit
+            );
+        }
 
     }
 }

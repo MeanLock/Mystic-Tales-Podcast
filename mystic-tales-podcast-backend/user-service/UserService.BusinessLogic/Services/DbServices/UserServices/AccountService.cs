@@ -36,6 +36,8 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateA
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountViolationPoint;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyPodcaster;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcastBuddyReview;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcastBuddyReview;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -1481,10 +1483,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
-                   var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
-                        predicate: a => a.AccountId == createPodcastBuddyReviewParameterDTO.PodcastBuddyId && a.IsVerified == true,
-                        includeFunc: null
-                        ).ToListAsync()).FirstOrDefault();
+                    var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
+                         predicate: a => a.AccountId == createPodcastBuddyReviewParameterDTO.PodcastBuddyId && a.IsVerified == true,
+                         includeFunc: null
+                         ).ToListAsync()).FirstOrDefault();
                     if (podcasterProfile == null)
                     {
                         throw new Exception("Podcast buddy with id " + createPodcastBuddyReviewParameterDTO.PodcastBuddyId + " does not exist");
@@ -1497,7 +1499,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     {
                         throw new Exception("Account with id " + createPodcastBuddyReviewParameterDTO.AccountId + " has already reviewed podcast buddy with id " + createPodcastBuddyReviewParameterDTO.PodcastBuddyId);
                     }
-                    
+
                     var podcastBuddyReview = new PodcastBuddyReview
                     {
                         AccountId = createPodcastBuddyReviewParameterDTO.AccountId,
@@ -1549,8 +1551,148 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 }
             }
         }
+
+        public async Task UpdatePodcastBuddyReview(UpdatePodcastBuddyReviewParameterDTO updatePodcastBuddyReviewParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+
+
+
+                    var existingReview = await _podcastBuddyReviewGenericRepository.FindByIdAsync(updatePodcastBuddyReviewParameterDTO.PodcastBuddyReviewId);
+
+                    if (existingReview == null)
+                    {
+                        throw new Exception("Account with id " + updatePodcastBuddyReviewParameterDTO.AccountId + " has not reviewed podcast buddy with id " + updatePodcastBuddyReviewParameterDTO.PodcastBuddyReviewId);
+                    }
+                    else if (existingReview.AccountId != updatePodcastBuddyReviewParameterDTO.AccountId)
+                    {
+                        throw new Exception("Account with id " + updatePodcastBuddyReviewParameterDTO.AccountId + " is not the owner of podcast buddy review with id " + updatePodcastBuddyReviewParameterDTO.PodcastBuddyReviewId);
+                    }
+                    var previousRating = existingReview.Rating;
+                    existingReview.Title = updatePodcastBuddyReviewParameterDTO.Title ?? existingReview.Title;
+                    existingReview.Content = updatePodcastBuddyReviewParameterDTO.Content ?? existingReview.Content;
+                    existingReview.Rating = updatePodcastBuddyReviewParameterDTO.Rating;
+                    await _podcastBuddyReviewGenericRepository.UpdateAsync(existingReview.Id, existingReview);
+
+
+                    var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
+                         predicate: a => a.AccountId == existingReview.PodcastBuddyId && a.IsVerified == true,
+                         includeFunc: null
+                         ).ToListAsync()).FirstOrDefault();
+                    if (podcasterProfile == null)
+                    {
+                        throw new Exception("Podcast buddy with id " + existingReview.PodcastBuddyId + " does not exist");
+                    }
+
+                    // cập nhật rating count cho podcaster profile
+                    podcasterProfile.AverageRating = ((podcasterProfile.AverageRating * podcasterProfile.RatingCount) - previousRating + updatePodcastBuddyReviewParameterDTO.Rating) / podcasterProfile.RatingCount;
+                    await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
+
+                    await transaction.CommitAsync();
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Create podcast buddy review successfully",
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-podcast-buddy-review.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Update podcast buddy review failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-podcast-buddy-review.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeletePodcastBuddyReview(DeletePodcastBuddyReviewParameterDTO deletePodcastBuddyReviewParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingReview = await _podcastBuddyReviewGenericRepository.FindByIdAsync(deletePodcastBuddyReviewParameterDTO.PodcastBuddyReviewId);
+                    if (existingReview == null)
+                    {
+                        throw new Exception("Podcast buddy review not found");
+                    } else if (existingReview.AccountId != deletePodcastBuddyReviewParameterDTO.AccountId)
+                    {
+                        throw new Exception("Account with id " + deletePodcastBuddyReviewParameterDTO.AccountId + " is not the owner of podcast buddy review with id " + deletePodcastBuddyReviewParameterDTO.PodcastBuddyReviewId);
+                    }
+                    await _podcastBuddyReviewGenericRepository.DeleteAsync(existingReview.Id);
+
+                    var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
+                         predicate: a => a.AccountId == existingReview.PodcastBuddyId && a.IsVerified == true,
+                         includeFunc: null
+                         ).ToListAsync()).FirstOrDefault();
+                    if (podcasterProfile == null)
+                    {
+                        throw new Exception("Podcast buddy with id " + existingReview.PodcastBuddyId + " does not exist");
+                    }
+
+                    // cập nhật rating count cho podcaster profile
+                    podcasterProfile.RatingCount -= 1;
+                    podcasterProfile.AverageRating = podcasterProfile.RatingCount == 0 ? 0 : ((podcasterProfile.AverageRating * (podcasterProfile.RatingCount + 1)) - existingReview.Rating) / podcasterProfile.RatingCount;
+                    await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
+
+                    await transaction.CommitAsync();
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Message = "Delete podcast buddy review successfully",
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-podcast-buddy-review.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete podcast buddy review failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-podcast-buddy-review.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
     }
 }
-
-
-
