@@ -1,0 +1,37 @@
+// global.scss
+@use './app/default__theme' as *;
+@use './app/light__theme' as *;
+@use './app/dark__theme' as *;
+@use './chat-room/default__theme' as *;
+@use './chat-room/red__theme' as *;
+@use './chat-room/dark__theme' as *;
+
+
+:root {
+  @include App-Theme_default;   // Theme mặc định cho App
+  @include ChatRoom-Theme_default;  // Theme mặc định cho Chat Room
+}
+// Áp dụng các theme vào toàn bộ ứng dụng hoặc các component
+[data-app-theme="default"] {
+  @include App-Theme_default;
+}
+
+[data-app-theme="light"] {
+  @include App-Theme_light;
+}
+
+[data-app-theme="dark"] {
+  @include App-Theme_dark;
+}
+
+[data-chat-room-theme="default"] {
+  @include ChatRoom-Theme_default;
+}
+
+[data-chat-room-theme="red"] {
+  @include ChatRoom-Theme_red;
+}
+
+[data-chat-room-theme="dark"] {
+  @include ChatRoom-Theme_dark;
+}

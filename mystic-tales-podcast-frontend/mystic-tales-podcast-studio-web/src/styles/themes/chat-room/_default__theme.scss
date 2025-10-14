@@ -1,0 +1,26 @@
+// chat-room/default.scss
+@mixin ChatRoom-Theme_default {
+    --primary-color: #9b59b6;
+    --background-color: #f4f4f4;
+    --text-color: #222222;
+    --chat-bg: #f4f4f4;
+    --chat-text-color: #333;
+  
+    // Cấu hình cho các selector
+    button {
+    }
+    .MessageListScrollBarLayout{
+      background-color: white;
+    }
+    .TestLuonChoNongNe{
+      display: none;
+    }
+    ul {
+
+    }
+  
+    li {
+
+    }
+  }
+  

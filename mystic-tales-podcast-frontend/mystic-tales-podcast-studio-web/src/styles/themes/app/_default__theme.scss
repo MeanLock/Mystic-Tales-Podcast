@@ -1,0 +1,27 @@
+// Biến màu cho theme
+$app-bg-color: #ffffff;
+$app-text-color: #000000;
+$app-button-bg: #e0e0e0;
+$app-button-text: #333333;
+
+// Mixin để áp dụng style
+// app/default.scss
+@mixin App-Theme_default {
+  --primary-color: #3498db;
+  --background-color: #ffffff;
+  --text-color: #333333;
+  --button-bg: #3498db;
+
+  // Cấu hình cho các selector
+  button {
+    
+  }
+
+  ul {
+    
+  }
+
+  li {
+    
+  }
+}

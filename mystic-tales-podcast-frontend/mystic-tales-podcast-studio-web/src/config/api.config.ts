@@ -1,0 +1,12 @@
+import { ENV_CONFIG } from "./env.config";
+
+const REST_API_BASE_URL = ENV_CONFIG.REST_API_BASE_URL
+const GRAPHQL_API_BASE_URL = ENV_CONFIG.GRAPHQL_API_BASE_URL
+const GRAPHQL_API_WS_URL = ENV_CONFIG.GRAPHQL_API_WS_URL
+
+export const API_CONFIG = {
+  REST_API_BASE_URL,
+  GRAPHQL_API_BASE_URL,
+  GRAPHQL_API_WS_URL,
+  // Có thể mở rộng thêm các cấu hình API khác nếu cần
+};
