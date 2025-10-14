@@ -8,8 +8,10 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccoun
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterFollowed;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeactivateAccount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcasterFollowed;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.NewResetPassword;
@@ -345,6 +347,38 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "verify-podcaster.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("create-podcaster-followed", SAGA_TOPIC)]
+        public async Task HandleCreatePodcasterFollowedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var createPodcasterFollowedParameterDTO = command.RequestData.ToObject<CreatePodcasterFollowedParameterDTO>();
+                    await _accountService.CreatePodcasterFollowed(createPodcasterFollowedParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-podcaster-followed.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-podcaster-followed", SAGA_TOPIC)]
+        public async Task HandleDeletePodcasterFollowedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deletePodcasterFollowedParameterDTO = command.RequestData.ToObject<DeletePodcasterFollowedParameterDTO>();
+                    await _accountService.DeletePodcasterFollowed(deletePodcasterFollowedParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-podcaster-followed.failed"    // From YAML onFailure.emit
             );
         }
 

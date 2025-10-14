@@ -477,7 +477,7 @@ namespace UserService.API.Controllers.BaseControllers
         }
 
         // /api/user-service/api/accounts/{AccountId}/{IsFollow}
-        [HttpPut("{AccountId}/follow/{IsFollow}")]
+        [HttpPost("{AccountId}/follow/{IsFollow}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> FollowOrUnfollowPodcaster(int AccountId, bool IsFollow)
         {
@@ -488,12 +488,12 @@ namespace UserService.API.Controllers.BaseControllers
             }
             var requestData = JObject.FromObject(new
             {
-                FollowerAccountId = account.Id,
-                FollowingAccountId = AccountId,
-                IsFollow = IsFollow
+                AccountId = account.Id,
+                PodcastBuddyId = AccountId,
             });
+            var flowName = IsFollow ? "podcaster-follow-flow" : "podcaster-unfollow-flow";
 
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "podcaster-follow-unfollow-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, flowName);
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {
