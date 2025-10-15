@@ -10,6 +10,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
     [Route("api/chat-rooms")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class ChatRoomController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -28,7 +29,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         public async Task<IActionResult> GetChatMessageByBookingId([FromRoute] int BookingId)
         {
             var chatMessage = await _chatRoomService.GetAllChatRoomByBookingIdAsync(BookingId);
-            if(chatMessage == null || chatMessage.Count == 0)
+            if (chatMessage == null || chatMessage.Count == 0)
             {
                 return NotFound($"Chat messages for Booking ID {BookingId} not found.");
             }

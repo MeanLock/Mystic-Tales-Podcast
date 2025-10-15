@@ -10,6 +10,7 @@ namespace ModerationService.API.Controllers.BaseControllers
     [Route("api/buddy-reports")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class BuddyReportController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -33,6 +34,6 @@ namespace ModerationService.API.Controllers.BaseControllers
             });
         }
 
-        
+
     }
 }

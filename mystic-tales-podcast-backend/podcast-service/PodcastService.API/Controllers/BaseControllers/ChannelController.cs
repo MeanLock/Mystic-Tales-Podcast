@@ -11,6 +11,7 @@ namespace PodcastService.API.Controllers.BaseControllers
     [Route("api/channels")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class ChannelController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;

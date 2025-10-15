@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UserService.API.Filters.ExceptionFilters;
@@ -11,6 +12,7 @@ namespace UserService.API.Controllers.MiscControllers
     [Route("api/misc/file-source")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class FileSourceController : ControllerBase
     {
         private readonly FileIOHelper _fileIOHelper;

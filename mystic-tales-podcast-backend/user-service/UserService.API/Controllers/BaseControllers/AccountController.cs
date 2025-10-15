@@ -22,6 +22,7 @@ namespace UserService.API.Controllers.BaseControllers
     [Route("api/accounts")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class AccountController : ControllerBase
     {
         private readonly KafkaProducerService _kafkaProducerService;
@@ -145,7 +146,6 @@ namespace UserService.API.Controllers.BaseControllers
         // /api/user-service/api/accounts/podcast-buddies
         [HttpGet("podcast-buddies")]
         // [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
-        [Authorize(Policy = "OptionalAccess")]
         public async Task<IActionResult> GetPodcastBuddies()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -504,7 +504,7 @@ namespace UserService.API.Controllers.BaseControllers
         }
 
 
-        
+
 
     }
 }

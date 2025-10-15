@@ -10,6 +10,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
     [Route("api/member-subscriptions")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class MemberSubscriptionController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -33,6 +34,6 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             });
         }
 
-        
+
     }
 }

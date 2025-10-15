@@ -21,6 +21,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
     [Route("api/producing-requests")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class ProducingRequestController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -34,9 +35,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         private readonly FileIOHelper _fileIOHelper;
         private readonly AcoustIDAudioFingerprintGenerator _audioFingerprintGenerator;
         private readonly ILogger<ProducingRequestController> _logger;
-        
+
         public ProducingRequestController(
-            GenericQueryService genericQueryService, 
+            GenericQueryService genericQueryService,
             HttpServiceQueryClient httpServiceQueryClient,
             BookingProducingRequestService bookingProducingRequestService,
             BookingService bookingService,
@@ -60,7 +61,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             _audioFingerprintGenerator = audioFingerprintGenerator;
             _logger = logger;
         }
-        
+
         [HttpGet("{BookingProducingRequestId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetProducingRequestById([FromRoute] Guid BookingProducingRequestId)
@@ -72,7 +73,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
             return Ok(result);
         }
-        
+
         [HttpPost("bookings/{BookingId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> CreateProducingRequest([FromRoute] int BookingId, [FromBody] BookingProducingRequestRequestDTO request)
@@ -82,14 +83,14 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 return Unauthorized("Account information not found.");
             }
-            
+
             var accountId = account.Id;
             var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
             if (!isValid)
             {
                 return Forbid("You are not authorized to create booking producing request for this booking.");
             }
-            
+
             var requestData = new JObject
             {
                 { "BookingId", BookingId },
@@ -109,7 +110,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
-        
+
         [HttpPut("{BookingProducingRequestId}/submit")]
         [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> SubmitAudioTrack(
@@ -122,20 +123,20 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 return Unauthorized("Account information not found.");
             }
-            
+
             var accountId = account.Id;
             var isValid = await _bookingProducingRequestService.ValidateProducingRequestPodcasterAsync(BookingProducingRequestId, accountId);
-            if(!isValid)
+            if (!isValid)
             {
                 return Forbid("You are not authorized to submit tracks for this booking producing request.");
             }
-            
+
             // Validate all audio files first
             foreach (var audioFile in request.AudioFiles)
             {
                 var isValidAudioFile = _fileValidationConfig.IsValidFile("BookingPodcastTrack.audioFileKey", audioFile.FileName, audioFile.Length, audioFile.ContentType);
                 if (!isValidAudioFile)
-                { 
+                {
                     return BadRequest($"Invalid audio file '{audioFile.FileName}'. Please ensure all audio files have correct type and size.");
                 }
             }
@@ -180,7 +181,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                     { "AudioLength", (int)(audioMetadata?.Duration ?? 0) }
                 });
             }
-            
+
             // Create a single saga message with all tracks
             var requestData = new JObject
             {
@@ -212,7 +213,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 }
                 return StatusCode(500, "Failed to initiate booking producing request submission process.");
             }
-            
+
             return Ok(new
             {
                 //Message = "Booking producing request submitted successfully.",
@@ -220,7 +221,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
-        
+
         [HttpPut("{BookingProducingRequestId}/accept/{isAccepted}")]
         [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> BookingProducingRequestAcceptance(
@@ -254,7 +255,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId,
             });
         }
-        
+
         [HttpPut("{BookingPodcastTrackId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> UpdateBookingPodcastTrackPreviewListenSlot(

@@ -25,6 +25,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
     [Route("api/bookings")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class BookingController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;

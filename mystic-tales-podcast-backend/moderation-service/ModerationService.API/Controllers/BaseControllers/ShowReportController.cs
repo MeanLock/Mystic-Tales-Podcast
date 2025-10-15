@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ModerationService.API.Filters.ExceptionFilters;
 using ModerationService.BusinessLogic.Models.CrossService;
@@ -8,6 +9,7 @@ namespace ModerationService.API.Controllers.BaseControllers
     [Route("api/show-reports")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class ShowReportController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -19,6 +21,6 @@ namespace ModerationService.API.Controllers.BaseControllers
             _httpServiceQueryClient = httpServiceQueryClient;
         }
 
-       
+
     }
 }

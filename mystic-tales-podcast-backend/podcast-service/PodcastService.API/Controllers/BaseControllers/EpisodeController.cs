@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PodcastService.API.Filters.ExceptionFilters;
 using PodcastService.BusinessLogic.Models.CrossService;
@@ -8,6 +9,7 @@ namespace PodcastService.API.Controllers.BaseControllers
     [Route("api/episodes")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class EpisodeController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -19,6 +21,6 @@ namespace PodcastService.API.Controllers.BaseControllers
             _httpServiceQueryClient = httpServiceQueryClient;
         }
 
-        
+
     }
 }

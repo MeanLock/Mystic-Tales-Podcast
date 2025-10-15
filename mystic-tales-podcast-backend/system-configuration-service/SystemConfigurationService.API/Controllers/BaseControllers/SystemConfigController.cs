@@ -10,6 +10,7 @@ namespace SystemConfigurationService.API.Controllers.BaseControllers
     [Route("api/system-configs")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class SystemConfigController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;

@@ -1,5 +1,6 @@
 using BookingManagementService.API.Filters.ExceptionFilters;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace UserService.API.Controllers.MiscControllers
@@ -7,6 +8,7 @@ namespace UserService.API.Controllers.MiscControllers
     [Route("api/misc/file-source")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class FileSourceController : ControllerBase
     {
         private readonly FileIOHelper _fileIOHelper;

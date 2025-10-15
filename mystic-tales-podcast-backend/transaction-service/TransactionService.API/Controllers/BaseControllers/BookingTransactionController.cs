@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TransactionService.API.Filters.ExceptionFilters;
 using TransactionService.BusinessLogic.Models.CrossService;
@@ -8,6 +9,7 @@ namespace TransactionService.API.Controllers.BaseControllers
     [Route("api/booking-transactions")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class BookingTransactionController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -19,6 +21,6 @@ namespace TransactionService.API.Controllers.BaseControllers
             _httpServiceQueryClient = httpServiceQueryClient;
         }
 
-   
+
     }
 }

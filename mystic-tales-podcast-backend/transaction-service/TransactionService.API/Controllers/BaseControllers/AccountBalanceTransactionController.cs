@@ -16,6 +16,7 @@ namespace TransactionService.API.Controllers.BaseControllers
     [Route("api/account-balance-transactions")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
+    [Authorize(Policy = "OptionalAccess")]
     public class AccountBalanceTransactionController : ControllerBase
     {
         private readonly GenericQueryService _genericQueryService;
@@ -25,7 +26,7 @@ namespace TransactionService.API.Controllers.BaseControllers
         private readonly IMessagingService _messagingService;
 
         public AccountBalanceTransactionController(
-            GenericQueryService genericQueryService, 
+            GenericQueryService genericQueryService,
             HttpServiceQueryClient httpServiceQueryClient,
             ILogger<AccountBalanceTransactionController> logger,
             KafkaProducerService kafkaProducerService,
@@ -55,8 +56,8 @@ namespace TransactionService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
 
-            var requestData = new JObject 
-            { 
+            var requestData = new JObject
+            {
                 { "AccountId", accountId },
                 { "Amount", request.Amount },
                 { "Description", request.Description },
