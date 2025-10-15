@@ -4,7 +4,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
-using BookingManagementService.BusinessLogic.Services.DbServices;
+using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.BusinessSetting.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;

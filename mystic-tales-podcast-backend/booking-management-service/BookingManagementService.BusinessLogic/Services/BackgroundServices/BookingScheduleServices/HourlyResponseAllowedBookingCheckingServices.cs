@@ -1,5 +1,5 @@
 ﻿using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
-using BookingManagementService.BusinessLogic.Services.DbServices;
+using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
