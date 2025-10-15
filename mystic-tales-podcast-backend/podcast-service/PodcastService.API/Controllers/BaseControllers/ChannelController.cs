@@ -230,6 +230,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
         public async Task<IActionResult> CreateChannel(ChannelCreateRequestDTO channelCreateRequestDTO)
         {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var channelCreateInfo = JsonConvert.DeserializeObject<ChannelCreateInfoDTO>(channelCreateRequestDTO.ChannelCreateInfo);
 
             string mainImageFileKey = null;
@@ -281,6 +282,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             JObject requestData = JObject.FromObject(channelCreateInfo);
             requestData["MainImageFileKey"] = mainImageFileKey;
             requestData["BackgroundImageFileKey"] = backgroundImageFileKey;
+            requestData["PodcasterId"] = account.Id;
 
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "channel-creation-flow");

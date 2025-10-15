@@ -95,6 +95,13 @@ namespace UserService.API.Controllers.BaseControllers
             });
         }
 
+        [HttpGet("test-delete-account-status-cache/{accountId}")]
+        public async Task<IActionResult> TestDeleteAccountStatusCache(int accountId)
+        {
+            await _redisSharedCacheService.KeyDeleteAsync($"account:status:{accountId}");
+            return Ok(new { Message = $"Deleted account status cache for account ID: {accountId}" });
+        }
+
         // /api/user-service/get-file-url/{fileKey}
         [HttpGet("get-file-url/{**fileKey}")]
         [Authorize]

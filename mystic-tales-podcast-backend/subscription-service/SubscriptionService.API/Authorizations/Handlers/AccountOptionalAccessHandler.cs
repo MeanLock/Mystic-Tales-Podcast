@@ -23,7 +23,7 @@ namespace SubscriptionService.API.Authorizations.Handlers
             _redisSharedCacheService = redisSharedCacheService;
         }
 
-        public async Task<JObject> GetAccountById(int accountId)
+        public async Task<AccountStatusCache> QueryAccountStatusCacheById(int accountId)
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -36,7 +36,8 @@ namespace SubscriptionService.API.Authorizations.Handlers
                         EntityType = "Account",
                         Parameters = JObject.FromObject(new
                         {
-                            id = accountId
+                            id = accountId,
+                            include = "PodcasterProfile" 
                         }),
                         Fields = new[] {
                             "Id",
@@ -61,13 +62,21 @@ namespace SubscriptionService.API.Authorizations.Handlers
                             "LastPodcastListenSlotChanged",
                             "DeactivatedAt",
                             "CreatedAt",
-                            "UpdatedAt"
+                            "UpdatedAt",
+                            "PodcasterProfile",
                         }
                     }
                 }
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
-            return result.Results["account"] as JObject;
+            if (result.Results["account"] == null) return null;
+
+
+            var accountStatusCache = (result.Results["account"] as JObject).ToObject<AccountStatusCache>();
+            var podcasterProfile = result.Results["account"]["PodcasterProfile"] as JObject;
+            accountStatusCache.HasVerifiedPodcasterProfile = accountStatusCache.RoleId == 1 && podcasterProfile != null && podcasterProfile["IsVerified"]?.ToObject<bool>() == true ? true : false;
+            Console.WriteLine($"Queried Account: Id={accountStatusCache.Id}, RoleId={accountStatusCache.RoleId}, IsVerified={accountStatusCache.IsVerified}, DeactivatedAt={accountStatusCache.DeactivatedAt}, HasVerifiedPodcasterProfile={accountStatusCache.HasVerifiedPodcasterProfile}");
+            return accountStatusCache;
         }
 
         public async Task<AccountStatusCache> GetAccountStatusCacheById(int accountId)
@@ -83,7 +92,16 @@ namespace SubscriptionService.API.Authorizations.Handlers
             // NẾU KHÔNG CÓ TOKEN THÌ VẪN CHO QUA
             if (context.User?.Identity?.IsAuthenticated != true)
             {
-                Console.WriteLine("No authenticated user found in context. Skipping account validation.");
+                // in ra api url và method
+                if (context.Resource is HttpContext httpContext)
+                {
+                    Console.WriteLine($"API URL: {httpContext.Request.Path}, Method: {httpContext.Request.Method}");
+                }
+                else
+                {
+                    Console.WriteLine($"API URL: {context.Resource?.ToString()}, Method: [Unknown]");
+                }
+                Console.WriteLine("No00000000000000000 authenticated user found in context. Skipping account validation.");
                 context.Succeed(requirement);
                 return;
             }
@@ -98,14 +116,12 @@ namespace SubscriptionService.API.Authorizations.Handlers
             }
             if (userId == null) { context.Fail(); return; }
 
-            // var account = await _accountRepository.FindByIdAsync(int.Parse(userId));
-            // var account = await _accountGenericRepository.FindByIdAsync(int.Parse(userId), a => );
             var account = await GetAccountStatusCacheById(int.Parse(userId));
 
             if (account == null)
             {
                 Console.WriteLine($"Fetching account status from database for account id: {userId}");
-                account = (await GetAccountById(int.Parse(userId)))?.ToObject<AccountStatusCache>();
+                account = await QueryAccountStatusCacheById(int.Parse(userId));
                 if (account == null)
                 {
                     Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account not found: {userId}");
@@ -137,7 +153,6 @@ namespace SubscriptionService.API.Authorizations.Handlers
                 {
                     authContext.HttpContext.Items["LoggedInAccount"] = account;
                 }
-                // Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account: {account.SurveyTopicFavorites.Count}");
                 context.Succeed(requirement);
             }
         }
