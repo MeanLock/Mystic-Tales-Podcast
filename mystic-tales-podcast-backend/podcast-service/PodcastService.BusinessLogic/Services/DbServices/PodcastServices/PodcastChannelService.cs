@@ -1319,7 +1319,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
-                {
+                {   
                     var podcastChannel = new PodcastChannel
                     {
                         Name = createChannelParameterDTO.Name,
