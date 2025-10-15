@@ -355,6 +355,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.OwnedBookingStorageSize).HasColumnName("ownedBookingStorageSize");
             entity.Property(e => e.RatingCount).HasColumnName("ratingCount");
+            entity.Property(e => e.TotalFollow).HasColumnName("totalFollow");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")

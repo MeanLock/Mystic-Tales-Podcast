@@ -1,11 +1,11 @@
 namespace UserService.BusinessLogic.DTOs.Account
 {
-    public class PodcastBuddyReviewRequestDTO
+    public class PodcastBuddyReviewUpdateRequestDTO
     {
-        public required PodcastBuddyReviewRequestInfoDTO PodcastBuddyReviewRequestInfo { get; set; }
+        public required PodcastBuddyReviewUpdateInfoDTO PodcastBuddyReviewUpdateInfo { get; set; }
     }
 
-    public class PodcastBuddyReviewRequestInfoDTO
+    public class PodcastBuddyReviewUpdateInfoDTO
     {
         public string? Title { get; set; } = null;
         public string? Content { get; set; } = null;

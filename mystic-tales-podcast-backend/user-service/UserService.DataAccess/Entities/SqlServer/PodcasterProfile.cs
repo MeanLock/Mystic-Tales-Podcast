@@ -29,5 +29,7 @@ public partial class PodcasterProfile
 
     public DateTime UpdatedAt { get; set; }
 
+    public int TotalFollow { get; set; }
+
     public virtual Account Account { get; set; } = null!;
 }

@@ -144,11 +144,11 @@ namespace UserService.API.Controllers.BaseControllers
 
         // /api/user-service/api/accounts/podcast-buddies
         [HttpGet("podcast-buddies")]
-        [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
+        // [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
         public async Task<IActionResult> GetPodcastBuddies()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var podcastBuddies = await _accountService.GetPodcastBuddyAccounts(account.RoleId);
+            var podcastBuddies = await _accountService.GetPodcastBuddyAccounts(account?.RoleId);
 
             return Ok(new { PodcastBuddyList = podcastBuddies });
         }
@@ -156,12 +156,11 @@ namespace UserService.API.Controllers.BaseControllers
         // /api/user-service/api/accounts/podcaster/apply
         [HttpPost("podcaster/apply")]
         [Authorize(Policy = "Customer.NoViolationAccess.NonPodcasterAccess")]
-
-        public async Task<IActionResult> ApplyPodcaster([FromForm] PodcasterProfileRequestDTO podcasterProfileRequestDTO)
+        public async Task<IActionResult> ApplyPodcaster([FromForm] PodcasterProfileCreateRequestDTO podcasterProfileRequestDTO)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
-            var podcasterProfileRequestInfo = JsonConvert.DeserializeObject<PodcasterProfileRequestInfoDTO>(podcasterProfileRequestDTO.PodcasterProfileRequestInfo);
+            var podcasterProfileRequestInfo = JsonConvert.DeserializeObject<PodcasterProfileCreateInfoDTO>(podcasterProfileRequestDTO.PodcasterProfileCreateInfo);
 
             string commitmentDocumentFileKey = null;
             if (podcasterProfileRequestDTO.CommitmentDocumentFile != null)
@@ -240,7 +239,7 @@ namespace UserService.API.Controllers.BaseControllers
                 return StatusCode(403, "You can only update your own podcaster profile.");
             }
 
-            var podcasterProfileRequestInfo = JsonConvert.DeserializeObject<PodcasterProfileRequestInfoDTO>(podcasterProfileUpdateRequestDTO.PodcasterProfileRequestInfo);
+            var podcasterProfileRequestInfo = JsonConvert.DeserializeObject<PodcasterProfileUpdateInfoDTO>(podcasterProfileUpdateRequestDTO.PodcasterProfileUpdateInfo);
 
             string buddyAudioFileKey = null;
             if (podcasterProfileUpdateRequestDTO.BuddyAudioFile != null)
@@ -402,14 +401,14 @@ namespace UserService.API.Controllers.BaseControllers
         // /api/user-service/api/accounts/{AccountId}/podcast-buddy-reviews
         [HttpPost("{AccountId}/podcast-buddy-reviews")]
         [Authorize(Policy = "Customer.NoViolationAccess")]
-        public async Task<IActionResult> GetPodcastBuddyReviewsByAccountId(PodcastBuddyReviewRequestDTO podcastBuddyReviewRequestDTO, int AccountId)
+        public async Task<IActionResult> GetPodcastBuddyReviewsByAccountId(PodcastBuddyReviewCreateRequestDTO podcastBuddyReviewCreateRequestDTO, int AccountId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             if (account.Id == AccountId)
             {
                 return StatusCode(403, "You cannot review yourself as a podcast buddy.");
             }
-            if (podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating < 0 || podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating > 5)
+            if (podcastBuddyReviewCreateRequestDTO.PodcastBuddyReviewCreateInfo.Rating < 0 || podcastBuddyReviewCreateRequestDTO.PodcastBuddyReviewCreateInfo.Rating > 5)
             {
                 return BadRequest("Rating must be between 0 and 5.");
             }
@@ -417,9 +416,9 @@ namespace UserService.API.Controllers.BaseControllers
             {
                 AccountId = account.Id,
                 PodcastBuddyId = AccountId,
-                Title = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Title,
-                Content = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Content,
-                Rating = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating
+                Title = podcastBuddyReviewCreateRequestDTO.PodcastBuddyReviewCreateInfo.Title,
+                Content = podcastBuddyReviewCreateRequestDTO.PodcastBuddyReviewCreateInfo.Content,
+                Rating = podcastBuddyReviewCreateRequestDTO.PodcastBuddyReviewCreateInfo.Rating
             });
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("public-review-management-domain", requestData, null, "podcast-buddy-review-creation-flow");
@@ -434,16 +433,16 @@ namespace UserService.API.Controllers.BaseControllers
         // /api/user-service/api/accounts/podcast-buddy-reviews/{PodcastBuddyReviewId}
         [HttpPut("podcast-buddy-reviews/{PodcastBuddyReviewId}")]
         [Authorize(Policy = "Customer.NoViolationAccess")]
-        public async Task<IActionResult> UpdatePodcastBuddyReviewById(PodcastBuddyReviewRequestDTO podcastBuddyReviewRequestDTO, Guid PodcastBuddyReviewId)
+        public async Task<IActionResult> UpdatePodcastBuddyReviewById(PodcastBuddyReviewUpdateRequestDTO podcastBuddyReviewUpdateRequestDTO, Guid PodcastBuddyReviewId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var requestData = JObject.FromObject(new
             {
                 PodcastBuddyReviewId = PodcastBuddyReviewId,
                 AccountId = account.Id,
-                Title = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Title,
-                Content = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Content,
-                Rating = podcastBuddyReviewRequestDTO.PodcastBuddyReviewRequestInfo.Rating
+                Title = podcastBuddyReviewUpdateRequestDTO.PodcastBuddyReviewUpdateInfo.Title,
+                Content = podcastBuddyReviewUpdateRequestDTO.PodcastBuddyReviewUpdateInfo.Content,
+                Rating = podcastBuddyReviewUpdateRequestDTO.PodcastBuddyReviewUpdateInfo.Rating
             });
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("public-review-management-domain", requestData, null, "podcast-buddy-review-update-flow");
@@ -503,162 +502,7 @@ namespace UserService.API.Controllers.BaseControllers
         }
 
 
-        //         // /api/user-service/api/auth/register/customer
-        // [HttpPost("register/customer")]
-        // public async Task<IActionResult> RegisterCustomer([FromForm] CustomerRegisterRequestDTO customerRegisterRequestDTO)
-        // {
-        //     var RegisterInfo = JsonConvert.DeserializeObject<CustomerRegisterInfoDTO>(customerRegisterRequestDTO.RegisterInfo);
-
-        //     string mainImageFileKey = null;
-        //     if (customerRegisterRequestDTO.MainImageFile != null)
-        //     {
-        //         // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
-        //         var isValidImage = _fileValidationConfig.IsValidFile("Account.mainImageFileKey", customerRegisterRequestDTO.MainImageFile.FileName, customerRegisterRequestDTO.MainImageFile.Length, customerRegisterRequestDTO.MainImageFile.ContentType);
-        //         if (!isValidImage)
-        //         {
-        //             return BadRequest("Invalid image file.");
-        //         }
-
-
-        //         string newMainImageFileName = $"{Guid.NewGuid()}_{customerRegisterRequestDTO.MainImageFile.FileName}";
-        //         using (var stream = customerRegisterRequestDTO.MainImageFile.OpenReadStream())
-        //         {
-        //             await _fileIOHelper.UploadBinaryFileWithStreamAsync(
-        //                                 stream,
-        //                                 _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
-        //                                 newMainImageFileName
-        //                             );
-        //         }
-
-        //         mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
-
-        //     }
-        //     JObject requestData = JObject.FromObject(RegisterInfo);
-        //     requestData["MainImageFileKey"] = mainImageFileKey;
-        //     requestData["RoleId"] = 1;
-
-        //     var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-registration-flow");
-        //     await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-        //     return Ok(new
-        //     {
-        //         SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
-        //     }
-        //     );
-        // }
-
-
-        // // /api/user-service/api/auth/account-verification
-        // [HttpPost("account-verification")]
-        // public async Task<IActionResult> AccountVerification([FromBody] AccountVerificationRequestDTO accountVerificationRequestDTO)
-        // {
-        //     // var accountVerificationInfo = JsonConvert.DeserializeObject<AccountVerificationInfoDTO>(accountVerificationRequestDTO.AccountVerificationInfo);
-        //     var requestData = JObject.FromObject(accountVerificationRequestDTO.AccountVerificationInfo);
-        //     var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-email-verification-flow");
-        //     await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-        //     return Ok(new
-        //     {
-        //         SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
-        //     }
-        //     );
-        // }
-
-        // // /api/user-service/api/auth/register/staff
-        // [HttpPost("register/staff")]
-        // public async Task<IActionResult> RegisterStaff([FromForm] StaffRegisterRequestDTO staffRegisterRequestDTO)
-        // {
-        //     var RegisterInfo = JsonConvert.DeserializeObject<StaffRegisterInfoDTO>(staffRegisterRequestDTO.RegisterInfo);
-
-        //     string mainImageFileKey = null;
-        //     if (staffRegisterRequestDTO.MainImageFile != null)
-        //     {
-        //         // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
-        //         var isValidImage = _fileValidationConfig.IsValidFile("Account.mainImageFileKey", staffRegisterRequestDTO.MainImageFile.FileName, staffRegisterRequestDTO.MainImageFile.Length, staffRegisterRequestDTO.MainImageFile.ContentType);
-        //         if (!isValidImage)
-        //         {
-        //             return BadRequest("Invalid image file.");
-        //         }
-
-        //         string newMainImageFileName = $"{Guid.NewGuid()}_{staffRegisterRequestDTO.MainImageFile.FileName}";
-        //         using (var stream = staffRegisterRequestDTO.MainImageFile.OpenReadStream())
-        //         {
-        //             await _fileIOHelper.UploadBinaryFileWithStreamAsync(
-        //                                 stream,
-        //                                 _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
-        //                                 newMainImageFileName
-        //                             );
-        //         }
-        //         mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
-
-        //     }
-        //     JObject requestData = JObject.FromObject(RegisterInfo);
-        //     requestData["MainImageFileKey"] = mainImageFileKey;
-        //     requestData["RoleId"] = 2;
-
-        //     var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-registration-flow");
-        //     await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-        //     return Ok(new
-        //     {
-        //         SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
-        //     }
-        //     );
-        // }
-
-
-        // // /api/user-service/api/auth/login-manual
-        // [HttpPost("login-manual")]
-        // public async Task<IActionResult> LoginManual([FromBody] ManualLoginRequestDTO manualLoginRequestDTO)
-        // {
-        //     var requestData = JObject.FromObject(manualLoginRequestDTO.ManualLoginInfo);
-        //     var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-manual-login-flow");
-        //     await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-        //     return Ok(new
-        //     {
-        //         SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
-        //     }
-        //     );
-        // }
-
-        // // /api/user-service/api/auth/login-google
-        // [HttpPost("login-google")]
-        // public async Task<IActionResult> LoginGoogle([FromBody] GoogleLoginRequestDTO googleLoginRequestDTO)
-        // {
-        //     var requestData = JObject.FromObject(googleLoginRequestDTO.GoogleAuth);
-        //     var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-google-login-flow");
-        //     await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-        //     return Ok(new
-        //     {
-        //         SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
-        //     }
-        //     );
-        // }
-
-        // // /api/user-service/api/auth/forgot-password
-        // [HttpPost("forgot-password")]
-        // public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDTO forgotPasswordRequestDTO)
-        // {
-        //     var requestData = JObject.FromObject(forgotPasswordRequestDTO);
-        //     var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "forgot-password-flow");
-        //     await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-        //     return Ok(new
-        //     {
-        //         SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
-        //     }
-        //     );
-        // }
-
-        // // /api/user-service/api/auth/new-reset-password
-        // [HttpPost("new-reset-password")]
-        // public async Task<IActionResult> NewResetPassword([FromBody] NewResetPasswordRequestDTO newResetPasswordRequestDTO)
-        // {
-        //     var requestData = JObject.FromObject(newResetPasswordRequestDTO.ResetPasswordInfo);
-        //     var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "password-reset-flow");
-        //     await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-        //     return Ok(new
-        //     {
-        //         SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
-        //     }
-        //     );
-        // }
+        
 
     }
 }

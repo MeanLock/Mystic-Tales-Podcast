@@ -11,6 +11,7 @@ namespace UserService.BusinessLogic.DTOs.Account
         public double AverageRating { get; set; }
 
         public int RatingCount { get; set; }
+        public int TotalFollow { get; set; }
 
         public string CommitmentDocumentFileKey { get; set; } = null!;
 

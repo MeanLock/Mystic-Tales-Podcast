@@ -642,6 +642,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             Description = item.PodcasterProfile.Description,
                             AverageRating = item.PodcasterProfile.AverageRating,
                             RatingCount = item.PodcasterProfile.RatingCount,
+                            TotalFollow = item.PodcasterProfile.TotalFollow,
                             CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
                             OwnedBookingStorageSize = item.PodcasterProfile.OwnedBookingStorageSize,
@@ -679,7 +680,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             }
         }
 
-        public async Task<List<PodcastBuddyListItemResponseDTO>> GetPodcastBuddyAccounts(int requestRoleId)
+        public async Task<List<PodcastBuddyListItemResponseDTO>> GetPodcastBuddyAccounts(int? requestRoleId)
         {
             try
             {
@@ -693,7 +694,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     );
 
                 // nếu requestRoleId là 1 thì loại bỏ các account có DeactivatedAt khác null và violation level != 0
-                if (requestRoleId == 1)
+                if (requestRoleId == null || requestRoleId == 1)
                 {
                     podcasters = podcasters.Where(p => p.DeactivatedAt == null && (p.ViolationLevel == 0 || p.ViolationLevel == null)).ToList();
                 }
@@ -713,6 +714,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             Description = item.PodcasterProfile.Description,
                             AverageRating = item.PodcasterProfile.AverageRating,
                             RatingCount = item.PodcasterProfile.RatingCount,
+                            TotalFollow = item.PodcasterProfile.TotalFollow,
                             CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
                             IsVerified = item.PodcasterProfile.IsVerified,
@@ -799,6 +801,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         Description = podcaster.PodcasterProfile.Description,
                         AverageRating = podcaster.PodcasterProfile.AverageRating,
                         RatingCount = podcaster.PodcasterProfile.RatingCount,
+                        TotalFollow = podcaster.PodcasterProfile.TotalFollow,
                         CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
                         BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
                         OwnedBookingStorageSize = podcaster.PodcasterProfile.OwnedBookingStorageSize,
@@ -873,6 +876,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         Description = podcaster.PodcasterProfile.Description,
                         AverageRating = podcaster.PodcasterProfile.AverageRating,
                         RatingCount = podcaster.PodcasterProfile.RatingCount,
+                        TotalFollow = podcaster.PodcasterProfile.TotalFollow,
                         CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
                         BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
                         IsVerified = podcaster.PodcasterProfile.IsVerified,
@@ -1841,6 +1845,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     await _accountFollowedPodcasterGenericRepository.CreateAsync(podcasterFollowed);
 
+                    podcasterProfile.TotalFollow += 1;
+                    await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
+
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
@@ -1890,6 +1897,14 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
+                    var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
+                         predicate: a => a.AccountId == deletePodcasterFollowedParameterDTO.PodcastBuddyId && a.IsVerified == true,
+                         includeFunc: null
+                         ).ToListAsync()).FirstOrDefault();
+                    if (podcasterProfile == null)
+                    {
+                        throw new Exception("Podcast buddy with id " + deletePodcasterFollowedParameterDTO.PodcastBuddyId + " does not exist");
+                    }
                     var existingFollow = (await _accountFollowedPodcasterGenericRepository.FindAll(
                         predicate: a => a.AccountId == deletePodcasterFollowedParameterDTO.AccountId && a.PodcasterId == deletePodcasterFollowedParameterDTO.PodcastBuddyId,
                         includeFunc: null
@@ -1900,6 +1915,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     }
                     await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByAccountIdAndPodcasterIdAsync(deletePodcasterFollowedParameterDTO.AccountId, deletePodcasterFollowedParameterDTO.PodcastBuddyId);
 
+                    podcasterProfile.TotalFollow -= 1;
+                    await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
