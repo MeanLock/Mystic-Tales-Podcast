@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompletePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
@@ -14,6 +15,7 @@ using TransactionService.BusinessLogic.Models.CrossService;
 using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
 using TransactionService.DataAccess.Data;
+using TransactionService.DataAccess.Entities;
 using TransactionService.DataAccess.Entities.SqlServer;
 using TransactionService.DataAccess.Repositories.interfaces;
 using TransactionService.Infrastructure.Configurations.Payos.interfaces;
@@ -70,6 +72,9 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var systemConfig = await GetActiveSystemConfigProfile();
+
+                    var profitRate = systemConfig?["PodcastSubscriptionConfig"]?.Value<double?>("ProfitRate") ?? 0;
                     var transactionTypeId = parameter.TransactionTypeId;
                     var newPodcastSubscriptionTransaction = null as PodcastSubscriptionTransaction;
                     switch (transactionTypeId)
@@ -79,7 +84,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                             {
                                 PodcastSubscriptionRegistrationId = parameter.PodcastSubscriptionRegistrationId,
                                 Amount = parameter.Amount,
-                                Profit = null,
+                                Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
                                 TransactionStatusId = 1,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -92,7 +97,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                             {
                                 PodcastSubscriptionRegistrationId = parameter.PodcastSubscriptionRegistrationId,
                                 Amount = parameter.Amount,
-                                Profit = null,
+                                Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
                                 TransactionStatusId = 1,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -101,25 +106,68 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                             newPodcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.CreateAsync(cyclePaymentRefundPodcastSubscriptionTransaction);
                             break;
                         case 10:
-                            var systemSubscriptionPodcastSubscriptionTransaction = new PodcastSubscriptionTransaction
+                            var systemIncomePodcastSubscriptionTransaction = new PodcastSubscriptionTransaction
                             {
                                 PodcastSubscriptionRegistrationId = parameter.PodcastSubscriptionRegistrationId,
                                 Amount = parameter.Amount,
-                                Profit = null,
+                                Profit = parameter.Profit,
+                                TransactionTypeId = parameter.TransactionTypeId,
+                                TransactionStatusId = 2,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            newPodcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.CreateAsync(systemIncomePodcastSubscriptionTransaction);
+                            break;
+                        case 11:
+                            var podcasterIncomePodcastSubscriptionTransaction = new PodcastSubscriptionTransaction
+                            {
+                                PodcastSubscriptionRegistrationId = parameter.PodcastSubscriptionRegistrationId,
+                                Amount = parameter.Amount,
+                                Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
                                 TransactionStatusId = 1,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
-                            newPodcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.CreateAsync(systemSubscriptionPodcastSubscriptionTransaction);
-                            break;
-                        case 11:
+                            newPodcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.CreateAsync(podcasterIncomePodcastSubscriptionTransaction);
+                            var requestData = new JObject
+                            {
+                                { "PodcastSubscriptionRegistrationId", newPodcastSubscriptionTransaction.PodcastSubscriptionRegistrationId },
+                                { "Profit", null },
+                                { "AccountId", parameter.AccountId },
+                                { "PodcasterId", parameter.PodcasterId },
+                                { "Amount", newPodcastSubscriptionTransaction.Profit },
+                                { "TransactionTypeId", 10 }
+                            };
+
+                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "podcast-subscription-system-payment-flow");
+                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+                            _logger.LogInformation($"Send start saga trigger message for SagaId: {startSagaTriggerMessage.SagaInstanceId} to flow podcast-subscription-system-payment-flow Successfully");
                             break;
                         default:
                             throw new Exception("Invalid TransactionTypeId for podcast subscription transaction: " + transactionTypeId);
                     }
 
                     await transaction.CommitAsync();
+
+                    var newRequestData = command.RequestData;
+                    newRequestData["PodcastSubscriptionTransactionId"] = newPodcastSubscriptionTransaction.Id;
+
+                    var newResponseData = new JObject{
+                        { "PodcastSubscriptionTransactionId", newPodcastSubscriptionTransaction.Id },
+                        { "CreatedAt", newPodcastSubscriptionTransaction.CreatedAt}
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: newRequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Create podcast subscription transaction successfully for SagaId: {SagaId}", command.SagaInstanceId);
+
                 }
                 catch (Exception ex)
                 {
@@ -137,7 +185,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         flowName: command.FlowName,
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
-                    _logger.LogInformation("Creating podcast subscription transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
+                    _logger.LogError("Creating podcast subscription transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }
@@ -152,6 +200,31 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var podcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.FindByIdAsync(parameter.PodcastSubscriptionTransactionId);
+                    if (podcastSubscriptionTransaction != null)
+                    {
+                        throw new Exception($"No podcast subscription transaction found for Id: {parameter.PodcastSubscriptionTransactionId}");
+                    }
+                    if (podcastSubscriptionTransaction.TransactionStatusId != 1)
+                    {
+                        throw new Exception($"This podcast subscription transaction is not eligible for completion");
+                    }
+                    podcastSubscriptionTransaction.TransactionStatusId = 2;
+                    var newPodcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.UpdateAsync(podcastSubscriptionTransaction.Id, podcastSubscriptionTransaction);
+
+                    await transaction.CommitAsync();
+                    var newResponseData = command.RequestData;
+                    newResponseData["UpdatedAt"] = newPodcastSubscriptionTransaction.UpdatedAt;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Complete podcast subscription transaction successfully for SagaId: {SagaId}", command.SagaInstanceId);
                 }
                 catch (Exception ex)
                 {
@@ -202,7 +275,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 ? podcastSubsciptionRegistrationArray.First as JObject
                 : null;
         }
-        public async Task<JObject?> GetMemberSubscriptionRegistration(int accountId, Guid memberSubscriptionRegistartionId)
+        private async Task<JObject?> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -210,25 +283,26 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     {
                         new BatchQueryItem
                         {
-                            Key = "memberSubscriptionRegistrationOfAccount",
+                            Key = "activeSystemConfigProfile",
                             QueryType = "findall",
-                            EntityType = "MemberSubscriptionRegistration",
-                            Parameters = JObject.FromObject(new
-                            {
-                                where = new
+                            EntityType = "SystemConfigProfile",
+                                Parameters = JObject.FromObject(new
                                 {
-                                    MemberSubscriptionRegistartionId = memberSubscriptionRegistartionId,
-                                    AccountId = accountId
-                                }
-                            }),
-                            Fields = new[] { "Id", "AccountId", "MemberSubscriptionId"}
+                                    where = new
+                                    {
+                                        IsActive = true
+                                    },
+                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+
+                                }),
+                            Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
                         }
                     }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return result.Results?["memberSubscriptionRegistrationOfAccount"] is JArray memberSubsciptionRegistrationArray && memberSubsciptionRegistrationArray.Count > 0
-                ? memberSubsciptionRegistrationArray.First as JObject
+            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                ? configArray.First as JObject
                 : null;
         }
     }

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using TransactionService.BusinessLogic.Attributes;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.AccountBalanceCreatePaymentLink;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteBookingTransaction;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompletePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPayment;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
@@ -125,6 +126,21 @@ namespace TransactionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: "payment-processing-domain",
                 failedEmitMessage: "create-podcast-subscription-transaction.failed"
+            );
+        }
+        [MessageHandler("complete-podcast-subscription-transaction", "payment-processing-domain")]
+        public async Task HandleCompletePodcastSubscriptionTransactionCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameters = command.RequestData.ToObject<CompletePodcastSubscriptionTransactionParameterDTO>();
+                    await _podcastSubscriptionService.CompletePodcastSubscriptionTransactionAsync(parameters, command);
+                    _logger.LogInformation("Handled complete-podcast-subscription-transaction command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "payment-processing-domain",
+                failedEmitMessage: "complete-podcast-subscription-transaction.failed"
             );
         }
     }

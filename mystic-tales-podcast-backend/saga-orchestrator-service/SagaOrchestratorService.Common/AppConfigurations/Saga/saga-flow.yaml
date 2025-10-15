@@ -4604,7 +4604,7 @@ flows:
   podcast-subscription-system-payment-flow:
     topic: "payment-processing-domain"
     handle-service: "SagaOrchestratorService"
-    description: "Thanh toán gói đăng ký podcast từ hệ thống"
+    description: "Lưu số tiền system nhận được từ podcast subscription"
     save-file: ""
     steps:
       - name: "create-podcast-subscription-transaction"
@@ -4633,10 +4633,7 @@ flows:
           emit: "create-podcast-subscription-transaction.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: 
-            - name: "add-podcaster-balance-amount"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+          nextSteps: []
           nextFlows: []
         onFailure:
           emit: "create-podcast-subscription-transaction.failed"
@@ -4753,6 +4750,43 @@ flows:
             - name: "add-account-balance-amount-rollback-flow"
               topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
+
+  member-subscription-system-payment-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Lưu số tiền system nhận được từ member subscription"
+    save-file: ""
+    steps:
+      - name: "create-member-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo member subscription transaction"
+        parameters:
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - MemberSubscriptionTransactionId
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - MemberSubscriptionTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "create-member-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-member-subscription-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
 
   # storage-purchase-flow:
 

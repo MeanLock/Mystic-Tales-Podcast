@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteMemberSubscriptionTransaction;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateMemberSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
@@ -59,7 +61,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 .Where(pst => pst.MemberSubscriptionRegistrationId.Equals(memberSubscriptionRegistartionId))
                 .ToListAsync();
         }
-        public async Task CreateMemberSubscriptionTransactionAsync(CreateMembertSubscriptionTransactionParameterDTO parameter, SagaCommandMessage command)
+        public async Task CreateMemberSubscriptionTransactionAsync(CreateMemberSubscriptionTransactionParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -71,9 +73,32 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var responseData = command.LastStepResponseData;
 
                     var transactionTypeId = parameter.TransactionTypeId;
+                    var newMemberSubscriptionTransaction = null as MemberSubscriptionTransaction;
                     switch (transactionTypeId)
                     {
                         case 8:
+                            var cyclePaymentMemberSubscriptionTransaction = new MemberSubscriptionTransaction
+                            {
+                                MemberSubscriptionRegistrationId = parameter.MemberSubscriptionRegistrationId,
+                                Amount = parameter.Amount,
+                                TransactionTypeId = transactionTypeId,
+                                TransactionStatusId = 1,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            newMemberSubscriptionTransaction = await _memberSubscriptionTransactionGenericRepository.CreateAsync(cyclePaymentMemberSubscriptionTransaction);
+                            var requestData = new JObject
+                            {
+                                { "MemberSubscriptionRegistrationId", newMemberSubscriptionTransaction.MemberSubscriptionRegistrationId },
+                                { "AccountId", parameter.AccountId },
+                                { "Amount", parameter.Amount },
+                                { "TransactionTypeId", 10 }
+                            };
+
+                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "podcast-subscription-system-payment-flow");
+                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+                            _logger.LogInformation($"Send start saga trigger message for SagaId: {startSagaTriggerMessage.SagaInstanceId} to flow podcast-subscription-system-payment-flow Successfully");
+
                             break;
                         case 9:
                             break;

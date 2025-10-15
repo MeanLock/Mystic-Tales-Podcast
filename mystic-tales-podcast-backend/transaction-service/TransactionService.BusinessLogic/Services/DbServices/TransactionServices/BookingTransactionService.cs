@@ -181,7 +181,6 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     await transaction.CommitAsync();
                     //Cách cổ điển: Sao chép toàn bộ RequestData rồi thêm thuộc tính mới
                     var newResponseData = command.RequestData;
-                    newResponseData["BookingTransactionId"] = newBookingTransaction.Id;
                     newResponseData["UpdatedAt"] = newBookingTransaction.UpdatedAt;
 
                     //Cách 1: Sử dụng Merge (nếu không có thuộc tính trùng tên)
