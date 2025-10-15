@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
+using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
 using TransactionService.BusinessLogic.Models.CrossService;
 using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -15,6 +17,7 @@ using TransactionService.DataAccess.Data;
 using TransactionService.DataAccess.Entities.SqlServer;
 using TransactionService.DataAccess.Repositories.interfaces;
 using TransactionService.Infrastructure.Configurations.Payos.interfaces;
+using TransactionService.Infrastructure.Models.Kafka;
 using TransactionService.Infrastructure.Services.Kafka;
 
 namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServices
@@ -55,6 +58,83 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 .Include(pst => pst.TransactionStatus)
                 .Where(pst => pst.MemberSubscriptionRegistrationId.Equals(memberSubscriptionRegistartionId))
                 .ToListAsync();
+        }
+        public async Task CreateMemberSubscriptionTransactionAsync(CreateMembertSubscriptionTransactionParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var transactionTypeId = parameter.TransactionTypeId;
+                    switch (transactionTypeId)
+                    {
+                        case 8:
+                            break;
+                        case 9:
+                            break;
+                        case 10:
+                            break;
+                        default:
+                            throw new Exception("Invalid TransactionTypeId for podcast subscription transaction: " + transactionTypeId);
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while creating member subscription transaction for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Creating member subscription transaction failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Creating member subscription transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task CompleteMemberSubscriptionTransactionAsync(CompleteMemberSubscriptionTransactionParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while completing member subscription transaction for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Completing member subscription transaction failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Completing member subscription transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
         }
         public async Task<JObject?> GetMemberSubscriptionRegistration(int accountId, Guid memberSubscriptionRegistartionId)
         {

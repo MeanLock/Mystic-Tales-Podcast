@@ -17,7 +17,7 @@ using TransactionService.Infrastructure.Configurations.Payos.interfaces;
 using TransactionService.Infrastructure.Models.Kafka;
 using TransactionService.Infrastructure.Services.Kafka;
 
-namespace TransactionService.BusinessLogic.Services.DbServices
+namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServices
 {
     public class BookingTransactionService
     {
@@ -45,7 +45,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices
             _messagingService = messagingService;
             _dateHelper = dateHelper;
         }
-        public async Task CreateBookingTransaction(CreateBookingTransactionParameterDTO parameter, SagaCommandMessage command)
+        public async Task CreateBookingTransactionAsync(CreateBookingTransactionParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -117,6 +117,8 @@ namespace TransactionService.BusinessLogic.Services.DbServices
                     }
 
                     await transaction.CommitAsync();
+                    var newRequestData = command.RequestData;
+                    newRequestData["BookingTransactionId"] = newBookingTransaction.Id;
 
                     var newResponseData = new JObject{
                         { "BookingTransactionId", newBookingTransaction.Id },
@@ -125,7 +127,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.PaymentProcessingDomain,
-                        requestData: command.RequestData,
+                        requestData: newRequestData,
                         responseData: newResponseData,
                         sagaInstanceId: sagaId,
                         flowName: flowName,
@@ -153,7 +155,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices
                 }
             }
         }
-        public async Task CompleteBookingTransaction(CompleteBookingTransactionParameterDTO parameter, SagaCommandMessage command)
+        public async Task CompleteBookingTransactionAsync(CompleteBookingTransactionParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -177,13 +179,20 @@ namespace TransactionService.BusinessLogic.Services.DbServices
                     var newBookingTransaction = await _bookingTransactionGenericRepository.UpdateAsync(bookingTransaction.Id, bookingTransaction);
 
                     await transaction.CommitAsync();
-                    var newResponseData = new JObject{
-                        { "BookingTransactionId", newBookingTransaction.Id },
-                        { "UpdatedAt", newBookingTransaction.UpdatedAt}
-                    };
-                    // Merge all properties from RequestData into newResponseData
-                    newResponseData.Merge(command.RequestData);
+                    //Cách cổ điển: Sao chép toàn bộ RequestData rồi thêm thuộc tính mới
+                    var newResponseData = command.RequestData;
+                    newResponseData["BookingTransactionId"] = newBookingTransaction.Id;
+                    newResponseData["UpdatedAt"] = newBookingTransaction.UpdatedAt;
 
+                    //Cách 1: Sử dụng Merge (nếu không có thuộc tính trùng tên)
+                    //var newResponseData = new JObject{
+                    //    { "BookingTransactionId", newBookingTransaction.Id },
+                    //    { "UpdatedAt", newBookingTransaction.UpdatedAt}
+                    //};
+                    //// Merge all properties from RequestData into newResponseData
+                    //newResponseData.Merge(command.RequestData);
+
+                    //Cách 2: Dùng vòng lặp để thêm từng thuộc tính (nếu có thuộc tính trùng tên)
                     //var newResponseData = new JObject{
                     //    { "BookingTransactionId", newBookingTransaction.Id },
                     //    { "UpdatedAt", newBookingTransaction.UpdatedAt}
@@ -194,6 +203,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices
                     //    newResponseData[property.Name] = property.Value;
                     //}
 
+                    //Cách 3: Clone toàn bộ RequestData rồi thêm thuộc tính mới (nếu có thuộc tính trùng tên)
                     // // Clone RequestData to avoid modifying the original
                     //var newResponseData = (JObject)command.RequestData.DeepClone();
                     // // Add your specific properties

@@ -21,7 +21,7 @@ using TransactionService.Infrastructure.Configurations.Payos.interfaces;
 using TransactionService.Infrastructure.Models.Kafka;
 using TransactionService.Infrastructure.Services.Kafka;
 
-namespace TransactionService.BusinessLogic.Services.DbServices
+namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServices
 {
     public class AccountBalanceTransactionService
     {
@@ -46,7 +46,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
         }
-        public async Task CreateAccountBalanceTransactionDepositPaymentLink(AccountBalanceCreatePaymentLinkParameterDTO parameter, SagaCommandMessage command)
+        public async Task CreateAccountBalanceTransactionDepositPaymentLinkAsync(AccountBalanceCreatePaymentLinkParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
