@@ -145,9 +145,11 @@ namespace UserService.API.Controllers.BaseControllers
         // /api/user-service/api/accounts/podcast-buddies
         [HttpGet("podcast-buddies")]
         // [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
+        [Authorize(Policy = "OptionalAccess")]
         public async Task<IActionResult> GetPodcastBuddies()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            Console.WriteLine($"Logged in account from HttpContext.Items: Id={account?.Id}, RoleId={account?.RoleId}, IsVerified={account?.IsVerified}, DeactivatedAt={account?.DeactivatedAt}");
             var podcastBuddies = await _accountService.GetPodcastBuddyAccounts(account?.RoleId);
 
             return Ok(new { PodcastBuddyList = podcastBuddies });

@@ -222,6 +222,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Description)
                 .HasDefaultValue("")
                 .HasColumnName("description");
+            entity.Property(e => e.EpisodeOrder)
+                .HasDefaultValue(1)
+                .HasColumnName("episodeOrder");
             entity.Property(e => e.ExplicitContent).HasColumnName("explicitContent");
             entity.Property(e => e.IsAudioPublishable).HasColumnName("isAudioPublishable");
             entity.Property(e => e.IsReleased).HasColumnName("isReleased");

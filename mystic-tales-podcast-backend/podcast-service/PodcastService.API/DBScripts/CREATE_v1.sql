@@ -130,6 +130,7 @@ CREATE TABLE PodcastEpisode (
     podcastEpisodeSubscriptionTypeId INT NOT NULL DEFAULT 1,
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     seasonNumber INT NOT NULL DEFAULT 0,
+    episodeOrder INT NOT NULL DEFAULT 1,
     totalSave INT NOT NULL DEFAULT 0,
     listenCount INT NOT NULL DEFAULT 0,
     isAudioPublishable BIT NULL,

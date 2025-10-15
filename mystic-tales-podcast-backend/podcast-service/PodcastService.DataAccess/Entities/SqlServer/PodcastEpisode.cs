@@ -47,6 +47,8 @@ public partial class PodcastEpisode
 
     public DateTime UpdatedAt { get; set; }
 
+    public int EpisodeOrder { get; set; }
+
     public virtual ICollection<PodcastEpisodeIllegalContentTypeMarking> PodcastEpisodeIllegalContentTypeMarkings { get; set; } = new List<PodcastEpisodeIllegalContentTypeMarking>();
 
     public virtual ICollection<PodcastEpisodeLicense> PodcastEpisodeLicenses { get; set; } = new List<PodcastEpisodeLicense>();

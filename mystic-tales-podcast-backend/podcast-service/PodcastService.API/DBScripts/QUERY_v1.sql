@@ -1,0 +1,2 @@
+ALTER TABLE PodcastEpisode
+ADD episodeOrder INT NOT NULL DEFAULT 1;
