@@ -51,6 +51,7 @@ namespace TransactionService.API.Controllers.BaseControllers
             });
         }
         [HttpPost("balance-deposit/create-payment-link")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
         public async Task<IActionResult> CreateBalanceDepositPaymentLink([FromBody] AccountBalanceTransactionCreateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -101,6 +102,7 @@ namespace TransactionService.API.Controllers.BaseControllers
             });
         }
         [HttpPost("balance-withdrawal")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
         public async Task<IActionResult> CreateBalanceWithdrawalRequest([FromBody] AccountBalanceWithdrawalRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;

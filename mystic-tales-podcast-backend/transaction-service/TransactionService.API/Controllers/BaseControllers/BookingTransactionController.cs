@@ -37,6 +37,7 @@ namespace TransactionService.API.Controllers.BaseControllers
             _messagingService = messagingService;
         }
         [HttpPost("{BookingId}/deposit")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
         public async Task<IActionResult> CreateBookingDepositTransaction(
             [FromRoute] int BookingId,
             [FromBody] BookingTransactionCreateRequestDTO request)
@@ -62,7 +63,32 @@ namespace TransactionService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
+        [HttpPost("{BookingId}/pay-the-rest")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
+        public async Task<IActionResult> CreateBookingPayTheRestTransaction(
+            [FromRoute] int BookingId,
+            [FromBody] BookingTransactionCreateRequestDTO request)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
 
-
+            var requestData = new JObject
+            {
+                { "BookingId", BookingId },
+                { "AccountId", accountId },
+                { "Amount", request.Amount },
+                { "TransactionTypeId", 6 }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "booking-final-payment-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate pay the rest payment process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
     }
 }

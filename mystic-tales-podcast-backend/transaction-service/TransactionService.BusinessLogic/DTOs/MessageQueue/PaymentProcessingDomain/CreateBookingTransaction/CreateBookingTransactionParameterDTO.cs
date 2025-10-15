@@ -10,6 +10,7 @@ namespace TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDo
     {
         public int BookingId { get; set; }
         public decimal Amount { get; set; }
+        public decimal? Profit { get; set; }
         public int? AccountId { get; set; }
         public int? PodcasterId { get; set; }
         public int TransactionTypeId { get; set; }

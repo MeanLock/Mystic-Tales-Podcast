@@ -6,9 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 using TransactionService.BusinessLogic.Attributes;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.AccountBalanceCreatePaymentLink;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteBookingTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPayment;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransaction;
-using TransactionService.BusinessLogic.Services.DbServices;
+using TransactionService.BusinessLogic.Services.DbServices.TransactionServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
 using TransactionService.Infrastructure.Services.Kafka;
 
@@ -18,17 +19,20 @@ namespace TransactionService.BusinessLogic.MessageHandlers
     {
         private readonly ILogger<PaymentProcessingDomainMessageHandler> _logger;
         private readonly AccountBalanceTransactionService _accountBalanceTransactionService;
+        private readonly BookingTransactionService _bookingTransactionService;
         public PaymentProcessingDomainMessageHandler(
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
             ILogger<PaymentProcessingDomainMessageHandler> logger,
-            AccountBalanceTransactionService accountBalanceTransactionService) : base(messagingService, kafkaProducerService, logger)
+            AccountBalanceTransactionService accountBalanceTransactionService,
+            BookingTransactionService bookingTransactionService) : base(messagingService, kafkaProducerService, logger)
         {
             _logger = logger;
             _accountBalanceTransactionService = accountBalanceTransactionService;
+            _bookingTransactionService = bookingTransactionService;
         }
         [MessageHandler("create-payment-link", "payment-processing-domain")]
-        public async Task HandleAccountBalanceCreatePaymentLinkCommandAsync(string messageJson)
+        public async Task HandleCreatePaymentLinkCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
                 messageJson,
@@ -36,14 +40,14 @@ namespace TransactionService.BusinessLogic.MessageHandlers
                 {
                     var parameters = command.RequestData.ToObject<AccountBalanceCreatePaymentLinkParameterDTO>();
                     await _accountBalanceTransactionService.CreateAccountBalanceTransactionDepositPaymentLink(parameters, command);
-                    _logger.LogInformation("Handled account-balance-create-payment-link command for SagaId: {SagaId}", command.SagaInstanceId);
+                    _logger.LogInformation("Handled create-payment-link command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "saga-orchestrator-events",
-                failedEmitMessage: "account-balance-create-payment-link.failed"
+                responseTopic: "payment-processing-domain",
+                failedEmitMessage: "create-payment-link.failed"
             );
         }
         [MessageHandler("confirm-payment", "payment-processing-domain")]
-        public async Task HandleAccountBalanceConfirmPaymentCommandAsync(string messageJson)
+        public async Task HandleConfirmPaymentCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
                 messageJson,
@@ -51,39 +55,68 @@ namespace TransactionService.BusinessLogic.MessageHandlers
                 {
                     var parameters = command.RequestData.ToObject<ConfirmPaymentParameterDTO>();
                     await _accountBalanceTransactionService.ConfirmAccountBalanceTransactionPaymentAsync(parameters, command);
-                    _logger.LogInformation("Handled account-balance-confirm-payment command for SagaId: {SagaId}", command.SagaInstanceId);
+                    _logger.LogInformation("Handled confirm-payment command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "saga-orchestrator-events",
-                failedEmitMessage: "account-balance-confirm-payment.failed"
+                responseTopic: "payment-processing-domain",
+                failedEmitMessage: "confirm-payment.failed"
             );
         }
         [MessageHandler("create-withdrawal-request", "payment-processing-domain")] // Placeholder for future implementation
-        public async Task HandleAccountBalanceCreateWithdrawalRequestCommandAsync(string messageJson)
+        public async Task HandleCreateWithdrawalRequestCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
                 messageJson,
                 async (command) =>
                 {
                     // Placeholder for future implementation
-                    _logger.LogInformation("Handled account-balance-create-withdrawal-request command for SagaId: {SagaId}", command.SagaInstanceId);
+                    _logger.LogInformation("Handled create-withdrawal-request command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "saga-orchestrator-events",
-                failedEmitMessage: "account-balance-create-withdrawal-request.failed"
+                responseTopic: "payment-processing-domain",
+                failedEmitMessage: "create-withdrawal-request.failed"
             );
         }
         [MessageHandler("create-booking-transaction", "payment-processing-domain")]
-        public async Task HandleBookingTransactionCreateBookingTransactionCommandAsync(string messageJson)
+        public async Task HandleCreateBookingTransactionCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
                 messageJson,
                 async (command) =>
                 {
                     var parameters = command.RequestData.ToObject<CreateBookingTransactionParameterDTO>();
-                    await _accountBalanceTransactionService.CreateBookingTransaction(parameters, command);
-                    _logger.LogInformation("Handled booking-transaction-create-booking-transaction command for SagaId: {SagaId}", command.SagaInstanceId);
+                    await _bookingTransactionService.CreateBookingTransaction(parameters, command);
+                    _logger.LogInformation("Handled create-booking-transaction command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "saga-orchestrator-events",
-                failedEmitMessage: "booking-transaction-create-booking-transaction.failed"
+                responseTopic: "payment-processing-domain",
+                failedEmitMessage: "create-booking-transaction.failed"
+            );
+        }
+        [MessageHandler("complete-booking-transaction", "payment-processing-domain")]
+        public async Task HandleCompleteBookingTransaction(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameters = command.RequestData.ToObject<CompleteBookingTransactionParameterDTO>();
+                    await _bookingTransactionService.CompleteBookingTransaction(parameters, command);
+                    _logger.LogInformation("Handled complete-booking-transaction command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "payment-processing-domain",
+                failedEmitMessage: "complete-booking-transaction.failed"
+            );
+        }
+        [MessageHandler("create-podcast-subscription-transaction", "payment-processing-domain")]
+        public async Task HandleCreatePodcastSubscriptionTransactionCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    // Placeholder for future implementation
+                    _logger.LogInformation("Handled create-podcast-subscription-transaction command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "payment-processing-domain",
+                failedEmitMessage: "create-podcast-subscription-transaction.failed"
             );
         }
     }
