@@ -13,6 +13,7 @@ namespace PodcastService.BusinessLogic.Registrations
 
             // MiscServices
             services.AddScoped<PlatformFeedbackService>();
+            services.AddScoped<MailOperationService>();
 
 
 

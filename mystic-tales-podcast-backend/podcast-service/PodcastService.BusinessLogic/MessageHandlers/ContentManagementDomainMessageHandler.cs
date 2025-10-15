@@ -23,6 +23,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
     {
         private readonly IMessagingService _messagingService;
         private readonly PodcastChannelService _podcastChannelService;
+        
         // private readonly AuthService _authService;
         private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.ContentManagementDomain;

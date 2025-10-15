@@ -33,7 +33,7 @@ namespace ModerationService.BusinessLogic.Registrations
 
             // MiscServices
             services.AddScoped<PlatformFeedbackService>();
-
+            services.AddScoped<MailOperationService>();
 
 
 

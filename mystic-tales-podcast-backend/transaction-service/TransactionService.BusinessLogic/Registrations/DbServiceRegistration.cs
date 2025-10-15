@@ -35,7 +35,7 @@ namespace TransactionService.BusinessLogic.Registrations
 
             // MiscServices
             services.AddScoped<PlatformFeedbackService>();
-
+            services.AddScoped<MailOperationService>();
 
 
 
