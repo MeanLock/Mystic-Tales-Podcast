@@ -6,11 +6,8 @@ using System.Threading.Tasks;
 
 namespace TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction
 {
-    public class AccountBalanceTransactionRequestDTO
+    public class AccountBalanceWithdrawalRequestDTO
     {
         public decimal Amount { get; set; }
-        public string Description { get; set; } = string.Empty;
-        public string? ReturnUrl { get; set; }
-        public string? CancelUrl { get; set; }
     }
 }

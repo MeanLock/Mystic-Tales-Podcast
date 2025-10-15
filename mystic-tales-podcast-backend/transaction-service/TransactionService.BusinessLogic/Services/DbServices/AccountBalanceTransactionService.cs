@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.AccountBalanceCreatePaymentLink;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPayment;
 using TransactionService.BusinessLogic.DTOs.Transaction;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -98,7 +99,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while create payment link for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject{
-                        { "ErrorMessage", "Account balance create payment link, error: " + ex.Message }
+                        { "ErrorMessage", "Account balance create payment link failed, error: " + ex.Message }
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
@@ -110,6 +111,91 @@ namespace TransactionService.BusinessLogic.Services.DbServices
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Account balance create payment link failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ConfirmAccountBalanceTransactionPaymentAsync(ConfirmPaymentParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    WebhookType webhookBody = parameter.WebHookBody;
+                    if (webhookBody == null)
+                    {
+                        throw new Exception("Invalid webhook data.");
+                    }
+                    if (webhookBody.data.description == "VQRIO123")
+                    {
+                        return;
+                    }
+                    // Console.WriteLine("\n\n\n" + JsonConvert.SerializeObject(webhookBody, Formatting.Indented) + "\n\n\n");
+
+                    // Retrieve the payment history record
+                    AccountBalanceTransaction? accountBalanceTransaction = _accountBalanceTransactionGenericRepository.FindAll()
+                        .Where(abt => abt.OrderCode.Equals(webhookBody.data.orderCode.ToString()))
+                        .FirstOrDefault();
+                    if (accountBalanceTransaction == null)
+                    {
+                        throw new HttpRequestException("Payment not found.");
+                    }
+
+                    if (webhookBody.code == "00")
+                    {
+                        accountBalanceTransaction.TransactionStatusId = 2;
+                    }
+                    else
+                    {
+                        accountBalanceTransaction.TransactionStatusId = 4;
+                    }
+
+                    await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
+
+                    await transaction.CommitAsync();
+
+                    var newRequestData = new JObject{
+                        { "AccountBalanceTransactionId", accountBalanceTransaction.Id },
+                        { "AccountId", accountBalanceTransaction.AccountId },
+                        { "Amount", accountBalanceTransaction.Amount }
+                    };
+                    var newResponseData = new JObject{
+                        { "AccountBalanceTransactionId", accountBalanceTransaction.Id },
+                        { "AccountId", accountBalanceTransaction.AccountId },
+                        { "Amount", accountBalanceTransaction.Amount }
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: newRequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Account balance confirm payment successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while confirm payment for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Account balance confirm payment failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Account balance confirm payment failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }

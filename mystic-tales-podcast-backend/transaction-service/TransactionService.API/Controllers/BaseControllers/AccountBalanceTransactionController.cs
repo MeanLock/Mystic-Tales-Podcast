@@ -51,7 +51,7 @@ namespace TransactionService.API.Controllers.BaseControllers
             });
         }
         [HttpPost("balance-deposit/create-payment-link")]
-        public async Task<IActionResult> CreateBalanceDepositPaymentLink([FromBody] AccountBalanceTransactionRequestDTO request)
+        public async Task<IActionResult> CreateBalanceDepositPaymentLink([FromBody] AccountBalanceTransactionCreateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
@@ -59,10 +59,10 @@ namespace TransactionService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "AccountId", accountId },
-                { "Amount", request.Amount },
-                { "Description", request.Description },
-                { "ReturnUrl", request.ReturnUrl ?? string.Empty },
-                { "CancelUrl", request.CancelUrl ?? string.Empty }
+                { "Amount", request.AccountBalanceTransactionInfo.Amount },
+                { "Description", request.AccountBalanceTransactionInfo.Description },
+                { "ReturnUrl", request.AccountBalanceTransactionInfo.ReturnUrl ?? string.Empty },
+                { "CancelUrl", request.AccountBalanceTransactionInfo.CancelUrl ?? string.Empty }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "account-balance-create-payment-link-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
@@ -87,17 +87,36 @@ namespace TransactionService.API.Controllers.BaseControllers
 
             var requestData = new JObject
             {
-                { "AccountId", accountId },
-                { "Amount", request.Amount },
-                { "Description", request.Description },
-                { "ReturnUrl", request.ReturnUrl ?? string.Empty },
-                { "CancelUrl", request.CancelUrl ?? string.Empty }
+                { "WebHookBody", JObject.FromObject(webhookBody) },
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "account-balance-create-payment-link-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "account-balance-confirm-payment-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
                 return StatusCode(500, "Failed to initiate create payment link process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpPost("balance-withdrawal")]
+        public async Task<IActionResult> CreateBalanceWithdrawalRequest([FromBody] AccountBalanceWithdrawalRequestDTO request)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var requestData = new JObject
+            {
+                { "AccountId", accountId },
+                { "Amount", request.Amount },
+                { "TransactionTypeId", 2 }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "account-balance-withdrawal-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate withdrawal process.");
             }
             return Ok(new
             {

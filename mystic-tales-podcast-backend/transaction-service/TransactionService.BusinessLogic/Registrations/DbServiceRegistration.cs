@@ -17,6 +17,7 @@ namespace TransactionService.BusinessLogic.Registrations
 
             // PaymentServices
             services.AddScoped<AccountBalanceTransactionService>();
+            services.AddScoped<BookingTransactionService>();
 
             // // SurveyServices
             // services.AddScoped<SurveyCoreService>();
