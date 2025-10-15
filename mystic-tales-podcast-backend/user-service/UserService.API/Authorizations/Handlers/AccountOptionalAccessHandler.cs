@@ -83,6 +83,15 @@ namespace UserService.API.Authorizations.Handlers
             // NẾU KHÔNG CÓ TOKEN THÌ VẪN CHO QUA
             if (context.User?.Identity?.IsAuthenticated != true)
             {
+                // in ra api url và method
+                if (context.Resource is HttpContext httpContext)
+                {
+                    Console.WriteLine($"API URL: {httpContext.Request.Path}, Method: {httpContext.Request.Method}");
+                }
+                else
+                {
+                    Console.WriteLine($"API URL: {context.Resource?.ToString()}, Method: [Unknown]");
+                }
                 Console.WriteLine("No authenticated user found in context. Skipping account validation.");
                 context.Succeed(requirement);
                 return;

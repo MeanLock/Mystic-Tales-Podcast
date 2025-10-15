@@ -66,7 +66,7 @@ namespace PodcastService.API.Authorizations.Handlers
                     }
                 }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
             return result.Results["account"] as JObject;
         }
 

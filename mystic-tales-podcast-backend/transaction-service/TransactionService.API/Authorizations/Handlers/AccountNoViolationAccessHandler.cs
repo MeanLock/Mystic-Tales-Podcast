@@ -65,7 +65,7 @@ namespace TransactionService.API.Authorizations.Handlers
                     }
                 }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
             return result.Results["account"] as JObject;
         }
 

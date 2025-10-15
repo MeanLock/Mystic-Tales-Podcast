@@ -65,7 +65,7 @@ namespace PodcastService.API.Authorizations.Handlers
                     }
                 }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
             return result.Results["account"] as JObject;
         }
 
@@ -97,6 +97,8 @@ namespace PodcastService.API.Authorizations.Handlers
             {
                 Console.WriteLine($"Fetching account status from database for account id: {userId}");
                 account = (await GetAccountById(int.Parse(userId)))?.ToObject<AccountStatusCache>();
+                Console.WriteLine($"Account fetched: Id={account.Id}, RoleId={account.RoleId}, IsVerified={account.IsVerified}, DeactivatedAt={account.DeactivatedAt}");
+
                 if (account == null)
                 {
                     Console.WriteLine($"0000000000000000000000000000000000000000000000000000000Account not found: {userId}");
@@ -110,7 +112,6 @@ namespace PodcastService.API.Authorizations.Handlers
                 }
             }
 
-            Console.WriteLine($"Account fetched: Id={account.Id}, RoleId={account.RoleId}, IsVerified={account.IsVerified}, DeactivatedAt={account.DeactivatedAt}");
 
             if (account.RoleId != int.Parse(roleId))
             {

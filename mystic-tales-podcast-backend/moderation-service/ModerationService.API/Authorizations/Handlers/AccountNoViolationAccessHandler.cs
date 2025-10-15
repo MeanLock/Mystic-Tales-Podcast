@@ -65,7 +65,7 @@ namespace ModerationService.API.Authorizations.Handlers
                     }
                 }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("ModerationService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
             return result.Results["account"] as JObject;
         }
 

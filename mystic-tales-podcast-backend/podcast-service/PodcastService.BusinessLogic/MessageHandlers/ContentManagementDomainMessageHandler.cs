@@ -11,6 +11,7 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Update
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
 using PodcastService.BusinessLogic.Enums.Kafka;
 using PodcastService.BusinessLogic.Models.Mail;
+using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
 using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
 using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
@@ -23,7 +24,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
     {
         private readonly IMessagingService _messagingService;
         private readonly PodcastChannelService _podcastChannelService;
-        
+        private readonly MailOperationService _mailOperationService;
         // private readonly AuthService _authService;
         private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.ContentManagementDomain;
@@ -34,6 +35,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
         public ContentManagementDomainMessageHandler(
             IMessagingService messagingService,
             PodcastChannelService podcastChannelService,
+            MailOperationService mailOperationService,
 
             KafkaProducerService kafkaProducerService,
             ILogger<ContentManagementDomainMessageHandler> logger,
@@ -363,7 +365,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                     };
                     Console.WriteLine("Sending email to: " + mailInfo.MailObject["VerifyCode"]);
                     var mailProperty = _mailPropertiesConfig.GetMailPropertyByTypeName(mailInfo.MailTypeName);
-                    await _accountService.SendPodcastServiceEmail(mailProperty, mailInfo.ToEmail, mailModel);
+                    await _mailOperationService.SendPodcastServiceEmail(mailProperty, mailInfo.ToEmail, mailModel);
                     // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: SAGA_TOPIC,

@@ -66,7 +66,7 @@ namespace SystemConfigurationService.API.Authorizations.Handlers
                     }
                 }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
             return result.Results["account"] as JObject;
         }
 
