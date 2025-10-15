@@ -62,10 +62,10 @@ flows:
           - VerifyCode
           - Email
         next-request-data:
-          - VerifyCode
+          - IsVerified
           - Email
         response-data:
-          - VerifyCode
+          - IsVerified
           - Email
         onSuccess:
           emit: "verify-account.success"
@@ -213,7 +213,10 @@ flows:
           - ResetPasswordUrl
           - ExpiredAt
         response-data:
-          - Message
+          - Email
+          - PasswordResetToken
+          - ResetPasswordUrl
+          - ExpiredAt
         onSuccess:
           emit: "send-reset-password-link.success"
           topic: "user-management-domain"
@@ -246,7 +249,9 @@ flows:
           - Email
           - NewPassword
         response-data:
-          - Message
+          - ResetPasswordToken
+          - Email
+          - NewPassword
         onSuccess:
           emit: "reset-account-password.success"
           topic: "user-management-domain"

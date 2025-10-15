@@ -421,18 +421,29 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     await transaction.CommitAsync();
 
-                    var messageNextRequestData = JObject.FromObject(new
-                    {
-                        Email = existAccount.Email,
-                        FullName = existAccount.FullName,
-                        Dob = existAccount.Dob?.ToString("yyyy-MM-dd"),
-                        Gender = existAccount.Gender,
-                        Address = existAccount.Address,
-                        Phone = existAccount.Phone,
-                        MainImageFileKey = existAccount.MainImageFileKey,
-                        RoleId = existAccount.RoleId,
-                        Password = existAccount.Password,
-                    });
+                    // var messageNextRequestData = JObject.FromObject(new
+                    // {
+                    //     Email = existAccount.Email,
+                    //     FullName = existAccount.FullName,
+                    //     Dob = existAccount.Dob?.ToString("yyyy-MM-dd"),
+                    //     Gender = existAccount.Gender,
+                    //     Address = existAccount.Address,
+                    //     Phone = existAccount.Phone,
+                    //     MainImageFileKey = existAccount.MainImageFileKey,
+                    //     RoleId = existAccount.RoleId,
+                    //     Password = existAccount.Password,
+                    // });
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["Email"] = existAccount.Email;
+                    messageNextRequestData["FullName"] = existAccount.FullName;
+                    messageNextRequestData["Dob"] = existAccount.Dob?.ToString("yyyy-MM-dd");
+                    messageNextRequestData["Gender"] = existAccount.Gender;
+                    messageNextRequestData["Address"] = existAccount.Address;
+                    messageNextRequestData["Phone"] = existAccount.Phone;
+                    messageNextRequestData["MainImageFileKey"] = existAccount.MainImageFileKey;
+                    messageNextRequestData["RoleId"] = existAccount.RoleId;
+                    messageNextRequestData["Password"] = existAccount.Password;
+
                     var messageResponseData = JObject.FromObject(new
                     {
                         AccountId = existAccount.Id,
@@ -927,11 +938,17 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         throw new Exception("Change account status failed, cannot update account status cache in redis");
                     }
 
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["Id"] = account.Id;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        Id = account.Id,
+                    });
 
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
-                        responseData: command.RequestData,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "change-account-status.success"
@@ -1019,6 +1036,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = JObject.FromObject(createPodcasterProfileParameter);
+                    messageNextRequestData["AccountId"] = podcasterProfile.AccountId;
+                    messageNextRequestData["Name"] = podcasterProfile.Name;
+                    messageNextRequestData["Description"] = podcasterProfile.Description;
                     messageNextRequestData["CommitmentDocumentFileKey"] = podcasterProfile.CommitmentDocumentFileKey;
 
                     var messageResponseData = JObject.FromObject(new
@@ -1150,6 +1170,11 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
                     await transaction.CommitAsync();
 
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = podcasterProfile.AccountId;
+                    messageNextRequestData["Name"] = podcasterProfile.Name;
+                    messageNextRequestData["Description"] = podcasterProfile.Description;
+                    messageNextRequestData["BuddyAudioFileKey"] = podcasterProfile.BuddyAudioFileKey;
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Update podcaster profile successfully",
@@ -1160,7 +1185,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1223,6 +1248,16 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     }
 
                     await transaction.CommitAsync();
+                    
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = account.Id;
+                    messageNextRequestData["Email"] = account.Email;
+                    messageNextRequestData["FullName"] = account.FullName;
+                    messageNextRequestData["Dob"] = account.Dob?.ToString("yyyy-MM-dd");
+                    messageNextRequestData["Gender"] = account.Gender;
+                    messageNextRequestData["Address"] = account.Address;
+                    messageNextRequestData["Phone"] = account.Phone;
+                    messageNextRequestData["MainImageFileKey"] = account.MainImageFileKey;
 
                     var messageResponseData = JObject.FromObject(new
                     {
@@ -1238,7 +1273,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1283,6 +1318,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     await transaction.CommitAsync();
 
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = account.Id;
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Deactivate account successfully"
@@ -1290,7 +1327,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1336,6 +1373,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     await transaction.CommitAsync();
 
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = account.Id;
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Activate account successfully"
@@ -1343,7 +1383,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1402,6 +1442,11 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     await transaction.CommitAsync();
 
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = account.Id;
+                    messageNextRequestData["ViolationPoint"] = addAccountViolationPointParameterDTO.ViolationPoint;
+
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Add account violation point successfully"
@@ -1411,7 +1456,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1466,6 +1511,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     podcasterProfile.IsVerified = verifyPodcasterParameterDTO.IsVerified;
                     await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
                     await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = podcasterProfile.AccountId;
+                    messageNextRequestData["IsVerified"] = podcasterProfile.IsVerified;
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Verify podcaster profile successfully",
@@ -1474,7 +1523,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1546,6 +1595,15 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
 
                     await transaction.CommitAsync();
+
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = podcastBuddyReview.AccountId;
+                    messageNextRequestData["PodcastBuddyId"] = podcastBuddyReview.PodcastBuddyId;
+                    messageNextRequestData["Title"] = podcastBuddyReview.Title;
+                    messageNextRequestData["Content"] = podcastBuddyReview.Content;
+                    messageNextRequestData["Rating"] = podcastBuddyReview.Rating;
+
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Create podcast buddy review successfully",
@@ -1558,7 +1616,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.PublicReviewManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1629,6 +1687,13 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
 
                     await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;   
+                    messageNextRequestData["PodcastBuddyReviewId"] = existingReview.Id;
+                    messageNextRequestData["AccountId"] = existingReview.AccountId;
+                    messageNextRequestData["Title"] = existingReview.Title;
+                    messageNextRequestData["Content"] = existingReview.Content;
+                    messageNextRequestData["Rating"] = existingReview.Rating;
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Create podcast buddy review successfully",
@@ -1641,7 +1706,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.PublicReviewManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1703,6 +1768,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
 
                     await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastBuddyReviewId"] = existingReview.Id;
+                    messageNextRequestData["AccountId"] = existingReview.AccountId;
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Delete podcast buddy review successfully",
@@ -1711,7 +1780,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.PublicReviewManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1773,6 +1842,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _accountFollowedPodcasterGenericRepository.CreateAsync(podcasterFollowed);
 
                     await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = podcasterFollowed.AccountId;
+                    messageNextRequestData["PodcastBuddyId"] = podcasterFollowed.PodcasterId;
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Create podcaster followed successfully",
@@ -1781,7 +1854,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -1828,6 +1901,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByAccountIdAndPodcasterIdAsync(deletePodcasterFollowedParameterDTO.AccountId, deletePodcasterFollowedParameterDTO.PodcastBuddyId);
 
                     await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = deletePodcasterFollowedParameterDTO.AccountId;
+                    messageNextRequestData["PodcastBuddyId"] = deletePodcasterFollowedParameterDTO.PodcastBuddyId;
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Delete podcaster followed successfully",
