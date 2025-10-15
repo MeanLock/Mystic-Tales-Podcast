@@ -7,7 +7,7 @@ import { useRouter } from "expo-router";
 
 type Episode = {
   Id: string;
-  Title: string;
+  Name: string;
   Description: string;
   ExplicitContent: boolean;
   ReleaseDate: string;
@@ -115,7 +115,7 @@ const EpisodeComponent = ({ episode }: { episode: Episode }) => {
         <Text style={style.dateText}>{formatDate(episode.ReleaseDate)}</Text>
         <View className="w-full gap-2">
           <Text numberOfLines={2} className="font-bold text-white text-[20px]">
-            {episode.Title}
+            {episode.Name}
           </Text>
           <Text numberOfLines={3}>{episode.Description}</Text>
         </View>

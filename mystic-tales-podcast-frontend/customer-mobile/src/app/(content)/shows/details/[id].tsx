@@ -1,15 +1,23 @@
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
 import ShowInformations from "./components/ShowInformations";
 import EpisodeList from "./components/EpisodeList";
 import RatingAndReview from "./components/RatingAndReview";
 import ShowDescription from "./components/ShowDescription";
 import MoreInformations from "./components/MoreInformations";
 import Suggesstion from "./components/Suggesstion";
+import SkeletonLoading from "@/src/components/loaders/Skeleton";
 
 export type ShowDetails = {
   Id: number;
@@ -102,7 +110,7 @@ export type ShowDetails = {
   }[];
   ShowEpisodeList: {
     Id: string;
-    Title: string;
+    Name: string;
     Description: string;
     ExplicitContent: boolean;
     ReleaseDate: string;
@@ -399,7 +407,7 @@ const showData: ShowDetails = {
   ShowEpisodeList: [
     {
       Id: "a1c2f301-001",
-      Title: "Tập 1: Gốc Cây Sau Nhà",
+      Name: "Tập 1: Gốc Cây Sau Nhà",
       Description:
         "Alice, một cô bé tò mò, vừa chuyển đến ngôi nhà cổ ở rìa rừng cùng gia đình. Trong một buổi chiều u ám, cô phát hiện một gốc cây rỗng kỳ lạ phát ra âm thanh như tiếng thở. Dù bị cảnh báo không được tới gần, cô vẫn bị cuốn hút và quyết định khám phá nó, mở đầu cho một hành trình không thể quay lại.",
       ExplicitContent: false,
@@ -424,7 +432,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-002",
-      Title: "Tập 2: Cánh Cửa Dẫn Lối",
+      Name: "Tập 2: Cánh Cửa Dẫn Lối",
       Description:
         "Bên trong gốc cây, Alice nhận ra một luồng sáng xanh dị thường. Khi chạm vào, cô bị hút qua một đường hầm xoáy sâu và rơi xuống một khu rừng lạ. Cảnh vật giống hệt khu rừng sau nhà, nhưng mọi thứ đều mang màu sắc u tối và tĩnh lặng đến đáng sợ. Từ xa, tiếng cười trẻ con vang vọng.",
       ExplicitContent: false,
@@ -448,7 +456,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-003",
-      Title: "Tập 3: Khu Rừng Không Bóng Người",
+      Name: "Tập 3: Khu Rừng Không Bóng Người",
       Description:
         "Cô bé lang thang qua những thân cây khổng lồ và hoa cỏ phát sáng. Dù đẹp kỳ lạ, bầu không khí khiến cô cảm thấy có ai đó đang dõi theo. Tiếng gió thổi nghe như lời thì thầm. Mỗi bước đi, những bóng đen trong rừng lại tiến gần hơn.",
       ExplicitContent: false,
@@ -472,7 +480,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-004",
-      Title: "Tập 4: Người Giữ Khu Vườn",
+      Name: "Tập 4: Người Giữ Khu Vườn",
       Description:
         "Alice gặp một người phụ nữ mặc váy đen dài, tự xưng là Người Giữ Vườn. Bà nói rằng Alice đã đến 'Vườn Địa Đàng Của Quỷ' — nơi chỉ những người được chọn mới có thể đặt chân tới. Mọi lời nói của bà ta đều dịu dàng, nhưng đôi mắt lại phản chiếu ánh đỏ rực như máu.",
       ExplicitContent: true,
@@ -496,7 +504,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-005",
-      Title: "Tập 5: Tiếng Cười Trong Đêm",
+      Name: "Tập 5: Tiếng Cười Trong Đêm",
       Description:
         "Đêm đầu tiên ở khu vườn, Alice bị đánh thức bởi tiếng cười của một đứa trẻ. Khi mở mắt, cô thấy một chiếc mặt nạ đang treo lơ lửng trước giường. Cô bỏ chạy, nhưng mọi lối đi đều dẫn trở lại cùng một nơi — giữa rừng là chiếc bàn ăn với những chiếc ghế tự xoay nhìn về phía cô.",
       ExplicitContent: true,
@@ -520,7 +528,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-006",
-      Title: "Tập 6: Những Khuôn Mặt Trên Cây",
+      Name: "Tập 6: Những Khuôn Mặt Trên Cây",
       Description:
         "Cây cối trong khu vườn bắt đầu thay đổi. Alice phát hiện khuôn mặt người xuất hiện trên thân cây, đôi mắt mở to cầu cứu rồi tan biến khi cô chạm vào. Dường như khu vườn này đang sống — và nó đang đói.",
       ExplicitContent: true,
@@ -544,7 +552,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-007",
-      Title: "Tập 7: Con Thỏ Đen",
+      Name: "Tập 7: Con Thỏ Đen",
       Description:
         "Một con thỏ đen có đôi mắt người dẫn đường cho Alice. Nó nói bằng giọng trầm của một người đàn ông, bảo rằng cô phải 'ăn bữa tiệc của quỷ' trước khi mặt trời mọc, nếu không sẽ không bao giờ rời được nơi này.",
       ExplicitContent: true,
@@ -568,7 +576,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-008",
-      Title: "Tập 8: Bữa Tiệc Dưới Trăng Máu",
+      Name: "Tập 8: Bữa Tiệc Dưới Trăng Máu",
       Description:
         "Alice được mời tới dự bữa tiệc kỳ lạ, nơi mọi sinh vật quái dị đều mang mặt nạ. Bàn ăn dài vô tận, thức ăn bốc khói và di chuyển như còn sống. Khi cô cắn thử một miếng, vị máu tan nơi đầu lưỡi. Cả bàn tiệc quay sang nhìn, cùng nói: 'Chào mừng thực khách mới.'",
       ExplicitContent: true,
@@ -593,7 +601,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-009",
-      Title: "Tập 9: Chiếc Gương Biết Nói",
+      Name: "Tập 9: Chiếc Gương Biết Nói",
       Description:
         "Alice bước vào căn phòng đầy gương. Trong mỗi tấm gương, cô thấy những phiên bản khác nhau của mình – vui vẻ, sợ hãi, tức giận. Một tấm trong số đó mở miệng nói: 'Ta là ngươi khi ngươi ngừng giả vờ.' Cô chạy đi, nhưng tiếng cười trong gương vẫn vang mãi.",
       ExplicitContent: true,
@@ -618,7 +626,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-010",
-      Title: "Tập 10: Những Đứa Trẻ Không Hồn",
+      Name: "Tập 10: Những Đứa Trẻ Không Hồn",
       Description:
         "Alice gặp nhóm trẻ con mặc đồng phục cũ kỹ, gương mặt tái nhợt. Chúng nói rằng đã bị mắc kẹt trong khu vườn hàng trăm năm. Mỗi khi có ai mới đến, khu vườn sẽ lấy đi một ký ức để nuôi sống chính nó. Khi Alice nhìn xuống tay mình, những dòng chữ viết trên tay đã biến mất.",
       ExplicitContent: true,
@@ -643,7 +651,7 @@ const showData: ShowDetails = {
     },
     {
       Id: "a1c2f301-011",
-      Title: "Tập 11: Con Đường Không Hồi Kết",
+      Name: "Tập 11: Con Đường Không Hồi Kết",
       Description:
         "Alice cố gắng thoát ra khỏi khu vườn, nhưng mỗi con đường lại quay về cùng một chỗ. Cô đánh dấu thân cây bằng dao, song dấu vết biến mất sau vài phút. Từ xa, Người Giữ Khu Vườn đứng nhìn, mỉm cười: 'Không ai rời khỏi nơi này, trừ khi khu vườn muốn.'",
       ExplicitContent: true,
@@ -716,11 +724,14 @@ export default function ShowDetailsScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // HOOKS
-  useEffect(() => {
-    if (id && id !== "") {
-      fetch(id);
-    }
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      if (id && id !== "") {
+        fetch(id);
+      }
+      return () => {};
+    }, [])
+  );
 
   // FUNCTIONS
   const fetch = async (id: string) => {
@@ -733,8 +744,9 @@ export default function ShowDetailsScreen() {
 
   if (isLoading) {
     return (
-      <View className="w-full h-full flex items-center justify-center">
-        <Text>Is Loading ...</Text>
+      <View className="w-full h-screen justify-center items-center gap-3">
+        <ActivityIndicator />
+        <Text>Loading ...</Text>
       </View>
     );
   }

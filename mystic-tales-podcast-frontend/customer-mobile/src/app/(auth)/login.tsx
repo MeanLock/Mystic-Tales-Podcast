@@ -18,6 +18,7 @@ import {
   Pressable,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import { useColorScheme } from "@/src/components/useColorScheme";
 import { useRouter } from "expo-router";
@@ -26,6 +27,7 @@ import { useLoginMutation } from "@/src/services/auth/authApi";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/src/store/store";
 import { setCredentials } from "@/src/features/auth/authSlice";
+import { User } from "@/src/types/user";
 
 type IconInputProps = {
   value: string;
@@ -97,7 +99,7 @@ export default function Login() {
   // HOOKS
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const [login] = useLoginMutation();
+  const [login, { isLoading }] = useLoginMutation();
   const authState = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
 
@@ -117,63 +119,76 @@ export default function Login() {
       return;
     } else if (!password) {
       Alert.alert("Lỗi", "Vui lòng nhập password");
+      return;
     } else {
-      // Sau khi có API thì bỏ vào đây
-      // await handleLogin(e, password);
-      handleLoginDump();
+      await handleLogin(e, password);
     }
   };
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      // Gọi API login ở đây
       console.log("Logging in with:", email, password);
-      const result = await login({
-        LoginInfo: { Email: email, Password: password },
-      }).unwrap();
-      console.log("Login successful:", result);
-    } catch (error) {
-      Alert.alert("Lỗi", "Đăng nhập thất bại. Vui lòng thử lại.");
-    }
-  };
 
-  const handleLoginDump = () => {
-    // Chức năng đăng nhập giả lập (bỏ qua API)
-    console.log("Logging in with (dump):", email, password);
-    dispatch(
-      setCredentials({
-        accessToken: "dummy_access_token",
-        user: {
+      // Mở ra khi có API
+      // const result = await login({
+      //   LoginInfo: {
+      //     Email: email,
+      //     Password: password,
+      //   },
+      // }).unwrap();
+
+      // Fake Logic, xóa sau khi có API
+      const accessToken = "abc-xyz-def-ghk";
+      const user: User = {
+        Id: 1,
+        Email: email, // Sử dụng email từ input
+        Role: {
           Id: 1,
-          Email: "customer1@example.com",
-          Role: {
-            Id: 2,
-            Name: "Customer",
-          },
-          Fullname: "Hoàng Minh Lộc",
-          Dob: "2004-10-03",
-          Gender: "male",
-          Address: "S5.01B Vinhomes Grand Park, Quận 9, TP. HCM",
-          Phone: "0896893636",
-          Balance: 100000,
-          MainImageFileKey:
-            "https://i.pinimg.com/736x/84/6c/b5/846cb5c8b99cb86fdd052c661d0af33f.jpg",
-          IsVerified: true,
-          GoogleId: null,
-          PodcastListenSlot: 100,
-          ViolationPoint: 0,
-          ViolationLevel: 0,
-          LastViolationPointChanged: "2025-10-07T04:53:50.673Z",
-          LastViolationLevelChanged: "2025-10-07T04:53:50.673Z",
-          LastPodcastListenSlotChanged: "2025-10-07T04:53:50.673Z",
-          DeactivatedAt: null,
-          CreatedAt: "2025-10-07T04:53:50.673Z",
-          UpdatedAt: "2025-10-07T04:53:50.673Z",
-          IsBeingPunish: false,
+          Name: "Customer",
         },
-      })
-    );
-    router.replace("/(tabs)/home");
+        Fullname: "Hoàng Minh Lộc",
+        Dob: "03/10/2004",
+        Gender: "Male",
+        Address: "S5.01B Vinhomes GrandPark",
+        Phone: "0896893636",
+        Balance: 100000,
+        MainImageFileKey:
+          "https://i.pinimg.com/736x/84/6c/b5/846cb5c8b99cb86fdd052c661d0af33f.jpg",
+        IsVerified: true,
+        GoogleId: null,
+        PodcastListenSlot: 10,
+        ViolationPoint: 0,
+        ViolationLevel: 0,
+        LastViolationPointChanged: "102031031",
+        LastViolationLevelChanged: "12312312312",
+        LastPodcastListenSlotChanged: "12313123123",
+        DeactivatedAt: null,
+        CreatedAt: "ădadwadawdaw",
+        UpdatedAt: "dădawwdawd",
+        IsBeingPunish: false,
+      };
+
+      // Set credentials vào Redux store
+      dispatch(setCredentials({ user, accessToken }));
+
+      console.log("Login successful (fake):", { user, accessToken });
+
+      // Navigate to home after successful login
+      router.replace("/(tabs)/home");
+    } catch (error: any) {
+      // Handle different error types
+      let errorMessage = "Đăng nhập thất bại. Vui lòng thử lại.";
+
+      if (error?.data?.error) {
+        errorMessage = error.data.error;
+      } else if (error?.error) {
+        errorMessage = error.error;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+
+      Alert.alert("Lỗi", errorMessage);
+    }
   };
 
   return (
@@ -255,8 +270,16 @@ export default function Login() {
             }
           />
 
-          <TouchableOpacity style={style.submit} onPress={onSubmit}>
-            <Text style={style.submitText}>Login</Text>
+          <TouchableOpacity
+            style={[style.submit, isLoading && { opacity: 0.7 }]}
+            onPress={onSubmit}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={style.submitText}>Login</Text>
+            )}
           </TouchableOpacity>
 
           <View className="w-full items-center justify-center">

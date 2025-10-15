@@ -1,6 +1,6 @@
 export type EpisodeFromApi = {
   Id: string;
-  Title: string;
+  Name: string;
   Description: string;
   ExplicitContent: boolean;
   ReleaseDate: string;
@@ -24,7 +24,7 @@ export type EpisodeFromApi = {
 
 export type EpisodeWithImageUrl = {
   Id: string;
-  Title: string;
+  Name: string;
   Description: string;
   ExplicitContent: boolean;
   ReleaseDate: string;
@@ -40,8 +40,8 @@ export type EpisodeWithImageUrl = {
   TotalSave: number;
   ListenCount: number;
   IsAudioPublishable: boolean;
-  TakenDownReason: string;
-  DeletedAt: string;
+  TakenDownReason: string | null;
+  DeletedAt: string | null;
   CreatedAt: string;
   UpdatedAt: string;
 };
@@ -52,7 +52,7 @@ export type PodcastEpisodeSubscriptionType = {
 };
 export type EpisodeCardWithImageProps = {
   Id: string;
-  Title: string;
+  Name: string;
   Description: string;
   ExplicitContent: boolean;
   ReleaseDate: string;

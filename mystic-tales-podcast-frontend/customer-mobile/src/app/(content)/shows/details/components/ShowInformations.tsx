@@ -287,8 +287,6 @@ const style = StyleSheet.create({
   containerWrapper: {
     width: "100%",
     overflow: "hidden",
-    borderBottomColor: "#514F4F",
-    borderBottomWidth: 0.3,
   },
   container: {
     width: "100%",
