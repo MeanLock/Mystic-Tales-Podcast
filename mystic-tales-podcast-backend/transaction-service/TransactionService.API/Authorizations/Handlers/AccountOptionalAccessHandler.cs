@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json.Linq;
-using UserService.API.Authorizations.Requirements;
-using UserService.BusinessLogic.DTOs.Cache;
-using UserService.BusinessLogic.Models.CrossService;
-using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
-using UserService.DataAccess.Entities;
-using UserService.DataAccess.Repositories.interfaces;
-using UserService.Infrastructure.Services.Redis;
+using TransactionService.API.Authorizations.Requirements;
+using TransactionService.BusinessLogic.DTOs.Cache;
+using TransactionService.BusinessLogic.Models.CrossService;
+using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using TransactionService.DataAccess.Entities;
+using TransactionService.DataAccess.Repositories.interfaces;
+using TransactionService.Infrastructure.Services.Redis;
 
-namespace UserService.API.Authorizations.Handlers
+namespace TransactionService.API.Authorizations.Handlers
 {
     public class AccountOptionalAccessHandler : AuthorizationHandler<AccountOptionalAccessRequirement>
     {
@@ -66,7 +66,7 @@ namespace UserService.API.Authorizations.Handlers
                     }
                 }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
             return result.Results["account"] as JObject;
         }
 

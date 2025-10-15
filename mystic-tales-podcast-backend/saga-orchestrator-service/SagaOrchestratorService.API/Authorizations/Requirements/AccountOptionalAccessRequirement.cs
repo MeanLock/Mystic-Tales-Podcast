@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 
-namespace BookingManagementService.API.Authorizations.Requirements
+namespace SagaOrchestratorService.API.Authorizations.Requirements
 {
     public class AccountOptionalAccessRequirement : IAuthorizationRequirement { }
 }

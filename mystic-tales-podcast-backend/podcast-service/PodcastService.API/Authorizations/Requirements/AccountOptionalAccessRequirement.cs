@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 
-namespace UserService.API.Authorizations.Requirements
+namespace PodcastService.API.Authorizations.Requirements
 {
     public class AccountOptionalAccessRequirement : IAuthorizationRequirement { }
 }

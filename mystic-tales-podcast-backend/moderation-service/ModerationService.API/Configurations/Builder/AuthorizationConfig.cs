@@ -14,7 +14,7 @@ namespace ModerationService.API.Configurations.Builder
             builder.AddCustomAuthorizationHandlers();
             builder.AddRolePolicy();
             builder.AddEmailPolicy();
-            builder.AddLoginRequiredPolicy();
+            builder.AddStaticPolicy();
 
             builder.AddDefaultAuthorization();
         }
@@ -24,6 +24,7 @@ namespace ModerationService.API.Configurations.Builder
             builder.Services.AddScoped<IAuthorizationHandler, AccountBasicAccessHandler>();
             builder.Services.AddScoped<IAuthorizationHandler, AccountNoViolationAccessHandler>();
             builder.Services.AddScoped<IAuthorizationHandler, AccountPodcasterAccessHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, AccountOptionalAccessHandler>();
         }
 
         public static void AddDefaultAuthorization(this WebApplicationBuilder builder)
@@ -34,10 +35,14 @@ namespace ModerationService.API.Configurations.Builder
             });
         }
 
-        public static void AddLoginRequiredPolicy(this WebApplicationBuilder builder)
+        public static void AddStaticPolicy(this WebApplicationBuilder builder)
         {
             builder.Services.AddAuthorization(options =>
             {
+                options.AddPolicy("OptionalAccess", policy =>
+                {
+                    policy.Requirements.Add(new AccountOptionalAccessRequirement());
+                });
                 options.AddPolicy("BasicAccess", policy =>
                 {
                     policy.RequireAuthenticatedUser();

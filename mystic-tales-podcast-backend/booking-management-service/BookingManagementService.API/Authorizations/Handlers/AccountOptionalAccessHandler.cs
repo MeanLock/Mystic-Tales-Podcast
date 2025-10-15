@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json.Linq;
-using UserService.API.Authorizations.Requirements;
-using UserService.BusinessLogic.DTOs.Cache;
-using UserService.BusinessLogic.Models.CrossService;
-using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
-using UserService.DataAccess.Entities;
-using UserService.DataAccess.Repositories.interfaces;
-using UserService.Infrastructure.Services.Redis;
+using BookingManagementService.API.Authorizations.Requirements;
+using BookingManagementService.BusinessLogic.DTOs.Cache;
+using BookingManagementService.BusinessLogic.Models.CrossService;
+using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using BookingManagementService.DataAccess.Entities;
+using BookingManagementService.DataAccess.Repositories.interfaces;
+using BookingManagementService.Infrastructure.Services.Redis;
 
-namespace UserService.API.Authorizations.Handlers
+namespace BookingManagementService.API.Authorizations.Handlers
 {
     public class AccountOptionalAccessHandler : AuthorizationHandler<AccountOptionalAccessRequirement>
     {
@@ -66,7 +66,7 @@ namespace UserService.API.Authorizations.Handlers
                     }
                 }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("BookingManagementService", batchRequest);
             return result.Results["account"] as JObject;
         }
 

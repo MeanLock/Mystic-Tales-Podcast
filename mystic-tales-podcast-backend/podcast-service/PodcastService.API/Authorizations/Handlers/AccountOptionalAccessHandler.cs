@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json.Linq;
-using UserService.API.Authorizations.Requirements;
-using UserService.BusinessLogic.DTOs.Cache;
-using UserService.BusinessLogic.Models.CrossService;
-using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
-using UserService.DataAccess.Entities;
-using UserService.DataAccess.Repositories.interfaces;
-using UserService.Infrastructure.Services.Redis;
+using PodcastService.API.Authorizations.Requirements;
+using PodcastService.BusinessLogic.DTOs.Cache;
+using PodcastService.BusinessLogic.Models.CrossService;
+using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using PodcastService.DataAccess.Entities;
+using PodcastService.DataAccess.Repositories.interfaces;
+using PodcastService.Infrastructure.Services.Redis;
 
-namespace UserService.API.Authorizations.Handlers
+namespace PodcastService.API.Authorizations.Handlers
 {
     public class AccountOptionalAccessHandler : AuthorizationHandler<AccountOptionalAccessRequirement>
     {
@@ -66,7 +66,7 @@ namespace UserService.API.Authorizations.Handlers
                     }
                 }
             };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
             return result.Results["account"] as JObject;
         }
 
