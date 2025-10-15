@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Net.payOS.Types;
 using Newtonsoft.Json.Linq;
 using TransactionService.API.Filters.ExceptionFilters;
 using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction;
@@ -71,6 +72,18 @@ namespace TransactionService.API.Controllers.BaseControllers
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
+        }
+        [HttpPost("confirm-payment")]
+        public async Task<IActionResult> ConfirmPayment([FromBody] WebhookType? webhookBody)
+        {
+            if (webhookBody == null)
+            {
+                return BadRequest("Invalid webhook data.");
+            }
+            // Process the webhook data as needed
+            _logger.LogInformation("Received payment confirmation webhook: {WebhookBody}", JObject.FromObject(webhookBody).ToString());
+            // Here you can add logic to update your database or trigger other actions based on the webhook data
+            return Ok(new { Message = "Webhook received successfully." });
         }
     }
 }

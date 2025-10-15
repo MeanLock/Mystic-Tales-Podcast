@@ -8,6 +8,10 @@ namespace TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDo
 {
     public class AccountBalanceCreatePaymentLinkParameterDTO
     {
-
+        public int AccountId { get; set; }
+        public decimal Amount { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public string? ReturnUrl { get; set; }
+        public string? CancelUrl { get; set; }
     }
 }

@@ -3412,10 +3412,7 @@ flows:
           emit: "create-payment-link.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: 
-            - name: "confirm-payment"
-              topic: "payment-processing-domain"
-              handle-service: "SagaOrchestratorService"
+          nextSteps: []
           nextFlows: []
         onFailure:
           emit: "create-payment-link.failed"
@@ -3435,16 +3432,18 @@ flows:
         handle-service: "TransactionService"
         description: "Xác nhận thanh toán thành công từ payment gateway, cập nhật status account balance thành success"
         parameters:
+          - WebHookBody:
+            - Data
+            - vv
           - AccountBalanceTransactionId
         next-request-data:
           - AccountId
           - Amount
-          - ReturnUrl
-          - CancelUrl
-          - TransactionTypeId
           - AccountBalanceTransactionId
         response-data:
+          - AccountId
           - Amount
+          - AccountBalanceTransactionId
         onSuccess:
           emit: "confirm-payment.success"
           topic: "payment-processing-domain"
@@ -3470,9 +3469,6 @@ flows:
         next-request-data:
           - AccountId
           - Amount
-          - ReturnUrl
-          - CancelUrl
-          - TransactionTypeId
           - AccountBalanceTransactionId
         response-data:
           - AccountId

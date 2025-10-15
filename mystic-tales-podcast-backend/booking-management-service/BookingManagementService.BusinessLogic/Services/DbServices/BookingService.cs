@@ -18,6 +18,7 @@ using BookingManagementService.BusinessLogic.Services.CrossServiceServices.Query
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.DataAccess.Data;
+using BookingManagementService.DataAccess.Entities;
 using BookingManagementService.DataAccess.Entities.SqlServer;
 using BookingManagementService.DataAccess.Repositories.interfaces;
 using BookingManagementService.Infrastructure.Models.Kafka;
@@ -374,7 +375,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                                     { "TransactionTypeId", 4 }
                                 };
                                 var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.BookingManagementDomain,
+                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
                                     requestData: command.RequestData,
                                     sagaInstanceId: null,
                                     messageName: refundMessageName);
@@ -393,7 +394,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                                     { "TransactionTypeId", 5 }
                                 };
                                 var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.BookingManagementDomain,
+                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
                                     requestData: command.RequestData,
                                     sagaInstanceId: null,
                                     messageName: refundMessageName);
@@ -851,7 +852,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                                 { "TransactionTypeId", 5 }
                             };
                             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.BookingManagementDomain,
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
                                 requestData: newRequestData,
                                 sagaInstanceId: null,
                                 messageName: compensationMessageName);
@@ -874,7 +875,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                         var startFirstSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.BookingManagementDomain,
+                            topic: KafkaTopicEnum.UserManagementDomain,
                             requestData: new JObject
                             {
                                 { "AccountId", booking.PodcastBuddyId },
@@ -897,7 +898,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                                 { "TransactionTypeId", 4 }
                             };
                             var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.BookingManagementDomain,
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
                                 requestData: newRequestData,
                                 sagaInstanceId: null,
                                 messageName: "booking-refund-flow");
@@ -995,7 +996,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                                     { "TransactionTypeId", 4 }
                                 };
                                 var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.BookingManagementDomain,
+                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
                                     requestData: newRequestData,
                                     sagaInstanceId: null,
                                     messageName: "booking-refund-flow");
@@ -1006,6 +1007,20 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     }
 
                     await transaction.CommitAsync();
+                    var newResponseData = new JObject
+                    {
+                        { "PodcasterId", parameter.PodcasterId },
+                    };
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Booking terminate success for SagaId: {SagaId}", sagaId.ToString());
                 }
                 catch (Exception ex)
                 {
