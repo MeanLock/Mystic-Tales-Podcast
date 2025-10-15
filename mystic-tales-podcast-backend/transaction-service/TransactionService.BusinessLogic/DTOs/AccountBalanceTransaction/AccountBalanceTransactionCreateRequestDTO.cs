@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction
 {
-    public class AccountBalanceTransactionRequestDTO
+    public class AccountBalanceTransactionCreateRequestDTO
     {
         public AccountBalanceTransactionCreateInfoDTO AccountBalanceTransactionInfo { get; set; }
     }

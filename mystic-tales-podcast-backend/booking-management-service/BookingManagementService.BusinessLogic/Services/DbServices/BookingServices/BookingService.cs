@@ -369,6 +369,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                                 var newRequestData = new JObject
                                 {
                                     { "BookingId", booking.Id },
+                                    { "Profit", booking.Price * (decimal)profitRate },
                                     { "Amount", Amount },
                                     { "AccountId", parameter.AccountId },
                                     { "PodcasterId", booking.PodcastBuddyId },
@@ -388,6 +389,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                                 var newRequestData = new JObject
                                 {
                                     { "BookingId", booking.Id },
+                                    { "Profit", null },
                                     { "Amount", Amount },
                                     { "AccountId", parameter.AccountId },
                                     { "PodcasterId", booking.AccountId },
@@ -744,7 +746,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     
                     if (booking == null)
                     {
-                        throw new InvalidOperationException($"Booking with ID {bookingId} not found");
+                        throw new Exception($"Booking with ID {bookingId} not found");
                     }
 
                     var newBookingStatusTracking = new BookingStatusTracking

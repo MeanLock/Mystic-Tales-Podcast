@@ -17,6 +17,7 @@ using BookingManagementService.DataAccess.Repositories.interfaces;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using HotChocolate.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
@@ -475,13 +476,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
         }
         public async Task<bool> ValidateProducingRequestPodcasterAsync(Guid BookingProducingRequestId, int accountId)
         {
-            Console.WriteLine(BookingProducingRequestId + "---------------------------------------");
-            Console.WriteLine("DDCMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM");
-            var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdWithPaths(
-                BookingProducingRequestId,
-                "Booking"
-                );
-            Console.WriteLine("DDCMMMMMMMMMMMMMMMMMMMMMMMMMMMafasdasdasdasdasfasfasfsafMMMMMMMMMMMMMMMMMMMMM");
+            var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindAll()
+                .Include(pr => pr.Booking)
+                .Where(pr => pr.Id.Equals(BookingProducingRequestId))
+                .FirstOrDefaultAsync();
             if (bookingProducingRequest == null)
                 return false;
             if (bookingProducingRequest.Booking.PodcastBuddyId != accountId)

@@ -4,15 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransaction
+namespace TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction
 {
-    public class CreateBookingTransactionParameterDTO
+    public class CreatePodcastSubscriptionTransactionParameterDTO
     {
-        public int BookingId { get; set; }
-        public decimal Amount { get; set; }
+        public Guid PodcastSubscriptionRegistrationId { get; set; }
         public decimal? Profit { get; set; }
         public int? AccountId { get; set; }
         public int? PodcasterId { get; set; }
+        public decimal Amount { get; set; }
         public int TransactionTypeId { get; set; }
     }
 }

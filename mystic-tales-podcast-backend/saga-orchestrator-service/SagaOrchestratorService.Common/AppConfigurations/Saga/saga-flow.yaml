@@ -3573,6 +3573,7 @@ flows:
           - PodcasterId
           - TransactionTypeId
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - Profit 
@@ -3605,6 +3606,7 @@ flows:
           - AccountId
           - Amount
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - Profit 
@@ -3696,6 +3698,7 @@ flows:
           - PodcasterId
           - TransactionTypeId
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - Profit 
@@ -3728,6 +3731,7 @@ flows:
           - PodcasterId
           - Amount
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - Profit 
@@ -3764,6 +3768,7 @@ flows:
           - AccountId
           - Amount
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - Profit 
@@ -3858,6 +3863,7 @@ flows:
           - PodcasterId
           - TransactionTypeId
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - Profit 
@@ -3891,6 +3897,12 @@ flows:
           - Amount
         next-request-data:
           - BookingTransactionId
+          - BookingId
+          - Amount
+          - Profit 
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
         response-data:
           - AccountId
           - Amount
@@ -3976,6 +3988,7 @@ flows:
           - PodcasterId
           - TransactionTypeId
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - Profit 
@@ -4094,6 +4107,7 @@ flows:
           - Amount
           - TransactionTypeId
         next-request-data:
+          - PodcastSubscriptionPaymentTransactionId
           - PodcastSubscriptionRegistrationId
           - Profit
           - AccountId
@@ -4127,6 +4141,12 @@ flows:
           - Amount
         next-request-data:
           - PodcastSubscriptionPaymentTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
         response-data:
           - AccountId
           - Amount
@@ -4156,6 +4176,7 @@ flows:
         parameters:
           - PodcastSubscriptionTransactionId
         next-request-data:
+          - PodcastSubscriptionPaymentTransactionId
           - PodcastSubscriptionRegistrationId
           - Profit
           - AccountId
@@ -4203,12 +4224,13 @@ flows:
           - Amount
           - TransactionTypeId
         next-request-data:
+          - MemberSubscriptionTransactionId
           - MemberSubscriptionRegistrationId
           - AccountId
           - Amount
           - TransactionTypeId
         response-data:
-          - MemberSubscriptionPaymentTransactionId
+          - MemberSubscriptionTransactionId
           - CreatedAt
         onSuccess:
           emit: "create-member-subscription-transaction.success"
@@ -4233,7 +4255,11 @@ flows:
           - AccountId
           - Amount
         next-request-data:
-          - MemberSubscriptionPaymentTransactionId
+          - MemberSubscriptionTransactionId
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
         response-data:
           - AccountId
           - Amount
@@ -4263,6 +4289,7 @@ flows:
         parameters:
           - MemberSubscriptionTransactionId
         next-request-data:
+          - MemberSubscriptionTransactionId
           - MemberSubscriptionRegistrationId
           - AccountId
           - Amount
@@ -4308,6 +4335,7 @@ flows:
           - Amount
           - TransactionTypeId
         next-request-data:
+          - PodcastSubscriptionTransactionId
           - PodcastSubscriptionRegistrationId
           - Profit
           - AccountId
@@ -4315,7 +4343,7 @@ flows:
           - Amount
           - TransactionTypeId
         response-data:
-          - PodcastSubscriptionTransaction
+          - PodcastSubscriptionTransactionId
           - CreatedAt
         onSuccess:
           emit: "create-podcast-subscription-transaction.success"
@@ -4341,6 +4369,12 @@ flows:
           - Amount
         next-request-data:
           - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
         response-data:
           - AccountId
           - Amount
@@ -4372,6 +4406,12 @@ flows:
           - Amount
         next-request-data:
           - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
         response-data:
           - PodcasterId
           - Amount
@@ -4404,6 +4444,7 @@ flows:
         parameters:
           - PodcastSubscriptionTransactionId
         next-request-data:
+          - PodcastSubscriptionTransactionId
           - PodcastSubscriptionRegistrationId
           - Profit
           - AccountId
@@ -4438,6 +4479,169 @@ flows:
               topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
 
+  podcaster-subscription-income-release-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Giải phóng thu nhập từ đăng ký cho podcaster"
+    save-file: ""
+    steps:
+      - name: "create-podcast-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo podcast subscription transaction"
+        parameters:
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+          - CreatedAt
+        onSuccess:
+          emit: "create-account-balance-transaction.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "add-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-account-balance-transaction.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "add-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vô ví Podcaster"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - AccountId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-member-subscription-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "add-account-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "complete-podcast-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Hoàn thành podcast subscription transaction"
+        parameters:
+          - PodcastSubscriptionTransactionId
+        next-request-data:
+          - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-podcast-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "complete-podcast-subscription-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "add-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
+  podcast-subscription-system-payment-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Lưu số tiền system nhận được từ podcast subscription"
+    save-file: ""
+    steps:
+      - name: "create-podcast-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo podcast subscription transaction"
+        parameters:
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - PodcastSubscriptionTransactionId
+          - PodcastSubscriptionRegistrationId
+          - Profit
+          - AccountId
+          - PodcasterId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - PodcastSubscriptionTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "create-podcast-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-podcast-subscription-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
+
   member-subscription-refund-flow:
     topic: "payment-processing-domain"
     handle-service: "SagaOrchestratorService"
@@ -4454,6 +4658,7 @@ flows:
           - Amount
           - TransactionTypeId
         next-request-data:
+          - MemberSubscriptionTransactionId
           - MemberSubscriptionRegistrationId
           - AccountId
           - Amount
@@ -4485,6 +4690,10 @@ flows:
           - Amount
         next-request-data:
           - MemberSubscriptionTransactionId
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
         response-data:
           - AccountId
           - Amount
@@ -4541,6 +4750,43 @@ flows:
             - name: "add-account-balance-amount-rollback-flow"
               topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
+
+  member-subscription-system-payment-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Lưu số tiền system nhận được từ member subscription"
+    save-file: ""
+    steps:
+      - name: "create-member-subscription-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo member subscription transaction"
+        parameters:
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        next-request-data:
+          - MemberSubscriptionTransactionId
+          - MemberSubscriptionRegistrationId
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - MemberSubscriptionTransactionId
+          - CreatedAt
+        onSuccess:
+          emit: "create-member-subscription-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-member-subscription-transaction.failed"
+          topic: "user-management-domain"
+          handle-service: "UserService"
+          nextSteps: []
+          nextFlows: []
 
   # storage-purchase-flow:
 
@@ -5731,100 +5977,6 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-
-  podcaster-subscription-income-release-flow:
-    topic: "payment-processing-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Giải phóng thu nhập từ đăng ký cho podcaster"
-    save-file: ""
-    steps:
-      - name: "create-podcast-subscription-transaction"
-        topic: "payment-processing-domain"
-        handle-service: "TransactionService"
-        description: "Tạo podcast subscription transaction"
-        parameters:
-          - PodcastSubscriptionRegistrationId
-          - Amount
-          - TransactionTypeId
-        next-request-data:
-          - PodcastSubscriptionRegistrationId
-          - Amount
-          - TransactionTypeId
-        response-data:
-          - AccountBalanceTransactionId
-          - PodcastSubscriptionRegistrationId
-          - Amount
-          - TransactionTypeId
-          - CreatedAt
-        onSuccess:
-          emit: "create-account-balance-transaction.success"
-          topic: "subscription-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: 
-            - name: "add-account-balance-amount"
-              topic: "user-management-domain"
-              handle-service: "UserService"
-          nextFlows: []
-        onFailure:
-          emit: "create-account-balance-transaction.failed"
-          topic: "subscription-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-      - name: "add-account-balance-amount"
-        topic: "user-management-domain"
-        handle-service: "UserService"
-        description: "Thêm tiền vô ví Podcaster"
-        parameters:
-          - AccountId
-          - Amount
-        next-request-data:
-          - MemberSubscriptionTransactionId
-        response-data:
-          - AccountId
-          - Amount
-          - NewBalance
-        onSuccess:
-          emit: "add-account-balance-amount.success"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: 
-            - name: "complete-member-subscription-transaction"
-              topic: "payment-processing-domain"
-              handle-service: "UserService"
-          nextFlows: []
-        onFailure:
-          emit: "add-account-balance-amount.failed"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-      - name: "complete-podcast-subscription-transaction"
-        topic: "payment-processing-domain"
-        handle-service: "TransactionService"
-        description: "Hoàn thành podcast subscription transaction"
-        parameters:
-          - AccountBalanceTransactionId
-        next-request-data:
-          - AccountBalanceTransactionId
-        response-data:
-          - AccountBalanceTransactionId
-          - TransactionStatusId
-        onSuccess:
-          emit: "complete-podcast-subscription-transaction.success"
-          topic: "payment-processing-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "complete-podcast-subscription-transaction.failed"
-          topic: "payment-processing-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: 
-            - name: "add-account-balance-amount-rollback-flow"
-              topic: "user-management-domain"
-              handle-service: "SagaOrchestratorService"
 
   unpublish-show-rollback-flow:
     topic: "content-management-domain"
