@@ -225,11 +225,14 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 //     Token = token,
                 // });
 
-                var requestData = command.RequestData;
-                requestData["AccessToken"] = token;
+                var messageNextRequestData = command.RequestData;
+                messageNextRequestData["AccessToken"] = token;
+                messageNextRequestData["Email"] = account.Email;
+                messageNextRequestData["Password"] = loginRequest.Password;
+
                 var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: requestData,
+                        requestData: messageNextRequestData,
                         responseData: JObject.FromObject(new
                         {
                             Message = "Login successful",
@@ -386,11 +389,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     var token = _jwtHelper.GenerateJWT_TwoPublicPrivateKey(claims, _jwtConfig.Exp);
                     await transaction.CommitAsync();
                     // return JObject.FromObject(new { Token = token });
-                    var requestData = command.RequestData;
-                    requestData["AccessToken"] = token;
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AuthorizationCode"] = authorizationCode;
+                    messageNextRequestData["RedirectUri"] = redirectUri;
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                             topic: KafkaTopicEnum.UserManagementDomain,
-                            requestData: requestData,
+                            requestData: messageNextRequestData,
                             responseData: JObject.FromObject(new
                             {
                                 Message = "Login successful",
@@ -453,13 +457,18 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     await transaction.CommitAsync();
 
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["Email"] =   account.Email;
+                    messageNextRequestData["IsVerified"] = account.IsVerified;
 
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: JObject.FromObject(new
                         {
-                            Message = "Account verification successful"
+                            // Message = "Account verification successful",
+                            Email = account.Email,
+                            IsVerified = account.IsVerified
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -570,19 +579,30 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     await transaction.CommitAsync();
 
-                    var requestData = JObject.FromObject(new CustomerPasswordResetMailViewModel
-                    {
-                        Email = forgotPasswordData.Email,
-                        PasswordResetToken = NewGuid,
-                        ResetPasswordUrl = resetPasswordUrl,
-                        ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
-                    });
+                    // var requestData = JObject.FromObject(new CustomerPasswordResetMailViewModel
+                    // {
+                    //     Email = forgotPasswordData.Email,
+                    //     PasswordResetToken = NewGuid,
+                    //     ResetPasswordUrl = resetPasswordUrl,
+                    //     ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
+                    // });
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["Email"] = account.Email;
+                    messageNextRequestData["PasswordResetToken"] = NewGuid;
+                    messageNextRequestData["ResetPasswordUrl"] = resetPasswordUrl;
+                    messageNextRequestData["ExpiredAt"] = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss");
+
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: requestData,
+                        requestData: messageNextRequestData,
                         responseData: JObject.FromObject(new
                         {
-                            Message = "Forgot password process initiated. Please check your email for the reset link."
+                            // Message = "Forgot password process initiated. Please check your email for the reset link."
+                            Email = account.Email,
+                            PasswordResetToken = NewGuid,
+                            ResetPasswordUrl = resetPasswordUrl,
+                            ExpiredAt = _dateHelpers.GetNowByAppTimeZone().AddHours(1).ToString("dd/MM/yyyy HH:mm:ss"),
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -641,12 +661,20 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     await transaction.CommitAsync();
 
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["Email"] = account.Email;
+                    messageNextRequestData["NewPassword"] = newResetPasswordRequest.NewPassword;
+                    messageNextRequestData["ResetPasswordToken"] = newResetPasswordRequest.ResetPasswordToken;
+
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: messageNextRequestData,
                         responseData: JObject.FromObject(new
                         {
-                            Message = "Password has been reset successfully"
+                            // Message = "Password has been reset successfully"
+                            Email = account.Email,
+                            NewPassword = newResetPasswordRequest.NewPassword,
+                            ResetPasswordToken = newResetPasswordRequest.ResetPasswordToken
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
