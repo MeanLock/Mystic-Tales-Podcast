@@ -5,7 +5,9 @@ namespace SubscriptionService.DataAccess.Entities.SqlServer;
 
 public partial class MemberSubscriptionRegistration
 {
-    public int AccountId { get; set; }
+    public Guid Id { get; set; }
+
+    public int? AccountId { get; set; }
 
     public int MemberSubscriptionId { get; set; }
 

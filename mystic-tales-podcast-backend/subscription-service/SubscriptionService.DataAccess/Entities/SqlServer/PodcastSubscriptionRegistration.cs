@@ -5,7 +5,9 @@ namespace SubscriptionService.DataAccess.Entities.SqlServer;
 
 public partial class PodcastSubscriptionRegistration
 {
-    public int AccountId { get; set; }
+    public Guid Id { get; set; }
+
+    public int? AccountId { get; set; }
 
     public int PodcastSubscriptionId { get; set; }
 
@@ -28,6 +30,4 @@ public partial class PodcastSubscriptionRegistration
     public virtual PodcastSubscription PodcastSubscription { get; set; } = null!;
 
     public virtual SubscriptionCycleType SubscriptionCycleType { get; set; } = null!;
-
-    public virtual ICollection<PodcastSubscriptionBenefit> PodcastSubscriptionBenefits { get; set; } = new List<PodcastSubscriptionBenefit>();
 }

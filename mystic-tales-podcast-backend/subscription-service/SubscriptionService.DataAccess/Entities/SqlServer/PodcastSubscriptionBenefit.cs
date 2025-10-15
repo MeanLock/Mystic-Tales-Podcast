@@ -10,6 +10,4 @@ public partial class PodcastSubscriptionBenefit
     public string Name { get; set; } = null!;
 
     public virtual ICollection<PodcastSubscriptionBenefitMapping> PodcastSubscriptionBenefitMappings { get; set; } = new List<PodcastSubscriptionBenefitMapping>();
-
-    public virtual ICollection<PodcastSubscriptionRegistration> PodcastSubscriptionRegistrations { get; set; } = new List<PodcastSubscriptionRegistration>();
 }

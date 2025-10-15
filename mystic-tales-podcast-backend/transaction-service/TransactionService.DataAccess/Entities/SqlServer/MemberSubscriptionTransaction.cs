@@ -7,8 +7,6 @@ public partial class MemberSubscriptionTransaction
 {
     public Guid Id { get; set; }
 
-    public int MemberSubscriptionRegistrationId { get; set; }
-
     public decimal Amount { get; set; }
 
     public int TransactionTypeId { get; set; }
@@ -18,6 +16,8 @@ public partial class MemberSubscriptionTransaction
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
+
+    public Guid MemberSubscriptionRegistrationId { get; set; }
 
     public virtual TransactionStatus TransactionStatus { get; set; } = null!;
 

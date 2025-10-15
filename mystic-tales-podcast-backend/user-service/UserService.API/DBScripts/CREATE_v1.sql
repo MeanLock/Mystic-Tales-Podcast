@@ -1012,7 +1012,7 @@ CREATE TABLE AccountBalanceTransaction (
 -- PodcastSubscriptionTransaction table
 CREATE TABLE PodcastSubscriptionTransaction (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    podcastSubscriptionRegistrationId INT NOT NULL,
+    podcastSubscriptionRegistrationId UNIQUEIDENTIFIER NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     profit DECIMAL(18,2) NULL,
     transactionTypeId INT NOT NULL,
@@ -1026,7 +1026,7 @@ CREATE TABLE PodcastSubscriptionTransaction (
 -- MemberSubscriptionTransaction table
 CREATE TABLE MemberSubscriptionTransaction (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    memberSubscriptionRegistrationId INT NOT NULL,
+    memberSubscriptionRegistrationId UNIQUEIDENTIFIER NOT NULL,
     amount DECIMAL(18,2) NOT NULL,
     transactionTypeId INT NOT NULL,
     transactionStatusId INT NOT NULL,

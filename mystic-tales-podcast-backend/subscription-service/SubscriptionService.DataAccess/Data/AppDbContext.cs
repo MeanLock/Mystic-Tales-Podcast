@@ -7,10 +7,6 @@ namespace SubscriptionService.DataAccess.Data;
 
 public partial class AppDbContext : DbContext
 {
-    public AppDbContext()
-    {
-    }
-
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
@@ -37,10 +33,6 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<PodcastSubscriptionRegistration> PodcastSubscriptionRegistrations { get; set; }
 
     public virtual DbSet<SubscriptionCycleType> SubscriptionCycleTypes { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost,1434;Database=MTP_SubscriptionDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -151,13 +143,14 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<MemberSubscriptionRegistration>(entity =>
         {
-            entity.HasKey(e => e.AccountId).HasName("PK__MemberSu__F267251EF869FEE5");
+            entity.HasKey(e => e.Id).HasName("PK__MemberSu__3213E83FBDC8768E");
 
-            entity.ToTable("MemberSubscriptionRegistration", tb => tb.HasTrigger("TR_MemberSubscriptionRegistration_UpdatedAt"));
+            entity.ToTable("MemberSubscriptionRegistration");
 
-            entity.Property(e => e.AccountId)
-                .ValueGeneratedNever()
-                .HasColumnName("accountId");
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("(newid())")
+                .HasColumnName("id");
+            entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.CancelledAt)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnType("datetime")
@@ -181,7 +174,7 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.MemberSubscription).WithMany(p => p.MemberSubscriptionRegistrations)
                 .HasForeignKey(d => d.MemberSubscriptionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MemberSub__membe__05D8E0BE");
+                .HasConstraintName("FK__MemberSub__membe__25518C17");
         });
 
         modelBuilder.Entity<PodcastSubscription>(entity =>
@@ -294,13 +287,14 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<PodcastSubscriptionRegistration>(entity =>
         {
-            entity.HasKey(e => e.AccountId).HasName("PK__PodcastS__F267251E0F7C81CC");
+            entity.HasKey(e => e.Id).HasName("PK__PodcastS__3213E83F29A7A8BB");
 
-            entity.ToTable("PodcastSubscriptionRegistration", tb => tb.HasTrigger("TR_PodcastSubscriptionRegistration_UpdatedAt"));
+            entity.ToTable("PodcastSubscriptionRegistration");
 
-            entity.Property(e => e.AccountId)
-                .ValueGeneratedNever()
-                .HasColumnName("accountId");
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("(newid())")
+                .HasColumnName("id");
+            entity.Property(e => e.AccountId).HasColumnName("accountId");
             entity.Property(e => e.CancelledAt)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnType("datetime")
@@ -328,31 +322,12 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.PodcastSubscription).WithMany(p => p.PodcastSubscriptionRegistrations)
                 .HasForeignKey(d => d.PodcastSubscriptionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__PodcastSu__podca__6754599E");
+                .HasConstraintName("FK__PodcastSu__podca__1CBC4616");
 
             entity.HasOne(d => d.SubscriptionCycleType).WithMany(p => p.PodcastSubscriptionRegistrations)
                 .HasForeignKey(d => d.SubscriptionCycleTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__PodcastSu__subsc__68487DD7");
-
-            entity.HasMany(d => d.PodcastSubscriptionBenefits).WithMany(p => p.PodcastSubscriptionRegistrations)
-                .UsingEntity<Dictionary<string, object>>(
-                    "PodcastSubscriptionRegistrationBenefit",
-                    r => r.HasOne<PodcastSubscriptionBenefit>().WithMany()
-                        .HasForeignKey("PodcastSubscriptionBenefitId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__PodcastSu__podca__6C190EBB"),
-                    l => l.HasOne<PodcastSubscriptionRegistration>().WithMany()
-                        .HasForeignKey("PodcastSubscriptionRegistrationId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__PodcastSu__podca__6B24EA82"),
-                    j =>
-                    {
-                        j.HasKey("PodcastSubscriptionRegistrationId", "PodcastSubscriptionBenefitId").HasName("PK__PodcastS__CCA820513C00438D");
-                        j.ToTable("PodcastSubscriptionRegistrationBenefit");
-                        j.IndexerProperty<int>("PodcastSubscriptionRegistrationId").HasColumnName("podcastSubscriptionRegistrationId");
-                        j.IndexerProperty<int>("PodcastSubscriptionBenefitId").HasColumnName("podcastSubscriptionBenefitId");
-                    });
+                .HasConstraintName("FK__PodcastSu__subsc__1DB06A4F");
         });
 
         modelBuilder.Entity<SubscriptionCycleType>(entity =>
