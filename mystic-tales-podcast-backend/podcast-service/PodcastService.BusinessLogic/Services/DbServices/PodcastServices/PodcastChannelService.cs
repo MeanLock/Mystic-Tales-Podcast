@@ -22,6 +22,9 @@ using PodcastService.Infrastructure.Services.Redis;
 using PodcastService.DataAccess.Entities.SqlServer;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
 using PodcastService.BusinessLogic.Enums.Podcast;
+using PodcastService.BusinessLogic.DTOs.Channel.ListItems;
+using PodcastService.BusinessLogic.DTOs.Cache;
+using PodcastService.BusinessLogic.DTOs.Channel;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -52,6 +55,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         private readonly IGenericRepository<PodcastChannel> _podcastChannelGenericRepository;
         private readonly IGenericRepository<PodcastChannelStatusTracking> _podcastChannelStatusTrackingGenericRepository;
         private readonly IGenericRepository<PodcastChannelHashtag> _podcastChannelHashtagGenericRepository;
+        private readonly IGenericRepository<Hashtag> _hashtagGenericRepository;
 
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
@@ -80,6 +84,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             IGenericRepository<PodcastChannel> podcastChannelGenericRepository,
             IGenericRepository<PodcastChannelStatusTracking> podcastChannelStatusTrackingGenericRepository,
             IGenericRepository<PodcastChannelHashtag> podcastChannelHashtagGenericRepository,
+            IGenericRepository<Hashtag> hashtagGenericRepository,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -104,6 +109,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _podcastChannelGenericRepository = podcastChannelGenericRepository;
             _podcastChannelStatusTrackingGenericRepository = podcastChannelStatusTrackingGenericRepository;
             _podcastChannelHashtagGenericRepository = podcastChannelHashtagGenericRepository;
+            _hashtagGenericRepository = hashtagGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -203,6 +209,63 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
             return violationLevel;
         }
+
+        public async Task<AccountStatusCache> QueryAccountStatusCacheById(int accountId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                {
+                    new BatchQueryItem
+                    {
+                        Key = "account",
+                        QueryType = "findbyid",
+                        EntityType = "Account",
+                        Parameters = JObject.FromObject(new
+                        {
+                            id = accountId,
+                            include = "PodcasterProfile"
+                        }),
+                        Fields = new[] {
+                            "Id",
+                            "Email",
+                            "Password",
+                            "RoleId",
+                            "FullName",
+                            "Dob",
+                            "Gender",
+                            "Address",
+                            "Phone",
+                            "Balance",
+                            "MainImageFileKey",
+                            "IsVerified",
+                            "GoogleId",
+                            "VerifyCode",
+                            "PodcastListenSlot",
+                            "ViolationPoint",
+                            "ViolationLevel",
+                            "LastViolationPointChanged",
+                            "LastViolationLevelChanged",
+                            "LastPodcastListenSlotChanged",
+                            "DeactivatedAt",
+                            "CreatedAt",
+                            "UpdatedAt",
+                            "PodcasterProfile",
+                        }
+                    }
+                }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+            if (result.Results["account"] == null) return null;
+
+
+            var accountStatusCache = (result.Results["account"] as JObject).ToObject<AccountStatusCache>();
+            var podcasterProfile = result.Results["account"]["PodcasterProfile"] as JObject;
+            accountStatusCache.HasVerifiedPodcasterProfile = accountStatusCache.RoleId == 1 && podcasterProfile != null && podcasterProfile["IsVerified"]?.ToObject<bool>() == true ? true : false;
+            Console.WriteLine($"Queried Account: Id={accountStatusCache.Id}, RoleId={accountStatusCache.RoleId}, IsVerified={accountStatusCache.IsVerified}, DeactivatedAt={accountStatusCache.DeactivatedAt}, HasVerifiedPodcasterProfile={accountStatusCache.HasVerifiedPodcasterProfile}");
+            return accountStatusCache;
+        }
+
 
         /////////////////////////////////////////////////////////////
 
@@ -1314,12 +1377,139 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         // }
         #endregion
 
+        public async Task<List<ChannelListItemDTO>> GetChannels(int? roleId)
+        {
+            // tuân thủ cách viết ở trên
+            try
+            {
+                var query = _podcastChannelGenericRepository.FindAll(
+                    predicate: c => c.DeletedAt == null,
+                    includeFunc: q => q
+                        .Include(pc => pc.PodcastCategory)
+                        .Include(pc => pc.PodcastSubCategory)
+                        .Include(pc => pc.PodcastChannelStatusTrackings)
+                        .ThenInclude(pct => pct.PodcastChannelStatus)
+                        .Include(pc => pc.PodcastChannelHashtags)
+                        .ThenInclude(pch => pch.Hashtag)
+                );
+
+                if (roleId == null || roleId == 1)
+                {
+                    query = query.Where(pc => pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId != (int)PodcastChannelStatusEnum.Unpublished);
+                }
+                var channels = await query.ToListAsync();
+
+                var channelList = channels.Select(pc => new ChannelListItemDTO
+                {
+                    Id = pc.Id,
+                    Name = pc.Name,
+                    Description = pc.Description,
+                    MainImageFileKey = pc.MainImageFileKey,
+                    BackgroundImageFileKey = pc.BackgroundImageFileKey,
+                    PodcastCategory = new PodcastCategoryDTO
+                    {
+                        Id = pc.PodcastCategory.Id,
+                        Name = pc.PodcastCategory.Name
+                    },
+                    PodcastSubCategory = new PodcastSubCategoryDTO
+                    {
+                        Id = pc.PodcastSubCategory.Id,
+                        Name = pc.PodcastSubCategory.Name,
+                        PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
+                    },
+                    CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
+                    {
+                        Id = pct.PodcastChannelStatus.Id,
+                        Name = pct.PodcastChannelStatus.Name
+                    }).FirstOrDefault()!,
+                    Hashtags = pc.PodcastChannelHashtags.Select(pch => new HashtagDTO
+                    {
+                        Id = pch.Hashtag.Id,
+                        Name = pch.Hashtag.Name
+                    }).ToList(),
+                    TotalFavorite = pc.TotalFavorite,
+                    ListenCount = pc.ListenCount,
+                    PodcasterId = pc.PodcasterId,
+                    CreatedAt = pc.CreatedAt,
+                    UpdatedAt = pc.UpdatedAt
+                }).ToList();
+                return channelList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get channels failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<List<ChannelListItemDTO>> GetChannelByPodcasterIdAsync(int podcasterId)
+        {
+            // tuân thủ cách viết ở trên
+            try
+            {
+                var query = _podcastChannelGenericRepository.FindAll(
+                    predicate: c => c.DeletedAt == null && c.PodcasterId == podcasterId,
+                    includeFunc: q => q
+                        .Include(pc => pc.PodcastCategory)
+                        .Include(pc => pc.PodcastSubCategory)
+                        .Include(pc => pc.PodcastChannelStatusTrackings)
+                        .ThenInclude(pct => pct.PodcastChannelStatus)
+                        .Include(pc => pc.PodcastChannelHashtags)
+                        .ThenInclude(pch => pch.Hashtag)
+                );
+
+                var channels = await query.ToListAsync();
+
+                var channelList = channels.Select(pc => new ChannelListItemDTO
+                {
+                    Id = pc.Id,
+                    Name = pc.Name,
+                    Description = pc.Description,
+                    MainImageFileKey = pc.MainImageFileKey,
+                    BackgroundImageFileKey = pc.BackgroundImageFileKey,
+                    PodcastCategory = new PodcastCategoryDTO
+                    {
+                        Id = pc.PodcastCategory.Id,
+                        Name = pc.PodcastCategory.Name
+                    },
+                    PodcastSubCategory = new PodcastSubCategoryDTO
+                    {
+                        Id = pc.PodcastSubCategory.Id,
+                        Name = pc.PodcastSubCategory.Name,
+                        PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
+                    },
+                    CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
+                    {
+                        Id = pct.PodcastChannelStatus.Id,
+                        Name = pct.PodcastChannelStatus.Name
+                    }).FirstOrDefault()!,
+                    Hashtags = pc.PodcastChannelHashtags.Select(pch => new HashtagDTO
+                    {
+                        Id = pch.Hashtag.Id,
+                        Name = pch.Hashtag.Name
+                    }).ToList(),
+                    TotalFavorite = pc.TotalFavorite,
+                    ListenCount = pc.ListenCount,
+                    PodcasterId = pc.PodcasterId,
+                    CreatedAt = pc.CreatedAt,
+                    UpdatedAt = pc.UpdatedAt
+                }).ToList();
+                return channelList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get channels failed, error: " + ex.Message);
+            }
+        }
+
+
         public async Task CreatePodcastChannel(CreateChannelParameterDTO createChannelParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
-                {   
+                {
                     var podcastChannel = new PodcastChannel
                     {
                         Name = createChannelParameterDTO.Name,
@@ -1360,6 +1550,11 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                     foreach (var hashtagId in createChannelParameterDTO.HashtagIds)
                     {
+                        var existingHashtag = await _hashtagGenericRepository.FindByIdAsync(hashtagId);
+                        if (existingHashtag == null)
+                        {
+                            throw new Exception("Hashtag with id " + hashtagId + " does not exist");
+                        }
                         var podcastChannelHashtag = new PodcastChannelHashtag
                         {
                             PodcastChannelId = podcastChannel.Id,
@@ -1371,14 +1566,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    //                       - Name
-                    //   - Description
-                    //   - MainImageFileKey
-                    //   - BackgroundImageFileKey
-                    //   - PodcastCategoryId
-                    //   - podcastSubCategoryId
-                    //   - HashtagIds
-                    //   - PodcasterId
                     messageNextRequestData["Name"] = podcastChannel.Name;
                     messageNextRequestData["Description"] = podcastChannel.Description;
                     messageNextRequestData["MainImageFileKey"] = podcastChannel.MainImageFileKey;
@@ -1432,5 +1619,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
             }
         }
+
+
     }
 }

@@ -1,4 +1,4 @@
--- PodcastSubscriptionRegistration table
+﻿-- PodcastSubscriptionRegistration table
 CREATE TABLE PodcastSubscriptionRegistration (
     accountId INT PRIMARY KEY,
     podcastSubscriptionId INT NOT NULL,
@@ -24,38 +24,17 @@ CREATE TABLE PodcastSubscriptionRegistrationBenefit (
 );
 
 
-Drop table PodcastSubscriptionRegistrationBenefit
-Drop table PodcastSubscriptionRegistration
-Drop table MemberSubscriptionRegistration
+-- Bảng PodcastSubscriptionTransaction
+ALTER TABLE PodcastSubscriptionTransaction
+DROP COLUMN podcastSubscriptionRegistrationId;
 
+ALTER TABLE PodcastSubscriptionTransaction
+ADD podcastSubscriptionRegistrationId UNIQUEIDENTIFIER NOT NULL;
 
+-- Bảng MemberSubscriptionTransaction
+ALTER TABLE MemberSubscriptionTransaction
+DROP COLUMN memberSubscriptionRegistrationId;
 
-CREATE TABLE PodcastSubscriptionRegistration (
-	id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    accountId INT,
-    podcastSubscriptionId INT NOT NULL,
-    subscriptionCycleTypeId INT NOT NULL,
-    currentVersion INT NOT NULL,
-    isAcceptNewestVersionSwitch BIT NULL DEFAULT NULL,
-    lastPaidAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    isIncomeTaken BIT NOT NULL DEFAULT 0,
-    cancelledAt DATETIME NULL DEFAULT NULL,
-    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    FOREIGN KEY (podcastSubscriptionId) REFERENCES PodcastSubscription(id),
-    FOREIGN KEY (subscriptionCycleTypeId) REFERENCES SubscriptionCycleType(id)
-);
-
-CREATE TABLE MemberSubscriptionRegistration (
-	id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    accountId INT,
-    memberSubscriptionId INT NOT NULL,
-    currentVersion INT NOT NULL,
-    isAcceptNewestVersionSwitch BIT NULL,
-    lastPaidAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    cancelledAt DATETIME NULL DEFAULT NULL,
-    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    FOREIGN KEY (memberSubscriptionId) REFERENCES MemberSubscription(id)
-);
+ALTER TABLE MemberSubscriptionTransaction
+ADD memberSubscriptionRegistrationId UNIQUEIDENTIFIER NOT NULL;
 
