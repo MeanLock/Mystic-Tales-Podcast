@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using TransactionService.BusinessLogic.Services.DbServices;
 using TransactionService.BusinessLogic.Services.DbServices.MiscServices;
 
 namespace TransactionService.BusinessLogic.Registrations
@@ -14,8 +15,8 @@ namespace TransactionService.BusinessLogic.Registrations
             // services.AddScoped<AuthService>();
             // services.AddScoped<AccountService>();
 
-            // // PaymentServices
-            // services.AddScoped<AccountPaymentService>();
+            // PaymentServices
+            services.AddScoped<AccountBalanceTransactionService>();
 
             // // SurveyServices
             // services.AddScoped<SurveyCoreService>();

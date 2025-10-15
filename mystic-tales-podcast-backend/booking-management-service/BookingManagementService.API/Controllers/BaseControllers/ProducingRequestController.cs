@@ -232,14 +232,12 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 return Unauthorized("Account information not found.");
             }
-            Console.WriteLine("con day thi sao ha thang mat lon.......dddddddddddddddddddddddd..........");
             var accountId = account.Id;
             var isValid = await _bookingProducingRequestService.ValidateProducingRequestPodcasterAsync(BookingProducingRequestId, accountId);
             if (!isValid)
             {
                 return Forbid("You are not authorized to accept or reject this booking producing request.");
             }
-            Console.WriteLine("dden duojc day chuaw thang mat lon.................");
             var requestData = new JObject
             {
                 { "BookingProducingRequestId", BookingProducingRequestId },

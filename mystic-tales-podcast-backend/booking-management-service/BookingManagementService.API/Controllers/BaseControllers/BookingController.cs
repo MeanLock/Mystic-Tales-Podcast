@@ -123,6 +123,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
                 var accountId = account.Id;
 
+                var isValid = await _bookingService.ValidateBookingAccountOrPodcasterAsync(BookingId, accountId);
+                if(!isValid)
+                {
+                    throw new UnauthorizedAccessException("You are not authorized to create booking negotiate for this booking.");
+                }
                 // Parse the JSON BookingNegotiationInfo
                 var negotiationRequestInfo = JsonConvert.DeserializeObject<BookingNegotiationInfoDTO>(bookingNegotiationRequestDTO.BookingNegotiationInfo);
                 if (negotiationRequestInfo == null)
@@ -201,6 +206,15 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> RejectBooking([FromRoute] int BookingId)
         {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var isValid = await _bookingService.ValidateBookingPodcasterAsync(BookingId, accountId);
+            if (!isValid)
+            {
+                throw new UnauthorizedAccessException("You are not authorized to reject this booking.");
+            }
+
             var requestData = new JObject
             {
                 { "BookingId", BookingId }
@@ -224,6 +238,12 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
+
+            var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
+            if (!isValid)
+            {
+                throw new UnauthorizedAccessException("You are not authorized to cancel this booking.");
+            }
 
             var requestData = new JObject
             {

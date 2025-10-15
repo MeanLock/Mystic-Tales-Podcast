@@ -9,10 +9,10 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
     public class SubmitBookingTrackParameterDTO
     {
         public Guid BookingProducingRequestId { get; set; }
-        public List<BookingTrackSubmissionItem> Tracks { get; set; }
+        public List<TracksParameterDTO> Tracks { get; set; }
     }
 
-    public class BookingTrackSubmissionItem
+    public class TracksParameterDTO
     {
         public string AudioFileKey { get; set; }
         public double AudioFileSize { get; set; }

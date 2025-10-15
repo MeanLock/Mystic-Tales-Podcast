@@ -8,6 +8,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateTrackListenSlot;
 using BookingManagementService.BusinessLogic.Services.DbServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -178,6 +179,20 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: "booking-management-domain",
                 failedEmitMessage: "booking-track-preview-flow.failed"
+            );
+        }
+        [MessageHandler("terminate-booking-of-podcaster", "booking-management-domain")]
+        public async Task HandleTerminateBookingOfPodcasterAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<TerminateBookingOfPodcasterParameterDTO>();
+                    await _bookingService.TerminateBookingOfPodcasterAsync(parameter, command);
+                },
+                responseTopic: "booking-management-domain",
+                failedEmitMessage: "terminate-booking-of-podcaster.failed"
             );
         }
     }

@@ -3383,7 +3383,7 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  account-balance-deposit-flow:
+  account-balance-create-payment-link-flow:
     topic: "payment-processing-domain"
     handle-service: "SagaOrchestratorService"
     description: "Nạp tiền vào tài khoản"
@@ -3396,15 +3396,15 @@ flows:
         parameters:
           - AccountId
           - Amount
+          - Description
           - ReturnUrl
           - CancelUrl
-          - TransactionTypeId
         next-request-data:
           - AccountId
           - Amount
+          - Description
           - ReturnUrl
           - CancelUrl
-          - TransactionTypeId
         response-data:
           - PaymentLinkUrl
           - AccountBalanceTransactionId
@@ -3423,6 +3423,13 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+
+  account-balance-confirm-payment-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xác nhận thanh toán nạp tiền vào tài khoản"
+    save-file: ""
+    steps:
       - name: "confirm-payment"
         topic: "payment-processing-domain"
         handle-service: "TransactionService"
@@ -3637,12 +3644,9 @@ flows:
         handle-service: "TransactionService"
         description: "Cập nhật status thành success cho booking transaction"
         parameters:
-          - BookingId
-          - Amount
-          - AccountId
-          - PodcasterId
-          - TransactionTypeId
+          - BookingTransactionId
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - AccountId
@@ -3793,12 +3797,9 @@ flows:
         handle-service: "TransactionService"
         description: "Cập nhật status thành success cho booking transaction"
         parameters:
-          - BookingId
-          - Amount
-          - AccountId
-          - PodcasterId
-          - TransactionTypeId
+          - BookingTransactionId
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - AccountId
@@ -3913,12 +3914,9 @@ flows:
         handle-service: "TransactionService"
         description: "Cập nhật status thành success cho booking transaction"
         parameters:
-          - BookingId
-          - Amount
-          - AccountId
-          - PodcasterId
-          - TransactionTypeId
+          - BookingTransactionId
         next-request-data:
+          - BookingTransactionId
           - BookingId
           - Amount
           - AccountId
@@ -4140,11 +4138,7 @@ flows:
         handle-service: "TransactionService"
         description: "Cập nhật status thành success cho podcast subscription payment transaction"
         parameters:
-          - PodcastSubscriptionRegistrationId
-          - AccountId
-          - PodcasterId
-          - Amount
-          - TransactionTypeId
+          - PodcastSubscriptionTransactionId
         next-request-data:
           - PodcastSubscriptionRegistrationId
           - AccountId
@@ -4249,10 +4243,7 @@ flows:
         handle-service: "TransactionService"
         description: "Cập nhật status thành success cho member subscription payment transaction"
         parameters:
-          - MemberSubscriptionRegistrationId
-          - AccountId
-          - Amount
-          - TransactionTypeId
+          - MemberSubscriptionTransactionId
         next-request-data:
           - MemberSubscriptionRegistrationId
           - AccountId
@@ -4391,11 +4382,7 @@ flows:
         handle-service: "TransactionService"
         description: "Cập nhật status thành success cho podcast subscription transaction"
         parameters:
-          - PodcastSubscriptionRegistrationId
-          - AccountId
-          - PodcasterId
-          - Amount
-          - TransactionTypeId
+          - PodcastSubscriptionTransactionId
         next-request-data:
           - PodcastSubscriptionRegistrationId
           - AccountId
@@ -4504,10 +4491,6 @@ flows:
         description: "Cập nhật status thành success cho member subscription transaction"
         parameters:
           - MemberSubscriptionTransactionId
-          - MemberSubscriptionRegistrationId
-          - AccountId
-          - Amount
-          - TransactionTypeId
         next-request-data:
           - MemberSubscriptionTransactionId
           - MemberSubscriptionRegistrationId
