@@ -1128,8 +1128,8 @@ flows:
           - Description
           - MainImageFileKey
           - BackgroundImageFileKey
-          - CategoryId
-          - SubCategoryId
+          - PodcastCategoryId
+          - podcastSubCategoryId
           - HashtagIds
           - PodcasterId
         next-request-data:
@@ -1137,8 +1137,8 @@ flows:
           - Description
           - MainImageFileKey
           - BackgroundImageFileKey
-          - CategoryId
-          - SubCategoryId
+          - PodcastCategoryId
+          - podcastSubCategoryId
           - HashtagIds
           - PodcasterId
         response-data:
@@ -1147,11 +1147,10 @@ flows:
           - Description
           - MainImageFileKey
           - BackgroundImageFileKey
-          - CategoryId
-          - SubCategoryId
+          - PodcastCategoryId
+          - podcastSubCategoryId
           - HashtagIds
           - PodcasterId
-          - CreatedAt
         onSuccess:
           emit: "create-channel.success"
           topic: "content-management-domain"

@@ -15,6 +15,7 @@ namespace PodcastService.BusinessLogic.DTOs.Account
         public required int PodcasterId { get; set; }
         public int? PodcastCategoryId { get; set; }
         public int? podcastSubCategoryId { get; set; }
-        
+        public List<int>? HashtagIds { get; set; }
+
     }
 }

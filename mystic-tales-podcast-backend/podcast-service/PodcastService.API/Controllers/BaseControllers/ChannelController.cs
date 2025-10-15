@@ -1,10 +1,18 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using PodcastService.API.Filters.ExceptionFilters;
 using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.DTOs.Cache;
+using PodcastService.BusinessLogic.Helpers.FileHelpers;
 using PodcastService.BusinessLogic.Models.CrossService;
 using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
+using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
+using PodcastService.Common.AppConfigurations.FilePath.interfaces;
+using PodcastService.Infrastructure.Services.Kafka;
+using PodcastService.Infrastructure.Services.Redis;
 
 namespace PodcastService.API.Controllers.BaseControllers
 {
@@ -14,13 +22,25 @@ namespace PodcastService.API.Controllers.BaseControllers
     [Authorize(Policy = "OptionalAccess")]
     public class ChannelController : ControllerBase
     {
-        private readonly GenericQueryService _genericQueryService;
-        private readonly HttpServiceQueryClient _httpServiceQueryClient;
+        private readonly KafkaProducerService _kafkaProducerService;
+        private readonly IMessagingService _messagingService;
+        private readonly IFileValidationConfig _fileValidationConfig;
+        private readonly IFilePathConfig _filePathConfig;
+        private readonly FileIOHelper _fileIOHelper;
+        // private readonly AccountService _accountService;
+        private readonly RedisInstanceCacheService _redisInstanceCacheService;
+        private readonly RedisSharedCacheService _redisSharedCacheService;
 
-        public ChannelController(GenericQueryService genericQueryService, HttpServiceQueryClient httpServiceQueryClient)
+        public ChannelController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService)
         {
-            _genericQueryService = genericQueryService;
-            _httpServiceQueryClient = httpServiceQueryClient;
+            _kafkaProducerService = kafkaProducerService;
+            _messagingService = messagingService;
+            _fileValidationConfig = fileValidationConfig;
+            _filePathConfig = filePathConfig;
+            _fileIOHelper = fileIOHelper;
+            _redisInstanceCacheService = redisInstanceCacheService;
+            _redisSharedCacheService = redisSharedCacheService;
+            // _accountService = accountService;
         }
 
         #region Sample coding format
@@ -210,12 +230,66 @@ namespace PodcastService.API.Controllers.BaseControllers
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
         public async Task<IActionResult> CreateChannel(ChannelCreateRequestDTO channelCreateRequestDTO)
         {
-            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var newChannel = await _genericQueryService.CreateChannelAsync(account.Id, createChannelRequestDTO);
+            var channelCreateInfo = JsonConvert.DeserializeObject<ChannelCreateInfoDTO>(channelCreateRequestDTO.ChannelCreateInfo);
+
+            string mainImageFileKey = null;
+            if (channelCreateRequestDTO.MainImageFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidFile = _fileValidationConfig.IsValidFile("PodcastChannel.mainImageFileKey", channelCreateRequestDTO.MainImageFile.FileName, channelCreateRequestDTO.MainImageFile.Length, channelCreateRequestDTO.MainImageFile.ContentType);
+                if (!isValidFile)
+                {
+                    return BadRequest("Invalid upload file.");
+                }
+
+
+                string newMainImageFileName = $"{Guid.NewGuid()}_{channelCreateRequestDTO.MainImageFile.FileName}";
+                using (var stream = channelCreateRequestDTO.MainImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                        newMainImageFileName
+                                    );
+                }
+
+                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+
+            }
+
+            string backgroundImageFileKey = null;
+            if (channelCreateRequestDTO.BackgroundImageFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidFile = _fileValidationConfig.IsValidFile("PodcastChannel.backgroundImageFileKey", channelCreateRequestDTO.BackgroundImageFile.FileName, channelCreateRequestDTO.BackgroundImageFile.Length, channelCreateRequestDTO.BackgroundImageFile.ContentType);
+                if (!isValidFile)
+                {
+                    return BadRequest("Invalid upload file.");
+                }
+                string newBackgroundImageFileName = $"{Guid.NewGuid()}_{channelCreateRequestDTO.BackgroundImageFile.FileName}";
+                using (var stream = channelCreateRequestDTO.BackgroundImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                        newBackgroundImageFileName
+                                    );
+                }
+                backgroundImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newBackgroundImageFileName);
+            }
+            
+            JObject requestData = JObject.FromObject(channelCreateInfo);
+            requestData["MainImageFileKey"] = mainImageFileKey;
+            requestData["BackgroundImageFileKey"] = backgroundImageFileKey;
+            requestData["RoleId"] = 1;
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-registration-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {
-                Channel = newChannel
-            });
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
         }
 
 
