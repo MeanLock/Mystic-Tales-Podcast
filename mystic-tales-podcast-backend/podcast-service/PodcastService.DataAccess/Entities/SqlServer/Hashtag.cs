@@ -9,9 +9,9 @@ public partial class Hashtag
 
     public string Name { get; set; } = null!;
 
-    public virtual ICollection<PodcastChannel> PodcastChannels { get; set; } = new List<PodcastChannel>();
+    public virtual ICollection<PodcastChannelHashtag> PodcastChannelHashtags { get; set; } = new List<PodcastChannelHashtag>();
 
-    public virtual ICollection<PodcastEpisode> PodcastEpisodes { get; set; } = new List<PodcastEpisode>();
+    public virtual ICollection<PodcastEpisodeHashtag> PodcastEpisodeHashtags { get; set; } = new List<PodcastEpisodeHashtag>();
 
-    public virtual ICollection<PodcastShow> PodcastShows { get; set; } = new List<PodcastShow>();
+    public virtual ICollection<PodcastShowHashtag> PodcastShowHashtags { get; set; } = new List<PodcastShowHashtag>();
 }

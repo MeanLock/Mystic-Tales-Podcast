@@ -23,7 +23,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAcco
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
-using UserService.BusinessLogic.DTOs.ViewModels.Mail;
+using UserService.BusinessLogic.Models.Mail;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendResetPasswordLink;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.NewResetPassword;
 using Microsoft.EntityFrameworkCore;

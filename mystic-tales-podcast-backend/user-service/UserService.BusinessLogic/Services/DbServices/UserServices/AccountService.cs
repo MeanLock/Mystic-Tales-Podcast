@@ -8,7 +8,7 @@ using UserService.DataAccess.Repositories.interfaces;
 using UserService.BusinessLogic.DTOs.Auth;
 using UserService.BusinessLogic.DTOs.Account;
 using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
-using UserService.BusinessLogic.DTOs.ViewModels.Mail;
+using UserService.BusinessLogic.Models.Mail;
 using UserService.Infrastructure.Services.Google.Email;
 using UserService.Infrastructure.Configurations.Google.interfaces;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
@@ -258,18 +258,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         /////////////////////////////////////////////////////////////
 
-        public async Task SendUserServiceEmail(MailProperty mailProperty, string toEmail, object viewModel)
-        {
-            try
-            {
-                await _fluentEmailService.SendEmail(toEmail, viewModel, mailProperty.TemplateFilePath
-                , mailProperty.Subject);
-            }
-            catch (Exception ex)
-            {
-                throw new HttpRequestException("Send email failed, error: " + ex.Message);
-            }
-        }
+
 
         public async Task RegisterAccount(CreateAccountParameterDTO accountRegisterDTO, SagaCommandMessage command)
         {

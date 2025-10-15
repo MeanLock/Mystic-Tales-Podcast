@@ -21,13 +21,14 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePod
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUser;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyPodcaster;
-using UserService.BusinessLogic.DTOs.ViewModels.Mail;
+using UserService.BusinessLogic.Models.Mail;
 using UserService.BusinessLogic.Enums.Kafka;
 using UserService.BusinessLogic.Services.DbServices.UserServices;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
 using UserService.Infrastructure.Models.Kafka;
 using UserService.Infrastructure.Services.Kafka;
+using UserService.BusinessLogic.Services.DbServices.MiscServices;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -36,6 +37,7 @@ namespace UserService.BusinessLogic.MessageHandlers
         private readonly IMessagingService _messagingService;
         private readonly AccountService _accountService;
         private readonly AuthService _authService;
+        private readonly MailOperationService _mailOperationService;
         private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.UserManagementDomain;
         private readonly IMailPropertiesConfig _mailPropertiesConfig;
@@ -48,6 +50,7 @@ namespace UserService.BusinessLogic.MessageHandlers
             AuthService authService,
             KafkaProducerService kafkaProducerService,
             ILogger<UserManagementDomainMessageHandler> logger,
+            MailOperationService mailOperationService,
             IMailPropertiesConfig mailPropertiesConfig) : base(messagingService, kafkaProducerService, logger)
         {
             _messagingService = messagingService;
@@ -55,6 +58,7 @@ namespace UserService.BusinessLogic.MessageHandlers
             _accountService = accountService;
             _authService = authService;
             _mailPropertiesConfig = mailPropertiesConfig;
+            _mailOperationService = mailOperationService;
         }
 
         // create-account
@@ -108,7 +112,7 @@ namespace UserService.BusinessLogic.MessageHandlers
                     };
                     Console.WriteLine("Sending email to: " + mailInfo.MailObject["VerifyCode"]);
                     var mailProperty = _mailPropertiesConfig.GetMailPropertyByTypeName(mailInfo.MailTypeName);
-                    await _accountService.SendUserServiceEmail(mailProperty, mailInfo.ToEmail, mailModel);
+                    await _mailOperationService.SendUserServiceEmail(mailProperty, mailInfo.ToEmail, mailModel);
                     // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: SAGA_TOPIC,

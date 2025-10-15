@@ -8,12 +8,6 @@ using PodcastService.DataAccess.Data;
 using PodcastService.DataAccess.UOW;
 using PodcastService.DataAccess.Repositories.interfaces;
 using PodcastService.DataAccess.Entities;
-using Net.payOS;
-using Net.payOS.Types;
-using PodcastService.BusinessLogic.DTOs.Transaction;
-using System.Linq.Expressions;
-using PodcastService.BusinessLogic.DTOs.Auth;
-using PodcastService.BusinessLogic.DTOs.Feedback;
 using PodcastService.Infrastructure.Configurations.Payos.interfaces;
 using PodcastService.BusinessLogic.Helpers.AuthHelpers;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
@@ -42,9 +36,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.MiscServices
         private readonly IUnitOfWork _unitOfWork;
 
         // REPOSITORIES
-        IGenericRepository<Account> _accountGenericRepository;
-        IGenericRepository<AccountBalanceTransaction> _accountBalanceTransactionGenericRepository;
-        IGenericRepository<PlatformFeedback> _platformFeedbackGenericRepository;
+        // IGenericRepository<Account> _accountGenericRepository;
+        // IGenericRepository<AccountBalanceTransaction> _accountBalanceTransactionGenericRepository;
+        // IGenericRepository<PlatformFeedback> _platformFeedbackGenericRepository;
 
 
 
@@ -55,9 +49,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.MiscServices
             JwtHelper jwtHelper,
             IUnitOfWork unitOfWork,
 
-            IGenericRepository<Account> accountGenericRepository,
-            IGenericRepository<AccountBalanceTransaction> accountBalanceTransactionGenericRepository,
-            IGenericRepository<PlatformFeedback> platformFeedbackGenericRepository,
+            // IGenericRepository<Account> accountGenericRepository,
+            // IGenericRepository<AccountBalanceTransaction> accountBalanceTransactionGenericRepository,
+            // IGenericRepository<PlatformFeedback> platformFeedbackGenericRepository,
 
             FileIOHelper fileIOHelper,
             IFilePathConfig filePathConfig,
@@ -71,9 +65,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.MiscServices
             _jwtHelper = jwtHelper;
             _unitOfWork = unitOfWork;
 
-            _accountGenericRepository = accountGenericRepository;
-            _accountBalanceTransactionGenericRepository = accountBalanceTransactionGenericRepository;
-            _platformFeedbackGenericRepository = platformFeedbackGenericRepository;
+            // _accountGenericRepository = accountGenericRepository;
+            // _accountBalanceTransactionGenericRepository = accountBalanceTransactionGenericRepository;
+            // _platformFeedbackGenericRepository = platformFeedbackGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _filePathConfig = filePathConfig;
@@ -91,50 +85,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.MiscServices
 
         /////////////////////////////////////////////////////////////
 
-        public async Task CreatePlatformFeedback(PlatformFeedbackRequestDTO platformFeedback, Account account)
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    // Check if the account has already given feedback
-                    var existingFeedback = await _platformFeedbackGenericRepository.FindAll(
-                        predicate: feedback => feedback.AccountId == account.Id
-                    ).FirstOrDefaultAsync();
-                    if (existingFeedback != null)
-                    {
-                        // update
-                        existingFeedback.RatingScore = platformFeedback.Feedback.RatingScore;
-                        existingFeedback.Comment = platformFeedback.Feedback.Comment;
 
-                        await _platformFeedbackGenericRepository.UpdateAsync(existingFeedback.AccountId, existingFeedback);
-                    }
-                    else
-                    {
-                        PlatformFeedback platformFeedbackEntity = new PlatformFeedback
-                        {
-                            AccountId = account.Id,
-                            RatingScore = platformFeedback.Feedback.RatingScore,
-                            Comment = platformFeedback.Feedback.Comment
-                        };
-                        // Save feedback to the database
-                        await _platformFeedbackGenericRepository.CreateAsync(platformFeedbackEntity);
-                    }
-
-
-
-                    // Commit the transaction
-                    await transaction.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine("\n" + ex.StackTrace + "\n");
-                    throw new HttpRequestException("Tạo phản hồi không thành công, lỗi: " + ex.Message);
-                }
-            }
-        }
-    
     }
 }

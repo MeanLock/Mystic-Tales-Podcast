@@ -43,7 +43,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             // _accountService = accountService;
         }
 
-        #region Sample coding format
+        #region Sample coding format must be followed
         // [HttpGet("test-get-account-status")]
         // [Authorize(Policy = "Customer.NoViolationAccess")]
         // public async Task<IActionResult> TestGetAccountStatus()
@@ -226,7 +226,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         // [HttpGet]
 
         // /api/podcast-service/api/channels
-        [HttpPost("/channels")]
+        [HttpPost("")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
         public async Task<IActionResult> CreateChannel(ChannelCreateRequestDTO channelCreateRequestDTO)
         {
@@ -248,12 +248,12 @@ namespace PodcastService.API.Controllers.BaseControllers
                 {
                     await _fileIOHelper.UploadBinaryFileWithStreamAsync(
                                         stream,
-                                        _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                        _filePathConfig.PODCAST_CHANNEL_TEMP_FILE_PATH,
                                         newMainImageFileName
                                     );
                 }
 
-                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newMainImageFileName);
+                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_CHANNEL_TEMP_FILE_PATH, newMainImageFileName);
 
             }
 
@@ -271,19 +271,19 @@ namespace PodcastService.API.Controllers.BaseControllers
                 {
                     await _fileIOHelper.UploadBinaryFileWithStreamAsync(
                                         stream,
-                                        _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                        _filePathConfig.PODCAST_CHANNEL_TEMP_FILE_PATH,
                                         newBackgroundImageFileName
                                     );
                 }
-                backgroundImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_TEMP_FILE_PATH, newBackgroundImageFileName);
+                backgroundImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_CHANNEL_TEMP_FILE_PATH, newBackgroundImageFileName);
             }
             
             JObject requestData = JObject.FromObject(channelCreateInfo);
             requestData["MainImageFileKey"] = mainImageFileKey;
             requestData["BackgroundImageFileKey"] = backgroundImageFileKey;
-            requestData["RoleId"] = 1;
 
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-registration-flow");
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "channel-creation-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {

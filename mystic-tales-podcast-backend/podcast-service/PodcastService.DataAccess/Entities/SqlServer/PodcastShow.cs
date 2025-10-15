@@ -57,6 +57,8 @@ public partial class PodcastShow
 
     public virtual ICollection<PodcastEpisode> PodcastEpisodes { get; set; } = new List<PodcastEpisode>();
 
+    public virtual ICollection<PodcastShowHashtag> PodcastShowHashtags { get; set; } = new List<PodcastShowHashtag>();
+
     public virtual ICollection<PodcastShowReview> PodcastShowReviews { get; set; } = new List<PodcastShowReview>();
 
     public virtual ICollection<PodcastShowStatusTracking> PodcastShowStatusTrackings { get; set; } = new List<PodcastShowStatusTracking>();
@@ -64,6 +66,4 @@ public partial class PodcastShow
     public virtual PodcastShowsSubscriptionType PodcastShowsSubscriptionType { get; set; } = null!;
 
     public virtual PodcastSubCategory? PodcastSubCategory { get; set; }
-
-    public virtual ICollection<Hashtag> Hashtags { get; set; } = new List<Hashtag>();
 }

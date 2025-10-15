@@ -7,10 +7,6 @@ namespace PodcastService.DataAccess.Data;
 
 public partial class AppDbContext : DbContext
 {
-    public AppDbContext()
-    {
-    }
-
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
@@ -22,11 +18,15 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<PodcastChannel> PodcastChannels { get; set; }
 
+    public virtual DbSet<PodcastChannelHashtag> PodcastChannelHashtags { get; set; }
+
     public virtual DbSet<PodcastChannelStatus> PodcastChannelStatuses { get; set; }
 
     public virtual DbSet<PodcastChannelStatusTracking> PodcastChannelStatusTrackings { get; set; }
 
     public virtual DbSet<PodcastEpisode> PodcastEpisodes { get; set; }
+
+    public virtual DbSet<PodcastEpisodeHashtag> PodcastEpisodeHashtags { get; set; }
 
     public virtual DbSet<PodcastEpisodeIllegalContentTypeMarking> PodcastEpisodeIllegalContentTypeMarkings { get; set; }
 
@@ -50,6 +50,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<PodcastShow> PodcastShows { get; set; }
 
+    public virtual DbSet<PodcastShowHashtag> PodcastShowHashtags { get; set; }
+
     public virtual DbSet<PodcastShowReview> PodcastShowReviews { get; set; }
 
     public virtual DbSet<PodcastShowStatus> PodcastShowStatuses { get; set; }
@@ -59,10 +61,6 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<PodcastShowsSubscriptionType> PodcastShowsSubscriptionTypes { get; set; }
 
     public virtual DbSet<PodcastSubCategory> PodcastSubCategories { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost,1434;Database=MTP_PodcastDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -134,25 +132,30 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.PodcastSubCategory).WithMany(p => p.PodcastChannels)
                 .HasForeignKey(d => d.PodcastSubCategoryId)
                 .HasConstraintName("FK__PodcastCh__podca__6477ECF3");
+        });
 
-            entity.HasMany(d => d.Hashtags).WithMany(p => p.PodcastChannels)
-                .UsingEntity<Dictionary<string, object>>(
-                    "PodcastChannelHashtag",
-                    r => r.HasOne<Hashtag>().WithMany()
-                        .HasForeignKey("HashtagId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__PodcastCh__hasht__2DE6D218"),
-                    l => l.HasOne<PodcastChannel>().WithMany()
-                        .HasForeignKey("PodcastChannelId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__PodcastCh__podca__2CF2ADDF"),
-                    j =>
-                    {
-                        j.HasKey("PodcastChannelId", "HashtagId").HasName("PK__PodcastC__166218237826B4F5");
-                        j.ToTable("PodcastChannelHashtag");
-                        j.IndexerProperty<Guid>("PodcastChannelId").HasColumnName("podcastChannelId");
-                        j.IndexerProperty<int>("HashtagId").HasColumnName("hashtagId");
-                    });
+        modelBuilder.Entity<PodcastChannelHashtag>(entity =>
+        {
+            entity.HasKey(e => new { e.PodcastChannelId, e.HashtagId }).HasName("PK__PodcastC__166218237826B4F5");
+
+            entity.ToTable("PodcastChannelHashtag");
+
+            entity.Property(e => e.PodcastChannelId).HasColumnName("podcastChannelId");
+            entity.Property(e => e.HashtagId).HasColumnName("hashtagId");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+
+            entity.HasOne(d => d.Hashtag).WithMany(p => p.PodcastChannelHashtags)
+                .HasForeignKey(d => d.HashtagId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__PodcastCh__hasht__2DE6D218");
+
+            entity.HasOne(d => d.PodcastChannel).WithMany(p => p.PodcastChannelHashtags)
+                .HasForeignKey(d => d.PodcastChannelId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__PodcastCh__podca__2CF2ADDF");
         });
 
         modelBuilder.Entity<PodcastChannelStatus>(entity =>
@@ -230,6 +233,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.IsReleased).HasColumnName("isReleased");
             entity.Property(e => e.ListenCount).HasColumnName("listenCount");
             entity.Property(e => e.MainImageFileKey).HasColumnName("mainImageFileKey");
+            entity.Property(e => e.Name)
+                .HasMaxLength(250)
+                .HasColumnName("name");
             entity.Property(e => e.PodcastEpisodeSubscriptionTypeId)
                 .HasDefaultValue(1)
                 .HasColumnName("podcastEpisodeSubscriptionTypeId");
@@ -237,9 +243,6 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ReleaseDate).HasColumnName("releaseDate");
             entity.Property(e => e.SeasonNumber).HasColumnName("seasonNumber");
             entity.Property(e => e.TakenDownReason).HasColumnName("takenDownReason");
-            entity.Property(e => e.Title)
-                .HasMaxLength(250)
-                .HasColumnName("title");
             entity.Property(e => e.TotalSave).HasColumnName("totalSave");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
@@ -255,25 +258,30 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.PodcastShowId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__PodcastEp__podca__00200768");
+        });
 
-            entity.HasMany(d => d.Hashtags).WithMany(p => p.PodcastEpisodes)
-                .UsingEntity<Dictionary<string, object>>(
-                    "PodcastEpisodeHashtag",
-                    r => r.HasOne<Hashtag>().WithMany()
-                        .HasForeignKey("HashtagId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__PodcastEp__hasht__3587F3E0"),
-                    l => l.HasOne<PodcastEpisode>().WithMany()
-                        .HasForeignKey("PodcastEpisodeId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__PodcastEp__podca__3493CFA7"),
-                    j =>
-                    {
-                        j.HasKey("PodcastEpisodeId", "HashtagId").HasName("PK__PodcastE__5D89B8B2AA76DEF0");
-                        j.ToTable("PodcastEpisodeHashtag");
-                        j.IndexerProperty<Guid>("PodcastEpisodeId").HasColumnName("podcastEpisodeId");
-                        j.IndexerProperty<int>("HashtagId").HasColumnName("hashtagId");
-                    });
+        modelBuilder.Entity<PodcastEpisodeHashtag>(entity =>
+        {
+            entity.HasKey(e => new { e.PodcastEpisodeId, e.HashtagId }).HasName("PK__PodcastE__5D89B8B2AA76DEF0");
+
+            entity.ToTable("PodcastEpisodeHashtag");
+
+            entity.Property(e => e.PodcastEpisodeId).HasColumnName("podcastEpisodeId");
+            entity.Property(e => e.HashtagId).HasColumnName("hashtagId");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+
+            entity.HasOne(d => d.Hashtag).WithMany(p => p.PodcastEpisodeHashtags)
+                .HasForeignKey(d => d.HashtagId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__PodcastEp__hasht__3587F3E0");
+
+            entity.HasOne(d => d.PodcastEpisode).WithMany(p => p.PodcastEpisodeHashtags)
+                .HasForeignKey(d => d.PodcastEpisodeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__PodcastEp__podca__3493CFA7");
         });
 
         modelBuilder.Entity<PodcastEpisodeIllegalContentTypeMarking>(entity =>
@@ -549,25 +557,30 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.PodcastSubCategory).WithMany(p => p.PodcastShows)
                 .HasForeignKey(d => d.PodcastSubCategoryId)
                 .HasConstraintName("FK__PodcastSh__podca__70DDC3D8");
+        });
 
-            entity.HasMany(d => d.Hashtags).WithMany(p => p.PodcastShows)
-                .UsingEntity<Dictionary<string, object>>(
-                    "PodcastShowHashtag",
-                    r => r.HasOne<Hashtag>().WithMany()
-                        .HasForeignKey("HashtagId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__PodcastSh__hasht__31B762FC"),
-                    l => l.HasOne<PodcastShow>().WithMany()
-                        .HasForeignKey("PodcastShowId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__PodcastSh__podca__30C33EC3"),
-                    j =>
-                    {
-                        j.HasKey("PodcastShowId", "HashtagId").HasName("PK__PodcastS__67B6F557AE2EEB71");
-                        j.ToTable("PodcastShowHashtag");
-                        j.IndexerProperty<Guid>("PodcastShowId").HasColumnName("podcastShowId");
-                        j.IndexerProperty<int>("HashtagId").HasColumnName("hashtagId");
-                    });
+        modelBuilder.Entity<PodcastShowHashtag>(entity =>
+        {
+            entity.HasKey(e => new { e.PodcastShowId, e.HashtagId }).HasName("PK__PodcastS__67B6F557AE2EEB71");
+
+            entity.ToTable("PodcastShowHashtag");
+
+            entity.Property(e => e.PodcastShowId).HasColumnName("podcastShowId");
+            entity.Property(e => e.HashtagId).HasColumnName("hashtagId");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+
+            entity.HasOne(d => d.Hashtag).WithMany(p => p.PodcastShowHashtags)
+                .HasForeignKey(d => d.HashtagId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__PodcastSh__hasht__31B762FC");
+
+            entity.HasOne(d => d.PodcastShow).WithMany(p => p.PodcastShowHashtags)
+                .HasForeignKey(d => d.PodcastShowId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__PodcastSh__podca__30C33EC3");
         });
 
         modelBuilder.Entity<PodcastShowReview>(entity =>

@@ -117,7 +117,7 @@ CREATE TABLE PodcastShow (
 -- PodcastEpisode table
 CREATE TABLE PodcastEpisode (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    title NVARCHAR(250) NOT NULL,
+    name NVARCHAR(250) NOT NULL,
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     explicitContent BIT NOT NULL DEFAULT 0,
     releaseDate DATE NULL,
@@ -241,6 +241,7 @@ CREATE TABLE Hashtag (
 CREATE TABLE PodcastChannelHashtag (
     podcastChannelId UNIQUEIDENTIFIER NOT NULL,
     hashtagId INT NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     PRIMARY KEY (podcastChannelId, hashtagId),
     FOREIGN KEY (podcastChannelId) REFERENCES PodcastChannel(id),
     FOREIGN KEY (hashtagId) REFERENCES Hashtag(id)
@@ -250,6 +251,7 @@ CREATE TABLE PodcastChannelHashtag (
 CREATE TABLE PodcastShowHashtag (
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     hashtagId INT NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     PRIMARY KEY (podcastShowId, hashtagId),
     FOREIGN KEY (podcastShowId) REFERENCES PodcastShow(id),
     FOREIGN KEY (hashtagId) REFERENCES Hashtag(id)
@@ -259,6 +261,7 @@ CREATE TABLE PodcastShowHashtag (
 CREATE TABLE PodcastEpisodeHashtag (
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     hashtagId INT NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     PRIMARY KEY (podcastEpisodeId, hashtagId),
     FOREIGN KEY (podcastEpisodeId) REFERENCES PodcastEpisode(id),
     FOREIGN KEY (hashtagId) REFERENCES Hashtag(id)

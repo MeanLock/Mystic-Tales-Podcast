@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
+using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 
 namespace PodcastService.BusinessLogic.Registrations
 {
@@ -7,29 +8,8 @@ namespace PodcastService.BusinessLogic.Registrations
     {
         public static IServiceCollection AddDbServices(this IServiceCollection services)
         {
-            // // ConfigServices
-            // services.AddScoped<SystemConfigService>();
-
-            // // PodcastServices
-            // services.AddScoped<AuthService>();
-            // services.AddScoped<AccountService>();
-
-            // // PaymentServices
-            // services.AddScoped<AccountPaymentService>();
-
-            // // SurveyServices
-            // services.AddScoped<SurveyCoreService>();
-            // services.AddScoped<SurveySessionService>();
-            // services.AddScoped<SurveyResponseService>();
-            // services.AddScoped<SurveyTransactionService>();
-
-            // // FilterServices
-            // services.AddScoped<FilterTagService>();
-
-            // // ReportServices
-            // services.AddScoped<SurveyStatisticsService>();
-            // services.AddScoped<TransactionStatisticsService>();
-            // services.AddScoped<UserStatisticsService>();
+            // PodcastServices
+            services.AddScoped<PodcastChannelService>();
 
             // MiscServices
             services.AddScoped<PlatformFeedbackService>();

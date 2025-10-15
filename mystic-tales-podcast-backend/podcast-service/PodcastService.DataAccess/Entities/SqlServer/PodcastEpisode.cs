@@ -7,7 +7,7 @@ public partial class PodcastEpisode
 {
     public Guid Id { get; set; }
 
-    public string Title { get; set; } = null!;
+    public string Name { get; set; } = null!;
 
     public string Description { get; set; } = null!;
 
@@ -49,6 +49,8 @@ public partial class PodcastEpisode
 
     public int EpisodeOrder { get; set; }
 
+    public virtual ICollection<PodcastEpisodeHashtag> PodcastEpisodeHashtags { get; set; } = new List<PodcastEpisodeHashtag>();
+
     public virtual ICollection<PodcastEpisodeIllegalContentTypeMarking> PodcastEpisodeIllegalContentTypeMarkings { get; set; } = new List<PodcastEpisodeIllegalContentTypeMarking>();
 
     public virtual ICollection<PodcastEpisodeLicense> PodcastEpisodeLicenses { get; set; } = new List<PodcastEpisodeLicense>();
@@ -60,6 +62,4 @@ public partial class PodcastEpisode
     public virtual PodcastEpisodeSubscriptionType PodcastEpisodeSubscriptionType { get; set; } = null!;
 
     public virtual PodcastShow PodcastShow { get; set; } = null!;
-
-    public virtual ICollection<Hashtag> Hashtags { get; set; } = new List<Hashtag>();
 }

@@ -21,7 +21,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePod
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUser;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyPodcaster;
-using UserService.BusinessLogic.DTOs.ViewModels.Mail;
+using UserService.BusinessLogic.Models.Mail;
 using UserService.BusinessLogic.Enums.Kafka;
 using UserService.BusinessLogic.Services.DbServices.UserServices;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;

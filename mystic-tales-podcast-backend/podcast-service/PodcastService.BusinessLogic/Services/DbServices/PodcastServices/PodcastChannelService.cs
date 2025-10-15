@@ -1,0 +1,1454 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using PodcastService.Common.AppConfigurations.App.interfaces;
+using PodcastService.Common.AppConfigurations.FilePath.interfaces;
+using PodcastService.DataAccess.Data;
+using PodcastService.DataAccess.UOW;
+using PodcastService.DataAccess.Repositories.interfaces;
+using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
+using PodcastService.BusinessLogic.DTOs.ViewModels.Mail;
+using PodcastService.Infrastructure.Services.Google.Email;
+using PodcastService.Infrastructure.Configurations.Google.interfaces;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
+using PodcastService.BusinessLogic.Helpers.AuthHelpers;
+using PodcastService.BusinessLogic.Helpers.FileHelpers;
+using PodcastService.BusinessLogic.Helpers.DateHelpers;
+using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using PodcastService.BusinessLogic.Models.CrossService;
+using Newtonsoft.Json.Linq;
+using PodcastService.Infrastructure.Services.Kafka;
+using PodcastService.BusinessLogic.Enums.Kafka;
+using PodcastService.Infrastructure.Models.Kafka;
+using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
+using Confluent.Kafka;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendPodcastServiceEmail;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
+using PodcastService.Infrastructure.Services.Redis;
+using PodcastService.BusinessLogic.DTOs.Cache;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
+using PodcastService.DataAccess.Entities.SqlServer;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcasterProfile;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUser;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeactivateAccount;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateAccount;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountViolationPoint;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyPodcaster;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcastBuddyReview;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcastBuddyReview;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterFollowed;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcasterFollowed;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
+using PodcastService.BusinessLogic.Enums.Podcast;
+
+namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
+{
+    public class PodcastChannelService
+    {
+        // LOGGER
+        private readonly ILogger<PodcastChannelService> _logger;
+
+        // CONFIG
+        public readonly IAppConfig _appConfig;
+        private readonly IFilePathConfig _filePathConfig;
+        private readonly IAccountConfig _accountConfig;
+        private readonly IGoogleMailConfig _googleMailConfig;
+
+        // DB CONTEXT
+        private readonly AppDbContext _appDbContext;
+
+        // HELPERS
+        private readonly BcryptHelper _bcryptHelper;
+        private readonly JwtHelper _jwtHelper;
+        private readonly FileIOHelper _fileIOHelper;
+        private readonly DateHelper _dateHelper;
+
+        // UNIT OF WORK
+        private readonly IUnitOfWork _unitOfWork;
+
+        // REPOSITORIES
+        private readonly IGenericRepository<PodcastChannel> _podcastChannelGenericRepository;
+        private readonly IGenericRepository<PodcastChannelStatusTracking> _podcastChannelStatusTrackingGenericRepository;
+        private readonly IGenericRepository<PodcastChannelHashtag> _podcastChannelHashtagGenericRepository;
+
+
+        private readonly HttpServiceQueryClient _httpServiceQueryClient;
+
+
+
+        // GOOGLE SERVICE
+        private readonly FluentEmailService _fluentEmailService;
+
+        // KAFKA SERVICE
+        private readonly IMessagingService _messagingService;
+        private readonly KafkaProducerService _kafkaProducerService;
+
+        // REDIS SERVICE
+        private readonly RedisSharedCacheService _redisSharedCacheService;
+
+        public PodcastChannelService(
+            ILogger<PodcastChannelService> logger,
+            AppDbContext appDbContext,
+            BcryptHelper bcryptHelper,
+            FluentEmailService fluentEmailService,
+            JwtHelper jwtHelper,
+            IUnitOfWork unitOfWork,
+
+            IServiceProvider serviceProvider,
+            IGenericRepository<PodcastChannel> podcastChannelGenericRepository,
+            IGenericRepository<PodcastChannelStatusTracking> podcastChannelStatusTrackingGenericRepository,
+            IGenericRepository<PodcastChannelHashtag> podcastChannelHashtagGenericRepository,
+
+            FileIOHelper fileIOHelper,
+            DateHelper dateHelper,
+
+            IFilePathConfig filePathConfig,
+            IGoogleMailConfig googleMailConfig,
+            IAppConfig appConfig,
+            IAccountConfig accountConfig,
+
+            HttpServiceQueryClient httpServiceQueryClient,
+            IMessagingService messagingService,
+            KafkaProducerService kafkaProducerService,
+
+            RedisSharedCacheService redisSharedCacheService
+            )
+        {
+            _logger = logger;
+
+            _appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
+
+            _podcastChannelGenericRepository = podcastChannelGenericRepository;
+            _podcastChannelStatusTrackingGenericRepository = podcastChannelStatusTrackingGenericRepository;
+            _podcastChannelHashtagGenericRepository = podcastChannelHashtagGenericRepository;
+
+            _fileIOHelper = fileIOHelper;
+            _jwtHelper = jwtHelper;
+            _bcryptHelper = bcryptHelper;
+            _dateHelper = dateHelper;
+
+            _fluentEmailService = fluentEmailService;
+
+            _filePathConfig = filePathConfig;
+            _accountConfig = accountConfig;
+            _googleMailConfig = googleMailConfig;
+            _appConfig = appConfig;
+
+            _httpServiceQueryClient = httpServiceQueryClient;
+            _messagingService = messagingService;
+            _kafkaProducerService = kafkaProducerService;
+
+            _redisSharedCacheService = redisSharedCacheService;
+        }
+
+
+
+        public static string GenerateRandomVerifyCode(int length)
+        {
+            var random = new Random();
+            var digits = new char[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                digits[i] = (char)('0' + random.Next(0, 10));
+            }
+
+            return new string(digits);
+        }
+
+        public async Task<JObject> GetActiveSystemConfigProfile()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "activeSystemConfigProfile",
+                            QueryType = "findall",
+                            EntityType = "SystemConfigProfile",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        IsActive = true
+                                    },
+                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+
+                                }),
+                            Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+
+            return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
+        }
+
+        public async Task<Guid> SendChangeAccountStatusMessage(int id)
+        {
+            var requestData = JObject.FromObject(new
+            {
+                Id = id
+            });
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "account-status-change-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return startSagaTriggerMessage.SagaInstanceId;
+        }
+
+        public int CalculateViolationLevel(int violationPoint, JArray accountViolationLevelConfigs)
+        {
+            int violationLevel = 0;
+            accountViolationLevelConfigs = new JArray(accountViolationLevelConfigs.OrderBy(c => c.Value<int>("ViolationPointThreshold")));
+            int maxLevelPointThreshold = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationPointThreshold"));
+            if (violationPoint > maxLevelPointThreshold)
+            {
+                violationLevel = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationLevel"));
+                return violationLevel;
+            }
+            foreach (var config in accountViolationLevelConfigs)
+            {
+                int level = config.Value<int>("ViolationLevel");
+                int pointThreshold = config.Value<int>("ViolationPointThreshold");
+                // Console.WriteLine($"Checking level {level} with threshold {pointThreshold} against violation point {violationPoint}");
+                if (violationPoint <= pointThreshold)
+                {
+                    violationLevel = level;
+                    break;
+                }
+            }
+
+            return violationLevel;
+        }
+
+        /////////////////////////////////////////////////////////////
+
+        public async Task SendPodcastServiceEmail(MailProperty mailProperty, string toEmail, object viewModel)
+        {
+            try
+            {
+                await _fluentEmailService.SendEmail(toEmail, viewModel, mailProperty.TemplateFilePath
+                , mailProperty.Subject);
+            }
+            catch (Exception ex)
+            {
+                throw new HttpRequestException("Send email failed, error: " + ex.Message);
+            }
+        }
+
+        #region Sample coding format must be followed
+        // public async Task RegisterAccount(CreateAccountParameterDTO accountRegisterDTO, SagaCommandMessage command)
+        // {
+        //     var registerInfo = accountRegisterDTO;
+        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //     {
+        //         try
+        //         {
+        //             var existAccount = await _unitOfWork.AccountRepository.FindByEmailAsync(registerInfo.Email);
+
+        //             var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
+
+        //             if (existAccount != null)
+        //             {
+        //                 if (existAccount.IsVerified == true)
+        //                 {
+        //                     throw new Exception("Account with email " + registerInfo.Email + " already exists and is verified.");
+        //                 }
+        //                 else
+        //                 {
+        //                     string verifyCode = GenerateRandomVerifyCode(_accountConfig.VerifyCodeLength);
+
+        //                     existAccount.Email = registerInfo.Email;
+        //                     existAccount.Password = _bcryptHelper.HashPassword(registerInfo.Password);
+        //                     existAccount.FullName = registerInfo.FullName;
+        //                     existAccount.RoleId = registerInfo.RoleId;
+        //                     existAccount.Dob = DateOnly.FromDateTime(registerInfo.Dob);
+        //                     existAccount.Gender = registerInfo.Gender;
+        //                     existAccount.Address = registerInfo.Address;
+        //                     existAccount.Phone = registerInfo.Phone;
+        //                     existAccount.IsVerified = registerInfo.RoleId == 1 ? false : true;
+        //                     existAccount.VerifyCode = registerInfo.RoleId == 1 ? verifyCode : null;
+        //                     existAccount.PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold") : null;
+        //                     existAccount.MainImageFileKey = null;
+        //                     // await _fluentEmailService.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
+        //                     // {
+        //                     //     Email = registerInfo.Email,
+        //                     //     FullName = registerInfo.FullName,
+        //                     //     VerifyCode = verifyCode
+        //                     // }, _googleMailConfig.AccountVerification_TemplateViewPath
+        //                     // , _googleMailConfig.AccountVerification_MailSubject);
+
+        //                     if (registerInfo.RoleId == 1)
+        //                     {
+        //                         var mailSendingRequestData = JObject.FromObject(new
+        //                         {
+        //                             SendPodcastServiceEmailMailInfo = new
+        //                             {
+        //                                 MailTypeName = "CustomerRegistrationVerification",
+        //                                 ToEmail = registerInfo.Email,
+        //                                 MailObject = new CustomerRegistrationVerificationMailViewModel
+        //                                 {
+        //                                     Email = registerInfo.Email,
+        //                                     FullName = registerInfo.FullName,
+        //                                     VerifyCode = verifyCode
+        //                                 }
+        //                             }
+        //                         });
+        //                         var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+        //                             topic: KafkaTopicEnum.UserManagementDomain,
+        //                             requestData: mailSendingRequestData,
+        //                             sagaInstanceId: null,
+        //                             messageName: "user-service-mail-sending-flow");
+        //                         await _messagingService.SendSagaMessageAsync(mailSendingFlow);
+        //                     }
+
+
+        //                     await _accountGenericRepository.UpdateAsync(existAccount.Id, existAccount);
+
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 string verifyCode = GenerateRandomVerifyCode(_accountConfig.VerifyCodeLength);
+
+        //                 existAccount = new Account
+        //                 {
+        //                     Email = registerInfo.Email,
+        //                     Password = _bcryptHelper.HashPassword(registerInfo.Password),
+        //                     FullName = registerInfo.FullName,
+        //                     RoleId = registerInfo.RoleId,
+        //                     Dob = DateOnly.FromDateTime(registerInfo.Dob),
+        //                     Gender = registerInfo.Gender,
+        //                     Address = registerInfo.Address,
+        //                     Phone = registerInfo.Phone,
+        //                     IsVerified = registerInfo.RoleId == 1 ? false : true,
+        //                     VerifyCode = registerInfo.RoleId == 1 ? verifyCode : null,
+        //                     PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold") : null,
+        //                     MainImageFileKey = null,
+        //                 };
+
+        //                 // await _fluentEmailService.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
+        //                 // {
+        //                 //     Email = registerInfo.Email,
+        //                 //     FullName = registerInfo.FullName,
+        //                 //     VerifyCode = verifyCode
+        //                 // }, _googleMailConfig.AccountVerification_TemplateViewPath
+        //                 // , _googleMailConfig.AccountVerification_MailSubject);
+
+        //                 if (registerInfo.RoleId == 1)
+        //                 {
+        //                     // var mailSendingRequestData = JObject.FromObject(new
+        //                     // {
+        //                     //     MailTypeName = "CustomerRegistrationVerification",
+        //                     //     ToEmail = registerInfo.Email,
+        //                     //     MailObject = new CustomerRegistrationVerificationMailViewModel
+        //                     //     {
+        //                     //         Email = registerInfo.Email,
+        //                     //         FullName = registerInfo.FullName,
+        //                     //         VerifyCode = verifyCode
+        //                     //     }
+        //                     // });
+        //                     var mailSendingRequestData = JObject.FromObject(new
+        //                     {
+        //                         SendPodcastServiceEmailMailInfo = new
+        //                         {
+        //                             MailTypeName = "CustomerRegistrationVerification",
+        //                             ToEmail = registerInfo.Email,
+        //                             MailObject = new CustomerRegistrationVerificationMailViewModel
+        //                             {
+        //                                 Email = registerInfo.Email,
+        //                                 FullName = registerInfo.FullName,
+        //                                 VerifyCode = verifyCode
+        //                             }
+        //                         }
+        //                     });
+        //                     var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+        //                             topic: KafkaTopicEnum.UserManagementDomain,
+        //                             requestData: mailSendingRequestData,
+        //                             sagaInstanceId: null,
+        //                             messageName: "user-service-mail-sending-flow");
+        //                     await _messagingService.SendSagaMessageAsync(mailSendingFlow);
+        //                 }
+
+        //                 await _accountGenericRepository.CreateAsync(existAccount);
+        //             }
+
+
+
+        //             var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + existAccount.Id;
+        //             if (registerInfo.MainImageFileKey != null && registerInfo.MainImageFileKey != "")
+        //             {
+        //                 var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(registerInfo.MainImageFileKey)}");
+        //                 await _fileIOHelper.CopyFileToFileAsync(registerInfo.MainImageFileKey, MainImageFileKey);
+        //                 await _fileIOHelper.DeleteFileAsync(registerInfo.MainImageFileKey);
+        //                 existAccount.MainImageFileKey = MainImageFileKey;
+        //                 await _accountGenericRepository.UpdateAsync(existAccount.Id, existAccount);
+        //             }
+
+        //             await transaction.CommitAsync();
+
+        //             // var messageNextRequestData = JObject.FromObject(new
+        //             // {
+        //             //     Email = existAccount.Email,
+        //             //     FullName = existAccount.FullName,
+        //             //     Dob = existAccount.Dob?.ToString("yyyy-MM-dd"),
+        //             //     Gender = existAccount.Gender,
+        //             //     Address = existAccount.Address,
+        //             //     Phone = existAccount.Phone,
+        //             //     MainImageFileKey = existAccount.MainImageFileKey,
+        //             //     RoleId = existAccount.RoleId,
+        //             //     Password = existAccount.Password,
+        //             // });
+        //             var messageNextRequestData = command.RequestData;
+        //             messageNextRequestData["Email"] = existAccount.Email;
+        //             messageNextRequestData["FullName"] = existAccount.FullName;
+        //             messageNextRequestData["Dob"] = existAccount.Dob?.ToString("yyyy-MM-dd");
+        //             messageNextRequestData["Gender"] = existAccount.Gender;
+        //             messageNextRequestData["Address"] = existAccount.Address;
+        //             messageNextRequestData["Phone"] = existAccount.Phone;
+        //             messageNextRequestData["MainImageFileKey"] = existAccount.MainImageFileKey;
+        //             messageNextRequestData["RoleId"] = existAccount.RoleId;
+        //             messageNextRequestData["Password"] = existAccount.Password;
+
+        //             var messageResponseData = JObject.FromObject(new
+        //             {
+        //                 AccountId = existAccount.Id,
+        //                 // Message = "Register account successfully"
+        //                 VerifyCode = existAccount.VerifyCode,
+        //                 Email = existAccount.Email
+        //             });
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: messageNextRequestData,
+        //                 responseData: messageResponseData,
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "create-account.success"
+        //                 );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+        //             await SendChangeAccountStatusMessage(existAccount.Id);
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             await transaction.RollbackAsync();
+
+        //             // xoá file tạm
+        //             if (registerInfo.MainImageFileKey != null && registerInfo.MainImageFileKey != "")
+        //             {
+        //                 await _fileIOHelper.DeleteFileAsync(registerInfo.MainImageFileKey);
+        //             }
+
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: command.RequestData,
+        //                 responseData: JObject.FromObject(new
+        //                 {
+        //                     ErrorMessage = $"Account registration failed, error: {ex.Message}"
+        //                 }),
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "create-account.failed"
+        //                 );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //             // throw new HttpRequestException("Đăng kí tài khoản thất bại, lỗi: " + ex.Message);
+        //         }
+        //     }
+
+        // }
+
+        // public async Task<List<AccountListItemResponseDTO>> GetCustomerAccounts()
+        // {
+        //     try
+        //     {
+        //         var customers = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1, null, a => a.Include(ac => ac.Role));
+
+        //         var result = customers.Select(item =>
+        //         {
+        //             return new AccountListItemResponseDTO
+        //             {
+        //                 Id = item.Id,
+        //                 Email = item.Email,
+        //                 Role = new RoleDTO
+        //                 {
+        //                     Id = item.Role.Id,
+        //                     Name = item.Role.Name
+        //                 },
+        //                 FullName = item.FullName,
+        //                 Dob = item.Dob?.ToString("yyyy-MM-dd"),
+        //                 Gender = item.Gender,
+        //                 Address = item.Address,
+        //                 Phone = item.Phone,
+        //                 Balance = item.Balance,
+        //                 IsVerified = item.IsVerified,
+        //                 PodcastListenSlot = item.PodcastListenSlot,
+        //                 ViolationPoint = item.ViolationPoint,
+        //                 ViolationLevel = item.ViolationLevel,
+        //                 LastPodcastListenSlotChanged = item.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 LastViolationPointChanged = item.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 LastViolationLevelChanged = item.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 MainImageFileKey = item.MainImageFileKey,
+        //                 DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+
+        //             };
+        //         });
+
+        //         return result.ToList();
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         // throw new HttpRequestException("Lấy danh sách tài khoản khách hàng thất bại, lỗi: " + ex.Message);
+        //         throw new Exception("Get customer account list failed, error: " + ex.Message);
+        //     }
+
+        // }
+
+        // public async Task<List<AccountListItemResponseDTO>> GetStaffAccounts(bool? IsDeactivated = null)
+        // {
+        //     try
+        //     {
+        //         List<int> roles = new List<int> { 2 }; // 2: Head, 3: Assignee
+        //         var staffs = await _unitOfWork.AccountRepository.FindByRoleIdsAsync(roles,
+        //             predicate: IsDeactivated.HasValue ? (a => (IsDeactivated == true ? a.DeactivatedAt != null : a.DeactivatedAt == null)) : null
+        //         , a => a.Include(ac => ac.Role));
+
+        //         var result = staffs.Select(item =>
+        //         {
+        //             return new AccountListItemResponseDTO
+        //             {
+        //                 Id = item.Id,
+        //                 Email = item.Email,
+        //                 Role = new RoleDTO
+        //                 {
+        //                     Id = item.Role.Id,
+        //                     Name = item.Role.Name
+        //                 },
+        //                 FullName = item.FullName,
+        //                 Dob = item.Dob?.ToString("yyyy-MM-dd"),
+        //                 Gender = item.Gender,
+        //                 Address = item.Address,
+        //                 Phone = item.Phone,
+        //                 Balance = item.Balance,
+        //                 IsVerified = item.IsVerified,
+        //                 PodcastListenSlot = item.PodcastListenSlot,
+        //                 ViolationPoint = item.ViolationPoint,
+        //                 ViolationLevel = item.ViolationLevel,
+        //                 LastPodcastListenSlotChanged = item.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 LastViolationPointChanged = item.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 LastViolationLevelChanged = item.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 MainImageFileKey = item.MainImageFileKey,
+        //                 DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             };
+        //         });
+
+        //         return result.ToList();
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         throw new HttpRequestException("Get staff account list failed, error: " + ex.Message);
+        //     }
+
+        // }
+
+        // public async Task<List<PodcasterListItemResponseDTO>> GetPodcasterAccounts()
+        // {
+        //     try
+        //     {
+
+        //         var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+        //             predicate: a => a.PodcasterProfile != null,
+        //                 a => a.Include(ac => ac.Role)
+        //                         .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+        //                         .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
+        //                         .ThenInclude(r => r.Account)
+        //             );
+
+
+        //         var result = podcasters.Select(item =>
+        //         {
+        //             Console.WriteLine("Số podcaster tìm thấy: " + (item.PodcastBuddyReviewPodcastBuddies.Count > 0 ? item.PodcastBuddyReviewPodcastBuddies.Count : 0));
+
+        //             return new PodcasterListItemResponseDTO
+        //             {
+        //                 Id = item.Id,
+        //                 Email = item.Email,
+        //                 Role = new RoleDTO
+        //                 {
+        //                     Id = item.Role.Id,
+        //                     Name = item.Role.Name
+        //                 },
+        //                 FullName = item.FullName,
+        //                 Dob = item.Dob?.ToString("yyyy-MM-dd"),
+        //                 Gender = item.Gender,
+        //                 PodcastListenSlot = item.PodcastListenSlot,
+        //                 ViolationPoint = item.ViolationPoint,
+        //                 ViolationLevel = item.ViolationLevel,
+        //                 LastPodcastListenSlotChanged = item.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 LastViolationPointChanged = item.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 LastViolationLevelChanged = item.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 Address = item.Address,
+        //                 Phone = item.Phone,
+        //                 Balance = item.Balance,
+        //                 IsVerified = item.IsVerified,
+        //                 MainImageFileKey = item.MainImageFileKey,
+        //                 DeactivatedAt = item.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 CreatedAt = item.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 UpdatedAt = item.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //                 PodcasterProfile = new PodcasterProfileDTO
+        //                 {
+        //                     AccountId = item.PodcasterProfile.AccountId,
+        //                     Name = item.PodcasterProfile.Name,
+        //                     Description = item.PodcasterProfile.Description,
+        //                     AverageRating = item.PodcasterProfile.AverageRating,
+        //                     RatingCount = item.PodcasterProfile.RatingCount,
+        //                     TotalFollow = item.PodcasterProfile.TotalFollow,
+        //                     CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
+        //                     BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
+        //                     OwnedBookingStorageSize = item.PodcasterProfile.OwnedBookingStorageSize,
+        //                     UsedBookingStorageSize = item.PodcasterProfile.UsedBookingStorageSize,
+        //                     IsVerified = item.PodcasterProfile.IsVerified,
+        //                     CreatedAt = item.PodcasterProfile.CreatedAt,
+        //                     UpdatedAt = item.PodcasterProfile.UpdatedAt,
+        //                 },
+        //                 ReviewList = item.PodcastBuddyReviewPodcastBuddies?
+        //                 .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+        //                 {
+        //                     Id = r.Id,
+        //                     Account = new AccountSnippetDTO
+        //                     {
+        //                         Id = r.Account.Id,
+        //                         FullName = r.Account.FullName,
+        //                         Email = r.Account.Email,
+        //                         MainImageFileKey = r.Account.MainImageFileKey
+        //                     },
+        //                     Rating = r.Rating,
+        //                     Content = r.Content,
+        //                     DeletedAt = r.DeletedAt,
+        //                     PodcastBuddyId = r.PodcastBuddyId,
+        //                     Title = r.Title,
+        //                     UpdatedAt = r.UpdatedAt
+        //                 }).ToList()
+        //             };
+        //         });
+        //         return result.ToList();
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         throw new HttpRequestException("Get podcaster account list failed, error: " + ex.Message);
+        //     }
+        // }
+
+        // public async Task<List<PodcastBuddyListItemResponseDTO>> GetPodcastBuddyAccounts(int? requestRoleId)
+        // {
+        //     try
+        //     {
+
+        //         var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+        //             predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.IsVerified == true && a.IsVerified == true,
+        //                 a => a.Include(ac => ac.Role)
+        //                         .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+        //                         .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
+        //                         .ThenInclude(r => r.Account)
+        //             );
+
+        //         // nếu requestRoleId là 1 thì loại bỏ các account có DeactivatedAt khác null và violation level != 0
+        //         if (requestRoleId == null || requestRoleId == 1)
+        //         {
+        //             podcasters = podcasters.Where(p => p.DeactivatedAt == null && (p.ViolationLevel == 0 || p.ViolationLevel == null)).ToList();
+        //         }
+
+
+
+        //         var result = podcasters.Select(item =>
+        //         {
+        //             Console.WriteLine("Số podcaster tìm thấy: " + (item.PodcastBuddyReviewPodcastBuddies.Count > 0 ? item.PodcastBuddyReviewPodcastBuddies.Count : 0));
+
+        //             return new PodcastBuddyListItemResponseDTO
+        //             {
+        //                 PodcastBuddyProfile = new PodcastBuddyProfileDTO
+        //                 {
+        //                     AccountId = item.PodcasterProfile.AccountId,
+        //                     Name = item.PodcasterProfile.Name,
+        //                     Description = item.PodcasterProfile.Description,
+        //                     AverageRating = item.PodcasterProfile.AverageRating,
+        //                     RatingCount = item.PodcasterProfile.RatingCount,
+        //                     TotalFollow = item.PodcasterProfile.TotalFollow,
+        //                     CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
+        //                     BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
+        //                     IsVerified = item.PodcasterProfile.IsVerified,
+        //                 },
+        //                 ReviewList = item.PodcastBuddyReviewPodcastBuddies?
+        //                 .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+        //                 {
+        //                     Id = r.Id,
+        //                     Account = new AccountSnippetDTO
+        //                     {
+        //                         Id = r.Account.Id,
+        //                         FullName = r.Account.FullName,
+        //                         Email = r.Account.Email,
+        //                         MainImageFileKey = r.Account.MainImageFileKey
+        //                     },
+        //                     Rating = r.Rating,
+        //                     Content = r.Content,
+        //                     DeletedAt = r.DeletedAt,
+        //                     PodcastBuddyId = r.PodcastBuddyId,
+        //                     Title = r.Title,
+        //                     UpdatedAt = r.UpdatedAt
+        //                 }).ToList()
+        //             };
+        //         });
+        //         return result.ToList();
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         throw new HttpRequestException("Get podcast buddy account list failed, error: " + ex.Message);
+        //     }
+        // }
+
+        // public async Task<PodcasterListItemResponseDTO> GetPodcasterProfileByAccountId(int accountId)
+        // {
+        //     try
+        //     {
+        //         var podcaster = (await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+        //             predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.AccountId == accountId,
+        //                 a => a.Include(ac => ac.Role)
+        //                         .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+        //                         .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
+        //                         .ThenInclude(r => r.Account)
+        //             )).FirstOrDefault();
+
+        //         // đếm số review
+        //         if (podcaster == null)
+        //         {
+        //             throw new Exception("Podcaster account with id " + accountId + " not found");
+        //         }
+
+        //         Console.WriteLine("Số podcaster tìm thấy: " + (podcaster.PodcastBuddyReviewPodcastBuddies.Count > 0 ? podcaster.PodcastBuddyReviewPodcastBuddies.Count : 0));
+
+        //         return new PodcasterListItemResponseDTO
+        //         {
+        //             Id = podcaster.Id,
+        //             Email = podcaster.Email,
+        //             Role = new RoleDTO
+        //             {
+        //                 Id = podcaster.Role.Id,
+        //                 Name = podcaster.Role.Name
+        //             },
+        //             FullName = podcaster.FullName,
+        //             Dob = podcaster.Dob?.ToString("yyyy-MM-dd"),
+        //             Gender = podcaster.Gender,
+        //             PodcastListenSlot = podcaster.PodcastListenSlot,
+        //             ViolationPoint = podcaster.ViolationPoint,
+        //             ViolationLevel = podcaster.ViolationLevel,
+        //             LastPodcastListenSlotChanged = podcaster.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             LastViolationPointChanged = podcaster.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             LastViolationLevelChanged = podcaster.LastViolationLevelChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             Address = podcaster.Address,
+        //             Phone = podcaster.Phone,
+        //             Balance = podcaster.Balance,
+        //             IsVerified = podcaster.IsVerified,
+        //             MainImageFileKey = podcaster.MainImageFileKey,
+        //             DeactivatedAt = podcaster.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             CreatedAt = podcaster.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             UpdatedAt = podcaster.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             PodcasterProfile = new PodcasterProfileDTO
+        //             {
+        //                 AccountId = podcaster.PodcasterProfile.AccountId,
+        //                 Name = podcaster.PodcasterProfile.Name,
+        //                 Description = podcaster.PodcasterProfile.Description,
+        //                 AverageRating = podcaster.PodcasterProfile.AverageRating,
+        //                 RatingCount = podcaster.PodcasterProfile.RatingCount,
+        //                 TotalFollow = podcaster.PodcasterProfile.TotalFollow,
+        //                 CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
+        //                 BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
+        //                 OwnedBookingStorageSize = podcaster.PodcasterProfile.OwnedBookingStorageSize,
+        //                 UsedBookingStorageSize = podcaster.PodcasterProfile.UsedBookingStorageSize,
+        //                 IsVerified = podcaster.PodcasterProfile.IsVerified,
+        //                 CreatedAt = podcaster.PodcasterProfile.CreatedAt,
+        //                 UpdatedAt = podcaster.PodcasterProfile.UpdatedAt,
+        //             },
+        //             ReviewList = podcaster.PodcastBuddyReviewPodcastBuddies?
+        //             .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+        //             {
+        //                 Id = r.Id,
+        //                 Account = new AccountSnippetDTO
+        //                 {
+        //                     Id = r.Account.Id,
+        //                     FullName = r.Account.FullName,
+        //                     Email = r.Account.Email,
+        //                     MainImageFileKey = r.Account.MainImageFileKey
+        //                 },
+        //                 Rating = r.Rating,
+        //                 Content = r.Content,
+        //                 DeletedAt = r.DeletedAt,
+        //                 PodcastBuddyId = r.PodcastBuddyId,
+        //                 Title = r.Title,
+        //                 UpdatedAt = r.UpdatedAt
+        //             }).ToList()
+        //         };
+
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         throw new HttpRequestException("Get podcaster account list failed, error: " + ex.Message);
+        //     }
+        // }
+
+        // public async Task<PodcastBuddyListItemResponseDTO> GetPodcastBuddyProfileByAccountId(int accountId, int requestRoleId)
+        // {
+        //     try
+        //     {
+        //         var podcaster = (await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+        //             predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.AccountId == accountId && a.PodcasterProfile.IsVerified == true && a.IsVerified == true,
+        //                 a => a.Include(ac => ac.Role)
+        //                         .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+        //                         .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
+        //                         .ThenInclude(r => r.Account)
+        //             )).FirstOrDefault();
+
+        //         // đếm số review
+        //         if (podcaster == null)
+        //         {
+        //             throw new Exception("Podcaster account with id " + accountId + " not found");
+        //         }
+
+        //         // nếu requestRoleId là 1 thì loại bỏ các account có DeactivatedAt khác null và violation level != 0
+        //         if (requestRoleId == 1 && (podcaster.DeactivatedAt != null || podcaster.ViolationLevel != 0))
+        //         {
+        //             throw new Exception("Podcaster account with id " + accountId + " not found");
+        //         }
+
+
+
+
+        //         Console.WriteLine("Số podcaster tìm thấy: " + (podcaster.PodcastBuddyReviewPodcastBuddies.Count > 0 ? podcaster.PodcastBuddyReviewPodcastBuddies.Count : 0));
+
+        //         return new PodcastBuddyListItemResponseDTO
+        //         {
+        //             PodcastBuddyProfile = new PodcastBuddyProfileDTO
+        //             {
+        //                 AccountId = podcaster.PodcasterProfile.AccountId,
+        //                 Name = podcaster.PodcasterProfile.Name,
+        //                 Description = podcaster.PodcasterProfile.Description,
+        //                 AverageRating = podcaster.PodcasterProfile.AverageRating,
+        //                 RatingCount = podcaster.PodcasterProfile.RatingCount,
+        //                 TotalFollow = podcaster.PodcasterProfile.TotalFollow,
+        //                 CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
+        //                 BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
+        //                 IsVerified = podcaster.PodcasterProfile.IsVerified,
+        //             },
+        //             ReviewList = podcaster.PodcastBuddyReviewPodcastBuddies?
+        //             .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+        //             {
+        //                 Id = r.Id,
+        //                 Account = new AccountSnippetDTO
+        //                 {
+        //                     Id = r.Account.Id,
+        //                     FullName = r.Account.FullName,
+        //                     Email = r.Account.Email,
+        //                     MainImageFileKey = r.Account.MainImageFileKey
+        //                 },
+        //                 Rating = r.Rating,
+        //                 Content = r.Content,
+        //                 DeletedAt = r.DeletedAt,
+        //                 PodcastBuddyId = r.PodcastBuddyId,
+        //                 Title = r.Title,
+        //                 UpdatedAt = r.UpdatedAt
+        //             }).ToList()
+        //         };
+
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         throw new HttpRequestException("Get podcast buddy account failed, error: " + ex.Message);
+        //     }
+        // }
+
+        // public async Task ChangeAccountStatus(ChangeAccountStatusParameterDTO changeAccountStatusParameter, SagaCommandMessage command)
+        // {
+        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //     {
+        //         try
+        //         {
+        //             var account = await _accountGenericRepository.FindByIdAsync(changeAccountStatusParameter.Id, includeProperties: a => a.PodcasterProfile);
+        //             if (account == null)
+        //             {
+        //                 throw new Exception("Account with id " + changeAccountStatusParameter.Id + " does not exist");
+        //             }
+
+        //             var result = await _redisSharedCacheService.KeySetAsync<AccountStatusCache>($"account:status:{account.Id}", new AccountStatusCache
+        //             {
+        //                 Id = account.Id,
+        //                 IsVerified = account.IsVerified,
+        //                 DeactivatedAt = account.DeactivatedAt,
+        //                 RoleId = account.RoleId,
+        //                 LastViolationLevelChanged = account.LastViolationLevelChanged,
+        //                 LastViolationPointChanged = account.LastViolationPointChanged,
+        //                 ViolationLevel = account.ViolationLevel,
+        //                 ViolationPoint = account.ViolationPoint,
+        //                 HasVerifiedPodcasterProfile = account.RoleId == 1 && account.PodcasterProfile != null && account.PodcasterProfile.IsVerified == true ? true : false
+        //             },
+        //             // set cache expiry to 1 hour (khi hết hạn key-value này sẽ bị xoá khỏi redis)
+        //             TimeSpan.FromHours(1)
+        //             );
+
+        //             if (result == false)
+        //             {
+        //                 throw new Exception("Change account status failed, cannot update account status cache in redis");
+        //             }
+
+        //             var messageNextRequestData = command.RequestData;
+        //             messageNextRequestData["Id"] = account.Id;
+        //             var messageResponseData = JObject.FromObject(new
+        //             {
+        //                 Id = account.Id,
+        //             });
+
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: messageNextRequestData,
+        //                 responseData: messageResponseData,
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "change-account-status.success"
+        //                 );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             await transaction.RollbackAsync();
+
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: command.RequestData,
+        //                 responseData: JObject.FromObject(new
+        //                 {
+        //                     ErrorMessage = $"Change account status failed, error: {ex.Message}"
+        //                 }),
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "change-account-status.failed"
+        //                 );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         }
+        //     }
+
+        // }
+
+        // public async Task CreatePodcasterProfile(CreatePodcasterProfileParameterDTO createPodcasterProfileParameter, SagaCommandMessage command)
+        // {
+        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //     {
+        //         try
+        //         {
+        //             var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
+        //             var account = await _accountGenericRepository.FindByIdAsync(createPodcasterProfileParameter.AccountId, includeProperties: a => a.PodcasterProfile);
+        //             // Console.WriteLine("Tìm thấy account: " + (account.PodcasterProfile.IsVerified == null ? "null" : account.PodcasterProfile.IsVerified.ToString()));
+        //             if (account.PodcasterProfile != null)
+        //             {
+        //                 if (account.PodcasterProfile.IsVerified == true)
+        //                 {
+        //                     throw new Exception("Podcaster profile for account id " + createPodcasterProfileParameter.AccountId + " is already verified, cannot create another one");
+        //                 }
+        //                 else if (account.PodcasterProfile.IsVerified == null)
+        //                 {
+        //                     throw new Exception("Podcaster profile for account id " + createPodcasterProfileParameter.AccountId + " is pending verification, cannot create another one");
+        //                 }
+        //                 else
+        //                 {
+        //                     // xoá profile cũ
+        //                     Console.WriteLine("Xoá podcaster profile cũ cho account id: " + account.Id);
+        //                     await _podcasterProfileGenericRepository.DeleteAsync(account.PodcasterProfile.AccountId);
+        //                 }
+        //             }
+
+
+
+        //             var podcasterProfile = new PodcasterProfile
+        //             {
+        //                 AccountId = account.Id,
+        //                 Name = createPodcasterProfileParameter.Name,
+        //                 Description = createPodcasterProfileParameter.Description,
+        //                 BuddyAudioFileKey = null,
+        //                 CommitmentDocumentFileKey = null,
+        //                 IsVerified = null,
+        //                 OwnedBookingStorageSize = activeSystemConfigProfile["BookingConfig"].Value<double>("FreeInitialBookingStorageSize"),
+        //                 UsedBookingStorageSize = 0,
+        //                 RatingCount = 0
+        //             };
+
+
+        //             var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + account.Id;
+        //             if (createPodcasterProfileParameter.CommitmentDocumentFileKey != null && createPodcasterProfileParameter.CommitmentDocumentFileKey != "")
+        //             {
+        //                 var CommitmentDocumentFileKey = FilePathHelper.CombinePaths(folderPath, $"buddy_commitment_document{FilePathHelper.GetExtension(createPodcasterProfileParameter.CommitmentDocumentFileKey)}");
+        //                 await _fileIOHelper.CopyFileToFileAsync(createPodcasterProfileParameter.CommitmentDocumentFileKey, CommitmentDocumentFileKey);
+        //                 await _fileIOHelper.DeleteFileAsync(createPodcasterProfileParameter.CommitmentDocumentFileKey);
+        //                 podcasterProfile.CommitmentDocumentFileKey = CommitmentDocumentFileKey;
+
+        //             }
+
+
+        //             await _podcasterProfileGenericRepository.CreateAsync(podcasterProfile);
+        //             await transaction.CommitAsync();
+
+        //             var messageNextRequestData = JObject.FromObject(createPodcasterProfileParameter);
+        //             messageNextRequestData["AccountId"] = podcasterProfile.AccountId;
+        //             messageNextRequestData["Name"] = podcasterProfile.Name;
+        //             messageNextRequestData["Description"] = podcasterProfile.Description;
+        //             messageNextRequestData["CommitmentDocumentFileKey"] = podcasterProfile.CommitmentDocumentFileKey;
+
+        //             var messageResponseData = JObject.FromObject(new
+        //             {
+        //                 // Message = "Create podcaster profile successfully",
+        //                 AccountId = podcasterProfile.AccountId,
+        //                 Name = podcasterProfile.Name,
+        //                 Description = podcasterProfile.Description,
+        //                 CommitmentDocumentFileKey = podcasterProfile.CommitmentDocumentFileKey
+        //             });
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: messageNextRequestData,
+        //                 responseData: messageResponseData,
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "create-podcaster-profile.success"
+        //                 );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+        //             await SendChangeAccountStatusMessage(podcasterProfile.AccountId);
+
+
+
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             await transaction.RollbackAsync();
+
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: command.RequestData,
+        //                 responseData: JObject.FromObject(new
+        //                 {
+        //                     ErrorMessage = $"Create podcaster profile failed, error: {ex.Message}"
+        //                 }),
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "create-podcaster-profile.failed"
+        //                 );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         }
+        //     }
+        // }
+
+        // public async Task<AccountListItemResponseDTO> GetAccountById(int accountId)
+        // {
+        //     try
+        //     {
+        //         var account = await _accountGenericRepository.FindByIdAsync(accountId, includeProperties: a => a.Role);
+
+        //         return new AccountListItemResponseDTO
+        //         {
+        //             Id = account.Id,
+        //             Email = account.Email,
+        //             Role = new RoleDTO
+        //             {
+        //                 Id = account.Role.Id,
+        //                 Name = account.Role.Name
+        //             },
+        //             FullName = account.FullName,
+        //             Dob = account.Dob?.ToString("yyyy-MM-dd"),
+        //             Gender = account.Gender,
+        //             Address = account.Address,
+        //             Phone = account.Phone,
+        //             Balance = account.Balance,
+        //             IsVerified = account.IsVerified,
+        //             PodcastListenSlot = account.PodcastListenSlot,
+        //             ViolationPoint = account.ViolationPoint,
+        //             CreatedAt = account.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             UpdatedAt = account.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             MainImageFileKey = account.MainImageFileKey,
+        //             DeactivatedAt = account.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             ViolationLevel = account.ViolationLevel,
+        //             LastViolationPointChanged = account.LastViolationPointChanged?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+        //             LastViolationLevelChanged = account.LastViolationLevelChanged?.ToString("yyyy-MM-ddTH:mm:ss.fffZ"),
+        //             LastPodcastListenSlotChanged = account.LastPodcastListenSlotChanged?.ToString("yyyy-MM-ddTH:mm:ss.fffZ"),
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         throw new HttpRequestException("Get account by id failed, error: " + ex.Message);
+        //     }
+
+
+        // }
+
+
+        // public async Task UpdatePodcasterProfile(UpdatePodcasterProfileParameterDTO updatePodcasterProfileParameterDTO, SagaCommandMessage command)
+        // {
+        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //     {
+        //         try
+        //         {
+        //             var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
+        //                 predicate: a => a.AccountId == updatePodcasterProfileParameterDTO.AccountId,
+        //                 includeFunc: null
+        //                 ).ToListAsync()).FirstOrDefault();
+
+
+        //             if (podcasterProfile == null)
+        //             {
+        //                 throw new Exception("Podcaster profile with id " + updatePodcasterProfileParameterDTO.AccountId + " does not exist");
+        //             }
+        //             else if (podcasterProfile.IsVerified == false)
+        //             {
+        //                 throw new Exception("Podcaster profile with id " + updatePodcasterProfileParameterDTO.AccountId + " is not verified, cannot update");
+        //             }
+
+
+
+
+        //             podcasterProfile.Name = updatePodcasterProfileParameterDTO.Name;
+        //             podcasterProfile.Description = updatePodcasterProfileParameterDTO.Description;
+
+        //             var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + podcasterProfile.AccountId;
+        //             if (updatePodcasterProfileParameterDTO.BuddyAudioFileKey != null && updatePodcasterProfileParameterDTO.BuddyAudioFileKey != "")
+        //             {
+        //                 await _fileIOHelper.DeleteFileAsync(podcasterProfile.BuddyAudioFileKey);
+        //                 var BuddyAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"buddy_trailer_audio{FilePathHelper.GetExtension(updatePodcasterProfileParameterDTO.BuddyAudioFileKey)}");
+        //                 await _fileIOHelper.CopyFileToFileAsync(updatePodcasterProfileParameterDTO.BuddyAudioFileKey, BuddyAudioFileKey);
+        //                 await _fileIOHelper.DeleteFileAsync(updatePodcasterProfileParameterDTO.BuddyAudioFileKey);
+        //                 podcasterProfile.BuddyAudioFileKey = BuddyAudioFileKey;
+
+        //             }
+
+        //             await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
+        //             await transaction.CommitAsync();
+
+        //             var messageNextRequestData = command.RequestData;
+        //             messageNextRequestData["AccountId"] = podcasterProfile.AccountId;
+        //             messageNextRequestData["Name"] = podcasterProfile.Name;
+        //             messageNextRequestData["Description"] = podcasterProfile.Description;
+        //             messageNextRequestData["BuddyAudioFileKey"] = podcasterProfile.BuddyAudioFileKey;
+        //             var messageResponseData = JObject.FromObject(new
+        //             {
+        //                 // Message = "Update podcaster profile successfully",
+        //                 AccountId = podcasterProfile.AccountId,
+        //                 Name = podcasterProfile.Name,
+        //                 Description = podcasterProfile.Description,
+        //                 BuddyAudioFileKey = podcasterProfile.BuddyAudioFileKey
+        //             });
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: messageNextRequestData,
+        //                 responseData: messageResponseData,
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "update-podcaster-profile.success"
+        //                 );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+        //             await SendChangeAccountStatusMessage(podcasterProfile.AccountId);
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             await transaction.RollbackAsync();
+
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: command.RequestData,
+        //                 responseData: JObject.FromObject(new
+        //                 {
+        //                     ErrorMessage = $"Update podcaster profile failed, error: {ex.Message}"
+        //                 }),
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "update-podcaster-profile.failed"
+        //                 );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         }
+        //     }
+        // }
+
+        // public async Task UpdateUser(UpdateUserParameterDTO updateUserParameterDTO, SagaCommandMessage command)
+        // {
+        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //     {
+        //         try
+        //         {
+        //             var updateUserInfo = updateUserParameterDTO;
+        //             var account = await _accountGenericRepository.FindByIdAsync(updateUserInfo.AccountId);
+        //             if (account == null)
+        //             {
+        //                 throw new Exception("Account with id " + updateUserInfo.AccountId + " does not exist");
+        //             }
+        //             account.FullName = updateUserInfo.FullName;
+        //             account.Dob = DateOnly.FromDateTime(updateUserInfo.Dob);
+        //             account.Gender = updateUserInfo.Gender;
+        //             account.Address = updateUserInfo.Address;
+        //             account.Phone = updateUserInfo.Phone;
+
+        //             await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+        //             var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + account.Id;
+        //             if (updateUserInfo.MainImageFileKey != null && updateUserInfo.MainImageFileKey != "")
+        //             {
+        //                 await _fileIOHelper.DeleteFileAsync(account.MainImageFileKey);
+        //                 var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(updateUserInfo.MainImageFileKey)}");
+        //                 await _fileIOHelper.CopyFileToFileAsync(updateUserInfo.MainImageFileKey, MainImageFileKey);
+        //                 await _fileIOHelper.DeleteFileAsync(updateUserInfo.MainImageFileKey);
+        //                 account.MainImageFileKey = MainImageFileKey;
+        //                 await _accountGenericRepository.UpdateAsync(account.Id, account);
+        //             }
+
+        //             await transaction.CommitAsync();
+
+        //             var messageNextRequestData = command.RequestData;
+        //             messageNextRequestData["AccountId"] = account.Id;
+        //             messageNextRequestData["Email"] = account.Email;
+        //             messageNextRequestData["FullName"] = account.FullName;
+        //             messageNextRequestData["Dob"] = account.Dob?.ToString("yyyy-MM-dd");
+        //             messageNextRequestData["Gender"] = account.Gender;
+        //             messageNextRequestData["Address"] = account.Address;
+        //             messageNextRequestData["Phone"] = account.Phone;
+        //             messageNextRequestData["MainImageFileKey"] = account.MainImageFileKey;
+
+        //             var messageResponseData = JObject.FromObject(new
+        //             {
+        //                 // Message = "Update user successfully",
+        //                 AccountId = account.Id,
+        //                 Email = account.Email,
+        //                 FullName = account.FullName,
+        //                 Dob = account.Dob?.ToString("yyyy-MM-dd"),
+        //                 Gender = account.Gender,
+        //                 Address = account.Address,
+        //                 Phone = account.Phone,
+        //                 MainImageFileKey = account.MainImageFileKey
+        //             });
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: messageNextRequestData,
+        //                 responseData: messageResponseData,
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "update-user.success"
+        //             );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+        //             await SendChangeAccountStatusMessage(account.Id);
+
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             await transaction.RollbackAsync();
+
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: command.RequestData,
+        //                 responseData: JObject.FromObject(new
+        //                 {
+        //                     ErrorMessage = $"Update user failed, error: {ex.Message}"
+        //                 }),
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "update-user.failed"
+        //             );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         }
+        //     }
+        // }
+
+        // public async Task DeactivateAccount(DeactivateAccountParameterDTO deactivateAccountParameterDTO, SagaCommandMessage command)
+        // {
+        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //     {
+        //         try
+        //         {
+        //             var account = await this.GetExistAccountById(deactivateAccountParameterDTO.AccountId);
+        //             account.DeactivatedAt = _dateHelper.GetNowByAppTimeZone();
+
+        //             await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+        //             await transaction.CommitAsync();
+
+        //             var messageNextRequestData = command.RequestData;
+        //             messageNextRequestData["AccountId"] = account.Id;
+        //             var messageResponseData = JObject.FromObject(new
+        //             {
+        //                 // Message = "Deactivate account successfully"
+        //                 AccountId = account.Id,
+        //             });
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: messageNextRequestData,
+        //                 responseData: messageResponseData,
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "deactivate-account.success"
+        //             );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+        //             await SendChangeAccountStatusMessage(account.Id);
+        //             // [CHỈNH SỬA SAU] CHẠY CÁC FLOW XOÁ TRONG booking, chanel/show/episode (AccountFavoritedPodcastChannel/AccountFollowedPodcastShow/AccountSavedPodcastEpisode), podcast subscription, Report review session, publish review session, DMCA Accusation, AccountFollowedPodcaster
+
+        //         }
+        //         catch (Exception ex)
+        //         {
+        //             await transaction.RollbackAsync();
+
+        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                 topic: KafkaTopicEnum.UserManagementDomain,
+        //                 requestData: command.RequestData,
+        //                 responseData: JObject.FromObject(new
+        //                 {
+        //                     ErrorMessage = $"Deactivate account failed, error: {ex.Message}"
+        //                 }),
+        //                 sagaInstanceId: command.SagaInstanceId,
+        //                 flowName: command.FlowName,
+        //                 messageName: "deactivate-account.failed"
+        //             );
+        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //         }
+        //     }
+        // }
+        #endregion
+
+        public async Task CreatePodcastChannel(CreateChannelParameterDTO createChannelParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcastChannel = new PodcastChannel
+                    {
+                        Name = createChannelParameterDTO.Name,
+                        Description = createChannelParameterDTO.Description,
+                        PodcasterId = createChannelParameterDTO.PodcasterId,
+                        PodcastCategoryId = createChannelParameterDTO.PodcastCategoryId,
+                        PodcastSubCategoryId = createChannelParameterDTO.PodcastSubCategoryId,
+                    };
+
+                    await _podcastChannelGenericRepository.CreateAsync(podcastChannel);
+
+                    var newPodcastChannelStatusTracking = new PodcastChannelStatusTracking
+                    {
+                        PodcastChannelId = podcastChannel.Id,
+                        PodcastChannelStatusId = (int)PodcastChannelStatusEnum.Unpublished, // setting to "Unpublished" status
+                    };
+                    await _podcastChannelStatusTrackingGenericRepository.CreateAsync(newPodcastChannelStatusTracking);
+
+
+                    var folderPath = _filePathConfig.PODCAST_CHANNEL_FILE_PATH + "\\" + podcastChannel.Id;
+                    if (createChannelParameterDTO.MainImageFileKey != null && createChannelParameterDTO.MainImageFileKey != "")
+                    {
+                        var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(createChannelParameterDTO.MainImageFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.MainImageFileKey, MainImageFileKey);
+                        await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.MainImageFileKey);
+                        podcastChannel.MainImageFileKey = MainImageFileKey;
+
+                    }
+                    if (createChannelParameterDTO.BackgroundImageFileKey != null && createChannelParameterDTO.BackgroundImageFileKey != "")
+                    {
+                        var BackgroundImageFileKey = FilePathHelper.CombinePaths(folderPath, $"background_image{FilePathHelper.GetExtension(createChannelParameterDTO.BackgroundImageFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.BackgroundImageFileKey, BackgroundImageFileKey);
+                        await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.BackgroundImageFileKey);
+                        podcastChannel.BackgroundImageFileKey = BackgroundImageFileKey;
+                    }
+
+                    await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
+
+                    foreach (var hashtagId in createChannelParameterDTO.HashtagIds)
+                    {
+                        var podcastChannelHashtag = new PodcastChannelHashtag
+                        {
+                            PodcastChannelId = podcastChannel.Id,
+                            HashtagId = hashtagId
+                        };
+                        await _podcastChannelHashtagGenericRepository.CreateAsync(podcastChannelHashtag);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    //                       - Name
+                    //   - Description
+                    //   - MainImageFileKey
+                    //   - BackgroundImageFileKey
+                    //   - PodcastCategoryId
+                    //   - podcastSubCategoryId
+                    //   - HashtagIds
+                    //   - PodcasterId
+                    messageNextRequestData["Name"] = podcastChannel.Name;
+                    messageNextRequestData["Description"] = podcastChannel.Description;
+                    messageNextRequestData["MainImageFileKey"] = podcastChannel.MainImageFileKey;
+                    messageNextRequestData["BackgroundImageFileKey"] = podcastChannel.BackgroundImageFileKey;
+                    messageNextRequestData["PodcastCategoryId"] = podcastChannel.PodcastCategoryId;
+                    messageNextRequestData["PodcastSubCategoryId"] = podcastChannel.PodcastSubCategoryId;
+                    messageNextRequestData["HashtagIds"] = JArray.FromObject(createChannelParameterDTO.HashtagIds);
+                    messageNextRequestData["PodcasterId"] = podcastChannel.PodcasterId;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = podcastChannel.Id,
+                        Name = podcastChannel.Name,
+                        Description = podcastChannel.Description,
+                        MainImageFileKey = podcastChannel.MainImageFileKey,
+                        BackgroundImageFileKey = podcastChannel.BackgroundImageFileKey,
+                        PodcastCategoryId = podcastChannel.PodcastCategoryId,
+                        PodcastSubCategoryId = podcastChannel.PodcastSubCategoryId,
+                        HashtagIds = createChannelParameterDTO.HashtagIds,
+                        PodcasterId = podcastChannel.PodcasterId
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-channel.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create podcast channel failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-channel.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+    }
+}

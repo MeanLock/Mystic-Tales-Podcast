@@ -33,11 +33,11 @@ public partial class PodcastChannel
 
     public virtual PodcastCategory? PodcastCategory { get; set; }
 
+    public virtual ICollection<PodcastChannelHashtag> PodcastChannelHashtags { get; set; } = new List<PodcastChannelHashtag>();
+
     public virtual ICollection<PodcastChannelStatusTracking> PodcastChannelStatusTrackings { get; set; } = new List<PodcastChannelStatusTracking>();
 
     public virtual ICollection<PodcastShow> PodcastShows { get; set; } = new List<PodcastShow>();
 
     public virtual PodcastSubCategory? PodcastSubCategory { get; set; }
-
-    public virtual ICollection<Hashtag> Hashtags { get; set; } = new List<Hashtag>();
 }
