@@ -95,19 +95,58 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                                 { "TransactionTypeId", 10 }
                             };
 
-                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "podcast-subscription-system-payment-flow");
+                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "member-subscription-system-payment-flow");
                             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-                            _logger.LogInformation($"Send start saga trigger message for SagaId: {startSagaTriggerMessage.SagaInstanceId} to flow podcast-subscription-system-payment-flow Successfully");
-
+                            _logger.LogInformation($"Send start saga trigger message for SagaId: {startSagaTriggerMessage.SagaInstanceId} to flow member-subscription-system-payment-flow Successfully");
                             break;
                         case 9:
+                            var cyclePaymentRefundMemberSubscriptionTransaction = new MemberSubscriptionTransaction
+                            {
+                                MemberSubscriptionRegistrationId = parameter.MemberSubscriptionRegistrationId,
+                                Amount = parameter.Amount,
+                                TransactionTypeId = transactionTypeId,
+                                TransactionStatusId = 1,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            newMemberSubscriptionTransaction = await _memberSubscriptionTransactionGenericRepository.CreateAsync(cyclePaymentRefundMemberSubscriptionTransaction);
                             break;
                         case 10:
+                            var systemIncomeMemberSubscriptionTransaction = new MemberSubscriptionTransaction
+                            {
+                                MemberSubscriptionRegistrationId = parameter.MemberSubscriptionRegistrationId,
+                                Amount = parameter.Amount,
+                                TransactionTypeId = transactionTypeId,
+                                TransactionStatusId = 2,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            newMemberSubscriptionTransaction = await _memberSubscriptionTransactionGenericRepository.CreateAsync(systemIncomeMemberSubscriptionTransaction);
                             break;
                         default:
                             throw new Exception("Invalid TransactionTypeId for podcast subscription transaction: " + transactionTypeId);
                     }
 
+                    await transaction.CommitAsync();
+
+                    var newRequestData = command.RequestData;
+                    newRequestData["MemberSubscriptionTransactionId"] = newMemberSubscriptionTransaction.Id;
+
+                    var newResponseData = new JObject
+                    {
+                        { "MemberSubscriptionTransactionId", newMemberSubscriptionTransaction.Id },
+                        { "CreatedAt", newMemberSubscriptionTransaction.CreatedAt }
+                    };
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: newRequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Created member subscription transaction successfully for SagaId: {SagaId}", command.SagaInstanceId);
                 }
                 catch (Exception ex)
                 {
@@ -140,6 +179,31 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var memberSubscriptionTransaction = await _memberSubscriptionTransactionGenericRepository.FindByIdAsync(parameter.MemberSubscriptionTransactionId);
+                    if (memberSubscriptionTransaction != null)
+                    {
+                        throw new Exception($"No podcast subscription transaction found for Id: {parameter.MemberSubscriptionTransactionId}");
+                    }
+                    if (memberSubscriptionTransaction.TransactionStatusId != 1)
+                    {
+                        throw new Exception($"This podcast subscription transaction is not eligible for completion");
+                    }
+                    memberSubscriptionTransaction.TransactionStatusId = 2;
+                    var newPodcastSubscriptionTransaction = await _memberSubscriptionTransactionGenericRepository.UpdateAsync(memberSubscriptionTransaction.Id, memberSubscriptionTransaction);
+
+                    await transaction.CommitAsync();
+                    var newResponseData = command.RequestData;
+                    newResponseData["UpdateAt"] = newPodcastSubscriptionTransaction.UpdatedAt;
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Completed member subscription transaction successfully for SagaId: {SagaId}", command.SagaInstanceId);
                 }
                 catch (Exception ex)
                 {

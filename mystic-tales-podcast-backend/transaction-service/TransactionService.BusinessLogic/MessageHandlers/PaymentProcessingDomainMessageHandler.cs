@@ -7,9 +7,11 @@ using System.Threading.Tasks;
 using TransactionService.BusinessLogic.Attributes;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.AccountBalanceCreatePaymentLink;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteBookingTransaction;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteMemberSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompletePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPayment;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransaction;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateMemberSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.Services.DbServices.TransactionServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -141,6 +143,36 @@ namespace TransactionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: "payment-processing-domain",
                 failedEmitMessage: "complete-podcast-subscription-transaction.failed"
+            );
+        }
+        [MessageHandler("create-member-subscription-transaction", "payment-processing-domain")]
+        public async Task HandleCreateMemberSubscriptionTransactionCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameters = command.RequestData.ToObject<CreateMemberSubscriptionTransactionParameterDTO>();
+                    await _memberSubscriptionService.CreateMemberSubscriptionTransactionAsync(parameters, command);
+                    _logger.LogInformation("Handled create-member-subscription-transaction command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "payment-processing-domain",
+                failedEmitMessage: "create-member-subscription-transaction.failed"
+            );
+        }
+        [MessageHandler("complete-member-subscription-transaction", "payment-processing-domain")]
+        public async Task HandleCompleteMemberSubscriptionTransactionCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameters = command.RequestData.ToObject<CompleteMemberSubscriptionTransactionParameterDTO>();
+                    await _memberSubscriptionService.CompleteMemberSubscriptionTransactionAsync(parameters, command);
+                    _logger.LogInformation("Handled complete-member-subscription-transaction command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "payment-processing-domain",
+                failedEmitMessage: "complete-member-subscription-transaction.failed"
             );
         }
     }
