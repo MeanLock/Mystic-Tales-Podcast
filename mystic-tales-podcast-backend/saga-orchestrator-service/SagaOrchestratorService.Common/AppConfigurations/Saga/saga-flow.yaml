@@ -3435,7 +3435,6 @@ flows:
           - WebHookBody:
             - Data
             - vv
-          - AccountBalanceTransactionId
         next-request-data:
           - AccountId
           - Amount

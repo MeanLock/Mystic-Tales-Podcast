@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Client;
 using Net.payOS.Types;
 using Newtonsoft.Json.Linq;
 using TransactionService.API.Filters.ExceptionFilters;
@@ -82,8 +83,25 @@ namespace TransactionService.API.Controllers.BaseControllers
             }
             // Process the webhook data as needed
             _logger.LogInformation("Received payment confirmation webhook: {WebhookBody}", JObject.FromObject(webhookBody).ToString());
-            // Here you can add logic to update your database or trigger other actions based on the webhook data
-            return Ok(new { Message = "Webhook received successfully." });
+
+            var requestData = new JObject
+            {
+                { "AccountId", accountId },
+                { "Amount", request.Amount },
+                { "Description", request.Description },
+                { "ReturnUrl", request.ReturnUrl ?? string.Empty },
+                { "CancelUrl", request.CancelUrl ?? string.Empty }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "account-balance-create-payment-link-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate create payment link process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
         }
     }
 }
