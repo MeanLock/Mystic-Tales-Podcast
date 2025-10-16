@@ -4514,7 +4514,7 @@ flows:
           - TransactionTypeId
           - CreatedAt
         onSuccess:
-          emit: "create-account-balance-transaction.success"
+          emit: "create-podcast-subscription-transaction.success"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
@@ -4523,7 +4523,7 @@ flows:
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "create-account-balance-transaction.failed"
+          emit: "create-podcast-subscription-transaction.failed"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []

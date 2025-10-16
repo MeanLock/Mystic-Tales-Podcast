@@ -10,6 +10,8 @@ using System.Text;
 using System.Threading.Tasks;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.AccountBalanceCreatePaymentLink;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPayment;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPaymentRollback;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateAccountBalanceTransactionRollback;
 using TransactionService.BusinessLogic.DTOs.Transaction;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -196,6 +198,116 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Account balance confirm payment failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ConfirmAccountBalanceTransactionPaymentRollbackAsync(ConfirmPaymentRollbackParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    AccountBalanceTransaction? accountBalanceTransaction = _accountBalanceTransactionGenericRepository.FindByIdAsync(parameter.AccountBalanceTransactionId).Result;
+                    if (accountBalanceTransaction == null)
+                    {
+                        throw new Exception("Payment not found.");
+                    }
+                    ;
+                    accountBalanceTransaction.TransactionStatusId = 4; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject{
+                        { "AccountBalanceTransactionId", accountBalanceTransaction.Id },
+                        { "TransactionStatusId", accountBalanceTransaction.TransactionStatusId}
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Rollback confirm payment successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while rolling back confirm payment for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Rollback confirm payment failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Rollback confirm payment failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task CreateAccountBalanceTransactionRollbackAsync(CreateAccountBalanceTransactionRollbackParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    AccountBalanceTransaction? accountBalanceTransaction = _accountBalanceTransactionGenericRepository.FindByIdAsync(parameter.AccountBalanceTransactionId).Result;
+                    if (accountBalanceTransaction == null)
+                    {
+                        throw new Exception("Account Balance Transaction not found.");
+                    }
+                    ;
+                    accountBalanceTransaction.TransactionStatusId = 4; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject{
+                        { "AccountBalanceTransactionId", accountBalanceTransaction.Id },
+                        { "TransactionStatusId", accountBalanceTransaction.TransactionStatusId}
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Rollback create account balance transaction successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while rolling back create account balance transaction for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Rollback create account balance transactionnt failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Rollback create account balance transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }

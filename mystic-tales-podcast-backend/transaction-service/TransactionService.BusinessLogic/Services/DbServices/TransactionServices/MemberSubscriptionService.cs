@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteMemberSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateMemberSubscriptionTransaction;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateMemberSubscriptionTransactionRollback;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
@@ -222,6 +223,61 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Completing member subscription transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task CreateMemberSubscriptionTransactionRollbackAsync(CreateMemberSubscriptionTransactionRollbackParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    MemberSubscriptionTransaction? memberSubscriptionTransaction = _memberSubscriptionTransactionGenericRepository.FindByIdAsync(parameter.MemberSubscriptionTransactionId).Result;
+                    if (memberSubscriptionTransaction == null)
+                    {
+                        throw new Exception("Member Subscription Transaction not found.");
+                    }
+                    ;
+                    memberSubscriptionTransaction.TransactionStatusId = 4; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    await _memberSubscriptionTransactionGenericRepository.UpdateAsync(memberSubscriptionTransaction.Id, memberSubscriptionTransaction);
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject{
+                        { "MemberSubscriptionTransactionId", memberSubscriptionTransaction.Id },
+                        { "TransactionStatusId", memberSubscriptionTransaction.TransactionStatusId}
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Rollback create member subscription transaction successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while rolling back create member subscription transaction for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Rollback create member subscription transactionnt failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Rollback create member subscription transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }

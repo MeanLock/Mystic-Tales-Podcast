@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteBookingTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransaction;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransactionRollback;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -16,6 +17,7 @@ using TransactionService.DataAccess.Repositories.interfaces;
 using TransactionService.Infrastructure.Configurations.Payos.interfaces;
 using TransactionService.Infrastructure.Models.Kafka;
 using TransactionService.Infrastructure.Services.Kafka;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServices
 {
@@ -237,6 +239,61 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Completing booking transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task CreateBookingTransactionRollbackAsync(CreateBookingTransactionRollbackParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    BookingTransaction? bookingTransaction = _bookingTransactionGenericRepository.FindByIdAsync(parameter.BookingTransactionId).Result;
+                    if (bookingTransaction == null)
+                    {
+                        throw new Exception("Booking Transaction not found.");
+                    }
+                    ;
+                    bookingTransaction.TransactionStatusId = 4; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    await _bookingTransactionGenericRepository.UpdateAsync(bookingTransaction.Id, bookingTransaction);
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject{
+                        { "BookingTransactionId", bookingTransaction.Id },
+                        { "TransactionStatusId", bookingTransaction.TransactionStatusId}
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Rollback create booking transaction successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while rolling back create booking transaction for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Rollback create booking transactionnt failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Rollback create booking transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }
