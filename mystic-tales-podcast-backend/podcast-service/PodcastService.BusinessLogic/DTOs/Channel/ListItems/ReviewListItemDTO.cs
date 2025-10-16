@@ -1,4 +1,6 @@
-namespace UserService.BusinessLogic.DTOs.Account
+using PodcastService.BusinessLogic.DTOs.Account;
+
+namespace PodcastService.BusinessLogic.DTOs.Channel.ListItems
 {
     public class ReviewListItemDTO
     {

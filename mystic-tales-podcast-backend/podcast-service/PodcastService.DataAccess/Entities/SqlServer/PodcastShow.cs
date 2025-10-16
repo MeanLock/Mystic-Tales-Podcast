@@ -39,7 +39,7 @@ public partial class PodcastShow
 
     public int? PodcastSubCategoryId { get; set; }
 
-    public int PodcastShowsSubscriptionTypeId { get; set; }
+    public int PodcastShowSubscriptionTypeId { get; set; }
 
     public Guid? PodcastChannelId { get; set; }
 
@@ -63,7 +63,7 @@ public partial class PodcastShow
 
     public virtual ICollection<PodcastShowStatusTracking> PodcastShowStatusTrackings { get; set; } = new List<PodcastShowStatusTracking>();
 
-    public virtual PodcastShowsSubscriptionType PodcastShowsSubscriptionType { get; set; } = null!;
+    public virtual PodcastShowSubscriptionType PodcastShowSubscriptionType { get; set; } = null!;
 
     public virtual PodcastSubCategory? PodcastSubCategory { get; set; }
 }

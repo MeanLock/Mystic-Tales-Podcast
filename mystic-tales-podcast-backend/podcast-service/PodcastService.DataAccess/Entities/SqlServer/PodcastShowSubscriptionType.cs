@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace PodcastService.DataAccess.Entities.SqlServer;
 
-public partial class PodcastShowsSubscriptionType
+public partial class PodcastShowSubscriptionType
 {
     public int Id { get; set; }
 

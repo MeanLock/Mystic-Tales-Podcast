@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Http;
+using PodcastService.BusinessLogic.DTOs.Cachegory;
+using PodcastService.BusinessLogic.DTOs.Hashtag;
 
 namespace PodcastService.BusinessLogic.DTOs.Channel.ListItems
 {

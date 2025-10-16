@@ -25,6 +25,9 @@ using PodcastService.BusinessLogic.Enums.Podcast;
 using PodcastService.BusinessLogic.DTOs.Channel.ListItems;
 using PodcastService.BusinessLogic.DTOs.Cache;
 using PodcastService.BusinessLogic.DTOs.Channel;
+using PodcastService.BusinessLogic.DTOs.Channel.Details;
+using PodcastService.BusinessLogic.DTOs.Cachegory;
+using PodcastService.BusinessLogic.DTOs.Hashtag;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -1397,7 +1400,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 if (roleId == null || roleId == 1)
                 {
-                    query = query.Where(pc => pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId != (int)PodcastChannelStatusEnum.Unpublished);
+                    query = query.Where(pc => pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published);
                 }
                 var channels = await query.ToListAsync();
 
@@ -1459,6 +1462,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .ThenInclude(pct => pct.PodcastChannelStatus)
                         .Include(pc => pc.PodcastChannelHashtags)
                         .ThenInclude(pch => pch.Hashtag)
+                        .Include(pc => pc.PodcastShows)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
                 );
 
                 var channels = await query.ToListAsync();
@@ -1493,7 +1498,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     }).ToList(),
                     TotalFavorite = pc.TotalFavorite,
                     ListenCount = pc.ListenCount,
-
+                    ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.DeletedAt == null) : 0,
                     PodcasterId = pc.PodcasterId,
                     CreatedAt = pc.CreatedAt,
                     UpdatedAt = pc.UpdatedAt
@@ -1504,6 +1509,132 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 throw new HttpRequestException("Get channels failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<ChannelDetailResponseDTO> GetChannelByIdAsync(Guid channelId, int? role)
+        {
+            try
+            {
+                var query = _podcastChannelGenericRepository.FindAll(
+                    predicate: c => c.DeletedAt == null && c.Id == channelId,
+                    includeFunc: q => q
+                        .Include(pc => pc.PodcastCategory)
+                        .Include(pc => pc.PodcastSubCategory)
+                        .Include(pc => pc.PodcastChannelStatusTrackings)
+                        .ThenInclude(pct => pct.PodcastChannelStatus)
+                        .Include(pc => pc.PodcastChannelHashtags)
+                        .ThenInclude(pch => pch.Hashtag)
+                        .Include(pc => pc.PodcastShows)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                );
+
+                if (role == null || role == 1)
+                {
+                    query = query.Where(pc => pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published);
+                }
+
+                var channel = await query.FirstOrDefaultAsync();
+
+                if (channel == null)
+                {
+                    throw new Exception("Channel with id " + channelId + " does not exist");
+                }
+
+                var podcastSubscriptionBatchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            // Key = "activeSystemConfigProfile",
+                            // QueryType = "findall",
+                            // EntityType = "SystemConfigProfile",
+                            //     Parameters = JObject.FromObject(new
+                            //     {
+                            //         where = new
+                            //         {
+                            //             IsActive = true
+                            //         },
+                            //         include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+
+                            //     }),
+                            // Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
+
+                            //                             nhìn vào file GenericQueryService tôi cần bạn tạo cho tôi BatchQueryItem để query find all PodcastSubscription với điều kiện là deletedAt == null và PodcastChannelId == uid, isactive có thể bằng true nếu roleid == null || roleid == 1 thì chỉ lấy active = true ngược lại không có điều kiện này
+
+                            // include PodcastSubscriptionCycleTypePriceList (có include thêm subscriptionCycleType) và PodcastSubscriptionBenefitMappingList (có include thêm PodcastSubscriptionBenefit)
+
+                            // select tất cả trong PodcastSubscription
+                            Key = "podcastSubscriptionList",
+                            QueryType = "findall",
+                            EntityType = "PodcastSubscription",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new 
+                                {
+                                    DeletedAt = (DateTime?)null,
+                                    PodcastChannelId = channel.Id,
+                                },
+                                include = "PodcastSubscriptionBenefitMappings.PodcastSubscriptionBenefit , PodcastSubscriptionCycleTypePrices.SubscriptionCycleType"
+                            }),
+                            // Fields = null // lấy tất cả
+                        }
+                    }
+                };
+
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", podcastSubscriptionBatchRequest);
+
+
+                // in kết quả ra  check
+                foreach (var res in (JArray)result.Results["podcastSubscriptionList"])
+                {
+                    Console.WriteLine("\n\nOKKKK: " + res.ToString());
+
+                }
+
+                var channelDetail = new ChannelDetailResponseDTO
+                {
+                    Id = channel.Id,
+                    Name = channel.Name,
+                    Description = channel.Description,
+                    MainImageFileKey = channel.MainImageFileKey,
+                    BackgroundImageFileKey = channel.BackgroundImageFileKey,
+                    PodcastCategory = new PodcastCategoryDTO
+                    {
+                        Id = channel.PodcastCategory.Id,
+                        Name = channel.PodcastCategory.Name
+                    },
+                    PodcastSubCategory = new PodcastSubCategoryDTO
+                    {
+                        Id = channel.PodcastSubCategory.Id,
+                        Name = channel.PodcastSubCategory.Name,
+                        PodcastCategoryId = channel.PodcastSubCategory.PodcastCategoryId
+                    },
+                    CurrentStatus = channel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
+                    {
+                        Id = pct.PodcastChannelStatus.Id,
+                        Name = pct.PodcastChannelStatus.Name
+                    }).FirstOrDefault()!,
+                    Hashtags = channel.PodcastChannelHashtags.Select(pch => new HashtagDTO
+                    {
+                        Id = pch.Hashtag.Id,
+                        Name = pch.Hashtag.Name
+                    }).ToList(),
+                    TotalFavorite = channel.TotalFavorite,
+                    ListenCount = channel.ListenCount,
+                    ShowCount = channel.PodcastShows != null ? channel.PodcastShows.Count(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnums.Published && ps.DeletedAt == null) : 0,
+                    PodcasterId = channel.PodcasterId,
+                    CreatedAt = channel.CreatedAt,
+                    UpdatedAt = channel.UpdatedAt,
+                    // PodcastSubscriptionList =
+                };
+                return channelDetail;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get channel by id failed, error: " + ex.Message);
             }
         }
 

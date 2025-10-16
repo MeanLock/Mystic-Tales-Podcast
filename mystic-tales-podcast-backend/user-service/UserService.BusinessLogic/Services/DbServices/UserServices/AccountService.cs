@@ -644,7 +644,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
                         {
                             Id = r.Id,
-                            Account = new AccountSnippetDTO
+                            Account = new AccountSnippetResponseDTO
                             {
                                 Id = r.Account.Id,
                                 FullName = r.Account.FullName,
@@ -712,7 +712,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
                         {
                             Id = r.Id,
-                            Account = new AccountSnippetDTO
+                            Account = new AccountSnippetResponseDTO
                             {
                                 Id = r.Account.Id,
                                 FullName = r.Account.FullName,
@@ -803,7 +803,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
                     {
                         Id = r.Id,
-                        Account = new AccountSnippetDTO
+                        Account = new AccountSnippetResponseDTO
                         {
                             Id = r.Account.Id,
                             FullName = r.Account.FullName,
@@ -874,7 +874,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
                     {
                         Id = r.Id,
-                        Account = new AccountSnippetDTO
+                        Account = new AccountSnippetResponseDTO
                         {
                             Id = r.Account.Id,
                             FullName = r.Account.FullName,

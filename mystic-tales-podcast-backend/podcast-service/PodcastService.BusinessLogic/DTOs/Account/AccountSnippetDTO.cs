@@ -1,6 +1,6 @@
-namespace UserService.BusinessLogic.DTOs.Account
+namespace PodcastService.BusinessLogic.DTOs.Account
 {
-    public class AccountSnippetDTO
+    public class AccountSnippetResponseDTO
     {
         public int Id { get; set; }
         public required string FullName { get; set; }

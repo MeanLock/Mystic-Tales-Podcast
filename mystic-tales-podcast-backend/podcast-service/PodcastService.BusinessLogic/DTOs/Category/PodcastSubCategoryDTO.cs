@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace PodcastService.BusinessLogic.DTOs.Channel
+namespace PodcastService.BusinessLogic.DTOs.Cachegory
 {
     public class PodcastSubCategoryDTO
     {

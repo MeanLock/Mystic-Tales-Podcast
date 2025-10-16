@@ -407,8 +407,8 @@ CREATE TABLE PodcastEpisodeSubscriptionType (
     name NVARCHAR(50) NOT NULL
 );
 
--- PodcastShowsSubscriptionType table
-CREATE TABLE PodcastShowsSubscriptionType (
+-- PodcastShowSubscriptionType table
+CREATE TABLE PodcastShowSubscriptionType (
     id INT PRIMARY KEY,
     name NVARCHAR(50) NOT NULL
 );
@@ -469,7 +469,7 @@ CREATE TABLE PodcastShow (
     podcasterId INT NOT NULL,
     podcastCategoryId INT NULL,
     podcastSubCategoryId INT NULL,
-    podcastShowsSubscriptionTypeId INT NOT NULL DEFAULT 1,
+    podcastShowSubscriptionTypeId INT NOT NULL DEFAULT 1,
     podcastChannelId UNIQUEIDENTIFIER NULL,
     takenDownReason NVARCHAR(MAX) NULL,
     deletedAt DATETIME NULL DEFAULT NULL,
@@ -477,7 +477,7 @@ CREATE TABLE PodcastShow (
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (podcastCategoryId) REFERENCES PodcastCategory(id),
     FOREIGN KEY (podcastSubCategoryId) REFERENCES PodcastSubCategory(id),
-    FOREIGN KEY (podcastShowsSubscriptionTypeId) REFERENCES PodcastShowsSubscriptionType(id),
+    FOREIGN KEY (podcastShowSubscriptionTypeId) REFERENCES PodcastShowSubscriptionType(id),
     FOREIGN KEY (podcastChannelId) REFERENCES PodcastChannel(id)
 );
 

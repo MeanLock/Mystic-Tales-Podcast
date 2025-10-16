@@ -323,7 +323,7 @@ namespace PodcastService.API.Controllers.BaseControllers
 
         // /api/podcast-service/api/channels/{PodcastChannelId}
         [HttpGet("{PodcastChannelId}")]
-        public async Task<IActionResult> GetChannelById(int PodcastChannelId)
+        public async Task<IActionResult> GetChannelById(Guid PodcastChannelId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 

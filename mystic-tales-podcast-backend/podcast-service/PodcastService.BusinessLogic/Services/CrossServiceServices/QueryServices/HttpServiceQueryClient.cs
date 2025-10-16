@@ -58,6 +58,7 @@ namespace PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServic
 
             try
             {
+                Console.WriteLine($"{_appConfig.API_GATEWAY_URL}/{serviceInfo.Url}/api/query/batch");
                 var response = await client.PostAsync($"{_appConfig.API_GATEWAY_URL}/{serviceInfo.Url}/api/query/batch", content, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)

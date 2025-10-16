@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Http;
 
-namespace PodcastService.BusinessLogic.DTOs.Channel
+namespace PodcastService.BusinessLogic.DTOs.Subscription
 {
-    public class PodcastCategoryDTO
+    public class SubscriptionCycleTypeDTO
     {
         public int Id { get; set; }
 

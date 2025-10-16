@@ -58,7 +58,7 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<PodcastShowStatusTracking> PodcastShowStatusTrackings { get; set; }
 
-    public virtual DbSet<PodcastShowsSubscriptionType> PodcastShowsSubscriptionTypes { get; set; }
+    public virtual DbSet<PodcastShowSubscriptionType> PodcastShowSubscriptionTypes { get; set; }
 
     public virtual DbSet<PodcastSubCategory> PodcastSubCategories { get; set; }
 
@@ -525,9 +525,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("name");
             entity.Property(e => e.PodcastCategoryId).HasColumnName("podcastCategoryId");
             entity.Property(e => e.PodcastChannelId).HasColumnName("podcastChannelId");
-            entity.Property(e => e.PodcastShowsSubscriptionTypeId)
-                .HasDefaultValue(1)
-                .HasColumnName("podcastShowsSubscriptionTypeId");
+            entity.Property(e => e.PodcastShowSubscriptionTypeId).HasColumnName("podcastShowSubscriptionTypeId");
             entity.Property(e => e.PodcastSubCategoryId).HasColumnName("podcastSubCategoryId");
             entity.Property(e => e.PodcasterId).HasColumnName("podcasterId");
             entity.Property(e => e.RatingCount).HasColumnName("ratingCount");
@@ -549,8 +547,8 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.PodcastChannelId)
                 .HasConstraintName("FK__PodcastSh__podca__72C60C4A");
 
-            entity.HasOne(d => d.PodcastShowsSubscriptionType).WithMany(p => p.PodcastShows)
-                .HasForeignKey(d => d.PodcastShowsSubscriptionTypeId)
+            entity.HasOne(d => d.PodcastShowSubscriptionType).WithMany(p => p.PodcastShows)
+                .HasForeignKey(d => d.PodcastShowSubscriptionTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__PodcastSh__podca__71D1E811");
 
@@ -659,11 +657,11 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("FK__PodcastSh__podca__1DB06A4F");
         });
 
-        modelBuilder.Entity<PodcastShowsSubscriptionType>(entity =>
+        modelBuilder.Entity<PodcastShowSubscriptionType>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__PodcastS__3213E83F594D8BE4");
 
-            entity.ToTable("PodcastShowsSubscriptionType");
+            entity.ToTable("PodcastShowSubscriptionType");
 
             entity.Property(e => e.Id)
                 .ValueGeneratedNever()
