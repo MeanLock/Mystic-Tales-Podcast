@@ -1,84 +1,89 @@
-import React, { createContext, useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import './styles.scss';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { Box } from '@mui/material';
 import type { RootState } from '../../../../redux/rootReducer';
 import { clearAuthToken } from '../../../../redux/auth/authSlice';
+import { setUserContext } from '../../../../redux/navigation/navigationSlice';
 import { JwtUtil } from '../../../../core/utils/jwt.util';
 import { DefaultLayoutHeader } from './DefaultLayoutHeader';
-import { DefaultLayoutContent } from './DefaultLayoutContent';
-import { DefaultLayoutFooter } from './DefaultLayoutFooter';
-import { _nonLoginNav, getRoleNavItems } from '../../../../router/_roleNav';
-import { Box, Container } from '@mui/material';
-
-
-interface DefaultLayoutContextProps {
-  isAdmin: boolean;
-  isLogin: boolean;
-}
-
-export const DefaultLayoutContext = createContext<DefaultLayoutContextProps>({
-  isAdmin: false,
-  isLogin: false
-});
+import DefaultLayoutSideBar from './DefaultLayoutSideBar';
+import DefaultLayoutContent from './DefaultLayoutContent';
+import { _podcasterNav } from '../../../../router/_roleNav';
+import { set } from '@/redux/ui/uiSlice';
 
 const DefaultLayout = () => {
-
-  // HOOKS
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const authSlice = useSelector((state: RootState) => state.auth);
+  const navigation = useSelector((state: RootState) => state.navigation);
+  const uiSlice = useSelector((state: RootState) => state.ui);
 
-  // STATES
-  const [member, setMember] = useState<any>(null);
-  const [navItems, setNavItems] = useState<{
-    label: string,
-    path: string
-  }[]>([]);
+  // useEffect(() => {
+  //   if (!authSlice || !authSlice.token || !JwtUtil.isTokenValid(authSlice.token)) {
+  //     dispatch(clearAuthToken());
+  //     navigate('/login');
+  //     return;
+  //   }
 
-  // REDUX
-  const auth = useSelector((state: RootState) => state.auth);
+  //   // Check if user has podcaster profile
+  //   const user = authSlice.user;
+  //   if (!user?.podcasterProfile) {
+  //     navigate('/login');
+  //     return;
+  //   }
 
+  //   // Initialize user context if not already set
+  //   if (!navigation.currentContext) {
+  //     dispatch(setUserContext({
+  //       user: {
+  //         id: user.id,
+  //         name: user.podcasterProfile?.name || user.name,
+  //         email: user.email,
+  //         avatar: user.podcasterProfile?.avatar || user.avatar
+  //       },
+  //       navItems: _podcasterNav
+  //     }));
+  //   }
+  // }, [authSlice, navigation.currentContext, dispatch, navigate]);
 
+  // // Don't render if not authenticated
+  // if (!authSlice.token || !authSlice.user?.podcasterProfile) {
+  //   return null;
+  // }
 
-  useEffect(() => {
-    if (!auth.token) {
-      setNavItems(_nonLoginNav);
+  const handleOverlayClick = () => {
+    dispatch(set({ sidebarMobileOpen: false }))
+  }
 
-      dispatch(clearAuthToken())
-      setMember(null);
+  // Determine if we're on mobile
+  const isMobile = window.innerWidth <= 768
 
+  // Build content className
+  const contentClassName = [
+    "default-layout__content",
+    uiSlice.sidebarNarrow && !isMobile ? "default-layout__content--narrow" : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
 
-    } else if (auth.token && JwtUtil.isTokenValid(auth.token)) {
-      const member = auth.user;
-      setMember(member);
-      const navItems = getRoleNavItems(auth.user.isAdmin == true ? 1 : 0);
-      setNavItems(navItems);
-    } else {
-      dispatch(clearAuthToken())
-      setMember(null);
-    }
-  }, [auth, navigate]);
-
-
-
+  // Build overlay className
+  const overlayClassName = [
+    "default-layout__overlay",
+    uiSlice.sidebarMobileOpen && isMobile ? "default-layout__overlay--visible" : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
   return (
-    <DefaultLayoutContext.Provider value={{
-      isAdmin: member && member.isAdmin,
-      isLogin: member ? true : false
-    }}>
-      <Box className={"default-layout"} display={'flex'} flexDirection='column' width={'100%'} height={'100vh'}>
-        <DefaultLayoutHeader navItems={navItems} />
-        <div className="wrapper d-flex flex-column min-vh-100">
-          <div className="body flex-grow-1">
-            <Container maxWidth="xl" className="default-layout-container" sx={{ height: '100vh', width: '100%' }}>
-              <DefaultLayoutContent />
-            </Container>
-          </div>
-          <DefaultLayoutFooter />
-        </div>
+    <Box className="default-layout">
+      <DefaultLayoutHeader />
+      <DefaultLayoutSideBar />
+      <Box className={overlayClassName} onClick={handleOverlayClick} />
+      <Box className={contentClassName}>
+        <DefaultLayoutContent />
       </Box>
-    </DefaultLayoutContext.Provider>
-
+    </Box>
   )
 }
 

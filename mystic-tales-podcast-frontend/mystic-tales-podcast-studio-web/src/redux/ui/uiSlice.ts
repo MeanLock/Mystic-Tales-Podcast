@@ -2,12 +2,14 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 export interface UiState {
-  sidebarShow: boolean;
+  sidebarNarrow: boolean;
+  sidebarMobileOpen: boolean;
   theme: string;
 }
 
 const initialState: UiState = {
-  sidebarShow: true,
+  sidebarNarrow: false,
+  sidebarMobileOpen: false,
   theme: 'light',
 } ;
 

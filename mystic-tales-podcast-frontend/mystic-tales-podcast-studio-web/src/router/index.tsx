@@ -1,14 +1,17 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { authRoutes } from './auth.routes';
-import { defaultRoutes } from './default.routes';
-import { surveyRoutes } from './survey.routes';
+import React from 'react';
+
+const DefaultLayout = React.lazy(() => import('./../views/components/layouts/default-layout/index'))
+const Login = React.lazy(() => import('./../views/pages/login-page/index'))
 
 export const appRouter = createBrowserRouter([
-  authRoutes,
-  defaultRoutes,
-  surveyRoutes,
+   {
+    path: '/login',
+    element: <Login />,
+  },
   {
     path: '*',
-    element: <div>404 Not Found</div>,
-  }
+    element: <DefaultLayout />,
+  },
 ]);

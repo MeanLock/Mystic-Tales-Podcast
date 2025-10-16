@@ -1,72 +1,39 @@
-export const getRoleNavItems = (isAdmin: number): {
-  label: string,
-  path: string,
-}[] => {
-  const _roleNav = [
-    // Admin  
-    [
-      {
-        label: 'Perfumes',
-        path: '/perfumes',
-      },
-      {
-        label: 'Comments',
-        path: '/comments',
-      },
-      {
-        label: 'Profile',
-        path: '/profile',
-      },
-      {
-        label: 'Perfumes Manage',
-        path: '/admin/perfumes',
-      },
-      {
-        label: 'Brands Manage',
-        path: '/admin/brands',
-      },
-      {
-        label: 'Collectors Manage',
-        path: '/admin/collectors',
-      },
-      {
-        label: 'Survey',
-        path: '/survey',
-      },
-    ],
-    // Normal Member
-    [
-      {
-        label: 'Perfumes',
-        path: '/perfumes',
-      },
-      {
-        label: 'Comments',
-        path: '/comments',
-      },
-      {
-        label: 'Profile',
-        path: '/profile',
-      },
-      {
-        label: 'Survey',
-        path: '/survey',
-      },
-    ]
 
-  ]
-  const roleNav = _roleNav[isAdmin]
-
-  return roleNav;
-}
-
-export const _nonLoginNav: {
-  label: string,
-  path: string,
+export const _podcasterNav: {
+  label: string;
+  icon: string;
+  path: string;
 }[] = [
-    {
-      label: 'Perfumes',
-      path: '/perfumes',
-    }
-  ]
+  {
+    label: "Dashboard",
+    icon: "dashboard",
+    path: "/dashboard",
+  },
+  {
+    label: "Earn",
+    icon: "monetization_on",
+    path: "/earn",
+  },
+  {
+    label: "Copyright",
+    icon: "copyright",
+    path: "/copyright",
+  },
+  {
+    label: "My Channels",
+    icon: "podcasts",
+    path: "/my-channels",
+  },
+  {
+    label: "My Shows",
+    icon: "mic",
+    path: "/my-shows",
+  },
+  {
+    label: "Booking Management",
+    icon: "event_note",
+    path: "/booking-management",
+  },
+];
+
 
