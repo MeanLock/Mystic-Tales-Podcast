@@ -320,5 +320,19 @@ namespace PodcastService.API.Controllers.BaseControllers
                 ChannelList = channels
             });
         }
+
+        // /api/podcast-service/api/channels/{PodcastChannelId}
+        [HttpGet("{PodcastChannelId}")]
+        public async Task<IActionResult> GetChannelById(int PodcastChannelId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var channel = await _podcastChannelService.GetChannelByIdAsync(PodcastChannelId, account?.RoleId);
+
+            return Ok(new
+            {
+                Channel = channel
+            });
+        }
     }
 }

@@ -1377,7 +1377,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         // }
         #endregion
 
-        public async Task<List<ChannelListItemDTO>> GetChannels(int? roleId)
+        public async Task<List<ChannelListItemResponseDTO>> GetChannels(int? roleId)
         {
             // tuân thủ cách viết ở trên
             try
@@ -1391,6 +1391,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .ThenInclude(pct => pct.PodcastChannelStatus)
                         .Include(pc => pc.PodcastChannelHashtags)
                         .ThenInclude(pch => pch.Hashtag)
+                        .Include(pc => pc.PodcastShows)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
                 );
 
                 if (roleId == null || roleId == 1)
@@ -1399,7 +1401,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
                 var channels = await query.ToListAsync();
 
-                var channelList = channels.Select(pc => new ChannelListItemDTO
+                var channelList = channels.Select(pc => new ChannelListItemResponseDTO
                 {
                     Id = pc.Id,
                     Name = pc.Name,
@@ -1429,6 +1431,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     }).ToList(),
                     TotalFavorite = pc.TotalFavorite,
                     ListenCount = pc.ListenCount,
+                    ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnums.Published && ps.DeletedAt == null) : 0,
                     PodcasterId = pc.PodcasterId,
                     CreatedAt = pc.CreatedAt,
                     UpdatedAt = pc.UpdatedAt
@@ -1442,7 +1445,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task<List<ChannelListItemDTO>> GetChannelByPodcasterIdAsync(int podcasterId)
+        public async Task<List<ChannelListItemResponseDTO>> GetChannelByPodcasterIdAsync(int podcasterId)
         {
             // tuân thủ cách viết ở trên
             try
@@ -1460,7 +1463,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 var channels = await query.ToListAsync();
 
-                var channelList = channels.Select(pc => new ChannelListItemDTO
+                var channelList = channels.Select(pc => new ChannelListItemResponseDTO
                 {
                     Id = pc.Id,
                     Name = pc.Name,
@@ -1490,6 +1493,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     }).ToList(),
                     TotalFavorite = pc.TotalFavorite,
                     ListenCount = pc.ListenCount,
+
                     PodcasterId = pc.PodcasterId,
                     CreatedAt = pc.CreatedAt,
                     UpdatedAt = pc.UpdatedAt

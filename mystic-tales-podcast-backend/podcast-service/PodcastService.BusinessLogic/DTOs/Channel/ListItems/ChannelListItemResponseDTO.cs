@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace PodcastService.BusinessLogic.DTOs.Channel.ListItems
 {
-    public class ChannelListItemDTO
+    public class ChannelListItemResponseDTO
     {
         public Guid Id { get; set; }
 
@@ -17,6 +17,7 @@ namespace PodcastService.BusinessLogic.DTOs.Channel.ListItems
         public int TotalFavorite { get; set; }
 
         public int ListenCount { get; set; }
+        public int ShowCount { get; set; }
 
         public int PodcasterId { get; set; }
 
