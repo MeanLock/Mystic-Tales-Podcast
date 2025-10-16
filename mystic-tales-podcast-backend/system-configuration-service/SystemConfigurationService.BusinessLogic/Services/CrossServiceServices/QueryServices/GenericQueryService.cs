@@ -170,7 +170,6 @@ namespace SystemConfigurationService.BusinessLogic.Services.CrossServiceServices
             else
             {
                 Console.WriteLine("[BuildDynamicPredicate] No 'where' object found, using all non-special parameters");
-                // Nếu không có 'where', sử dụng tất cả parameters trừ special parameters
                 whereObj = new JObject();
                 foreach (var prop in parameters.Properties())
                 {
@@ -245,21 +244,23 @@ namespace SystemConfigurationService.BusinessLogic.Services.CrossServiceServices
                     // Tạo điều kiện expression
                     Expression conditionExpression = null;
 
-                    // Kiểm tra null values
+                    // ✅ THAY ĐỔI: Kiểm tra null values với logic mới
                     if (paramValue == null || prop.Value.Type == JTokenType.Null)
                     {
                         Console.WriteLine($"[BuildDynamicPredicate] 🔍 Creating NULL condition for property: {prop.Name}");
 
-                        // Đối với nullable types, so sánh trực tiếp với null
-                        if (IsNullableType(currentType) || !currentType.IsValueType)
+                        // ✅ Kiểm tra nếu cột không allow null
+                        if (!IsNullableType(currentType) && currentType.IsValueType)
                         {
-                            conditionExpression = Expression.Equal(propertyExpression, Expression.Constant(null, currentType));
-                            Console.WriteLine($"[BuildDynamicPredicate] ✅ Created IS NULL condition");
+                            Console.WriteLine($"[BuildDynamicPredicate] ⚠️ Property '{prop.Name}' does not allow null, IGNORING this condition (treating as always true)");
+                            // SKIP điều kiện này hoàn toàn - không thêm vào combined expression
+                            continue;
                         }
                         else
                         {
-                            Console.WriteLine($"[BuildDynamicPredicate] ❌ Cannot create NULL condition for non-nullable value type");
-                            continue;
+                            // Đối với nullable types, so sánh trực tiếp với null
+                            conditionExpression = Expression.Equal(propertyExpression, Expression.Constant(null, currentType));
+                            Console.WriteLine($"[BuildDynamicPredicate] ✅ Created IS NULL condition");
                         }
                     }
                     else

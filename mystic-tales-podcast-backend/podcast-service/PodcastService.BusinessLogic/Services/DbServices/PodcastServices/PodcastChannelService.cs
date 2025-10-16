@@ -28,6 +28,8 @@ using PodcastService.BusinessLogic.DTOs.Channel;
 using PodcastService.BusinessLogic.DTOs.Channel.Details;
 using PodcastService.BusinessLogic.DTOs.Cachegory;
 using PodcastService.BusinessLogic.DTOs.Hashtag;
+using PodcastService.BusinessLogic.DTOs.Subscription.ListItems;
+using PodcastService.BusinessLogic.DTOs.Subscription;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -1547,38 +1549,23 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         new BatchQueryItem
                         {
-                            // Key = "activeSystemConfigProfile",
-                            // QueryType = "findall",
-                            // EntityType = "SystemConfigProfile",
-                            //     Parameters = JObject.FromObject(new
-                            //     {
-                            //         where = new
-                            //         {
-                            //             IsActive = true
-                            //         },
-                            //         include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
-
-                            //     }),
-                            // Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
-
-                            //                             nhìn vào file GenericQueryService tôi cần bạn tạo cho tôi BatchQueryItem để query find all PodcastSubscription với điều kiện là deletedAt == null và PodcastChannelId == uid, isactive có thể bằng true nếu roleid == null || roleid == 1 thì chỉ lấy active = true ngược lại không có điều kiện này
-
-                            // include PodcastSubscriptionCycleTypePriceList (có include thêm subscriptionCycleType) và PodcastSubscriptionBenefitMappingList (có include thêm PodcastSubscriptionBenefit)
-
-                            // select tất cả trong PodcastSubscription
                             Key = "podcastSubscriptionList",
                             QueryType = "findall",
                             EntityType = "PodcastSubscription",
                             Parameters = JObject.FromObject(new
                             {
-                                where = new 
+                                where = (role == null || role == 1) ? new
                                 {
+                                    IsActive = (bool?)true,
+                                    DeletedAt = (DateTime?)null,
+                                    PodcastChannelId = channel.Id,
+                                } : new {
+                                    IsActive = (bool?)null,
                                     DeletedAt = (DateTime?)null,
                                     PodcastChannelId = channel.Id,
                                 },
                                 include = "PodcastSubscriptionBenefitMappings.PodcastSubscriptionBenefit , PodcastSubscriptionCycleTypePrices.SubscriptionCycleType"
                             }),
-                            // Fields = null // lấy tất cả
                         }
                     }
                 };
@@ -1586,12 +1573,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", podcastSubscriptionBatchRequest);
 
 
-                // in kết quả ra  check
-                foreach (var res in (JArray)result.Results["podcastSubscriptionList"])
-                {
-                    Console.WriteLine("\n\nOKKKK: " + res.ToString());
 
-                }
 
                 var channelDetail = new ChannelDetailResponseDTO
                 {
@@ -1627,133 +1609,176 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     PodcasterId = channel.PodcasterId,
                     CreatedAt = channel.CreatedAt,
                     UpdatedAt = channel.UpdatedAt,
-                    // PodcastSubscriptionList =
+                    PodcastSubscriptionList = ((JArray)result.Results["podcastSubscriptionList"]).Select(ps =>
+                    {
+                        var psObj = ps.ToObject<PodcastSubscriptionListItemResponseDTO>();
+                        return new PodcastSubscriptionListItemResponseDTO
+                        {
+                            Id = psObj.Id,
+                            Name = psObj.Name,
+                            Description = psObj.Description,
+                            CurrentVersion = psObj.CurrentVersion,
+                            PodcastShowId = psObj.PodcastShowId,
+                            IsActive = psObj.IsActive,
+                            CreatedAt = psObj.CreatedAt,
+                            UpdatedAt = psObj.UpdatedAt,
+                            PodcastChannelId = psObj.PodcastChannelId,
+                            PodcastSubscriptionCycleTypePriceList = ((JArray)ps["PodcastSubscriptionCycleTypePrices"]).ToObject<List<PodcastSubscriptionCycleTypePriceListItemResponseDTO>>().Select(psctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
+                            {
+                                PodcastSubscriptionId = psctp.PodcastSubscriptionId,
+                                SubscriptionCycleTypeId = psctp.SubscriptionCycleTypeId,
+                                Price = psctp.Price,
+                                Version = psctp.Version,
+                                CreatedAt = psctp.CreatedAt,
+                                UpdatedAt = psctp.UpdatedAt,
+                                SubscriptionCycleType = psctp.SubscriptionCycleType != null ? new SubscriptionCycleTypeDTO
+                                {
+                                    Id = psctp.SubscriptionCycleType.Id,
+                                    Name = psctp.SubscriptionCycleType.Name,
+                                } : null
+                            }).ToList(),
+                            DeletedAt = psObj.DeletedAt,
+                            PodcastSubscriptionBenefitMappingList = ((JArray)ps["PodcastSubscriptionBenefitMappings"]).ToObject<List<PodcastSubscriptionBenefitMappingListItemResponseDTO>>().Select(psbm => new PodcastSubscriptionBenefitMappingListItemResponseDTO
+                            {
+                                PodcastSubscriptionId = psbm.PodcastSubscriptionId,
+                                Version = psbm.Version,
+                                CreatedAt = psbm.CreatedAt,
+                                UpdatedAt = psbm.UpdatedAt,
+                                PodcastSubscriptionBenefit = psbm.PodcastSubscriptionBenefit != null ? new PodcastSubscriptionBenefitDTO
+                                {
+                                    Id = psbm.PodcastSubscriptionBenefit.Id,
+                                    Name = psbm.PodcastSubscriptionBenefit.Name
+                                } : null
+                            }).ToList()
+                        };
+                    }).ToList()
+                        
                 };
-                return channelDetail;
-            }
+            return channelDetail;
+        }
             catch (Exception ex)
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 throw new HttpRequestException("Get channel by id failed, error: " + ex.Message);
-            }
-        }
+    }
+}
 
 
-        public async Task CreatePodcastChannel(CreateChannelParameterDTO createChannelParameterDTO, SagaCommandMessage command)
+public async Task CreatePodcastChannel(CreateChannelParameterDTO createChannelParameterDTO, SagaCommandMessage command)
+{
+    using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+    {
+        try
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            var podcastChannel = new PodcastChannel
             {
-                try
-                {
-                    var podcastChannel = new PodcastChannel
-                    {
-                        Name = createChannelParameterDTO.Name,
-                        Description = createChannelParameterDTO.Description,
-                        PodcasterId = createChannelParameterDTO.PodcasterId,
-                        PodcastCategoryId = createChannelParameterDTO.PodcastCategoryId,
-                        PodcastSubCategoryId = createChannelParameterDTO.PodcastSubCategoryId,
-                    };
+                Name = createChannelParameterDTO.Name,
+                Description = createChannelParameterDTO.Description,
+                PodcasterId = createChannelParameterDTO.PodcasterId,
+                PodcastCategoryId = createChannelParameterDTO.PodcastCategoryId,
+                PodcastSubCategoryId = createChannelParameterDTO.PodcastSubCategoryId,
+            };
 
-                    await _podcastChannelGenericRepository.CreateAsync(podcastChannel);
+            await _podcastChannelGenericRepository.CreateAsync(podcastChannel);
 
-                    var newPodcastChannelStatusTracking = new PodcastChannelStatusTracking
-                    {
-                        PodcastChannelId = podcastChannel.Id,
-                        PodcastChannelStatusId = (int)PodcastChannelStatusEnum.Unpublished, // setting to "Unpublished" status
-                    };
-                    await _podcastChannelStatusTrackingGenericRepository.CreateAsync(newPodcastChannelStatusTracking);
+            var newPodcastChannelStatusTracking = new PodcastChannelStatusTracking
+            {
+                PodcastChannelId = podcastChannel.Id,
+                PodcastChannelStatusId = (int)PodcastChannelStatusEnum.Unpublished, // setting to "Unpublished" status
+            };
+            await _podcastChannelStatusTrackingGenericRepository.CreateAsync(newPodcastChannelStatusTracking);
 
 
-                    var folderPath = _filePathConfig.PODCAST_CHANNEL_FILE_PATH + "\\" + podcastChannel.Id;
-                    if (createChannelParameterDTO.MainImageFileKey != null && createChannelParameterDTO.MainImageFileKey != "")
-                    {
-                        var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(createChannelParameterDTO.MainImageFileKey)}");
-                        await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.MainImageFileKey, MainImageFileKey);
-                        await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.MainImageFileKey);
-                        podcastChannel.MainImageFileKey = MainImageFileKey;
+            var folderPath = _filePathConfig.PODCAST_CHANNEL_FILE_PATH + "\\" + podcastChannel.Id;
+            if (createChannelParameterDTO.MainImageFileKey != null && createChannelParameterDTO.MainImageFileKey != "")
+            {
+                var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(createChannelParameterDTO.MainImageFileKey)}");
+                await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.MainImageFileKey, MainImageFileKey);
+                await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.MainImageFileKey);
+                podcastChannel.MainImageFileKey = MainImageFileKey;
 
-                    }
-                    if (createChannelParameterDTO.BackgroundImageFileKey != null && createChannelParameterDTO.BackgroundImageFileKey != "")
-                    {
-                        var BackgroundImageFileKey = FilePathHelper.CombinePaths(folderPath, $"background_image{FilePathHelper.GetExtension(createChannelParameterDTO.BackgroundImageFileKey)}");
-                        await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.BackgroundImageFileKey, BackgroundImageFileKey);
-                        await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.BackgroundImageFileKey);
-                        podcastChannel.BackgroundImageFileKey = BackgroundImageFileKey;
-                    }
-
-                    await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
-
-                    foreach (var hashtagId in createChannelParameterDTO.HashtagIds)
-                    {
-                        var existingHashtag = await _hashtagGenericRepository.FindByIdAsync(hashtagId);
-                        if (existingHashtag == null)
-                        {
-                            throw new Exception("Hashtag with id " + hashtagId + " does not exist");
-                        }
-                        var podcastChannelHashtag = new PodcastChannelHashtag
-                        {
-                            PodcastChannelId = podcastChannel.Id,
-                            HashtagId = hashtagId
-                        };
-                        await _podcastChannelHashtagGenericRepository.CreateAsync(podcastChannelHashtag);
-                    }
-
-                    await transaction.CommitAsync();
-
-                    var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["Name"] = podcastChannel.Name;
-                    messageNextRequestData["Description"] = podcastChannel.Description;
-                    messageNextRequestData["MainImageFileKey"] = podcastChannel.MainImageFileKey;
-                    messageNextRequestData["BackgroundImageFileKey"] = podcastChannel.BackgroundImageFileKey;
-                    messageNextRequestData["PodcastCategoryId"] = podcastChannel.PodcastCategoryId;
-                    messageNextRequestData["PodcastSubCategoryId"] = podcastChannel.PodcastSubCategoryId;
-                    messageNextRequestData["HashtagIds"] = JArray.FromObject(createChannelParameterDTO.HashtagIds);
-                    messageNextRequestData["PodcasterId"] = podcastChannel.PodcasterId;
-
-                    var messageResponseData = JObject.FromObject(new
-                    {
-                        PodcastChannelId = podcastChannel.Id,
-                        Name = podcastChannel.Name,
-                        Description = podcastChannel.Description,
-                        MainImageFileKey = podcastChannel.MainImageFileKey,
-                        BackgroundImageFileKey = podcastChannel.BackgroundImageFileKey,
-                        PodcastCategoryId = podcastChannel.PodcastCategoryId,
-                        PodcastSubCategoryId = podcastChannel.PodcastSubCategoryId,
-                        HashtagIds = createChannelParameterDTO.HashtagIds,
-                        PodcasterId = podcastChannel.PodcasterId
-                    });
-                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.ContentManagementDomain,
-                        requestData: messageNextRequestData,
-                        responseData: messageResponseData,
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: "create-channel.success"
-                    );
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-
-                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.ContentManagementDomain,
-                        requestData: command.RequestData,
-                        responseData: JObject.FromObject(new
-                        {
-                            ErrorMessage = $"Create podcast channel failed, error: {ex.Message}"
-                        }),
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: "create-channel.failed"
-                    );
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-
-                    Console.WriteLine("\n" + ex.StackTrace + "\n");
-                }
             }
+            if (createChannelParameterDTO.BackgroundImageFileKey != null && createChannelParameterDTO.BackgroundImageFileKey != "")
+            {
+                var BackgroundImageFileKey = FilePathHelper.CombinePaths(folderPath, $"background_image{FilePathHelper.GetExtension(createChannelParameterDTO.BackgroundImageFileKey)}");
+                await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.BackgroundImageFileKey, BackgroundImageFileKey);
+                await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.BackgroundImageFileKey);
+                podcastChannel.BackgroundImageFileKey = BackgroundImageFileKey;
+            }
+
+            await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
+
+            foreach (var hashtagId in createChannelParameterDTO.HashtagIds)
+            {
+                var existingHashtag = await _hashtagGenericRepository.FindByIdAsync(hashtagId);
+                if (existingHashtag == null)
+                {
+                    throw new Exception("Hashtag with id " + hashtagId + " does not exist");
+                }
+                var podcastChannelHashtag = new PodcastChannelHashtag
+                {
+                    PodcastChannelId = podcastChannel.Id,
+                    HashtagId = hashtagId
+                };
+                await _podcastChannelHashtagGenericRepository.CreateAsync(podcastChannelHashtag);
+            }
+
+            await transaction.CommitAsync();
+
+            var messageNextRequestData = command.RequestData;
+            messageNextRequestData["Name"] = podcastChannel.Name;
+            messageNextRequestData["Description"] = podcastChannel.Description;
+            messageNextRequestData["MainImageFileKey"] = podcastChannel.MainImageFileKey;
+            messageNextRequestData["BackgroundImageFileKey"] = podcastChannel.BackgroundImageFileKey;
+            messageNextRequestData["PodcastCategoryId"] = podcastChannel.PodcastCategoryId;
+            messageNextRequestData["PodcastSubCategoryId"] = podcastChannel.PodcastSubCategoryId;
+            messageNextRequestData["HashtagIds"] = JArray.FromObject(createChannelParameterDTO.HashtagIds);
+            messageNextRequestData["PodcasterId"] = podcastChannel.PodcasterId;
+
+            var messageResponseData = JObject.FromObject(new
+            {
+                PodcastChannelId = podcastChannel.Id,
+                Name = podcastChannel.Name,
+                Description = podcastChannel.Description,
+                MainImageFileKey = podcastChannel.MainImageFileKey,
+                BackgroundImageFileKey = podcastChannel.BackgroundImageFileKey,
+                PodcastCategoryId = podcastChannel.PodcastCategoryId,
+                PodcastSubCategoryId = podcastChannel.PodcastSubCategoryId,
+                HashtagIds = createChannelParameterDTO.HashtagIds,
+                PodcasterId = podcastChannel.PodcasterId
+            });
+            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                topic: KafkaTopicEnum.ContentManagementDomain,
+                requestData: messageNextRequestData,
+                responseData: messageResponseData,
+                sagaInstanceId: command.SagaInstanceId,
+                flowName: command.FlowName,
+                messageName: "create-channel.success"
+            );
+            await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
         }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+
+            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                topic: KafkaTopicEnum.ContentManagementDomain,
+                requestData: command.RequestData,
+                responseData: JObject.FromObject(new
+                {
+                    ErrorMessage = $"Create podcast channel failed, error: {ex.Message}"
+                }),
+                sagaInstanceId: command.SagaInstanceId,
+                flowName: command.FlowName,
+                messageName: "create-channel.failed"
+            );
+            await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+            Console.WriteLine("\n" + ex.StackTrace + "\n");
+        }
+    }
+}
 
 
     }
