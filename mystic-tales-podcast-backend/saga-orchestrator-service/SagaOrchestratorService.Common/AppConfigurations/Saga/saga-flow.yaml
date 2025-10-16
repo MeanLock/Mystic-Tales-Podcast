@@ -6039,13 +6039,13 @@ flows:
         nextSteps: []
         nextFlows: []
 
-  create-payment-link-rollback-flow:
+  confirm-payment-rollback-flow:
     topic: "payment-processing-domain"
     handle-service: "SagaOrchestratorService"
     description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
     save-file: ""
     steps:
-    - name: "create-payment-link-rollback"
+    - name: "confirm-payment-rollback"
       topic: "payment-processing-domain"
       handle-service: "TransactionService"
       description: "Chuyển trạng thái của account balance transaction thành failed"
@@ -6057,13 +6057,13 @@ flows:
         - AccountBalanceTransactionId
         - TransactionStatusId
       onSuccess:
-        emit: "create-payment-link-rollback.success"
+        emit: "confirm-payment-rollback.success"
         topic: "payment-processing-domain"
         handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
       onFailure:
-        emit: "create-payment-link-rollback.failed"
+        emit: "confirm-payment-rollback.failed"
         topic: "payment-processing-domain"
         handle-service: "SagaOrchestratorService"
         nextSteps: []

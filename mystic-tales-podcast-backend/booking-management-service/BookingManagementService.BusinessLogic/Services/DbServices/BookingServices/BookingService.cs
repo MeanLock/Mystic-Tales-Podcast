@@ -29,7 +29,7 @@ using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
-namespace BookingManagementService.BusinessLogic.Services.DbServices
+namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServices
 {
     public class BookingService
     {
@@ -119,7 +119,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                 AccountId = booking.AccountId,
                 PodcastBuddyId = booking.PodcastBuddyId,
                 Price = booking.Price ?? 0,
-                Deadline = booking.Deadline ?? default(DateOnly),
+                Deadline = booking.Deadline ?? default,
                 DemoAudioFileKey = booking.DemoAudioFileKey,
                 BookingManualCancelledReason = booking.BookingManualCancelledReason,
                 BookingAutoCancelledReason = booking.BookingAutoCancelReason,
@@ -130,7 +130,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     Id = nego.Id,
                     BookingId = nego.BookingId,
                     Note = nego.Note,
-                    Deadline = nego.Deadline ?? default(DateOnly),
+                    Deadline = nego.Deadline ?? default,
                     Price = nego.Price ?? 0,
                     DemoAudioRequired = nego.DemoAudioRequired,
                     DemoAudioFileKey = nego.DemoAudioFileKey,
@@ -145,7 +145,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                     Note = prod.Note,
                     Deadline = prod.Deadline,
                     IsAccepted = prod.IsAccepted ?? false,
-                    FinishedAt = prod.FinishedAt ?? default(DateTime),
+                    FinishedAt = prod.FinishedAt ?? default,
                     CreatedAt = prod.CreatedAt
                 }).ToList() ?? new List<BookingProducingRequestListItemResponseDTO>()
             };
@@ -660,7 +660,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices
                         Id = Guid.NewGuid(),
                         BookingId = booking.Id,
                         Note = bookingNegotiation.Note,
-                        Deadline = booking.Deadline ?? default(DateOnly),
+                        Deadline = booking.Deadline ?? default,
                         IsAccepted = true,
                         FinishedAt = _dateHelper.GetNowByAppTimeZone(),
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()

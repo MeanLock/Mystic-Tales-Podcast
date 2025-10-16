@@ -22,7 +22,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
-namespace BookingManagementService.BusinessLogic.Services.DbServices
+namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServices
 {
     public class BookingProducingRequestService
     {

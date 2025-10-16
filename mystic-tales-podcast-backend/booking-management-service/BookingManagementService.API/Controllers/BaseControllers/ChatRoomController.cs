@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using BookingManagementService.API.Filters.ExceptionFilters;
 using BookingManagementService.BusinessLogic.Models.CrossService;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
-using BookingManagementService.BusinessLogic.Services.DbServices;
 using Microsoft.AspNetCore.Authorization;
+using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
 {

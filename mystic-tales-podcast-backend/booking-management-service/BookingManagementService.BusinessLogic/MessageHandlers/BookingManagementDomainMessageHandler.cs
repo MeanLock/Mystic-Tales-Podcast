@@ -10,7 +10,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateTrackListenSlot;
-using BookingManagementService.BusinessLogic.Services.DbServices;
+using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using Microsoft.Extensions.Logging;

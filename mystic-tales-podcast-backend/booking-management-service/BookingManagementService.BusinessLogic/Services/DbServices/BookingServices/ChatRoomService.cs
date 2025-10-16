@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookingManagementService.BusinessLogic.Services.DbServices
+namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServices
 {
     public class ChatRoomService
     {

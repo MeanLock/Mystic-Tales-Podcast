@@ -8,7 +8,7 @@ namespace TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction
 {
     public class AccountBalanceTransactionCreateRequestDTO
     {
-        public AccountBalanceTransactionCreateInfoDTO AccountBalanceTransactionInfo { get; set; }
+        public AccountBalanceTransactionCreateInfoDTO AccountBalanceTransactionCreateInfo { get; set; }
     }
     public class AccountBalanceTransactionCreateInfoDTO
     {
