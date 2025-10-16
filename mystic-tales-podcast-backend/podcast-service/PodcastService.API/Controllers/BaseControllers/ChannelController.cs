@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PodcastService.API.Filters.ExceptionFilters;
-using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.DTOs.Cache;
+using PodcastService.BusinessLogic.DTOs.Channel;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
 using PodcastService.BusinessLogic.Models.CrossService;
 using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
 using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
 using PodcastService.Common.AppConfigurations.FilePath.interfaces;
@@ -27,11 +28,12 @@ namespace PodcastService.API.Controllers.BaseControllers
         private readonly IFileValidationConfig _fileValidationConfig;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
-        // private readonly AccountService _accountService;
+
+        private readonly PodcastChannelService _podcastChannelService;
         private readonly RedisInstanceCacheService _redisInstanceCacheService;
         private readonly RedisSharedCacheService _redisSharedCacheService;
 
-        public ChannelController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService)
+        public ChannelController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService, PodcastChannelService podcastChannelService)
         {
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
@@ -40,7 +42,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             _fileIOHelper = fileIOHelper;
             _redisInstanceCacheService = redisInstanceCacheService;
             _redisSharedCacheService = redisSharedCacheService;
-            // _accountService = accountService;
+            _podcastChannelService = podcastChannelService;
         }
 
         #region Sample coding format must be followed
@@ -223,7 +225,17 @@ namespace PodcastService.API.Controllers.BaseControllers
         #endregion
 
         // /api/podcast-service/api/channels
-        // [HttpGet]
+        [HttpGet("")]
+        public async Task<IActionResult> GetChannels([FromQuery] int? PodcasterId, [FromQuery] string? SearchKeyword, [FromQuery] int PageNumber = 1, [FromQuery] int PageSize = 10)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var channels = await _podcastChannelService.GetChannels(account?.RoleId);
+
+            return Ok(new
+            {
+                ChannelList = channels
+            });
+        }
 
         // /api/podcast-service/api/channels
         [HttpPost("")]
@@ -278,7 +290,7 @@ namespace PodcastService.API.Controllers.BaseControllers
                 }
                 backgroundImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_CHANNEL_TEMP_FILE_PATH, newBackgroundImageFileName);
             }
-            
+
             JObject requestData = JObject.FromObject(channelCreateInfo);
             requestData["MainImageFileKey"] = mainImageFileKey;
             requestData["BackgroundImageFileKey"] = backgroundImageFileKey;
@@ -294,7 +306,19 @@ namespace PodcastService.API.Controllers.BaseControllers
             );
         }
 
+        // /api/podcast-service/api/channels/me
+        [HttpGet("me")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetMyChannel()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
+            var channels = await _podcastChannelService.GetChannelByPodcasterIdAsync(account.Id);
 
+            return Ok(new
+            {
+                ChannelList = channels
+            });
+        }
     }
 }

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace PodcastService.BusinessLogic.DTOs.Account
+namespace PodcastService.BusinessLogic.DTOs.Channel
 {
     public class ChannelCreateRequestDTO
     {

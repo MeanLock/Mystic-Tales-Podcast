@@ -1,5 +1,12 @@
-﻿ALTER TABLE PodcastEpisode
+﻿select * from PodcastChannel
+select * from PodcastChannelStatusTracking
+delete from PodcastChannelStatusTracking
+delete from PodcastChannel
+
+
+ALTER TABLE PodcastEpisode
 ADD episodeOrder INT NOT NULL DEFAULT 1;
+
 
 
 EXEC sp_rename 'PodcastEpisode.title', 'name', 'COLUMN'

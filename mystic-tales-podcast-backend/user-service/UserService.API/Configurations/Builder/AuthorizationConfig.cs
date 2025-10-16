@@ -93,7 +93,7 @@ namespace UserService.API.Configurations.Builder
                 });
                 options.AddPolicy("Customer.PodcasterAccess", policy =>
                 {
-                    policy.RequireRole("Staff");
+                    policy.RequireRole("Customer");
                     policy.Requirements.Add(new AccountPodcasterAccessRequirement());
                 });
                 options.AddPolicy("Customer.NoViolationAccess.NonPodcasterAccess", policy =>
