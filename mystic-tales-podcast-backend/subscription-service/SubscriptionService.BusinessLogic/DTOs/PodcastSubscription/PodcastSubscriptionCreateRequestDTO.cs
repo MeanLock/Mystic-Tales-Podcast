@@ -13,9 +13,4 @@ namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription
         public List<PodcastSubscriptionCycleTypePriceCreateRequestDTO> PodcastSubscriptionCycleTypePriceCreateInfoList { get; set; }
         public List<int> PodcastSubscriptionBenefitMappingCreateInfoList { get; set; }
     }
-    public class PodcastSubscriptionCycleTypePriceCreateRequestDTO
-    {
-        public int SubscriptionCycleTypeId { get; set; }
-        public decimal Price { get; set; }
-    }
 }

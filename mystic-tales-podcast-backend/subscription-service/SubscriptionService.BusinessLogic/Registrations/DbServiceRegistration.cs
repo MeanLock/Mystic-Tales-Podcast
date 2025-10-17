@@ -12,7 +12,6 @@ namespace SubscriptionService.BusinessLogic.Registrations
             services.AddScoped<PodcastSubscriptionService>();
 
             // MiscServices
-            services.AddScoped<PlatformFeedbackService>();
             services.AddScoped<MailOperationService>();
 
             // CachingServices

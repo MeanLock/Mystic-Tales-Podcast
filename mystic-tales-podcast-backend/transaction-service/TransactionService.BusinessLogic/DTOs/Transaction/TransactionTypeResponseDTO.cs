@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TransactionService.BusinessLogic.DTOs.PodcastSubscriptionTransaction
+namespace TransactionService.BusinessLogic.DTOs.Transaction
 {
     public class TransactionTypeResponseDTO
     {

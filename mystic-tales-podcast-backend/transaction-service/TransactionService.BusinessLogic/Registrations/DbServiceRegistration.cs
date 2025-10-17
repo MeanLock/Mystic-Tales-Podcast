@@ -9,7 +9,6 @@ namespace TransactionService.BusinessLogic.Registrations
         public static IServiceCollection AddDbServices(this IServiceCollection services)
         {
             // MiscServices
-            services.AddScoped<PlatformFeedbackService>();
             services.AddScoped<MailOperationService>();
 
             // CachingServices
