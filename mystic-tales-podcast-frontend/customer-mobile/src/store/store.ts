@@ -4,7 +4,7 @@ import { baseApi } from "../services/baseApi";
 import authReducer from "../features/auth/authSlice";
 import downloadsReducer from "../features/download/downloadSlice";
 
-// ⬇️ redux-persist + AsyncStorage
+// persist
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   persistStore,
@@ -17,26 +17,26 @@ import {
   REGISTER,
 } from "redux-persist";
 
-import playerReducer from "../features/mediaPlayer/playerSlice";
+import playerReducer, {
+  updatePosition,
+} from "../features/mediaPlayer/playerSlice";
+import { playerMiddleware } from "../features/mediaPlayer/playerMiddleware"; // ✅
+import { playerEngine } from "../services/audio/playerEngine";
 
-// Gộp reducer gốc
 const rootReducer = combineReducers({
   auth: authReducer,
   downloads: downloadsReducer,
   player: playerReducer,
-  [baseApi.reducerPath]: baseApi.reducer, // KHÔNG persist RTK Query
+  [baseApi.reducerPath]: baseApi.reducer,
 });
 
-// Cấu hình persist (chỉ whitelist các slice bạn muốn giữ)
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
   whitelist: [
-    // Muốn giữ cái gì thì thêm ở đây
-    "player",   
-    "auth", 
+    // "player", // đang tắt persist player để test
+    "auth",
   ],
-  // blacklist: [baseApi.reducerPath], // không cần vì ta persist root, whitelist đủ rồi
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -45,11 +45,13 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      // Bỏ qua các action đặc thù của redux-persist để khỏi warning serializable
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(baseApi.middleware),
+    })
+      .concat(baseApi.middleware) // RTK Query middleware
+      .concat(playerMiddleware), // ✅ Thêm playerEngine middleware
+  devTools: __DEV__,
 });
 
 export const persistor = persistStore(store);
@@ -57,3 +59,11 @@ export const persistor = persistStore(store);
 // Types
 export type RootState = ReturnType<typeof rootReducer>;
 export type AppDispatch = typeof store.dispatch;
+
+playerEngine.onStatus = (s) => {
+  // đẩy tiến độ phát (giây) về Redux
+  if ("isLoaded" in s && s.isLoaded) {
+    const seconds = Math.floor((s.positionMillis ?? 0) / 1000);
+    store.dispatch(updatePosition({ position: seconds }));
+  }
+};

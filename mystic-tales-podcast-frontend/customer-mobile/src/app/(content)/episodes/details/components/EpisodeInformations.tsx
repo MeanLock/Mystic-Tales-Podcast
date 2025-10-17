@@ -1,5 +1,7 @@
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
+import { mockEpisodes } from "@/src/data/mockEpisodes";
+import { enqueue, play } from "@/src/features/mediaPlayer/playerSlice";
 import { formatAudioLength, formatDateRange } from "@/src/lib/format";
 import { EpisodeWithImageUrl } from "@/src/types/episode";
 import {
@@ -17,6 +19,7 @@ import {
   Pressable,
   StyleSheet,
 } from "react-native";
+import { useDispatch } from "react-redux";
 
 type EpisodeInfoProps = Pick<
   EpisodeWithImageUrl,
@@ -33,6 +36,99 @@ const EpisodeInformations = ({
 }: EpisodeInfoProps) => {
   const router = useRouter();
   const [isFavorited, setIsFavorited] = useState(false);
+
+  const dispatch = useDispatch();
+
+  const handlePlayEpisode = () => {
+    console.log("Force init player with mock data...");
+    dispatch(
+      play({
+        audio: {
+          Id: mockEpisodes[0].Id,
+          Name: mockEpisodes[0].Name,
+          LatestPosition: 0,
+          AudioLength: mockEpisodes[0].AudioLength,
+          MainFileKey: mockEpisodes[0].AudioFileKey,
+          ImageUrl: mockEpisodes[0].ImageUrl,
+          PodcasterName: "Hoàng Minh Lộc",
+          Show: {
+            Id: mockEpisodes[0].PodcastShowId,
+            Name: "Khi em lớn",
+          },
+        },
+      })
+    );
+  };
+
+  const handleAddToQueue = () => {
+    console.log("Add To Queue...");
+    dispatch(
+      enqueue({
+        Id: mockEpisodes[1].Id,
+        Name: mockEpisodes[1].Name,
+        AudioLength: mockEpisodes[1].AudioLength,
+        MainFileKey: mockEpisodes[1].AudioFileKey,
+        ImageUrl: mockEpisodes[1].ImageUrl,
+        PodcasterName: "Wrxdie",
+        Show: {
+          Id: mockEpisodes[0].PodcastShowId,
+          Name: "Cất đi mai chơi nốt",
+        },
+      })
+    );
+  };
+  const handleAddToQueue2 = () => {
+    console.log("Add To Queue...");
+    dispatch(
+      enqueue({
+        Id: mockEpisodes[2].Id,
+        Name: mockEpisodes[2].Name,
+        AudioLength: mockEpisodes[2].AudioLength,
+        MainFileKey: mockEpisodes[2].AudioFileKey,
+        ImageUrl: mockEpisodes[2].ImageUrl,
+        PodcasterName: "BAN MAI",
+        Show: {
+          Id: mockEpisodes[2].PodcastShowId,
+          Name: "VLEU",
+        },
+      })
+    );
+  };
+  const handleAddToQueue3 = () => {
+    console.log("Add To Queue...");
+    dispatch(
+      enqueue({
+        Id: mockEpisodes[3].Id,
+        Name: mockEpisodes[3].Name,
+        AudioLength: mockEpisodes[3].AudioLength,
+        MainFileKey: mockEpisodes[3].AudioFileKey,
+        ImageUrl: mockEpisodes[3].ImageUrl,
+        PodcasterName: "Lauv",
+        Show: {
+          Id: mockEpisodes[3].PodcastShowId,
+          Name: "Cất đi mai chơi nốt",
+        },
+      })
+    );
+  };
+  const handleAddToQueue4 = () => {
+    console.log("Add To Queue...");
+    dispatch(
+      enqueue({
+        Id: mockEpisodes[4].Id,
+        Name: mockEpisodes[4].Name,
+        AudioLength: mockEpisodes[4].AudioLength,
+        MainFileKey: mockEpisodes[4].AudioFileKey,
+        ImageUrl: mockEpisodes[4].ImageUrl,
+        PodcasterName: "Wrxdie",
+        Show: {
+          Id: mockEpisodes[4].PodcastShowId,
+          Name: "Cất đi mai chơi nốt",
+        },
+      })
+    );
+  };
+
   return (
     <View style={styles.containerWrapper}>
       <ImageBackground
@@ -103,9 +199,44 @@ const EpisodeInformations = ({
           </Text>
 
           <View className="w-full flex items-center justify-center">
-            <Pressable style={styles.playButton}>
+            <Pressable
+              onPress={() => handlePlayEpisode()}
+              style={styles.playButton}
+            >
               <MaterialIcons name="play-arrow" size={25} color={"#aee339"} />
               <Text className="font-bold text-[#aee339]">Play</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleAddToQueue()}
+              style={styles.playButton}
+              className="mt-2"
+            >
+              <MaterialIcons name="add" size={25} color={"#aee339"} />
+              <Text className="font-bold text-[#aee339]">Add To Queue</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleAddToQueue2()}
+              style={styles.playButton}
+              className="mt-2"
+            >
+              <MaterialIcons name="add" size={25} color={"#aee339"} />
+              <Text className="font-bold text-[#aee339]">Add To Queue2</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleAddToQueue3()}
+              style={styles.playButton}
+              className="mt-2"
+            >
+              <MaterialIcons name="add" size={25} color={"#aee339"} />
+              <Text className="font-bold text-[#aee339]">Add To Queue3</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleAddToQueue4()}
+              style={styles.playButton}
+              className="mt-2"
+            >
+              <MaterialIcons name="add" size={25} color={"#aee339"} />
+              <Text className="font-bold text-[#aee339]">Add To Queue4</Text>
             </Pressable>
           </View>
         </View>

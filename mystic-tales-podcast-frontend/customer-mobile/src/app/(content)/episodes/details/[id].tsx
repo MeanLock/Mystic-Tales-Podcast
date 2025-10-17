@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView } from "react-native";
 import EpisodeInformations from "./components/EpisodeInformations";
 import EpisodeDescription from "./components/EpisodeDescription";
+import DebugPlayer from "./components/DebugPlayer";
 
 const epsideMockData: EpisodeWithImageUrl = {
   Id: "a1c2f301-010",
@@ -89,6 +90,7 @@ export default function EpisdeDetailsScreen() {
     <ScrollView showsVerticalScrollIndicator={false}>
       <EpisodeInformations {...episode} />
       <EpisodeDescription description={episode.Description} />
+      {/* <DebugPlayer /> */}
     </ScrollView>
   );
 }

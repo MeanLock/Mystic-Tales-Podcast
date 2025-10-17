@@ -13,13 +13,13 @@ export const formatAudioLength = (length: number): string => {
   // Tạo chuỗi kết quả
   if (hours > 0) {
     // Có giờ: "xx h yy m zz s"
-    return `${pad(hours)} h ${pad(minutes)} m ${pad(seconds)} s`;
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
   } else if (minutes > 0) {
     // Chỉ có phút: "yy m zz s"
-    return `${pad(minutes)} m ${pad(seconds)} s`;
+    return `${pad(minutes)}:${pad(seconds)}`;
   } else {
     // Chỉ có giây: "zz s"
-    return `${pad(seconds)} s`;
+    return `00:${pad(seconds)}`;
   }
 };
 

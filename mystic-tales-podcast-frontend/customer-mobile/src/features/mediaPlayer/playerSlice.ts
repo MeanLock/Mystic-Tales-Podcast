@@ -1,3 +1,4 @@
+import { mockEpisodes } from "@/src/data/mockEpisodes";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 /** ===== Types ===== */
@@ -35,6 +36,9 @@ export type PlayerType = {
 };
 
 /** ===== Helpers ===== */
+const formatQueue = (arr: QueuedAudioType[]) =>
+  arr.map((x, i) => `#${i}{Index:${x.Index},Name:${x.Name}}`).join(" | ");
+
 const clamp = (n: number, min: number, max: number) =>
   Math.max(min, Math.min(max, n));
 
@@ -62,8 +66,17 @@ function toCurrent(q: QueuedAudioType): NonNullable<CurrentAudioType> {
 
 /** ===== Initial ===== */
 const initialState: PlayerType = {
-  playerMode: { playStatus: "stop", nextMode: "normal" },
-  currentAudio: null,
+  playerMode: { playStatus: "playing", nextMode: "normal" },
+  currentAudio: {
+    Id: mockEpisodes[0].Id,
+    Name: mockEpisodes[0].Name,
+    LatestPosition: 0,
+    AudioLength: mockEpisodes[0].AudioLength,
+    MainFileKey: mockEpisodes[0].AudioFileKey,
+    ImageUrl: mockEpisodes[0].ImageUrl,
+    PodcasterName: "Mystic Tales",
+    Show: { Id: mockEpisodes[0].PodcastShowId, Name: "Mystic Tales" },
+  },
   queueAudios: [],
 };
 
@@ -72,7 +85,6 @@ const playerSlice = createSlice({
   name: "player",
   initialState,
   reducers: {
-
     // ACTION 1 //
     /** Play: có thể truyền audio mới; nếu không, tiếp tục play current */
     play(
@@ -189,6 +201,9 @@ const playerSlice = createSlice({
       action: PayloadAction<{ fromIndex: number; toIndex: number }>
     ) {
       const { fromIndex, toIndex } = action.payload;
+      console.log(`Move Item From Index: ${fromIndex} to Index: ${toIndex}`);
+      console.log("Select Items: ", state.queueAudios[fromIndex].Name);
+      console.log("Change With Item: ", state.queueAudios[toIndex].Name);
       const q = normalizeQueue(state.queueAudios);
       if (
         fromIndex < 0 ||
@@ -206,6 +221,29 @@ const playerSlice = createSlice({
       const after = without.slice(insertAt);
 
       state.queueAudios = normalizeQueue([...before, { ...item }, ...after]);
+    },
+
+    moveInQueueSwap(
+      state,
+      action: PayloadAction<{ fromIndex: number; toIndex: number }>
+    ) {
+      const { fromIndex, toIndex } = action.payload;
+      const length = state.queueAudios.length;
+
+      // Validation
+      if (
+        fromIndex === toIndex ||
+        fromIndex < 0 ||
+        fromIndex >= length ||
+        toIndex < 0 ||
+        toIndex >= length
+      ) {
+        return;
+      }
+
+      // Di chuyển item (Immer sẽ tự động tạo bản sao immutable)
+      const [item] = state.queueAudios.splice(fromIndex, 1);
+      state.queueAudios.splice(toIndex, 0, item);
     },
 
     // ACTION 9 //
@@ -237,6 +275,7 @@ export const {
   moveInQueue,
   stopAll,
   hydrate,
+  moveInQueueSwap,
 } = playerSlice.actions;
 
 export default playerSlice.reducer;
