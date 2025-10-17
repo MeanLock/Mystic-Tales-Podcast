@@ -938,13 +938,16 @@ flows:
           - AccountId
           - PodcastChannelId
         response-data:
-          - AccountFavoritedPodcastChannelId
-          - CreatedAt
+          - AccountId
+          - PodcastChannelId
         onSuccess:
           emit: "create-channel-favorited.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "increase-channel-total-favorite"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
           emit: "create-channel-favorited.failed"
@@ -952,6 +955,33 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+      - name: "plus-channel-total-favorite"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Tăng tổng số lượt yêu thích kênh podcast"
+        parameters:
+          - PodcastChannelId
+        next-request-data:
+          - AccountId
+          - PodcastChannelId
+        response-data:
+          - AccountId
+          - PodcastChannelId
+        onSuccess:
+          emit: "plus-channel-total-favorite.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "plus-channel-total-favorite.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-channel-favorited-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
 
   channel-unfavorite-flow:
     topic: "user-management-domain"
@@ -976,7 +1006,10 @@ flows:
           emit: "delete-channel-favorited.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "subtract-channel-total-favorite"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
           emit: "delete-channel-favorited.failed"
@@ -984,6 +1017,33 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+      - name: "subtract-channel-total-favorite"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Giảm tổng số lượt yêu thích kênh podcast"
+        parameters:
+          - PodcastChannelId
+        next-request-data:
+          - AccountId
+          - PodcastChannelId
+        response-data:
+          - AccountId
+          - PodcastChannelId
+        onSuccess:
+          emit: "subtract-channel-total-favorite.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "subtract-channel-total-favorite.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "delete-channel-favorited-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
 
   show-follow-flow:
     topic: "user-management-domain"
@@ -1002,13 +1062,16 @@ flows:
           - AccountId
           - PodcastShowId
         response-data:
-          - AccountFollowedPodcastShowId
-          - CreatedAt
+          - AccountId
+          - PodcastShowId
         onSuccess:
           emit: "create-show-followed.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "plus-show-total-follow"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
           emit: "create-show-followed.failed"
@@ -1016,6 +1079,33 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+      - name: "plus-show-total-follow"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Tăng tổng số lượt theo dõi chương trình podcast"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - AccountId
+          - PodcastShowId
+        response-data:
+          - AccountId
+          - PodcastShowId
+        onSuccess:
+          emit: "plus-show-total-follow.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "plus-show-total-follow.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-show-followed-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
 
   show-unfollow-flow:
     topic: "user-management-domain"
@@ -1040,7 +1130,10 @@ flows:
           emit: "delete-show-followed.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "subtract-show-total-follow"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
           emit: "delete-show-followed.failed"
@@ -1048,6 +1141,33 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+      - name: "subtract-show-total-follow"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Giảm tổng số lượt theo dõi chương trình podcast"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - AccountId
+          - PodcastShowId
+        response-data:
+          - AccountId
+          - PodcastShowId
+        onSuccess:
+          emit: "subtract-show-total-follow.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "subtract-show-total-follow.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "delete-show-followed-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
 
   episode-save-flow:
     topic: "user-management-domain"
@@ -1055,8 +1175,8 @@ flows:
     description: "Lưu tập podcast"
     save-file: ""
     steps:
-      - name: "user-management-domain"
-        topic: "content-management-domain"
+      - name: "create-episode-saved"
+        topic: "user-management-domain"
         handle-service: "PodcastService"
         description: "Lưu episode vào danh sách đã lưu"
         parameters:
@@ -1066,13 +1186,16 @@ flows:
           - AccountId
           - PodcastEpisodeId
         response-data:
-          - AccountSavedPodcastEpisodeId
-          - CreatedAt
+          - AccountId
+          - PodcastEpisodeId
         onSuccess:
           emit: "create-episode-saved.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "plus-episode-total-saved"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
           emit: "create-episode-saved.failed"
@@ -1080,6 +1203,33 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+      - name: "plus-episode-total-saved"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Tăng tổng số lượt lưu tập podcast"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - AccountId
+          - PodcastEpisodeId
+        response-data:
+          - AccountId
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "plus-episode-total-saved.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "plus-episode-total-saved.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-episode-saved-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
 
   episode-unsave-flow:
     topic: "user-management-domain"
@@ -1104,7 +1254,10 @@ flows:
           emit: "delete-episode-saved.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "subtract-episode-total-saved"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
           emit: "delete-episode-saved.failed"
@@ -1112,6 +1265,33 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+      - name: "subtract-episode-total-saved"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Giảm tổng số lượt lưu tập podcast"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - AccountId
+          - PodcastEpisodeId
+        response-data:
+          - AccountId
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "subtract-episode-total-saved.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "subtract-episode-total-saved.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "delete-episode-saved-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
 
   channel-creation-flow:
     topic: "content-management-domain"
@@ -6511,3 +6691,195 @@ flows:
         handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
+
+  create-channel-favorited-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+      - name: "create-channel-favorited-rollback"
+        topic: "user-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa channel khỏi danh sách yêu thích"
+        parameters:
+          - AccountId
+          - PodcastChannelId
+        next-request-data:
+          - AccountId
+          - PodcastChannelId
+        response-data:
+          - AccountId
+          - PodcastChannelId
+        onSuccess:
+          emit: "create-channel-favorited-rollback.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-channel-favorited-rollback.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  channel-unfavorite-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Thêm kênh podcast vào danh sách yêu thích"
+    save-file: ""
+    steps:
+      - name: "delete-channel-favorited-rollback"
+        topic: "user-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa channel khỏi danh sách yêu thích"
+        parameters:
+          - AccountId
+          - PodcastChannelId
+        next-request-data:
+          - AccountId
+          - PodcastChannelId
+        response-data:
+          - AccountId
+          - PodcastChannelId
+        onSuccess:
+          emit: "delete-channel-favorited-rollback.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-channel-favorited-rollback.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  create-show-followed-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
+    save-file: ""
+    steps:
+      - name: "create-show-followed-rollback"
+        topic: "user-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa show khỏi danh sách theo dõi"
+        parameters:
+          - AccountId
+          - PodcastShowId
+        next-request-data:
+          - AccountId
+          - PodcastShowId
+        response-data:
+          - AccountId
+          - PodcastShowId
+        onSuccess:
+          emit: "create-show-followed-rollback.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-show-followed-rollback.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: [] 
+
+  delete-show-followed-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Thêm chương trình podcast vào danh sách theo dõi"
+    save-file: ""
+    steps:
+      - name: "delete-show-followed-rollback"
+        topic: "user-management-domain"
+        handle-service: "PodcastService"
+        description: "Unfollow show"
+        parameters:
+          - AccountId
+          - PodcastShowId
+        next-request-data:
+          - AccountId
+          - PodcastShowId
+        response-data:
+          - AccountId
+          - PodcastShowId
+        onSuccess:
+          emit: "delete-show-followed-rollback.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-show-followed-rollback.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+  
+  create-episode-saved-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa tập podcast khỏi danh sách lưu"
+    save-file: ""
+    steps:
+      - name: "create-episode-saved-rollback"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Lưu episode vào danh sách đã lưu"
+        parameters:
+          - AccountId
+          - PodcastEpisodeId
+        next-request-data:
+          - AccountId
+          - PodcastEpisodeId
+        response-data:
+          - AccountId
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "create-episode-saved-rollback.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-episode-saved-rollback.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  delete-episode-saved-rollback-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Lưu tập podcast"
+    save-file: ""
+    steps:
+      - name: "delete-episode-saved-rollback"
+        topic: "user-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa episode khỏi danh sách đã lưu"
+        parameters:
+          - AccountId
+          - PodcastEpisodeId
+        next-request-data:
+          - AccountId
+          - PodcastEpisodeId
+        response-data:
+          - AccountId
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "delete-episode-saved-rollback.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-episode-saved-rollback.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []

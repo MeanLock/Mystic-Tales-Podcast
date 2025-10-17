@@ -1,6 +1,6 @@
 ﻿using Amazon.Runtime.Internal;
 using Amazon.Runtime.Internal.Util;
-using BookingManagementService.BusinessLogic.DTOs.Booking;
+using BookingManagementService.BusinessLogic.DTOs.Booking.Details;
 using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;

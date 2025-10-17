@@ -2,7 +2,7 @@
 
 namespace BookingManagementService.BusinessLogic.DTOs.ProducingRequest
 {
-    public class BookingProducingRequestRequestDTO
+    public class BookingProducingRequestCreateRequestDTO
     {
         public BookingProducingRequestInfoDTO BookingProducingRequestInfo { get; set; }
     }

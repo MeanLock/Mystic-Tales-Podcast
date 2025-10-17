@@ -3,7 +3,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateTrackListenSlot;
-using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
+using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.Detail;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;

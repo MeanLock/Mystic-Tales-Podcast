@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace BookingManagementService.BusinessLogic.DTOs.ProducingRequest
 {
-    public class BookingPodcastTrackRequestDTO
+    public class BookingPodcastTrackCreateRequestDTO
     {
         public List<IFormFile> AudioFiles { get; set; } = new List<IFormFile>();
     }
