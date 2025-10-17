@@ -945,7 +945,7 @@ flows:
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
-            - name: "increase-channel-total-favorite"
+            - name: "plus-channel-total-favorite"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -6724,7 +6724,7 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  channel-unfavorite-rollback-flow:
+  delete-channel-favorited-rollback-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Thêm kênh podcast vào danh sách yêu thích"

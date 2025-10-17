@@ -14,6 +14,7 @@ public class UnitOfWork : IUnitOfWork
     // public ISurveyTopicFavoriteRepository SurveyTopicFavoriteRepository { get; }
     public IPasswordResetTokenRepository PasswordResetTokenRepository { get; }
     public IAccountFollowedPodcasterRepository AccountFollowedPodcasterRepository { get; }
+    public IAccountFavoritedPodcastChannelRepository AccountFavoritedPodcastChannelRepository { get; }
     // public ISurveyTakenResultRepository SurveyTakenResultRepository { get; }
     // public ISurveyStatusTrackingRepository SurveyStatusTrackingRepository { get; }
     // public IFilterTagRepository FilterTagRepository { get; }
@@ -33,8 +34,8 @@ public class UnitOfWork : IUnitOfWork
         // ISurveyQuestionRepository surveyQuestionRepository,
         // ISurveyTopicFavoriteRepository surveyTopicFavoriteRepository,
         IPasswordResetTokenRepository passwordResetTokenRepository,
-        IAccountFollowedPodcasterRepository accountFollowedPodcasterRepository
-
+        IAccountFollowedPodcasterRepository accountFollowedPodcasterRepository,
+        IAccountFavoritedPodcastChannelRepository accountFavoritedPodcastChannelRepository
         // ISurveyTakenResultRepository surveyTakenResultRepository,
         // ISurveyStatusTrackingRepository surveyStatusTrackingRepository,
         // IFilterTagRepository filterTagRepository,
@@ -57,6 +58,7 @@ public class UnitOfWork : IUnitOfWork
         // this.SurveyTopicFavoriteRepository = surveyTopicFavoriteRepository;
         this.PasswordResetTokenRepository = passwordResetTokenRepository;
         this.AccountFollowedPodcasterRepository = accountFollowedPodcasterRepository;
+        this.AccountFavoritedPodcastChannelRepository = accountFavoritedPodcastChannelRepository;
         // this.SurveyTakenResultRepository = surveyTakenResultRepository;
         // this.SurveyStatusTrackingRepository = surveyStatusTrackingRepository;
         // this.FilterTagRepository = filterTagRepository;

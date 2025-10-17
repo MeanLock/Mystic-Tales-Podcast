@@ -42,6 +42,9 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePod
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcasterFollowed;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateChannelFavorited;
 using UserService.BusinessLogic.DTOs.Channel;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateChannelFavoritedRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavorited;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavoritedRollback;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -2008,6 +2011,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     {
                         throw new Exception("Podcast channel with id " + channelFavoritedParameterDTO.PodcastChannelId + " does not exist");
                     }
+                    else if (podcastChannel.PodcasterId == channelFavoritedParameterDTO.AccountId)
+                    {
+                        throw new Exception("Podcaster cannot favorite their own podcast channel");
+                    }
 
                     var channelFavorited = new AccountFavoritedPodcastChannel
                     {
@@ -2016,9 +2023,6 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     };
 
                     await _accountFavoritedPodcastChannelGenericRepository.CreateAsync(channelFavorited);
-
-                    // podcastChannel.TotalFavorites += 1;
-                    // await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
 
                     await transaction.CommitAsync();
 
@@ -2057,6 +2061,195 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         flowName: command.FlowName,
                         messageName: "create-channel-favorited.failed"
                         );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task CreateChannelFavoritedRollback(CreateChannelFavoritedRollbackParameterDTO channelFavoritedRollbackParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingFavorite = (await _accountFavoritedPodcastChannelGenericRepository.FindAll(
+                        predicate: a => a.AccountId == channelFavoritedRollbackParameterDTO.AccountId && a.PodcastChannelId == channelFavoritedRollbackParameterDTO.PodcastChannelId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (existingFavorite == null)
+                    {
+                        throw new Exception("Account with id " + channelFavoritedRollbackParameterDTO.AccountId + " has not favorited podcast channel with id " + channelFavoritedRollbackParameterDTO.PodcastChannelId);
+                    }
+                    await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByAccountIdAndPodcastChannelIdAsync(channelFavoritedRollbackParameterDTO.AccountId, channelFavoritedRollbackParameterDTO.PodcastChannelId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = channelFavoritedRollbackParameterDTO.AccountId;
+                    messageNextRequestData["PodcastChannelId"] = channelFavoritedRollbackParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Create channel favorited rollback successfully",
+                        PodcastChannelId = channelFavoritedRollbackParameterDTO.PodcastChannelId,
+                        AccountId = channelFavoritedRollbackParameterDTO.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-channel-favorited-rollback.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create channel favorited rollback failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-channel-favorited-rollback.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteChannelFavorited(DeleteChannelFavoritedParameterDTO deleteChannelFavoritedParameterDTO, SagaCommandMessage sagaCommand)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingFavorite = (await _accountFavoritedPodcastChannelGenericRepository.FindAll(
+                        predicate: a => a.AccountId == deleteChannelFavoritedParameterDTO.AccountId && a.PodcastChannelId == deleteChannelFavoritedParameterDTO.PodcastChannelId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (existingFavorite == null)
+                    {
+                        throw new Exception("Account with id " + deleteChannelFavoritedParameterDTO.AccountId + " has not favorited podcast channel with id " + deleteChannelFavoritedParameterDTO.PodcastChannelId);
+                    }
+                    await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByAccountIdAndPodcastChannelIdAsync(deleteChannelFavoritedParameterDTO.AccountId, deleteChannelFavoritedParameterDTO.PodcastChannelId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = sagaCommand.RequestData;
+                    messageNextRequestData["AccountId"] = deleteChannelFavoritedParameterDTO.AccountId;
+                    messageNextRequestData["PodcastChannelId"] = deleteChannelFavoritedParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete channel favorited successfully",
+                        PodcastChannelId = deleteChannelFavoritedParameterDTO.PodcastChannelId,
+                        AccountId = deleteChannelFavoritedParameterDTO.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: sagaCommand.SagaInstanceId,
+                        flowName: sagaCommand.FlowName,
+                        messageName: "delete-channel-favorited.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: sagaCommand.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete channel favorited failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: sagaCommand.SagaInstanceId,
+                        flowName: sagaCommand.FlowName,
+                        messageName: "delete-channel-favorited.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+            }
+        }
+
+        public async Task DeleteChannelFavoritedRollback(DeleteChannelFavoritedRollbackParameterDTO deleteChannelFavoritedRollbackParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // var existingFavorite = (await _accountFavoritedPodcastChannelGenericRepository.FindAll(
+                    //      predicate: a => a.AccountId == deleteChannelFavoritedRollbackParameterDTO.AccountId && a.PodcastChannelId == deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
+                    //      includeFunc: null
+                    //      ).ToListAsync()).FirstOrDefault();
+                    // if (existingFavorite == null)
+                    // {
+                    //     throw new Exception("Account with id " + deleteChannelFavoritedRollbackParameterDTO.AccountId + " has not favorited podcast channel with id " + deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId);
+                    // }
+                    // await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByAccountIdAndPodcastChannelIdAsync(deleteChannelFavoritedRollbackParameterDTO.AccountId, deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId);
+
+                    var existingFavorite = (await _accountFavoritedPodcastChannelGenericRepository.FindAll(
+                         predicate: a => a.AccountId == deleteChannelFavoritedRollbackParameterDTO.AccountId && a.PodcastChannelId == deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
+                         includeFunc: null
+                         ).ToListAsync()).FirstOrDefault();
+                    if (existingFavorite != null)
+                    {
+                        throw new Exception("Account with id " + deleteChannelFavoritedRollbackParameterDTO.AccountId + " has already favorited podcast channel with id " + deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId);
+                    }
+
+                    var channelFavorited = new AccountFavoritedPodcastChannel
+                    {
+                        AccountId = deleteChannelFavoritedRollbackParameterDTO.AccountId,
+                        PodcastChannelId = deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
+                    };
+                    await _accountFavoritedPodcastChannelGenericRepository.CreateAsync(channelFavorited);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = deleteChannelFavoritedRollbackParameterDTO.AccountId;
+                    messageNextRequestData["PodcastChannelId"] = deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete channel favorited rollback successfully",
+                        PodcastChannelId = deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
+                        AccountId = deleteChannelFavoritedRollbackParameterDTO.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-channel-favorited-rollback.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete channel favorited rollback failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-channel-favorited-rollback.failed"
+                    );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }

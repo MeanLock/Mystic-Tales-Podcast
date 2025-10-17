@@ -30,6 +30,9 @@ using UserService.Infrastructure.Models.Kafka;
 using UserService.Infrastructure.Services.Kafka;
 using UserService.BusinessLogic.Services.DbServices.MiscServices;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateChannelFavorited;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateChannelFavoritedRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavorited;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavoritedRollback;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -400,6 +403,54 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-channel-favorited.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("create-channel-favorited-rollback", SAGA_TOPIC)]
+        public async Task HandleCreateChannelFavoritedRollbackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var createChannelFavoritedRollbackParameterDTO = command.RequestData.ToObject<CreateChannelFavoritedRollbackParameterDTO>();
+                    await _accountService.CreateChannelFavoritedRollback(createChannelFavoritedRollbackParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-channel-favorited-rollback.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-channel-favorited", SAGA_TOPIC)]
+        public async Task HandleDeleteChannelFavoritedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteChannelFavoritedParameterDTO = command.RequestData.ToObject<DeleteChannelFavoritedParameterDTO>();
+                    await _accountService.DeleteChannelFavorited(deleteChannelFavoritedParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-channel-favorited.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-channel-favorited-rollback", SAGA_TOPIC)]
+        public async Task HandleDeleteChannelFavoritedRollbackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteChannelFavoritedRollbackParameterDTO = command.RequestData.ToObject<DeleteChannelFavoritedRollbackParameterDTO>();
+                    await _accountService.DeleteChannelFavoritedRollback(deleteChannelFavoritedRollbackParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-channel-favorited-rollback.failed"    // From YAML onFailure.emit
             );
         }
 

@@ -36,6 +36,8 @@ using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
 using PodcastService.BusinessLogic.DTOs.Show;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractChannelTotalFavorite;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -1915,10 +1917,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         public async Task UpdatePodcastChannel(UpdateChannelParameterDTO updateChannelParameterDTO, SagaCommandMessage command)
         {
-                using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
                 {
-                    try
-                    {
                     var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(updateChannelParameterDTO.PodcastChannelId);
                     if (podcastChannel == null)
                     {
@@ -2072,7 +2074,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     var messageResponseData = JObject.FromObject(new
                     {
                         PodcastChannelId = podcastChannel.Id,
-                    }); 
+                    });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
                         requestData: messageNextRequestData,
@@ -2104,6 +2106,124 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
             }
 
+        }
+
+        public async Task PlusPodcastChannelTotalFavorite(PlusChannelTotalFavoriteParameterDTO plusChannelTotalFavoriteParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(plusChannelTotalFavoriteParameterDTO.PodcastChannelId);
+                    if (podcastChannel == null)
+                    {
+                        throw new Exception("Podcast channel with id " + plusChannelTotalFavoriteParameterDTO.PodcastChannelId + " does not exist");
+                    }
+                    else if (podcastChannel.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast channel with id " + plusChannelTotalFavoriteParameterDTO.PodcastChannelId + " has been deleted");
+                    }
+
+                    podcastChannel.TotalFavorite += 1;
+                    await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
+                    messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = podcastChannel.Id,
+                        AccountId = command.RequestData["AccountId"],
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "plus-channel-total-favorite.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Plus podcast channel total favorite failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "plus-channel-total-favorite.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task SubtractPodcastChannelTotalFavorite(SubtractChannelTotalFavoriteParameterDTO subtractChannelTotalFavoriteParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(subtractChannelTotalFavoriteParameterDTO.PodcastChannelId);
+                    if (podcastChannel == null)
+                    {
+                        throw new Exception("Podcast channel with id " + subtractChannelTotalFavoriteParameterDTO.PodcastChannelId + " does not exist");
+                    }
+                    else if (podcastChannel.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast channel with id " + subtractChannelTotalFavoriteParameterDTO.PodcastChannelId + " has been deleted");
+                    }
+
+                    podcastChannel.TotalFavorite = Math.Max(0, podcastChannel.TotalFavorite - 1);
+                    await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
+                    messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = podcastChannel.Id,
+                        AccountId = command.RequestData["AccountId"],
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-channel-total-favorite.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Subtract podcast channel total favorite failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-channel-total-favorite.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
         }
     }
 }

@@ -3,7 +3,9 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using PodcastService.BusinessLogic.Attributes;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
@@ -432,6 +434,42 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "publish-channel.failed"    // From YAML onFailure.emit
             );
         }
+
+        [MessageHandler("plus-channel-total-favorite", SAGA_TOPIC)]
+        public async Task HandlePlusChannelTotalFavoriteAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    // throw new Exception("Simulated exception for testing failure handling.");
+                    var channelId = command.RequestData.ToObject<PlusChannelTotalFavoriteParameterDTO>();
+                    await _podcastChannelService.PlusPodcastChannelTotalFavorite(channelId, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "plus-channel-total-favorite.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("subtract-channel-total-favorite", SAGA_TOPIC)]
+        public async Task HandleSubtractChannelTotalFavoriteAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    // throw new Exception("Simulated exception for testing failure handling.");
+                    var channelId = command.RequestData.ToObject<SubtractChannelTotalFavoriteParameterDTO>();
+                    await _podcastChannelService.SubtractPodcastChannelTotalFavorite(channelId, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "subtract-channel-total-favorite.failed"    // From YAML onFailure.emit
+            );
+        }
+
+
+
+
     }
 }
 
