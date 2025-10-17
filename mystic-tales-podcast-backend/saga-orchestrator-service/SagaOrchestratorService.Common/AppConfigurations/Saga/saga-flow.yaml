@@ -2850,26 +2850,23 @@ flows:
           - Description
           - PodcastShowId
           - PodcastChannelId
-          - PodcastSubscriptionCycleTypePrice
-          - PodcastSubscriptionBenefitId
-          - PodcasterId
+          - PodcastSubscriptionCycleTypePriceList
+          - PodcastSubscriptionBenefitMappingList
         next-request-data:
           - Name
           - Description
           - PodcastShowId
           - PodcastChannelId
-          - PodcastSubscriptionCycleTypePrice
-          - PodcastSubscriptionBenefitId
-          - PodcasterId
+          - PodcastSubscriptionCycleTypePriceList
+          - PodcastSubscriptionBenefitMappingList
         response-data:
           - PodcastSubscriptionId
           - Name
           - Description
           - PodcastShowId
           - PodcastChannelId
-          - PodcastSubscriptionCycleTypePrice
-          - PodcastSubscriptionBenefitId
-          - PodcasterId
+          - PodcastSubscriptionCycleTypePriceList
+          - PodcastSubscriptionBenefitMappingList
           - CreatedAt
         onSuccess:
           emit: "create-podcast-subscription.success"

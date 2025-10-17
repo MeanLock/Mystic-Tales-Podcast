@@ -318,7 +318,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                             {
                                 where = new
                                 {
-                                    PodcastSubscriptionRegistartionId = podcastSubscriptionRegistartionId,
+                                    Id = podcastSubscriptionRegistartionId,
                                     AccountId = accountId
                                 }
                             }),
