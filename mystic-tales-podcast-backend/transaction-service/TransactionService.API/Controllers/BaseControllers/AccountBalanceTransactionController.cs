@@ -60,10 +60,10 @@ namespace TransactionService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "AccountId", accountId },
-                { "Amount", request.AccountBalanceTransactionInfo.Amount },
-                { "Description", request.AccountBalanceTransactionInfo.Description },
-                { "ReturnUrl", request.AccountBalanceTransactionInfo.ReturnUrl ?? string.Empty },
-                { "CancelUrl", request.AccountBalanceTransactionInfo.CancelUrl ?? string.Empty }
+                { "Amount", request.AccountBalanceTransactionCreateInfo.Amount },
+                { "Description", request.AccountBalanceTransactionCreateInfo.Description },
+                { "ReturnUrl", request.AccountBalanceTransactionCreateInfo.ReturnUrl ?? string.Empty },
+                { "CancelUrl", request.AccountBalanceTransactionCreateInfo.CancelUrl ?? string.Empty }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "account-balance-create-payment-link-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);

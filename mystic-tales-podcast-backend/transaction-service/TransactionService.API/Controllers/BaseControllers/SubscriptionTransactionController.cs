@@ -43,6 +43,7 @@ namespace TransactionService.API.Controllers.BaseControllers
             {
                 return Forbid($"You are not authorize to see the transaction of Podcast Subscription Registration Id: {PodcastSubscriptionRegistrationId}");
             }
+            Console.WriteLine(isValid.ToString());
             var result = await _podcastSubscriptionService.GetPodcastSubscriptionTransactions(PodcastSubscriptionRegistrationId);
             if(result == null || result.Count == 0)
             {
