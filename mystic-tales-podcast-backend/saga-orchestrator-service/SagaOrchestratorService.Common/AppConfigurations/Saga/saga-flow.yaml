@@ -1129,7 +1129,7 @@ flows:
           - MainImageFileKey
           - BackgroundImageFileKey
           - PodcastCategoryId
-          - podcastSubCategoryId
+          - PodcastSubCategoryId
           - HashtagIds
           - PodcasterId
         next-request-data:
@@ -1138,7 +1138,7 @@ flows:
           - MainImageFileKey
           - BackgroundImageFileKey
           - PodcastCategoryId
-          - podcastSubCategoryId
+          - PodcastSubCategoryId
           - HashtagIds
           - PodcasterId
         response-data:
@@ -1148,7 +1148,7 @@ flows:
           - MainImageFileKey
           - BackgroundImageFileKey
           - PodcastCategoryId
-          - podcastSubCategoryId
+          - PodcastSubCategoryId
           - HashtagIds
           - PodcasterId
         onSuccess:
@@ -1180,28 +1180,31 @@ flows:
           - Description
           - MainImageFileKey
           - BackgroundImageFileKey
-          - CategoryId
-          - SubCategoryId
+          - PodcastCategoryId
+          - PodcastSubCategoryId
           - HashtagIds
+          - PodcasterId
         next-request-data:
           - PodcastChannelId
           - Name
           - Description
           - MainImageFileKey
           - BackgroundImageFileKey
-          - CategoryId
-          - SubCategoryId
+          - PodcastCategoryId
+          - PodcastSubCategoryId
           - HashtagIds
+          - PodcasterId
         response-data:
           - PodcastChannelId
           - Name
           - Description
           - MainImageFileKey
           - BackgroundImageFileKey
-          - CategoryId
-          - SubCategoryId
+          - PodcastCategoryId
+          - PodcastSubCategoryId
           - HashtagIds
           - UpdatedAt
+          - PodcasterId
         onSuccess:
           emit: "update-channel.success"
           topic: "content-management-domain"

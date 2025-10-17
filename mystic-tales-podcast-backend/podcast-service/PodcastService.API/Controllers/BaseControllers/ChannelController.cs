@@ -387,7 +387,31 @@ namespace PodcastService.API.Controllers.BaseControllers
             requestData["MainImageFileKey"] = mainImageFileKey;
             requestData["BackgroundImageFileKey"] = backgroundImageFileKey;
             requestData["PodcastChannelId"] = PodcastChannelId;
+            requestData["PodcasterId"] = account.Id;
+
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "channel-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/podcast-service/api/channels/{PodcastChannelId}
+        [HttpDelete("{PodcastChannelId}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> DeleteChannelById(Guid PodcastChannelId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            JObject requestData = new JObject
+            {
+                ["PodcastChannelId"] = PodcastChannelId,
+                ["PodcasterId"] = account.Id
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "channel-deletion-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {

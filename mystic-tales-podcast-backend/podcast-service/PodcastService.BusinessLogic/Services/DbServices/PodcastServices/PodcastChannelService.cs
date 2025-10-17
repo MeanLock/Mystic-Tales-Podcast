@@ -1424,7 +1424,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 var channelList = (await Task.WhenAll(channels.Select(async pc =>
                 {
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(pc.PodcasterId);
-                    if (podcaster == null || podcaster.Id != pc.PodcasterId || podcaster.IsVerified == false || podcaster.DeactivatedAt != null || podcaster.HasVerifiedPodcasterProfile == false)
+                    if (podcaster == null || podcaster.Id != pc.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
                     {
                         throw new Exception("Podcaster with id " + pc.PodcasterId + " does not exist");
                     }
@@ -1502,7 +1502,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 var channelList = (await Task.WhenAll(channels.Select(async pc =>
                 {
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(pc.PodcasterId);
-                    if (podcaster == null || podcaster.Id != pc.PodcasterId || podcaster.IsVerified == false || podcaster.DeactivatedAt != null || podcaster.HasVerifiedPodcasterProfile == false)
+                    if (podcaster == null || podcaster.Id != pc.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
                     {
                         throw new Exception("Podcaster with id " + pc.PodcasterId + " does not exist");
                     }
@@ -1637,7 +1637,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 var showList = await showByChannelIdQuery.ToListAsync();
 
                 var podcaster = await _accountCachingService.GetAccountStatusCacheById(channel.PodcasterId);
-                if (podcaster == null || podcaster.Id != channel.PodcasterId || podcaster.IsVerified == false || podcaster.DeactivatedAt != null || podcaster.HasVerifiedPodcasterProfile == false)
+                if (podcaster == null || podcaster.Id != channel.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
                 {
                     throw new Exception("Podcaster with id " + channel.PodcasterId + " does not exist");
                 }
