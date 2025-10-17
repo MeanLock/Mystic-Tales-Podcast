@@ -61,6 +61,16 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 .Include(pst => pst.TransactionType)
                 .Include(pst => pst.TransactionStatus)
                 .Where(pst => pst.PodcastSubscriptionRegistrationId.Equals(podcastSubscriptionRegistartionId))
+                .Select(pst => new PodcastSubscriptionTransaction
+                {
+                    Id = pst.Id,
+                    PodcastSubscriptionRegistrationId = pst.PodcastSubscriptionRegistrationId,
+                    Amount = pst.Amount,
+                    TransactionType = pst.TransactionType,
+                    TransactionStatus = pst.TransactionStatus,
+                    CreatedAt = pst.CreatedAt,
+                    UpdatedAt = pst.UpdatedAt
+                })
                 .ToListAsync();
         }
         public async Task CreatePodcastSubscriptionTransactionAsync(CreatePodcastSubscriptionTransactionParameterDTO parameter, SagaCommandMessage command)

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreatePodcastSubscription;
-using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItem;
+using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems;
 using SubscriptionService.BusinessLogic.Enums.Kafka;
 using SubscriptionService.BusinessLogic.Models.CrossService;
 using SubscriptionService.BusinessLogic.Services.CrossServiceServices.QueryServices;

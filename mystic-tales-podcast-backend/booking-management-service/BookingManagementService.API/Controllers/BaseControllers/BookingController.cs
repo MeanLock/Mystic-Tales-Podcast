@@ -87,7 +87,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
         [HttpPost]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> CreateBooking([FromBody] BookingRequestDTO request)
+        public async Task<IActionResult> CreateBooking([FromBody] BookingCreateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
@@ -117,7 +117,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> CreateBookingNegotiation(
             [FromRoute] int BookingId,
-            [FromForm] BookingNegotiationRequestDTO bookingNegotiationRequestDTO)
+            [FromForm] BookingNegotiationCreateRequestDTO bookingNegotiationRequestDTO)
         {
             try
             {

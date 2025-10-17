@@ -100,7 +100,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             }).ToList();
             return Task.FromResult(result);
         }
-        public async Task<BookingResponseDTO?> GetBookingByIdAsync(int bookingId)
+        public async Task<BookingDetailResponseDTO?> GetBookingByIdAsync(int bookingId)
         {
             var booking = await _bookingGenericRepository.FindByIdWithPaths(
                 bookingId,
@@ -111,7 +111,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             if (booking == null)
                 return null;
 
-            return new BookingResponseDTO
+            return new BookingDetailResponseDTO
             {
                 Id = booking.Id,
                 Title = booking.Title,

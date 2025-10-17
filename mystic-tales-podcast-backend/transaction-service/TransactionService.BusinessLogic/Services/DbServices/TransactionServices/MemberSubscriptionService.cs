@@ -60,6 +60,16 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 .Include(pst => pst.TransactionType)
                 .Include(pst => pst.TransactionStatus)
                 .Where(pst => pst.MemberSubscriptionRegistrationId.Equals(memberSubscriptionRegistartionId))
+                .Select(pst => new MemberSubscriptionTransaction
+                {
+                    Id = pst.Id,
+                    MemberSubscriptionRegistrationId = pst.MemberSubscriptionRegistrationId,
+                    Amount = pst.Amount,
+                    TransactionType = pst.TransactionType,
+                    TransactionStatus = pst.TransactionStatus,
+                    CreatedAt = pst.CreatedAt,
+                    UpdatedAt = pst.UpdatedAt
+                })
                 .ToListAsync();
         }
         public async Task CreateMemberSubscriptionTransactionAsync(CreateMemberSubscriptionTransactionParameterDTO parameter, SagaCommandMessage command)

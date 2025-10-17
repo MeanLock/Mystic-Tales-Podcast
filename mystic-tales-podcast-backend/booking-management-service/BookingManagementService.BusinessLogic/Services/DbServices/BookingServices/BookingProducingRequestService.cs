@@ -71,7 +71,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _fileIOHelper = fileIOHelper;
             _dateHelper = dateHelper;
         }
-        public async Task<BookingProducingRequestResponseDTO?> GetProducingRequestByIdAsync(Guid id)
+        public async Task<BookingProducingRequestDetailResponseDTO?> GetProducingRequestByIdAsync(Guid id)
         {
             var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdWithPaths(
                 id,
@@ -81,7 +81,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             if (bookingProducingRequest == null)
                 return null;
 
-            return new BookingProducingRequestResponseDTO
+            return new BookingProducingRequestDetailResponseDTO
             {
                 Id = bookingProducingRequest.Id,
                 BookingId = bookingProducingRequest.BookingId,
