@@ -7,10 +7,6 @@ namespace UserService.DataAccess.Data;
 
 public partial class AppDbContext : DbContext
 {
-    public AppDbContext()
-    {
-    }
-
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
@@ -39,10 +35,6 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<PodcasterProfile> PodcasterProfiles { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost,1434;Database=MTP_UserDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -222,6 +214,8 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
+            entity.Property(e => e.IsCompleted).HasColumnName("isCompleted");
+            entity.Property(e => e.LastListenDurationSeconds).HasColumnName("lastListenDurationSeconds");
 
             entity.HasOne(d => d.Account).WithMany(p => p.AccountPodcastListenHistories)
                 .HasForeignKey(d => d.AccountId)

@@ -29,6 +29,7 @@ using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
 using UserService.Infrastructure.Models.Kafka;
 using UserService.Infrastructure.Services.Kafka;
 using UserService.BusinessLogic.Services.DbServices.MiscServices;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateChannelFavorited;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -383,6 +384,22 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "delete-podcaster-followed.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("create-channel-favorited", SAGA_TOPIC)]
+        public async Task HandleCreateChannelFavoritedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var createChannelFavoritedParameterDTO = command.RequestData.ToObject<CreateChannelFavoritedParameterDTO>();
+                    await _accountService.CreateChannelFavorited(createChannelFavoritedParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-channel-favorited.failed"    // From YAML onFailure.emit
             );
         }
 

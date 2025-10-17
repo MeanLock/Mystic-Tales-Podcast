@@ -40,6 +40,8 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePod
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterFollowed;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcasterFollowed;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateChannelFavorited;
+using UserService.BusinessLogic.DTOs.Channel;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -72,6 +74,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         private readonly IGenericRepository<PodcasterProfile> _podcasterProfileGenericRepository;
         private readonly IGenericRepository<PodcastBuddyReview> _podcastBuddyReviewGenericRepository;
         private readonly IGenericRepository<AccountFollowedPodcaster> _accountFollowedPodcasterGenericRepository;
+        private readonly IGenericRepository<AccountFavoritedPodcastChannel> _accountFavoritedPodcastChannelGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
@@ -101,6 +104,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             IGenericRepository<PodcasterProfile> podcasterProfileGenericRepository,
             IGenericRepository<PodcastBuddyReview> podcastBuddyReviewGenericRepository,
             IGenericRepository<AccountFollowedPodcaster> accountFollowedPodcasterGenericRepository,
+            IGenericRepository<AccountFavoritedPodcastChannel> accountFavoritedPodcastChannelGenericRepository,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -127,6 +131,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _podcasterProfileGenericRepository = podcasterProfileGenericRepository;
             _podcastBuddyReviewGenericRepository = podcastBuddyReviewGenericRepository;
             _accountFollowedPodcasterGenericRepository = accountFollowedPodcasterGenericRepository;
+            _accountFavoritedPodcastChannelGenericRepository = accountFavoritedPodcastChannelGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -1252,7 +1257,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     }
 
                     await transaction.CommitAsync();
-                    
+
                     var messageNextRequestData = command.RequestData;
                     messageNextRequestData["AccountId"] = account.Id;
                     messageNextRequestData["Email"] = account.Email;
@@ -1692,7 +1697,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     await transaction.CommitAsync();
 
-                    var messageNextRequestData = command.RequestData;   
+                    var messageNextRequestData = command.RequestData;
                     messageNextRequestData["PodcastBuddyReviewId"] = existingReview.Id;
                     messageNextRequestData["AccountId"] = existingReview.AccountId;
                     messageNextRequestData["Title"] = existingReview.Title;
@@ -1953,6 +1958,105 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         flowName: command.FlowName,
                         messageName: "delete-podcaster-followed.failed"
                     );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task CreateChannelFavorited(CreateChannelFavoritedParameterDTO channelFavoritedParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    var existingFavorite = (await _accountFavoritedPodcastChannelGenericRepository.FindAll(
+                        predicate: a => a.AccountId == channelFavoritedParameterDTO.AccountId && a.PodcastChannelId == channelFavoritedParameterDTO.PodcastChannelId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (existingFavorite != null)
+                    {
+                        throw new Exception("Account with id " + channelFavoritedParameterDTO.AccountId + " has already favorited podcast channel with id " + channelFavoritedParameterDTO.PodcastChannelId);
+                    }
+
+                    var podcastChannelBatchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastChannel",
+                            QueryType = "findbyid",
+                            EntityType = "PodcastChannel",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where =  new {
+                                    DeletedAt = (DateTime?)null,
+                                },
+                                id = channelFavoritedParameterDTO.PodcastChannelId,
+                            }),
+                        }
+                    }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", podcastChannelBatchRequest);
+
+
+                    var podcastChannel = result.Results["podcastChannel"].ToObject<PodcastChannelDTO>();
+                    if (podcastChannel == null)
+                    {
+                        throw new Exception("Podcast channel with id " + channelFavoritedParameterDTO.PodcastChannelId + " does not exist");
+                    }
+
+                    var channelFavorited = new AccountFavoritedPodcastChannel
+                    {
+                        AccountId = channelFavoritedParameterDTO.AccountId,
+                        PodcastChannelId = channelFavoritedParameterDTO.PodcastChannelId,
+                    };
+
+                    await _accountFavoritedPodcastChannelGenericRepository.CreateAsync(channelFavorited);
+
+                    // podcastChannel.TotalFavorites += 1;
+                    // await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = channelFavorited.AccountId;
+                    messageNextRequestData["PodcastChannelId"] = channelFavorited.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Create channel favorited successfully",
+                        PodcastChannelId = channelFavorited.PodcastChannelId,
+                        AccountId = channelFavorited.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-channel-favorited.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create channel favorited failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-channel-favorited.failed"
+                        );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }

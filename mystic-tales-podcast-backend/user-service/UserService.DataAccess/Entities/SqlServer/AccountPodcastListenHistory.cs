@@ -11,5 +11,9 @@ public partial class AccountPodcastListenHistory
 
     public DateTime CreatedAt { get; set; }
 
+    public int LastListenDurationSeconds { get; set; }
+
+    public bool IsCompleted { get; set; }
+
     public virtual Account Account { get; set; } = null!;
 }

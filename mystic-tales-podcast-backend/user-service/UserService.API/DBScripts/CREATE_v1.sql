@@ -40,6 +40,8 @@ CREATE TABLE Account (
 CREATE TABLE AccountPodcastListenHistory (
     accountId INT NOT NULL,
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
+    lastListenDurationSeconds INT NOT NULL DEFAULT 0,
+    isCompleted BIT NOT NULL DEFAULT 0,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     PRIMARY KEY (accountId, podcastEpisodeId),
     FOREIGN KEY (accountId) REFERENCES Account(id)

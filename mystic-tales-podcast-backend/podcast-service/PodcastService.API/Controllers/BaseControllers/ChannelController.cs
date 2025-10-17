@@ -442,5 +442,29 @@ namespace PodcastService.API.Controllers.BaseControllers
             }
             );
         }
+
+        // /api/podcast-service/api/channels/{PodcastShowId}/favorite/{IsFavorite}
+        [HttpPost("{PodcastChannelId}/favorite/{IsFavorite}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> FavoriteOrUnfavoriteChannelById(Guid PodcastChannelId, bool IsFavorite)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+
+            var flowName = IsFavorite ? "channel-favorite-flow" : "channel-unfavorite-flow";
+            JObject requestData = new JObject
+            {
+                ["PodcastChannelId"] = PodcastChannelId,
+                ["AccountId"] = account.Id
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, flowName);
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
     }
 }
