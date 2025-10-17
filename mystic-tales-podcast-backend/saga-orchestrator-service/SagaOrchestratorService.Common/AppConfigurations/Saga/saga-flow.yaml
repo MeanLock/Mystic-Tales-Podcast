@@ -3970,7 +3970,7 @@ flows:
               topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
 
-  booking-deposit-compenstation-flow:
+  booking-deposit-compensation-flow:
     topic: "payment-processing-domain"
     handle-service: "SagaOrchestratorService"
     description: "Hoàn tiền đặt cọc booking do podcaster từ chối yêu cầu"

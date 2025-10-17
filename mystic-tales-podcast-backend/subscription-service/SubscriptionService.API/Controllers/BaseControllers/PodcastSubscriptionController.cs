@@ -26,7 +26,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         private readonly IMessagingService _messagingService;
 
         public PodcastSubscriptionController(
-            GenericQueryService genericQueryService, 
+            GenericQueryService genericQueryService,
             HttpServiceQueryClient httpServiceQueryClient,
             PodcastSubscriptionService podcastSubscriptionService,
             ILogger<PodcastSubscriptionController> logger,
@@ -42,7 +42,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         }
         [HttpGet("shows/{PodcastShowId}")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
-        public async Task<IActionResult> GetPodcastSubscriptionByShowId([FromRoute] Guid PodcastShowId)
+        public async Task<IActionResult> GetPodcastSubscriptionByPodcastShowId([FromRoute] Guid PodcastShowId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
@@ -52,12 +52,12 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             {
                 return Forbid($"The Logged In Account is unauthorized to access Podcast Show Id: {PodcastShowId}");
             }
-            var podcastShow = await _podcastSubscriptionService.GetPodcastSubscriptionListByShowIdAsync(PodcastShowId);
-            if (podcastShow == null)
+            var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionListByPodcastShowIdAsync(PodcastShowId);
+            if (podcastSubscription == null)
             {
                 return NotFound($"No podcast subscription found with Show Id: {PodcastShowId}");
             }
-            return Ok(podcastShow);
+            return Ok(podcastSubscription);
         }
         [HttpPost("shows/{PodcastShowId}")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
@@ -78,6 +78,57 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 { "Name", request.Name },
                 { "Description", request.Description },
                 { "PodcastShowId", PodcastShowId  },
+                { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(request.PodcastSubscriptionCycleTypePriceCreateInfoList) },
+                { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionBenefitMappingCreateInfoList) }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("subscription-management-domain", requestData, null, "podcast-subscription-creation-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate podcast subscription creation.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpGet("channels/{PodcastChannelId}")]
+        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionByPodcastChannelId([FromRoute] Guid PodcastChannelId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var isValid = await _podcastSubscriptionService.GetPodcastChannel(accountId, PodcastChannelId);
+            if (isValid == null)
+            {
+                return Forbid($"The Logged In Account is unauthorized to access Podcast Channel Id: {PodcastChannelId}");
+            }
+            var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionListByPodcastChannelIdAsync(PodcastChannelId);
+            if (podcastSubscription == null)
+            {
+                return NotFound($"No podcast subscription found with Channel Id: {PodcastChannelId}");
+            }
+            return Ok(podcastSubscription);
+        }
+        [HttpPost("channels/{PodcastChannelId}")]
+        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        public async Task<IActionResult> CreatePodcastSubscriptionByChannelId(
+            [FromRoute] Guid PodcastChannelId,
+            [FromBody] PodcastSubscriptionCreateRequestDTO request)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var isValid = await _podcastSubscriptionService.GetPodcastChannel(accountId, PodcastChannelId);
+            if (isValid == null)
+            {
+                return Forbid($"The Logged In Account is unauthorized to create PodcastSubscription for PodcastChannel with Id: {PodcastChannelId}");
+            }
+            var requestData = new JObject
+            {
+                { "Name", request.Name },
+                { "Description", request.Description },
+                { "PodcastChannelId", PodcastChannelId  },
                 { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(request.PodcastSubscriptionCycleTypePriceCreateInfoList) },
                 { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionBenefitMappingCreateInfoList) }
             };
