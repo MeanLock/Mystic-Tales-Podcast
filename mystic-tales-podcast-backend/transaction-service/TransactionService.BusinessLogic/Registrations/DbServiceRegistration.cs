@@ -12,6 +12,9 @@ namespace TransactionService.BusinessLogic.Registrations
             services.AddScoped<PlatformFeedbackService>();
             services.AddScoped<MailOperationService>();
 
+            // CachingServices
+            services.AddScoped<AccountCachingService>();
+
             // TransactionServices
             services.AddScoped<AccountBalanceTransactionService>();
             services.AddScoped<BookingTransactionService>();

@@ -294,7 +294,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             JObject requestData = JObject.FromObject(channelCreateInfo);
             requestData["MainImageFileKey"] = mainImageFileKey;
             requestData["BackgroundImageFileKey"] = backgroundImageFileKey;
-            requestData["PodcasterId"] = account.Id;
+            requestData["PodcasterId"] = account.Id; // lấy PodcasterId từ account đăng nhập hiện tại chứ không phải từ DTO
 
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "channel-creation-flow");
@@ -333,6 +333,67 @@ namespace PodcastService.API.Controllers.BaseControllers
             {
                 Channel = channel
             });
+        }
+
+        // /api/podcast-service/api/channels/{PodcastChannelId}
+        [HttpPut("{PodcastChannelId}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> UpdateChannelById(Guid PodcastChannelId, ChannelUpdateRequestDTO channelUpdateRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var channelUpdateInfo = JsonConvert.DeserializeObject<ChannelUpdateInfoDTO>(channelUpdateRequestDTO.ChannelUpdateInfo);
+
+            string mainImageFileKey = null;
+            if (channelUpdateRequestDTO.MainImageFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidFile = _fileValidationConfig.IsValidFile("PodcastChannel.mainImageFileKey", channelUpdateRequestDTO.MainImageFile.FileName, channelUpdateRequestDTO.MainImageFile.Length, channelUpdateRequestDTO.MainImageFile.ContentType);
+                if (!isValidFile)
+                {
+                    return BadRequest("Invalid upload file.");
+                }
+                string newMainImageFileName = $"{Guid.NewGuid()}_{channelUpdateRequestDTO.MainImageFile.FileName}";
+                using (var stream = channelUpdateRequestDTO.MainImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.PODCAST_CHANNEL_TEMP_FILE_PATH,
+                                        newMainImageFileName
+                                    );
+                }
+                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_CHANNEL_TEMP_FILE_PATH, newMainImageFileName);
+            }
+            string backgroundImageFileKey = null;
+            if (channelUpdateRequestDTO.BackgroundImageFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidFile = _fileValidationConfig.IsValidFile("PodcastChannel.backgroundImageFileKey", channelUpdateRequestDTO.BackgroundImageFile.FileName, channelUpdateRequestDTO.BackgroundImageFile.Length, channelUpdateRequestDTO.BackgroundImageFile.ContentType);
+                if (!isValidFile)
+                {
+                    return BadRequest("Invalid upload file.");
+                }
+                string newBackgroundImageFileName = $"{Guid.NewGuid()}_{channelUpdateRequestDTO.BackgroundImageFile.FileName}";
+                using (var stream = channelUpdateRequestDTO.BackgroundImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.PODCAST_CHANNEL_TEMP_FILE_PATH,
+                                        newBackgroundImageFileName
+                                    );
+                }
+                backgroundImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_CHANNEL_TEMP_FILE_PATH, newBackgroundImageFileName);
+            }
+            JObject requestData = JObject.FromObject(channelUpdateInfo);
+            requestData["MainImageFileKey"] = mainImageFileKey;
+            requestData["BackgroundImageFileKey"] = backgroundImageFileKey;
+            requestData["PodcastChannelId"] = PodcastChannelId;
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "channel-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
         }
     }
 }

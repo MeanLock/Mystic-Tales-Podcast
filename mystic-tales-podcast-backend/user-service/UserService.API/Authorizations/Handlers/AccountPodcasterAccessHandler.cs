@@ -73,6 +73,8 @@ namespace UserService.API.Authorizations.Handlers
 
             var accountStatusCache = (result.Results["account"] as JObject).ToObject<AccountStatusCache>();
             var podcasterProfile = result.Results["account"]["PodcasterProfile"] as JObject;
+            accountStatusCache.PodcasterProfileName = podcasterProfile?["Name"]?.ToObject<string>();
+            accountStatusCache.PodcasterProfileIsVerified = podcasterProfile?["IsVerified"]?.ToObject<bool>();
             accountStatusCache.HasVerifiedPodcasterProfile = accountStatusCache.RoleId == 1 && podcasterProfile != null && podcasterProfile["IsVerified"]?.ToObject<bool>() == true ? true : false;
             Console.WriteLine($"Queried Account: Id={accountStatusCache.Id}, RoleId={accountStatusCache.RoleId}, IsVerified={accountStatusCache.IsVerified}, DeactivatedAt={accountStatusCache.DeactivatedAt}, HasVerifiedPodcasterProfile={accountStatusCache.HasVerifiedPodcasterProfile}");
             return accountStatusCache;

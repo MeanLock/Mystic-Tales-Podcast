@@ -11,6 +11,9 @@ namespace BookingManagementService.BusinessLogic.Registrations
             // MiscServices
             services.AddScoped<MailOperationService>();
 
+            // CachingServices
+            services.AddScoped<AccountCachingService>();
+
             // BookingServices
             services.AddScoped<BookingService>(); 
             services.AddScoped<BookingProducingRequestService>();

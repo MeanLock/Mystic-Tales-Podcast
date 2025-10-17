@@ -913,6 +913,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     var result = await _redisSharedCacheService.KeySetAsync<AccountStatusCache>($"account:status:{account.Id}", new AccountStatusCache
                     {
                         Id = account.Id,
+                        Email = account.Email,
+                        FullName = account.FullName,
+                        MainImageFileKey = account.MainImageFileKey,
                         IsVerified = account.IsVerified,
                         DeactivatedAt = account.DeactivatedAt,
                         RoleId = account.RoleId,
@@ -920,6 +923,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         LastViolationPointChanged = account.LastViolationPointChanged,
                         ViolationLevel = account.ViolationLevel,
                         ViolationPoint = account.ViolationPoint,
+                        PodcasterProfileName = account.PodcasterProfile != null ? account.PodcasterProfile.Name : null,
+                        PodcasterProfileIsVerified = account.PodcasterProfile != null ? account.PodcasterProfile.IsVerified : null,
                         HasVerifiedPodcasterProfile = account.RoleId == 1 && account.PodcasterProfile != null && account.PodcasterProfile.IsVerified == true ? true : false
                     },
                     // set cache expiry to 1 hour (khi hết hạn key-value này sẽ bị xoá khỏi redis)
@@ -1152,7 +1157,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + podcasterProfile.AccountId;
                     if (updatePodcasterProfileParameterDTO.BuddyAudioFileKey != null && updatePodcasterProfileParameterDTO.BuddyAudioFileKey != "")
                     {
-                        await _fileIOHelper.DeleteFileAsync(podcasterProfile.BuddyAudioFileKey);
+                        if (podcasterProfile.BuddyAudioFileKey != null && podcasterProfile.BuddyAudioFileKey != "")
+                        {
+                            await _fileIOHelper.DeleteFileAsync(podcasterProfile.BuddyAudioFileKey);
+                        }
                         var BuddyAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"buddy_trailer_audio{FilePathHelper.GetExtension(updatePodcasterProfileParameterDTO.BuddyAudioFileKey)}");
                         await _fileIOHelper.CopyFileToFileAsync(updatePodcasterProfileParameterDTO.BuddyAudioFileKey, BuddyAudioFileKey);
                         await _fileIOHelper.DeleteFileAsync(updatePodcasterProfileParameterDTO.BuddyAudioFileKey);
@@ -1232,7 +1240,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + account.Id;
                     if (updateUserInfo.MainImageFileKey != null && updateUserInfo.MainImageFileKey != "")
                     {
-                        await _fileIOHelper.DeleteFileAsync(account.MainImageFileKey);
+                        if (account.MainImageFileKey != null && account.MainImageFileKey != "")
+                        {
+                            await _fileIOHelper.DeleteFileAsync(account.MainImageFileKey);
+                        }
                         var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(updateUserInfo.MainImageFileKey)}");
                         await _fileIOHelper.CopyFileToFileAsync(updateUserInfo.MainImageFileKey, MainImageFileKey);
                         await _fileIOHelper.DeleteFileAsync(updateUserInfo.MainImageFileKey);

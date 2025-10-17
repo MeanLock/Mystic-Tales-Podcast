@@ -15,6 +15,9 @@ namespace UserService.BusinessLogic.Registrations
             // MiscServices
             services.AddScoped<MailOperationService>();
 
+            // CachingServices
+            services.AddScoped<AccountCachingService>();
+
             return services;
         }
     }

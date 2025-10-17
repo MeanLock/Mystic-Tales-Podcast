@@ -3,6 +3,7 @@ using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.DTOs.Cachegory;
 using PodcastService.BusinessLogic.DTOs.Channel;
 using PodcastService.BusinessLogic.DTOs.Channel.ListItems;
+using PodcastService.BusinessLogic.DTOs.Hashtag;
 
 namespace PodcastService.BusinessLogic.DTOs.Show.ListItems
 {
@@ -16,7 +17,7 @@ namespace PodcastService.BusinessLogic.DTOs.Show.ListItems
         public bool? IsReleased { get; set; }
         public string Copyright { get; set; } = null!;
         public string? UploadFrequency { get; set; }
-        public List<ReviewListItemDTO> ReviewList { get; set; } = new List<ReviewListItemDTO>();
+        // public List<ReviewListItemDTO> ReviewList { get; set; } = new List<ReviewListItemDTO>();
         public int RatingCount { get; set; }
         public double AverageRating { get; set; }
         public string? MainImageFileKey { get; set; }
@@ -28,8 +29,10 @@ namespace PodcastService.BusinessLogic.DTOs.Show.ListItems
         public PodcastSubCategoryDTO? PodcastSubCategory { get; set; }
         public PodcastShowSubscriptionTypeDTO? PodcastShowSubscriptionType { get; set; }
         public PodcastChannelSnippetResponseDTO? PodcastChannel { get; set; }
+        public List<HashtagDTO>? Hashtags { get; set; }
         public string? TakenDownReason { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public required PodcastShowStatusDTO CurrentStatus { get; set; } = null!;
     }
 }

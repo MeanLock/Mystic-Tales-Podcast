@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.DTOs.Cachegory;
 using PodcastService.BusinessLogic.DTOs.Hashtag;
 
@@ -21,7 +22,7 @@ namespace PodcastService.BusinessLogic.DTOs.Channel.ListItems
         public int ListenCount { get; set; }
         public int ShowCount { get; set; }
 
-        public int PodcasterId { get; set; }
+        public AccountSnippetResponseDTO Podcaster { get; set; } = null!;
 
         public PodcastCategoryDTO? PodcastCategory { get; set; }
 
@@ -31,7 +32,7 @@ namespace PodcastService.BusinessLogic.DTOs.Channel.ListItems
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        public PodcastChannelStatusDTO CurrentStatus { get; set; } = null!;
+        public required PodcastChannelStatusDTO CurrentStatus { get; set; } = null!;
 
     }
 }

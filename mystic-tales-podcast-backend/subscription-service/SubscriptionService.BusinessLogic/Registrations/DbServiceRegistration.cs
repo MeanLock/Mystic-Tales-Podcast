@@ -35,6 +35,9 @@ namespace SubscriptionService.BusinessLogic.Registrations
             services.AddScoped<PlatformFeedbackService>();
             services.AddScoped<MailOperationService>();
 
+            // CachingServices
+            services.AddScoped<AccountCachingService>();
+
 
 
             return services;

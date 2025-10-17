@@ -8,44 +8,17 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _appDbContext;
     // public IAccountRepository AccountRepository { get; }
-    // public IAccountOnlineTrackingRepository AccountOnlineTrackingRepository { get; }
-    // public ISurveyRepository SurveyRepository { get; }
-    // public ISurveyQuestionRepository SurveyQuestionRepository { get; }
-    // public ISurveyTopicFavoriteRepository SurveyTopicFavoriteRepository { get; }
-    // public IPasswordResetTokenRepository PasswordResetTokenRepository { get; }
-    // public ISurveyTakenResultRepository SurveyTakenResultRepository { get; }
-    // public ISurveyStatusTrackingRepository SurveyStatusTrackingRepository { get; }
-    // public IFilterTagRepository FilterTagRepository { get; }
-    // public ITakerTagFilterRepository TakerTagFilterRepository { get; }
-    // public ISystemConfigProfileRepository SystemConfigProfileRepository { get; }
-    // public ISurveyTakerSegmentRepository SurveyTakerSegmentRepository { get; }
-    // public ISurveyTagFilterRepository SurveyTagFilterRepository { get; }
-    // public IAccountProfileRepository AccountProfileRepository { get; }
-    // public IAccountBalanceTransactionRepository AccountBalanceTransactionRepository { get; }
-    // public ISurveyCommunityTransactionRepository SurveyCommunityTransactionRepository { get; }
+    public IPodcastChannelHashtagRepository PodcastChannelHashtagRepository { get; }
 
     public UnitOfWork(
-        AppDbContext appDbContext
+        AppDbContext appDbContext,
         // IAccountRepository accountRepository,
-        // IAccountOnlineTrackingRepository accountOnlineTrackingRepository,
-        // ISurveyRepository surveyRepository,
-        // ISurveyQuestionRepository surveyQuestionRepository,
-        // ISurveyTopicFavoriteRepository surveyTopicFavoriteRepository,
-        // IPasswordResetTokenRepository passwordResetTokenRepository,
-        // ISurveyTakenResultRepository surveyTakenResultRepository,
-        // ISurveyStatusTrackingRepository surveyStatusTrackingRepository,
-        // IFilterTagRepository filterTagRepository,
-        // ITakerTagFilterRepository takerTagFilterRepository,
-        // ISystemConfigProfileRepository systemConfigProfileRepository,
-        // ISurveyTakerSegmentRepository surveyTakerSegmentRepository,
-        // ISurveyTagFilterRepository surveyTagFilterRepository,
-        // IAccountProfileRepository accountProfileRepository,
-        // IAccountBalanceTransactionRepository accountBalanceTransactionRepository,
-        // ISurveyCommunityTransactionRepository surveyCommunityTransactionRepository
+        IPodcastChannelHashtagRepository podcastChannelHashtagRepository
 
         )
     {
         _appDbContext = appDbContext;
+        PodcastChannelHashtagRepository = podcastChannelHashtagRepository;
 
         // this.AccountRepository = accountRepository;
         // this.AccountOnlineTrackingRepository = accountOnlineTrackingRepository;

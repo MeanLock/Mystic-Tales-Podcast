@@ -30,6 +30,11 @@ using PodcastService.BusinessLogic.DTOs.Cachegory;
 using PodcastService.BusinessLogic.DTOs.Hashtag;
 using PodcastService.BusinessLogic.DTOs.Subscription.ListItems;
 using PodcastService.BusinessLogic.DTOs.Subscription;
+using PodcastService.BusinessLogic.DTOs.Show.ListItems;
+using PodcastService.BusinessLogic.DTOs.Account;
+using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
+using PodcastService.BusinessLogic.DTOs.Show;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -61,11 +66,13 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         private readonly IGenericRepository<PodcastChannelStatusTracking> _podcastChannelStatusTrackingGenericRepository;
         private readonly IGenericRepository<PodcastChannelHashtag> _podcastChannelHashtagGenericRepository;
         private readonly IGenericRepository<Hashtag> _hashtagGenericRepository;
+        private readonly IGenericRepository<PodcastShow> _podcastShowGenericRepository;
 
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
-
+        // CACHING SERVICE
+        private readonly AccountCachingService _accountCachingService;
 
         // GOOGLE SERVICE
         private readonly FluentEmailService _fluentEmailService;
@@ -90,6 +97,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             IGenericRepository<PodcastChannelStatusTracking> podcastChannelStatusTrackingGenericRepository,
             IGenericRepository<PodcastChannelHashtag> podcastChannelHashtagGenericRepository,
             IGenericRepository<Hashtag> hashtagGenericRepository,
+            IGenericRepository<PodcastShow> podcastShowGenericRepository,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -100,6 +108,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             IAccountConfig accountConfig,
 
             HttpServiceQueryClient httpServiceQueryClient,
+
+            AccountCachingService accountCachingService,
+
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
 
@@ -115,6 +126,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _podcastChannelStatusTrackingGenericRepository = podcastChannelStatusTrackingGenericRepository;
             _podcastChannelHashtagGenericRepository = podcastChannelHashtagGenericRepository;
             _hashtagGenericRepository = hashtagGenericRepository;
+            _podcastShowGenericRepository = podcastShowGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -129,6 +141,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _appConfig = appConfig;
 
             _httpServiceQueryClient = httpServiceQueryClient;
+
+            _accountCachingService = accountCachingService;
+
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
 
@@ -1406,41 +1421,55 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
                 var channels = await query.ToListAsync();
 
-                var channelList = channels.Select(pc => new ChannelListItemResponseDTO
+                var channelList = (await Task.WhenAll(channels.Select(async pc =>
                 {
-                    Id = pc.Id,
-                    Name = pc.Name,
-                    Description = pc.Description,
-                    MainImageFileKey = pc.MainImageFileKey,
-                    BackgroundImageFileKey = pc.BackgroundImageFileKey,
-                    PodcastCategory = new PodcastCategoryDTO
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(pc.PodcasterId);
+                    if (podcaster == null || podcaster.Id != pc.PodcasterId || podcaster.IsVerified == false || podcaster.DeactivatedAt != null || podcaster.HasVerifiedPodcasterProfile == false)
                     {
-                        Id = pc.PodcastCategory.Id,
-                        Name = pc.PodcastCategory.Name
-                    },
-                    PodcastSubCategory = new PodcastSubCategoryDTO
+                        throw new Exception("Podcaster with id " + pc.PodcasterId + " does not exist");
+                    }
+                    return new ChannelListItemResponseDTO
                     {
-                        Id = pc.PodcastSubCategory.Id,
-                        Name = pc.PodcastSubCategory.Name,
-                        PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
-                    },
-                    CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
-                    {
-                        Id = pct.PodcastChannelStatus.Id,
-                        Name = pct.PodcastChannelStatus.Name
-                    }).FirstOrDefault()!,
-                    Hashtags = pc.PodcastChannelHashtags.Select(pch => new HashtagDTO
-                    {
-                        Id = pch.Hashtag.Id,
-                        Name = pch.Hashtag.Name
-                    }).ToList(),
-                    TotalFavorite = pc.TotalFavorite,
-                    ListenCount = pc.ListenCount,
-                    ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnums.Published && ps.DeletedAt == null) : 0,
-                    PodcasterId = pc.PodcasterId,
-                    CreatedAt = pc.CreatedAt,
-                    UpdatedAt = pc.UpdatedAt
-                }).ToList();
+                        Id = pc.Id,
+                        Name = pc.Name,
+                        Description = pc.Description,
+                        MainImageFileKey = pc.MainImageFileKey,
+                        BackgroundImageFileKey = pc.BackgroundImageFileKey,
+                        PodcastCategory = new PodcastCategoryDTO
+                        {
+                            Id = pc.PodcastCategory.Id,
+                            Name = pc.PodcastCategory.Name
+                        },
+                        PodcastSubCategory = new PodcastSubCategoryDTO
+                        {
+                            Id = pc.PodcastSubCategory.Id,
+                            Name = pc.PodcastSubCategory.Name,
+                            PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
+                        },
+                        CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
+                        {
+                            Id = pct.PodcastChannelStatus.Id,
+                            Name = pct.PodcastChannelStatus.Name
+                        }).FirstOrDefault()!,
+                        Hashtags = pc.PodcastChannelHashtags.Select(pch => new HashtagDTO
+                        {
+                            Id = pch.Hashtag.Id,
+                            Name = pch.Hashtag.Name
+                        }).ToList(),
+                        TotalFavorite = pc.TotalFavorite,
+                        ListenCount = pc.ListenCount,
+                        ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnums.Published && ps.DeletedAt == null) : 0,
+                        Podcaster = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.FullName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        CreatedAt = pc.CreatedAt,
+                        UpdatedAt = pc.UpdatedAt
+                    };
+                }))).ToList();
                 return channelList;
             }
             catch (Exception ex)
@@ -1470,41 +1499,57 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 var channels = await query.ToListAsync();
 
-                var channelList = channels.Select(pc => new ChannelListItemResponseDTO
+                var channelList = (await Task.WhenAll(channels.Select(async pc =>
                 {
-                    Id = pc.Id,
-                    Name = pc.Name,
-                    Description = pc.Description,
-                    MainImageFileKey = pc.MainImageFileKey,
-                    BackgroundImageFileKey = pc.BackgroundImageFileKey,
-                    PodcastCategory = new PodcastCategoryDTO
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(pc.PodcasterId);
+                    if (podcaster == null || podcaster.Id != pc.PodcasterId || podcaster.IsVerified == false || podcaster.DeactivatedAt != null || podcaster.HasVerifiedPodcasterProfile == false)
                     {
-                        Id = pc.PodcastCategory.Id,
-                        Name = pc.PodcastCategory.Name
-                    },
-                    PodcastSubCategory = new PodcastSubCategoryDTO
+                        throw new Exception("Podcaster with id " + pc.PodcasterId + " does not exist");
+                    }
+                    return new ChannelListItemResponseDTO
                     {
-                        Id = pc.PodcastSubCategory.Id,
-                        Name = pc.PodcastSubCategory.Name,
-                        PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
-                    },
-                    CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
-                    {
-                        Id = pct.PodcastChannelStatus.Id,
-                        Name = pct.PodcastChannelStatus.Name
-                    }).FirstOrDefault()!,
-                    Hashtags = pc.PodcastChannelHashtags.Select(pch => new HashtagDTO
-                    {
-                        Id = pch.Hashtag.Id,
-                        Name = pch.Hashtag.Name
-                    }).ToList(),
-                    TotalFavorite = pc.TotalFavorite,
-                    ListenCount = pc.ListenCount,
-                    ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.DeletedAt == null) : 0,
-                    PodcasterId = pc.PodcasterId,
-                    CreatedAt = pc.CreatedAt,
-                    UpdatedAt = pc.UpdatedAt
-                }).ToList();
+                        Id = pc.Id,
+                        Name = pc.Name,
+                        Description = pc.Description,
+                        MainImageFileKey = pc.MainImageFileKey,
+                        BackgroundImageFileKey = pc.BackgroundImageFileKey,
+                        PodcastCategory = new PodcastCategoryDTO
+                        {
+                            Id = pc.PodcastCategory.Id,
+                            Name = pc.PodcastCategory.Name
+                        },
+                        PodcastSubCategory = new PodcastSubCategoryDTO
+                        {
+                            Id = pc.PodcastSubCategory.Id,
+                            Name = pc.PodcastSubCategory.Name,
+                            PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
+                        },
+                        CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
+                        {
+                            Id = pct.PodcastChannelStatus.Id,
+                            Name = pct.PodcastChannelStatus.Name
+                        }).FirstOrDefault()!,
+                        Hashtags = pc.PodcastChannelHashtags.Select(pch => new HashtagDTO
+                        {
+                            Id = pch.Hashtag.Id,
+                            Name = pch.Hashtag.Name
+                        }).ToList(),
+                        TotalFavorite = pc.TotalFavorite,
+                        ListenCount = pc.ListenCount,
+                        ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.DeletedAt == null) : 0,
+                        Podcaster = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.FullName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        CreatedAt = pc.CreatedAt,
+                        UpdatedAt = pc.UpdatedAt
+                    };
+                }))
+
+                ).ToList();
                 return channelList;
             }
             catch (Exception ex)
@@ -1573,7 +1618,29 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", podcastSubscriptionBatchRequest);
 
 
+                var showByChannelIdQuery = _podcastShowGenericRepository.FindAll(
+                    predicate: ps => ps.DeletedAt == null && ps.PodcastChannelId == channel.Id,
+                    includeFunc: q => q
+                        .Include(ps => ps.PodcastShowStatusTrackings)
+                        .ThenInclude(pst => pst.PodcastShowStatus)
+                        .Include(ps => ps.PodcastCategory)
+                        .Include(ps => ps.PodcastSubCategory)
+                        .Include(ps => ps.PodcastShowHashtags)
+                        .ThenInclude(psh => psh.Hashtag)
+                        .Include(ps => ps.PodcastShowSubscriptionType)
+                );
 
+                if (role == null || role == 1)
+                {
+                    showByChannelIdQuery = showByChannelIdQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnums.Published && ps.IsReleased == true);
+                }
+                var showList = await showByChannelIdQuery.ToListAsync();
+
+                var podcaster = await _accountCachingService.GetAccountStatusCacheById(channel.PodcasterId);
+                if (podcaster == null || podcaster.Id != channel.PodcasterId || podcaster.IsVerified == false || podcaster.DeactivatedAt != null || podcaster.HasVerifiedPodcasterProfile == false)
+                {
+                    throw new Exception("Podcaster with id " + channel.PodcasterId + " does not exist");
+                }
 
                 var channelDetail = new ChannelDetailResponseDTO
                 {
@@ -1605,10 +1672,75 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     }).ToList(),
                     TotalFavorite = channel.TotalFavorite,
                     ListenCount = channel.ListenCount,
-                    ShowCount = channel.PodcastShows != null ? channel.PodcastShows.Count(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnums.Published && ps.DeletedAt == null) : 0,
-                    PodcasterId = channel.PodcasterId,
+                    ShowCount = showList.Count,
+                    Podcaster = new AccountSnippetResponseDTO
+                    {
+                        Id = podcaster.Id,
+                        FullName = podcaster.FullName,
+                        Email = podcaster.Email,
+                        MainImageFileKey = podcaster.MainImageFileKey
+                    },
                     CreatedAt = channel.CreatedAt,
                     UpdatedAt = channel.UpdatedAt,
+                    ShowList = showList.Select(ps => new ShowListItemResponseDTO
+                    {
+                        Id = ps.Id,
+                        Name = ps.Name,
+                        Description = ps.Description,
+                        MainImageFileKey = ps.MainImageFileKey,
+                        TrailerAudioFileKey = ps.TrailerAudioFileKey,
+                        TotalFollow = ps.TotalFollow,
+                        ListenCount = ps.ListenCount,
+                        AverageRating = ps.AverageRating,
+                        RatingCount = ps.RatingCount,
+                        Copyright = ps.Copyright,
+                        IsReleased = ps.IsReleased,
+                        Language = ps.Language,
+                        UploadFrequency = ps.UploadFrequency,
+                        ReleaseDate = ps.ReleaseDate,
+                        TakenDownReason = role == null || role == 1 ? null : ps.TakenDownReason,
+                        PodcastCategory = new PodcastCategoryDTO
+                        {
+                            Id = ps.PodcastCategory.Id,
+                            Name = ps.PodcastCategory.Name
+                        },
+                        PodcastSubCategory = new PodcastSubCategoryDTO
+                        {
+                            Id = ps.PodcastSubCategory.Id,
+                            Name = ps.PodcastSubCategory.Name,
+                            PodcastCategoryId = ps.PodcastSubCategory.PodcastCategoryId
+                        },
+                        PodcastChannel = new PodcastChannelSnippetResponseDTO
+                        {
+                            Id = channel.Id,
+                            Name = channel.Name,
+                            MainImageFileKey = channel.MainImageFileKey
+                        },
+                        Podcaster = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            Email = podcaster.Email,
+                            FullName = podcaster.FullName,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
+                        {
+                            Id = ps.PodcastShowSubscriptionType.Id,
+                            Name = ps.PodcastShowSubscriptionType.Name
+                        } : null,
+                        Hashtags = ps.PodcastShowHashtags.Select(psh => new HashtagDTO
+                        {
+                            Id = psh.Hashtag.Id,
+                            Name = psh.Hashtag.Name
+                        }).ToList(),
+                        CreatedAt = ps.CreatedAt,
+                        UpdatedAt = ps.UpdatedAt,
+                        CurrentStatus = ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).Select(pst => new PodcastShowStatusDTO
+                        {
+                            Id = pst.PodcastShowStatus.Id,
+                            Name = pst.PodcastShowStatus.Name
+                        }).FirstOrDefault()!,
+                    }).ToList(),
                     PodcastSubscriptionList = ((JArray)result.Results["podcastSubscriptionList"]).Select(ps =>
                     {
                         var psObj = ps.ToObject<PodcastSubscriptionListItemResponseDTO>();
@@ -1626,7 +1758,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             PodcastSubscriptionCycleTypePriceList = ((JArray)ps["PodcastSubscriptionCycleTypePrices"]).ToObject<List<PodcastSubscriptionCycleTypePriceListItemResponseDTO>>().Select(psctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
                             {
                                 PodcastSubscriptionId = psctp.PodcastSubscriptionId,
-                                SubscriptionCycleTypeId = psctp.SubscriptionCycleTypeId,
                                 Price = psctp.Price,
                                 Version = psctp.Version,
                                 CreatedAt = psctp.CreatedAt,
@@ -1652,133 +1783,259 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             }).ToList()
                         };
                     }).ToList()
-                        
+
                 };
-            return channelDetail;
-        }
+                return channelDetail;
+            }
             catch (Exception ex)
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 throw new HttpRequestException("Get channel by id failed, error: " + ex.Message);
-    }
-}
+            }
+        }
 
 
-public async Task CreatePodcastChannel(CreateChannelParameterDTO createChannelParameterDTO, SagaCommandMessage command)
-{
-    using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-    {
-        try
+        public async Task CreatePodcastChannel(CreateChannelParameterDTO createChannelParameterDTO, SagaCommandMessage command)
         {
-            var podcastChannel = new PodcastChannel
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
-                Name = createChannelParameterDTO.Name,
-                Description = createChannelParameterDTO.Description,
-                PodcasterId = createChannelParameterDTO.PodcasterId,
-                PodcastCategoryId = createChannelParameterDTO.PodcastCategoryId,
-                PodcastSubCategoryId = createChannelParameterDTO.PodcastSubCategoryId,
-            };
-
-            await _podcastChannelGenericRepository.CreateAsync(podcastChannel);
-
-            var newPodcastChannelStatusTracking = new PodcastChannelStatusTracking
-            {
-                PodcastChannelId = podcastChannel.Id,
-                PodcastChannelStatusId = (int)PodcastChannelStatusEnum.Unpublished, // setting to "Unpublished" status
-            };
-            await _podcastChannelStatusTrackingGenericRepository.CreateAsync(newPodcastChannelStatusTracking);
-
-
-            var folderPath = _filePathConfig.PODCAST_CHANNEL_FILE_PATH + "\\" + podcastChannel.Id;
-            if (createChannelParameterDTO.MainImageFileKey != null && createChannelParameterDTO.MainImageFileKey != "")
-            {
-                var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(createChannelParameterDTO.MainImageFileKey)}");
-                await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.MainImageFileKey, MainImageFileKey);
-                await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.MainImageFileKey);
-                podcastChannel.MainImageFileKey = MainImageFileKey;
-
-            }
-            if (createChannelParameterDTO.BackgroundImageFileKey != null && createChannelParameterDTO.BackgroundImageFileKey != "")
-            {
-                var BackgroundImageFileKey = FilePathHelper.CombinePaths(folderPath, $"background_image{FilePathHelper.GetExtension(createChannelParameterDTO.BackgroundImageFileKey)}");
-                await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.BackgroundImageFileKey, BackgroundImageFileKey);
-                await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.BackgroundImageFileKey);
-                podcastChannel.BackgroundImageFileKey = BackgroundImageFileKey;
-            }
-
-            await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
-
-            foreach (var hashtagId in createChannelParameterDTO.HashtagIds)
-            {
-                var existingHashtag = await _hashtagGenericRepository.FindByIdAsync(hashtagId);
-                if (existingHashtag == null)
+                try
                 {
-                    throw new Exception("Hashtag with id " + hashtagId + " does not exist");
+                    var podcastChannel = new PodcastChannel
+                    {
+                        Name = createChannelParameterDTO.Name,
+                        Description = createChannelParameterDTO.Description,
+                        PodcasterId = createChannelParameterDTO.PodcasterId,
+                        PodcastCategoryId = createChannelParameterDTO.PodcastCategoryId,
+                        PodcastSubCategoryId = createChannelParameterDTO.PodcastSubCategoryId,
+                    };
+
+                    await _podcastChannelGenericRepository.CreateAsync(podcastChannel);
+
+                    var newPodcastChannelStatusTracking = new PodcastChannelStatusTracking
+                    {
+                        PodcastChannelId = podcastChannel.Id,
+                        PodcastChannelStatusId = (int)PodcastChannelStatusEnum.Unpublished, // setting to "Unpublished" status
+                    };
+                    await _podcastChannelStatusTrackingGenericRepository.CreateAsync(newPodcastChannelStatusTracking);
+
+
+                    var folderPath = _filePathConfig.PODCAST_CHANNEL_FILE_PATH + "\\" + podcastChannel.Id;
+                    if (createChannelParameterDTO.MainImageFileKey != null && createChannelParameterDTO.MainImageFileKey != "")
+                    {
+                        var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(createChannelParameterDTO.MainImageFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.MainImageFileKey, MainImageFileKey);
+                        await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.MainImageFileKey);
+                        podcastChannel.MainImageFileKey = MainImageFileKey;
+
+                    }
+                    if (createChannelParameterDTO.BackgroundImageFileKey != null && createChannelParameterDTO.BackgroundImageFileKey != "")
+                    {
+                        var BackgroundImageFileKey = FilePathHelper.CombinePaths(folderPath, $"background_image{FilePathHelper.GetExtension(createChannelParameterDTO.BackgroundImageFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(createChannelParameterDTO.BackgroundImageFileKey, BackgroundImageFileKey);
+                        await _fileIOHelper.DeleteFileAsync(createChannelParameterDTO.BackgroundImageFileKey);
+                        podcastChannel.BackgroundImageFileKey = BackgroundImageFileKey;
+                    }
+
+                    await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
+
+                    foreach (var hashtagId in createChannelParameterDTO.HashtagIds)
+                    {
+                        var existingHashtag = await _hashtagGenericRepository.FindByIdAsync(hashtagId);
+                        if (existingHashtag == null)
+                        {
+                            throw new Exception("Hashtag with id " + hashtagId + " does not exist");
+                        }
+                        var podcastChannelHashtag = new PodcastChannelHashtag
+                        {
+                            PodcastChannelId = podcastChannel.Id,
+                            HashtagId = hashtagId
+                        };
+                        await _podcastChannelHashtagGenericRepository.CreateAsync(podcastChannelHashtag);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["Name"] = podcastChannel.Name;
+                    messageNextRequestData["Description"] = podcastChannel.Description;
+                    messageNextRequestData["MainImageFileKey"] = podcastChannel.MainImageFileKey;
+                    messageNextRequestData["BackgroundImageFileKey"] = podcastChannel.BackgroundImageFileKey;
+                    messageNextRequestData["PodcastCategoryId"] = podcastChannel.PodcastCategoryId;
+                    messageNextRequestData["PodcastSubCategoryId"] = podcastChannel.PodcastSubCategoryId;
+                    messageNextRequestData["HashtagIds"] = JArray.FromObject(createChannelParameterDTO.HashtagIds);
+                    messageNextRequestData["PodcasterId"] = podcastChannel.PodcasterId;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = podcastChannel.Id,
+                        Name = podcastChannel.Name,
+                        Description = podcastChannel.Description,
+                        MainImageFileKey = podcastChannel.MainImageFileKey,
+                        BackgroundImageFileKey = podcastChannel.BackgroundImageFileKey,
+                        PodcastCategoryId = podcastChannel.PodcastCategoryId,
+                        PodcastSubCategoryId = podcastChannel.PodcastSubCategoryId,
+                        HashtagIds = createChannelParameterDTO.HashtagIds,
+                        PodcasterId = podcastChannel.PodcasterId
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-channel.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
                 }
-                var podcastChannelHashtag = new PodcastChannelHashtag
+                catch (Exception ex)
                 {
-                    PodcastChannelId = podcastChannel.Id,
-                    HashtagId = hashtagId
-                };
-                await _podcastChannelHashtagGenericRepository.CreateAsync(podcastChannelHashtag);
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create podcast channel failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-channel.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
             }
-
-            await transaction.CommitAsync();
-
-            var messageNextRequestData = command.RequestData;
-            messageNextRequestData["Name"] = podcastChannel.Name;
-            messageNextRequestData["Description"] = podcastChannel.Description;
-            messageNextRequestData["MainImageFileKey"] = podcastChannel.MainImageFileKey;
-            messageNextRequestData["BackgroundImageFileKey"] = podcastChannel.BackgroundImageFileKey;
-            messageNextRequestData["PodcastCategoryId"] = podcastChannel.PodcastCategoryId;
-            messageNextRequestData["PodcastSubCategoryId"] = podcastChannel.PodcastSubCategoryId;
-            messageNextRequestData["HashtagIds"] = JArray.FromObject(createChannelParameterDTO.HashtagIds);
-            messageNextRequestData["PodcasterId"] = podcastChannel.PodcasterId;
-
-            var messageResponseData = JObject.FromObject(new
-            {
-                PodcastChannelId = podcastChannel.Id,
-                Name = podcastChannel.Name,
-                Description = podcastChannel.Description,
-                MainImageFileKey = podcastChannel.MainImageFileKey,
-                BackgroundImageFileKey = podcastChannel.BackgroundImageFileKey,
-                PodcastCategoryId = podcastChannel.PodcastCategoryId,
-                PodcastSubCategoryId = podcastChannel.PodcastSubCategoryId,
-                HashtagIds = createChannelParameterDTO.HashtagIds,
-                PodcasterId = podcastChannel.PodcasterId
-            });
-            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                topic: KafkaTopicEnum.ContentManagementDomain,
-                requestData: messageNextRequestData,
-                responseData: messageResponseData,
-                sagaInstanceId: command.SagaInstanceId,
-                flowName: command.FlowName,
-                messageName: "create-channel.success"
-            );
-            await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-
         }
-        catch (Exception ex)
+
+
+        public async Task UpdatePodcastChannel(UpdateChannelParameterDTO updateChannelParameterDTO, SagaCommandMessage command)
         {
-            await transaction.RollbackAsync();
-
-            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                topic: KafkaTopicEnum.ContentManagementDomain,
-                requestData: command.RequestData,
-                responseData: JObject.FromObject(new
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
                 {
-                    ErrorMessage = $"Create podcast channel failed, error: {ex.Message}"
-                }),
-                sagaInstanceId: command.SagaInstanceId,
-                flowName: command.FlowName,
-                messageName: "create-channel.failed"
-            );
-            await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(updateChannelParameterDTO.PodcastChannelId);
+                    if (podcastChannel == null)
+                    {
+                        throw new Exception("Podcast channel with id " + updateChannelParameterDTO.PodcastChannelId + " does not exist");
+                    }
+                    else if (podcastChannel.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast channel with id " + updateChannelParameterDTO.PodcastChannelId + " has been deleted");
+                    }
+                    else if (podcastChannel.PodcasterId != updateChannelParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast channel with id " + updateChannelParameterDTO.PodcastChannelId + " does not belong to podcaster with id " + updateChannelParameterDTO.PodcasterId);
+                    }
 
-            Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    podcastChannel.Name = updateChannelParameterDTO.Name;
+                    podcastChannel.Description = updateChannelParameterDTO.Description;
+                    podcastChannel.PodcastCategoryId = updateChannelParameterDTO.PodcastCategoryId;
+                    podcastChannel.PodcastSubCategoryId = updateChannelParameterDTO.PodcastSubCategoryId;
+
+                    var folderPath = _filePathConfig.PODCAST_CHANNEL_FILE_PATH + "\\" + podcastChannel.Id;
+                    if (updateChannelParameterDTO.MainImageFileKey != null && updateChannelParameterDTO.MainImageFileKey != "")
+                    {
+                        if (!string.IsNullOrEmpty(podcastChannel?.MainImageFileKey))
+                        {
+                            await _fileIOHelper.DeleteFileAsync(podcastChannel.MainImageFileKey);
+                        }
+                        var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(updateChannelParameterDTO.MainImageFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(updateChannelParameterDTO.MainImageFileKey, MainImageFileKey);
+                        await _fileIOHelper.DeleteFileAsync(updateChannelParameterDTO.MainImageFileKey);
+                        podcastChannel.MainImageFileKey = MainImageFileKey;
+
+                    }
+                    if (updateChannelParameterDTO.BackgroundImageFileKey != null && updateChannelParameterDTO.BackgroundImageFileKey != "")
+                    {
+                        if (!string.IsNullOrEmpty(podcastChannel?.BackgroundImageFileKey))
+                        {
+                            await _fileIOHelper.DeleteFileAsync(podcastChannel.BackgroundImageFileKey);
+                        }
+                        var BackgroundImageFileKey = FilePathHelper.CombinePaths(folderPath, $"background_image{FilePathHelper.GetExtension(updateChannelParameterDTO.BackgroundImageFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(updateChannelParameterDTO.BackgroundImageFileKey, BackgroundImageFileKey);
+                        await _fileIOHelper.DeleteFileAsync(updateChannelParameterDTO.BackgroundImageFileKey);
+                        podcastChannel.BackgroundImageFileKey = BackgroundImageFileKey;
+                    }
+
+                    await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
+
+                    // Update hashtags
+                    await _unitOfWork.PodcastChannelHashtagRepository.DeleteByPodcastChannelIdAsync(podcastChannel.Id);
+
+                    foreach (var hashtagId in updateChannelParameterDTO.HashtagIds)
+                    {
+                        var existingHashtag = await _hashtagGenericRepository.FindByIdAsync(hashtagId);
+                        if (existingHashtag == null)
+                        {
+                            throw new Exception("Hashtag with id " + hashtagId + " does not exist");
+                        }
+                        var podcastChannelHashtag = new PodcastChannelHashtag
+                        {
+                            PodcastChannelId = podcastChannel.Id,
+                            HashtagId = hashtagId
+                        };
+                        await _podcastChannelHashtagGenericRepository.CreateAsync(podcastChannelHashtag);
+                    }
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["Name"] = podcastChannel.Name;
+                    messageNextRequestData["Description"] = podcastChannel.Description;
+                    messageNextRequestData["MainImageFileKey"] = podcastChannel.MainImageFileKey;
+                    messageNextRequestData["BackgroundImageFileKey"] = podcastChannel.BackgroundImageFileKey;
+                    messageNextRequestData["PodcastCategoryId"] = podcastChannel.PodcastCategoryId;
+                    messageNextRequestData["PodcastSubCategoryId"] = podcastChannel.PodcastSubCategoryId;
+                    messageNextRequestData["HashtagIds"] = JArray.FromObject(updateChannelParameterDTO.HashtagIds);
+                    messageNextRequestData["PodcasterId"] = podcastChannel.PodcasterId;
+                    messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
+                    
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = podcastChannel.Id,
+                        Name = podcastChannel.Name,
+                        Description = podcastChannel.Description,
+                        MainImageFileKey = podcastChannel.MainImageFileKey,
+                        BackgroundImageFileKey = podcastChannel.BackgroundImageFileKey,
+                        PodcastCategoryId = podcastChannel.PodcastCategoryId,
+                        PodcastSubCategoryId = podcastChannel.PodcastSubCategoryId,
+                        HashtagIds = updateChannelParameterDTO.HashtagIds,
+                        PodcasterId = podcastChannel.PodcasterId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-channel.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Update podcast channel failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-channel.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
         }
-    }
-}
 
 
     }

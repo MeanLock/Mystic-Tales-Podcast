@@ -6,8 +6,6 @@ namespace PodcastService.BusinessLogic.DTOs.Subscription.ListItems
     {
         public int PodcastSubscriptionId { get; set; }
 
-        public int SubscriptionCycleTypeId { get; set; }
-
         public int Version { get; set; }
 
         public decimal Price { get; set; }
