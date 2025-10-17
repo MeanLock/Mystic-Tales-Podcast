@@ -305,7 +305,6 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
         }
         public async Task<JObject?> GetPodcastSubscriptionRegistration(int accountId, Guid podcastSubscriptionRegistartionId)
         {
-            Console.WriteLine("asdasdasasdasdasdasasdasd " + podcastSubscriptionRegistartionId);
             var batchRequest = new BatchQueryRequest
             {
                 Queries = new List<BatchQueryItem>
