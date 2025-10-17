@@ -1322,12 +1322,15 @@ flows:
         description: "Xóa kênh podcast"
         parameters:
           - PodcastChannelId
+          - PodcasterId
           - KeptShowIds
         next-request-data:
           - PodcastChannelId
+          - PodcasterId
           - KeptShowIds
         response-data:
           - PodcastChannelId
+          - PodcasterId
           - KeptShowIds
           - DeletedAt
         onSuccess:
@@ -1351,11 +1354,13 @@ flows:
         description: "Xóa tất cả các mục theo dõi kênh podcast liên quan đến kênh đã xóa"
         parameters:
           - PodcastChannelId
+          - PodcasterId
         next-request-data:
           - PodcastChannelId
-          - KeptShowIds
+          - PodcasterId
         response-data:
           - PodcastChannelId
+          - PodcasterId
         onSuccess:
           emit: "delete-account-favorited-channel.success"
           topic: "user-management-domain"

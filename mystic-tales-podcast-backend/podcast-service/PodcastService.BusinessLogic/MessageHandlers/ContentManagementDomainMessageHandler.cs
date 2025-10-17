@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using PodcastService.BusinessLogic.Attributes;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
@@ -413,6 +414,23 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "update-channel.failed"    // From YAML onFailure.emit
             );
 
+        }
+
+        // [MessageHandler("delete-channel", SAGA_TOPIC)] 
+
+        [MessageHandler("publish-channel", SAGA_TOPIC)]
+        public async Task HandlePublishChannelAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var channelId = command.RequestData.ToObject<PublishChannelParameterDTO>();
+                    await _podcastChannelService.PublishPodcastChannel(channelId, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "publish-channel.failed"    // From YAML onFailure.emit
+            );
         }
     }
 }

@@ -35,6 +35,7 @@ using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
 using PodcastService.BusinessLogic.DTOs.Show;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -1914,10 +1915,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         public async Task UpdatePodcastChannel(UpdateChannelParameterDTO updateChannelParameterDTO, SagaCommandMessage command)
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
+                using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
                 {
+                    try
+                    {
                     var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(updateChannelParameterDTO.PodcastChannelId);
                     if (podcastChannel == null)
                     {
@@ -1992,7 +1993,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     messageNextRequestData["HashtagIds"] = JArray.FromObject(updateChannelParameterDTO.HashtagIds);
                     messageNextRequestData["PodcasterId"] = podcastChannel.PodcasterId;
                     messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
-                    
+
                     var messageResponseData = JObject.FromObject(new
                     {
                         PodcastChannelId = podcastChannel.Id,
@@ -2037,6 +2038,72 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        public async Task PublishPodcastChannel(PublishChannelParameterDTO publishChannelParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(publishChannelParameterDTO.PodcastChannelId);
+                    if (podcastChannel == null)
+                    {
+                        throw new Exception("Podcast channel with id " + publishChannelParameterDTO.PodcastChannelId + " does not exist");
+                    }
+                    else if (podcastChannel.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast channel with id " + publishChannelParameterDTO.PodcastChannelId + " has been deleted");
+                    }
+                    else if (podcastChannel.PodcasterId != publishChannelParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast channel with id " + publishChannelParameterDTO.PodcastChannelId + " does not belong to podcaster with id " + publishChannelParameterDTO.PodcasterId);
+                    }
 
+                    var newPodcastChannelStatusTracking = new PodcastChannelStatusTracking
+                    {
+                        PodcastChannelId = podcastChannel.Id,
+                        PodcastChannelStatusId = (int)PodcastChannelStatusEnum.Published, // setting to "Published" status
+                    };
+                    await _podcastChannelStatusTrackingGenericRepository.CreateAsync(newPodcastChannelStatusTracking);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = podcastChannel.Id,
+                    }); 
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "publish-channel.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Publish podcast channel failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "publish-channel.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+
+        }
     }
 }
