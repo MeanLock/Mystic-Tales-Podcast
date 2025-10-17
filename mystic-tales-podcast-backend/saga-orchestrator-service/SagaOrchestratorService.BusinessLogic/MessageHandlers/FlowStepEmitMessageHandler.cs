@@ -165,6 +165,52 @@ namespace SagaOrchestratorService.BusinessLogic.MessageHandlers
                     var resultDataJson = SerializeToJson(responseData);
                     await _sagaInstanceService.UpdateSagaStatusAsync(currentSagaId, SagaFlowStatusEnum.FAILED, resultDataJson, stepName, sagaErrorMessage);
 
+                    foreach (var step in outcome.Value.NextSteps)
+                    {
+                        // Create step execution for next step
+                        await _sagaInstanceService.CreateStepExecutionAsync(currentSagaId, step.Name, step.Topic, SerializeToJson(requestData));
+
+                        // Update saga current step
+                        await _sagaInstanceService.UpdateSagaCurrentStepAsync(currentSagaId, step.Name);
+
+                        var SagaCommandMessage = _kafkaProducerService.PrepareSagaCommandMessage(step.Topic, requestData, responseData, currentSagaId, flowName, step.Name);
+                        var result = await _messaging.SendSagaMessageAsync(SagaCommandMessage);
+                        if (result)
+                            _logger.LogInformation("Emit '{Emit}' -> step '{Step}' sent to '{Topic}' (SagaId: {SagaId})",
+                            emit, step.Name, step.Topic, currentSagaId);
+                        else
+                        {
+                            _logger.LogWarning("Emit '{Emit}' -> failed to send step '{Step}' to '{Topic}' (SagaId: {SagaId})",
+                            emit, step.Name, step.Topic, currentSagaId);
+                        }
+                    }
+
+                    foreach (var nextFlow in outcome.Value.NextFlows)
+                    {
+                        if (string.IsNullOrWhiteSpace(nextFlow.Name))
+                            continue;
+
+                        if (!_flowConfig.Flows.TryGetValue(nextFlow.Name, out var flowDef) || string.IsNullOrWhiteSpace(flowDef.Topic))
+                        {
+                            _logger.LogWarning("Emit '{Emit}' -> unknown next flow '{Flow}'", emit, nextFlow.Name);
+                        }
+                        else
+                        {
+                            // Use the topic from nextFlow if specified, otherwise fallback to flowDef.Topic
+                            var targetTopic = !string.IsNullOrWhiteSpace(nextFlow.Topic) ? nextFlow.Topic : flowDef.Topic;
+
+                            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(targetTopic, requestData, null, nextFlow.Name);
+                            var result = await _messaging.SendSagaMessageAsync(startSagaTriggerMessage);
+                            if (result)
+                                _logger.LogInformation("Emit '{Emit}' -> start flow '{Flow}' to '{Topic}'",
+                                    emit, nextFlow.Name, targetTopic);
+                            else
+                            {
+                                _logger.LogWarning("Emit '{Emit}' -> failed to start flow '{Flow}' to '{Topic}'", emit, nextFlow.Name, targetTopic);
+                            }
+                        }
+                    }
+
                     _logger.LogWarning("Saga failed: {SagaId}, Step: {StepName}, Emit: {Emit}, Error: {ErrorMessage}, ResultData updated",
                         currentSagaId, stepName, emit, sagaErrorMessage);
                 }

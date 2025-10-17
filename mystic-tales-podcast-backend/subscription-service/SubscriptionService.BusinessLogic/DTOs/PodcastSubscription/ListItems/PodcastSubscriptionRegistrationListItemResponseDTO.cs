@@ -14,10 +14,10 @@ namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems
         public int PodcastSubscriptionId { get; set; }
         public SubscriptionCycleTypeDTO SubscriptionCycleType { get; set; }
         public int CurrentVersion { get; set; }
-        public bool IsAcceptNewestVersionSwitch { get; set; }
+        public bool? IsAcceptNewestVersionSwitch { get; set; }
         public bool IsIncomeTaken { get; set; }
         public DateTime LastPaidAt { get; set; }
-        public DateTime CancelledAt { get; set; }
+        public DateTime? CancelledAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using SubscriptionService.BusinessLogic.Attributes;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreatePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeletePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.UpdatePodcastSubscription;
 using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
 using SubscriptionService.BusinessLogic.Services.MessagingServices.interfaces;
 using SubscriptionService.Infrastructure.Services.Kafka;
@@ -38,6 +40,36 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: "subscription-management-domain",
                 failedEmitMessage: "create-podcast-subscription.failed"
+            );
+        }
+        [MessageHandler("update-podcast-subscription", "subscription-management-domain")]
+        public async Task HandleUpdatePodcastSubscriptionCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameters = command.RequestData.ToObject<UpdatePodcastSubscriptionParameterDTO>();
+                    await _podcastSubscriptionService.UpdatePodcastSubscriptionAsync(parameters, command);
+                    _logger.LogInformation("Handled update-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "subscription-management-domain",
+                failedEmitMessage: "update-podcast-subscription.failed"
+            );
+        }
+        [MessageHandler("delete-podcast-subscription", "subscription-management-domain")]
+        public async Task HandleDeletePodcastSubscriptionCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<DeletePodcastSubscriptionParameterDTO>();
+                    await _podcastSubscriptionService.DeletePodcastSubscriptionAsync(parameter, command);
+                    _logger.LogInformation("Handled delete-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "subscription-management-domain",
+                failedEmitMessage: "delete-podcast-subscription.failed"
             );
         }
     }

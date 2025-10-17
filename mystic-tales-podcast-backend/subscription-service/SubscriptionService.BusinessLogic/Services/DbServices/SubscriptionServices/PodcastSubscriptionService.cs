@@ -3,7 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreatePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeletePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.UpdatePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.Details;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems;
+using SubscriptionService.BusinessLogic.DTOs.Subscription;
 using SubscriptionService.BusinessLogic.Enums.Kafka;
 using SubscriptionService.BusinessLogic.Models.CrossService;
 using SubscriptionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -121,12 +126,12 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                             .FirstOrDefaultAsync(ps => ps.PodcastShowId == parameter.PodcastShowId && ps.DeletedAt == null);
-                        if(existPodcastSubscription != null)
+                        if (existPodcastSubscription != null)
                         {
                             throw new Exception($"An Active Podcast Subscription already exists for PodcastShow Id: {parameter.PodcastShowId}");
                         }
                     }
-                    if(parameter.PodcastChannelId != null)
+                    if (parameter.PodcastChannelId != null)
                     {
                         var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                             .FirstOrDefaultAsync(ps => ps.PodcastChannelId == parameter.PodcastChannelId && ps.DeletedAt == null);
@@ -192,15 +197,16 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
                         { "CreatedAt", podcastSubscription.CreatedAt }
                     };
+                    var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.PaymentProcessingDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: messageName);
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
-                    _logger.LogInformation("Successfully created podcast subscription for SagaId: {SagaId}", command.SagaInstanceId);
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully created podcast subscription for SagaId: {SagaId}", sagaId);
                 }
                 catch (Exception ex)
                 {
@@ -221,6 +227,260 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     _logger.LogInformation("Create podcast subscription failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
+        }
+        public async Task<PodcastSubscriptionDetailResponseDTO?> GetPodcastSubscriptionByIdAsync(int podcastSubscriptionId)
+        {
+            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll(
+                includeFunc: ps => ps
+                    .Include(sct => sct.PodcastSubscriptionCycleTypePrices)
+                    .ThenInclude(sct => sct.SubscriptionCycleType)
+                    .Include(bm => bm.PodcastSubscriptionBenefitMappings)
+                    .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                    .Include(sr => sr.PodcastSubscriptionRegistrations)
+                    .ThenInclude(sr => sr.SubscriptionCycleType)
+                )
+                .Where(ps => ps.Id == podcastSubscriptionId)
+                .Select(ps => new PodcastSubscriptionDetailResponseDTO
+                {
+                    Id = ps.Id,
+                    Name = ps.Name,
+                    Description = ps.Description,
+                    PodcastShowId = ps.PodcastShowId,
+                    PodcastChannelId = ps.PodcastChannelId,
+                    IsActive = ps.DeletedAt == null,
+                    CurrentVersion = ps.CurrentVersion,
+                    DeletedAt = ps.DeletedAt,
+                    CreatedAt = ps.CreatedAt,
+                    UpdatedAt = ps.UpdatedAt,
+                    PodcastSubscriptionCycleTypePriceList = ps.PodcastSubscriptionCycleTypePrices
+                        .Select(ctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
+                        {
+                            PodcastSubscriptionId = ctp.PodcastSubscriptionId,
+                            SubscriptionCycleType = ctp.SubscriptionCycleType == null
+                            ? null
+                            : new SubscriptionCycleTypeDTO
+                            {
+                                Id = ctp.SubscriptionCycleType.Id,
+                                Name = ctp.SubscriptionCycleType.Name
+                            },
+                            Version = ctp.Version,
+                            Price = ctp.Price,
+                            CreatedAt = ctp.CreatedAt,
+                            UpdatedAt = ctp.UpdatedAt
+                        }).ToList(),
+                    PodcastSubscriptionBenefitMappingList = ps.PodcastSubscriptionBenefitMappings
+                        .Select(bm => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionBenefitMappingListItemResponseDTO
+                        {
+                            PodcastSubscriptionId = bm.PodcastSubscriptionId,
+                            PodcastSubscriptionBenefit = bm.PodcastSubscriptionBenefit == null
+                            ? null
+                            : new PodcastSubscriptionBenefitDTO
+                            {
+                                Id = bm.PodcastSubscriptionBenefit.Id,
+                                Name = bm.PodcastSubscriptionBenefit.Name
+                            },
+                            Version = bm.Version,
+                            CreatedAt = bm.CreatedAt,
+                            UpdatedAt = bm.UpdatedAt
+                        }).ToList(),
+                    PodcastSubscriptionRegistrationList = ps.PodcastSubscriptionRegistrations
+                        .Select(sr => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionRegistrationListItemResponseDTO
+                        {
+                            Id = sr.Id,
+                            AccountId = sr.AccountId ?? 0,
+                            PodcastSubscriptionId = sr.PodcastSubscriptionId,
+                            SubscriptionCycleType = sr.SubscriptionCycleType == null
+                            ? null
+                            : new SubscriptionCycleTypeDTO
+                            {
+                                Id = sr.SubscriptionCycleType.Id,
+                                Name = sr.SubscriptionCycleType.Name
+                            },
+                            CurrentVersion = sr.CurrentVersion,
+                            IsAcceptNewestVersionSwitch = sr.IsAcceptNewestVersionSwitch,
+                            IsIncomeTaken = sr.IsIncomeTaken,
+                            LastPaidAt = sr.LastPaidAt,
+                            CancelledAt = sr.CancelledAt,
+                            CreatedAt = sr.CreatedAt,
+                            UpdatedAt = sr.UpdatedAt
+                        }).ToList()
+                })
+                .FirstOrDefaultAsync();
+            if (podcastSubscription == null)
+            {
+                _logger.LogWarning("No Podcast subscription with ID {PodcastSubscriptionId} found.", podcastSubscriptionId);
+                return null;
+            }
+            return podcastSubscription;
+        }
+        public async Task UpdatePodcastSubscriptionAsync(UpdatePodcastSubscriptionParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcastSubscription = null as PodcastSubscription;
+                    var cycleTypePrices = null as List<PodcastSubscriptionCycleTypePrice>;
+                    var benefitMappings = null as List<PodcastSubscriptionBenefitMapping>;
+                    var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                        .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null);
+                    if (existPodcastSubscription == null)
+                    {
+                        throw new Exception($"No Active Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
+                    }
+                    existPodcastSubscription.Name = parameter.Name;
+                    existPodcastSubscription.Description = parameter.Description;
+                    existPodcastSubscription.CurrentVersion += 1;
+                    existPodcastSubscription.UpdatedAt = DateTime.UtcNow;
+
+                    podcastSubscription = await _podcastSubscriptionGenericRepository.UpdateAsync(existPodcastSubscription.Id, existPodcastSubscription);
+                    foreach (var cycleTypePrice in parameter.PodcastSubscriptionCycleTypePriceList)
+                    {
+                        var newCycleTypePrice = new PodcastSubscriptionCycleTypePrice
+                        {
+                            PodcastSubscriptionId = podcastSubscription.Id,
+                            SubscriptionCycleTypeId = cycleTypePrice.SubscriptionCycleTypeId,
+                            Version = podcastSubscription.CurrentVersion,
+                            Price = cycleTypePrice.Price,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        var cycleTypePriceResult = await _podcastSubscriptionCycleTypePriceGenericRepository.CreateAsync(newCycleTypePrice);
+                        if (cycleTypePrices == null)
+                        {
+                            cycleTypePrices.Add(cycleTypePriceResult);
+                        }
+                    }
+                    foreach (var benefitId in parameter.PodcastSubscriptionBenefitMappingList)
+                    {
+                        var newBenefitMapping = new PodcastSubscriptionBenefitMapping
+                        {
+                            PodcastSubscriptionId = podcastSubscription.Id,
+                            PodcastSubscriptionBenefitId = benefitId,
+                            Version = podcastSubscription.CurrentVersion,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        var benefitMappingResult = await _podcastSubscriptionBenefitMappingGenericRepository.CreateAsync(newBenefitMapping);
+                        if (benefitMappings == null)
+                        {
+                            benefitMappings.Add(benefitMappingResult);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject
+                    {
+                        { "PodcastSubscriptionId", podcastSubscription.Id },
+                        { "Name", podcastSubscription.Name },
+                        { "Description", podcastSubscription.Description },
+                        { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(cycleTypePrices) },
+                        { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
+                        { "UpdatedAt", podcastSubscription.UpdatedAt },
+                        { "NewVersion", podcastSubscription.CurrentVersion }
+                    };
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully updated podcast subscription for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while updating podcast subscription for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Update podcast subscription failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Update podcast subscription failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task DeletePodcastSubscriptionAsync(DeletePodcastSubscriptionParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                        .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null);
+                    if (existPodcastSubscription == null)
+                    {
+                        _logger.LogWarning("No Active Podcast Subscription exists for PodcastSubscription Id: {PodcastSubscriptionId}", parameter.PodcastSubscriptionId);
+                        throw new Exception($"No Active Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
+                    }
+                    existPodcastSubscription.DeletedAt = DateTime.UtcNow;
+                    existPodcastSubscription.UpdatedAt = DateTime.UtcNow;
+                    await _podcastSubscriptionGenericRepository.UpdateAsync(existPodcastSubscription.Id, existPodcastSubscription);
+                    
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject
+                    {
+                        { "PodcastSubscriptionId", existPodcastSubscription.Id },
+                        { "DeletedAt", existPodcastSubscription.DeletedAt }
+                    };
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully deleted podcast subscription for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while deleting podcast subscription for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Delete podcast subscription failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Delete podcast subscription failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task<JObject?> ValidatePodcastSubscriptionAccess(int accountId, int PodcastSubscriptionId)
+        {
+            var podcastShowId = await _podcastSubscriptionGenericRepository.FindAll()
+                .Where(ps => ps.Id == PodcastSubscriptionId)
+                .Select(ps => ps.PodcastShowId)
+                .FirstOrDefaultAsync();
+            return await GetPodcastShow(accountId, podcastShowId.Value);
         }
         public async Task<JObject?> GetPodcastShow(int accountId, Guid podcastShowId)
         {
