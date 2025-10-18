@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
 
-namespace BookingManagementService.BusinessLogic.DTOs.ProducingRequest
+namespace BookingManagementService.BusinessLogic.DTOs.ProducingRequest.Detail
 {
     public class BookingProducingRequestDetailResponseDTO
     {
