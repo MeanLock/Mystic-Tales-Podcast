@@ -175,7 +175,7 @@
         flex-direction: column;
         padding: 0;
         background-color: var(--primary-grey);
-        border-right: 1px solid #444;
+        border-right: 0.3px solid var(--secondary-grey);
         color: white;
         position: fixed;
         top: 65px;
@@ -254,11 +254,10 @@
                 transition: opacity 0.3s ease;
             }
 
-            &-subtitle {
-                color: #4CAF50;
-                font-size: 0.75rem;
-                margin-top: 4px;
-                text-transform: uppercase;
+            &-type {
+                color: var(--primary-green);
+                font-weight: 500;
+                font-size: 0.8rem;
                 transition: opacity 0.3s ease;
             }
         }

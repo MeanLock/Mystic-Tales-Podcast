@@ -1,71 +1,50 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { setUserContext, setShowContext } from '../../redux/navigation/navigationSlice';
-import { _podcasterNav } from '../../router/_roleNav';
-
-// Navigation items for show context
-const _showNav = [
-  {
-    label: "Show Dashboard",
-    icon: "dashboard",
-    path: "/show/:id/dashboard",
-  },
-  {
-    label: "Episodes",
-    icon: "library_music",
-    path: "/show/:id/episodes",
-  },
-  {
-    label: "Analytics",
-    icon: "analytics",
-    path: "/show/:id/analytics",
-  },
-  {
-    label: "Settings",
-    icon: "settings",
-    path: "/show/:id/settings",
-  },
-  {
-    label: "Back to Profile",
-    icon: "arrow_back",
-    path: "/dashboard",
-  },
-];
+import { setChannelContext, setUserContext,  } from '../../redux/navigation/navigationSlice';
+import { _channelDetailNav, _podcasterNav } from '../../router/_roleNav';
 
 export const useNavigationContext = () => {
   const dispatch = useDispatch();
 
-  const switchToUserContext = useCallback((user: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-  }) => {
-    dispatch(setUserContext({
-      user,
-      navItems: _podcasterNav
-    }));
-  }, [dispatch]);
+  const switchToUserContext = (user: any) => {
+    dispatch(setUserContext({ user, navItems: _podcasterNav }));
+  };
 
-  const switchToShowContext = useCallback((show: {
-    id: string;
-    name: string;
-    avatar?: string;
-  }) => {
-    // Replace :id with actual show id in navigation paths
-    const showNavItems = _showNav.map(item => ({
+  const switchToChannelContext = (channel: any) => {
+     const navItemsWithId = _channelDetailNav.map(item => ({
       ...item,
-      path: item.path.replace(':id', show.id)
+      path: item.path.replace(':id', channel.id) // Thay thế :id bằng ID thực tế
     }));
+    dispatch(setChannelContext({ channel, navItems: navItemsWithId }));
+  };
 
-    dispatch(setShowContext({
-      show,
-      navItems: showNavItems
-    }));
-  }, [dispatch]);
+ 
+  const switchContextByType = (contextInfo: { type: string; id: string; basePath: string }) => {
+    switch (contextInfo.type) {
+      case 'channel':
+        const channelInfo = {
+          id: contextInfo.id,
+          name: `Channel ${contextInfo.id}`,
+          avatar: `https://picsum.photos/300/300?random=${contextInfo.id}`
+        };
+        switchToChannelContext(channelInfo);
+        break;
+    
+      default: 
+        const user = {
+          id: "u_1",
+          name: "SAMURICE",
+          email: "samurice@gmail.com",
+          avatar: "https://lumiere-a.akamaihd.net/v1/images/a_avatarpandorapedia_neytiri_16x9_1098_01_0e7d844a.jpeg?region=420%2C0%2C1080%2C1080",
+        };
+        switchToUserContext(user);
+        break;
+    }
+  };
 
   return {
     switchToUserContext,
-    switchToShowContext
+    switchToChannelContext,
+    switchContextByType,
   };
 };

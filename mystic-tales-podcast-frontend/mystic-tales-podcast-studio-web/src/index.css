@@ -44,7 +44,11 @@
 
 :root {
   --primary-grey: #282828;
+  --secondary-grey: #666666;
   --primary-green: #AEE339;
+  --white: #ffffff;
+  --white-75: rgba(255, 255, 255, 0.75);
+  --white-60: rgba(255, 255, 255, 0.6);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -77,6 +81,9 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --ag-background-color: var(--primary-grey);
+  --ag-foreground-color: white;
+
 }
 
 .dark {
@@ -112,18 +119,23 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+
 html,
 body,
 #root {
-    font-family: 'poppins', sans-serif !important;
-    color: white;
+  font-family: 'poppins', sans-serif !important;
+  color: white;
 }
-
+.text-primary {
+  color: var(--primary-green) !important;
+}
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
+

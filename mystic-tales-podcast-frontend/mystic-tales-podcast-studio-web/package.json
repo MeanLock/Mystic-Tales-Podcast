@@ -1,5 +1,5 @@
 {
-  "name": "survey-talk-platform-web",
+  "name": "mystic-tales-podcast-studio-web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -44,6 +44,7 @@
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.58.1",
     "react-phone-input-2": "^2.15.1",
+    "react-quilljs": "^2.0.5",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.6.1",
     "react-slick": "^0.30.3",

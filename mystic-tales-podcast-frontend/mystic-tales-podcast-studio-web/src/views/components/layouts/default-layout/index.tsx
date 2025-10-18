@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import './styles.scss';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 import type { RootState } from '../../../../redux/rootReducer';
 import { clearAuthToken } from '../../../../redux/auth/authSlice';
@@ -10,15 +10,17 @@ import { JwtUtil } from '../../../../core/utils/jwt.util';
 import { DefaultLayoutHeader } from './DefaultLayoutHeader';
 import DefaultLayoutSideBar from './DefaultLayoutSideBar';
 import DefaultLayoutContent from './DefaultLayoutContent';
-import { _podcasterNav } from '../../../../router/_roleNav';
 import { set } from '@/redux/ui/uiSlice';
+import { useNavigationContext } from '@/core/hooks/useNavigationContext';
 
 const DefaultLayout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+    const location = useLocation(); 
   const authSlice = useSelector((state: RootState) => state.auth);
   const navigation = useSelector((state: RootState) => state.navigation);
   const uiSlice = useSelector((state: RootState) => state.ui);
+  const { switchContextByType } = useNavigationContext();
 
   // useEffect(() => {
   //   if (!authSlice || !authSlice.token || !JwtUtil.isTokenValid(authSlice.token)) {
@@ -48,10 +50,48 @@ const DefaultLayout = () => {
   //   }
   // }, [authSlice, navigation.currentContext, dispatch, navigate]);
 
-  // // Don't render if not authenticated
+  // Don't render if not authenticated
   // if (!authSlice.token || !authSlice.user?.podcasterProfile) {
   //   return null;
   // }
+  const detectContextFromPath = (pathname: string) => {
+    // Channel context: /my-channel/:id/*
+    const channelMatch = pathname.match(/^\/my-channel\/([^\/]+)/);
+    if (channelMatch) {
+      return {
+        type: 'channel' as const,
+        id: channelMatch[1],
+        basePath: `/my-channel/${channelMatch[1]}`
+      };
+    }
+
+    // Show/Episode context: /show/:id/*
+    const showMatch = pathname.match(/^\/show\/([^\/]+)/);
+    if (showMatch) {
+      return {
+        type: 'show' as const,
+        id: showMatch[1],
+        basePath: `/show/${showMatch[1]}`
+      };
+    }
+
+    return {
+      type: 'user' as const,
+      id: 'user',
+      basePath: '/'
+    };
+  };
+
+  useEffect(() => {
+    const pathname = location.pathname;
+    const detectedContext = detectContextFromPath(pathname);
+    if (
+      navigation.contextType !== detectedContext.type ||
+      navigation.currentContext?.id !== detectedContext.id
+    ) {
+      switchContextByType(detectedContext);
+    }
+  }, [location.pathname, navigation.contextType, navigation.currentContext?.id]);
 
   const handleOverlayClick = () => {
     dispatch(set({ sidebarMobileOpen: false }))

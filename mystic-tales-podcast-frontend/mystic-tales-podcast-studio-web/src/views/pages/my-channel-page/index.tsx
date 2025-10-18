@@ -3,6 +3,7 @@ import { Button, TextField, InputAdornment, Chip, Box, Typography, Card, CardMed
 import { Search, Add, FilterList, Favorite, PlayArrow, ExpandMore } from '@mui/icons-material';
 import './styles.scss';
 
+
 // Mock categories with subcategories for filter
 export const mockCategoriesWithSub = [
     {
@@ -244,7 +245,7 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
     const [selectedFilters, setSelectedFilters] = useState<SelectedFilter[]>([])
     const [sortBy, setSortBy] = useState('Release Date')
     const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null)
-
+    
     const fetchChannelList = async () => {
         setChannelList(mockData.ChannelList)
     }
@@ -529,7 +530,13 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
             {filteredChannels.length > 0 ? (
                 <div className="my-channel-page__channels-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 ">
                     {filteredChannels.map((channel) => (
-                        <Card key={channel.Id} className="my-channel-page__channel-card">
+                        <Card
+                            key={channel.Id}
+                            className="my-channel-page__channel-card"
+                            onClick={() => {
+                                window.open(`/my-channel/${channel.Id}/overview`);
+                            }}
+                        >
                             <div className="my-channel-page__channel-image-container relative">
                                 <CardMedia
                                     component="img"
@@ -575,7 +582,7 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
                 <div className="my-channel-page__empty-state">
                     <Search className="my-channel-page__empty-state-icon" />
                     <Typography variant="h5" className="my-channel-page__empty-state-title">
-                        No channels found
+                        No channel found
                     </Typography>
                     <Typography className="my-channel-page__empty-state-description">
                         Try adjusting your search terms or filters
@@ -584,7 +591,7 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
                         variant="contained"
                         startIcon={<Add />}
                         sx={{
-                            backgroundColor: '#9ccc65',
+                            backgroundColor: 'var(--primary-green)',
                             color: '#000',
                             fontWeight: 'bold',
                             borderRadius: '8px',
