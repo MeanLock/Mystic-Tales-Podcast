@@ -1,17 +1,18 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { JSX } from 'react';
 
 export interface NavigationState {
-  contextType: 'user' | 'show';
+  contextType: 'user' | 'channel' | 'show';
   currentContext: {
     id: string;
     name: string;
     avatar?: string;
     email?: string;
-    subtitle?: string;
+    type?: string;
   } | null;
   navItems: Array<{
     label: string;
-    icon: string;
+    icon: JSX.Element;
     path: string;
   }>;
 }
@@ -33,27 +34,27 @@ const navigationSlice = createSlice({
         email: string;
         avatar?: string;
       };
-      navItems: Array<{ label: string; icon: string; path: string; }>;
+      navItems: Array<{ label: string; icon: JSX.Element; path: string; }>;
     }>) => {
       state.contextType = 'user';
       state.currentContext = {
         ...action.payload.user,
-        subtitle: 'Podcaster'
       };
       state.navItems = action.payload.navItems;
     },
-    setShowContext: (state, action: PayloadAction<{
-      show: {
+
+    setChannelContext: (state, action: PayloadAction<{
+      channel: {
         id: string;
         name: string;
         avatar?: string;
       };
-      navItems: Array<{ label: string; icon: string; path: string; }>;
+      navItems: Array<{ label: string; icon: JSX.Element; path: string; }>;
     }>) => {
-      state.contextType = 'show';
+      state.contextType = 'channel';
       state.currentContext = {
-        ...action.payload.show,
-        subtitle: 'Show'
+        ...action.payload.channel,
+        type: 'Channel'
       };
       state.navItems = action.payload.navItems;
     },
@@ -64,5 +65,5 @@ const navigationSlice = createSlice({
   }
 });
 
-export const { setUserContext, setShowContext, clearContext } = navigationSlice.actions;
+export const { setUserContext, setChannelContext, clearContext } = navigationSlice.actions;
 export default navigationSlice.reducer;

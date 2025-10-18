@@ -8,7 +8,6 @@ import { appRouter } from "./router";
 import { ToastContainer } from "react-toastify";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 function App() {
-  const [count, setCount] = useState(0);
 
   return (
     <Box
@@ -18,7 +17,6 @@ function App() {
       width={"100%"}
       height={"100vh"}
     >
-      {/* <h1>App Layout</h1> */}
       <Suspense
         fallback={
           <Box
@@ -27,6 +25,7 @@ function App() {
               height: "100vh",
               justifyContent: "center",
               alignItems: "center",
+              backgroundColor: "var(--primary-grey)",
             }}
           >
             <CircularProgress color="primary" />
@@ -36,7 +35,6 @@ function App() {
         <RouterProvider router={appRouter} />
       </Suspense>
       <ToastContainer />
-      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
     </Box>
   );
 }
