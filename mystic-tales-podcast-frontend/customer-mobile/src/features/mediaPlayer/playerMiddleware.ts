@@ -5,51 +5,89 @@ import {
   pause,
   nextTrack,
   stopAll,
-  updatePosition,
   hydrate,
   enqueue,
   removeFromQueue,
   moveInQueueSwap,
+  seekBy,
+  seekTo,
+  onEnded,
+  seekPreview,
 } from "./playerSlice";
 import type { RootState } from "@/src/store/store";
-import type { Middleware } from "@reduxjs/toolkit";
+import type { Middleware, UnknownAction } from "@reduxjs/toolkit";
+
+// Type guard: kiểm tra có .type không
+const isAction = (a: unknown): a is UnknownAction =>
+  typeof a === "object" && a !== null && "type" in a;
 
 export const playerMiddleware: Middleware<{}, RootState> =
-  (store) => (next) => async (action) => {
-    const result = next(action); // ⚠️ để reducer cập nhật state trước
+  (store) => (next) => (action) => {
+    const result = next(action); // để reducer cập nhật state trước
+
+    // đảm bảo chỉ xử lý nếu là action hợp lệ
+    if (!isAction(action)) return result;
 
     const state = store.getState().player;
 
-    // Đồng bộ vị trí nghe (nếu muốn cập nhật từ engine → redux, thì gắn engine.onStatus ở chỗ init)
-    switch (action.type) {
-      case play.type: {
-        if (state.currentAudio) {
-          await playerEngine.playCurrent(state.currentAudio);
+    // chạy side-effects bất đồng bộ trong IIFE,
+    // để middleware vẫn trả về kiểu 'unknown' đồng bộ.
+    (async () => {
+      switch (action.type) {
+        case play.type: {
+          if (state.currentAudio) {
+            await playerEngine.playCurrent(state.currentAudio);
+          }
+          break;
         }
-        break;
-      }
-      case pause.type: {
-        await playerEngine.pause();
-        break;
-      }
-      case nextTrack.type: {
-        // reducer đã đổi currentAudio → phát bài mới
-        if (state.currentAudio) {
-          await playerEngine.playCurrent(state.currentAudio);
+        case pause.type: {
+          await playerEngine.pause();
+          break;
         }
-        break;
+        case nextTrack.type: {
+          if (state.currentAudio) {
+            await playerEngine.playCurrent(state.currentAudio);
+          }
+          break;
+        }
+        case stopAll.type: {
+          await playerEngine.stop();
+          break;
+        }
+        case seekPreview.type: {
+          // UI-only, không chạm engine
+          break;
+        }
+        case seekBy.type:
+        case seekTo.type: {
+          if (state.currentAudio) {
+            await playerEngine.seek(state.currentAudio.LatestPosition);
+          }
+          break;
+        }
+        case onEnded.type: {
+          console.log(
+            "[mw] onEnded -> play?",
+            !!state.currentAudio,
+            state.playerMode.playStatus
+          );
+          if (state.currentAudio && state.playerMode.playStatus === "playing") {
+            await playerEngine.playCurrent(state.currentAudio);
+          } else if (state.playerMode.playStatus === "stop") {
+            await playerEngine.stop();
+          }
+          break;
+        }
+        case hydrate.type:
+        case enqueue.type:
+        case removeFromQueue.type:
+        case moveInQueueSwap.type: {
+          // nếu bạn có logic preload head queue thì gọi ở đây
+          // await playerEngine.preload(head.Id, head.MainFileKey)
+          break;
+        }
       }
-      case stopAll.type: {
-        await playerEngine.stop();
-        break;
-      }
-      // Các thao tác queue không cần chạm engine trừ khi bạn tự động phát khi queue thay đổi.
-      case hydrate.type:
-      case enqueue.type:
-      case removeFromQueue.type:
-      case moveInQueueSwap.type:
-        break;
-    }
+    })();
 
-    return result;
+    return result; // <- đồng bộ, đúng kiểu 'unknown'
   };

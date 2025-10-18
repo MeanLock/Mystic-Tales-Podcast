@@ -8,8 +8,7 @@ export const mockEpisodes: EpisodeWithImageUrl[] = [
     ExplicitContent: false,
     ReleaseDate: "2025-10-14T00:00:38.448Z",
     IsReleased: true,
-    ImageUrl:
-      "https://images.genius.com/04ccd6dc69c341cbbed7ee60eedeeed7.1000x1000x1.png",
+    ImageUrl: "https://i1.sndcdn.com/artworks-WJCe3p2futns-0-t500x500.jpg",
     AudioFileKey: "audio-1",
     AudioFileSize: 1,
     AudioLength: 110,

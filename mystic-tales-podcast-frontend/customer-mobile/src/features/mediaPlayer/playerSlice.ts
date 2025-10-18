@@ -66,7 +66,7 @@ function toCurrent(q: QueuedAudioType): NonNullable<CurrentAudioType> {
 
 /** ===== Initial ===== */
 const initialState: PlayerType = {
-  playerMode: { playStatus: "playing", nextMode: "normal" },
+  playerMode: { playStatus: "pause", nextMode: "normal" },
   currentAudio: {
     Id: mockEpisodes[0].Id,
     Name: mockEpisodes[0].Name,
@@ -261,6 +261,60 @@ const playerSlice = createSlice({
       state.currentAudio = action.payload.currentAudio;
       state.queueAudios = normalizeQueue(action.payload.queueAudios);
     },
+
+    /** Seek tương đối: tua ±delta giây (thực thi thật) */
+    seekBy(state, action: PayloadAction<{ delta: number }>) {
+      if (!state.currentAudio) return;
+      const cur = state.currentAudio;
+      cur.LatestPosition = clamp(
+        cur.LatestPosition + action.payload.delta,
+        0,
+        cur.AudioLength
+      );
+    },
+
+    /** Seek tuyệt đối (thực thi thật) */
+    seekTo(state, action: PayloadAction<{ position: number }>) {
+      if (!state.currentAudio) return;
+      const cur = state.currentAudio;
+      cur.LatestPosition = clamp(action.payload.position, 0, cur.AudioLength);
+    },
+
+    /** NEW: Seek xem trước (chỉ cập nhật UI, middleware bỏ qua) */
+    seekPreview(state, action: PayloadAction<{ position: number }>) {
+      if (!state.currentAudio) return;
+      const cur = state.currentAudio;
+      cur.LatestPosition = clamp(action.payload.position, 0, cur.AudioLength);
+    },
+
+    /** Gọi khi bài hiện tại kết thúc */
+    onEnded(state) {
+      // Chỉ xử lý theo nextMode === "normal" như yêu cầu
+      console.log(
+        "[onEnded] nextMode=",
+        state.playerMode.nextMode,
+        "queueLen=",
+        state.queueAudios.length
+      );
+
+      if (state.playerMode.nextMode === "normal") {
+        if (state.queueAudios.length > 0) {
+          const normalized = normalizeQueue(state.queueAudios);
+          const next = normalized[0];
+          state.currentAudio = toCurrent(next);
+          state.queueAudios = normalizeQueue(
+            normalized.filter((q) => q.Id !== next.Id)
+          );
+          state.playerMode.playStatus = "playing";
+        } else {
+          // Không còn gì trong queue -> stop luôn
+          state.playerMode.playStatus = "stop";
+        }
+      } else {
+        // Các chế độ khác (show/favorites/downloads): chưa đặc tả → tạm stop
+        state.playerMode.playStatus = "stop";
+      }
+    },
   },
 });
 
@@ -276,6 +330,10 @@ export const {
   stopAll,
   hydrate,
   moveInQueueSwap,
+  seekBy,
+  seekTo,
+  seekPreview,
+  onEnded,
 } = playerSlice.actions;
 
 export default playerSlice.reducer;

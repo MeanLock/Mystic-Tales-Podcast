@@ -7,6 +7,10 @@ import {
   play,
   moveInQueue,
   moveInQueueSwap,
+  seekBy,
+  seekTo,
+  nextTrack,
+  seekPreview,
 } from "@/src/features/mediaPlayer/playerSlice";
 import { formatAudioLength } from "@/src/lib/format";
 import { RootState } from "@/src/store/store";
@@ -27,6 +31,7 @@ import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
+import Slider from "@react-native-community/slider";
 
 const MainAudioCard = ({ audio }: { audio: CurrentAudioType }) => {
   return (
@@ -39,7 +44,10 @@ const MainAudioCard = ({ audio }: { audio: CurrentAudioType }) => {
         <Text className="text-[#BFC0BA] font-semibold text-[12px]">
           EPISODE 1
         </Text>
-        <Text className="text-[#fff] font-semibold text-[16px]">
+        <Text
+          numberOfLines={1}
+          className="text-[#fff] font-semibold text-[16px] w-3/4"
+        >
           {audio?.Name}
         </Text>
         <Text className="text-[#BFC0BA] text-[12px]">
@@ -177,6 +185,8 @@ const MediaPlayerContent = () => {
     dispatch(play());
   };
 
+  const canNext = playerState.queueAudios.length > 0;
+
   return (
     <View style={styles.container}>
       <View style={styles.contentContainer}>
@@ -203,32 +213,25 @@ const MediaPlayerContent = () => {
       <View style={styles.actionContainer}>
         {/* Audio Length Tracking */}
         <View className="w-full px-[33px] gap-1">
-          {/* Progress bar */}
-          <View className="w-full justify-center">
-            {/* Track (nền) */}
-            <View
-              style={{
-                height: 7,
-                borderRadius: 4,
-                backgroundColor: "rgba(217,217,217,0.3)",
-              }}
-            />
-            {/* Filled (tiến trình) */}
-            <View
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                height: 7,
-                width: `${progressPct}%`, // chuẩn theo % độ dài
-                backgroundColor: "#fff",
-                borderTopLeftRadius: 4,
-                borderBottomLeftRadius: 4,
-                borderTopRightRadius: progressPct >= 99.9 ? 4 : 0,
-                borderBottomRightRadius: progressPct >= 99.9 ? 4 : 0,
-              }}
-            />
-          </View>
+          {/* === NEW: Slider kéo seek === */}
+          <Slider
+            style={{ width: "100%", height: 28 }}
+            value={clampedPos}
+            minimumValue={0}
+            maximumValue={Math.max(duration, 0.000001)}
+            step={1}
+            minimumTrackTintColor="#fff"
+            maximumTrackTintColor="rgba(217,217,217,0.3)"
+            thumbTintColor="#fff"
+            onValueChange={(val) => {
+              // chỉ update UI (redux) để thanh chạy mượt, không gọi engine
+              dispatch(seekPreview({ position: val }));
+            }}
+            onSlidingComplete={(val) => {
+              // seek thật: lúc này middleware sẽ gọi engine.seek duy nhất 1 lần
+              dispatch(seekTo({ position: val }));
+            }}
+          />
 
           {/* Thời gian */}
           <View className="w-full justify-between items-center flex-row">
@@ -242,7 +245,8 @@ const MediaPlayerContent = () => {
           style={{ gap: 40 }}
           className="w-full py-5 flex-row items-center justify-center"
         >
-          <Pressable>
+          {/* === NEW: tua -10s === */}
+          <Pressable onPress={() => dispatch(seekBy({ delta: -10 }))}>
             <MaterialCommunityIcons name="rewind-10" color="#fff" size={30} />
           </Pressable>
           {playerState.playerMode.playStatus === "playing" ? (
@@ -262,7 +266,8 @@ const MediaPlayerContent = () => {
               <Ionicons name="play" color="#fff" size={50} />
             </Pressable>
           )}
-          <Pressable>
+          {/* === NEW: tua +10s === */}
+          <Pressable onPress={() => dispatch(seekBy({ delta: +10 }))}>
             <MaterialCommunityIcons
               name="fast-forward-10"
               color="#fff"
@@ -277,7 +282,12 @@ const MediaPlayerContent = () => {
           className="w-full h-[120px] flex-row items-center justify-center "
         >
           {/* Next Audio on Queue */}
-          <Pressable>
+          {/* === NEW: Next – disable nếu queue rỗng === */}
+          <Pressable
+            onPress={() => canNext && dispatch(nextTrack())}
+            disabled={!canNext}
+            style={{ opacity: canNext ? 1 : 0.4 }}
+          >
             <Foundation name="next" color="#d9d9d9" size={30} />
           </Pressable>
           {/* Change Layout to Queue Layout */}

@@ -1,6 +1,6 @@
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
-import { pause, play } from "@/src/features/mediaPlayer/playerSlice";
+import { pause, play, seekBy } from "@/src/features/mediaPlayer/playerSlice";
 import { RootState } from "@/src/store/store";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet } from "react-native";
@@ -28,9 +28,11 @@ const PlayerButtonUI = () => {
         />
       </View>
 
-      <View className="h-full flex justify-between items-start p-2">
-        <Text className="text-white">{playerState.currentAudio?.Name}</Text>
-        <Text className="text-sm text-gray-400">
+      <View className="h-full flex justify-between items-start p-2 w-3/4">
+        <Text numberOfLines={1} className="text-white w-3/4">
+          {playerState.currentAudio?.Name}
+        </Text>
+        <Text numberOfLines={1} className="text-sm text-gray-400 w-3/4">
           {playerState.currentAudio?.PodcasterName}
         </Text>
       </View>
@@ -46,7 +48,12 @@ const PlayerButtonUI = () => {
           </Pressable>
         )}
         <Pressable>
-          <MaterialIcons name="forward-10" color="#fff" size={30} />
+          <MaterialIcons
+            onPress={() => dispatch(seekBy({ delta: -10 }))}
+            name="forward-10"
+            color="#fff"
+            size={30}
+          />
         </Pressable>
       </View>
     </View>
