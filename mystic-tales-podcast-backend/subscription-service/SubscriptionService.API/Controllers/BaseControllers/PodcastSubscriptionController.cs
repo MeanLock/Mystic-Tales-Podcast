@@ -67,7 +67,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            
+
             var requestData = new JObject
             {
                 { "AccountId", accountId },
@@ -309,7 +309,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             return Ok(podcastSubscriptionRegistration);
         }
         [HttpPut("{PodcastSubscriptionId}/active/{IsActive}")]
-        [Authorize (Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
         public async Task<IActionResult> UpdatePodcastSubscriptionActiveStatusById(
             [FromRoute] int PodcastSubscriptionId,
             [FromRoute] bool IsActive)
@@ -340,6 +340,34 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             if (!result)
             {
                 return StatusCode(500, "Failed to initiate podcast subscription process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpPut("podcast-subscriptions-registrations/{PodcastSubscriptionRegistrationId}/cancel")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> CancelPodcastSubscriptionRegistrationById(
+            [FromRoute] Guid PodcastSubscriptionRegistrationId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var requestData = new JObject
+            {
+                { "AccountId", accountId },
+                { "PodcastSubscriptionRegistrationId", PodcastSubscriptionRegistrationId }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "subscription-management-domain",
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "podcast-subscription-cancellation-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate podcast subscription cancellation.");
             }
             return Ok(new
             {

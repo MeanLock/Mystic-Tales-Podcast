@@ -120,5 +120,20 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "deactivate-podcast-subscription.failed"
             );
         }
+        [MessageHandler("cancel-podcast-subscription-registration", "subscription-management-domain")]
+        public async Task HandleCancelPodcastSubscriptionRegistrationCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<DeactivatePodcastSubscriptionParameterDTO>();
+                    await _podcastSubscriptionService.CancelPodcastSubscriptionRegistrationAsync(parameter, command);
+                    _logger.LogInformation("Handled cancel-podcast-subscription-registration command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "subscription-management-domain",
+                failedEmitMessage: "cancel-podcast-subscription-registration.failed"
+            );
+        }
     }
 }

@@ -921,6 +921,35 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  account-listen-history-deletion-by-episode-id-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa lịch sử nghe theo episode id"
+    save-file: ""
+    steps:
+      - name: "delete-listen-history-by-episode-id"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Xóa lịch sử nghe theo episode id"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - PodcastEpisodeId
+        reponse-data:
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "delete-listen-history-by-episode-id.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-listen-history-by-episode-id.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   channel-favorite-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -2446,6 +2475,35 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  episode-publish-review-session-discard-flow:
+    topic: "content-moderation-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy phiên đánh giá xuất bản tập podcast"
+    save-file: ""
+    steps:
+      - name: "discard-episode-publish-review-session"
+        topic: "content-moderation-domain"
+        handle-service: "PodcastService"
+        description: "Hủy phiên đánh giá xuất bản tập podcast"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - PodcastEpisodeId
+        response-data:
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "discard-episode-publish-review-session.success"
+          topic: "content-moderation-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "discard-episode-publish-review-session.failed"
+          topic: "content-moderation-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   episode-deletion-flow:
     topic: "content-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -2714,7 +2772,7 @@ flows:
           nextFlows: []
 
   activities-of-podcaster-termination-flow:
-    topic: "content-management-domain"
+    topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Xóa tất cả nội dung của podcaster"
     save-file: ""
@@ -4996,6 +5054,41 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  cancel-subscription-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy gói đăng ký thành viên hoặc podcast"
+    save-file: ""
+    steps:
+      - name: "cancel-subscription"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Hủy gói đăng ký thành viên hoặc podcast"
+        parameters:
+          - SubscriptionId
+          - IsActive
+          - IsDeleted
+        next-request-data:
+          - SubscriptionId
+          - IsActive
+          - IsDeleted
+        response-data:
+          - SubscriptionId
+          - IsActive
+          - IsDeleted
+        onSuccess:
+          emit: "cancel-subscription.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "cancel-subscription.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   member-subscription-refund-flow:
     topic: "payment-processing-domain"
     handle-service: "SagaOrchestratorService"
@@ -5256,6 +5349,35 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  show-review-all-deletion-flow:
+    topic: "public-review-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa tất cả review cho podcast show"
+    save-file: ""
+    steps:
+      - name: "delete-all-show-reviews"
+        topic: "public-review-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa tất cả review cho podcast show"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - PodcastShowId
+        response-data:
+          - PodcastShowId
+        onSuccess:
+          emit: "delete-all-show-reviews.success"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-all-show-reviews.failed"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   podcast-buddy-review-creation-flow:
     topic: "public-review-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -5366,6 +5488,35 @@ flows:
           nextFlows: []
         onFailure:
           emit: "delete-podcast-buddy-review.failed"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcast-buddy-review-all-deletion-flow:
+    topic: "public-review-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa tất cả review cho podcast buddy"
+    save-file: ""
+    steps:
+      - name: "delete-all-podcast-buddy-reviews"
+        topic: "public-review-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa tất cả review cho podcast buddy"
+        parameters:
+          - PodcastBuddyId
+        next-request-data:
+          - PodcastBuddyId
+        response-data:
+          - PodcastBuddyId
+        onSuccess:
+          emit: "delete-all-podcast-buddy-reviews.success"
+          topic: "public-review-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-all-podcast-buddy-reviews.failed"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -5605,14 +5756,17 @@ flows:
         description: "Staff resolve podcast buddy report và chạy flow user-violation-punishment-flow nếu có phạt"
         parameters:
           - IsResolved
+          - IsTakenEffect
           - ResolvedViolationPoint
           - PodcastBuddyReportReviewSessionId
         next-request-data:
           - IsResolved
+          - IsTakenEffect
           - ResolvedViolationPoint
           - PodcastBuddyReportReviewSessionId
         response-data:
           - IsResolved
+          - IsTakenEffect
           - ResolvedViolationPoint
           - PodcastBuddyReportReviewSessionId
           - UpdatedAt
@@ -5641,12 +5795,15 @@ flows:
         description: "Resolve hết các podcast buddy report thuộc về podcaster"
         parameters:
           - IsResolved
+          - IsTakenEffect
           - PodcastShowReportReviewSessionId
         next-request-data:
           - IsResolved
+          - IsTakenEffect
           - PodcastShowReportReviewSessionId
         response-data:
           - IsResolved
+          - IsTakenEffect
           - PodcastShowReportReviewSessionId
           - UpdatedAt
         onSuccess:
@@ -5674,12 +5831,15 @@ flows:
         description: "Staff resolve podcast episode report và chạy flow episode-deletion-flow nếu có phạt"
         parameters:
           - IsResolved
+          - IsTakenEffect
           - PodcastEpisodeReportReviewSessionId
         next-request-data:
           - IsResolved
+          - IsTakenEffect
           - PodcastEpisodeReportReviewSessionId
         response-data:
           - IsResolved
+          - IsTakenEffect
           - PodcastEpisodeReportReviewSessionId
           - UpdatedAt
         onSuccess:
@@ -5898,6 +6058,93 @@ flows:
           nextFlows: []
         onFailure:
           emit: "update-dmca-accusation-status.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  dismiss-channel-dmca-accusation-flow:
+    topic: "dmca-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy bỏ cáo buộc DMCA cho kênh"
+    save-file: ""
+    steps:
+      - name: "dismiss-channel-dmca-accusation"
+        topic: "dmca-management-domain"
+        handle-service: "ModerationService"
+        description: "Hủy bỏ cáo buộc DMCA cho kênh"
+        parameters:
+          - ChannelId
+        next-request-data:
+          - ChannelId
+        response-data:
+          - ChannelId
+        onSuccess:
+          emit: "dismiss-channel-dmca-accusation.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "dismiss-channel-dmca-accusation.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  dismiss-show-dmca-accusation-flow:
+    topic: "dmca-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy bỏ cáo buộc DMCA cho show"
+    save-file: ""
+    steps:
+      - name: "dismiss-show-dmca-accusation"
+        topic: "dmca-management-domain"
+        handle-service: "ModerationService"
+        description: "Hủy bỏ cáo buộc DMCA cho show"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - PodcastShowId
+        response-data:
+          - PodcastShowId
+        onSuccess:
+          emit: "dismiss-show-dmca-accusation.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "dismiss-show-dmca-accusation.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  dismiss-episode-dmca-accusation-flow:
+    topic: "dmca-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Hủy bỏ cáo buộc DMCA cho episode"
+    save-file: ""
+    steps:
+      - name: "dismiss-episode-dmca-accusation"
+        topic: "dmca-management-domain"
+        handle-service: "ModerationService"
+        description: "Hủy bỏ cáo buộc DMCA cho episode"
+        parameters:
+          - PodcastEpisodeId
+        next-request-data:
+          - PodcastEpisodeId
+        response-data:
+          - PodcastEpisodeId
+        onSuccess:
+          emit: "dismiss-episode-dmca-accusation.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "dismiss-episode-dmca-accusation.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
