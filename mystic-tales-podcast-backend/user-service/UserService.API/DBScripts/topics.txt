@@ -1,0 +1,15 @@
+user-management-domain (chứa các message liên quan đến account)
+booking-management-domain (chứa các message liên quan đến booking)
+chat-communication-domain (chứa các message liên quan đến chat)
+content-management-domain (chứa các message liên quan đến podcast trên nền tảng)
+content-moderation-domain (chứa các message liên quan đến review session)
+subscription-management-domain (chứa các message liên quan đến subscription)
+payment-processing-domain (chứa các message liên quan đến payment)
+dmca-management-domain (chứa các message liên quan đến dmca)
+public-review-management-domain (chứa các message liên quan đến 2 review ngoài cộng đồng)
+report-management-domain (chứa các message liên quan đến 3 report manual ngoài cộng đồng)
+system-configuration-domain (chứa các message liên quan đến system config)
+notification-domain (chứa các message liên quan đến notification)
+
+
+

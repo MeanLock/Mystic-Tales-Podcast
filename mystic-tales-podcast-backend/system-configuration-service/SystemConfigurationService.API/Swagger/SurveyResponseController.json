@@ -1,0 +1,38 @@
+[
+    {
+        "method": "GET",
+        "url": "/api/Survey/response/filter/surveys/{SurveyId}",
+        "description": "summary: Lấy summary của filter survey (MANAGER, ADMIN)",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/response/filter/surveys/{SurveyId}",
+        "description": "Ghi nhận response cho filter survey",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/response/community/surveys/{SurveyId}",
+        "description": "Lấy summary của community survey (REQUESTER)",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/response/community/surveys/{SurveyId}",
+        "description": "Ghi nhận response cho community survey trả về thông báo kết quả",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/response/market-research/surveys/{SurveyId}",
+        "description": "Lấy summary của market survey có query version (MANAGER lấy tất cả version, BUYER lấy version đã mua)",
+        "completed": false
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/response/market-research/surveys/{SurveyId}/version/{Version}",
+        "description": "Ghi nhận response cho market survey cho version cụ thể trả về thông báo kết quả",
+        "completed": false
+    }
+]

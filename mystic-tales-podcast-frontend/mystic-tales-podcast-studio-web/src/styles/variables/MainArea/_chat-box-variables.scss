@@ -1,0 +1,86 @@
+// Text
+$text-primary: var(--chat-box_text-primary, #000000);  // used (màu chữ chính) default: #000000
+$text-secondary: var(--chat-box_text-secondary, #60708a); // used (màu chữ phụ) default: #60708a
+$text-icon: var(--chat-box_text-icon, #c9c9c9); // used (màu chữ của Icon) default: #c9c9c9
+$text-active: var(--chat-box_text-active, #005ae0); // used (màu chữ khi active) default: #005ae0
+$text-link: var(--chat-box_text-link, #005ae0); 
+$text-placeholder: var(--chat-box_text-placeholder, #000000);
+$text-error: var(--chat-box_text-error, #000000);
+$text-success: var(--chat-box_text-success, #000000);
+$text-muted: var(--chat-box_text-muted, #000000);
+
+// Input
+$input-bg-primary: var(--chat-box_input-bg-primary, #ffffff);  
+$input-bg-secondary: var(--chat-box_input-bg-secondary, #e5e7eb);  
+$input-border-primary: var(--chat-box_input-border-primary, #0000000d); // used (màu viền của Input) default: #0000000d
+$input-border-secondary: var(--chat-box_input-border-secondary, #00000000); 
+$input-text-primary: var(--chat-box_input-text-primary, #000000); 
+$input-text-secondary: var(--chat-box_input-text-secondary, #000000);
+$input-focus-border-primary: var(--chat-box_input-focus-border-primary, #005ae0); 
+$input-focus-border-secondary: var(--chat-box_input-focus-border-secondary, #005ae0);
+$input-box-shadow-primary: var(--chat-box_input-box-shadow-primary, #00000033);  // used (box-shadow của Input khi focus) default: 0 0 10px 0 #00000033
+$input-box-shadow-secondary: var(--chat-box_input-box-shadow-secondary, #00000033);
+
+// Title
+$title-primary: var(--chat-box_title-primary, #000000);    
+$title-secondary: var(--chat-box_title-secondary, #000000);
+$title-error: var(--chat-box_title-error, #000000);
+$title-success: var(--chat-box_title-success, #000000);
+
+// Button
+$button-bg-primary: var(--chat-box_button-bg-primary, #ffffff);  // used (màu nền của Button) default: #ffffff
+$button-bg-secondary: var(--chat-box_button-bg-secondary, #005ae0); 
+$button-hover-bg-primary: var(--chat-box_button-hover-bg-primary, #e5e7eb);   // used (màu nền của Button khi hover) default: #e5e7eb
+$button-hover-bg-secondary: var(--chat-box_button-hover-bg-secondary, #000000);
+$button-text-primary: var(--chat-box_button-text-primary, #000000); 
+$button-text-secondary: var(--chat-box_button-text-secondary, #ffffff); 
+$button-hover-text-primary: var(--chat-box_button-hover-text-primary, #000000);  
+$button-hover-text-secondary: var(--chat-box_button-hover-text-secondary, #000000);
+$button-active-bg-primary: var(--chat-box_button-active-bg-primary, #e5efff);  
+$button-active-bg-secondary: var(--chat-box_button-active-bg-secondary, #000000);
+$button-active-text-primary: var(--chat-box_button-active-text-primary, #005ae0);   // used (màu chữ của Button khi active) default: #005ae0
+$button-active-text-secondary: var(--chat-box_button-active-text-secondary, #000000);
+$button-disabled-bg: var(--chat-box_button-disabled-bg, #000000);
+$button-disabled-text: var(--chat-box_button-disabled-text, #000000);
+
+// Action Button
+$action-button-bg: var(--chat-box_action-button-bg, #ffffff);   
+$action-group-bg: var(--chat-box_action-group-bg, #ffffff); 
+$action-button-hover-bg: var(--chat-box_action-button-hover-bg, #ccd0d5);  
+$action-button-active-bg: var(--chat-box_action-button-active-bg, #c1d9ff);  
+$action-button-active-hover-bg: var(--chat-box_action-button-active-hover-bg, #c1d9ff); 
+
+// Background
+$background-primary: var(--chat-box_background-primary, #ffffff);   
+$background-secondary: var(--chat-box_background-secondary, #ffffff);  // used (màu nền phụ của Chat Box) default: #ffffff
+$background-overlay: var(--chat-box_background-overlay, rgba(0, 0, 0, 0.5));
+$background-highlight: var(--chat-box_background-highlight, #000000);
+$background-card: var(--chat-box_background-card, #000000);
+
+// Icon
+$icon-primary: var(--chat-box_icon-primary, #000000);  // used (màu của Icon) default: #000000
+$icon-secondary: var(--chat-box_icon-secondary, #5a6981);  // used (màu của Icon phụ) default: #5a6981
+$icon-disabled: var(--chat-box_icon-disabled, #000000);
+$icon-highlight: var(--chat-box_icon-highlight, #000000);
+
+// Divider & Border
+$border-primary: var(--chat-box_border-primary, #000000);
+$border-secondary: var(--chat-box_border-secondary, #00000026); // used (màu viền phụ) default: #00000026
+$divider-light: var(--chat-box_divider-light, #000000);
+$divider-dark: var(--chat-box_divider-dark, #000000);
+
+// Shadow
+$shadow-primary: var(--chat-box_shadow-primary, 0 2px 4px #0000001a);
+$shadow-secondary: var(--chat-box_shadow-secondary, 0 2px 6px #00000033);
+
+// Popup
+$popup-bg: var(--chat-box_popup-bg, #ffffff);  // used (màu nền của PopUp) default: #ffffff
+$popup-item-bg: var(--chat-box_popup-bg, #ffffff);  // used (màu nền của item trong PopUp) default: #ffffff
+$popup-item-hover-bg: var(--chat-box_popup-hover-bg, #e5e7eb);  // used (màu nền của item trong PopUp khi hover) default: #e5e7eb
+$popup-item-border: var(--chat-box_popup-border, #ccd0d5); 
+
+// Room Item
+$room-item-bg: var(--chat-box_room-item-bg, #ffffff); 
+$room-item-hover-bg: var(--chat-box_room-item-hover-bg, #e5e7eb);
+$room-item-active-bg: var(--chat-box_room-item-border, #dbebff);  
+

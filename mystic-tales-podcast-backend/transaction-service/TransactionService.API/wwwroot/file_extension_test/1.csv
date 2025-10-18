@@ -1,0 +1,185 @@
+Data type,Default value,Input type,,,,"Variable 
+(Primitive)",,,"Variable
+(Object prop)",,,Function return data,,,"Question taken data
+(Primitive/Object prop)",,,"Question default data 
+(Object prop)",,,"Foreach current item
+(Primitive)",,,"Foreach current item
+(Object prop)",,
+Boolean,FALSE,Boolean input,,,,Boolean,,,Boolean,,,Boolean,,,,,,,,,Boolean,,,Boolean,,
+Number,0,Math input,,,,Number,,,Number,,,Number,,,"* Xem Sheet ""Question type taken data type""
+
+Duyệt về prop sau cùng có kiểu Number ở các loại câu hỏi ",,,"* Xem Sheet ""Question type default data type""
+
+Duyệt về prop sau cùng có kiểu Number ở các loại câu hỏi ",,,Number,,,Number,,
+String,"""""",String input,,,,"Boolean
+
+Number
+
+String",,,"Boolean
+
+Number
+
+String",,,"Boolean
+
+Number
+
+String",,,"* Xem Sheet ""Question type taken data type""
+
+Duyệt về prop sau cùng có kiểu Number/String ở các loại câu hỏi ",,,"* Xem Sheet ""Question type default data type""
+
+Duyệt về prop sau cùng có kiểu Number/String ở các loại câu hỏi ",,,"Boolean
+
+Number
+
+String",,,"Boolean
+
+Number
+
+String",,
+Object,{} (null),Object input,"Boolean
+(prop)       ","Number
+(prop) ","String
+(prop) ","Boolean
+(prop)        ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) "
+,,,Boolean input,Math input,String input,Boolean,Number,"Boolean
+
+Number
+
+String",Boolean,Number,"Boolean
+
+Number
+
+String",Boolean,Number,"Boolean
+
+Number
+
+String",,"* Xem Sheet ""Question type taken data type""
+
+Duyệt về prop sau cùng có kiểu Number ở các loại câu hỏi ","* Xem Sheet ""Question type taken data type""
+
+Duyệt về prop sau cùng có kiểu Number/String ở các loại câu hỏi ",,"* Xem Sheet ""Question type default data type""
+
+Duyệt về prop sau cùng có kiểu Number ở các loại câu hỏi ","* Xem Sheet ""Question type default data type""
+
+Duyệt về prop sau cùng có kiểu Number/String ở các loại câu hỏi ",Boolean,Number,"Boolean
+
+Number
+
+String",Boolean,Number,"Boolean
+
+Number
+
+String"
+"Array
+(Primitive)",[],Array input,Boolean       ,Number,String,Boolean       ,Number,String,Boolean       ,Number,String,Boolean       ,Number,String,Boolean       ,Number,String,Boolean       ,Number,String,Boolean       ,Number,String,Boolean       ,Number,String
+,,,Boolean input,Math input,String input,Boolean,Number,"Boolean
+
+Number
+
+String",Boolean,Number,"Boolean
+
+Number
+
+String",Boolean,Number,"Boolean
+
+Number
+
+String",,"* Xem Sheet ""Question type taken data type""
+
+Duyệt về prop sau cùng có kiểu Number ở các loại câu hỏi ","* Xem Sheet ""Question type taken data type""
+
+Duyệt về prop sau cùng có kiểu Number/String ở các loại câu hỏi ",,"* Xem Sheet ""Question type default data type""
+
+Duyệt về prop sau cùng có kiểu Number ở các loại câu hỏi ","* Xem Sheet ""Question type default data type""
+
+Duyệt về prop sau cùng có kiểu Number/String ở các loại câu hỏi ",Boolean,Number,"Boolean
+
+Number
+
+String",Boolean,Number,"Boolean
+
+Number
+
+String"
+"Array
+(Object)",[],Array input,"Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) ","Boolean       
+(prop) ","Number
+(prop) ","String
+(prop) "
+,,,Boolean input,Math input,String input,Boolean,Number,"Boolean
+
+Number
+
+String",Boolean,Number,"Boolean
+
+Number
+
+String",Boolean,Number,"Boolean
+
+Number
+
+String",,"* Xem Sheet ""Question type taken data type""
+
+Duyệt về prop sau cùng có kiểu Number ở các loại câu hỏi ","* Xem Sheet ""Question type taken data type""
+
+Duyệt về prop sau cùng có kiểu Number/String ở các loại câu hỏi ",,"* Xem Sheet ""Question type default data type""
+
+Duyệt về prop sau cùng có kiểu Number ở các loại câu hỏi ","* Xem Sheet ""Question type default data type""
+
+Duyệt về prop sau cùng có kiểu Number/String ở các loại câu hỏi ",Boolean,Number,"Boolean
+
+Number
+
+String",Boolean,Number,"Boolean
+
+Number
+
+String"
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,
+"* Lưu ý:
++ Kiểu Array có thể khởi gán thẳng với 1 array ở bước init, từ data gán sẽ khởi tạo sẵn object format theo đúng format của data đang được gán với. Format này không thể được khải thêm props và chỉ có thể bỏ bớt, trừ khi bỏ gán với data đang gán.
++ Kiểu object có thể khởi gán thẳng với 1 object ở bước init, từ data gán sẽ khởi tạo sẵn object format theo đúng format của data đang được gán với. Format này không thể được khải thêm props và chỉ có thể bỏ bớt, trừ khi bỏ gán với data đang gán.",,,,,,,,,,,,,,,,,,,,,,,,,,

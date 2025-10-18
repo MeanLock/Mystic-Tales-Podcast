@@ -1,0 +1,25 @@
+// app/light.scss
+@mixin App-Theme_light {
+  --primary-color: #f1c40f;
+  --background-color: #fefefe;
+  --text-color: #222222;
+  --button-bg: #f1c40f;
+  --app-font-primary : monospace;
+
+
+  .RoomBrowser{
+    background-color: yellow;
+  }
+
+  // Cấu hình cho các selector
+  button {
+
+  }
+
+  ul {
+  }
+
+  li {
+
+  }
+}

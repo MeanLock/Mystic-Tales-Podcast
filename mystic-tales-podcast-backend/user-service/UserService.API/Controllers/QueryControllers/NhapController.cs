@@ -1,0 +1,89 @@
+using Microsoft.AspNetCore.Mvc;
+using UserService.API.Filters.ExceptionFilters;
+using UserService.BusinessLogic.Helpers.FileHelpers;
+using UserService.BusinessLogic.Models.CrossService;
+using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using UserService.Infrastructure.Services.Audio.AcoustID;
+using UserService.Infrastructure.Models.Audio.AcoustID;
+
+namespace UserService.API.Controllers.QueryControllers
+{
+    [Route("api/nhap")]
+    [ApiController]
+    [TypeFilter(typeof(HttpExceptionFilter))]
+    public class NhapController : ControllerBase
+    {
+        private readonly GenericQueryService _genericQueryService;
+        private readonly HttpServiceQueryClient _httpServiceQueryClient;
+
+        private readonly FileIOHelper _fileIOHelper;
+        private readonly AcoustIDAudioFingerprintGenerator _acoustIDAudioFingerprintGenerator;
+        private readonly AcoustIDAudioFingerprintComparator _acoustIDAudioFingerprintComparator;
+
+        public NhapController(GenericQueryService genericQueryService, HttpServiceQueryClient httpServiceQueryClient,
+            FileIOHelper fileIOHelper, AcoustIDAudioFingerprintGenerator acoustIDAudioFingerprintGenerator,
+            AcoustIDAudioFingerprintComparator acoustIDAudioFingerprintComparator)
+        {
+            _genericQueryService = genericQueryService;
+            _httpServiceQueryClient = httpServiceQueryClient;
+            _fileIOHelper = fileIOHelper;
+            _acoustIDAudioFingerprintGenerator = acoustIDAudioFingerprintGenerator;
+            _acoustIDAudioFingerprintComparator = acoustIDAudioFingerprintComparator;
+        }
+
+        [HttpPost("generate-audio-fingerprint")]
+        public async Task<IActionResult> GenerateAudioFingerprint([FromBody] string filePath)
+        {
+            try
+            {
+                using var fileStream = await _fileIOHelper.GetFileStreamAsync(filePath);
+                if (fileStream == null)
+                {
+                    return BadRequest("File not found or could not be accessed.");
+                }
+
+                // Service đã xử lý tất cả các loại stream, chỉ cần gọi trực tiếp
+                var fingerprint = await _acoustIDAudioFingerprintGenerator.GenerateFingerprintAsync(fileStream);
+
+                return Ok(new
+                {
+                    fileUrl = await _fileIOHelper.GeneratePresignedUrlAsync(filePath),
+                    fingerprint = fingerprint.FingerprintData
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi nếu cần
+                Console.WriteLine($"Error generating fingerprint: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, "Internal server error while generating fingerprint.");
+            }
+        }
+
+        [HttpPost("compare-audio-fingerprints")]
+        public IActionResult CompareTargetToCandidates([FromBody] AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison comparison)
+        {
+            if (string.IsNullOrEmpty(comparison?.Target?.AudioFingerPrint))
+            {
+                return BadRequest("Target fingerprint is required.");
+            }
+
+            if (comparison.Candidates == null || !comparison.Candidates.Any())
+            {
+                return BadRequest("At least one candidate fingerprint is required for comparison.");
+            }
+
+            try
+            {
+                var result = _acoustIDAudioFingerprintComparator.CompareTargetToCandidates(comparison);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error comparing fingerprints: {ex.Message}");
+                return StatusCode(500, "Internal server error while comparing fingerprints.");
+            }
+        }
+    }
+
+}

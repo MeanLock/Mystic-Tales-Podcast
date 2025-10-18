@@ -1,0 +1,12 @@
+.vs/
+TransactionService.API/bin/
+TransactionService.API/obj/
+TransactionService.BusinessLogic/bin/
+TransactionService.BusinessLogic/obj/
+TransactionService.Infrastructure/bin/
+TransactionService.Infrastructure/obj/
+TransactionService.DataAccess/bin/
+TransactionService.DataAccess/obj/
+TransactionService.Common/bin/
+TransactionService.Common/obj/
+

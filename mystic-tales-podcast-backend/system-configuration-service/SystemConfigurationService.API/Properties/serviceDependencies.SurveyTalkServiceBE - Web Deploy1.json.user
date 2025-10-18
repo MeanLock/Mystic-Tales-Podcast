@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "apis1": {
+      "restored": true,
+      "restoreTime": "2025-06-18T06:35:42.3085273Z"
+    }
+  },
+  "parameters": {
+    "apis1.subscriptionId": {
+      "Name": "apis1.subscriptionId",
+      "Type": "subscription",
+      "Value": "0a090cfd-5d0f-48a1-8583-e1e364382fa7"
+    },
+    "apis1.resourceGroupName": {
+      "Name": "apis1.resourceGroupName",
+      "Type": "resourceGroup",
+      "Value": "ASP.NET_Web_Api_Hosting_Group_0"
+    }
+  }
+}

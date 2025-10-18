@@ -1,0 +1,12 @@
+.vs/
+BookingManagementService.API/bin/
+BookingManagementService.API/obj/
+BookingManagementService.BusinessLogic/bin/
+BookingManagementService.BusinessLogic/obj/
+BookingManagementService.Infrastructure/bin/
+BookingManagementService.Infrastructure/obj/
+BookingManagementService.DataAccess/bin/
+BookingManagementService.DataAccess/obj/
+BookingManagementService.Common/bin/
+BookingManagementService.Common/obj/
+

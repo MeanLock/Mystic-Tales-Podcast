@@ -1,0 +1,12 @@
+.auth-layout {
+  background-color: app_vars.$background-color-primary;
+  .auth-layout-header {
+    background-color: aqua;
+  }
+  .auth-layout-content {
+    background-color: app_vars.$background-color-primary;
+  }
+  .auth-layout-footer {
+    background-color: green;
+  }
+}

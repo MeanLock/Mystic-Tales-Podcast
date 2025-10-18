@@ -1,0 +1,55 @@
+subscription-registration-flow:
+  topic: "subscription-registration-flow"
+  description: "Đăng ký gói dịch vụ"
+  save-file: "MainImageFile"
+  steps:
+    - name: "validate-subscription"
+      topic: "subscription-management"
+      description: "Nhận thông tin tài khoản để tạo tài khoản"
+      parameters:
+        - Email
+        - Password
+        - FullName
+        - Dob
+        - Gender
+        - Address
+        - Phone
+        - MainImageFileKey
+        - RoleId
+      next-request-data:
+        - Email
+        - Password
+        - FullName
+      response-data:
+        - UserId
+        - SubscriptionId
+      onSuccess:
+        emit: "validate-subscription.success"
+        topic: "subscription-management"
+        nextSteps:
+          - name: "process-subscription-payment"
+            topic: "payment-processing"
+        nextFlows: []
+      onFailure:
+        emit: "validate-subscription.failed"
+        topic: "subscription-management"
+        nextSteps: []
+        nextFlows: []
+
+    - name: "process-subscription-payment"
+      topic: "payment-processing"
+      description: "Xử lý thanh toán cho gói dịch vụ"
+      onSuccess:
+        emit: "process-subscription-payment.success"
+        topic: "payment-processing"
+        nextSteps:
+          - name: "register-subscription"
+            topic: "subscription-management"
+        nextFlows: []
+      onFailure:
+        emit: "process-subscription-payment.failed"
+        topic: "payment-processing"
+        nextSteps: []
+        nextFlows:
+          - name: "user-notification-flow"
+            topic: "user-notification-flow"

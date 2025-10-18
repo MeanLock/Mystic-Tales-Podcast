@@ -1,0 +1,26 @@
+[
+    {
+        "method": "GET",
+        "url": "/api/Report/transaction/community/summary-profit",
+        "description": "Tổng doanh thu của ngày hiện tại. Trả về tổng doanh thu ngày hiện tại và phần trăm thay đổi so với hôm qua.",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Report/transaction/community/periodic-profit",
+        "description": "Doanh thu theo từng ngày. Trả về doanh thu từng ngày trong khoảng 7 ngày gần nhất (bao gồm hôm nay).",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Report/transaction/account-balance/periodic-amount",
+        "description": "Tổng số lượng tiền giao dịch (cả nạp và rút). Trả về số lượng giao dịch (cả nạp và rút) theo từng ngày.",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Report/transaction/account-balance/summary-count",
+        "description": "Tổng số lượng giao dịch trong ngày. Trả về tổng số lượng giao dịch (nạp và rút gộp lại) ngày hiện tại và phần trăm tăng so với hôm qua.",
+        "completed": true
+    }
+]

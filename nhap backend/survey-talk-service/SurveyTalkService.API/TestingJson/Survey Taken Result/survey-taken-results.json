@@ -1,0 +1,228 @@
+[
+  {
+    "id": 1,
+    "surveyId": 100,
+    "takerId": 200,
+    "isValid": true,
+    "invalidReason": null,
+    "moneyEarned": 10.0,
+    "xpEarned": 5,
+    "completedAt": "2025-06-15T10:00:00Z",
+    "responses": [
+      {
+        "id": 1,
+        "surveyTakenResultId": 1,
+        "surveyQuestionId": 101,
+        "isValid": true,
+        "valueJsonString": {
+          "questionContent": {
+            "id": 101,
+            "questionTypeId": 1,
+            "content": "Bạn thích màu nào nhất?",
+            "description": "Chọn một màu bạn thích nhất.",
+            "configJson": {},
+            "options": [
+              { "id": 1, "content": "Đỏ" },
+              { "id": 2, "content": "Xanh" },
+              { "id": 3, "content": "Vàng" }
+            ]
+          },
+          "questionResponse": {
+            "input": null,
+            "range": null,
+            "ranking": null,
+            "singleChoice": 2,
+            "multipleChoice": null,
+            "speechText": null
+          }
+        }
+      },
+      {
+        "id": 2,
+        "surveyTakenResultId": 1,
+        "surveyQuestionId": 102,
+        "isValid": true,
+        "valueJsonString": {
+          "questionContent": {
+            "id": 102,
+            "questionTypeId": 2,
+            "content": "Bạn thích những loại trái cây nào?",
+            "description": "Chọn nhiều loại nếu muốn.",
+            "configJson": {
+              "minChoiceCount": 1,
+              "maxChoiceCount": 3
+            },
+            "options": [
+              { "id": 4, "content": "Táo" },
+              { "id": 5, "content": "Cam" },
+              { "id": 6, "content": "Chuối" }
+            ]
+          },
+          "questionResponse": {
+            "input": null,
+            "range": null,
+            "ranking": null,
+            "singleChoice": null,
+            "multipleChoice": [4, 6],
+            "speechText": null
+          }
+        }
+      },
+      {
+        "id": 3,
+        "surveyTakenResultId": 1,
+        "surveyQuestionId": 103,
+        "isValid": true,
+        "valueJsonString": {
+          "questionContent": {
+            "id": 103,
+            "questionTypeId": 3,
+            "content": "Bạn đánh giá mức độ hài lòng từ 1 đến 10.",
+            "description": "Kéo thanh trượt để chọn mức độ.",
+            "configJson": {
+              "min": 1,
+              "max": 10,
+              "step": 1,
+              "unit": "điểm"
+            },
+            "options": []
+          },
+          "questionResponse": {
+            "input": {
+              "value": 8,
+              "valueType": "number"
+            },
+            "range": null,
+            "ranking": null,
+            "singleChoice": null,
+            "multipleChoice": null,
+            "speechText": null
+          }
+        }
+      },
+      {
+        "id": 4,
+        "surveyTakenResultId": 1,
+        "surveyQuestionId": 104,
+        "isValid": true,
+        "valueJsonString": {
+          "questionContent": {
+            "id": 104,
+            "questionTypeId": 4,
+            "content": "Chọn khoảng tuổi phù hợp.",
+            "description": "Kéo để chọn khoảng tuổi.",
+            "configJson": {
+              "min": 18,
+              "max": 60,
+              "step": 1,
+              "unit": "tuổi"
+            },
+            "options": []
+          },
+          "questionResponse": {
+            "input": null,
+            "range": {
+              "min": 25,
+              "max": 35
+            },
+            "ranking": null,
+            "singleChoice": null,
+            "multipleChoice": null,
+            "speechText": null
+          }
+        }
+      },
+      {
+        "id": 5,
+        "surveyTakenResultId": 1,
+        "surveyQuestionId": 105,
+        "isValid": true,
+        "valueJsonString": {
+          "questionContent": {
+            "id": 105,
+            "questionTypeId": 5,
+            "content": "Nhập số điện thoại của bạn.",
+            "description": "Vui lòng nhập số điện thoại.",
+            "configJson": {
+              "fieldInputTypeId": 1
+            },
+            "options": []
+          },
+          "questionResponse": {
+            "input": {
+              "value": "0912345678",
+              "valueType": "string"
+            },
+            "range": null,
+            "ranking": null,
+            "singleChoice": null,
+            "multipleChoice": null,
+            "speechText": null
+          }
+        }
+      },
+      {
+        "id": 6,
+        "surveyTakenResultId": 1,
+        "surveyQuestionId": 106,
+        "isValid": true,
+        "valueJsonString": {
+          "questionContent": {
+            "id": 106,
+            "questionTypeId": 6,
+            "content": "Đánh giá chất lượng dịch vụ.",
+            "description": "Chọn số sao phù hợp.",
+            "configJson": {
+              "ratingLength": 5,
+              "ratingIcon": "star"
+            },
+            "options": []
+          },
+          "questionResponse": {
+            "input": {
+              "value": 4,
+              "valueType": "number"
+            },
+            "range": null,
+            "ranking": null,
+            "singleChoice": null,
+            "multipleChoice": null,
+            "speechText": null
+          }
+        }
+      },
+      {
+        "id": 7,
+        "surveyTakenResultId": 1,
+        "surveyQuestionId": 107,
+        "isValid": true,
+        "valueJsonString": {
+          "questionContent": {
+            "id": 107,
+            "questionTypeId": 7,
+            "content": "Xếp hạng các tiêu chí sau theo mức độ quan trọng.",
+            "description": "Kéo thả để sắp xếp.",
+            "configJson": {},
+            "options": [
+              { "id": 7, "content": "Giá cả" },
+              { "id": 8, "content": "Chất lượng" },
+              { "id": 9, "content": "Dịch vụ" }
+            ]
+          },
+          "questionResponse": {
+            "input": null,
+            "range": null,
+            "ranking": [
+              { "surveyOptionId": 8, "rankIndex": 1 },
+              { "surveyOptionId": 7, "rankIndex": 2 },
+              { "surveyOptionId": 9, "rankIndex": 3 }
+            ],
+            "singleChoice": null,
+            "multipleChoice": null,
+            "speechText": null
+          }
+        }
+      }
+    ]
+  }
+]

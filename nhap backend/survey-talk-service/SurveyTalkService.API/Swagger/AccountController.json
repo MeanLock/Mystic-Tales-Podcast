@@ -1,0 +1,44 @@
+[
+    {
+        "method": "GET",
+        "url": "/api/User/accounts/customer",
+        "description": "Lấy danh sách tài khoản customer [ADMIN]",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/User/accounts/staff",
+        "description": "Lấy danh sách tài khoản staff [ADMIN]",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/User/accounts/{AccountId}",
+        "description": "Lấy chi tiết tài khoản, tuỳ role",
+        "completed": true
+    },
+    {
+        "method": "PUT",
+        "url": "/api/User/accounts/{AccountId}",
+        "description": "Cập nhật tài khoản",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/User/accounts/me",
+        "description": "Lấy chi tiết tài khoản của người gọi",
+        "completed": true
+    },
+    {
+        "method": "PUT",
+        "url": "/api/User/accounts/{AccountId}/update-profile",
+        "description": "Update account profile (AccountProfile fields + favorite topics)",
+        "completed": true
+    },
+    {
+        "method": "PUT",
+        "url": "/api/User/accounts/{AccountId}/deactivate/{IsDeactivate}",
+        "description": "Vô hiệu hoá tài khoản",
+        "completed": true
+    }
+]

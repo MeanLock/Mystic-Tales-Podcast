@@ -1,0 +1,113 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{82166090-A50E-49DE-9113-0BDD7884D34C}|ApiGatewayService.Entry\\ApiGatewayService.Entry.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\apigateway\\apigateway.entry\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{82166090-A50E-49DE-9113-0BDD7884D34C}|ApiGatewayService.Entry\\ApiGatewayService.Entry.csproj|solutionrelative:apigateway.entry\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{84EEA3D9-528B-4E67-A75D-7A0F0D06E7C2}|ApiGatewayService.Application\\ApiGatewayService.Application.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\apigateway\\apigateway.application\\apigateway.application.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{84EEA3D9-528B-4E67-A75D-7A0F0D06E7C2}|ApiGatewayService.Application\\ApiGatewayService.Application.csproj|solutionrelative:apigateway.application\\apigateway.application.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{82166090-A50E-49DE-9113-0BDD7884D34C}|ApiGatewayService.Entry\\ApiGatewayService.Entry.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\apigateway\\apigateway.entry\\apigateway.entry.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{82166090-A50E-49DE-9113-0BDD7884D34C}|ApiGatewayService.Entry\\ApiGatewayService.Entry.csproj|solutionrelative:apigateway.entry\\apigateway.entry.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DD0C78FE-3423-4347-83F5-9A4326EAFA13}|ApiGatewayService.Infrastructure\\ApiGatewayService.Infrastructure.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\apigateway\\apigateway.infrastructure\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DD0C78FE-3423-4347-83F5-9A4326EAFA13}|ApiGatewayService.Infrastructure\\ApiGatewayService.Infrastructure.csproj|solutionrelative:apigateway.infrastructure\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{84EEA3D9-528B-4E67-A75D-7A0F0D06E7C2}|ApiGatewayService.Application\\ApiGatewayService.Application.csproj|d:\\vs\\source\\nhap-asp.net\\asp.net architecture\\microservice_1\\apigateway\\apigateway.application\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{84EEA3D9-528B-4E67-A75D-7A0F0D06E7C2}|ApiGatewayService.Application\\ApiGatewayService.Application.csproj|solutionrelative:apigateway.application\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ApiGatewayService.Application.csproj",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Application\\ApiGatewayService.Application.csproj",
+              "RelativeDocumentMoniker": "ApiGatewayService.Application\\ApiGatewayService.Application.csproj",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Application\\ApiGatewayService.Application.csproj",
+              "RelativeToolTip": "ApiGatewayService.Application\\ApiGatewayService.Application.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-25T09:18:30.967Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ApiGatewayService.Entry.csproj",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Entry\\ApiGatewayService.Entry.csproj",
+              "RelativeDocumentMoniker": "ApiGatewayService.Entry\\ApiGatewayService.Entry.csproj",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Entry\\ApiGatewayService.Entry.csproj",
+              "RelativeToolTip": "ApiGatewayService.Entry\\ApiGatewayService.Entry.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-25T09:17:13.106Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Infrastructure\\Class1.cs",
+              "RelativeDocumentMoniker": "ApiGatewayService.Infrastructure\\Class1.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Infrastructure\\Class1.cs",
+              "RelativeToolTip": "ApiGatewayService.Infrastructure\\Class1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-25T09:17:09.417Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Application\\Class1.cs",
+              "RelativeDocumentMoniker": "ApiGatewayService.Application\\Class1.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Application\\Class1.cs",
+              "RelativeToolTip": "ApiGatewayService.Application\\Class1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-25T09:16:37.831Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Entry\\Program.cs",
+              "RelativeDocumentMoniker": "ApiGatewayService.Entry\\Program.cs",
+              "ToolTip": "D:\\vs\\source\\NHAP-ASP.NET\\ASP.NET Architecture\\Microservice_1\\ApiGatewayService\\ApiGatewayService.Entry\\Program.cs",
+              "RelativeToolTip": "ApiGatewayService.Entry\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-25T09:15:09.604Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{56df62a4-05a3-4e5b-aa1a-99371ccfb997}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

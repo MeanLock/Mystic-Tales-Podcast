@@ -1,0 +1,336 @@
+- create-account.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- verify-account.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- login-account-manual.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- login-account-google.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- update-user.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- send-reset-password-link.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- reset-account-password.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- create-podcaster-profile.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- update-podcaster-profile.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- verify-podcaster.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- increase-storage-size.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- decrease-storage-size.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- deactivate-account.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- add-account-violation-point.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- check-violation-threshold.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- decrease-account-violation-point.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- save-episode-history.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- update-podcaster-rating.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- create-podcaster-followed.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- delete-podcaster-followed.failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- add-account-balance-amount .failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- subtract-account-balance-amount .failed
++ topic: user-management-domain
++ handle service: SagaOrchestratorService
+- create-single-account-notification.failed
++ topic: notification-domain
++ handle service: SagaOrchestratorService
+- create-channel.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- update-channel.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- publish-channel.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- unpublish-channel.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- refund-channel-subscription-account.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- delete-channel.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- create-channel-favorited.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- delete-channel-favorited.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- create-show.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- update-show.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- publish-show.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- unpublish-show.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- refund-podcast-subscription-account .failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- delete-show.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- submit-audio-file .failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- assign-show.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- update-show-rating.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- create-show-followed.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- delete-show-followed.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- create-episode.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- update-episode.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- publish-episode.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- unpublish-episode.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- create-episode-saved.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- delete-episode-saved.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- audio-content-automatic-examination.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- audio-content-staff-examination.failed
++ topic: content-moderation-domain
++ handle service: SagaOrchestratorService
+- delete-episode.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- takedown-content.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- restore-content.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- create-hashtag.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- update-listen-count.failed
++ topic: content-management-domain
++ handle service: SagaOrchestratorService
+- create-booking.failed
++ topic: booking-management-domain
++ handle service: SagaOrchestratorService
+- create-booking-negotiation.failed
++ topic: booking-management-domain
++ handle service: SagaOrchestratorService
+- create-producing-request.failed
++ topic: booking-management-domain
++ handle service: SagaOrchestratorService
+- agree-producing-request.failed
++ topic: booking-management-domain
++ handle service: SagaOrchestratorService
+- submit-booking-track.failed
++ topic: booking-management-domain
++ handle service: SagaOrchestratorService
+- update-booking-track.failed
++ topic: booking-management-domain
++ handle service: SagaOrchestratorService
+- agree-booking-negotiation.failed
++ topic: booking-management-domain
++ handle service: SagaOrchestratorService
+- complete-booking.failed
++ topic: booking-management-domain
++ handle service: SagaOrchestratorService
+- cancel-booking.failed
++ topic: booking-management-domain
++ handle service: SagaOrchestratorService
+- create-podcast-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- update-podcast-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- set-podcast-subscription-is-subscribable.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- active-podcast-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- inactive-podcast-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- create-account-podcast-subscription-registration.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- create-member-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- update-member-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- active-member-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- inactive-member-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- refund-member-subscription-account.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- create-account-member-subscription-registration.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- set-member-subscription-is-subscribable.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- cancel-account-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- delete-subscription.failed
++ topic: subscription-management-domain
++ handle service: SagaOrchestratorService
+- create-payment-link.failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- confirm-payment.failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- create-account-balance-transaction.failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- create-booking-transaction .failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- complete-booking-transaction .failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- create-podcast-subscription-transaction .failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- complete-podcast-subscription-transaction.failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- create-member-subscription-transaction.failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- complete-member-subscription-transaction.failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- calculate-storage-cost.failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- update-account-balance.failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- create-storage-transaction.failed
++ topic: payment-processing-domain
++ handle service: SagaOrchestratorService
+- create-show-review.failed
++ topic: public-review-management-domain
++ handle service: SagaOrchestratorService
+- update-show-review.failed
++ topic: public-review-management-domain
++ handle service: SagaOrchestratorService
+- delete-show-review.failed
++ topic: public-review-management-domain
++ handle service: SagaOrchestratorService
+- create-podcast-buddy-review.failed
++ topic: public-review-management-domain
++ handle service: SagaOrchestratorService
+- update-podcast-buddy-review.failed
++ topic: public-review-management-domain
++ handle service: SagaOrchestratorService
+- delete-podcast-buddy-review.failed
++ topic: public-review-management-domain
++ handle service: SagaOrchestratorService
+- create-buddy-report.failed
++ topic: report-management-domain
++ handle service: SagaOrchestratorService
+- create-show-report.failed
++ topic: report-management-domain
++ handle service: SagaOrchestratorService
+- create-episode-report.failed
++ topic: report-management-domain
++ handle service: SagaOrchestratorService
+- resolve-podcast-buddy-report.failed
++ topic: report-management-domain
++ handle service: SagaOrchestratorService
+- resolve-podcast-show-report.failed
++ topic: report-management-domain
++ handle service: SagaOrchestratorService
+- resolve-podcast-episode-report.failed
++ topic: report-management-domain
++ handle service: SagaOrchestratorService
+- create-dmca-accusation.failed
++ topic: dmca-management-domain
++ handle service: SagaOrchestratorService
+- assign-dmca-staff.failed
++ topic: dmca-management-domain
++ handle service: SagaOrchestratorService
+- create-counter-notice.failed
++ topic: dmca-management-domain
++ handle service: SagaOrchestratorService
+- create-lawsuit-proof.failed
++ topic: dmca-management-domain
++ handle service: SagaOrchestratorService
+- update-dmca-accusation.failed
++ topic: dmca-management-domain
++ handle service: SagaOrchestratorService
+- create-system-config.failed
++ topic: system-configuration-domain
++ handle service: SagaOrchestratorService
+- update-system-config.failed
++ topic: system-configuration-domain
++ handle service: SagaOrchestratorService
+- activate-config.failed
++ topic: system-configuration-domain
++ handle service: SagaOrchestratorService
+- delete-system-config.failed
++ topic: system-configuration-domain
++ handle service: SagaOrchestratorService

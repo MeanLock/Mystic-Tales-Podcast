@@ -1,0 +1,12 @@
+.vs/
+PodcastService.API/bin/
+PodcastService.API/obj/
+PodcastService.BusinessLogic/bin/
+PodcastService.BusinessLogic/obj/
+PodcastService.Infrastructure/bin/
+PodcastService.Infrastructure/obj/
+PodcastService.DataAccess/bin/
+PodcastService.DataAccess/obj/
+PodcastService.Common/bin/
+PodcastService.Common/obj/
+

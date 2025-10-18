@@ -1,0 +1,283 @@
+{
+    "takenResult": {
+        "surveyRespones": [
+            {
+                "questionContent": {
+                    "id": 8,
+                    "questionTypeId": 1,
+                    "content": "Giới tính của bạn là gì?",
+                    "description": "Câu hỏi liên quan filter tag Giới tính",
+                    "configJson": {},
+                    "options": [
+                        {
+                            "id": 1,
+                            "content": "Nam"
+                        },
+                        {
+                            "id": 2,
+                            "content": "Nữ"
+                        },
+                        {
+                            "id": 3,
+                            "content": "Khác"
+                        }
+                    ]
+                },
+                "questionResponse": {
+                    "input": null,
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": 1,
+                    "multipleChoice": null,
+                    "speechText": null
+                }
+            },
+            {
+                "questionContent": {
+                    "id": 9,
+                    "questionTypeId": 2,
+                    "content": "Bạn thuộc độ tuổi nào?",
+                    "description": "Câu hỏi liên quan filter tag Độ tuổi",
+                    "configJson": {
+                        "minChoiceCount": 1,
+                        "maxChoiceCount": 3
+                    },
+                    "options": [
+                        {
+                            "id": 4,
+                            "content": "18-25"
+                        },
+                        {
+                            "id": 5,
+                            "content": "26-35"
+                        },
+                        {
+                            "id": 6,
+                            "content": "36-50"
+                        }
+                    ]
+                },
+                "questionResponse": {
+                    "input": null,
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": null,
+                    "multipleChoice": [
+                        4
+                    ],
+                    "speechText": null
+                }
+            },
+            {
+                "questionContent": {
+                    "id": 10,
+                    "questionTypeId": 3,
+                    "content": "Bạn sống ở khu vực nào?",
+                    "description": "Câu hỏi liên quan filter tag Khu vực sống",
+                    "configJson": {
+                        "min": 1,
+                        "max": 10,
+                        "step": 1,
+                        "unit": "điểm"
+                    },
+                    "options": []
+                },
+                "questionResponse": {
+                    "input": {
+                        "value": 5,
+                        "valueType": "number"
+                    },
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": null,
+                    "multipleChoice": null,
+                    "speechText": null
+                }
+            },
+            {
+                "questionContent": {
+                    "id": 11,
+                    "questionTypeId": 4,
+                    "content": "Nghề nghiệp hiện tại của bạn?",
+                    "description": "Câu hỏi liên quan filter tag Nghề nghiệp",
+                    "configJson": {
+                        "min": 18,
+                        "max": 60,
+                        "step": 1,
+                        "unit": "tuổi"
+                    },
+                    "options": []
+                },
+                "questionResponse": {
+                    "input": null,
+                    "range": {
+                        "min": 25,
+                        "max": 35
+                    },
+                    "ranking": null,
+                    "singleChoice": null,
+                    "multipleChoice": null,
+                    "speechText": null
+                }
+            },
+            {
+                "questionContent": {
+                    "id": 12,
+                    "questionTypeId": 5,
+                    "content": "Trình độ học vấn của bạn?",
+                    "description": "Câu hỏi liên quan filter tag Trình độ học vấn",
+                    "configJson": {
+                        "fieldInputTypeId": 1
+                    },
+                    "options": []
+                },
+                "questionResponse": {
+                    "input": {
+                        "value": "Đại học",
+                        "valueType": "string"
+                    },
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": null,
+                    "multipleChoice": null,
+                    "speechText": null
+                }
+            },
+            {
+                "questionContent": {
+                    "id": 13,
+                    "questionTypeId": 6,
+                    "content": "Tình trạng hôn nhân của bạn?",
+                    "description": "Câu hỏi liên quan filter tag Tình trạng hôn nhân",
+                    "configJson": {
+                        "ratingLength": 5,
+                        "ratingIcon": "star"
+                    },
+                    "options": []
+                },
+                "questionResponse": {
+                    "input": {
+                        "value": 2,
+                        "valueType": "number"
+                    },
+                    "range": null,
+                    "ranking": null,
+                    "singleChoice": null,
+                    "multipleChoice": null,
+                    "speechText": null
+                }
+            },
+            {
+                "questionContent": {
+                    "id": 14,
+                    "questionTypeId": 7,
+                    "content": "Thu nhập của bạn thuộc mức nào?",
+                    "description": "Câu hỏi liên quan filter tag Thu nhập",
+                    "configJson": {},
+                    "options": [
+                        {
+                            "id": 7,
+                            "content": "< 5 triệu"
+                        },
+                        {
+                            "id": 8,
+                            "content": "5-15 triệu"
+                        },
+                        {
+                            "id": 9,
+                            "content": "> 15 triệu"
+                        }
+                    ]
+                },
+                "questionResponse": {
+                    "input": null,
+                    "range": null,
+                    "ranking": [
+                        {
+                            "surveyOptionId": 8,
+                            "rankIndex": 1
+                        },
+                        {
+                            "surveyOptionId": 7,
+                            "rankIndex": 2
+                        },
+                        {
+                            "surveyOptionId": 9,
+                            "rankIndex": 3
+                        }
+                    ],
+                    "singleChoice": null,
+                    "multipleChoice": null,
+                    "speechText": null
+                }
+            }
+        ],
+        "openAiFilterTagSummaries": [
+            {
+                "filterTagId": 1,
+                "filterTagName": "Giới tính",
+                "summary": "Nam."
+            },
+            {
+                "filterTagId": 2,
+                "filterTagName": "Độ tuổi",
+                "summary": "18-25."
+            },
+            {
+                "filterTagId": 3,
+                "filterTagName": "Khu vực sống",
+                "summary": "Khu vực 5."
+            },
+            {
+                "filterTagId": 4,
+                "filterTagName": "Nghề nghiệp",
+                "summary": "Từ 25 đến 35 tuổi."
+            },
+            {
+                "filterTagId": 5,
+                "filterTagName": "Trình độ học vấn",
+                "summary": "Đại học."
+            },
+            {
+                "filterTagId": 6,
+                "filterTagName": "Tình trạng hôn nhân",
+                "summary": "Đánh giá 2."
+            },
+            {
+                "filterTagId": 7,
+                "filterTagName": "Thu nhập",
+                "summary": "5-15 triệu."
+            },
+            {
+                "filterTagId": 8,
+                "filterTagName": "Sở thích chính",
+                "summary": null
+            },
+            {
+                "filterTagId": 9,
+                "filterTagName": "Số người trong gia đình",
+                "summary": null
+            },
+            {
+                "filterTagId": 10,
+                "filterTagName": "Loại thiết bị đang dùng",
+                "summary": null
+            },
+            {
+                "filterTagId": 11,
+                "filterTagName": "Loại nhà ở (thuê / sở hữu)",
+                "summary": null
+            },
+            {
+                "filterTagId": 12,
+                "filterTagName": "Tôn giáo",
+                "summary": null
+            },
+            {
+                "filterTagId": 13,
+                "filterTagName": "Mức độ sử dụng Internet",
+                "summary": null
+            }
+        ]
+    }
+}
