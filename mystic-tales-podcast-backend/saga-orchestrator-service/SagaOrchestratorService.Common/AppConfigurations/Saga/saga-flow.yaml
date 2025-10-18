@@ -1568,46 +1568,42 @@ flows:
           - Name
           - Description
           - Language
-          - ReleaseDate
           - Copyright
           - UploadFrequency
           - MainImageFileKey
           - PodcasterId
-          - CategoryId
-          - SubCategoryId
-          - ChannelId
-          - SubscriptionTypeId
+          - PodcastCategoryId
+          - PodcastSubCategoryId
+          - PodcastShowSubscriptionTypeId
+          - PodcastChannelId
           - HashtagIds
         next-request-data:
           - Name
           - Description
           - Language
-          - ReleaseDate
           - Copyright
           - UploadFrequency
           - MainImageFileKey
           - PodcasterId
-          - CategoryId
-          - SubCategoryId
-          - ChannelId
-          - SubscriptionTypeId
+          - PodcastCategoryId
+          - PodcastSubCategoryId
+          - PodcastShowSubscriptionTypeId
+          - PodcastChannelId
           - HashtagIds
         response-data:
           - PodcastShowId
           - Name
           - Description
           - Language
-          - ReleaseDate
           - Copyright
           - UploadFrequency
           - MainImageFileKey
           - PodcasterId
-          - CategoryId
-          - SubCategoryId
-          - ChannelId
-          - SubscriptionTypeId
+          - PodcastCategoryId
+          - PodcastSubCategoryId
+          - PodcastShowSubscriptionTypeId
+          - PodcastChannelId
           - HashtagIds
-          - CreatedAt
         onSuccess:
           emit: "create-show.success"
           topic: "content-management-domain"
@@ -1636,41 +1632,43 @@ flows:
           - Name
           - Description
           - Language
-          - ReleaseDate
           - Copyright
           - UploadFrequency
           - MainImageFileKey
-          - CategoryId
-          - SubCategoryId
-          - SubscriptionTypeId
+          - PodcasterId  # không dùng trong cập nhật nhưng giữ để kiểm tra quyền (lấy từ jwt)
+          - PodcastCategoryId
+          - PodcastSubCategoryId
+          - PodcastShowSubscriptionTypeId
+          - PodcastChannelId
           - HashtagIds
         next-request-data:
           - PodcastShowId
           - Name
           - Description
           - Language
-          - ReleaseDate
           - Copyright
           - UploadFrequency
           - MainImageFileKey
-          - CategoryId
-          - SubCategoryId
-          - SubscriptionTypeId
+          - PodcasterId
+          - PodcastCategoryId
+          - PodcastSubCategoryId
+          - PodcastShowSubscriptionTypeId
+          - PodcastChannelId
           - HashtagIds
         response-data:
           - PodcastShowId
           - Name
           - Description
           - Language
-          - ReleaseDate
           - Copyright
           - UploadFrequency
           - MainImageFileKey
-          - CategoryId
-          - SubCategoryId
-          - SubscriptionTypeId
+          - PodcasterId
+          - PodcastCategoryId
+          - PodcastSubCategoryId
+          - PodcastShowSubscriptionTypeId
+          - PodcastChannelId
           - HashtagIds
-          - UpdatedAt
         onSuccess:
           emit: "update-show.success"
           topic: "content-management-domain"

@@ -9,16 +9,19 @@ public class UnitOfWork : IUnitOfWork
     private readonly AppDbContext _appDbContext;
     // public IAccountRepository AccountRepository { get; }
     public IPodcastChannelHashtagRepository PodcastChannelHashtagRepository { get; }
+    public IPodcastShowHashtagRepository PodcastShowHashtagRepository { get; }
 
     public UnitOfWork(
         AppDbContext appDbContext,
         // IAccountRepository accountRepository,
-        IPodcastChannelHashtagRepository podcastChannelHashtagRepository
+        IPodcastChannelHashtagRepository podcastChannelHashtagRepository,
+        IPodcastShowHashtagRepository podcastShowHashtagRepository
 
         )
     {
         _appDbContext = appDbContext;
         PodcastChannelHashtagRepository = podcastChannelHashtagRepository;
+        PodcastShowHashtagRepository = podcastShowHashtagRepository;
 
         // this.AccountRepository = accountRepository;
         // this.AccountOnlineTrackingRepository = accountOnlineTrackingRepository;

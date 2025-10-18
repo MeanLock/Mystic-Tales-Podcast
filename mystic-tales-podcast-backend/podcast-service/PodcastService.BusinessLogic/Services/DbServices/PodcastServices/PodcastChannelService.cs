@@ -292,19 +292,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         /////////////////////////////////////////////////////////////
 
-        public async Task SendPodcastServiceEmail(MailProperty mailProperty, string toEmail, object viewModel)
-        {
-            try
-            {
-                await _fluentEmailService.SendEmail(toEmail, viewModel, mailProperty.TemplateFilePath
-                , mailProperty.Subject);
-            }
-            catch (Exception ex)
-            {
-                throw new HttpRequestException("Send email failed, error: " + ex.Message);
-            }
-        }
-
         #region Sample coding format must be followed
         // public async Task RegisterAccount(CreateAccountParameterDTO accountRegisterDTO, SagaCommandMessage command)
         // {
@@ -1438,17 +1425,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Description = pc.Description,
                         MainImageFileKey = pc.MainImageFileKey,
                         BackgroundImageFileKey = pc.BackgroundImageFileKey,
-                        PodcastCategory = new PodcastCategoryDTO
+                        PodcastCategory = pc.PodcastCategory != null ? new PodcastCategoryDTO
                         {
                             Id = pc.PodcastCategory.Id,
                             Name = pc.PodcastCategory.Name
-                        },
-                        PodcastSubCategory = new PodcastSubCategoryDTO
+                        } : null,
+                        PodcastSubCategory = pc.PodcastSubCategory != null ? new PodcastSubCategoryDTO
                         {
                             Id = pc.PodcastSubCategory.Id,
                             Name = pc.PodcastSubCategory.Name,
                             PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
-                        },
+                        } : null,
                         CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
                         {
                             Id = pct.PodcastChannelStatus.Id,
@@ -1461,7 +1448,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }).ToList(),
                         TotalFavorite = pc.TotalFavorite,
                         ListenCount = pc.ListenCount,
-                        ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnums.Published && ps.DeletedAt == null) : 0,
+                        ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Published && ps.DeletedAt == null) : 0,
                         Podcaster = new AccountSnippetResponseDTO
                         {
                             Id = podcaster.Id,
@@ -1516,17 +1503,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Description = pc.Description,
                         MainImageFileKey = pc.MainImageFileKey,
                         BackgroundImageFileKey = pc.BackgroundImageFileKey,
-                        PodcastCategory = new PodcastCategoryDTO
+                        PodcastCategory = pc.PodcastCategory != null ? new PodcastCategoryDTO
                         {
                             Id = pc.PodcastCategory.Id,
                             Name = pc.PodcastCategory.Name
-                        },
-                        PodcastSubCategory = new PodcastSubCategoryDTO
+                        } : null,
+                        PodcastSubCategory = pc.PodcastSubCategory != null ? new PodcastSubCategoryDTO
                         {
                             Id = pc.PodcastSubCategory.Id,
                             Name = pc.PodcastSubCategory.Name,
                             PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
-                        },
+                        } : null,
                         CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
                         {
                             Id = pct.PodcastChannelStatus.Id,
@@ -1635,7 +1622,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 if (role == null || role == 1)
                 {
-                    showByChannelIdQuery = showByChannelIdQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnums.Published && ps.IsReleased == true);
+                    showByChannelIdQuery = showByChannelIdQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && ps.IsReleased != null); // đã đăng và có ngày phát hành (có thể là đã phát hành hoặc sắp phát hành)
                 }
                 var showList = await showByChannelIdQuery.ToListAsync();
 
@@ -1652,17 +1639,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Description = channel.Description,
                     MainImageFileKey = channel.MainImageFileKey,
                     BackgroundImageFileKey = channel.BackgroundImageFileKey,
-                    PodcastCategory = new PodcastCategoryDTO
+                    PodcastCategory = channel.PodcastCategory != null ? new PodcastCategoryDTO
                     {
                         Id = channel.PodcastCategory.Id,
                         Name = channel.PodcastCategory.Name
-                    },
-                    PodcastSubCategory = new PodcastSubCategoryDTO
+                    } : null,
+                    PodcastSubCategory = channel.PodcastSubCategory != null ? new PodcastSubCategoryDTO
                     {
                         Id = channel.PodcastSubCategory.Id,
                         Name = channel.PodcastSubCategory.Name,
                         PodcastCategoryId = channel.PodcastSubCategory.PodcastCategoryId
-                    },
+                    } : null,
                     CurrentStatus = channel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
                     {
                         Id = pct.PodcastChannelStatus.Id,
@@ -1702,17 +1689,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         UploadFrequency = ps.UploadFrequency,
                         ReleaseDate = ps.ReleaseDate,
                         TakenDownReason = role == null || role == 1 ? null : ps.TakenDownReason,
-                        PodcastCategory = new PodcastCategoryDTO
+                        PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
                         {
                             Id = ps.PodcastCategory.Id,
                             Name = ps.PodcastCategory.Name
-                        },
-                        PodcastSubCategory = new PodcastSubCategoryDTO
+                        } : null,
+                        PodcastSubCategory = ps.PodcastSubCategory != null ? new PodcastSubCategoryDTO
                         {
                             Id = ps.PodcastSubCategory.Id,
                             Name = ps.PodcastSubCategory.Name,
                             PodcastCategoryId = ps.PodcastSubCategory.PodcastCategoryId
-                        },
+                        } : null,
                         PodcastChannel = new PodcastChannelSnippetResponseDTO
                         {
                             Id = channel.Id,
@@ -1812,6 +1799,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         PodcastCategoryId = createChannelParameterDTO.PodcastCategoryId,
                         PodcastSubCategoryId = createChannelParameterDTO.PodcastSubCategoryId,
                     };
+
+                    var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(podcastChannel.PodcasterId);
+                    if (existingPodcaster == null || existingPodcaster.Id != podcastChannel.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt !=null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + podcastChannel.PodcasterId + " does not exist");
+                    }
 
                     await _podcastChannelGenericRepository.CreateAsync(podcastChannel);
 

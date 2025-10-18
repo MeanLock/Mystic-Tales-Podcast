@@ -1,6 +1,6 @@
 namespace PodcastService.BusinessLogic.Enums.Podcast
 {
-    public enum PodcastShowStatusEnums
+    public enum PodcastShowStatusEnum
     {
         Draft = 1,
         ReadyToRelease = 2,

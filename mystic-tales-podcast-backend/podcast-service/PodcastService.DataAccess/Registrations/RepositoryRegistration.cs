@@ -19,6 +19,7 @@ namespace PodcastService.DataAccess.Registrations
         public static IServiceCollection AddDbRepositories (this IServiceCollection services) {
             // services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddScoped<IPodcastChannelHashtagRepository, PodcastChannelHashtagRepository>();
+            services.AddScoped<IPodcastShowHashtagRepository, PodcastShowHashtagRepository>();
 
             return services;
         }

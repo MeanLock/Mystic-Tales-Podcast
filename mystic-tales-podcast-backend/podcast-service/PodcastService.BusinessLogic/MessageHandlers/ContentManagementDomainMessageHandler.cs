@@ -3,10 +3,12 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using PodcastService.BusinessLogic.Attributes;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
@@ -28,6 +30,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
     {
         private readonly IMessagingService _messagingService;
         private readonly PodcastChannelService _podcastChannelService;
+        private readonly PodcastShowService _podcastShowService;
         private readonly MailOperationService _mailOperationService;
         // private readonly AuthService _authService;
         private readonly KafkaProducerService _kafkaProducerService;
@@ -39,6 +42,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
         public ContentManagementDomainMessageHandler(
             IMessagingService messagingService,
             PodcastChannelService podcastChannelService,
+            PodcastShowService podcastShowService,
             MailOperationService mailOperationService,
 
             KafkaProducerService kafkaProducerService,
@@ -48,6 +52,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
             _podcastChannelService = podcastChannelService;
+            _podcastShowService = podcastShowService;
 
             _mailPropertiesConfig = mailPropertiesConfig;
         }
@@ -467,8 +472,35 @@ namespace PodcastService.BusinessLogic.MessageHandlers
             );
         }
 
+        [MessageHandler("create-show", SAGA_TOPIC)]
+        public async Task HandleShowCreationFlowAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var show = command.RequestData.ToObject<CreateShowParameterDTO>();
+                    await _podcastShowService.CreatePodcastShow(show, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "show-creation-flow.failed"    // From YAML onFailure.emit
+            );
+        }
 
-
+        [MessageHandler("update-show", SAGA_TOPIC)]
+        public async Task HandleShowUpdateFlowAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var show = command.RequestData.ToObject<UpdateShowParameterDTO>();
+                    await _podcastShowService.UpdatePodcastShow(show, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "show-update-flow.failed"    // From YAML onFailure.emit
+            );
+        }
 
     }
 }

@@ -17,7 +17,6 @@ namespace PodcastService.BusinessLogic.DTOs.Show.ListItems
         public bool? IsReleased { get; set; }
         public string Copyright { get; set; } = null!;
         public string? UploadFrequency { get; set; }
-        // public List<ReviewListItemDTO> ReviewList { get; set; } = new List<ReviewListItemDTO>();
         public int RatingCount { get; set; }
         public double AverageRating { get; set; }
         public string? MainImageFileKey { get; set; }

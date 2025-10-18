@@ -10,6 +10,7 @@ namespace PodcastService.BusinessLogic.Registrations
         {
             // PodcastServices
             services.AddScoped<PodcastChannelService>();
+            services.AddScoped<PodcastShowService>();
 
             // MiscServices
             services.AddScoped<PlatformFeedbackService>();

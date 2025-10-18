@@ -17,10 +17,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.MiscServices
         public readonly IAppConfig _appConfig;
         private readonly IFilePathConfig _filePathConfig;
         private readonly IPayosConfig _payosConfig;
-        
+
         // GOOGLE SERVICE
         private readonly FluentEmailService _fluentEmailService;
-        
+
 
 
         public MailOperationService(
@@ -40,7 +40,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.MiscServices
 
         /////////////////////////////////////////////////////////////
 
-                public async Task SendPodcastServiceEmail(MailProperty mailProperty, string toEmail, object viewModel)
+        public async Task SendPodcastServiceEmail(MailProperty mailProperty, string toEmail, object viewModel)
         {
             try
             {

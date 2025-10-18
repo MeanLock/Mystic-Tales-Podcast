@@ -6,6 +6,7 @@ public interface IUnitOfWork
 {
     // IAccountRepository AccountRepository { get; }
     IPodcastChannelHashtagRepository PodcastChannelHashtagRepository { get; }
+    IPodcastShowHashtagRepository PodcastShowHashtagRepository { get; }
 
     int Complete();
 }
