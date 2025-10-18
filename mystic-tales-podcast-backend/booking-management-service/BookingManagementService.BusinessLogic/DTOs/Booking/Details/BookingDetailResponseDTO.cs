@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BookingManagementService.BusinessLogic.DTOs.Booking
+namespace BookingManagementService.BusinessLogic.DTOs.Booking.Details
 {
     public class BookingDetailResponseDTO
     {

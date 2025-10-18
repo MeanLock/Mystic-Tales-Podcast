@@ -7,6 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Exceptions\**" />
+    <Compile Remove="Services\BackgroundServices\**" />
+    <Compile Remove="Services\DbServices\MiscServices\**" />
+    <EmbeddedResource Remove="Exceptions\**" />
+    <EmbeddedResource Remove="Services\BackgroundServices\**" />
+    <EmbeddedResource Remove="Services\DbServices\MiscServices\**" />
+    <None Remove="Exceptions\**" />
+    <None Remove="Services\BackgroundServices\**" />
+    <None Remove="Services\DbServices\MiscServices\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SagaOrchestratorService.Common\SagaOrchestratorService.Common.csproj" />
     <ProjectReference Include="..\SagaOrchestratorService.DataAccess\SagaOrchestratorService.DataAccess.csproj" />
     <ProjectReference Include="..\SagaOrchestratorService.Infrastructure\SagaOrchestratorService.Infrastructure.csproj" />
@@ -24,11 +36,6 @@
     <Folder Include="DTOs\MessageQueue\ReportManagementDomain\" />
     <Folder Include="DTOs\MessageQueue\SubscriptionManagementDomain\" />
     <Folder Include="DTOs\MessageQueue\SystemConfigurationDomain\" />
-    <Folder Include="Exceptions\" />
-    <Folder Include="Services\BackgroundServices\interfaces\" />
-    <Folder Include="Services\BackgroundServices\MajorScheduleServices\" />
-    <Folder Include="Services\BackgroundServices\NonTimeRequiredRequestServices\" />
-    <Folder Include="Services\DbServices\MiscServices\" />
   </ItemGroup>
 
   <ItemGroup>

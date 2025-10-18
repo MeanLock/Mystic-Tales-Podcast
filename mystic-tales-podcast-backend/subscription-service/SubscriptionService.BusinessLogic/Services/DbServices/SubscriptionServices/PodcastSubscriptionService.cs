@@ -31,6 +31,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         private readonly IGenericRepository<PodcastSubscription> _podcastSubscriptionGenericRepository;
         private readonly IGenericRepository<PodcastSubscriptionCycleTypePrice> _podcastSubscriptionCycleTypePriceGenericRepository;
         private readonly IGenericRepository<PodcastSubscriptionBenefitMapping> _podcastSubscriptionBenefitMappingGenericRepository;
+        private readonly IGenericRepository<PodcastSubscriptionRegistration> _podcastSubscriptionRegistrationGenericRepository;
         private readonly ILogger<PodcastSubscriptionService> _logger;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
@@ -41,6 +42,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             IGenericRepository<PodcastSubscription> podcastSubscriptionGenericRepository,
             IGenericRepository<PodcastSubscriptionCycleTypePrice> podcastSubscriptionCycleTypePriceGenericRepository,
             IGenericRepository<PodcastSubscriptionBenefitMapping> podcastSubscriptionBenefitMappingGenericRepository,
+            IGenericRepository<PodcastSubscriptionRegistration> podcastSubscriptionRegistrationGenericRepository,
             ILogger<PodcastSubscriptionService> logger,
             KafkaProducerService kafkaProducerService,
             IMessagingService messagingService,
@@ -51,6 +53,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             _podcastSubscriptionGenericRepository = podcastSubscriptionGenericRepository;
             _podcastSubscriptionCycleTypePriceGenericRepository = podcastSubscriptionCycleTypePriceGenericRepository;
             _podcastSubscriptionBenefitMappingGenericRepository = podcastSubscriptionBenefitMappingGenericRepository;
+            _podcastSubscriptionRegistrationGenericRepository = podcastSubscriptionRegistrationGenericRepository;
             _logger = logger;
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
@@ -373,6 +376,17 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         }
                     }
 
+                    var updateRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        .Where(sr => sr.PodcastSubscriptionId == parameter.PodcastSubscriptionId && sr.CancelledAt == null)
+                        .ToListAsync();
+
+                    foreach(var registration in updateRegistrations)
+                    {
+                        registration.IsAcceptNewestVersionSwitch = null;
+                        registration.UpdatedAt = DateTime.UtcNow;
+                        await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+                    }
+
                     await transaction.CommitAsync();
                     var newResponseData = new JObject
                     {
@@ -433,10 +447,22 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         _logger.LogWarning("No Active Podcast Subscription exists for PodcastSubscription Id: {PodcastSubscriptionId}", parameter.PodcastSubscriptionId);
                         throw new Exception($"No Active Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
                     }
+                    existPodcastSubscription.IsActive = false;
                     existPodcastSubscription.DeletedAt = DateTime.UtcNow;
                     existPodcastSubscription.UpdatedAt = DateTime.UtcNow;
                     await _podcastSubscriptionGenericRepository.UpdateAsync(existPodcastSubscription.Id, existPodcastSubscription);
                     
+                    if(existPodcastSubscription.PodcastShowId != null)
+                    {
+                        var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                            .Where(sr => sr.PodcastSubscriptionId == existPodcastSubscription.Id && sr.CancelledAt == null)
+                            .ToListAsync();
+                        foreach (var registration in subscriptionRegistrations)
+                        {
+
+                        }
+                    }
+
                     await transaction.CommitAsync();
                     var newResponseData = new JObject
                     {

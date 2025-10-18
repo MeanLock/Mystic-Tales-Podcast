@@ -76,7 +76,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
         [HttpPost("bookings/{BookingId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> CreateProducingRequest([FromRoute] int BookingId, [FromBody] BookingProducingRequestRequestDTO request)
+        public async Task<IActionResult> CreateProducingRequest([FromRoute] int BookingId, [FromBody] BookingProducingRequestCreateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             if (account == null)
@@ -115,7 +115,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> SubmitAudioTrack(
             [FromRoute] Guid BookingProducingRequestId,
-            [FromForm] BookingPodcastTrackRequestDTO request
+            [FromForm] BookingPodcastTrackCreateRequestDTO request
             )
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
