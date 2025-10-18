@@ -1858,10 +1858,16 @@ flows:
         description: "Publish podcast show"
         parameters:
           - PodcastShowId
+          - PodcasterId  # không dùng trong publish nhưng giữ để kiểm tra quyền (lấy từ jwt)
+          - ReleaseDate
         next-request-data:
           - PodcastShowId
+          - PodcasterId
+          - ReleaseDate
         response-data:
           - PodcastShowId
+          - PodcasterId
+          - ReleaseDate
         onSuccess:
           emit: "publish-show.success"
           topic: "content-management-domain"
@@ -1935,30 +1941,28 @@ flows:
               topic: "content-management-domain"
               handle-service: "SagaOrchestratorService"
 
-  show-audio-submission-flow:
+  show-trailer-audio-submission-flow:
     topic: "content-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Gửi audio cho chương trình podcast"
-    save-file: "AudioFile"
+    save-file: "TrailerAudioFile"
     steps:
-      - name: " submit-show-trailer-audio-file"
+      - name: "submit-show-trailer-audio-file"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Submit trailer audio file cho show"
         parameters:
           - PodcastShowId
-          - AudioFileKey
+          - PodcasterId  # không dùng trong submit nhưng giữ để kiểm tra quyền (lấy từ jwt)
+          - TrailerAudioFileKey
         next-request-data:
           - PodcastShowId
-          - AudioFileKey
-          - AudioFileSize
-          - AudioLength
+          - PodcasterId
+          - TrailerAudioFileKey
         response-data:
           - PodcastShowId
-          - AudioFileKey
-          - AudioFileSize
-          - AudioLength
-          - UpdatedAt
+          - PodcasterId
+          - TrailerAudioFileKey
         onSuccess:
           emit: " submit-show-trailer-audio-file.success"
           topic: "content-management-domain"

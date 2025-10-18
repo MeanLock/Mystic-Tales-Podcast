@@ -424,5 +424,75 @@ namespace PodcastService.API.Controllers.BaseControllers
         }
 
 
+        // /api/podcast-service/api/shows/{PodcastShowId}/trailer-audio
+        [HttpPut("{PodcastShowId}/trailer-audio")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> UploadOrUpdateShowTrailerAudioById(Guid PodcastShowId, IFormFile TrailerAudioFile)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+            var isValidFile = _fileValidationConfig.IsValidFile("PodcastShow.trailerAudioFileKey", TrailerAudioFile.FileName, TrailerAudioFile.Length, TrailerAudioFile.ContentType);
+            if (!isValidFile)
+            {
+                return BadRequest("Invalid upload file.");
+            }
+            string newTrailerAudioFileName = $"{Guid.NewGuid()}_{TrailerAudioFile.FileName}";
+            using (var stream = TrailerAudioFile.OpenReadStream())
+            {
+                await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                    stream,
+                                    _filePathConfig.PODCAST_SHOW_TEMP_FILE_PATH,
+                                    newTrailerAudioFileName
+                                );
+            }
+            string trailerAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_SHOW_TEMP_FILE_PATH, newTrailerAudioFileName);
+
+            JObject requestData = new JObject
+            {
+                ["PodcastShowId"] = PodcastShowId,
+                ["PodcasterId"] = account.Id,
+                ["TrailerAudioFileKey"] = trailerAudioFileKey
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "show-trailer-audio-submission-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/podcast-service/api/shows/{PodcastShowId}/publish/{IsPublish}
+        [HttpPut("{PodcastShowId}/publish/{IsPublish}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> PublishOrUnpublishShowById(Guid PodcastShowId, bool IsPublish, ShowPublishRequestDTO showPublishRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (IsPublish == true && account.ViolationLevel >= 0)
+            {
+                return StatusCode(403, "Your account has violation level that is not allowed to show channel.");
+            }
+            
+            var flowName = IsPublish ? "show-publish-flow" : "show-unpublish-flow";
+            JObject requestData = new JObject
+            {
+                ["PodcastShowId"] = PodcastShowId,
+                ["PodcasterId"] = account.Id,
+                ["ShowPublishInfo"] = JObject.FromObject(showPublishRequestDTO.ShowPublishInfo)
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, flowName);
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+
+
     }
 }

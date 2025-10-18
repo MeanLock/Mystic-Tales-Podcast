@@ -6,6 +6,8 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Cre
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishShow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitShowTrailerAudioFile;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateShow;
@@ -483,7 +485,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                     await _podcastShowService.CreatePodcastShow(show, command);
                 },
                 responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "show-creation-flow.failed"    // From YAML onFailure.emit
+                failedEmitMessage: "create-show.failed"    // From YAML onFailure.emit
             );
         }
 
@@ -498,10 +500,40 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                     await _podcastShowService.UpdatePodcastShow(show, command);
                 },
                 responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "show-update-flow.failed"    // From YAML onFailure.emit
+                failedEmitMessage: "update-show.failed"    // From YAML onFailure.emit
             );
         }
 
+        [MessageHandler("submit-show-trailer-audio-file", SAGA_TOPIC)]
+        public async Task HandleShowTrailerAudioSubmissionFlowAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var show = command.RequestData.ToObject<SubmitShowTrailerAudioFileParameterDTO>();
+                    await _podcastShowService.SubmitPodcastShowTrailerAudioFile(show, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "submit-show-trailer-audio-file.failed"    // From YAML onFailure.emit
+            );
+        }
+
+
+        [MessageHandler("publish-show", SAGA_TOPIC)]
+        public async Task HandleShowPublishingFlowAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var show = command.RequestData.ToObject<PublishShowParameterDTO>();
+                    await _podcastShowService.PublishPodcastShow(show, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "publish-show.failed"    // From YAML onFailure.emit
+            );
+        }
     }
 }
 

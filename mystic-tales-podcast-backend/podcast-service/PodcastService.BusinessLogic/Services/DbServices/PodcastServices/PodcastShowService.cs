@@ -43,6 +43,8 @@ using PodcastService.BusinessLogic.DTOs.Show.Details;
 using PodcastService.BusinessLogic.DTOs.Episode.ListItems;
 using PodcastService.BusinessLogic.DTOs.Episode;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateShow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitShowTrailerAudioFile;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishShow;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -1183,30 +1185,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", podcastSubscriptionBatchRequest);
 
 
-                // var showByChannelIdQuery = _podcastShowGenericRepository.FindAll(
-                //     predicate: ps => ps.DeletedAt == null && ps.PodcastChannelId == channel.Id,
-                //     includeFunc: q => q
-                //         .Include(ps => ps.PodcastShowStatusTrackings)
-                //         .ThenInclude(pst => pst.PodcastShowStatus)
-                //         .Include(ps => ps.PodcastCategory)
-                //         .Include(ps => ps.PodcastSubCategory)
-                //         .Include(ps => ps.PodcastShowHashtags)
-                //         .ThenInclude(psh => psh.Hashtag)
-                //         .Include(ps => ps.PodcastShowSubscriptionType)
-                // );
-
-                // if (role == null || role == 1)
-                // {
-                //     showByChannelIdQuery = showByChannelIdQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnums.Published && ps.IsReleased != null);
-                // }
-                // var showList = await showByChannelIdQuery.ToListAsync();
-
-                // var podcaster = await _accountCachingService.GetAccountStatusCacheById(channel.PodcasterId);
-                // if (podcaster == null || podcaster.Id != channel.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
-                // {
-                //     throw new Exception("Podcaster with id " + channel.PodcasterId + " does not exist");
-                // }
-
                 var episodeByShowIdQuery = _podcastEpisodeGenericRepository.FindAll(
                     predicate: pe => pe.DeletedAt == null && pe.PodcastShowId == show.Id,
                     includeFunc: q => q
@@ -1224,150 +1202,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 var episodeList = await episodeByShowIdQuery.ToListAsync();
 
-                // var channelDetail = new ChannelDetailResponseDTO
-                // {
-                //     Id = channel.Id,
-                //     Name = channel.Name,
-                //     Description = channel.Description,
-                //     MainImageFileKey = channel.MainImageFileKey,
-                //     BackgroundImageFileKey = channel.BackgroundImageFileKey,
-                //     PodcastCategory = channel.PodcastCategory != null ? new PodcastCategoryDTO
-                //     {
-                //         Id = channel.PodcastCategory.Id,
-                //         Name = channel.PodcastCategory.Name
-                //     } : null,
-                //     PodcastSubCategory = channel.PodcastSubCategory != null ? new PodcastSubCategoryDTO
-                //     {
-                //         Id = channel.PodcastSubCategory.Id,
-                //         Name = channel.PodcastSubCategory.Name,
-                //         PodcastCategoryId = channel.PodcastSubCategory.PodcastCategoryId
-                //     } : null,
-                //     CurrentStatus = channel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
-                //     {
-                //         Id = pct.PodcastChannelStatus.Id,
-                //         Name = pct.PodcastChannelStatus.Name
-                //     }).FirstOrDefault()!,
-                //     Hashtags = channel.PodcastChannelHashtags.Select(pch => new HashtagDTO
-                //     {
-                //         Id = pch.Hashtag.Id,
-                //         Name = pch.Hashtag.Name
-                //     }).ToList(),
-                //     TotalFavorite = channel.TotalFavorite,
-                //     ListenCount = channel.ListenCount,
-                //     ShowCount = showList.Count,
-                //     Podcaster = new AccountSnippetResponseDTO
-                //     {
-                //         Id = podcaster.Id,
-                //         FullName = podcaster.FullName,
-                //         Email = podcaster.Email,
-                //         MainImageFileKey = podcaster.MainImageFileKey
-                //     },
-                //     CreatedAt = channel.CreatedAt,
-                //     UpdatedAt = channel.UpdatedAt,
-                //     ShowList = showList.Select(ps => new ShowListItemResponseDTO
-                //     {
-                //         Id = ps.Id,
-                //         Name = ps.Name,
-                //         Description = ps.Description,
-                //         MainImageFileKey = ps.MainImageFileKey,
-                //         TrailerAudioFileKey = ps.TrailerAudioFileKey,
-                //         TotalFollow = ps.TotalFollow,
-                //         ListenCount = ps.ListenCount,
-                //         AverageRating = ps.AverageRating,
-                //         RatingCount = ps.RatingCount,
-                //         Copyright = ps.Copyright,
-                //         IsReleased = ps.IsReleased,
-                //         Language = ps.Language,
-                //         UploadFrequency = ps.UploadFrequency,
-                //         ReleaseDate = ps.ReleaseDate,
-                //         TakenDownReason = role == null || role == 1 ? null : ps.TakenDownReason,
-                //         PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
-                //         {
-                //             Id = ps.PodcastCategory.Id,
-                //             Name = ps.PodcastCategory.Name
-                //         } : null,
-                //         PodcastSubCategory = ps.PodcastSubCategory != null ? new PodcastSubCategoryDTO
-                //         {
-                //             Id = ps.PodcastSubCategory.Id,
-                //             Name = ps.PodcastSubCategory.Name,
-                //             PodcastCategoryId = ps.PodcastSubCategory.PodcastCategoryId
-                //         } : null,
-                //         PodcastChannel = new PodcastChannelSnippetResponseDTO
-                //         {
-                //             Id = channel.Id,
-                //             Name = channel.Name,
-                //             MainImageFileKey = channel.MainImageFileKey
-                //         },
-                //         Podcaster = new AccountSnippetResponseDTO
-                //         {
-                //             Id = podcaster.Id,
-                //             Email = podcaster.Email,
-                //             FullName = podcaster.FullName,
-                //             MainImageFileKey = podcaster.MainImageFileKey
-                //         },
-                //         PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
-                //         {
-                //             Id = ps.PodcastShowSubscriptionType.Id,
-                //             Name = ps.PodcastShowSubscriptionType.Name
-                //         } : null,
-                //         Hashtags = ps.PodcastShowHashtags.Select(psh => new HashtagDTO
-                //         {
-                //             Id = psh.Hashtag.Id,
-                //             Name = psh.Hashtag.Name
-                //         }).ToList(),
-                //         CreatedAt = ps.CreatedAt,
-                //         UpdatedAt = ps.UpdatedAt,
-                //         CurrentStatus = ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).Select(pst => new PodcastShowStatusDTO
-                //         {
-                //             Id = pst.PodcastShowStatus.Id,
-                //             Name = pst.PodcastShowStatus.Name
-                //         }).FirstOrDefault()!,
-                //     }).ToList(),
-                //     PodcastSubscriptionList = ((JArray)result.Results["podcastSubscriptionList"]).Select(ps =>
-                //     {
-                //         var psObj = ps.ToObject<PodcastSubscriptionListItemResponseDTO>();
-                //         return new PodcastSubscriptionListItemResponseDTO
-                //         {
-                //             Id = psObj.Id,
-                //             Name = psObj.Name,
-                //             Description = psObj.Description,
-                //             CurrentVersion = psObj.CurrentVersion,
-                //             PodcastShowId = psObj.PodcastShowId,
-                //             IsActive = psObj.IsActive,
-                //             CreatedAt = psObj.CreatedAt,
-                //             UpdatedAt = psObj.UpdatedAt,
-                //             PodcastChannelId = psObj.PodcastChannelId,
-                //             PodcastSubscriptionCycleTypePriceList = ((JArray)ps["PodcastSubscriptionCycleTypePrices"]).ToObject<List<PodcastSubscriptionCycleTypePriceListItemResponseDTO>>().Select(psctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
-                //             {
-                //                 PodcastSubscriptionId = psctp.PodcastSubscriptionId,
-                //                 Price = psctp.Price,
-                //                 Version = psctp.Version,
-                //                 CreatedAt = psctp.CreatedAt,
-                //                 UpdatedAt = psctp.UpdatedAt,
-                //                 SubscriptionCycleType = psctp.SubscriptionCycleType != null ? new SubscriptionCycleTypeDTO
-                //                 {
-                //                     Id = psctp.SubscriptionCycleType.Id,
-                //                     Name = psctp.SubscriptionCycleType.Name,
-                //                 } : null
-                //             }).ToList(),
-                //             DeletedAt = psObj.DeletedAt,
-                //             PodcastSubscriptionBenefitMappingList = ((JArray)ps["PodcastSubscriptionBenefitMappings"]).ToObject<List<PodcastSubscriptionBenefitMappingListItemResponseDTO>>().Select(psbm => new PodcastSubscriptionBenefitMappingListItemResponseDTO
-                //             {
-                //                 PodcastSubscriptionId = psbm.PodcastSubscriptionId,
-                //                 Version = psbm.Version,
-                //                 CreatedAt = psbm.CreatedAt,
-                //                 UpdatedAt = psbm.UpdatedAt,
-                //                 PodcastSubscriptionBenefit = psbm.PodcastSubscriptionBenefit != null ? new PodcastSubscriptionBenefitDTO
-                //                 {
-                //                     Id = psbm.PodcastSubscriptionBenefit.Id,
-                //                     Name = psbm.PodcastSubscriptionBenefit.Name
-                //                 } : null
-                //             }).ToList()
-                //         };
-                //     }).ToList()
 
-                // };
-                // return channelDetail;
                 var showDetail = new ShowDetailResponseDTO
                 {
                     Id = show.Id,
@@ -1805,6 +1640,144 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        public async Task SubmitPodcastShowTrailerAudioFile(SubmitShowTrailerAudioFileParameterDTO submitShowTrailerAudioFileParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(submitShowTrailerAudioFileParameterDTO.PodcastShowId);
+                    if (existingPodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + submitShowTrailerAudioFileParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    else if (existingPodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + submitShowTrailerAudioFileParameterDTO.PodcastShowId + " has been deleted");
+                    }
+                    else if (existingPodcastShow.PodcasterId != submitShowTrailerAudioFileParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast show with id " + submitShowTrailerAudioFileParameterDTO.PodcastShowId + " does not belong to podcaster with id " + submitShowTrailerAudioFileParameterDTO.PodcasterId);
+                    }
 
+                    var folderPath = _filePathConfig.PODCAST_SHOW_FILE_PATH + "\\" + submitShowTrailerAudioFileParameterDTO.PodcastShowId;
+                    if (submitShowTrailerAudioFileParameterDTO.TrailerAudioFileKey != null && submitShowTrailerAudioFileParameterDTO.TrailerAudioFileKey != "")
+                    {
+                        if (!string.IsNullOrEmpty(existingPodcastShow?.TrailerAudioFileKey))
+                        {
+                            await _fileIOHelper.DeleteFileAsync(existingPodcastShow.TrailerAudioFileKey);
+                        }
+                        var TrailerAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"trailer_audio{FilePathHelper.GetExtension(submitShowTrailerAudioFileParameterDTO.TrailerAudioFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(submitShowTrailerAudioFileParameterDTO.TrailerAudioFileKey, TrailerAudioFileKey);
+                        await _fileIOHelper.DeleteFileAsync(submitShowTrailerAudioFileParameterDTO.TrailerAudioFileKey);
+                        existingPodcastShow.TrailerAudioFileKey = TrailerAudioFileKey;
+
+                    }
+
+                    await _podcastShowGenericRepository.UpdateAsync(existingPodcastShow.Id, existingPodcastShow);
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = existingPodcastShow.Id;
+                    messageNextRequestData["PodcasterId"] = existingPodcastShow.PodcasterId;
+                    messageNextRequestData["TrailerAudioFileKey"] = existingPodcastShow.TrailerAudioFileKey;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = existingPodcastShow.Id,
+                        PodcasterId = existingPodcastShow.PodcasterId,
+                        TrailerAudioFileKey = existingPodcastShow.TrailerAudioFileKey,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "submit-show-trailer-audio-file.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Submit podcast show trailer audio file failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "submit-show-trailer-audio-file.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task PublishPodcastShow(PublishShowParameterDTO publishShowParameterDTO, SagaCommandMessage command)
+        {
+            using(var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(publishShowParameterDTO.PodcastShowId);
+                    if (existingPodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + publishShowParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    else if (existingPodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + publishShowParameterDTO.PodcastShowId + " has been deleted");
+                    }
+                    else if (existingPodcastShow.PodcasterId != publishShowParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast show with id " + publishShowParameterDTO.PodcastShowId + " does not belong to podcaster with id " + publishShowParameterDTO.PodcasterId);
+                    }
+
+                    
+                    
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = publishShowParameterDTO.PodcastShowId;
+                    messageNextRequestData["PodcasterId"] = publishShowParameterDTO.PodcasterId;
+                    messageNextRequestData["ReleaseDate"] = publishShowParameterDTO.ReleaseDate;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = publishShowParameterDTO.PodcastShowId,
+                        PodcasterId = publishShowParameterDTO.PodcasterId,
+                        ReleaseDate = publishShowParameterDTO.ReleaseDate,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "publish-show.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Publish podcast show failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "publish-show.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
     }
 }

@@ -246,10 +246,14 @@ namespace PodcastService.API.Controllers.BaseControllers
 
         // /api/podcast-service/api/channels/{PodcastChannelId}/publish/{IsPublish}
         [HttpPut("{PodcastChannelId}/publish/{IsPublish}")]
-        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> PublishOrUnpublishChannelById(Guid PodcastChannelId, bool IsPublish)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (IsPublish == true && account.ViolationLevel >= 0)
+            {
+                return StatusCode(403, "Your account has violation level that is not allowed to publish channel.");
+            }
 
             var flowName = IsPublish ? "channel-publish-flow" : "channel-unpublish-flow";
             JObject requestData = new JObject
