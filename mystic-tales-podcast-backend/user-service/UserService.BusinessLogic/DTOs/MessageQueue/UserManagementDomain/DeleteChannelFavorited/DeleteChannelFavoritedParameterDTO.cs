@@ -8,7 +8,7 @@ namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Delet
 {
     public class DeleteChannelFavoritedParameterDTO
     {
-        public required int AccountId { get; set; }
+        public int? AccountId { get; set; }
         public required Guid PodcastChannelId { get; set; }
     }
 }

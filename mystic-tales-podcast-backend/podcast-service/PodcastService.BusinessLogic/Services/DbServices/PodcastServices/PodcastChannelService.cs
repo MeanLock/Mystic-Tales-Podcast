@@ -2176,7 +2176,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         throw new Exception("Podcast channel with id " + subtractChannelTotalFavoriteParameterDTO.PodcastChannelId + " has been deleted");
                     }
 
-                    podcastChannel.TotalFavorite = Math.Max(0, podcastChannel.TotalFavorite - 1);
+                    podcastChannel.TotalFavorite = Math.Max(0, podcastChannel.TotalFavorite - subtractChannelTotalFavoriteParameterDTO.AffectedAccountIds.Count);
                     await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
 
                     await transaction.CommitAsync();

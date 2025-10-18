@@ -32,5 +32,20 @@ namespace UserService.DataAccess.Repositories
                 await _appDbContext.SaveChangesAsync();
             }
         }
+
+        public async Task<List<int>> DeleteByPodcasterIdAsync(int podcasterId)
+        {
+            var entities = await _appDbContext.AccountFollowedPodcasters
+                .Where(afp => afp.PodcasterId == podcasterId)
+                .ToListAsync();
+
+            if (entities.Any())
+            {
+                _appDbContext.AccountFollowedPodcasters.RemoveRange(entities);
+                await _appDbContext.SaveChangesAsync();
+            }
+
+            return entities.Select(afp => afp.AccountId).ToList();
+        }
     }
 }

@@ -739,16 +739,18 @@ flows:
       - name: "delete-podcaster-followed"
         topic: "user-management-domain"
         handle-service: "UserService"
-        description: "Unfollow podcaster"
+        description: "Unfollow podcaster, nếu Account = null thì xóa tất cả followers của podcaster"
         parameters:
           - AccountId
           - PodcastBuddyId
         next-request-data:
           - AccountId
           - PodcastBuddyId
+          - AffectedAccountIds
         response-data:
           - AccountId
-          - UnfollowedPodcasterId
+          - PodcastBuddyId
+          - AffectedAccountIds
         onSuccess:
           emit: "delete-podcaster-followed.success"
           topic: "user-management-domain"
@@ -986,7 +988,7 @@ flows:
   channel-unfavorite-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
-    description: "Bỏ yêu thích kênh podcast"
+    description: "Bỏ yêu thích kênh podcast, AccountId null sẽ unfavorite tất cả"
     save-file: ""
     steps:
       - name: "delete-channel-favorited"
@@ -999,9 +1001,11 @@ flows:
         next-request-data:
           - AccountId
           - PodcastChannelId
+          - AffectedAccountIds
         response-data:
           - AccountId
           - PodcastChannelId
+          - AffectedAccountIds
         onSuccess:
           emit: "delete-channel-favorited.success"
           topic: "user-management-domain"
@@ -1020,15 +1024,18 @@ flows:
       - name: "subtract-channel-total-favorite"
         topic: "content-management-domain"
         handle-service: "PodcastService"
-        description: "Giảm tổng số lượt yêu thích kênh podcast"
+        description: "Giảm tổng số lượt yêu thích kênh podcast theo AffectedAccountIds"
         parameters:
           - PodcastChannelId
+          - AffectedAccountIds
         next-request-data:
           - AccountId
           - PodcastChannelId
+          - AffectedAccountIds
         response-data:
           - AccountId
           - PodcastChannelId
+          - AffectedAccountIds
         onSuccess:
           emit: "subtract-channel-total-favorite.success"
           topic: "content-management-domain"
@@ -1110,7 +1117,7 @@ flows:
   show-unfollow-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
-    description: "Bỏ theo dõi chương trình podcast"
+    description: "Bỏ theo dõi chương trình podcast, AccountId null sẽ unfollow tất cả"
     save-file: ""
     steps:
       - name: "delete-show-followed"
@@ -1123,9 +1130,11 @@ flows:
         next-request-data:
           - AccountId
           - PodcastShowId
+          - AffectedAccountIds
         response-data:
           - AccountId
           - PodcastShowId
+          - AffectedAccountIds
         onSuccess:
           emit: "delete-show-followed.success"
           topic: "user-management-domain"
@@ -1144,15 +1153,18 @@ flows:
       - name: "subtract-show-total-follow"
         topic: "content-management-domain"
         handle-service: "PodcastService"
-        description: "Giảm tổng số lượt theo dõi chương trình podcast"
+        description: "Giảm tổng số lượt theo dõi chương trình podcast theo AffectedAccountIds"
         parameters:
           - PodcastShowId
+          - AffectedAccountIds
         next-request-data:
           - AccountId
           - PodcastShowId
+          - AffectedAccountIds
         response-data:
           - AccountId
           - PodcastShowId
+          - AffectedAccountIds
         onSuccess:
           emit: "subtract-show-total-follow.success"
           topic: "content-management-domain"
@@ -1240,16 +1252,18 @@ flows:
       - name: "delete-episode-saved"
         topic: "user-management-domain"
         handle-service: "PodcastService"
-        description: "Xóa episode khỏi danh sách đã lưu"
+        description: "Xóa episode khỏi danh sách đã lưu, AccountId null sẽ unsave tất cả"
         parameters:
           - AccountId
           - PodcastEpisodeId
         next-request-data:
           - AccountId
           - PodcastEpisodeId
+          - AffectedAccountIds
         response-data:
           - AccountId
           - PodcastEpisodeId
+          - AffectedAccountIds
         onSuccess:
           emit: "delete-episode-saved.success"
           topic: "user-management-domain"
@@ -1268,15 +1282,18 @@ flows:
       - name: "subtract-episode-total-saved"
         topic: "content-management-domain"
         handle-service: "PodcastService"
-        description: "Giảm tổng số lượt lưu tập podcast"
+        description: "Giảm tổng số lượt lưu tập podcast, theo AffectedAccountIds"
         parameters:
           - PodcastEpisodeId
+          - AffectedAccountIds
         next-request-data:
           - AccountId
           - PodcastEpisodeId
+          - AffectedAccountIds
         response-data:
           - AccountId
           - PodcastEpisodeId
+          - AffectedAccountIds
         onSuccess:
           emit: "subtract-episode-total-saved.success"
           topic: "content-management-domain"
@@ -6726,13 +6743,13 @@ flows:
         handle-service: "PodcastService"
         description: "Xóa channel khỏi danh sách yêu thích"
         parameters:
-          - AccountId
           - PodcastChannelId
+          - AffectedAccountIds
         next-request-data:
-          - AccountId
           - PodcastChannelId
+          - AffectedAccountIds
         response-data:
-          - AccountId
+          - AffectedAccountIds
           - PodcastChannelId
         onSuccess:
           emit: "delete-channel-favorited-rollback.success"
@@ -6790,13 +6807,13 @@ flows:
         handle-service: "PodcastService"
         description: "Unfollow show"
         parameters:
-          - AccountId
+          - AffectedAccountIds
           - PodcastShowId
         next-request-data:
-          - AccountId
+          - AffectedAccountIds
           - PodcastShowId
         response-data:
-          - AccountId
+          - AffectedAccountIds
           - PodcastShowId
         onSuccess:
           emit: "delete-show-followed-rollback.success"
@@ -6854,13 +6871,13 @@ flows:
         handle-service: "PodcastService"
         description: "Xóa episode khỏi danh sách đã lưu"
         parameters:
-          - AccountId
+          - AffectedAccountIds
           - PodcastEpisodeId
         next-request-data:
-          - AccountId
+          - AffectedAccountIds
           - PodcastEpisodeId
         response-data:
-          - AccountId
+          - AffectedAccountIds
           - PodcastEpisodeId
         onSuccess:
           emit: "delete-episode-saved-rollback.success"

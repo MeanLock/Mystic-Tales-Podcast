@@ -8,7 +8,7 @@ namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Delet
 {
     public class DeleteChannelFavoritedRollbackParameterDTO
     {
-        public required int AccountId { get; set; }
+        public List<int> AffectedAccountIds { get; set; } = new List<int>();
         public required Guid PodcastChannelId { get; set; }
     }
 }

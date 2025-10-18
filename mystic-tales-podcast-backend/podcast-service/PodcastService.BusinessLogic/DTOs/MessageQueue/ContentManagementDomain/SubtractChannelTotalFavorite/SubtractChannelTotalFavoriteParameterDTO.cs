@@ -3,5 +3,6 @@ namespace PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain
     public class SubtractChannelTotalFavoriteParameterDTO
     {
         public required Guid PodcastChannelId { get; set; }
+        public List<int> AffectedAccountIds { get; set; } = new List<int>();
     }
 }

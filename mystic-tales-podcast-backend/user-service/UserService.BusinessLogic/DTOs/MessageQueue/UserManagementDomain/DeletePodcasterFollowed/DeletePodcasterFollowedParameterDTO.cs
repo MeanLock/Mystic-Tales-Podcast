@@ -2,7 +2,7 @@ namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Delet
 {
     public class DeletePodcasterFollowedParameterDTO
     {
-        public required int AccountId { get; set; }
+        public int? AccountId { get; set; }
         public required int PodcastBuddyId { get; set; }
     }
 }

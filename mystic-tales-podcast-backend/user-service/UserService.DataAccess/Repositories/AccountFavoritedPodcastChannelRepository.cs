@@ -32,5 +32,20 @@ namespace UserService.DataAccess.Repositories
                 await _appDbContext.SaveChangesAsync();
             }
         }
+
+        public async Task<List<int>> DeleteByPodcastChannelIdAsync(Guid podcastChannelId)
+        {
+            var entities = await _appDbContext.AccountFavoritedPodcastChannels
+                .Where(afp => afp.PodcastChannelId == podcastChannelId)
+                .ToListAsync();
+
+            if (entities.Any())
+            {
+                _appDbContext.AccountFavoritedPodcastChannels.RemoveRange(entities);
+                await _appDbContext.SaveChangesAsync();
+            }
+
+            return entities.Select(afp => afp.AccountId).ToList();
+        }
     }
 }

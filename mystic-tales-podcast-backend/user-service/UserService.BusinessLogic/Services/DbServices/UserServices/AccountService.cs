@@ -45,6 +45,7 @@ using UserService.BusinessLogic.DTOs.Channel;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateChannelFavoritedRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavorited;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavoritedRollback;
+using Microsoft.EntityFrameworkCore.Update;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -1913,28 +1914,47 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     {
                         throw new Exception("Podcast buddy with id " + deletePodcasterFollowedParameterDTO.PodcastBuddyId + " does not exist");
                     }
-                    var existingFollow = (await _accountFollowedPodcasterGenericRepository.FindAll(
-                        predicate: a => a.AccountId == deletePodcasterFollowedParameterDTO.AccountId && a.PodcasterId == deletePodcasterFollowedParameterDTO.PodcastBuddyId,
-                        includeFunc: null
-                        ).ToListAsync()).FirstOrDefault();
-                    if (existingFollow == null)
-                    {
-                        throw new Exception("Account with id " + deletePodcasterFollowedParameterDTO.AccountId + " has not followed podcast buddy with id " + deletePodcasterFollowedParameterDTO.PodcastBuddyId);
-                    }
-                    await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByAccountIdAndPodcasterIdAsync(deletePodcasterFollowedParameterDTO.AccountId, deletePodcasterFollowedParameterDTO.PodcastBuddyId);
 
-                    podcasterProfile.TotalFollow -= 1;
+
+                    List<int> affectedAccountIds = new List<int>();
+                    if (deletePodcasterFollowedParameterDTO.AccountId == null)
+                    {
+                        // xoá tất cả 
+                        affectedAccountIds = await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByPodcasterIdAsync(deletePodcasterFollowedParameterDTO.PodcastBuddyId);
+                    }
+                    else
+                    {
+                        var existingFollow = await (_accountFollowedPodcasterGenericRepository.FindAll(
+                            predicate: a => a.AccountId == deletePodcasterFollowedParameterDTO.AccountId && a.PodcasterId == deletePodcasterFollowedParameterDTO.PodcastBuddyId
+                            )).FirstOrDefaultAsync();
+                        if (existingFollow == null)
+                        {
+                            throw new Exception("Account with id " + deletePodcasterFollowedParameterDTO.AccountId + " has not followed podcast buddy with id " + deletePodcasterFollowedParameterDTO.PodcastBuddyId);
+                        }
+                        await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByAccountIdAndPodcasterIdAsync(deletePodcasterFollowedParameterDTO.AccountId.Value, deletePodcasterFollowedParameterDTO.PodcastBuddyId);
+                        affectedAccountIds.Add(deletePodcasterFollowedParameterDTO.AccountId.Value);
+                    }
+
+                    // var existingFollow = (await _unitOfWork.AccountFollowedPodcasterRepository.FindAll(
+                    //     predicate: a => a.AccountId == deletePodcasterFollowedParameterDTO.AccountId && a.PodcasterId == deletePodcasterFollowedParameterDTO.PodcastBuddyId
+                    //     )).FirstOrDefault();
+
+                    // await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByAccountIdAndPodcasterIdAsync(deletePodcasterFollowedParameterDTO.AccountId, deletePodcasterFollowedParameterDTO.PodcastBuddyId);
+
+                    podcasterProfile.TotalFollow -= affectedAccountIds.Count;
                     await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
                     messageNextRequestData["AccountId"] = deletePodcasterFollowedParameterDTO.AccountId;
                     messageNextRequestData["PodcastBuddyId"] = deletePodcasterFollowedParameterDTO.PodcastBuddyId;
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(affectedAccountIds);
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Delete podcaster followed successfully",
                         UnfollowedPodcasterId = deletePodcasterFollowedParameterDTO.PodcastBuddyId,
                         AccountId = deletePodcasterFollowedParameterDTO.AccountId,
+                        AffectedAccountIds = affectedAccountIds
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -2131,26 +2151,37 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
-                    var existingFavorite = (await _accountFavoritedPodcastChannelGenericRepository.FindAll(
-                        predicate: a => a.AccountId == deleteChannelFavoritedParameterDTO.AccountId && a.PodcastChannelId == deleteChannelFavoritedParameterDTO.PodcastChannelId,
-                        includeFunc: null
-                        ).ToListAsync()).FirstOrDefault();
-                    if (existingFavorite == null)
+
+                    List<int> affectedAccountIds = new List<int>();
+                    if (deleteChannelFavoritedParameterDTO.AccountId == null)
                     {
-                        throw new Exception("Account with id " + deleteChannelFavoritedParameterDTO.AccountId + " has not favorited podcast channel with id " + deleteChannelFavoritedParameterDTO.PodcastChannelId);
+                        affectedAccountIds = await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByPodcastChannelIdAsync(deleteChannelFavoritedParameterDTO.PodcastChannelId);
                     }
-                    await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByAccountIdAndPodcastChannelIdAsync(deleteChannelFavoritedParameterDTO.AccountId, deleteChannelFavoritedParameterDTO.PodcastChannelId);
+                    else
+                    {
+                        var existingFavorite = await (_accountFavoritedPodcastChannelGenericRepository.FindAll(
+                            predicate: a => a.AccountId == deleteChannelFavoritedParameterDTO.AccountId && a.PodcastChannelId == deleteChannelFavoritedParameterDTO.PodcastChannelId
+                            )).FirstOrDefaultAsync();
+                        if (existingFavorite == null)
+                        {
+                            throw new Exception("Account with id " + deleteChannelFavoritedParameterDTO.AccountId + " has not favorited podcast channel with id " + deleteChannelFavoritedParameterDTO.PodcastChannelId);
+                        }
+                        await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByAccountIdAndPodcastChannelIdAsync(deleteChannelFavoritedParameterDTO.AccountId ?? 1, deleteChannelFavoritedParameterDTO.PodcastChannelId);
+                        affectedAccountIds = new List<int> { deleteChannelFavoritedParameterDTO.AccountId ?? 1 };
+                    }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = sagaCommand.RequestData;
                     messageNextRequestData["AccountId"] = deleteChannelFavoritedParameterDTO.AccountId;
                     messageNextRequestData["PodcastChannelId"] = deleteChannelFavoritedParameterDTO.PodcastChannelId;
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(affectedAccountIds);
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Delete channel favorited successfully",
                         PodcastChannelId = deleteChannelFavoritedParameterDTO.PodcastChannelId,
                         AccountId = deleteChannelFavoritedParameterDTO.AccountId,
+                        AffectedAccountIds = affectedAccountIds,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,
@@ -2188,42 +2219,47 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
-                    // var existingFavorite = (await _accountFavoritedPodcastChannelGenericRepository.FindAll(
-                    //      predicate: a => a.AccountId == deleteChannelFavoritedRollbackParameterDTO.AccountId && a.PodcastChannelId == deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
-                    //      includeFunc: null
-                    //      ).ToListAsync()).FirstOrDefault();
-                    // if (existingFavorite == null)
-                    // {
-                    //     throw new Exception("Account with id " + deleteChannelFavoritedRollbackParameterDTO.AccountId + " has not favorited podcast channel with id " + deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId);
-                    // }
-                    // await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByAccountIdAndPodcastChannelIdAsync(deleteChannelFavoritedRollbackParameterDTO.AccountId, deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId);
-
                     var existingFavorite = (await _accountFavoritedPodcastChannelGenericRepository.FindAll(
-                         predicate: a => a.AccountId == deleteChannelFavoritedRollbackParameterDTO.AccountId && a.PodcastChannelId == deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
+                         predicate: a => deleteChannelFavoritedRollbackParameterDTO.AffectedAccountIds.Contains(a.AccountId) && a.PodcastChannelId == deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
                          includeFunc: null
-                         ).ToListAsync()).FirstOrDefault();
-                    if (existingFavorite != null)
+                         ).ToListAsync());
+                    // if (existingFavorite != null)
+                    // {
+                    //     throw new Exception("Account with id " + deleteChannelFavoritedRollbackParameterDTO.AccountId + " has already favorited podcast channel with id " + deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId);
+                    // }
+                    if (existingFavorite != null && existingFavorite.Count > 0)
                     {
-                        throw new Exception("Account with id " + deleteChannelFavoritedRollbackParameterDTO.AccountId + " has already favorited podcast channel with id " + deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId);
+                        var existingAccountIds = existingFavorite.Select(ef => ef.AccountId).ToList();
+                        deleteChannelFavoritedRollbackParameterDTO.AffectedAccountIds = deleteChannelFavoritedRollbackParameterDTO.AffectedAccountIds.Except(existingAccountIds).ToList(); // tránh tạo lại những favorite đã tồn tại
                     }
 
-                    var channelFavorited = new AccountFavoritedPodcastChannel
+                    foreach (var accountId in deleteChannelFavoritedRollbackParameterDTO.AffectedAccountIds)
                     {
-                        AccountId = deleteChannelFavoritedRollbackParameterDTO.AccountId,
-                        PodcastChannelId = deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
-                    };
-                    await _accountFavoritedPodcastChannelGenericRepository.CreateAsync(channelFavorited);
+                        var channelFavorited = new AccountFavoritedPodcastChannel
+                        {
+                            AccountId = accountId,
+                            PodcastChannelId = deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
+                        };
+                        await _accountFavoritedPodcastChannelGenericRepository.CreateAsync(channelFavorited);
+                    }
+
+                    // var channelFavorited = new AccountFavoritedPodcastChannel
+                    // {
+                    //     AccountId = deleteChannelFavoritedRollbackParameterDTO.AccountId,
+                    //     PodcastChannelId = deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
+                    // };
+                    // await _accountFavoritedPodcastChannelGenericRepository.CreateAsync(channelFavorited);
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["AccountId"] = deleteChannelFavoritedRollbackParameterDTO.AccountId;
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(deleteChannelFavoritedRollbackParameterDTO.AffectedAccountIds);
                     messageNextRequestData["PodcastChannelId"] = deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId;
                     var messageResponseData = JObject.FromObject(new
                     {
                         // Message = "Delete channel favorited rollback successfully",
                         PodcastChannelId = deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
-                        AccountId = deleteChannelFavoritedRollbackParameterDTO.AccountId,
+                        AffectedAccountIds = deleteChannelFavoritedRollbackParameterDTO.AffectedAccountIds,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.UserManagementDomain,

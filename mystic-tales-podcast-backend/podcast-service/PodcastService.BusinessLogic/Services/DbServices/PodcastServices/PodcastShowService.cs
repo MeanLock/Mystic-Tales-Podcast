@@ -1737,7 +1737,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         throw new Exception("Podcast show with id " + publishShowParameterDTO.PodcastShowId + " does not belong to podcaster with id " + publishShowParameterDTO.PodcasterId);
                     }
 
-                    
+
+                    existingPodcastShow.ReleaseDate = publishShowParameterDTO.ReleaseDate;
+                    if(publishShowParameterDTO.ReleaseDate != null && publishShowParameterDTO.ReleaseDate < DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()))
+                    {
+                        throw new Exception("Release date cannot be in the past");
+                    }else if(publishShowParameterDTO.ReleaseDate == null)
+                    {
+                        existingPodcastShow.ReleaseDate = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone());
+                    }   
+
+                    existingPodcastShow.IsPublished = true
+                    await _podcastShowGenericRepository.UpdateAsync(existingPodcastShow.Id, existingPodcastShow);
+
                     
                     await transaction.CommitAsync();
                     var messageNextRequestData = command.RequestData;
