@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using SubscriptionService.BusinessLogic.Attributes;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreateAccountPodcastSubscriptionRegistration;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreatePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeactivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeletePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.UpdatePodcastSubscription;
 using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
@@ -86,6 +88,36 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: "subscription-management-domain",
                 failedEmitMessage: "create-account-podcast-subscription-registration.failed"
+            );
+        }
+        [MessageHandler("activate-podcast-subscription", "subscription-management-domain")]
+        public async Task HandleActivatePodcastSubscriptionCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<ActivatePodcastSubscriptionParameterDTO>();
+                    await _podcastSubscriptionService.ActivatePodcastSubscriptionAsync(parameter, command);
+                    _logger.LogInformation("Handled activate-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "subscription-management-domain",
+                failedEmitMessage: "activate-podcast-subscription.failed"
+            );
+        }
+        [MessageHandler("deactivate-podcast-subscription", "subscription-management-domain")]
+        public async Task HandleDeactivatePodcastSubscriptionCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<DeactivatePodcastSubscriptionParameterDTO>();
+                    await _podcastSubscriptionService.DeactivatePodcastSubscriptionAsync(parameter, command);
+                    _logger.LogInformation("Handled deactivate-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "subscription-management-domain",
+                failedEmitMessage: "deactivate-podcast-subscription.failed"
             );
         }
     }

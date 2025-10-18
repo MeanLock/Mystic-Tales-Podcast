@@ -316,23 +316,26 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
-            if (isValid == null)
-            {
-                return Forbid($"The Logged In Account is unauthorized to update Podcast Subscription Id: {PodcastSubscriptionId}");
-            }
+            //var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
+            //if (isValid == null)
+            //{
+            //    return Forbid($"The Logged In Account is unauthorized to update Podcast Subscription Id: {PodcastSubscriptionId}");
+            //}
+
+            var messageName = "";
+            if (IsActive) messageName = "podcast-subscription-activation-flow";
+            else messageName = "podcast-subscription-deactivation-flow";
 
             var requestData = new JObject
             {
                 { "AccountId", accountId },
-                { "PodcastSubscriptionId", PodcastSubscriptionId },
-                { "SubscriptionCycleTypeId", request.SubscriptionCycleTypeId }
+                { "PodcastSubscriptionId", PodcastSubscriptionId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: "subscription-management-domain",
                 requestData: requestData,
                 sagaInstanceId: null,
-                messageName: "podcast-subscription-registration-flow");
+                messageName: messageName);
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {

@@ -3345,14 +3345,14 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  podcast-subscription-active-flow:
+  podcast-subscription-activation-flow:
     topic: "subscription-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Kích hoạt gói đăng ký podcast"
     save-file: ""
     steps:
       - name: "activate-podcast-subscription"
-        topic: "content-management-domain"
+        topic: "subscription-management-domain"
         handle-service: "PodcastService"
         description: "Kích hoạt gói đăng ký podcast"
         parameters:
@@ -3362,29 +3362,30 @@ flows:
           - AccountId
           - PodcastSubscriptionId
         response-data:
+          - AccountId
           - PodcastSubscriptionId
           - IsActive
           - UpdatedAt
         onSuccess:
           emit: "activate-podcast-subscription.success"
-          topic: "content-management-domain"
+          topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
           emit: "activate-podcast-subscription.failed"
-          topic: "content-management-domain"
+          topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
 
-  podcast-subscription-inactive-flow:
+  podcast-subscription-deactivation-flow:
     topic: "subscription-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Hủy kích hoạt gói đăng ký podcast"
     save-file: ""
     steps:
-      - name: "inactive-podcast-subscription"
+      - name: "deactivate-podcast-subscription"
         topic: "subscription-management-domain"
         handle-service: "SubscriptionService"
         description: "Nhận PodcastSubscriptionId để inactive subscription, xóa các SubscriptionRegistration"
@@ -3401,17 +3402,14 @@ flows:
           - UpdatedAt
         onSuccess:
           emit: "deactivate-podcast-subscription.success"
-          topic: ""
-          handle-service: ""
-          nextSteps:
-            - name: "refund-podcast-subscription-account"
-              topic: "subscription-management-domain"
-              handle-service: "SubscriptionService"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
           nextFlows: []
         onFailure:
           emit: "deactivate-podcast-subscription.failed"
-          topic: "content-management-domain"
-          handle-service: "PodcastService"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
 
