@@ -43,12 +43,12 @@ namespace TransactionService.API.Controllers.BaseControllers
             {
                 return Forbid($"You are not authorize to see the transaction of Podcast Subscription Registration Id: {PodcastSubscriptionRegistrationId}");
             }
-            Console.WriteLine(isValid.ToString());
+            //Console.WriteLine(isValid.ToString());
             var result = await _podcastSubscriptionService.GetPodcastSubscriptionTransactions(PodcastSubscriptionRegistrationId);
-            if(result == null || result.Count == 0)
-            {
-                return NotFound($"No transaction found for Podcast Subscription Registration Id: {PodcastSubscriptionRegistrationId}");
-            }
+            //if(result == null || result.Count == 0)
+            //{
+            //    return NotFound($"No transaction found for Podcast Subscription Registration Id: {PodcastSubscriptionRegistrationId}");
+            //}
             return Ok(result);
         }
         [HttpGet("member-subscription-registrations/{MemberSubscriptionRegistrationId}")]
@@ -63,10 +63,10 @@ namespace TransactionService.API.Controllers.BaseControllers
                 return Forbid($"You are not authorize to see the transaction of Member Subscription Registration Id: {MemberSubscriptionRegistrationId}");
             }
             var result = await _memberSubscriptionService.GetMemberSubscriptionTransactions(MemberSubscriptionRegistrationId);
-            if (result == null || result.Count == 0)
-            {
-                return NotFound($"No transaction found for Member Subscription Registration Id: {MemberSubscriptionRegistrationId}");
-            }
+            //if (result == null || result.Count == 0)
+            //{
+            //    return NotFound($"No transaction found for Member Subscription Registration Id: {MemberSubscriptionRegistrationId}");
+            //}
             return Ok(result);
         }
     }

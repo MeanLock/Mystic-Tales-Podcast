@@ -8,6 +8,10 @@ namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription
 {
     public class PodcastSubscriptionUpdateRequestDTO
     {
+        public PodcastSubscriptionUpdateInfoDTO PodcastSubscriptionUpdateInfo { get; set; }
+    }
+    public class PodcastSubscriptionUpdateInfoDTO
+    {
         public string Name { get; set; }
         public string Description { get; set; }
         public List<PodcastSubscriptionCycleTypePriceUpdateRequestDTO> PodcastSubscriptionCycleTypePriceUpdateInfoList { get; set; }

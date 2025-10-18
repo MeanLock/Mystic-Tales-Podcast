@@ -53,10 +53,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 return Forbid($"The Logged In Account is unauthorized to access Podcast Show Id: {PodcastShowId}");
             }
             var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionListByPodcastShowIdAsync(PodcastShowId);
-            if (podcastSubscription == null)
-            {
-                return NotFound($"No podcast subscription found with Show Id: {PodcastShowId}");
-            }
+            //if (podcastSubscription == null)
+            //{
+            //    return NotFound($"No podcast subscription found with Show Id: {PodcastShowId}");
+            //}
             return Ok(podcastSubscription);
         }
         [HttpPost("shows/{PodcastShowId}")]
@@ -67,21 +67,21 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var isValid = await _podcastSubscriptionService.GetPodcastShow(accountId, PodcastShowId);
-            if (isValid == null)
-            {
-                return Forbid($"The Logged In Account is unauthorized to create PodcastSubscription for PodcastShow with Id: {PodcastShowId}");
-            }
-
+            
             var requestData = new JObject
             {
-                { "Name", request.Name },
-                { "Description", request.Description },
+                { "AccountId", accountId },
+                { "Name", request.PodcastSubscriptionCreateInfo.Name },
+                { "Description", request.PodcastSubscriptionCreateInfo.Description },
                 { "PodcastShowId", PodcastShowId  },
-                { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(request.PodcastSubscriptionCycleTypePriceCreateInfoList) },
-                { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionBenefitMappingCreateInfoList) }
+                { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(request.PodcastSubscriptionCreateInfo.PodcastSubscriptionCycleTypePriceCreateInfoList) },
+                { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionCreateInfo.PodcastSubscriptionBenefitMappingCreateInfoList) }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("subscription-management-domain", requestData, null, "podcast-subscription-creation-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "subscription-management-domain",
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "podcast-subscription-creation-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -105,10 +105,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 return Forbid($"The Logged In Account is unauthorized to access Podcast Channel Id: {PodcastChannelId}");
             }
             var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionListByPodcastChannelIdAsync(PodcastChannelId);
-            if (podcastSubscription == null)
-            {
-                return NotFound($"No podcast subscription found with Channel Id: {PodcastChannelId}");
-            }
+            //if (podcastSubscription == null)
+            //{
+            //    return NotFound($"No podcast subscription found with Channel Id: {PodcastChannelId}");
+            //}
             return Ok(podcastSubscription);
         }
         [HttpPost("channels/{PodcastChannelId}")]
@@ -119,20 +119,25 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var isValid = await _podcastSubscriptionService.GetPodcastChannel(accountId, PodcastChannelId);
-            if (isValid == null)
-            {
-                return Forbid($"The Logged In Account is unauthorized to create PodcastSubscription for PodcastChannel with Id: {PodcastChannelId}");
-            }
+            //var isValid = await _podcastSubscriptionService.GetPodcastChannel(accountId, PodcastChannelId);
+            //if (isValid == null)
+            //{
+            //    return Forbid($"The Logged In Account is unauthorized to create PodcastSubscription for PodcastChannel with Id: {PodcastChannelId}");
+            //}
             var requestData = new JObject
             {
-                { "Name", request.Name },
-                { "Description", request.Description },
+                { "AccountId", accountId },
+                { "Name", request.PodcastSubscriptionCreateInfo.Name },
+                { "Description", request.PodcastSubscriptionCreateInfo.Description },
                 { "PodcastChannelId", PodcastChannelId  },
-                { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(request.PodcastSubscriptionCycleTypePriceCreateInfoList) },
-                { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionBenefitMappingCreateInfoList) }
+                { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(request.PodcastSubscriptionCreateInfo.PodcastSubscriptionCycleTypePriceCreateInfoList) },
+                { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionCreateInfo.PodcastSubscriptionBenefitMappingCreateInfoList) }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("subscription-management-domain", requestData, null, "podcast-subscription-creation-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "subscription-management-domain",
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "podcast-subscription-creation-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -156,10 +161,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             }
 
             var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionByIdAsync(PodcastSubscriptionId);
-            if (podcastSubscription == null)
-            {
-                return NotFound($"No podcast subscription found with Id: {PodcastSubscriptionId}");
-            }
+            //if (podcastSubscription == null)
+            //{
+            //    return NotFound($"No podcast subscription found with Id: {PodcastSubscriptionId}");
+            //}
 
             return Ok(podcastSubscription);
         }
@@ -171,20 +176,25 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
-            if (isValid == null)
-            {
-                return Forbid($"The Logged In Account is unauthorized to update Podcast Subscription Id: {PodcastSubscriptionId}");
-            }
+            //var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
+            //if (isValid == null)
+            //{
+            //    return Forbid($"The Logged In Account is unauthorized to update Podcast Subscription Id: {PodcastSubscriptionId}");
+            //}
             var requestData = new JObject
             {
-                { "Name", request.Name },
-                { "Description", request.Description },
+                { "AccountId", accountId },
+                { "Name", request.PodcastSubscriptionUpdateInfo.Name },
+                { "Description", request.PodcastSubscriptionUpdateInfo.Description },
                 { "PodcastSubscriptionId", PodcastSubscriptionId  },
-                { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(request.PodcastSubscriptionCycleTypePriceUpdateInfoList) },
-                { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionBenefitMappingUpdateInfoList) }
+                { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(request.PodcastSubscriptionUpdateInfo.PodcastSubscriptionCycleTypePriceUpdateInfoList) },
+                { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionUpdateInfo.PodcastSubscriptionBenefitMappingUpdateInfoList) }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("subscription-management-domain", requestData, null, "podcast-subscription-update-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "subscription-management-domain",
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "podcast-subscription-update-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -201,17 +211,22 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
-            if (isValid == null)
-            {
-                return Forbid($"The Logged In Account is unauthorized to delete Podcast Subscription Id: {PodcastSubscriptionId}");
-            }
+            //var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
+            //if (isValid == null)
+            //{
+            //    return Forbid($"The Logged In Account is unauthorized to delete Podcast Subscription Id: {PodcastSubscriptionId}");
+            //}
 
             var requestData = new JObject
             {
+                { "AccountId", accountId },
                 { "PodcastSubscriptionId", PodcastSubscriptionId }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("subscription-management-domain", requestData, null, "podcast-subscription-deletion-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "subscription-management-domain",
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "podcast-subscription-deletion-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -224,7 +239,9 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         }
         [HttpPost("{PodcastSubscriptionId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> SubscribeToPodcastSubscriptionById([FromRoute] int PodcastSubscriptionId)
+        public async Task<IActionResult> SubscribeToPodcastSubscriptionById(
+            [FromRoute] int PodcastSubscriptionId,
+            [FromBody] PodcastSubscriptionRegistrationCreateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
@@ -236,9 +253,86 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "AccountId", accountId },
-                { "PodcastSubscriptionId", PodcastSubscriptionId }
+                { "PodcastSubscriptionId", PodcastSubscriptionId },
+                { "SubscriptionCycleTypeId", request.SubscriptionCycleTypeId }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("subscription-management-domain", requestData, null, "podcast-subscription-user-subscription-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "subscription-management-domain",
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "podcast-subscription-registration-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate podcast subscription process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpGet("channels/podcast-subscriptions-registrations")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionsRegistrationsByPodcastChannelId()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var podcastSubscriptionsRegistrations = await _podcastSubscriptionService.GetChannelPodcastSubscriptionsRegistrationsByAccountIdAsync(accountId);
+            return Ok(podcastSubscriptionsRegistrations);
+        }
+        [HttpGet("shows/podcast-subscriptions-registrations")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionsRegistrationsByPodcastShowId()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var podcastSubscriptionsRegistrations = await _podcastSubscriptionService.GetShowPodcastSubscriptionsRegistrationsByAccountIdAsync(accountId);
+            return Ok(podcastSubscriptionsRegistrations);
+        }
+        [HttpGet("podcast-subscriptions-registrations/{PodcastSubscriptionRegistrationId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionRegistrationById([FromRoute] Guid PodcastSubscriptionRegistrationId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionRegistration(accountId, PodcastSubscriptionRegistrationId);
+            if (isValid == null)
+            {
+                return Forbid($"The Logged In Account is unauthorized to access Podcast Subscription Registration Id: {PodcastSubscriptionRegistrationId}");
+            }
+            var podcastSubscriptionRegistration = await _podcastSubscriptionService.GetPodcastSubscriptionRegistrationByIdAsync(PodcastSubscriptionRegistrationId);
+            //if (podcastSubscriptionRegistration == null)
+            //{
+            //    return NotFound($"No podcast subscription registration found with Id: {PodcastSubscriptionRegistrationId}");
+            //}
+            return Ok(podcastSubscriptionRegistration);
+        }
+        [HttpPut("{PodcastSubscriptionId}/active/{IsActive}")]
+        [Authorize (Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        public async Task<IActionResult> UpdatePodcastSubscriptionActiveStatusById(
+            [FromRoute] int PodcastSubscriptionId,
+            [FromRoute] bool IsActive)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
+            if (isValid == null)
+            {
+                return Forbid($"The Logged In Account is unauthorized to update Podcast Subscription Id: {PodcastSubscriptionId}");
+            }
+
+            var requestData = new JObject
+            {
+                { "AccountId", accountId },
+                { "PodcastSubscriptionId", PodcastSubscriptionId },
+                { "SubscriptionCycleTypeId", request.SubscriptionCycleTypeId }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "subscription-management-domain",
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "podcast-subscription-registration-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {

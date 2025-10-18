@@ -52,7 +52,11 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "Amount", request.Amount },
                 { "TransactionTypeId", 3 }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "booking-deposit-payment-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "payment-processing-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-deposit-payment-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -79,7 +83,11 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "Amount", request.Amount },
                 { "TransactionTypeId", 6 }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "booking-final-payment-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "payment-processing-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-final-payment-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {

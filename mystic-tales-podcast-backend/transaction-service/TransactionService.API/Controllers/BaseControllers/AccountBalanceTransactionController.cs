@@ -65,7 +65,11 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "ReturnUrl", request.AccountBalanceTransactionCreateInfo.ReturnUrl ?? string.Empty },
                 { "CancelUrl", request.AccountBalanceTransactionCreateInfo.CancelUrl ?? string.Empty }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "account-balance-create-payment-link-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "payment-processing-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "account-balance-create-payment-link-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -90,7 +94,11 @@ namespace TransactionService.API.Controllers.BaseControllers
             {
                 { "WebHookBody", JObject.FromObject(webhookBody) },
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "account-balance-confirm-payment-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "payment-processing-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "account-balance-confirm-payment-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -114,7 +122,11 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "Amount", request.Amount },
                 { "TransactionTypeId", 2 }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "account-balance-withdrawal-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "payment-processing-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "account-balance-withdrawal-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {

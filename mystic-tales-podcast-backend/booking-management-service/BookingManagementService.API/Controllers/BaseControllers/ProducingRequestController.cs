@@ -67,10 +67,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         public async Task<IActionResult> GetProducingRequestById([FromRoute] Guid BookingProducingRequestId)
         {
             var result = await _bookingProducingRequestService.GetProducingRequestByIdAsync(BookingProducingRequestId);
-            if (result == null)
-            {
-                return NotFound($"Booking Producing Request with ID {BookingProducingRequestId} not found.");
-            }
+            //if (result == null)
+            //{
+            //    return NotFound($"Booking Producing Request with ID {BookingProducingRequestId} not found.");
+            //}
             return Ok(result);
         }
 
@@ -99,7 +99,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "BookingPodcastTrackIds", JArray.FromObject(request.BookingProducingRequestInfo.BookingPodcastTrackIds) }
             };
 
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-producing-request-creation-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "booking-management-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-producing-request-creation-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -189,7 +193,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "Tracks", JArray.FromObject(trackSubmissions) }
             };
 
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-track-submission-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "booking-management-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-track-submission-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
 
             if (!result)
@@ -244,7 +252,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "BookingProducingRequestId", BookingProducingRequestId },
                 { "IsAccepted", isAccepted }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-producing-request-agreement-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "booking-management-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-producing-request-agreement-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -265,7 +277,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 { "BookingPodcastTrackId", BookingPodcastTrackId }
             };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-track-preview-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "booking-management-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-track-preview-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {

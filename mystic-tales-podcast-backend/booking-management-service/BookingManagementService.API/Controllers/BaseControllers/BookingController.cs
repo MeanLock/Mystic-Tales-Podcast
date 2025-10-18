@@ -66,10 +66,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         {
             var result = await _bookingService.GetAllBookingsAsync();
 
-            if (result == null || !result.Any())
-            {
-                return NotFound("No bookings found.");
-            }
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No bookings found.");
+            //}
             return Ok(result);
         }
 
@@ -78,10 +78,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         public async Task<IActionResult> GetBookingById(int BookingId)
         {
             var result = await _bookingService.GetBookingByIdAsync(BookingId);
-            if (result == null)
-            {
-                return NotFound($"Booking with ID {BookingId} not found.");
-            }
+            //if (result == null)
+            //{
+            //    return NotFound($"Booking with ID {BookingId} not found.");
+            //}
             return Ok(result);
         }
 
@@ -100,7 +100,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "PodcastBuddyId", request.BookingInfo.PodcastBuddyId }
             };
 
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-creation-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "booking-management-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-creation-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if(!result)
             {
@@ -162,7 +166,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 requestData["BookingId"] = BookingId;
                 requestData["DemoAudioFileKey"] = demoAudioFileKey;
 
-                var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-negotiation-flow");
+                var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                    topic: "booking-management-domain", 
+                    requestData: requestData, 
+                    sagaInstanceId: null, 
+                    messageName: "booking-negotiation-flow");
                 var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
                 if (!result)
                 {
@@ -196,10 +204,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var accountId = account.Id;
 
             var result = await _bookingService.GetBookingsByAccountIdAsync(accountId);
-            if (result == null || !result.Any())
-            {
-                return NotFound("No bookings found for the current user.");
-            }
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No bookings found for the current user.");
+            //}
             return Ok(result);
         }
 
@@ -221,7 +229,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "BookingId", BookingId }
             };
 
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-reject-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "booking-management-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-reject-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -253,7 +265,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "BookingManualCancelledReason", request.ManualBookingCancelledReason }
             };
 
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("booking-management-domain", requestData, null, "booking-manual-cancellation-flow");
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: "booking-management-domain", 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-manual-cancellation-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {

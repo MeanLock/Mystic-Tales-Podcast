@@ -8,6 +8,7 @@ namespace SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManage
 {
     public class UpdatePodcastSubscriptionParameterDTO
     {
+        public int AccountId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public int PodcastSubscriptionId { get; set; }

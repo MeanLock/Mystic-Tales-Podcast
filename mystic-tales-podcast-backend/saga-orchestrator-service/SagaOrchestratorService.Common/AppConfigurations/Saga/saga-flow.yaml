@@ -3311,12 +3311,14 @@ flows:
         handle-service: "SubscriptionService"
         description: "Cập nhật thông tin subscription và tạo version mới"
         parameters:
+          - AccountId
           - PodcastSubscriptionId
           - Name
           - Description
           - PodcastSubscriptionCycleTypePrice
           - PodcastSubscriptionBenefitId
         next-request-data:
+          - AccountId
           - PodcastSubscriptionId
           - Name
           - Description
@@ -3354,8 +3356,10 @@ flows:
         handle-service: "PodcastService"
         description: "Kích hoạt gói đăng ký podcast"
         parameters:
+          - AccountId
           - PodcastSubscriptionId
         next-request-data:
+          - AccountId
           - PodcastSubscriptionId
         response-data:
           - PodcastSubscriptionId
@@ -3385,12 +3389,15 @@ flows:
         handle-service: "SubscriptionService"
         description: "Nhận PodcastSubscriptionId để inactive subscription, xóa các SubscriptionRegistration"
         parameters:
+          - AccountId
           - PodcastSubscriptionId
         next-request-data:
+          - AccountId
           - PodcastSubscriptionId
         response-data:
+          - AccountId
           - PodcastSubscriptionId
-          - IsActive
+          - IsActive 
           - UpdatedAt
         onSuccess:
           emit: "deactivate-podcast-subscription.success"
@@ -3405,30 +3412,6 @@ flows:
           emit: "deactivate-podcast-subscription.failed"
           topic: "content-management-domain"
           handle-service: "PodcastService"
-          nextSteps: []
-          nextFlows: []
-      - name: "refund-podcast-subscription-account"
-        topic: "subscription-management-domain"
-        handle-service: "SubscriptionService"
-        description: "Nhận PodcastSubscriptionId để lấy các SubscriptionRegistration để lấy các AccountId và giá để chạy flow podcast-subscription-refund-flow"
-        parameters:
-          - PodcastSubscriptionId
-        next-request-data:
-          - PodcastSubscriptionId
-          - IsActive
-        response-data:
-          - PodcastSubscriptionId
-          - IsActive
-        onSuccess:
-          emit: "refund-podcast-subscription-account.success"
-          topic: "subscription-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "refund-podcast-subscription-account.failed"
-          topic: "subscription-management-domain"
-          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
 
@@ -3689,10 +3672,13 @@ flows:
         handle-service: "SubscriptionService"
         description: "Hủy đăng ký gói subscription"
         parameters:
+          - AccountId
           - PodcastSubscriptionRegistrationId
         next-request-data:
+          - AccountId
           - PodcastSubscriptionRegistrationId
         response-data:
+          - AccountId
           - PodcastSubscriptionRegistrationId
           - CancelledAt
         onSuccess:
@@ -3749,10 +3735,13 @@ flows:
         handle-service: "SubscriptionService"
         description: "Xóa đăng ký gói subscription"
         parameters:
+          - AccountId
           - PodcastSubscriptionId
         next-request-data:
+          - AccountId
           - PodcastSubscriptionId
         response-data:
+          - AccountId
           - PodcastSubscriptionId
           - DeletedAt
         onSuccess:

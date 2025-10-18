@@ -8,6 +8,7 @@ namespace SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManage
 {
     public class DeletePodcastSubscriptionParameterDTO
     {
+        public int AccountId { get; set; }
         public int PodcastSubscriptionId { get; set; }
     }
 }

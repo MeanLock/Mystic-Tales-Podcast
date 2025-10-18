@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using SubscriptionService.BusinessLogic.Attributes;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreateAccountPodcastSubscriptionRegistration;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeletePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.UpdatePodcastSubscription;
@@ -70,6 +71,21 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: "subscription-management-domain",
                 failedEmitMessage: "delete-podcast-subscription.failed"
+            );
+        }
+        [MessageHandler("create-account-podcast-subscription-registration", "subscription-management-domain")]
+        public async Task HandleCreateAccountPodcastSubscriptionRegistrationCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CreateAccountPodcastSubscriptionRegistrationParameterDTO>();
+                    await _podcastSubscriptionService.CreateAccountPodcastSubscriptionRegistrationAsync(parameter, command);
+                    _logger.LogInformation("Handled create-account-podcast-subscription-registration command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "subscription-management-domain",
+                failedEmitMessage: "create-account-podcast-subscription-registration.failed"
             );
         }
     }
