@@ -1,7 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using SubscriptionService.BusinessLogic.Attributes;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscriptionRegistration;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreateAccountPodcastSubscriptionRegistration;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreateMemberSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeactivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeletePodcastSubscription;
@@ -21,14 +24,17 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
     {
         private readonly ILogger<SubscriptionManagementDomainMessageHandler> _logger;
         private readonly PodcastSubscriptionService _podcastSubscriptionService;
+        private readonly MemberSubscriptionService _memberSubscriptionService;
         public SubscriptionManagementDomainMessageHandler(
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
             ILogger<SubscriptionManagementDomainMessageHandler> logger,
-            PodcastSubscriptionService podcastSubscriptionService) : base(messagingService, kafkaProducerService, logger)
+            PodcastSubscriptionService podcastSubscriptionService,
+            MemberSubscriptionService memberSubscriptionService) : base(messagingService, kafkaProducerService, logger)
         {
             _logger = logger;
             _podcastSubscriptionService = podcastSubscriptionService;
+            _memberSubscriptionService = memberSubscriptionService;
         }
         [MessageHandler("create-podcast-subscription", "subscription-management-domain")]
         public async Task HandleCreatePodcastSubscriptionCommandAsync(string key, string messageJson)
@@ -127,12 +133,42 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 messageJson,
                 async (command) =>
                 {
-                    var parameter = command.RequestData.ToObject<DeactivatePodcastSubscriptionParameterDTO>();
+                    var parameter = command.RequestData.ToObject<CancelPodcastSubscriptionRegistrationParameterDTO>();
                     await _podcastSubscriptionService.CancelPodcastSubscriptionRegistrationAsync(parameter, command);
                     _logger.LogInformation("Handled cancel-podcast-subscription-registration command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
                 responseTopic: "subscription-management-domain",
                 failedEmitMessage: "cancel-podcast-subscription-registration.failed"
+            );
+        }
+        [MessageHandler("cancel-podcast-subscription", "subscription-management-domain")]
+        public async Task HandlerCancelPodcastSubscriptionAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CancelPodcastSubscriptionParameterDTO>();
+                    await _podcastSubscriptionService.CancelPodcastSubscriptionAsync(parameter, command);
+                    _logger.LogInformation("Handled cancel-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "subscription-management-domain",
+                failedEmitMessage: "cancel-podcast-subscription.failed"
+            );
+        }
+        [MessageHandler("create-member-subscription", "subscription-management-domain")]
+        public async Task HandleCreateMemberSubscriptionAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CreateMemberSubscriptionParameterDTO>();
+                    await _memberSubscriptionService.CreateMemberSubscriptionAsync(parameter, command);
+                    _logger.LogInformation("Handled create-member-subscriptio command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: "subscription-management-domain",
+                failedEmitMessage: "create-member-subscriptio.failed"
             );
         }
     }

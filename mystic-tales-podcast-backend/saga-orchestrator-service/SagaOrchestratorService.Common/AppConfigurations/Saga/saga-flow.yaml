@@ -5071,36 +5071,36 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  cancel-subscription-flow:
+  cancel-podcast-subscription-flow:
     topic: "subscription-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Hủy gói đăng ký thành viên hoặc podcast"
     save-file: ""
     steps:
-      - name: "cancel-subscription"
+      - name: "cancel-podcast-subscription"
         topic: "subscription-management-domain"
         handle-service: "SubscriptionService"
         description: "Hủy gói đăng ký thành viên hoặc podcast"
         parameters:
-          - SubscriptionId
+          - PodcastSubscriptionId
           - IsActive
           - IsDeleted
         next-request-data:
-          - SubscriptionId
+          - PodcastSubscriptionId
           - IsActive
           - IsDeleted
         response-data:
-          - SubscriptionId
+          - PodcastSubscriptionId
           - IsActive
           - IsDeleted
         onSuccess:
-          emit: "cancel-subscription.success"
+          emit: "cancel-podcast-subscription.success"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "cancel-subscription.failed"
+          emit: "cancel-podcast-subscription.failed"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []

@@ -10,6 +10,7 @@ namespace SubscriptionService.BusinessLogic.Registrations
         {
             // SubscriptionServices
             services.AddScoped<PodcastSubscriptionService>();
+            services.AddScoped<MemberSubscriptionService>();
 
             // MiscServices
             services.AddScoped<MailOperationService>();
