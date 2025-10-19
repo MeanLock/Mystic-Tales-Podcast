@@ -35,9 +35,6 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Deactivat
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateAccount;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountViolationPoint;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyPodcaster;
-using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
-using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcastBuddyReview;
-using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterFollowed;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcasterFollowed;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateChannelFavorited;
@@ -46,6 +43,20 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateCha
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavorited;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavoritedRollback;
 using Microsoft.EntityFrameworkCore.Update;
+using UserService.BusinessLogic.Services.DbServices.MiscServices;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateShowFollowed;
+using UserService.BusinessLogic.Enums.Podcast;
+using UserService.BusinessLogic.DTOs.Show;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateShowFollowedRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteShowFollowed;
+using UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.CreatePodcastBuddyReview;
+using UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.UpdatePodcastBuddyReview;
+using UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeletePodcastBuddyReview;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateEpisodeSaved;
+using UserService.BusinessLogic.DTOs.Episode;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateEpisodeSavedRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteEpisodeSaved;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteEpisodeSavedRollback;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -79,10 +90,13 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         private readonly IGenericRepository<PodcastBuddyReview> _podcastBuddyReviewGenericRepository;
         private readonly IGenericRepository<AccountFollowedPodcaster> _accountFollowedPodcasterGenericRepository;
         private readonly IGenericRepository<AccountFavoritedPodcastChannel> _accountFavoritedPodcastChannelGenericRepository;
+        private readonly IGenericRepository<AccountFollowedPodcastShow> _accountFollowedPodcastShowGenericRepository;
+        private readonly IGenericRepository<AccountSavedPodcastEpisode> _accountSavedPodcastEpisodeGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
-
+        // CACHING SERVICE
+        private readonly AccountCachingService _accountCachingService;
 
         // GOOGLE SERVICE
         private readonly FluentEmailService _fluentEmailService;
@@ -109,6 +123,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             IGenericRepository<PodcastBuddyReview> podcastBuddyReviewGenericRepository,
             IGenericRepository<AccountFollowedPodcaster> accountFollowedPodcasterGenericRepository,
             IGenericRepository<AccountFavoritedPodcastChannel> accountFavoritedPodcastChannelGenericRepository,
+            IGenericRepository<AccountFollowedPodcastShow> accountFollowedPodcastShowGenericRepository,
+            IGenericRepository<AccountSavedPodcastEpisode> accountSavedPodcastEpisodeGenericRepository,
+
+            AccountCachingService accountCachingService,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -136,6 +154,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _podcastBuddyReviewGenericRepository = podcastBuddyReviewGenericRepository;
             _accountFollowedPodcasterGenericRepository = accountFollowedPodcasterGenericRepository;
             _accountFavoritedPodcastChannelGenericRepository = accountFavoritedPodcastChannelGenericRepository;
+            _accountFollowedPodcastShowGenericRepository = accountFollowedPodcastShowGenericRepository;
+            _accountSavedPodcastEpisodeGenericRepository = accountSavedPodcastEpisodeGenericRepository;
+
+            _accountCachingService = accountCachingService;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -1665,10 +1687,6 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
-
-
-
-
                     var existingReview = await _podcastBuddyReviewGenericRepository.FindByIdAsync(updatePodcastBuddyReviewParameterDTO.PodcastBuddyReviewId);
 
                     if (existingReview == null)
@@ -1829,6 +1847,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
+                    // chỉ follow podcaster đã được verify và account podcaster không bị deactive
                     var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
                          predicate: a => a.AccountId == createPodcasterFollowedParameterDTO.PodcastBuddyId && a.IsVerified == true,
                          includeFunc: null
@@ -1837,6 +1856,14 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     {
                         throw new Exception("Podcast buddy with id " + createPodcasterFollowedParameterDTO.PodcastBuddyId + " does not exist");
                     }
+
+                    var existingPodcasterAccount = await _accountCachingService.GetAccountStatusCacheById(createPodcasterFollowedParameterDTO.PodcastBuddyId);
+                    if (existingPodcasterAccount == null || existingPodcasterAccount.DeactivatedAt != null)
+                    {
+                        throw new Exception("Podcast buddy account with id " + createPodcasterFollowedParameterDTO.PodcastBuddyId + " does not exist or is deactivated");
+                    }
+
+
                     var existingFollow = (await _accountFollowedPodcasterGenericRepository.FindAll(
                         predicate: a => a.AccountId == createPodcasterFollowedParameterDTO.AccountId && a.PodcasterId == createPodcasterFollowedParameterDTO.PodcastBuddyId,
                         includeFunc: null
@@ -1927,12 +1954,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         var existingFollow = await (_accountFollowedPodcasterGenericRepository.FindAll(
                             predicate: a => a.AccountId == deletePodcasterFollowedParameterDTO.AccountId && a.PodcasterId == deletePodcasterFollowedParameterDTO.PodcastBuddyId
                             )).FirstOrDefaultAsync();
-                        if (existingFollow == null)
+                        if (existingFollow != null)
                         {
-                            throw new Exception("Account with id " + deletePodcasterFollowedParameterDTO.AccountId + " has not followed podcast buddy with id " + deletePodcasterFollowedParameterDTO.PodcastBuddyId);
+                            await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByAccountIdAndPodcasterIdAsync(deletePodcasterFollowedParameterDTO.AccountId.Value, deletePodcasterFollowedParameterDTO.PodcastBuddyId);
+                            affectedAccountIds.Add(deletePodcasterFollowedParameterDTO.AccountId.Value);
                         }
-                        await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByAccountIdAndPodcasterIdAsync(deletePodcasterFollowedParameterDTO.AccountId.Value, deletePodcasterFollowedParameterDTO.PodcastBuddyId);
-                        affectedAccountIds.Add(deletePodcasterFollowedParameterDTO.AccountId.Value);
+
                     }
 
                     // var existingFollow = (await _unitOfWork.AccountFollowedPodcasterRepository.FindAll(
@@ -2018,6 +2045,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                                     DeletedAt = (DateTime?)null,
                                 },
                                 id = channelFavoritedParameterDTO.PodcastChannelId,
+                                include = "PodcastChannelStatusTrackings"
                             }),
                         }
                     }
@@ -2034,6 +2062,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     else if (podcastChannel.PodcasterId == channelFavoritedParameterDTO.AccountId)
                     {
                         throw new Exception("Podcaster cannot favorite their own podcast channel");
+                    }
+
+                    var latestChannelStatusTracking = podcastChannel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => pct).FirstOrDefault();
+                    if (latestChannelStatusTracking == null || latestChannelStatusTracking.PodcastChannelStatusId != (int)PodcastChannelStatusEnum.Published)
+                    {
+                        throw new Exception("Podcast channel with id " + channelFavoritedParameterDTO.PodcastChannelId + " is not published, cannot be favorited");
                     }
 
                     var channelFavorited = new AccountFavoritedPodcastChannel
@@ -2162,12 +2196,13 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         var existingFavorite = await (_accountFavoritedPodcastChannelGenericRepository.FindAll(
                             predicate: a => a.AccountId == deleteChannelFavoritedParameterDTO.AccountId && a.PodcastChannelId == deleteChannelFavoritedParameterDTO.PodcastChannelId
                             )).FirstOrDefaultAsync();
-                        if (existingFavorite == null)
+                        if (existingFavorite != null)
                         {
-                            throw new Exception("Account with id " + deleteChannelFavoritedParameterDTO.AccountId + " has not favorited podcast channel with id " + deleteChannelFavoritedParameterDTO.PodcastChannelId);
+                            // throw new Exception("Account with id " + deleteChannelFavoritedParameterDTO.AccountId + " has not favorited podcast channel with id " + deleteChannelFavoritedParameterDTO.PodcastChannelId);
+                            await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByAccountIdAndPodcastChannelIdAsync(deleteChannelFavoritedParameterDTO.AccountId ?? 1, deleteChannelFavoritedParameterDTO.PodcastChannelId);
+                            affectedAccountIds = new List<int> { deleteChannelFavoritedParameterDTO.AccountId ?? 1 };
                         }
-                        await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByAccountIdAndPodcastChannelIdAsync(deleteChannelFavoritedParameterDTO.AccountId ?? 1, deleteChannelFavoritedParameterDTO.PodcastChannelId);
-                        affectedAccountIds = new List<int> { deleteChannelFavoritedParameterDTO.AccountId ?? 1 };
+
                     }
 
                     await transaction.CommitAsync();
@@ -2243,13 +2278,6 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         await _accountFavoritedPodcastChannelGenericRepository.CreateAsync(channelFavorited);
                     }
 
-                    // var channelFavorited = new AccountFavoritedPodcastChannel
-                    // {
-                    //     AccountId = deleteChannelFavoritedRollbackParameterDTO.AccountId,
-                    //     PodcastChannelId = deleteChannelFavoritedRollbackParameterDTO.PodcastChannelId,
-                    // };
-                    // await _accountFavoritedPodcastChannelGenericRepository.CreateAsync(channelFavorited);
-
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
@@ -2285,6 +2313,640 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "delete-channel-favorited-rollback.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task CreateShowFollowed(CreateShowFollowedParameterDTO createShowFollowedParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    var existingFollow = (await _accountFollowedPodcastShowGenericRepository.FindAll(
+                        predicate: a => a.AccountId == createShowFollowedParameterDTO.AccountId && a.PodcastShowId == createShowFollowedParameterDTO.PodcastShowId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (existingFollow != null)
+                    {
+                        throw new Exception("Account with id " + createShowFollowedParameterDTO.AccountId + " has already followed podcast show with id " + createShowFollowedParameterDTO.PodcastShowId);
+                    }
+
+                    var podcastChannelBatchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findbyid",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where =  new {
+                                    DeletedAt = (DateTime?)null,
+                                },
+                                id = createShowFollowedParameterDTO.PodcastShowId,
+                                include = "PodcastShowStatusTrackings, PodcastChannel, PodcastChannel.PodcastChannelStatusTrackings"
+                            }),
+                        }
+                    }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", podcastChannelBatchRequest);
+
+
+                    var podcastShow = result.Results["podcastShow"].ToObject<PodcastShowDTO>();
+                    if (podcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + createShowFollowedParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    else if (podcastShow.PodcasterId == createShowFollowedParameterDTO.AccountId)
+                    {
+                        throw new Exception("Podcaster cannot favorite their own podcast show");
+                    }
+
+
+                    // Nếu show thuộc về channel chưa được publish hoặc đã bị delete thì không thể favorite
+                    if (podcastShow.PodcastChannel != null)
+                    {
+                        var latestChannelStatusTracking = podcastShow.PodcastChannel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => pct).FirstOrDefault();
+                        if (latestChannelStatusTracking == null || latestChannelStatusTracking.PodcastChannelStatusId != (int)PodcastChannelStatusEnum.Published || podcastShow.PodcastChannel.DeletedAt != null)
+                        {
+                            throw new Exception("Podcast channel with id " + podcastShow.PodcastChannelId + " is not published or deleted, cannot follow its shows");
+                        }
+                    }
+
+                    var latestShowStatusTracking = podcastShow.PodcastShowStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => pct).FirstOrDefault();
+                    if (latestShowStatusTracking == null || latestShowStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Published)
+                    {
+                        throw new Exception("Podcast show with id " + createShowFollowedParameterDTO.PodcastShowId + " is not published, cannot be followed");
+                    }
+
+                    var showFavorited = new AccountFollowedPodcastShow
+                    {
+                        AccountId = createShowFollowedParameterDTO.AccountId,
+                        PodcastShowId = createShowFollowedParameterDTO.PodcastShowId,
+                    };
+
+                    await _accountFollowedPodcastShowGenericRepository.CreateAsync(showFavorited);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = showFavorited.AccountId;
+                    messageNextRequestData["PodcastShowId"] = showFavorited.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Create channel favorited successfully",
+                        PodcastShowId = showFavorited.PodcastShowId,
+                        AccountId = showFavorited.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-show-followed.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create show followed failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-show-followed.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task CreateShowFollowedRollback(CreateShowFollowedRollbackParameterDTO createShowFollowedRollbackParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingFollow = (await _accountFollowedPodcastShowGenericRepository.FindAll(
+                         predicate: a => a.AccountId == createShowFollowedRollbackParameterDTO.AccountId && a.PodcastShowId == createShowFollowedRollbackParameterDTO.PodcastShowId,
+                         includeFunc: null
+                         ).ToListAsync()).FirstOrDefault();
+                    if (existingFollow == null)
+                    {
+                        throw new Exception("Account with id " + createShowFollowedRollbackParameterDTO.AccountId + " has not followed podcast show with id " + createShowFollowedRollbackParameterDTO.PodcastShowId);
+                    }
+                    await _unitOfWork.AccountFollowedPodcastShowRepository.DeleteByAccountIdAndPodcastShowIdAsync(createShowFollowedRollbackParameterDTO.AccountId, createShowFollowedRollbackParameterDTO.PodcastShowId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = createShowFollowedRollbackParameterDTO.AccountId;
+                    messageNextRequestData["PodcastShowId"] = createShowFollowedRollbackParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Create show followed rollback successfully",
+                        PodcastShowId = createShowFollowedRollbackParameterDTO.PodcastShowId,
+                        AccountId = createShowFollowedRollbackParameterDTO.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-show-followed-rollback.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create show followed rollback failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-show-followed-rollback.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteShowFollowed(DeleteShowFollowedParameterDTO deleteShowFollowedParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = new List<int>();
+                    if (deleteShowFollowedParameterDTO.AccountId == null)
+                    {
+                        affectedAccountIds = await _unitOfWork.AccountFollowedPodcastShowRepository.DeleteByPodcastShowIdAsync(deleteShowFollowedParameterDTO.PodcastShowId);
+                    }
+                    else
+                    {
+                        var existingFollow = await (_accountFollowedPodcastShowGenericRepository.FindAll(
+                            predicate: a => a.AccountId == deleteShowFollowedParameterDTO.AccountId && a.PodcastShowId == deleteShowFollowedParameterDTO.PodcastShowId
+                            )).FirstOrDefaultAsync();
+                        if (existingFollow != null)
+                        {
+                            // throw new Exception("Account with id " + deleteShowFollowedParameterDTO.AccountId + " has not followed podcast show with id " + deleteShowFollowedParameterDTO.PodcastShowId);
+                            await _unitOfWork.AccountFollowedPodcastShowRepository.DeleteByAccountIdAndPodcastShowIdAsync(deleteShowFollowedParameterDTO.AccountId ?? 1, deleteShowFollowedParameterDTO.PodcastShowId);
+                            affectedAccountIds = new List<int> { deleteShowFollowedParameterDTO.AccountId ?? 1 };
+                        }
+
+                    }
+
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = deleteShowFollowedParameterDTO.AccountId;
+                    messageNextRequestData["PodcastShowId"] = deleteShowFollowedParameterDTO.PodcastShowId;
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(affectedAccountIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete show followed successfully",
+                        PodcastShowId = deleteShowFollowedParameterDTO.PodcastShowId,
+                        AccountId = deleteShowFollowedParameterDTO.AccountId,
+                        AffectedAccountIds = affectedAccountIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-followed.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete show followed failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-followed.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+            }
+        }
+
+        public async Task DeleteShowFollowedRollback(DeleteShowFollowedRollbackParameterDTO deleteShowFollowedRollbackParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingFollow = (await _accountFollowedPodcastShowGenericRepository.FindAll(
+                         predicate: a => deleteShowFollowedRollbackParameterDTO.AffectedAccountIds.Contains(a.AccountId) && a.PodcastShowId == deleteShowFollowedRollbackParameterDTO.PodcastShowId,
+                         includeFunc: null
+                         ).ToListAsync());
+
+
+                    if (existingFollow != null && existingFollow.Count > 0)
+                    {
+                        var existingAccountIds = existingFollow.Select(ef => ef.AccountId).ToList();
+                        deleteShowFollowedRollbackParameterDTO.AffectedAccountIds = deleteShowFollowedRollbackParameterDTO.AffectedAccountIds.Except(existingAccountIds).ToList(); // tránh tạo lại những favorite đã tồn tại
+                    }
+
+                    foreach (var accountId in deleteShowFollowedRollbackParameterDTO.AffectedAccountIds)
+                    {
+                        var showFollowed = new AccountFollowedPodcastShow
+                        {
+                            AccountId = accountId,
+                            PodcastShowId = deleteShowFollowedRollbackParameterDTO.PodcastShowId,
+                        };
+                        await _accountFollowedPodcastShowGenericRepository.CreateAsync(showFollowed);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(deleteShowFollowedRollbackParameterDTO.AffectedAccountIds);
+                    messageNextRequestData["PodcastShowId"] = deleteShowFollowedRollbackParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete show followed rollback successfully",
+                        PodcastShowId = deleteShowFollowedRollbackParameterDTO.PodcastShowId,
+                        AffectedAccountIds = deleteShowFollowedRollbackParameterDTO.AffectedAccountIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-followed-rollback.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete show followed rollback failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-followed-rollback.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task CreateEpisodeSaved(CreateEpisodeSavedParameterDTO createEpisodeSavedParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    var existingSave = (await _accountSavedPodcastEpisodeGenericRepository.FindAll(
+                        predicate: a => a.AccountId == createEpisodeSavedParameterDTO.AccountId && a.PodcastEpisodeId == createEpisodeSavedParameterDTO.PodcastEpisodeId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (existingSave != null)
+                    {
+                        throw new Exception("Account with id " + createEpisodeSavedParameterDTO.AccountId + " has already saved podcast episode with id " + createEpisodeSavedParameterDTO.PodcastEpisodeId);
+                    }
+
+                    var podcastChannelBatchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastEpisode",
+                            QueryType = "findbyid",
+                            EntityType = "PodcastEpisode",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where =  new {
+                                    DeletedAt = (DateTime?)null,
+                                },
+                                id = createEpisodeSavedParameterDTO.PodcastEpisodeId,
+                                include = "PodcastEpisodeStatusTrackings, PodcastShow, PodcastShow.PodcastShowStatusTrackings, PodcastShow.PodcastChannel, PodcastShow.PodcastChannel.PodcastChannelStatusTrackings"
+                            }),
+                        }
+                    }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", podcastChannelBatchRequest);
+
+
+                    var podcastEpisode = result.Results["podcastEpisode"].ToObject<PodcastEpisodeDTO>();
+                    if (podcastEpisode == null)
+                    {
+                        throw new Exception("Podcast episode with id " + createEpisodeSavedParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (podcastEpisode.PodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast episode with id " + createEpisodeSavedParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (podcastEpisode.PodcastShow.PodcasterId == createEpisodeSavedParameterDTO.AccountId)
+                    {
+                        throw new Exception("Podcaster cannot favorite their own podcast show");
+                    }
+
+                    // Nếu show thuộc về channel chưa được publish hoặc đã bị delete thì không thể save
+                    if (podcastEpisode.PodcastShow.PodcastChannel != null)
+                    {
+                        var latestChannelStatusTracking = podcastEpisode.PodcastShow.PodcastChannel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => pct).FirstOrDefault();
+                        if (latestChannelStatusTracking == null || latestChannelStatusTracking.PodcastChannelStatusId != (int)PodcastChannelStatusEnum.Published || podcastEpisode.PodcastShow.PodcastChannel.DeletedAt != null)
+                        {
+                            throw new Exception("Podcast channel with id " + podcastEpisode.PodcastShow.PodcastChannelId + " is not published or deleted, cannot save its shows' episodes");
+                        }
+                    }
+
+                    var latestShowStatusTracking = podcastEpisode.PodcastShow.PodcastShowStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => pct).FirstOrDefault();
+                    if (latestShowStatusTracking == null || latestShowStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Published || podcastEpisode.PodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + podcastEpisode.PodcastShowId + " is not published or deleted, cannot save its episodes");
+                    }
+
+                    var latestEpisodeStatusTracking = podcastEpisode.PodcastEpisodeStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => pct).FirstOrDefault();
+                    if (latestEpisodeStatusTracking == null || latestEpisodeStatusTracking.PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Published)
+                    {
+                        throw new Exception("Podcast episode with id " + createEpisodeSavedParameterDTO.PodcastEpisodeId + " is not published, cannot be saved");
+                    }
+
+                    var episodeSaved = new AccountSavedPodcastEpisode
+                    {
+                        AccountId = createEpisodeSavedParameterDTO.AccountId,
+                        PodcastEpisodeId = createEpisodeSavedParameterDTO.PodcastEpisodeId,
+                    };
+
+                    await _accountSavedPodcastEpisodeGenericRepository.CreateAsync(episodeSaved);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = episodeSaved.AccountId;
+                    messageNextRequestData["PodcastEpisodeId"] = episodeSaved.PodcastEpisodeId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Create channel favorited successfully",
+                        PodcastEpisodeId = episodeSaved.PodcastEpisodeId,
+                        AccountId = episodeSaved.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-episode-saved.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create episode saved failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-episode-saved.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task CreateEpisodeSavedRollback(CreateEpisodeSavedRollbackParameterDTO createEpisodeSavedRollbackParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingSave = (await _accountSavedPodcastEpisodeGenericRepository.FindAll(
+                         predicate: a => a.AccountId == createEpisodeSavedRollbackParameterDTO.AccountId && a.PodcastEpisodeId == createEpisodeSavedRollbackParameterDTO.PodcastEpisodeId,
+                         includeFunc: null
+                         ).ToListAsync()).FirstOrDefault();
+                    if (existingSave == null)
+                    {
+                        throw new Exception("Account with id " + createEpisodeSavedRollbackParameterDTO.AccountId + " has not saved podcast episode with id " + createEpisodeSavedRollbackParameterDTO.PodcastEpisodeId);
+                    }
+                    await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByAccountIdAndPodcastEpisodeIdAsync(createEpisodeSavedRollbackParameterDTO.AccountId, createEpisodeSavedRollbackParameterDTO.PodcastEpisodeId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = createEpisodeSavedRollbackParameterDTO.AccountId;
+                    messageNextRequestData["PodcastEpisodeId"] = createEpisodeSavedRollbackParameterDTO.PodcastEpisodeId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Create episode saved rollback successfully",
+                        PodcastEpisodeId = createEpisodeSavedRollbackParameterDTO.PodcastEpisodeId,
+                        AccountId = createEpisodeSavedRollbackParameterDTO.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-episode-saved-rollback.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create episode saved rollback failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-episode-saved-rollback.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteEpisodeSaved(DeleteEpisodeSavedParameterDTO deleteEpisodeSavedParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = new List<int>();
+                    if (deleteEpisodeSavedParameterDTO.AccountId == null)
+                    {
+                        affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(deleteEpisodeSavedParameterDTO.PodcastEpisodeId);
+                    }
+                    else
+                    {
+                        var existingSavedEpisode = await (_accountSavedPodcastEpisodeGenericRepository.FindAll(
+                            predicate: a => a.AccountId == deleteEpisodeSavedParameterDTO.AccountId && a.PodcastEpisodeId == deleteEpisodeSavedParameterDTO.PodcastEpisodeId
+                            )).FirstOrDefaultAsync();
+                        if (existingSavedEpisode != null)
+                        {
+                            await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByAccountIdAndPodcastEpisodeIdAsync(deleteEpisodeSavedParameterDTO.AccountId ?? 1, deleteEpisodeSavedParameterDTO.PodcastEpisodeId);
+                            affectedAccountIds = new List<int> { deleteEpisodeSavedParameterDTO.AccountId ?? 1 };
+                        }
+
+                    }
+
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = deleteEpisodeSavedParameterDTO.AccountId;
+                    messageNextRequestData["PodcastEpisodeId"] = deleteEpisodeSavedParameterDTO.PodcastEpisodeId;
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(affectedAccountIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete episode saved successfully",
+                        PodcastEpisodeId = deleteEpisodeSavedParameterDTO.PodcastEpisodeId,
+                        AccountId = deleteEpisodeSavedParameterDTO.AccountId,
+                        AffectedAccountIds = affectedAccountIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-episode-saved.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete episode saved failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-episode-saved.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+            }
+        }
+
+        public async Task DeleteEpisodeSavedRollback(DeleteEpisodeSavedRollbackParameterDTO deleteEpisodeSavedRollbackParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingSaves = (await _accountSavedPodcastEpisodeGenericRepository.FindAll(
+                         predicate: a => deleteEpisodeSavedRollbackParameterDTO.AffectedAccountIds.Contains(a.AccountId) && a.PodcastEpisodeId == deleteEpisodeSavedRollbackParameterDTO.PodcastEpisodeId,
+                         includeFunc: null
+                         ).ToListAsync());
+                    if (existingSaves != null && existingSaves.Count > 0)
+                    {
+                        var existingAccountIds = existingSaves.Select(ef => ef.AccountId).ToList();
+                        deleteEpisodeSavedRollbackParameterDTO.AffectedAccountIds = deleteEpisodeSavedRollbackParameterDTO.AffectedAccountIds.Except(existingAccountIds).ToList(); // tránh tạo lại những favorite đã tồn tại
+                    }
+                    foreach (var accountId in deleteEpisodeSavedRollbackParameterDTO.AffectedAccountIds)
+                    {
+                        var episodeSaved = new AccountSavedPodcastEpisode
+                        {
+                            AccountId = accountId,
+                            PodcastEpisodeId = deleteEpisodeSavedRollbackParameterDTO.PodcastEpisodeId,
+                        };
+                        await _accountSavedPodcastEpisodeGenericRepository.CreateAsync(episodeSaved);
+                    }
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(deleteEpisodeSavedRollbackParameterDTO.AffectedAccountIds);
+                    messageNextRequestData["PodcastEpisodeId"] = deleteEpisodeSavedRollbackParameterDTO.PodcastEpisodeId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete episode saved rollback successfully",
+                        PodcastEpisodeId = deleteEpisodeSavedRollbackParameterDTO.PodcastEpisodeId,
+                        AffectedAccountIds = deleteEpisodeSavedRollbackParameterDTO.AffectedAccountIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-episode-saved-rollback.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete episode saved rollback failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-episode-saved-rollback.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");

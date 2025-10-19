@@ -15,6 +15,8 @@ public class UnitOfWork : IUnitOfWork
     public IPasswordResetTokenRepository PasswordResetTokenRepository { get; }
     public IAccountFollowedPodcasterRepository AccountFollowedPodcasterRepository { get; }
     public IAccountFavoritedPodcastChannelRepository AccountFavoritedPodcastChannelRepository { get; }
+    public IAccountFollowedPodcastShowRepository AccountFollowedPodcastShowRepository { get; }
+    public IAccountSavedPodcastEpisodeRepository AccountSavedPodcastEpisodeRepository { get; }
     // public ISurveyTakenResultRepository SurveyTakenResultRepository { get; }
     // public ISurveyStatusTrackingRepository SurveyStatusTrackingRepository { get; }
     // public IFilterTagRepository FilterTagRepository { get; }
@@ -35,7 +37,9 @@ public class UnitOfWork : IUnitOfWork
         // ISurveyTopicFavoriteRepository surveyTopicFavoriteRepository,
         IPasswordResetTokenRepository passwordResetTokenRepository,
         IAccountFollowedPodcasterRepository accountFollowedPodcasterRepository,
-        IAccountFavoritedPodcastChannelRepository accountFavoritedPodcastChannelRepository
+        IAccountFavoritedPodcastChannelRepository accountFavoritedPodcastChannelRepository,
+        IAccountFollowedPodcastShowRepository accountFollowedPodcastShowRepository,
+        IAccountSavedPodcastEpisodeRepository accountSavedPodcastEpisodeRepository
         // ISurveyTakenResultRepository surveyTakenResultRepository,
         // ISurveyStatusTrackingRepository surveyStatusTrackingRepository,
         // IFilterTagRepository filterTagRepository,
@@ -59,6 +63,8 @@ public class UnitOfWork : IUnitOfWork
         this.PasswordResetTokenRepository = passwordResetTokenRepository;
         this.AccountFollowedPodcasterRepository = accountFollowedPodcasterRepository;
         this.AccountFavoritedPodcastChannelRepository = accountFavoritedPodcastChannelRepository;
+        this.AccountFollowedPodcastShowRepository = accountFollowedPodcastShowRepository;
+        this.AccountSavedPodcastEpisodeRepository = accountSavedPodcastEpisodeRepository;
         // this.SurveyTakenResultRepository = surveyTakenResultRepository;
         // this.SurveyStatusTrackingRepository = surveyStatusTrackingRepository;
         // this.FilterTagRepository = filterTagRepository;

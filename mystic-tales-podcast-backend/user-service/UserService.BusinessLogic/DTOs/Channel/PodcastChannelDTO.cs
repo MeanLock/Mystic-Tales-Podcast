@@ -30,6 +30,8 @@ namespace UserService.BusinessLogic.DTOs.Channel
         public DateTime CreatedAt { get; set; }
 
         public DateTime UpdatedAt { get; set; }
+        public List<PodcastChannelStatusTrackingDTO> PodcastChannelStatusTrackings { get; set; } = new List<PodcastChannelStatusTrackingDTO>();
+
     }
 
 }

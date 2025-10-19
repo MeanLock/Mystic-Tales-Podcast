@@ -5309,16 +5309,19 @@ flows:
         description: "Cập nhật review cho podcast show"
         parameters:
           - PodcastShowReviewId
+          - AccountId  # không dùng để cập nhật, chỉ để xác thực quyền
           - Title
           - Content
           - Rating
         next-request-data:
           - PodcastShowReviewId
+          - AccountId
           - Title
           - Content
           - Rating
         response-data:
           - PodcastShowReviewId
+          - AccountId
           - Title
           - Content
           - Rating
@@ -5348,11 +5351,13 @@ flows:
         description: "Xóa review cho podcast show"
         parameters:
           - PodcastShowReviewId
+          - AccountId # không dùng để xóa, chỉ để xác thực quyền
         next-request-data:
           - PodcastShowReviewId
+          - AccountId
         response-data:
           - PodcastShowReviewId
-          - DeletedAt
+          - AccountId
         onSuccess:
           emit: "delete-show-review.success"
           topic: "public-review-management-domain"
@@ -5449,7 +5454,7 @@ flows:
         description: "Cập nhật review cho podcast buddy"
         parameters:
           - PodcastBuddyReviewId
-          - AccountId
+          - AccountId  # không dùng để cập nhật, chỉ để xác thực quyền
           - Title
           - Content
           - Rating
@@ -5490,7 +5495,7 @@ flows:
         description: "Xóa review cho podcast buddy"
         parameters:
           - PodcastBuddyReviewId
-          - AccountId
+          - AccountId # không dùng để xóa, chỉ để xác thực quyền
         next-request-data:
           - PodcastBuddyReviewId
           - AccountId

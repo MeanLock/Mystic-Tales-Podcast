@@ -1784,6 +1784,227 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        public async Task<ChannelDetailResponseDTO> GetChannelByIdForPodcasterAsync(Guid channelId)
+        {
+            try
+            {
+                var query = _podcastChannelGenericRepository.FindAll(
+                    predicate: c => c.DeletedAt == null && c.Id == channelId,
+                    includeFunc: q => q
+                        .Include(pc => pc.PodcastCategory)
+                        .Include(pc => pc.PodcastSubCategory)
+                        .Include(pc => pc.PodcastChannelStatusTrackings)
+                        .ThenInclude(pct => pct.PodcastChannelStatus)
+                        .Include(pc => pc.PodcastChannelHashtags)
+                        .ThenInclude(pch => pch.Hashtag)
+                        .Include(pc => pc.PodcastShows)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                );
+
+                var channel = await query.FirstOrDefaultAsync();
+
+                if (channel == null)
+                {
+                    throw new Exception("Channel with id " + channelId + " does not exist");
+                }
+
+                var podcastSubscriptionBatchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastSubscriptionList",
+                            QueryType = "findall",
+                            EntityType = "PodcastSubscription",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new {
+                                    DeletedAt = (DateTime?)null,
+                                    PodcastChannelId = channel.Id,
+                                },
+                                include = "PodcastSubscriptionBenefitMappings.PodcastSubscriptionBenefit , PodcastSubscriptionCycleTypePrices.SubscriptionCycleType"
+                            }),
+                        }
+                    }
+                };
+
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", podcastSubscriptionBatchRequest);
+
+
+                var showByChannelIdQuery = _podcastShowGenericRepository.FindAll(
+                    predicate: ps => ps.DeletedAt == null && ps.PodcastChannelId == channel.Id,
+                    includeFunc: q => q
+                        .Include(ps => ps.PodcastShowStatusTrackings)
+                        .ThenInclude(pst => pst.PodcastShowStatus)
+                        .Include(ps => ps.PodcastCategory)
+                        .Include(ps => ps.PodcastSubCategory)
+                        .Include(ps => ps.PodcastShowHashtags)
+                        .ThenInclude(psh => psh.Hashtag)
+                        .Include(ps => ps.PodcastShowSubscriptionType)
+                );
+
+
+                var showList = await showByChannelIdQuery.ToListAsync();
+
+                var podcaster = await _accountCachingService.GetAccountStatusCacheById(channel.PodcasterId);
+                if (podcaster == null || podcaster.Id != channel.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
+                {
+                    throw new Exception("Podcaster with id " + channel.PodcasterId + " does not exist");
+                }
+
+                var channelDetail = new ChannelDetailResponseDTO
+                {
+                    Id = channel.Id,
+                    Name = channel.Name,
+                    Description = channel.Description,
+                    MainImageFileKey = channel.MainImageFileKey,
+                    BackgroundImageFileKey = channel.BackgroundImageFileKey,
+                    PodcastCategory = channel.PodcastCategory != null ? new PodcastCategoryDTO
+                    {
+                        Id = channel.PodcastCategory.Id,
+                        Name = channel.PodcastCategory.Name
+                    } : null,
+                    PodcastSubCategory = channel.PodcastSubCategory != null ? new PodcastSubCategoryDTO
+                    {
+                        Id = channel.PodcastSubCategory.Id,
+                        Name = channel.PodcastSubCategory.Name,
+                        PodcastCategoryId = channel.PodcastSubCategory.PodcastCategoryId
+                    } : null,
+                    CurrentStatus = channel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
+                    {
+                        Id = pct.PodcastChannelStatus.Id,
+                        Name = pct.PodcastChannelStatus.Name
+                    }).FirstOrDefault()!,
+                    Hashtags = channel.PodcastChannelHashtags.Select(pch => new HashtagDTO
+                    {
+                        Id = pch.Hashtag.Id,
+                        Name = pch.Hashtag.Name
+                    }).ToList(),
+                    TotalFavorite = channel.TotalFavorite,
+                    ListenCount = channel.ListenCount,
+                    ShowCount = showList.Count,
+                    Podcaster = new AccountSnippetResponseDTO
+                    {
+                        Id = podcaster.Id,
+                        FullName = podcaster.FullName,
+                        Email = podcaster.Email,
+                        MainImageFileKey = podcaster.MainImageFileKey
+                    },
+                    CreatedAt = channel.CreatedAt,
+                    UpdatedAt = channel.UpdatedAt,
+                    ShowList = showList.Select(ps => new ShowListItemResponseDTO
+                    {
+                        Id = ps.Id,
+                        Name = ps.Name,
+                        Description = ps.Description,
+                        MainImageFileKey = ps.MainImageFileKey,
+                        TrailerAudioFileKey = ps.TrailerAudioFileKey,
+                        TotalFollow = ps.TotalFollow,
+                        ListenCount = ps.ListenCount,
+                        AverageRating = ps.AverageRating,
+                        RatingCount = ps.RatingCount,
+                        Copyright = ps.Copyright,
+                        IsReleased = ps.IsReleased,
+                        Language = ps.Language,
+                        UploadFrequency = ps.UploadFrequency,
+                        ReleaseDate = ps.ReleaseDate,
+                        TakenDownReason = ps.TakenDownReason,
+                        PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
+                        {
+                            Id = ps.PodcastCategory.Id,
+                            Name = ps.PodcastCategory.Name
+                        } : null,
+                        PodcastSubCategory = ps.PodcastSubCategory != null ? new PodcastSubCategoryDTO
+                        {
+                            Id = ps.PodcastSubCategory.Id,
+                            Name = ps.PodcastSubCategory.Name,
+                            PodcastCategoryId = ps.PodcastSubCategory.PodcastCategoryId
+                        } : null,
+                        PodcastChannel = new PodcastChannelSnippetResponseDTO
+                        {
+                            Id = channel.Id,
+                            Name = channel.Name,
+                            MainImageFileKey = channel.MainImageFileKey
+                        },
+                        Podcaster = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            Email = podcaster.Email,
+                            FullName = podcaster.FullName,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
+                        {
+                            Id = ps.PodcastShowSubscriptionType.Id,
+                            Name = ps.PodcastShowSubscriptionType.Name
+                        } : null,
+                        Hashtags = ps.PodcastShowHashtags.Select(psh => new HashtagDTO
+                        {
+                            Id = psh.Hashtag.Id,
+                            Name = psh.Hashtag.Name
+                        }).ToList(),
+                        CreatedAt = ps.CreatedAt,
+                        UpdatedAt = ps.UpdatedAt,
+                        CurrentStatus = ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).Select(pst => new PodcastShowStatusDTO
+                        {
+                            Id = pst.PodcastShowStatus.Id,
+                            Name = pst.PodcastShowStatus.Name
+                        }).FirstOrDefault()!,
+                    }).ToList(),
+                    PodcastSubscriptionList = ((JArray)result.Results["podcastSubscriptionList"]).Select(ps =>
+                    {
+                        var psObj = ps.ToObject<PodcastSubscriptionListItemResponseDTO>();
+                        return new PodcastSubscriptionListItemResponseDTO
+                        {
+                            Id = psObj.Id,
+                            Name = psObj.Name,
+                            Description = psObj.Description,
+                            CurrentVersion = psObj.CurrentVersion,
+                            PodcastShowId = psObj.PodcastShowId,
+                            IsActive = psObj.IsActive,
+                            CreatedAt = psObj.CreatedAt,
+                            UpdatedAt = psObj.UpdatedAt,
+                            PodcastChannelId = psObj.PodcastChannelId,
+                            PodcastSubscriptionCycleTypePriceList = ((JArray)ps["PodcastSubscriptionCycleTypePrices"]).ToObject<List<PodcastSubscriptionCycleTypePriceListItemResponseDTO>>().Select(psctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
+                            {
+                                PodcastSubscriptionId = psctp.PodcastSubscriptionId,
+                                Price = psctp.Price,
+                                Version = psctp.Version,
+                                CreatedAt = psctp.CreatedAt,
+                                UpdatedAt = psctp.UpdatedAt,
+                                SubscriptionCycleType = psctp.SubscriptionCycleType != null ? new SubscriptionCycleTypeDTO
+                                {
+                                    Id = psctp.SubscriptionCycleType.Id,
+                                    Name = psctp.SubscriptionCycleType.Name,
+                                } : null
+                            }).ToList(),
+                            DeletedAt = psObj.DeletedAt,
+                            PodcastSubscriptionBenefitMappingList = ((JArray)ps["PodcastSubscriptionBenefitMappings"]).ToObject<List<PodcastSubscriptionBenefitMappingListItemResponseDTO>>().Select(psbm => new PodcastSubscriptionBenefitMappingListItemResponseDTO
+                            {
+                                PodcastSubscriptionId = psbm.PodcastSubscriptionId,
+                                Version = psbm.Version,
+                                CreatedAt = psbm.CreatedAt,
+                                UpdatedAt = psbm.UpdatedAt,
+                                PodcastSubscriptionBenefit = psbm.PodcastSubscriptionBenefit != null ? new PodcastSubscriptionBenefitDTO
+                                {
+                                    Id = psbm.PodcastSubscriptionBenefit.Id,
+                                    Name = psbm.PodcastSubscriptionBenefit.Name
+                                } : null
+                            }).ToList()
+                        };
+                    }).ToList()
+
+                };
+                return channelDetail;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get channel by id failed, error: " + ex.Message);
+            }
+        }
+
 
         public async Task CreatePodcastChannel(CreateChannelParameterDTO createChannelParameterDTO, SagaCommandMessage command)
         {
@@ -1801,7 +2022,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     };
 
                     var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(podcastChannel.PodcasterId);
-                    if (existingPodcaster == null || existingPodcaster.Id != podcastChannel.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt !=null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                    if (existingPodcaster == null || existingPodcaster.Id != podcastChannel.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
                     {
                         throw new Exception("Podcaster with id " + podcastChannel.PodcasterId + " does not exist");
                     }
@@ -2184,10 +2405,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     var messageNextRequestData = command.RequestData;
                     messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
                     messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(subtractChannelTotalFavoriteParameterDTO.AffectedAccountIds);
                     var messageResponseData = JObject.FromObject(new
                     {
                         PodcastChannelId = podcastChannel.Id,
                         AccountId = command.RequestData["AccountId"],
+                        AffectedAccountIds = subtractChannelTotalFavoriteParameterDTO.AffectedAccountIds
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,

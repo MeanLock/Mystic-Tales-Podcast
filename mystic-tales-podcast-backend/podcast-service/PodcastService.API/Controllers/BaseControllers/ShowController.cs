@@ -380,6 +380,21 @@ namespace PodcastService.API.Controllers.BaseControllers
             });
         }
 
+        // /api/podcast-service/api/shows/me/{PodcastShowId}
+        [HttpGet("me/{PodcastShowId}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetMyShowById(Guid PodcastShowId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var show = await _podcastShowService.GetShowByIdForPodcasterAsync(PodcastShowId);
+
+            return Ok(new
+            {
+                Show = show
+            });
+        }
+
         // /api/podcast-service/api/shows/{PodcastShowId}
         [HttpPut("{PodcastShowId}")]
         [Authorize(Policy = "Customer.PodcasterAccess")]
@@ -470,17 +485,17 @@ namespace PodcastService.API.Controllers.BaseControllers
         public async Task<IActionResult> PublishOrUnpublishShowById(Guid PodcastShowId, bool IsPublish, ShowPublishRequestDTO showPublishRequestDTO)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            if (IsPublish == true && account.ViolationLevel >= 0)
+            if (IsPublish == true && account.ViolationLevel > 0)
             {
                 return StatusCode(403, "Your account has violation level that is not allowed to show channel.");
             }
-            
+
             var flowName = IsPublish ? "show-publish-flow" : "show-unpublish-flow";
             JObject requestData = new JObject
             {
                 ["PodcastShowId"] = PodcastShowId,
                 ["PodcasterId"] = account.Id,
-                ["ShowPublishInfo"] = JObject.FromObject(showPublishRequestDTO.ShowPublishInfo)
+                ["ReleaseDate"] = showPublishRequestDTO.ShowPublishInfo.ReleaseDate?.ToString("yyyy-MM-dd")
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, flowName);
@@ -492,7 +507,110 @@ namespace PodcastService.API.Controllers.BaseControllers
             );
         }
 
+        // /api/podcast-service/api/shows/{PodcastShowId}/follow/{IsFollow}
+        [HttpPost("{PodcastShowId}/follow/{IsFollow}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> FollowOrUnfollowShowById(Guid PodcastShowId, bool IsFollow)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            JObject requestData = new JObject
+            {
+                ["AccountId"] = account.Id,
+                ["PodcastShowId"] = PodcastShowId
+            };
+
+            var flowName = IsFollow ? "show-follow-flow" : "show-unfollow-flow";
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, flowName);
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/podcast-service/api/shows/{PodcastShowId}/podcast-show-reviews
+        [HttpPost("{PodcastShowId}/podcast-show-reviews")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
+        public async Task<IActionResult> CreatePodcastShowReviewById(Guid PodcastShowId, PodcastShowReviewCreateRequestDTO podcastShowReviewCreateRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            if (podcastShowReviewCreateRequestDTO.PodcastShowReviewCreateInfo.Rating < 0 || podcastShowReviewCreateRequestDTO.PodcastShowReviewCreateInfo.Rating > 5)
+            {
+                return BadRequest("Rating must be between 0 and 5.");
+            }
+
+            JObject requestData = JObject.FromObject(new
+            {
+                AccountId = account.Id,
+                PodcastShowId = PodcastShowId,
+                Title = podcastShowReviewCreateRequestDTO.PodcastShowReviewCreateInfo.Title,
+                Content = podcastShowReviewCreateRequestDTO.PodcastShowReviewCreateInfo.Content,
+                Rating = podcastShowReviewCreateRequestDTO.PodcastShowReviewCreateInfo.Rating
+            });
 
 
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("public-review-management-domain", requestData, null, "show-review-creation-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/podcast-service/api/shows/podcast-show-reviews/{PodcastShowReviewId}
+        [HttpPut("podcast-show-reviews/{PodcastShowReviewId}")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
+        public async Task<IActionResult> UpdatePodcastShowReviewById(Guid PodcastShowReviewId, PodcastShowReviewUpdateRequestDTO podcastShowReviewUpdateRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            if (podcastShowReviewUpdateRequestDTO.PodcastShowReviewUpdateInfo.Rating < 0 || podcastShowReviewUpdateRequestDTO.PodcastShowReviewUpdateInfo.Rating > 5)
+            {
+                return BadRequest("Rating must be between 0 and 5.");
+            }
+
+            JObject requestData = JObject.FromObject(new
+            {
+                AccountId = account.Id,
+                PodcastShowReviewId = PodcastShowReviewId,
+                Title = podcastShowReviewUpdateRequestDTO.PodcastShowReviewUpdateInfo.Title,
+                Content = podcastShowReviewUpdateRequestDTO.PodcastShowReviewUpdateInfo.Content,
+                Rating = podcastShowReviewUpdateRequestDTO.PodcastShowReviewUpdateInfo.Rating
+            });
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("public-review-management-domain", requestData, null, "show-review-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/podcast-service/api/shows/podcast-show-reviews/{PodcastShowReviewId}
+        [HttpDelete("podcast-show-reviews/{PodcastShowReviewId}")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
+        public async Task<IActionResult> DeletePodcastShowReviewById(Guid PodcastShowReviewId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            JObject requestData = new JObject
+            {
+                ["AccountId"] = account.Id,
+                ["PodcastShowReviewId"] = PodcastShowReviewId
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("public-review-management-domain", requestData, null, "show-review-deletion-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
     }
 }

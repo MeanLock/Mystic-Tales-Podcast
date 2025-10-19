@@ -14,7 +14,9 @@ INSERT INTO TransactionType (id, name) VALUES
 (8, N'Customer Subscription Cycle Payment'),
 (9, N'Customer Subscription Cycle Payment Refund'),
 (10, N'System Subscription Income'),
-(11, N'Podcaster Subscription Income');
+(11, N'Podcaster Subscription Income'),
+(12, N'System Booking Income'),
+(13, N'Podcaster Booking Income');
 
 -- TransactionStatus
 INSERT INTO TransactionStatus (id, name) VALUES

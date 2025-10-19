@@ -7,7 +7,6 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ActivateA
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountViolationPoint;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.ChangeAccountStatus;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
-using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterFollowed;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcasterProfile;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeactivateAccount;
@@ -33,6 +32,13 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateCha
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateChannelFavoritedRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavorited;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteChannelFavoritedRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateShowFollowed;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateShowFollowedRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteShowFollowed;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateEpisodeSaved;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateEpisodeSavedRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteEpisodeSaved;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteEpisodeSavedRollback;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -64,37 +70,6 @@ namespace UserService.BusinessLogic.MessageHandlers
             _mailPropertiesConfig = mailPropertiesConfig;
             _mailOperationService = mailOperationService;
         }
-
-        // create-account
-        // verify-account
-        // login-account-manual
-        // login-account-google
-        // update-user
-        // send-reset-password-link
-        // reset-account-password
-        // create-podcaster-profile
-        // update-podcaster-profile
-        // verify-podcaster
-        // increase-storage-size
-        // decrease-storage-size
-        // deactivate-account
-        // add-account-violation-point
-        // subtract-account-violation-point
-        // check-violation-threshold
-        // decrease-account-violation-point
-        // save-episode-history
-        // update-podcaster-rating
-        // create-podcaster-followed
-        // delete-podcaster-followed
-        // add-account-balance-amount
-        // subtract-account-balance-amount
-        // send-user-service-email
-        // add-podcaster-balance-amount
-        // subtract-podcaster-balance-amount
-        // add-account-balance-amount-rollback
-        // subtract-account-balance-amount-rollback
-        // add-podcaster-balance-amount-rollback
-        // subtract-podcaster-balance-amount-rollback
 
         [MessageHandler("send-user-service-email", SAGA_TOPIC)]
         public async Task HandleSendUserServiceEmailAsync(string key, string messageJson)
@@ -454,80 +429,133 @@ namespace UserService.BusinessLogic.MessageHandlers
             );
         }
 
+        [MessageHandler("create-show-followed", SAGA_TOPIC)]
+        public async Task HandleCreateShowFollowedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var createShowFollowedParameterDTO = command.RequestData.ToObject<CreateShowFollowedParameterDTO>();
+                    await _accountService.CreateShowFollowed(createShowFollowedParameterDTO, command);
 
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-show-followed.failed"    // From YAML onFailure.emit
+            );
+        }
 
+        [MessageHandler("create-show-followed-rollback", SAGA_TOPIC)]
+        public async Task HandleCreateShowFollowedRollbackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var createShowFollowedRollbackParameterDTO = command.RequestData.ToObject<CreateShowFollowedRollbackParameterDTO>();
+                    await _accountService.CreateShowFollowedRollback(createShowFollowedRollbackParameterDTO, command);
 
-        // [MessageHandler("ForgotPasswordEvent", "auth-events")]
-        // public async Task HandleForgotPasswordAsync(string key, string messageJson)
-        // {
-        //     try
-        //     {
-        //         _logger.LogInformation("Processing ForgotPassword for key: {Key}", key);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-show-followed-rollback.failed"    // From YAML onFailure.emit
+            );
+        }
 
-        //         var envelope = DeserializeMessage<MessageEnvelope<ForgotPasswordEvent>>(messageJson);
-        //         var forgotPasswordEvent = envelope?.Data;
+        [MessageHandler("delete-show-followed", SAGA_TOPIC)]
+        public async Task HandleDeleteShowFollowedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteShowFollowedParameterDTO = command.RequestData.ToObject<DeleteShowFollowedParameterDTO>();
+                    await _accountService.DeleteShowFollowed(deleteShowFollowedParameterDTO, command);
 
-        //         if (forgotPasswordEvent == null)
-        //         {
-        //             _logger.LogWarning("ForgotPasswordEvent data is null for key: {Key}", key);
-        //             return;
-        //         }
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-followed.failed"    // From YAML onFailure.emit
+            );
+        }
 
-        //         // Business logic: Process forgot password
+        [MessageHandler("delete-show-followed-rollback", SAGA_TOPIC)]
+        public async Task HandleDeleteShowFollowedRollbackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteShowFollowedRollbackParameterDTO = command.RequestData.ToObject<DeleteShowFollowedRollbackParameterDTO>();
+                    await _accountService.DeleteShowFollowedRollback(deleteShowFollowedRollbackParameterDTO, command);
 
-        //         // Example: Send follow-up message after processing
-        //         var notificationEvent = new EmailNotificationEvent
-        //         {
-        //             To = forgotPasswordEvent.Email_Noti,
-        //             Subject = "Thông báo từ UserService gửi đến Architecture_1",
-        //             Message = $"tôi là HUYYYYYYYYYYYYYYYYYYYYY"
-        //         };
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-followed-rollback.failed"    // From YAML onFailure.emit
+            );
+        }
 
-        //         await _messagingService.SendMessageAsync(notificationEvent, null, "notification-events");
+        [MessageHandler("create-episode-saved", SAGA_TOPIC)]
+        public async Task HandleCreateEpisodeSavedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var createEpisodeSavedParameterDTO = command.RequestData.ToObject<CreateEpisodeSavedParameterDTO>();
+                    await _accountService.CreateEpisodeSaved(createEpisodeSavedParameterDTO, command);
 
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Failed to handle FacilityCreatedEvent for key: {Key}", key);
-        //         throw;
-        //     }
-        // }
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-episode-saved.failed"    // From YAML onFailure.emit
+            );
+        }
 
+        [MessageHandler("create-episode-saved-rollback", SAGA_TOPIC)]
+        public async Task HandleCreateEpisodeSavedRollbackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var createEpisodeSavedRollbackParameterDTO = command.RequestData.ToObject<CreateEpisodeSavedRollbackParameterDTO>();
+                    await _accountService.CreateEpisodeSavedRollback(createEpisodeSavedRollbackParameterDTO, command);
 
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-episode-saved-rollback.failed"    // From YAML onFailure.emit
+            );
+        }
 
-        // [MessageHandler("create-booking", "booking-management")]
-        // public async Task HandleCreateBookingAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             _logger.LogInformation("Creating booking for account {AccountId}",
-        //                 command.RequestData["accountId"]);
+        [MessageHandler("delete-episode-saved", SAGA_TOPIC)]
+        public async Task HandleDeleteEpisodeSavedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteEpisodeSavedParameterDTO = command.RequestData.ToObject<DeleteEpisodeSavedParameterDTO>();
+                    await _accountService.DeleteEpisodeSaved(deleteEpisodeSavedParameterDTO, command);
 
-        //             // Extract data from RequestData (JObject)
-        //             // var booking = await _bookingService.CreateBookingAsync(
-        //             //     accountId: command.RequestData["accountId"]!.Value<int>(),
-        //             //     podcastBuddyId: command.RequestData["podcastBuddyId"]!.Value<int>(),
-        //             //     title: command.RequestData["title"]!.Value<string>()!,
-        //             //     description: command.RequestData["description"]!.Value<string>()!
-        //             // );
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-episode-saved.failed"    // From YAML onFailure.emit
+            );
+        }
 
-        //             // Return response as JObject
-        //             // return await Task.FromResult(JObject.FromObject(new
-        //             // {
-        //             //     // bookingId = booking.Id,
-        //             //     // accountId = booking.AccountId,
-        //             //     // podcastBuddyId = booking.PodcastBuddyId,
-        //             //     status = "created"
-        //             // }));
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         // successEmit: "create-booking.success", // From YAML onSuccess.emit
-        //         failedEmitMessage: "create-booking.failed"    // From YAML onFailure.emit
-        //     );
-        // }
+        [MessageHandler("delete-episode-saved-rollback", SAGA_TOPIC)]
+        public async Task HandleDeleteEpisodeSavedRollbackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteEpisodeSavedRollbackParameterDTO = command.RequestData.ToObject<DeleteEpisodeSavedRollbackParameterDTO>();
+                    await _accountService.DeleteEpisodeSavedRollback(deleteEpisodeSavedRollbackParameterDTO, command);
 
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-episode-saved-rollback.failed"    // From YAML onFailure.emit
+            );
+        }
 
     }
 }

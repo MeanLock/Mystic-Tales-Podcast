@@ -159,6 +159,21 @@ namespace PodcastService.API.Controllers.BaseControllers
             });
         }
 
+        // /api/podcast-service/api/channels/me/{PodcastChannelId}
+        [HttpGet("me/{PodcastChannelId}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetMyChannelById(Guid PodcastChannelId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var channel = await _podcastChannelService.GetChannelByIdForPodcasterAsync(PodcastChannelId);
+
+            return Ok(new
+            {
+                Channel = channel
+            });
+        }
+
         // /api/podcast-service/api/channels/{PodcastChannelId}
         [HttpPut("{PodcastChannelId}")]
         [Authorize(Policy = "Customer.PodcasterAccess")]

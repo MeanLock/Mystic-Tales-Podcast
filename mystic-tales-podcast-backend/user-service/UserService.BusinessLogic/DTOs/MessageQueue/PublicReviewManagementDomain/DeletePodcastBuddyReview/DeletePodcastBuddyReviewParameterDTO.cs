@@ -1,4 +1,4 @@
-namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcastBuddyReview
+namespace UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeletePodcastBuddyReview
 {
     public class DeletePodcastBuddyReviewParameterDTO
     {

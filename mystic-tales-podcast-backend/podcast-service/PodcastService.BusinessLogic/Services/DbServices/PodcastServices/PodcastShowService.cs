@@ -45,6 +45,13 @@ using PodcastService.BusinessLogic.DTOs.Episode;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitShowTrailerAudioFile;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishShow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusShowTotalFollow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractShowTotalFollow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.CreateShowReview;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.UpdateShowReview;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteShowReview;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusEpisodeTotalSaved;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractEpisodeTotalSaved;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -80,6 +87,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         private readonly IGenericRepository<PodcastShowStatusTracking> _podcastShowStatusTrackingGenericRepository;
         private readonly IGenericRepository<PodcastShowHashtag> _podcastShowHashtagGenericRepository;
         private readonly IGenericRepository<PodcastEpisode> _podcastEpisodeGenericRepository;
+        private readonly IGenericRepository<PodcastShowReview> _podcastShowReviewGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
@@ -113,6 +121,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             IGenericRepository<PodcastShowStatusTracking> podcastShowStatusTrackingGenericRepository,
             IGenericRepository<PodcastShowHashtag> podcastShowHashtagGenericRepository,
             IGenericRepository<PodcastEpisode> podcastEpisodeGenericRepository,
+            IGenericRepository<PodcastShowReview> podcastShowReviewGenericRepository,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -145,6 +154,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _podcastShowStatusTrackingGenericRepository = podcastShowStatusTrackingGenericRepository;
             _podcastShowHashtagGenericRepository = podcastShowHashtagGenericRepository;
             _podcastEpisodeGenericRepository = podcastEpisodeGenericRepository;
+            _podcastShowReviewGenericRepository = podcastShowReviewGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -1135,6 +1145,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .Include(pc => pc.PodcastShowHashtags)
                         .ThenInclude(pch => pch.Hashtag)
                         .Include(pc => pc.PodcastChannel)
+                        .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                         .Include(pc => pc.PodcastShowSubscriptionType)
                 );
 
@@ -1147,6 +1158,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 if (show == null)
                 {
                     throw new Exception("Show with id " + showId + " does not exist");
+                }
+                // kiểm tra có thuộc về 1 channel đang được publish hay không, Customer không thấy được những show thuộc kênh chưa được publish hoặc đã bị xóa
+                if (show.PodcastChannel != null && (show.PodcastChannel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId != (int)PodcastChannelStatusEnum.Published || show.PodcastChannel.DeletedAt != null))
+                {
+                    if (role == null || role == 1)
+                    {
+                        throw new Exception("Show with id " + showId + " does not exist");
+                    }
                 }
 
                 var podcaster = await _accountCachingService.GetAccountStatusCacheById(show.PodcasterId);
@@ -1355,6 +1374,237 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 throw new HttpRequestException("Get show by id failed, error: " + ex.Message);
             }
         }
+
+        public async Task<ShowDetailResponseDTO> GetShowByIdForPodcasterAsync(Guid showId)
+        {
+            try
+            {
+                var query = _podcastShowGenericRepository.FindAll(
+                    predicate: c => c.DeletedAt == null && c.Id == showId,
+                    includeFunc: q => q
+                        .Include(pc => pc.PodcastCategory)
+                        .Include(pc => pc.PodcastSubCategory)
+                        .Include(pc => pc.PodcastShowStatusTrackings)
+                        .ThenInclude(pct => pct.PodcastShowStatus)
+                        .Include(pc => pc.PodcastShowHashtags)
+                        .ThenInclude(pch => pch.Hashtag)
+                        .Include(pc => pc.PodcastChannel)
+                        .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                        .Include(pc => pc.PodcastShowSubscriptionType)
+                );
+
+
+                var show = await query.FirstOrDefaultAsync();
+
+                if (show == null)
+                {
+                    throw new Exception("Show with id " + showId + " does not exist");
+                }
+                // kiểm tra có thuộc về 1 channel đang tồn tại hay không, Podcaster không thể thấy được những show thuộc kênh đã bị xóa
+                if (show.PodcastChannel != null && show.PodcastChannel.DeletedAt != null)
+                {
+                    throw new Exception("Show with id " + showId + " does not exist");
+                }
+
+                var podcaster = await _accountCachingService.GetAccountStatusCacheById(show.PodcasterId);
+                if (podcaster == null || podcaster.Id != show.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
+                {
+                    throw new Exception("Podcaster with id " + show.PodcasterId + " does not exist");
+                }
+
+                var podcastSubscriptionBatchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastSubscriptionList",
+                            QueryType = "findall",
+                            EntityType = "PodcastSubscription",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    DeletedAt = (DateTime?)null,
+                                    PodcastShowId = show.Id,
+                                },
+                                include = "PodcastSubscriptionBenefitMappings.PodcastSubscriptionBenefit , PodcastSubscriptionCycleTypePrices.SubscriptionCycleType"
+                            }),
+                        }
+                    }
+                };
+
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", podcastSubscriptionBatchRequest);
+
+
+                var episodeByShowIdQuery = _podcastEpisodeGenericRepository.FindAll(
+                    predicate: pe => pe.DeletedAt == null && pe.PodcastShowId == show.Id,
+                    includeFunc: q => q
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                        .ThenInclude(pet => pet.PodcastEpisodeStatus)
+                        .Include(pe => pe.PodcastEpisodeHashtags)
+                        .ThenInclude(peh => peh.Hashtag)
+                        .Include(pe => pe.PodcastEpisodeSubscriptionType)
+                );
+
+
+
+                var episodeList = await episodeByShowIdQuery.ToListAsync();
+
+
+                var showDetail = new ShowDetailResponseDTO
+                {
+                    Id = show.Id,
+                    Name = show.Name,
+                    Description = show.Description,
+                    MainImageFileKey = show.MainImageFileKey,
+                    TrailerAudioFileKey = show.TrailerAudioFileKey,
+                    TotalFollow = show.TotalFollow,
+                    ListenCount = show.ListenCount,
+                    AverageRating = show.AverageRating,
+                    RatingCount = show.RatingCount,
+                    CurrentStatus = show.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).Select(pst => new PodcastShowStatusDTO
+                    {
+                        Id = pst.PodcastShowStatus.Id,
+                        Name = pst.PodcastShowStatus.Name
+                    }).FirstOrDefault()!,
+                    Copyright = show.Copyright,
+                    IsReleased = show.IsReleased,
+                    Language = show.Language,
+                    UploadFrequency = show.UploadFrequency,
+                    ReleaseDate = show.ReleaseDate,
+                    TakenDownReason = show.TakenDownReason,
+                    PodcastCategory = show.PodcastCategory != null ? new PodcastCategoryDTO
+                    {
+                        Id = show.PodcastCategory.Id,
+                        Name = show.PodcastCategory.Name
+                    } : null,
+                    PodcastSubCategory = show.PodcastSubCategory != null ? new PodcastSubCategoryDTO
+                    {
+                        Id = show.PodcastSubCategory.Id,
+                        Name = show.PodcastSubCategory.Name,
+                        PodcastCategoryId = show.PodcastSubCategory.PodcastCategoryId
+                    } : null,
+                    PodcastChannel = show.PodcastChannel != null ? new PodcastChannelSnippetResponseDTO
+                    {
+                        Id = show.PodcastChannel.Id,
+                        Name = show.PodcastChannel.Name,
+                        MainImageFileKey = show.PodcastChannel.MainImageFileKey
+                    } : null,
+                    PodcastShowSubscriptionType = show.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
+                    {
+                        Id = show.PodcastShowSubscriptionType.Id,
+                        Name = show.PodcastShowSubscriptionType.Name
+                    } : null,
+                    Podcaster = new AccountSnippetResponseDTO
+                    {
+                        Id = podcaster.Id,
+                        Email = podcaster.Email,
+                        FullName = podcaster.FullName,
+                        MainImageFileKey = podcaster.MainImageFileKey
+                    },
+                    Hashtags = show.PodcastShowHashtags.Select(psh => new HashtagDTO
+                    {
+                        Id = psh.Hashtag.Id,
+                        Name = psh.Hashtag.Name
+                    }).ToList(),
+                    PodcastSubscriptionList = ((JArray)result.Results["podcastSubscriptionList"]).Select(ps =>
+                    {
+                        var psObj = ps.ToObject<PodcastSubscriptionListItemResponseDTO>();
+                        return new PodcastSubscriptionListItemResponseDTO
+                        {
+                            Id = psObj.Id,
+                            Name = psObj.Name,
+                            Description = psObj.Description,
+                            CurrentVersion = psObj.CurrentVersion,
+                            PodcastShowId = psObj.PodcastShowId,
+                            IsActive = psObj.IsActive,
+                            CreatedAt = psObj.CreatedAt,
+                            UpdatedAt = psObj.UpdatedAt,
+                            PodcastChannelId = psObj.PodcastChannelId,
+                            PodcastSubscriptionCycleTypePriceList = ((JArray)ps["PodcastSubscriptionCycleTypePrices"]).ToObject<List<PodcastSubscriptionCycleTypePriceListItemResponseDTO>>().Select(psctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
+                            {
+                                PodcastSubscriptionId = psctp.PodcastSubscriptionId,
+                                Price = psctp.Price,
+                                Version = psctp.Version,
+                                CreatedAt = psctp.CreatedAt,
+                                UpdatedAt = psctp.UpdatedAt,
+                                SubscriptionCycleType = psctp.SubscriptionCycleType != null ? new SubscriptionCycleTypeDTO
+                                {
+                                    Id = psctp.SubscriptionCycleType.Id,
+                                    Name = psctp.SubscriptionCycleType.Name,
+                                } : null
+                            }).ToList(),
+                            DeletedAt = psObj.DeletedAt,
+                            PodcastSubscriptionBenefitMappingList = ((JArray)ps["PodcastSubscriptionBenefitMappings"]).ToObject<List<PodcastSubscriptionBenefitMappingListItemResponseDTO>>().Select(psbm => new PodcastSubscriptionBenefitMappingListItemResponseDTO
+                            {
+                                PodcastSubscriptionId = psbm.PodcastSubscriptionId,
+                                Version = psbm.Version,
+                                CreatedAt = psbm.CreatedAt,
+                                UpdatedAt = psbm.UpdatedAt,
+                                PodcastSubscriptionBenefit = psbm.PodcastSubscriptionBenefit != null ? new PodcastSubscriptionBenefitDTO
+                                {
+                                    Id = psbm.PodcastSubscriptionBenefit.Id,
+                                    Name = psbm.PodcastSubscriptionBenefit.Name
+                                } : null
+                            }).ToList()
+                        };
+                    }).ToList(),
+                    EpisodeList = episodeList.Select(pe => new EpisodeListItemResponseDTO
+                    {
+                        Id = pe.Id,
+                        Name = pe.Name,
+                        Description = pe.Description,
+                        AudioFileKey = pe.AudioFileKey,
+                        AudioLength = pe.AudioLength,
+                        ReleaseDate = pe.ReleaseDate,
+                        IsReleased = pe.IsReleased,
+                        AudioFileSize = pe.AudioFileSize,
+                        EpisodeOrder = pe.EpisodeOrder,
+                        ExplicitContent = pe.ExplicitContent,
+                        IsAudioPublishable = pe.IsAudioPublishable,
+                        ListenCount = pe.ListenCount,
+                        MainImageFileKey = pe.MainImageFileKey,
+                        SeasonNumber = pe.SeasonNumber,
+                        TakenDownReason = pe.TakenDownReason,
+                        TotalSave = pe.TotalSave,
+                        Hashtags = pe.PodcastEpisodeHashtags.Select(peh => new HashtagDTO
+                        {
+                            Id = peh.Hashtag.Id,
+                            Name = peh.Hashtag.Name
+                        }).ToList(),
+                        PodcastShow = new PodcastShowSnippetResponseDTO
+                        {
+                            Id = show.Id,
+                            Name = show.Name,
+                            MainImageFileKey = show.MainImageFileKey
+                        },
+                        PodcastEpisodeSubscriptionType = pe.PodcastEpisodeSubscriptionType != null ? new PodcastEpisodeSubscriptionTypeDTO
+                        {
+                            Id = pe.PodcastEpisodeSubscriptionType.Id,
+                            Name = pe.PodcastEpisodeSubscriptionType.Name
+                        } : null,
+                        CreatedAt = pe.CreatedAt,
+                        UpdatedAt = pe.UpdatedAt,
+                        CurrentStatus = pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).Select(pet => new PodcastEpisodeStatusDTO
+                        {
+                            Id = pet.PodcastEpisodeStatus.Id,
+                            Name = pet.PodcastEpisodeStatus.Name
+                        }).FirstOrDefault()!,
+                    }).ToList(),
+                    CreatedAt = show.CreatedAt,
+                    UpdatedAt = show.UpdatedAt,
+                };
+
+                return showDetail;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get show by id failed, error: " + ex.Message);
+            }
+        }
+
         public async Task CreatePodcastShow(CreateShowParameterDTO createShowParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -1719,11 +1969,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         public async Task PublishPodcastShow(PublishShowParameterDTO publishShowParameterDTO, SagaCommandMessage command)
         {
-            using(var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(publishShowParameterDTO.PodcastShowId);
+                    var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(
+                        publishShowParameterDTO.PodcastShowId,
+                        includeFunc: query => query
+                            .Include(ps => ps.PodcastShowStatusTrackings));
                     if (existingPodcastShow == null)
                     {
                         throw new Exception("Podcast show with id " + publishShowParameterDTO.PodcastShowId + " does not exist");
@@ -1736,26 +1989,51 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         throw new Exception("Podcast show with id " + publishShowParameterDTO.PodcastShowId + " does not belong to podcaster with id " + publishShowParameterDTO.PodcasterId);
                     }
+                    var currentStatusId = existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(psst => psst.CreatedAt).FirstOrDefault()?.PodcastShowStatusId;
+
+                    // [NOTE]: nếu status hiện tại là Published hoặc TakenDown thì không thể publish lại, nếu status hiện tại không phải là ReadyToRelease thì không thể publish
+                    var publishedStatusIds = new List<int>
+                    {
+                        (int)PodcastShowStatusEnum.Published,
+                        (int)PodcastShowStatusEnum.TakenDown,
+                    };
+
+                    if (publishedStatusIds.Contains(currentStatusId.Value))
+                    {
+                        throw new Exception("Podcast show with id " + publishShowParameterDTO.PodcastShowId + " has already been published");
+                    }
+                    else if (currentStatusId != (int)PodcastShowStatusEnum.ReadyToRelease)
+                    {
+                        throw new Exception("Podcast show with id " + publishShowParameterDTO.PodcastShowId + " cannot be published as its current status is not 'Ready to Release'");
+                    }
 
 
                     existingPodcastShow.ReleaseDate = publishShowParameterDTO.ReleaseDate;
-                    if(publishShowParameterDTO.ReleaseDate != null && publishShowParameterDTO.ReleaseDate < DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()))
-                    {
-                        throw new Exception("Release date cannot be in the past");
-                    }else if(publishShowParameterDTO.ReleaseDate == null)
-                    {
-                        existingPodcastShow.ReleaseDate = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone());
-                    }   
 
-                    existingPodcastShow.IsPublished = true
+                    var newPodcastChannelStatusTracking = new PodcastShowStatusTracking
+                    {
+                        PodcastShowId = existingPodcastShow.Id,
+                        PodcastShowStatusId = (int)PodcastShowStatusEnum.Published
+                    };
+
+                    if (publishShowParameterDTO.ReleaseDate == null)
+                    {
+                        existingPodcastShow.IsReleased = true;
+                    }
+                    else
+                    {
+                        existingPodcastShow.IsReleased = false;
+                    }
+
+
                     await _podcastShowGenericRepository.UpdateAsync(existingPodcastShow.Id, existingPodcastShow);
+                    await _podcastShowStatusTrackingGenericRepository.CreateAsync(newPodcastChannelStatusTracking);
 
-                    
                     await transaction.CommitAsync();
                     var messageNextRequestData = command.RequestData;
                     messageNextRequestData["PodcastShowId"] = publishShowParameterDTO.PodcastShowId;
                     messageNextRequestData["PodcasterId"] = publishShowParameterDTO.PodcasterId;
-                    messageNextRequestData["ReleaseDate"] = publishShowParameterDTO.ReleaseDate;
+                    messageNextRequestData["ReleaseDate"] = publishShowParameterDTO.ReleaseDate?.ToString("yyyy-MM-dd");
                     var messageResponseData = JObject.FromObject(new
                     {
                         PodcastShowId = publishShowParameterDTO.PodcastShowId,
@@ -1785,6 +2063,502 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "publish-show.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task PlusPodcastShowTotalFollow(PlusShowTotalFollowParameterDTO plusShowTotalFollowParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcastShow = await _podcastShowGenericRepository.FindByIdAsync(plusShowTotalFollowParameterDTO.PodcastShowId);
+                    if (podcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + plusShowTotalFollowParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    else if (podcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + plusShowTotalFollowParameterDTO.PodcastShowId + " has been deleted");
+                    }
+
+                    podcastShow.TotalFollow += 1;
+                    await _podcastShowGenericRepository.UpdateAsync(podcastShow.Id, podcastShow);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = podcastShow.Id;
+                    messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = podcastShow.Id,
+                        AccountId = command.RequestData["AccountId"],
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "plus-show-total-follow.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Plus podcast show total follow failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "plus-show-total-follow.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task SubtractPodcastShowTotalFollow(SubtractShowTotalFollowParameterDTO subtractShowTotalFollowParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcastShow = await _podcastShowGenericRepository.FindByIdAsync(subtractShowTotalFollowParameterDTO.PodcastShowId);
+                    if (podcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + subtractShowTotalFollowParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    else if (podcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + subtractShowTotalFollowParameterDTO.PodcastShowId + " has been deleted");
+                    }
+
+                    podcastShow.TotalFollow = Math.Max(0, podcastShow.TotalFollow - subtractShowTotalFollowParameterDTO.AffectedAccountIds.Count);
+                    await _podcastShowGenericRepository.UpdateAsync(podcastShow.Id, podcastShow);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = podcastShow.Id;
+                    messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(subtractShowTotalFollowParameterDTO.AffectedAccountIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = podcastShow.Id,
+                        AccountId = command.RequestData["AccountId"],
+                        AffectedAccountIds = subtractShowTotalFollowParameterDTO.AffectedAccountIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-show-total-follow.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Subtract podcast show total follow failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-show-total-follow.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task PlusPodcastEpisodeTotalSaved(PlusEpisodeTotalSavedParameterDTO plusEpisodeTotalSavedParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(plusEpisodeTotalSavedParameterDTO.PodcastEpisodeId);
+                    if (podcastEpisode == null)
+                    {
+                        throw new Exception("Podcast episode with id " + plusEpisodeTotalSavedParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (podcastEpisode.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast episode with id " + plusEpisodeTotalSavedParameterDTO.PodcastEpisodeId + " has been deleted");
+                    }
+
+                    podcastEpisode.TotalSave += 1;
+                    await _podcastEpisodeGenericRepository.UpdateAsync(podcastEpisode.Id, podcastEpisode);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = podcastEpisode.Id;
+                    messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastEpisodeId = podcastEpisode.Id,
+                        AccountId = command.RequestData["AccountId"],
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "plus-episode-total-saved.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Plus podcast episode total saved failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "plus-episode-total-saved.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task SubtractPodcastEpisodeTotalSaved(SubtractEpisodeTotalSavedParameterDTO subtractEpisodeTotalSavedParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(subtractEpisodeTotalSavedParameterDTO.PodcastEpisodeId);
+                    if (podcastEpisode == null)
+                    {
+                        throw new Exception("Podcast episode with id " + subtractEpisodeTotalSavedParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (podcastEpisode.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast episode with id " + subtractEpisodeTotalSavedParameterDTO.PodcastEpisodeId + " has been deleted");
+                    }
+
+                    podcastEpisode.TotalSave = Math.Max(0, podcastEpisode.TotalSave - subtractEpisodeTotalSavedParameterDTO.AffectedAccountIds.Count);
+                    await _podcastEpisodeGenericRepository.UpdateAsync(podcastEpisode.Id, podcastEpisode);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = podcastEpisode.Id;
+                    messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
+                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(subtractEpisodeTotalSavedParameterDTO.AffectedAccountIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastEpisodeId = podcastEpisode.Id,
+                        AccountId = command.RequestData["AccountId"],
+                        AffectedAccountIds = subtractEpisodeTotalSavedParameterDTO.AffectedAccountIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-episode-total-saved.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Subtract podcast episode total saved failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-episode-total-saved.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+
+        public async Task CreatePodcastShowReview(CreateShowReviewParameterDTO createShowReviewParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var podcastShow = await _podcastShowGenericRepository.FindAll(
+                        predicate: ps => ps.Id == createShowReviewParameterDTO.PodcastShowId && ps.DeletedAt == null,
+                        includeFunc: ps => ps
+                            .Include(p => p.PodcastShowStatusTrackings)
+                    ).FirstOrDefaultAsync();
+                    if (podcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + createShowReviewParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    var currentStatusId = podcastShow.PodcastShowStatusTrackings.OrderByDescending(psst => psst.CreatedAt).FirstOrDefault()?.PodcastShowStatusId;
+                    if (currentStatusId != (int)PodcastShowStatusEnum.Published)
+                    {
+                        throw new Exception("Podcast show with id " + createShowReviewParameterDTO.PodcastShowId + " is not published");
+                    }
+
+                    var existingReview = (await _podcastShowReviewGenericRepository.FindAll(
+                        predicate: a => a.AccountId == createShowReviewParameterDTO.AccountId && a.PodcastShowId == createShowReviewParameterDTO.PodcastShowId,
+                        includeFunc: null
+                        ).ToListAsync()).FirstOrDefault();
+                    if (existingReview != null)
+                    {
+                        throw new Exception("Account with id " + createShowReviewParameterDTO.AccountId + " has already reviewed podcast show with id " + createShowReviewParameterDTO.PodcastShowId);
+                    }
+
+                    var podcastShowReview = new PodcastShowReview
+                    {
+                        AccountId = createShowReviewParameterDTO.AccountId,
+                        PodcastShowId = createShowReviewParameterDTO.PodcastShowId,
+                        Title = createShowReviewParameterDTO.Title,
+                        Content = createShowReviewParameterDTO.Content,
+                        Rating = createShowReviewParameterDTO.Rating,
+                    };
+
+                    await _podcastShowReviewGenericRepository.CreateAsync(podcastShowReview);
+                    // cập nhật rating count cho podcast show 
+                    podcastShow.RatingCount += 1;
+                    podcastShow.AverageRating = ((podcastShow.AverageRating * (podcastShow.RatingCount - 1)) + createShowReviewParameterDTO.Rating) / podcastShow.RatingCount;
+                    await _podcastShowGenericRepository.UpdateAsync(podcastShow.Id, podcastShow);
+
+                    await transaction.CommitAsync();
+
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = podcastShowReview.AccountId;
+                    messageNextRequestData["PodcastShowId"] = podcastShowReview.PodcastShowId;
+                    messageNextRequestData["Title"] = podcastShowReview.Title;
+                    messageNextRequestData["Content"] = podcastShowReview.Content;
+                    messageNextRequestData["Rating"] = podcastShowReview.Rating;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Create podcast show review successfully",
+                        PodcastShowReviewId = podcastShowReview.Id,
+                        AccountId = podcastShowReview.AccountId,
+                        PodcastShowId = podcastShowReview.PodcastShowId,
+                        Title = podcastShowReview.Title,
+                        Content = podcastShowReview.Content,
+                        Rating = podcastShowReview.Rating
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-show-review.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Create podcast show review failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "create-show-review.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task UpdatePodcastShowReview(UpdateShowReviewParameterDTO updateShowReviewParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingReview = await _podcastShowReviewGenericRepository.FindByIdAsync(updateShowReviewParameterDTO.PodcastShowReviewId);
+
+                    if (existingReview == null)
+                    {
+                        throw new Exception("Account with id " + updateShowReviewParameterDTO.AccountId + " has not reviewed podcast show with id " + updateShowReviewParameterDTO.PodcastShowReviewId);
+                    }
+                    else if (existingReview.AccountId != updateShowReviewParameterDTO.AccountId)
+                    {
+                        throw new Exception("Account with id " + updateShowReviewParameterDTO.AccountId + " is not the owner of podcast show review with id " + updateShowReviewParameterDTO.PodcastShowReviewId);
+                    }
+                    var previousRating = existingReview.Rating;
+                    existingReview.Title = updateShowReviewParameterDTO.Title ?? existingReview.Title;
+                    existingReview.Content = updateShowReviewParameterDTO.Content ?? existingReview.Content;
+                    existingReview.Rating = updateShowReviewParameterDTO.Rating;
+                    await _podcastShowReviewGenericRepository.UpdateAsync(existingReview.Id, existingReview);
+
+                    var podcastShow = await _podcastShowGenericRepository.FindAll(
+                         predicate: ps => ps.Id == existingReview.PodcastShowId && ps.DeletedAt == null,
+                         includeFunc: null
+                    ).FirstOrDefaultAsync();
+                    if (podcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + existingReview.PodcastShowId + " does not exist");
+                    }
+                    // cập nhật lại average rating cho podcast show
+                    podcastShow.AverageRating = ((podcastShow.AverageRating * podcastShow.RatingCount) - previousRating + existingReview.Rating) / podcastShow.RatingCount;
+                    await _podcastShowGenericRepository.UpdateAsync(podcastShow.Id, podcastShow);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowReviewId"] = existingReview.Id;
+                    messageNextRequestData["AccountId"] = existingReview.AccountId;
+                    messageNextRequestData["Title"] = existingReview.Title;
+                    messageNextRequestData["Content"] = existingReview.Content;
+                    messageNextRequestData["Rating"] = existingReview.Rating;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Create podcast show review successfully",
+                        PodcastShowReviewId = existingReview.Id,
+                        AccountId = existingReview.AccountId,
+                        Title = existingReview.Title,
+                        Content = existingReview.Content,
+                        Rating = existingReview.Rating
+
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-show-review.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Update show review failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-show-review.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+
+        public async Task DeletePodcastShowReview(DeleteShowReviewParameterDTO deletePodcastShowReviewParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingReview = await _podcastShowReviewGenericRepository.FindByIdAsync(deletePodcastShowReviewParameterDTO.PodcastShowReviewId);
+                    if (existingReview == null)
+                    {
+                        throw new Exception("Podcast show review not found");
+                    }
+                    else if (existingReview.AccountId != deletePodcastShowReviewParameterDTO.AccountId)
+                    {
+                        throw new Exception("Account with id " + deletePodcastShowReviewParameterDTO.AccountId + " is not the owner of podcast show review with id " + deletePodcastShowReviewParameterDTO.PodcastShowReviewId);
+                    }
+                    await _podcastShowReviewGenericRepository.DeleteAsync(existingReview.Id);
+
+                    var podcastShow = await _podcastShowGenericRepository.FindAll(
+                         predicate: ps => ps.Id == existingReview.PodcastShowId && ps.DeletedAt == null,
+                         includeFunc: null
+                    ).FirstOrDefaultAsync();
+                    if (podcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + existingReview.PodcastShowId + " does not exist");
+                    }
+
+                    // cập nhật rating count cho podcaster profile
+                    podcastShow.RatingCount -= 1;
+                    podcastShow.AverageRating = podcastShow.RatingCount == 0 ? 0 : ((podcastShow.AverageRating * (podcastShow.RatingCount + 1)) - existingReview.Rating) / podcastShow.RatingCount;
+                    await _podcastShowGenericRepository.UpdateAsync(podcastShow.Id, podcastShow);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowReviewId"] = existingReview.Id;
+                    messageNextRequestData["AccountId"] = existingReview.AccountId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete podcast show review successfully",
+                        PodcastShowReviewId = existingReview.Id,
+                        AccountId = existingReview.AccountId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-review.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete show review failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-review.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");

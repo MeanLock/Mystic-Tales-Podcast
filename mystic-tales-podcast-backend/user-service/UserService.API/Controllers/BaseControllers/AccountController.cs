@@ -33,8 +33,9 @@ namespace UserService.API.Controllers.BaseControllers
         private readonly AccountService _accountService;
         private readonly RedisInstanceCacheService _redisInstanceCacheService;
         private readonly RedisSharedCacheService _redisSharedCacheService;
+        private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
-        public AccountController(FileIOHelper fileIOHelper, KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, AccountService accountService, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService)
+        public AccountController(FileIOHelper fileIOHelper, KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, AccountService accountService, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService, HttpServiceQueryClient httpServiceQueryClient)
         {
             _fileIOHelper = fileIOHelper;
             _kafkaProducerService = kafkaProducerService;
@@ -44,6 +45,7 @@ namespace UserService.API.Controllers.BaseControllers
             _filePathConfig = filePathConfig;
             _redisInstanceCacheService = redisInstanceCacheService;
             _redisSharedCacheService = redisSharedCacheService;
+            _httpServiceQueryClient = httpServiceQueryClient;
         }
 
         // [HttpGet("roles")]
@@ -100,6 +102,34 @@ namespace UserService.API.Controllers.BaseControllers
         {
             await _redisSharedCacheService.KeyDeleteAsync($"account:status:{accountId}");
             return Ok(new { Message = $"Deleted account status cache for account ID: {accountId}" });
+        }
+
+        [HttpGet("test-query")]
+        public async Task<IActionResult> TestQuery()
+        {
+            var podcastChannelBatchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findbyid",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where =  new {
+                                    DeletedAt = (DateTime?)null,
+                                },
+                                id = "172eb07f-2121-4ff7-8b5c-91eeec0dee86",
+                                include = "PodcastShowStatusTrackings"
+                            }),
+                        }
+                    }
+            };
+
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", podcastChannelBatchRequest);
+            return Ok(new { result });
         }
 
         // /api/user-service/get-file-url/{fileKey}
@@ -445,6 +475,11 @@ namespace UserService.API.Controllers.BaseControllers
         public async Task<IActionResult> UpdatePodcastBuddyReviewById(PodcastBuddyReviewUpdateRequestDTO podcastBuddyReviewUpdateRequestDTO, Guid PodcastBuddyReviewId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (podcastBuddyReviewUpdateRequestDTO.PodcastBuddyReviewUpdateInfo.Rating < 0 || podcastBuddyReviewUpdateRequestDTO.PodcastBuddyReviewUpdateInfo.Rating > 5)
+            {
+                return BadRequest("Rating must be between 0 and 5.");
+            }
+
             var requestData = JObject.FromObject(new
             {
                 PodcastBuddyReviewId = PodcastBuddyReviewId,

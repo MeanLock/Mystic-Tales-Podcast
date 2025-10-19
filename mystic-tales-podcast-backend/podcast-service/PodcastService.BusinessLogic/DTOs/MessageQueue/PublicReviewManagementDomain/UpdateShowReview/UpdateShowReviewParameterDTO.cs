@@ -1,9 +1,9 @@
-namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview
+namespace PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.UpdateShowReview
 {
-    public class CreatePodcastBuddyReviewParameterDTO
+    public class UpdateShowReviewParameterDTO
     {
         public required int AccountId { get; set; }
-        public required int PodcastBuddyId { get; set; }
+        public required Guid PodcastShowReviewId { get; set; }
         public string? Title { get; set; }
         public string? Content { get; set; }
         public required float Rating { get; set; }

@@ -12,6 +12,8 @@ public interface IUnitOfWork
     IPasswordResetTokenRepository PasswordResetTokenRepository { get; }
     IAccountFollowedPodcasterRepository AccountFollowedPodcasterRepository { get; }
     IAccountFavoritedPodcastChannelRepository AccountFavoritedPodcastChannelRepository { get; }
+    IAccountFollowedPodcastShowRepository AccountFollowedPodcastShowRepository { get; }
+    IAccountSavedPodcastEpisodeRepository AccountSavedPodcastEpisodeRepository { get; }
     // ISurveyTakenResultRepository SurveyTakenResultRepository { get; }
     // ISurveyStatusTrackingRepository SurveyStatusTrackingRepository { get; }
     // IFilterTagRepository FilterTagRepository { get; }

@@ -1,4 +1,4 @@
-namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcastBuddyReview
+namespace UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.UpdatePodcastBuddyReview
 {
     public class UpdatePodcastBuddyReviewParameterDTO
     {

@@ -5,10 +5,14 @@ using PodcastService.BusinessLogic.Attributes;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusEpisodeTotalSaved;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusShowTotalFollow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitShowTrailerAudioFile;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractChannelTotalFavorite;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractEpisodeTotalSaved;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractShowTotalFollow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
@@ -534,6 +538,67 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "publish-show.failed"    // From YAML onFailure.emit
             );
         }
+
+        [MessageHandler("plus-show-total-follow", SAGA_TOPIC)]
+        public async Task HandlePlusShowTotalFollowAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var showId = command.RequestData.ToObject<PlusShowTotalFollowParameterDTO>();
+                    await _podcastShowService.PlusPodcastShowTotalFollow(showId, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "plus-show-total-follow.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("subtract-show-total-follow", SAGA_TOPIC)]
+        public async Task HandleSubtractShowTotalFollowAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var showId = command.RequestData.ToObject<SubtractShowTotalFollowParameterDTO>();
+                    await _podcastShowService.SubtractPodcastShowTotalFollow(showId, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "subtract-show-total-follow.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("plus-episode-total-saved", SAGA_TOPIC)]
+        public async Task HandlePlusEpisodeTotalSavedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var episodeId = command.RequestData.ToObject<PlusEpisodeTotalSavedParameterDTO>();
+                    await _podcastShowService.PlusPodcastEpisodeTotalSaved(episodeId, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "plus-episode-total-saved.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("subtract-episode-total-saved", SAGA_TOPIC)]
+        public async Task HandleSubtractEpisodeTotalSavedAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var episodeId = command.RequestData.ToObject<SubtractEpisodeTotalSavedParameterDTO>();
+                    await _podcastShowService.SubtractPodcastEpisodeTotalSaved(episodeId, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "subtract-episode-total-saved.failed"    // From YAML onFailure.emit
+            );
+        }
+
     }
 }
 
