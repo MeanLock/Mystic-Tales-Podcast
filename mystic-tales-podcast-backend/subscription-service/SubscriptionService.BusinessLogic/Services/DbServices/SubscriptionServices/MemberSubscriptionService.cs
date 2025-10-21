@@ -173,90 +173,92 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 }
             }
         }
+        //Not Implemented yet
         public async Task<MemberSubscriptionDetailResponseDTO> GetMemberSubscriptionIdAsync(int memberSubscriptionId)
         {
-            var memberSubscription = await _memberSubscriptionGenericRepository.FindAll(
-                includeFunc: ps => ps
-                    .Include(sct => sct.MemberSubscriptionCycleTypePrices)
-                    .ThenInclude(sct => sct.SubscriptionCycleType)
-                    .Include(bm => bm.MemberSubscriptionBenefitMappings)
-                    .ThenInclude(bm => bm.MemberSubscriptionBenefit)
-                    .Include(sr => sr.MemberSubscriptionRegistrations)
-                    .ThenInclude(sr => sr.SubscriptionCycleType)
-                )
-                .Where(ps => ps.Id == memberSubscriptionId)
-                .Select(ps => new PodcastSubscriptionDetailResponseDTO
-                {
-                    Id = ps.Id,
-                    Name = ps.Name,
-                    Description = ps.Description,
-                    PodcastShowId = ps.PodcastShowId,
-                    PodcastChannelId = ps.PodcastChannelId,
-                    IsActive = ps.DeletedAt == null,
-                    CurrentVersion = ps.CurrentVersion,
-                    DeletedAt = ps.DeletedAt,
-                    CreatedAt = ps.CreatedAt,
-                    UpdatedAt = ps.UpdatedAt,
-                    PodcastSubscriptionCycleTypePriceList = ps.PodcastSubscriptionCycleTypePrices
-                        .Select(ctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
-                        {
-                            PodcastSubscriptionId = ctp.PodcastSubscriptionId,
-                            SubscriptionCycleType = ctp.SubscriptionCycleType == null
-                            ? null
-                            : new SubscriptionCycleTypeDTO
-                            {
-                                Id = ctp.SubscriptionCycleType.Id,
-                                Name = ctp.SubscriptionCycleType.Name
-                            },
-                            Version = ctp.Version,
-                            Price = ctp.Price,
-                            CreatedAt = ctp.CreatedAt,
-                            UpdatedAt = ctp.UpdatedAt
-                        }).ToList(),
-                    PodcastSubscriptionBenefitMappingList = ps.PodcastSubscriptionBenefitMappings
-                        .Select(bm => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionBenefitMappingListItemResponseDTO
-                        {
-                            PodcastSubscriptionId = bm.PodcastSubscriptionId,
-                            PodcastSubscriptionBenefit = bm.PodcastSubscriptionBenefit == null
-                            ? null
-                            : new PodcastSubscriptionBenefitDTO
-                            {
-                                Id = bm.PodcastSubscriptionBenefit.Id,
-                                Name = bm.PodcastSubscriptionBenefit.Name
-                            },
-                            Version = bm.Version,
-                            CreatedAt = bm.CreatedAt,
-                            UpdatedAt = bm.UpdatedAt
-                        }).ToList(),
-                    PodcastSubscriptionRegistrationList = ps.PodcastSubscriptionRegistrations
-                        .Select(sr => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionRegistrationListItemResponseDTO
-                        {
-                            Id = sr.Id,
-                            AccountId = sr.AccountId ?? 0,
-                            PodcastSubscriptionId = sr.PodcastSubscriptionId,
-                            SubscriptionCycleType = sr.SubscriptionCycleType == null
-                            ? null
-                            : new SubscriptionCycleTypeDTO
-                            {
-                                Id = sr.SubscriptionCycleType.Id,
-                                Name = sr.SubscriptionCycleType.Name
-                            },
-                            CurrentVersion = sr.CurrentVersion,
-                            IsAcceptNewestVersionSwitch = sr.IsAcceptNewestVersionSwitch,
-                            IsIncomeTaken = sr.IsIncomeTaken,
-                            LastPaidAt = sr.LastPaidAt,
-                            CancelledAt = sr.CancelledAt,
-                            CreatedAt = sr.CreatedAt,
-                            UpdatedAt = sr.UpdatedAt
-                        }).ToList()
-                })
-                .FirstOrDefaultAsync();
-            if (memberSubscription == null)
-            {
-                _logger.LogWarning("No Member subscription with ID {MemberSubscriptionId} found.", memberSubscriptionId);
-                return null;
-            }
-            return memberSubscription;
+            //var memberSubscription = await _memberSubscriptionGenericRepository.FindAll(
+            //    includeFunc: ps => ps
+            //        .Include(sct => sct.MemberSubscriptionCycleTypePrices)
+            //        .ThenInclude(sct => sct.SubscriptionCycleType)
+            //        .Include(bm => bm.MemberSubscriptionBenefitMappings)
+            //        .ThenInclude(bm => bm.MemberSubscriptionBenefit)
+            //        .Include(sr => sr.MemberSubscriptionRegistrations)
+            //        .ThenInclude(sr => sr.SubscriptionCycleType)
+            //    )
+            //    .Where(ps => ps.Id == memberSubscriptionId)
+            //    .Select(ps => new PodcastSubscriptionDetailResponseDTO
+            //    {
+            //        Id = ps.Id,
+            //        Name = ps.Name,
+            //        Description = ps.Description,
+            //        PodcastShowId = ps.PodcastShowId,
+            //        PodcastChannelId = ps.PodcastChannelId,
+            //        IsActive = ps.DeletedAt == null,
+            //        CurrentVersion = ps.CurrentVersion,
+            //        DeletedAt = ps.DeletedAt,
+            //        CreatedAt = ps.CreatedAt,
+            //        UpdatedAt = ps.UpdatedAt,
+            //        PodcastSubscriptionCycleTypePriceList = ps.PodcastSubscriptionCycleTypePrices
+            //            .Select(ctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
+            //            {
+            //                PodcastSubscriptionId = ctp.PodcastSubscriptionId,
+            //                SubscriptionCycleType = ctp.SubscriptionCycleType == null
+            //                ? null
+            //                : new SubscriptionCycleTypeDTO
+            //                {
+            //                    Id = ctp.SubscriptionCycleType.Id,
+            //                    Name = ctp.SubscriptionCycleType.Name
+            //                },
+            //                Version = ctp.Version,
+            //                Price = ctp.Price,
+            //                CreatedAt = ctp.CreatedAt,
+            //                UpdatedAt = ctp.UpdatedAt
+            //            }).ToList(),
+            //        PodcastSubscriptionBenefitMappingList = ps.PodcastSubscriptionBenefitMappings
+            //            .Select(bm => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionBenefitMappingListItemResponseDTO
+            //            {
+            //                PodcastSubscriptionId = bm.PodcastSubscriptionId,
+            //                PodcastSubscriptionBenefit = bm.PodcastSubscriptionBenefit == null
+            //                ? null
+            //                : new PodcastSubscriptionBenefitDTO
+            //                {
+            //                    Id = bm.PodcastSubscriptionBenefit.Id,
+            //                    Name = bm.PodcastSubscriptionBenefit.Name
+            //                },
+            //                Version = bm.Version,
+            //                CreatedAt = bm.CreatedAt,
+            //                UpdatedAt = bm.UpdatedAt
+            //            }).ToList(),
+            //        PodcastSubscriptionRegistrationList = ps.PodcastSubscriptionRegistrations
+            //            .Select(sr => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionRegistrationListItemResponseDTO
+            //            {
+            //                Id = sr.Id,
+            //                AccountId = sr.AccountId ?? 0,
+            //                PodcastSubscriptionId = sr.PodcastSubscriptionId,
+            //                SubscriptionCycleType = sr.SubscriptionCycleType == null
+            //                ? null
+            //                : new SubscriptionCycleTypeDTO
+            //                {
+            //                    Id = sr.SubscriptionCycleType.Id,
+            //                    Name = sr.SubscriptionCycleType.Name
+            //                },
+            //                CurrentVersion = sr.CurrentVersion,
+            //                IsAcceptNewestVersionSwitch = sr.IsAcceptNewestVersionSwitch,
+            //                IsIncomeTaken = sr.IsIncomeTaken,
+            //                LastPaidAt = sr.LastPaidAt,
+            //                CancelledAt = sr.CancelledAt,
+            //                CreatedAt = sr.CreatedAt,
+            //                UpdatedAt = sr.UpdatedAt
+            //            }).ToList()
+            //    })
+            //    .FirstOrDefaultAsync();
+            //if (memberSubscription == null)
+            //{
+            //    _logger.LogWarning("No Member subscription with ID {MemberSubscriptionId} found.", memberSubscriptionId);
+            //    return null;
+            //}
+            //return memberSubscription;
+            return null;
         }
         private async Task<JObject?> GetActiveSystemConfigProfile()
         {

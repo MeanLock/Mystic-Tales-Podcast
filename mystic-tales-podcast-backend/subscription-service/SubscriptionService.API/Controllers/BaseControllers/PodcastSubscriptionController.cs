@@ -47,7 +47,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
 
-            var isValid = await _podcastSubscriptionService.GetPodcastShow(accountId, PodcastShowId);
+            var isValid = await _podcastSubscriptionService.GetPodcastShowWithAccountId(accountId, PodcastShowId);
             if (isValid == null)
             {
                 return Forbid($"The Logged In Account is unauthorized to access Podcast Show Id: {PodcastShowId}");
@@ -99,7 +99,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
 
-            var isValid = await _podcastSubscriptionService.GetPodcastChannel(accountId, PodcastChannelId);
+            var isValid = await _podcastSubscriptionService.GetPodcastChannelWithAccountId(accountId, PodcastChannelId);
             if (isValid == null)
             {
                 return Forbid($"The Logged In Account is unauthorized to access Podcast Channel Id: {PodcastChannelId}");
@@ -273,7 +273,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         }
         [HttpGet("channels/podcast-subscriptions-registrations")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> GetPodcastSubscriptionsRegistrationsByPodcastChannelId()
+        public async Task<IActionResult> GetPodcastChannelSubscriptionsRegistrationsByAccountId()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
@@ -283,7 +283,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         }
         [HttpGet("shows/podcast-subscriptions-registrations")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> GetPodcastSubscriptionsRegistrationsByPodcastShowId()
+        public async Task<IActionResult> GetPodcastShowSubscriptionsRegistrationsByAccountId()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;

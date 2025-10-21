@@ -4,6 +4,7 @@ using ModerationService.API.Filters.ExceptionFilters;
 using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.Models.CrossService;
 using ModerationService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using ModerationService.BusinessLogic.Services.DbServices.ReportServices;
 
 namespace ModerationService.API.Controllers.BaseControllers
 {
@@ -15,11 +16,16 @@ namespace ModerationService.API.Controllers.BaseControllers
     {
         private readonly GenericQueryService _genericQueryService;
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
+        private readonly PodcastBuddyReportService _podcastBuddyReportService;
 
-        public BuddyReportController(GenericQueryService genericQueryService, HttpServiceQueryClient httpServiceQueryClient)
+        public BuddyReportController(
+            GenericQueryService genericQueryService, 
+            HttpServiceQueryClient httpServiceQueryClient,
+            PodcastBuddyReportService podcastBuddyReportService)
         {
             _genericQueryService = genericQueryService;
             _httpServiceQueryClient = httpServiceQueryClient;
+            _podcastBuddyReportService = podcastBuddyReportService;
         }
 
         [HttpGet("test-get-account-status")]
@@ -33,7 +39,12 @@ namespace ModerationService.API.Controllers.BaseControllers
                 Message = $"Hello, your account ID is {account.Id}, RoleId is {account.RoleId}, ViolationLevel is {account.ViolationLevel}, ViolationPoint is {account.ViolationPoint}, IsVerified is {account.IsVerified}, DeactivatedAt is {account.DeactivatedAt}, LastViolationLevelChanged is {account.LastViolationLevelChanged}, LastViolationPointChanged is {account.LastViolationPointChanged}"
             });
         }
-
-
+        [HttpGet]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess")]
+        public async Task<IActionResult> GetBuddyReports()
+        {
+            var buddyReports = await _podcastBuddyReportService.GetAllPodcastReport();
+            return Ok(buddyReports);
+        }
     }
 }

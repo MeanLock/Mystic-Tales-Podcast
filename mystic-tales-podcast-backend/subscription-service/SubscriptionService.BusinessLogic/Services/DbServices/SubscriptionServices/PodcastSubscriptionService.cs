@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscription;
@@ -19,6 +20,7 @@ using SubscriptionService.BusinessLogic.Models.CrossService;
 using SubscriptionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using SubscriptionService.BusinessLogic.Services.MessagingServices.interfaces;
 using SubscriptionService.DataAccess.Data;
+using SubscriptionService.DataAccess.Entities;
 using SubscriptionService.DataAccess.Entities.SqlServer;
 using SubscriptionService.DataAccess.Repositories.interfaces;
 using SubscriptionService.Infrastructure.Models.Kafka;
@@ -36,7 +38,6 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         private readonly ILogger<PodcastSubscriptionService> _logger;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
-        private readonly GenericQueryService _genericQueryService;
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly AppDbContext _appDbContext;
 
@@ -49,7 +50,6 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             ILogger<PodcastSubscriptionService> logger,
             KafkaProducerService kafkaProducerService,
             IMessagingService messagingService,
-            GenericQueryService genericQueryService,
             HttpServiceQueryClient httpServiceQueryClient,
             AppDbContext appDbContext,
             DateHelper dateHelper)
@@ -61,7 +61,6 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             _logger = logger;
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
-            _genericQueryService = genericQueryService;
             _httpServiceQueryClient = httpServiceQueryClient;
             _appDbContext = appDbContext;
             _dateHelper = dateHelper;
@@ -134,7 +133,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var channel = new JObject();
                     if (parameter.PodcastShowId != null)
                     {
-                        show = await GetPodcastShow(parameter.AccountId, parameter.PodcastShowId.Value);
+                        show = await GetPodcastShowWithAccountId(parameter.AccountId, parameter.PodcastShowId.Value);
                         if (show == null)
                         {
                             throw new($"The Logged In Account is unauthorized to create PodcastSubscription for PodcastShow with Id: {parameter.PodcastShowId}");
@@ -148,7 +147,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
                     if (parameter.PodcastChannelId != null)
                     {
-                        channel = await GetPodcastChannel(parameter.AccountId, parameter.PodcastChannelId.Value);
+                        channel = await GetPodcastChannelWithAccountId(parameter.AccountId, parameter.PodcastChannelId.Value);
                         if (channel == null)
                         {
                             throw new($"The Logged In Account is unauthorized to create PodcastSubscription for PodcastChanne; with Id: {parameter.PodcastChannelId}");
@@ -381,7 +380,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var channel = new JObject();
                     if (existPodcastSubscription.PodcastShowId != null)
                     {
-                        show = await GetPodcastShow(parameter.AccountId, existPodcastSubscription.PodcastShowId.Value);
+                        show = await GetPodcastShowWithAccountId(parameter.AccountId, existPodcastSubscription.PodcastShowId.Value);
                         if (show == null)
                         {
                             throw new($"The Logged In Account is unauthorized to update PodcastSubscription for PodcastShow with Id: {existPodcastSubscription.PodcastShowId}");
@@ -389,7 +388,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
                     if (existPodcastSubscription.PodcastChannelId != null)
                     {
-                        channel = await GetPodcastChannel(parameter.AccountId, existPodcastSubscription.PodcastChannelId.Value);
+                        channel = await GetPodcastChannelWithAccountId(parameter.AccountId, existPodcastSubscription.PodcastChannelId.Value);
                         if (channel == null)
                         {
                             throw new($"The Logged In Account is unauthorized to update PodcastSubscription for PodcastChannel with Id: {existPodcastSubscription.PodcastChannelId}");
@@ -463,7 +462,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
                     foreach (var registration in updateRegistrations)
                     {
-                        registration.IsAcceptNewestVersionSwitch = null;
+                        registration.IsAcceptNewestVersionSwitch = false;
                         registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                     }
@@ -533,7 +532,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
                     if (existPodcastSubscription.PodcastShowId != null)
                     {
-                        show = await GetPodcastShow(parameter.AccountId, existPodcastSubscription.PodcastShowId.Value);
+                        show = await GetPodcastShowWithAccountId(parameter.AccountId, existPodcastSubscription.PodcastShowId.Value);
                         if (show == null)
                         {
                             throw new($"The Logged In Account is unauthorized to delete PodcastSubscription for PodcastShow with Id: {existPodcastSubscription.PodcastShowId}");
@@ -541,7 +540,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
                     if (existPodcastSubscription.PodcastChannelId != null)
                     {
-                        channel = await GetPodcastChannel(parameter.AccountId, existPodcastSubscription.PodcastChannelId.Value);
+                        channel = await GetPodcastChannelWithAccountId(parameter.AccountId, existPodcastSubscription.PodcastChannelId.Value);
                         if (channel == null)
                         {
                             throw new($"The Logged In Account is unauthorized to delete PodcastSubscription for PodcastChannel with Id: {existPodcastSubscription.PodcastChannelId}");
@@ -851,7 +850,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var channel = new JObject();
                     if (podcastSubscription.PodcastShowId != null)
                     {
-                        show = await GetPodcastShow(parameter.AccountId, podcastSubscription.PodcastShowId.Value);
+                        show = await GetPodcastShowWithAccountId(parameter.AccountId, podcastSubscription.PodcastShowId.Value);
                         if (show == null)
                         {
                             throw new($"The Logged In Account is unauthorized to activate PodcastSubscription for PodcastShow with Id: {podcastSubscription.PodcastShowId}");
@@ -859,7 +858,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
                     if (podcastSubscription.PodcastChannelId != null)
                     {
-                        channel = await GetPodcastChannel(parameter.AccountId, podcastSubscription.PodcastChannelId.Value);
+                        channel = await GetPodcastChannelWithAccountId(parameter.AccountId, podcastSubscription.PodcastChannelId.Value);
                         if (channel == null)
                         {
                             throw new($"The Logged In Account is unauthorized to activate PodcastSubscription for PodcastChannel with Id: {podcastSubscription.PodcastChannelId}");
@@ -978,7 +977,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
                     if (podcastSubscription.PodcastShowId != null)
                     {
-                        var isValid = await GetPodcastShow(parameter.AccountId, podcastSubscription.PodcastShowId.Value);
+                        var isValid = await GetPodcastShowWithAccountId(parameter.AccountId, podcastSubscription.PodcastShowId.Value);
                         if (isValid == null)
                         {
                             throw new($"The Logged In Account is unauthorized to deactivate PodcastSubscription for PodcastShow with Id: {podcastSubscription.PodcastShowId}");
@@ -986,7 +985,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
                     if (podcastSubscription.PodcastChannelId != null)
                     {
-                        var isValid = await GetPodcastChannel(parameter.AccountId, podcastSubscription.PodcastChannelId.Value);
+                        var isValid = await GetPodcastChannelWithAccountId(parameter.AccountId, podcastSubscription.PodcastChannelId.Value);
                         if (isValid == null)
                         {
                             throw new($"The Logged In Account is unauthorized to deactivate PodcastSubscription for PodcastChannel with Id: {podcastSubscription.PodcastChannelId}");
@@ -1283,6 +1282,169 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 }
             }
         }
+        public async Task PodcastSubscriptionRegistrationRenewalByHourAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        .Where(psr => psr.CancelledAt == null
+                            && psr.SubscriptionCycleTypeId == 1
+                            && psr.LastPaidAt.AddDays(30) < _dateHelper.GetNowByAppTimeZone() ||
+                            psr.CancelledAt == null 
+                            && psr.SubscriptionCycleTypeId == 2
+                            && psr.LastPaidAt.AddYears(1) < _dateHelper.GetNowByAppTimeZone())
+                        .ToListAsync();
+                    foreach (var registration in registrationsList)
+                    {
+                        if(registration.IsAcceptNewestVersionSwitch == null)
+                        {
+                            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
+                                .FirstOrDefaultAsync();
+                            registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
+                            var renewalRequestData = new JObject
+                            {
+                                { "PodcastSubscriptionRegistrationId", registration.Id },
+                                { "Profit", null },
+                                { "AccountId", registration.AccountId },
+                                { "PodcasterId", null },
+                                { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
+                                    && ptcp.Version == registration.CurrentVersion)
+                                    .Select(ptcp => ptcp.Price)
+                                    .FirstOrDefault() },
+                                { "TransactionTypeId", 8 }
+                            };
+                            var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: renewalRequestData,
+                                sagaInstanceId: null,
+                                messageName: "podcast-subscription-payment-flow");
+                            await _messagingService.SendSagaMessageAsync(renewalMessage, null);
+                        }
+                        if(registration.IsAcceptNewestVersionSwitch == true)
+                        {
+                            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
+                                .FirstOrDefaultAsync();
+                            registration.CurrentVersion = podcastSubscription.CurrentVersion;
+                            registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
+                            var renewalRequestData = new JObject
+                            {
+                                { "PodcastSubscriptionRegistrationId", registration.Id },
+                                { "Profit", null },
+                                { "AccountId", registration.AccountId },
+                                { "PodcasterId", null },
+                                { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
+                                    && ptcp.Version == podcastSubscription.CurrentVersion)
+                                    .Select(ptcp => ptcp.Price)
+                                    .FirstOrDefault() },
+                                { "TransactionTypeId", 8 }
+                            };
+                            var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: renewalRequestData,
+                                sagaInstanceId: null,
+                                messageName: "podcast-subscription-payment-flow");
+                            await _messagingService.SendSagaMessageAsync(renewalMessage, null);
+                        }
+                        if(registration.IsAcceptNewestVersionSwitch == false)
+                        {
+                            registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while checking podcast subscription registration renewal");
+                }
+            }
+        }
+        public async Task PodcastSubscriptionIncomeCheckingByHourAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var systemConfig = await GetActiveSystemConfigProfile();
+                    var podcastSubscriptionConfig = systemConfig["PodcastSubscriptionConfig"].ToList();
+
+                    var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        .Where(psr => !psr.IsIncomeTaken 
+                            && psr.IsAcceptNewestVersionSwitch == null 
+                            && psr.CancelledAt != null
+                            && psr.LastPaidAt.AddDays(30) > _dateHelper.GetNowByAppTimeZone())
+                        .ToListAsync();
+
+                    foreach (var registration in registrationsList)
+                    {
+                        // Find the config object for the current SubscriptionCycleTypeId
+                        var config = podcastSubscriptionConfig
+                            .FirstOrDefault(psc => psc["SubscriptionCycleTypeId"] != null && psc["SubscriptionCycleTypeId"].ToObject<int>() == registration.SubscriptionCycleTypeId);
+
+                        if (config != null)
+                        {
+                            var podcasterId = 0;
+                            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                .Where(ps => ps.Id == registration.PodcastSubscriptionId)
+                                .FirstOrDefaultAsync();
+                            if(podcastSubscription.PodcastChannelId != null)
+                            {
+                                var temp = await GetPodcastChannel(podcastSubscription.PodcastChannelId.Value);
+                                podcasterId = temp["PodcasterId"].ToObject<int>();
+                            }
+                            if (podcastSubscription.PodcastShowId != null)
+                            {
+                                var temp = await GetPodcastShow(podcastSubscription.PodcastShowId.Value);
+                                podcasterId = temp["PodcasterId"].ToObject<int>();
+                            }
+                            int incomeTakenDelayDays = config["IncomeTakenDelayDays"]?.ToObject<int>() ?? 0;
+                            decimal profitRate = config["ProfitRate"]?.ToObject<decimal>() ?? 0;
+                            var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                        .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                        .Select(psct => psct.Price)
+                                        .FirstOrDefault();
+                            if (registration.LastPaidAt.AddDays(incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
+                            {
+                                var incomeRequestData = new JObject()
+                                {
+                                    { "PodcastSubscriptionRegistrationId", registration.Id },
+                                    { "Profit", originalPrice * profitRate},
+                                    { "AccountId", null },
+                                    { "PodcasterId", podcasterId },
+                                    { "Amount", originalPrice - originalPrice * profitRate },
+                                    { "TransactionTypeId", 11 }
+                                };
+                                var incomeMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: incomeRequestData,
+                                sagaInstanceId: null,
+                                messageName: "podcaster-subscription-income-release-flow");
+                                await _messagingService.SendSagaMessageAsync(incomeMessage, null);
+                                registration.IsIncomeTaken = true;
+                                await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while checking podcast subscription income");
+                }
+            }
+        }
         private async Task<JObject?> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
@@ -1331,14 +1493,14 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 return null;
 
             if (podcastShowOrChannelIds.PodcastShowId.HasValue)
-                return await GetPodcastShow(accountId, podcastShowOrChannelIds.PodcastShowId.Value);
+                return await GetPodcastShowWithAccountId(accountId, podcastShowOrChannelIds.PodcastShowId.Value);
 
             if (podcastShowOrChannelIds.PodcastChannelId.HasValue)
-                return await GetPodcastChannel(accountId, podcastShowOrChannelIds.PodcastChannelId.Value);
+                return await GetPodcastChannelWithAccountId(accountId, podcastShowOrChannelIds.PodcastChannelId.Value);
 
             return null;
         }
-        public async Task<JObject?> GetPodcastShow(int accountId, Guid podcastShowId)
+        public async Task<JObject?> GetPodcastShowWithAccountId(int accountId, Guid podcastShowId)
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -1367,7 +1529,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 ? podcastShowArray.First as JObject
                 : null;
         }
-        public async Task<JObject?> GetPodcastChannel(int accountId, Guid podcastChannelId)
+        public async Task<JObject?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -1394,6 +1556,62 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
             return result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
                 ? podcastChannelArray.First as JObject
+                : null;
+        }
+        public async Task<JObject?> GetPodcastChannel(Guid podcastChannelId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastChannel",
+                            QueryType = "findall",
+                            EntityType = "PodcastChannel",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastChannelId
+                                },
+                                include = "PodcastChannelStatusTracking"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            return result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                ? podcastChannelArray.First as JObject
+                : null;
+        }
+        public async Task<JObject?> GetPodcastShow(Guid podcastShowId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastShowId
+                                },
+                                include = "PodcastShowStatusTracking"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                ? podcastShowArray.First as JObject
                 : null;
         }
     }

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using SubscriptionService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
 using SubscriptionService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
+using SubscriptionService.BusinessLogic.Services.BackgroundServices.PodcastSubscriptionScheduleServices;
 using SubscriptionService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
 
 namespace SubscriptionService.BusinessLogic.Registrations
@@ -10,11 +11,8 @@ namespace SubscriptionService.BusinessLogic.Registrations
     {
         public static IServiceCollection AddBackgroundServices(this IServiceCollection services)
         {
-            // services.AddHostedService<HourBaseMajorCloseScheduleService>();
-            // services.AddHostedService<HourBaseMajorServiceCloseScheduleService>();
-
-            // services.AddHostedService<MinuteBaseRequestCancellationService>();
-            // services.AddHostedService<HourBaseRequestCancellationService>();
+            services.AddHostedService<HourlyPodcastSubscriptionIncomeService>();
+            services.AddHostedService<HourlyPodcastSubscriptionRegistrationRenewalService>();
             
             services.Configure<HostOptions>(options =>
             {

@@ -11,15 +11,15 @@ using System.Threading.Tasks;
 
 namespace SubscriptionService.BusinessLogic.Services.BackgroundServices.PodcastSubscriptionScheduleServices
 {
-    public class HourlyPodcastSubscriptionRegistrationRenewalService : BackgroundService
+    public class HourlyPodcastSubscriptionIncomeService : BackgroundService
     {
         // LOGGER
-        private readonly ILogger<HourlyPodcastSubscriptionRegistrationRenewalService> _logger;
+        private readonly ILogger<HourlyPodcastSubscriptionIncomeService> _logger;
 
         // SERVICE PROVIDER
         private readonly IServiceProvider _serviceProvider;
-        public HourlyPodcastSubscriptionRegistrationRenewalService(
-            ILogger<HourlyPodcastSubscriptionRegistrationRenewalService> logger,
+        public HourlyPodcastSubscriptionIncomeService(
+            ILogger<HourlyPodcastSubscriptionIncomeService> logger,
             IServiceProvider serviceProvider
             )
         {
@@ -28,15 +28,15 @@ namespace SubscriptionService.BusinessLogic.Services.BackgroundServices.PodcastS
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("HourlyPodcastSubscriptionRegistrationRenewalService is starting.");
+            _logger.LogInformation("HourlyPodcastSubscriptionIncomeService is starting.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Checking Podcast Subscription Registration Renewal Service requests...");
-                Console.WriteLine("\n\n----Checking Podcast Subscription Registration Renewal Service requests----\n\n");
+                _logger.LogInformation("Checking Podcast Subscription Income Service requests...");
+                Console.WriteLine("\n\n----Checking Podcast Subscription Income Service requests----\n\n");
                 try
                 {
-                    await PodcastSubscriptionRegistrationRenewalByHour();
+                    await PodcastSubscriptionIncomeCheckingByHour();
 
                 }
                 catch (Exception ex)
@@ -47,12 +47,12 @@ namespace SubscriptionService.BusinessLogic.Services.BackgroundServices.PodcastS
                 await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
             }
         }
-        public async Task PodcastSubscriptionRegistrationRenewalByHour()
+        public async Task PodcastSubscriptionIncomeCheckingByHour()
         {
             using (var scope = _serviceProvider.CreateScope())
             {
                 var podcastSubscriptionService = scope.ServiceProvider.GetRequiredService<PodcastSubscriptionService>();
-                await podcastSubscriptionService.PodcastSubscriptionRegistrationRenewalByHourAsync();
+                await podcastSubscriptionService.PodcastSubscriptionIncomeCheckingByHourAsync();
             }
         }
     }

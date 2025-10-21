@@ -1,9 +1,9 @@
-using BookingManagementService.API.Filters.ExceptionFilters;
-using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ModerationService.API.Filters.ExceptionFilters;
+using ModerationService.BusinessLogic.Helpers.FileHelpers;
 
-namespace BookingManagementService.API.Controllers.MiscControllers
+namespace ModerationService.API.Controllers.MiscControllers
 {
     [Route("api/misc/file-source")]
     [ApiController]
