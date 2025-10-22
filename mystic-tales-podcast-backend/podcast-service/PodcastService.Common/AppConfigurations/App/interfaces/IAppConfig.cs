@@ -10,5 +10,7 @@ namespace PodcastService.Common.AppConfigurations.App.interfaces
         string? FILE_STORAGE_SRC { get; set; }
         string? TIME_ZONE { get; set; }
         string? EMBEDDING_VECTOR_API_URL { get; set; }
+        string? AUDIO_TRANSCRIPTION_API_URL { get; set; }
+        string? AUDIO_SEPARATION_AI_API_URL { get; set; }
     }
 }

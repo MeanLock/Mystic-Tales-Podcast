@@ -11,6 +11,8 @@ from AudioTransctiption_v2 import app as AudioTransctiption_v2_app
 from AudioTransctiption_v3 import app as AudioTransctiption_v3_app
 from AudioTransctiption_v4 import app as AudioTransctiption_v4_app
 from AudioTransctiption_v5 import app as AudioTransctiption_v5_app
+from AudioTransctiption_v6 import app as AudioTransctiption_v6_app
+from AudioTransctiption_v7 import app as AudioTransctiption_v7_app
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
@@ -32,3 +34,5 @@ app.mount("/v2", AudioTransctiption_v2_app)
 app.mount("/v3", AudioTransctiption_v3_app)
 app.mount("/v4", AudioTransctiption_v4_app) 
 app.mount("/v5", AudioTransctiption_v5_app) 
+app.mount("/v6", AudioTransctiption_v6_app)
+app.mount("/v7", AudioTransctiption_v7_app)

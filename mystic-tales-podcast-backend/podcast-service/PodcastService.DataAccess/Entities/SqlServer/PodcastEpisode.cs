@@ -19,11 +19,11 @@ public partial class PodcastEpisode
 
     public string? MainImageFileKey { get; set; }
 
-    public string AudioFileKey { get; set; } = null!;
+    public string? AudioFileKey { get; set; }
 
-    public double AudioFileSize { get; set; }
+    public double? AudioFileSize { get; set; }
 
-    public int AudioLength { get; set; }
+    public int? AudioLength { get; set; }
 
     public byte[]? AudioFingerPrint { get; set; }
 
@@ -49,11 +49,15 @@ public partial class PodcastEpisode
 
     public int EpisodeOrder { get; set; }
 
+    public string? AudioTranscript { get; set; }
+
     public virtual ICollection<PodcastEpisodeHashtag> PodcastEpisodeHashtags { get; set; } = new List<PodcastEpisodeHashtag>();
 
     public virtual ICollection<PodcastEpisodeIllegalContentTypeMarking> PodcastEpisodeIllegalContentTypeMarkings { get; set; } = new List<PodcastEpisodeIllegalContentTypeMarking>();
 
     public virtual ICollection<PodcastEpisodeLicense> PodcastEpisodeLicenses { get; set; } = new List<PodcastEpisodeLicense>();
+
+    public virtual ICollection<PodcastEpisodePublishDuplicateDetection> PodcastEpisodePublishDuplicateDetections { get; set; } = new List<PodcastEpisodePublishDuplicateDetection>();
 
     public virtual ICollection<PodcastEpisodePublishReviewSession> PodcastEpisodePublishReviewSessions { get; set; } = new List<PodcastEpisodePublishReviewSession>();
 

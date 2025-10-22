@@ -2126,37 +2126,39 @@ flows:
         handle-service: "PodcastService"
         description: "Tạo episode mới"
         parameters:
-          - Title
+          - Name
           - Description
           - ExplicitContent
-          - ReleaseDate
           - MainImageFileKey
-          - EpisodeSubscriptionTypeId
+          - PodcastEpisodeSubscriptionTypeId
           - PodcastShowId
           - SeasonNumber
+          - EpisodeOrder
           - HashtagIds
+          - PodcasterId  # không dùng trong tạo nhưng giữ để kiểm tra quyền (lấy từ jwt)
         next-request-data:
-          - Title
+          - Name
           - Description
           - ExplicitContent
-          - ReleaseDate
           - MainImageFileKey
-          - EpisodeSubscriptionTypeId
+          - PodcastEpisodeSubscriptionTypeId
           - PodcastShowId
           - SeasonNumber
+          - EpisodeOrder
           - HashtagIds
+          - PodcasterId
         response-data:
           - PodcastEpisodeId
-          - Title
+          - Name
           - Description
           - ExplicitContent
-          - ReleaseDate
           - MainImageFileKey
-          - EpisodeSubscriptionTypeId
+          - PodcastEpisodeSubscriptionTypeId
           - PodcastShowId
           - SeasonNumber
+          - EpisodeOrder
           - HashtagIds
-          - CreatedAt
+          - PodcasterId
         onSuccess:
           emit: "create-episode.success"
           topic: "content-management-domain"
@@ -2182,35 +2184,37 @@ flows:
         description: "Cập nhật thông tin episode"
         parameters:
           - PodcastEpisodeId
-          - Title
+          - PodcasterId  # không dùng trong cập nhật nhưng giữ để kiểm tra quyền (lấy từ jwt)
+          - Name
           - Description
           - ExplicitContent
-          - ReleaseDate
           - MainImageFileKey
-          - EpisodeSubscriptionTypeId
+          - PodcastEpisodeSubscriptionTypeId
           - SeasonNumber
+          - EpisodeOrder
           - HashtagIds
         next-request-data:
           - PodcastEpisodeId
-          - Title
+          - PodcasterId
+          - Name
           - Description
           - ExplicitContent
-          - ReleaseDate
           - MainImageFileKey
-          - EpisodeSubscriptionTypeId
+          - PodcastEpisodeSubscriptionTypeId
           - SeasonNumber
+          - EpisodeOrder
           - HashtagIds
         response-data:
           - PodcastEpisodeId
-          - Title
+          - PodcasterId
+          - Name
           - Description
           - ExplicitContent
-          - ReleaseDate
           - MainImageFileKey
-          - EpisodeSubscriptionTypeId
+          - PodcastEpisodeSubscriptionTypeId
           - SeasonNumber
+          - EpisodeOrder
           - HashtagIds
-          - UpdatedAt
         onSuccess:
           emit: "update-episode.success"
           topic: "content-management-domain"
@@ -2300,23 +2304,22 @@ flows:
         description: "Submit/cập nhật audio file cho episode"
         parameters:
           - PodcastEpisodeId
-          - AudioFingerPrint
+          - PodcasterId  # không dùng trong submit nhưng giữ để kiểm tra quyền (lấy từ jwt)
           - AudioFileKey
           - AudioFileSize
           - AudioLength
         next-request-data:
           - PodcastEpisodeId
-          - AudioFingerPrint
+          - PodcasterId
           - AudioFileKey
           - AudioFileSize
           - AudioLength
         response-data:
           - PodcastEpisodeId
-          - AudioFingerPrint 
+          - PodcasterId
           - AudioFileKey
           - AudioFileSize
           - AudioLength
-          - UpdatedAt
         onSuccess:
           emit: "submit-episode-audio-file.success"
           topic: "content-management-domain"
@@ -2327,6 +2330,96 @@ flows:
           emit: "submit-episode-audio-file.failed"
           topic: "content-management-domain"
           handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+
+      # - name: "plus-episode-publish-review-session-re-review-count"
+      #   topic: "content-moderation-domain"
+      #   handle-service: "ModerationService"
+      #   description: "Cộng 1 vào số lần yêu cầu đánh giá lại phiên đánh giá xuất bản tập podcast"
+      #   parameters:
+      #     - PodcastEpisodeId
+      #     - PodcasterId  # không dùng trong submit nhưng giữ để kiểm tra quyền (lấy từ jwt)
+      #   next-request-data:
+      #     - PodcastEpisodeId
+      #     - PodcasterId
+      #   response-data:
+      #     - PodcastEpisodeId
+      #     - PodcasterId
+      #   onSuccess:
+      #     emit: "plus-episode-publish-review-session-re-review-count.success"
+      #     topic: "content-moderation-domain"
+      #     handle-service: "ModerationService"
+      #     nextSteps: []
+      #     nextFlows: []
+      #   onFailure:
+      #     emit: "plus-episode-publish-review-session-re-review-count.failed"
+      #     topic: "content-moderation-domain"
+      #     handle-service: "ModerationService"
+      #     nextSteps: []
+      #     nextFlows: []
+      
+  episode-draft-audio-processing-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Gửi audio cho tập podcast"
+    save-file: "AudioFile"
+    steps:
+      - name: "processing-episode-draft-audio"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Submit/cập nhật audio file cho episode"
+        parameters:
+          - PodcastEpisodeId
+          - PodcasterId  # không dùng trong submit nhưng giữ để kiểm tra quyền (lấy từ jwt)
+        next-request-data:
+          - PodcastEpisodeId
+          - PodcasterId
+        response-data:
+          - PodcastEpisodeId
+          - PodcasterId
+        onSuccess:
+          emit: "processing-episode-draft-audio.success"
+          topic: "content-management-domain"
+          handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "processing-episode-draft-audio.failed"
+          topic: "content-management-domain"
+          handle-service: "PodcastService"
+          nextSteps: []
+          nextFlows: []
+  
+  episode-publish-audio-processing-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xử lý hls playlist cho tập podcast"
+    save-file: ""
+    steps:
+      - name: "processing-episode-publish-audio"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Xử lý audio xuất bản cho episode"
+        parameters:
+          - PodcastEpisodeId
+          - PodcasterId  # không dùng trong submit nhưng giữ để kiểm tra quyền (lấy từ jwt)
+        next-request-data:
+          - PodcastEpisodeId
+          - PodcasterId
+        response-data:
+          - PodcastEpisodeId
+          - PodcasterId
+        onSuccess:
+          emit: "processing-episode-publish-audio.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "processing-episode-publish-audio.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
 
@@ -2360,35 +2453,73 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  episode-license-upload-flow:
+
+
+  episode-licenses-upload-flow:
     topic: "content-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Tải lên giấy phép bản quyền tập podcast"
-    save-file: "LicenseFile"
+    save-file: "LicenseDocumentFiles"
     steps:
-      - name: "upload-episode-license-file"
+      - name: "upload-episode-licenses"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Upload episode license file"
         parameters:
           - PodcastEpisodeId
-          - LicenseFileKey
+          - LicenseDocumentFileKeys
+          - PodcasterId  # không dùng trong tải lên nhưng giữ để kiểm tra quyền (lấy từ jwt)
         next-request-data:
           - PodcastEpisodeId
-          - LicenseFileKey
+          - LicenseDocumentFileKeys
+          - PodcasterId
         response-data:
           - PodcastEpisodeId
+          - LicenseDocumentFileKeys
+          - PodcasterId
         onSuccess:
-          emit: "upload-episode-license-file.success"
+          emit: "upload-episode-licenses.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
-          nextFlows: 
-            - name: "episode-publish-request-flow"
-              topic: "content-management-domain"
-              handle-service: "SagaOrchestratorService"
+          nextFlows: []
         onFailure:
-          emit: "upload-episode-license-file.failed"
+          emit: "upload-episode-licenses.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-licenses-deletion-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa giấy phép bản quyền tập podcast"
+    save-file: "LicenseDocumentFiles"
+    steps:
+      - name: "delete-episode-licenses"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Delete episode license files"
+        parameters:
+          - PodcastEpisodeId
+          - PodcastEpisodeLicenseIds
+          - PodcasterId  # không dùng trong tải lên nhưng giữ để kiểm tra quyền (lấy từ jwt)
+        next-request-data:
+          - PodcastEpisodeId
+          - PodcastEpisodeLicenseIds
+          - PodcasterId
+        response-data:
+          - PodcastEpisodeId
+          - PodcastEpisodeLicenseIds
+          - PodcasterId
+        onSuccess:
+          emit: "delete-episode-licenses.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-episode-licenses.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []

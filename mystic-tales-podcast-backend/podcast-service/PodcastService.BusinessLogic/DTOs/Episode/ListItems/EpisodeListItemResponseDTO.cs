@@ -25,11 +25,11 @@ namespace PodcastService.BusinessLogic.DTOs.Episode.ListItems
 
         public string? MainImageFileKey { get; set; }
 
-        public string AudioFileKey { get; set; } = null!;
+        public string? AudioFileKey { get; set; } = null!;
 
-        public double AudioFileSize { get; set; }
+        public double? AudioFileSize { get; set; }
 
-        public int AudioLength { get; set; }
+        public int? AudioLength { get; set; }
         public required PodcastEpisodeSubscriptionTypeDTO PodcastEpisodeSubscriptionType { get; set; }
 
         public required PodcastShowSnippetResponseDTO PodcastShow { get; set; }

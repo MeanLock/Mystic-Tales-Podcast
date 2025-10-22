@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PodcastService.API.Filters.ExceptionFilters;
 using PodcastService.BusinessLogic.DTOs.Cache;
+using PodcastService.BusinessLogic.DTOs.Episode;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
 using PodcastService.BusinessLogic.Models.CrossService;
 using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -10,6 +12,9 @@ using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
 using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
 using PodcastService.Common.AppConfigurations.FilePath.interfaces;
+using PodcastService.Infrastructure.Helpers.AudioHelpers;
+using PodcastService.Infrastructure.Models.Audio.Transcription;
+using PodcastService.Infrastructure.Services.Audio.Transcription;
 using PodcastService.Infrastructure.Services.Kafka;
 using PodcastService.Infrastructure.Services.Redis;
 
@@ -31,8 +36,9 @@ namespace PodcastService.API.Controllers.BaseControllers
         private readonly PodcastEpisodeService _podcastEpisodeService;
         private readonly RedisInstanceCacheService _redisInstanceCacheService;
         private readonly RedisSharedCacheService _redisSharedCacheService;
+        private readonly AudioTranscriptionApiService _audioTranscriptionApiService;
 
-        public EpisodeController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService, PodcastEpisodeService podcastEpisodeService)
+        public EpisodeController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService, PodcastEpisodeService podcastEpisodeService, AudioTranscriptionApiService audioTranscriptionApiService)
         {
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
@@ -42,6 +48,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             _redisInstanceCacheService = redisInstanceCacheService;
             _redisSharedCacheService = redisSharedCacheService;
             _podcastEpisodeService = podcastEpisodeService;
+            _audioTranscriptionApiService = audioTranscriptionApiService;
         }
 
         #region Sample coding format must be followed
@@ -337,6 +344,243 @@ namespace PodcastService.API.Controllers.BaseControllers
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
+        }
+
+        // /api/podcast-service/api/episodes
+        [HttpPost("")]
+        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        public async Task<IActionResult> CreateEpisode(EpisodeCreateRequestDTO episodeCreateRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var episodeCreateInfo = JsonConvert.DeserializeObject<EpisodeCreateInfoDTO>(episodeCreateRequestDTO.EpisodeCreateInfo);
+
+            string mainImageFileKey = null;
+            if (episodeCreateRequestDTO.MainImageFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidFile = _fileValidationConfig.IsValidFile("PodcastEpisode.mainImageFileKey", episodeCreateRequestDTO.MainImageFile.FileName, episodeCreateRequestDTO.MainImageFile.Length, episodeCreateRequestDTO.MainImageFile.ContentType);
+                if (!isValidFile)
+                {
+                    return BadRequest("Invalid upload file.");
+                }
+
+
+                string newMainImageFileName = $"{Guid.NewGuid()}_{episodeCreateRequestDTO.MainImageFile.FileName}";
+                using (var stream = episodeCreateRequestDTO.MainImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.PODCAST_EPISODE_TEMP_FILE_PATH,
+                                        newMainImageFileName
+                                    );
+                }
+
+                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_EPISODE_TEMP_FILE_PATH, newMainImageFileName);
+
+            }
+            JObject requestData = JObject.FromObject(episodeCreateInfo);
+            requestData["MainImageFileKey"] = mainImageFileKey;
+            requestData["PodcasterId"] = account.Id; // lấy PodcasterId từ account đăng nhập hiện tại chứ không phải từ DTO
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-creation-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/podcast-service/api/episodes/{PodcastEpisodeId}
+        [HttpPut("{PodcastEpisodeId}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> UpdateEpisode(Guid PodcastEpisodeId, EpisodeUpdateRequestDTO episodeUpdateRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var episodeUpdateInfo = JsonConvert.DeserializeObject<EpisodeUpdateInfoDTO>(episodeUpdateRequestDTO.EpisodeUpdateInfo);
+
+            string mainImageFileKey = null;
+            if (episodeUpdateRequestDTO.MainImageFile != null)
+            {
+                // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+                var isValidFile = _fileValidationConfig.IsValidFile("PodcastEpisode.mainImageFileKey", episodeUpdateRequestDTO.MainImageFile.FileName, episodeUpdateRequestDTO.MainImageFile.Length, episodeUpdateRequestDTO.MainImageFile.ContentType);
+                if (!isValidFile)
+                {
+                    return BadRequest("Invalid upload file.");
+                }
+
+
+                string newMainImageFileName = $"{Guid.NewGuid()}_{episodeUpdateRequestDTO.MainImageFile.FileName}";
+                using (var stream = episodeUpdateRequestDTO.MainImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.PODCAST_EPISODE_TEMP_FILE_PATH,
+                                        newMainImageFileName
+                                    );
+                }
+
+                mainImageFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_EPISODE_TEMP_FILE_PATH, newMainImageFileName);
+
+            }
+
+            JObject requestData = JObject.FromObject(episodeUpdateInfo);
+            requestData["PodcastEpisodeId"] = PodcastEpisodeId;
+            requestData["MainImageFileKey"] = mainImageFileKey;
+            requestData["PodcasterId"] = account.Id;
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+
+        // /api/podcast-service/api/episodes/{PodcastEpisodeId}/licenses
+        [HttpPost("{PodcastEpisodeId}/licenses")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> UploadEpisodeLicenseFile(Guid PodcastEpisodeId, List<IFormFile> LicenseDocumentFiles)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType);
+            List<string> LicenseDocumentFileKeys = new List<string>();
+            foreach (var file in LicenseDocumentFiles)
+            {
+                var isValidFile = _fileValidationConfig.IsValidFile("PodcastEpisodeLicense.licenseDocumentFileKey", file.FileName, file.Length, file.ContentType);
+                if (!isValidFile)
+                {
+                    return BadRequest("Invalid upload file.");
+                }
+
+                string newLicenseFileName = $"{Guid.NewGuid()}_{file.FileName}";
+                using (var stream = file.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.PODCAST_EPISODE_TEMP_FILE_PATH,
+                                        newLicenseFileName
+                                    );
+                }
+
+                string licenseFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_EPISODE_TEMP_FILE_PATH, newLicenseFileName);
+                LicenseDocumentFileKeys.Add(licenseFileKey);
+            }
+
+
+            JObject requestData = new JObject
+            {
+                ["PodcastEpisodeId"] = PodcastEpisodeId,
+                ["LicenseDocumentFileKeys"] = JArray.FromObject(LicenseDocumentFileKeys),
+                ["PodcasterId"] = account.Id
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-licenses-upload-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+
+        // /api/podcast-service/api/episodes/{PodcastEpisodeId}/licenses/{PodcastEpisodeLicenseId}
+        [HttpDelete("{PodcastEpisodeId}/licenses/{PodcastEpisodeLicenseId}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> DeleteEpisodeLicenseFile(Guid PodcastEpisodeId, Guid PodcastEpisodeLicenseId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            JArray podcastEpisodeLicenseIds = new JArray
+            {
+                PodcastEpisodeLicenseId
+            };
+
+            JObject requestData = new JObject
+            {
+                ["PodcastEpisodeId"] = PodcastEpisodeId,
+                ["PodcastEpisodeLicenseIds"] = podcastEpisodeLicenseIds,
+                ["PodcasterId"] = account.Id
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-licenses-deletion-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+
+
+        // /api/podcast-service/api/episodes/{PodcastEpisodeId}/audio
+        [HttpPut("{PodcastEpisodeId}/audio")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> UploadEpisodeAudioFile(Guid PodcastEpisodeId, IFormFile AudioFile)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            // Validate and process the audio file
+            var isValidFile = _fileValidationConfig.IsValidFile("PodcastEpisode.audioFileKey", AudioFile.FileName, AudioFile.Length, AudioFile.ContentType);
+            if (!isValidFile)
+            {
+                return BadRequest("Invalid audio file.");
+            }
+
+            string newAudioFileName = $"{Guid.NewGuid()}_{AudioFile.FileName}";
+            int audioLengthSeconds;
+            using (var stream = AudioFile.OpenReadStream())
+            {
+                audioLengthSeconds = (int)await FFmpegCoreHelper.GetAudioDurationSecondsFromStreamAsync(stream);
+                await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                    stream,
+                                    _filePathConfig.PODCAST_EPISODE_TEMP_FILE_PATH,
+                                    newAudioFileName
+                                );
+            }
+
+            string audioFileKey = FilePathHelper.CombinePaths(_filePathConfig.PODCAST_EPISODE_TEMP_FILE_PATH, newAudioFileName);
+
+            JObject requestData = new JObject
+            {
+                ["PodcastEpisodeId"] = PodcastEpisodeId,
+                ["AudioFileKey"] = audioFileKey,
+                ["PodcasterId"] = account.Id,
+                ["AudioFileSize"] = AudioFile.Length / (1024.0 * 1024.0),
+                ["AudioLength"] = audioLengthSeconds
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-audio-submission-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        [HttpPost("audio-duration-seconds-test")]
+        public async Task<IActionResult> TestAudioDurationSeconds(IFormFile AudioFile)
+        {
+            var durationSeconds = 0.0;
+            using (var stream = AudioFile.OpenReadStream())
+            {
+                durationSeconds = await FFmpegCoreHelper.GetAudioDurationSecondsFromStreamAsync(stream);
+            }
+            return Ok(new
+            {
+                DurationSeconds = durationSeconds
+            });
+        }
+
+        [HttpPost("audio-transcription-test")]
+        public async Task<IActionResult> TestAudioTranscription(IFormFile AudioFile)
+        {
+            var transcriptionText = new AudioTranscriptionApiResult();
+            using (var stream = AudioFile.OpenReadStream())
+            {
+                transcriptionText = await _audioTranscriptionApiService.TranscribeAudioAsync(stream);
+            }
+            return Ok(transcriptionText);
         }
     }
 }

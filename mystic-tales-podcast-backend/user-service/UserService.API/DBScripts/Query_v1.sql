@@ -3,6 +3,11 @@ Select * from PodcasterProfile
 select * from PodcastBuddyReview
 select * from AccountFollowedPodcaster
 select * from AccountFavoritedPodcastChannel
+select * from AccountFollowedPodcastShow
+select * from AccountSavedPodcastEpisode
+
+
+
 
 Delete from AccountFavoritedPodcastChannel
 Delete from PodcasterProfile

@@ -20,6 +20,9 @@ namespace PodcastService.DataAccess.Registrations
             // services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddScoped<IPodcastChannelHashtagRepository, PodcastChannelHashtagRepository>();
             services.AddScoped<IPodcastShowHashtagRepository, PodcastShowHashtagRepository>();
+            services.AddScoped<IPodcastEpisodeHashtagRepository, PodcastEpisodeHashtagRepository>();
+            services.AddScoped<IPodcastEpisodeIllegalContentTypeMarkingRepository, PodcastEpisodeIllegalContentTypeMarkingRepository>();
+            services.AddScoped<IPodcastEpisodePublishDuplicateDetectionRepository, PodcastEpisodePublishDuplicateDetectionRepository>();
 
             return services;
         }

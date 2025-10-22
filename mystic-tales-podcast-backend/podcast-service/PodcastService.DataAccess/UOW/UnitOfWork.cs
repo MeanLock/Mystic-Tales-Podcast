@@ -10,18 +10,26 @@ public class UnitOfWork : IUnitOfWork
     // public IAccountRepository AccountRepository { get; }
     public IPodcastChannelHashtagRepository PodcastChannelHashtagRepository { get; }
     public IPodcastShowHashtagRepository PodcastShowHashtagRepository { get; }
+    public IPodcastEpisodeHashtagRepository PodcastEpisodeHashtagRepository { get; }
+    public IPodcastEpisodeIllegalContentTypeMarkingRepository PodcastEpisodeIllegalContentTypeMarkingRepository { get; }
+    public IPodcastEpisodePublishDuplicateDetectionRepository PodcastEpisodePublishDuplicateDetectionRepository { get; }
 
     public UnitOfWork(
         AppDbContext appDbContext,
         // IAccountRepository accountRepository,
         IPodcastChannelHashtagRepository podcastChannelHashtagRepository,
-        IPodcastShowHashtagRepository podcastShowHashtagRepository
-
-        )
+        IPodcastShowHashtagRepository podcastShowHashtagRepository,
+        IPodcastEpisodeHashtagRepository podcastEpisodeHashtagRepository,
+        IPodcastEpisodeIllegalContentTypeMarkingRepository podcastEpisodeIllegalContentTypeMarkingRepository,
+        IPodcastEpisodePublishDuplicateDetectionRepository podcastEpisodePublishDuplicateDetectionRepository
+    )
     {
         _appDbContext = appDbContext;
         PodcastChannelHashtagRepository = podcastChannelHashtagRepository;
         PodcastShowHashtagRepository = podcastShowHashtagRepository;
+        PodcastEpisodeHashtagRepository = podcastEpisodeHashtagRepository;
+        PodcastEpisodeIllegalContentTypeMarkingRepository = podcastEpisodeIllegalContentTypeMarkingRepository;
+        PodcastEpisodePublishDuplicateDetectionRepository = podcastEpisodePublishDuplicateDetectionRepository;
 
         // this.AccountRepository = accountRepository;
         // this.AccountOnlineTrackingRepository = accountOnlineTrackingRepository;

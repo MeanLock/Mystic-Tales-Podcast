@@ -48,7 +48,8 @@ INSERT INTO PodcastEpisodeStatus (id, name) VALUES
 (4, N'Ready to Release'),
 (5, N'Published'),
 (6, N'Taken Down'),
-(7, N'Removed');
+(7, N'Removed'),
+(8, N'Audio Processing');
 
 -- PodcastEpisodePublishReviewSessionStatus
 INSERT INTO PodcastEpisodePublishReviewSessionStatus (id, name) VALUES

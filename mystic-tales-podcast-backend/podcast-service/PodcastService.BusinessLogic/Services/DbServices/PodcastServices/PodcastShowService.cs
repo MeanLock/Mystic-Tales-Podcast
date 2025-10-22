@@ -964,6 +964,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .ThenInclude(psh => psh.Hashtag)
                         .Include(ps => ps.PodcastShowSubscriptionType)
                         .Include(ps => ps.PodcastChannel)
+                        .Include(ps => ps.PodcastEpisodes)
+                        .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
                 );
 
                 if (roleId == null || roleId == 1)
@@ -996,6 +998,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         UploadFrequency = ps.UploadFrequency,
                         ReleaseDate = ps.ReleaseDate,
                         TakenDownReason = roleId == null || roleId == 1 ? null : ps.TakenDownReason,
+                        EpisodeCount = ps.PodcastEpisodes.Count(pe =>
+                        {
+                            if (roleId == null || roleId == 1)
+                            {
+                                return pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null;
+                            }
+                            else
+                            {
+                                return pe.DeletedAt == null;
+                            }
+                        }),
                         PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
                         {
                             Id = ps.PodcastCategory.Id,
@@ -1064,6 +1077,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .ThenInclude(pch => pch.Hashtag)
                         .Include(pc => pc.PodcastChannel)
                         .Include(pc => pc.PodcastShowSubscriptionType)
+                        .Include(pc => pc.PodcastEpisodes)
+                        .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
                 );
 
                 var shows = await query.ToListAsync();
@@ -1082,6 +1097,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Copyright = ps.Copyright,
                     IsReleased = ps.IsReleased,
                     Language = ps.Language,
+                    EpisodeCount = ps.PodcastEpisodes.Count(pe => pe.DeletedAt == null),
                     PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
                     {
                         Id = ps.PodcastCategory.Id,
@@ -1233,6 +1249,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     ListenCount = show.ListenCount,
                     AverageRating = show.AverageRating,
                     RatingCount = show.RatingCount,
+                    EpisodeCount = episodeList.Count,
                     CurrentStatus = show.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).Select(pst => new PodcastShowStatusDTO
                     {
                         Id = pst.PodcastShowStatus.Id,
@@ -1474,6 +1491,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     UploadFrequency = show.UploadFrequency,
                     ReleaseDate = show.ReleaseDate,
                     TakenDownReason = show.TakenDownReason,
+                    EpisodeCount = episodeList.Count,
                     PodcastCategory = show.PodcastCategory != null ? new PodcastCategoryDTO
                     {
                         Id = show.PodcastCategory.Id,
@@ -1754,7 +1772,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             {
                 try
                 {
-                    var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(updateShowParameterDTO.PodcastShowId);
+                    var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(updateShowParameterDTO.PodcastShowId, includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                    .Include(ps => ps.PodcastChannel)
+                    
+                    );
                     if (existingPodcastShow == null)
                     {
                         throw new Exception("Podcast show with id " + updateShowParameterDTO.PodcastShowId + " does not exist");
@@ -1766,6 +1787,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     else if (existingPodcastShow.PodcasterId != updateShowParameterDTO.PodcasterId)
                     {
                         throw new Exception("Podcast show with id " + updateShowParameterDTO.PodcastShowId + " does not belong to podcaster with id " + updateShowParameterDTO.PodcasterId);
+                    }else if (existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                    {
+                        throw new Exception("Podcast show with id " + updateShowParameterDTO.PodcastShowId + " has been removed");
+                    }
+
+                    if (existingPodcastShow.PodcastChannel != null && existingPodcastShow.PodcastChannel.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast channel with id " + updateShowParameterDTO.PodcastShowId + " does not exist");
+                    }else if (existingPodcastShow.PodcastChannelId != null && existingPodcastShow.PodcasterId != updateShowParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast channel with id " + existingPodcastShow.PodcastChannelId + " does not belong to podcaster with id " + existingPodcastShow.PodcasterId);
                     }
 
                     var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(existingPodcastShow.PodcasterId);
@@ -2190,125 +2222,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task PlusPodcastEpisodeTotalSaved(PlusEpisodeTotalSavedParameterDTO plusEpisodeTotalSavedParameterDTO, SagaCommandMessage command)
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    var podcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(plusEpisodeTotalSavedParameterDTO.PodcastEpisodeId);
-                    if (podcastEpisode == null)
-                    {
-                        throw new Exception("Podcast episode with id " + plusEpisodeTotalSavedParameterDTO.PodcastEpisodeId + " does not exist");
-                    }
-                    else if (podcastEpisode.DeletedAt != null)
-                    {
-                        throw new Exception("Podcast episode with id " + plusEpisodeTotalSavedParameterDTO.PodcastEpisodeId + " has been deleted");
-                    }
-
-                    podcastEpisode.TotalSave += 1;
-                    await _podcastEpisodeGenericRepository.UpdateAsync(podcastEpisode.Id, podcastEpisode);
-
-                    await transaction.CommitAsync();
-
-                    var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastEpisodeId"] = podcastEpisode.Id;
-                    messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
-                    var messageResponseData = JObject.FromObject(new
-                    {
-                        PodcastEpisodeId = podcastEpisode.Id,
-                        AccountId = command.RequestData["AccountId"],
-                    });
-                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.ContentManagementDomain,
-                        requestData: messageNextRequestData,
-                        responseData: messageResponseData,
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: "plus-episode-total-saved.success"
-                    );
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.ContentManagementDomain,
-                        requestData: command.RequestData,
-                        responseData: JObject.FromObject(new
-                        {
-                            ErrorMessage = $"Plus podcast episode total saved failed, error: {ex.Message}"
-                        }),
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: "plus-episode-total-saved.failed"
-                    );
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-                    Console.WriteLine("\n" + ex.StackTrace + "\n");
-                }
-            }
-        }
-
-        public async Task SubtractPodcastEpisodeTotalSaved(SubtractEpisodeTotalSavedParameterDTO subtractEpisodeTotalSavedParameterDTO, SagaCommandMessage command)
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    var podcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(subtractEpisodeTotalSavedParameterDTO.PodcastEpisodeId);
-                    if (podcastEpisode == null)
-                    {
-                        throw new Exception("Podcast episode with id " + subtractEpisodeTotalSavedParameterDTO.PodcastEpisodeId + " does not exist");
-                    }
-                    else if (podcastEpisode.DeletedAt != null)
-                    {
-                        throw new Exception("Podcast episode with id " + subtractEpisodeTotalSavedParameterDTO.PodcastEpisodeId + " has been deleted");
-                    }
-
-                    podcastEpisode.TotalSave = Math.Max(0, podcastEpisode.TotalSave - subtractEpisodeTotalSavedParameterDTO.AffectedAccountIds.Count);
-                    await _podcastEpisodeGenericRepository.UpdateAsync(podcastEpisode.Id, podcastEpisode);
-
-                    await transaction.CommitAsync();
-
-                    var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastEpisodeId"] = podcastEpisode.Id;
-                    messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
-                    messageNextRequestData["AffectedAccountIds"] = JArray.FromObject(subtractEpisodeTotalSavedParameterDTO.AffectedAccountIds);
-                    var messageResponseData = JObject.FromObject(new
-                    {
-                        PodcastEpisodeId = podcastEpisode.Id,
-                        AccountId = command.RequestData["AccountId"],
-                        AffectedAccountIds = subtractEpisodeTotalSavedParameterDTO.AffectedAccountIds,
-                    });
-                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.ContentManagementDomain,
-                        requestData: messageNextRequestData,
-                        responseData: messageResponseData,
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: "subtract-episode-total-saved.success"
-                    );
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.ContentManagementDomain,
-                        requestData: command.RequestData,
-                        responseData: JObject.FromObject(new
-                        {
-                            ErrorMessage = $"Subtract podcast episode total saved failed, error: {ex.Message}"
-                        }),
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: "subtract-episode-total-saved.failed"
-                    );
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-                    Console.WriteLine("\n" + ex.StackTrace + "\n");
-                }
-            }
-        }
 
 
         public async Task CreatePodcastShowReview(CreateShowReviewParameterDTO createShowReviewParameterDTO, SagaCommandMessage command)

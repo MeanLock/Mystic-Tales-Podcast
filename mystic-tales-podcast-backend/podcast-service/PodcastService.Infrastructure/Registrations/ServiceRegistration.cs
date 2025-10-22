@@ -20,6 +20,9 @@ using PodcastService.Infrastructure.Configurations.Payos;
 using Net.payOS;
 using PodcastService.Infrastructure.Services.Kafka;
 using PodcastService.Infrastructure.Services.Audio.AcoustID;
+using PodcastService.Infrastructure.Services.Audio.Hls;
+using PodcastService.Infrastructure.Services.Audio.Tuning;
+using PodcastService.Infrastructure.Services.Audio.Transcription;
 
 namespace PodcastService.Infrastructure.Registrations
 {
@@ -209,6 +212,17 @@ namespace PodcastService.Infrastructure.Registrations
             services.AddScoped<AcoustIDAudioFingerprintGenerator>();
             services.AddScoped<AcoustIDAudioFingerprintComparator>();
 
+            // HLS Service
+            services.AddScoped<FFMegLocalHlsService>();
+            services.AddScoped<FFMpegCoreHlsService>();
+
+            // Audio Tuning Services
+            services.AddScoped<EqualizerTuningService>();
+            services.AddScoped<AITuningService>();
+            services.AddScoped<AdvanceTuningService>();
+
+            // Transcription Services
+            services.AddScoped<AudioTranscriptionApiService>();
 
             return services;
         }

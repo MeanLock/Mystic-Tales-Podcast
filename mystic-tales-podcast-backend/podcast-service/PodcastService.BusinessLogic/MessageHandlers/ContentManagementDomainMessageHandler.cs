@@ -1,33 +1,31 @@
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 using PodcastService.BusinessLogic.Attributes;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateEpisode;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateShow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeLicenses;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusEpisodeTotalSaved;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusShowTotalFollow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.ProcessingEpisodeDraftAudio;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishShow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitEpisodeAudioFile;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitShowTrailerAudioFile;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractEpisodeTotalSaved;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractShowTotalFollow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateEpisode;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateShow;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateAccount;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountGoogle;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.LoginAccountManual;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UploadEpisodeLicenses;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendPodcastServiceEmail;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateUser;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.VerifyAccount;
 using PodcastService.BusinessLogic.Enums.Kafka;
 using PodcastService.BusinessLogic.Models.Mail;
 using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
 using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
 using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
-using PodcastService.Infrastructure.Models.Kafka;
 using PodcastService.Infrastructure.Services.Kafka;
 
 namespace PodcastService.BusinessLogic.MessageHandlers
@@ -37,6 +35,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
         private readonly IMessagingService _messagingService;
         private readonly PodcastChannelService _podcastChannelService;
         private readonly PodcastShowService _podcastShowService;
+        private readonly PodcastEpisodeService _podcastEpisodeService;
         private readonly MailOperationService _mailOperationService;
         // private readonly AuthService _authService;
         private readonly KafkaProducerService _kafkaProducerService;
@@ -49,6 +48,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
             IMessagingService messagingService,
             PodcastChannelService podcastChannelService,
             PodcastShowService podcastShowService,
+            PodcastEpisodeService podcastEpisodeService,
             MailOperationService mailOperationService,
 
             KafkaProducerService kafkaProducerService,
@@ -59,6 +59,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
             _kafkaProducerService = kafkaProducerService;
             _podcastChannelService = podcastChannelService;
             _podcastShowService = podcastShowService;
+            _podcastEpisodeService = podcastEpisodeService;
 
             _mailPropertiesConfig = mailPropertiesConfig;
         }
@@ -577,7 +578,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 stepHandler: async (command) =>
                 {
                     var episodeId = command.RequestData.ToObject<PlusEpisodeTotalSavedParameterDTO>();
-                    await _podcastShowService.PlusPodcastEpisodeTotalSaved(episodeId, command);
+                    await _podcastEpisodeService.PlusPodcastEpisodeTotalSaved(episodeId, command);
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "plus-episode-total-saved.failed"    // From YAML onFailure.emit
@@ -592,13 +593,102 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 stepHandler: async (command) =>
                 {
                     var episodeId = command.RequestData.ToObject<SubtractEpisodeTotalSavedParameterDTO>();
-                    await _podcastShowService.SubtractPodcastEpisodeTotalSaved(episodeId, command);
+                    await _podcastEpisodeService.SubtractPodcastEpisodeTotalSaved(episodeId, command);
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "subtract-episode-total-saved.failed"    // From YAML onFailure.emit
             );
         }
 
+        [MessageHandler("create-episode", SAGA_TOPIC)]
+        public async Task HandleCreateEpisodeAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var episode = command.RequestData.ToObject<CreateEpisodeParameterDTO>();
+                    await _podcastEpisodeService.CreatePodcastEpisode(episode, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-episode.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("update-episode", SAGA_TOPIC)]
+        public async Task HandleUpdateEpisodeAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var episode = command.RequestData.ToObject<UpdateEpisodeParameterDTO>();
+                    await _podcastEpisodeService.UpdatePodcastEpisode(episode, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "update-episode.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("upload-episode-licenses", SAGA_TOPIC)]
+        public async Task HandleUploadEpisodeLicenseFilesAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var uploadEpisodeLicenses = command.RequestData.ToObject<UploadEpisodeLicensesParameterDTO>();
+                    await _podcastEpisodeService.UploadPodcastEpisodeLicenseFiles(uploadEpisodeLicenses, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "upload-episode-licenses.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-episode-licenses", SAGA_TOPIC)]
+        public async Task HandleDeleteEpisodeLicensesAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteEpisodeLicenses = command.RequestData.ToObject<DeleteEpisodeLicensesParameterDTO>();
+                    await _podcastEpisodeService.DeletePodcastEpisodeLicenseFiles(deleteEpisodeLicenses, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-episode-licenses.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("submit-episode-audio-file", SAGA_TOPIC)]
+        public async Task HandleEpisodeAudioSubmissionFlowAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var episode = command.RequestData.ToObject<SubmitEpisodeAudioFileParameterDTO>();
+                    await _podcastEpisodeService.SubmitPodcastEpisodeAudioFile(episode, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "submit-episode-audio-file.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("processing-episode-draft-audio", SAGA_TOPIC)]
+        public async Task HandlePublishEpisodeAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var episode = command.RequestData.ToObject<ProcessingEpisodeDraftAudioParameterDTO>();
+                    await _podcastEpisodeService.ProcessPodcastEpisodeDraftAudio(episode, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "publish-episode.failed"    // From YAML onFailure.emit
+            );
+        }
     }
 }
 

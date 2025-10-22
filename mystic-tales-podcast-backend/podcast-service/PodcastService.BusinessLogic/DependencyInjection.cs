@@ -16,6 +16,7 @@ namespace PodcastService.BusinessLogic
             services.AddOpenAIServices();
             services.AddMessagingServices();
             services.AddCrossServiceServices();
+            services.AddAudioServices();
             return services;
         }
     }

@@ -40,7 +40,7 @@ namespace PodcastService.API.Configurations.Builder
 
             builder.WebHost.ConfigureKestrel(serverOptions =>
             {
-                serverOptions.Limits.MaxRequestBodySize = 157286400; // 150MB
+                serverOptions.Limits.MaxRequestBodySize = 524288000; // 150MB
             });
         }
 

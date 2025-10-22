@@ -123,10 +123,11 @@ CREATE TABLE PodcastEpisode (
     releaseDate DATE NULL,
     isReleased BIT NULL,
     mainImageFileKey NVARCHAR(MAX) NULL,
-    audioFileKey NVARCHAR(MAX) NOT NULL,
-    audioFileSize FLOAT NOT NULL,
-    audioLength INT NOT NULL,
+    audioFileKey NVARCHAR(MAX) NULL DEFAULT NULL,
+    audioFileSize FLOAT NULL DEFAULT NULL,
+    audioLength INT NULL DEFAULT NULL,
     audioFingerPrint VARBINARY(MAX) NULL DEFAULT NULL,
+    audioTranscript NVARCHAR(MAX) NULL DEFAULT NULL,
     podcastEpisodeSubscriptionTypeId INT NOT NULL DEFAULT 1,
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     seasonNumber INT NOT NULL DEFAULT 0,
@@ -162,6 +163,15 @@ CREATE TABLE PodcastEpisodeIllegalContentTypeMarking (
     PRIMARY KEY (podcastEpisodeId, podcastIllegalContentTypeId),
     FOREIGN KEY (podcastEpisodeId) REFERENCES PodcastEpisode(id),
     FOREIGN KEY (podcastIllegalContentTypeId) REFERENCES PodcastIllegalContentType(id)
+);
+
+CREATE TABLE PodcastEpisodePublishDuplicateDetection (
+    podcastEpisodePublishReviewSessionId INT NOT NULL,
+    duplicatePodcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+	PRIMARY KEY (podcastEpisodePublishReviewSessionId, duplicatePodcastEpisodeId),
+    FOREIGN KEY (podcastEpisodePublishReviewSessionId) REFERENCES PodcastEpisodePublishReviewSession(id),
+    FOREIGN KEY (duplicatePodcastEpisodeId) REFERENCES PodcastEpisode(id),
 );
 
 -- PodcastEpisodePublishReviewSession table

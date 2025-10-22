@@ -23,5 +23,7 @@ public partial class PodcastEpisodePublishReviewSession
 
     public virtual PodcastEpisode PodcastEpisode { get; set; } = null!;
 
+    public virtual ICollection<PodcastEpisodePublishDuplicateDetection> PodcastEpisodePublishDuplicateDetections { get; set; } = new List<PodcastEpisodePublishDuplicateDetection>();
+
     public virtual ICollection<PodcastEpisodePublishReviewSessionStatusTracking> PodcastEpisodePublishReviewSessionStatusTrackings { get; set; } = new List<PodcastEpisodePublishReviewSessionStatusTracking>();
 }

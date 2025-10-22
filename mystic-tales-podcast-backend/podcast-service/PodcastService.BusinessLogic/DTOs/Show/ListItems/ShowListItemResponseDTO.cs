@@ -23,6 +23,7 @@ namespace PodcastService.BusinessLogic.DTOs.Show.ListItems
         public string? TrailerAudioFileKey { get; set; }
         public int ListenCount { get; set; }
         public int TotalFollow { get; set; }
+        public int EpisodeCount { get; set; }
         public AccountSnippetResponseDTO Podcaster { get; set; } = null!;
         public PodcastCategoryDTO? PodcastCategory { get; set; }
         public PodcastSubCategoryDTO? PodcastSubCategory { get; set; }

@@ -27,6 +27,8 @@ model_config = {
     "torch_dtype": torch.float16,  # Use half precision for better GPU memory usage
     "use_safetensors": True,
     "low_cpu_mem_usage": True,
+    # "max_memory": {0: "7GB"},
+    # "device_map": "auto"
 }
 
 
@@ -183,7 +185,7 @@ async def _transcribe_long_audio(transcriber, audio_data: Union[np.ndarray, str]
         return transcriber(audio_data, return_timestamps=True)
 
 @app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...), language: Optional[str] = None):
+async def transcribe(AudioFile: UploadFile = File(...), language: Optional[str] = None):
     """Transcribe audio với GPU optimization - xử lý trực tiếp từ memory"""
     
     # Check memory before processing
@@ -200,11 +202,11 @@ async def transcribe(file: UploadFile = File(...), language: Optional[str] = Non
         raise HTTPException(status_code=503, detail="Model not available")
     
     # Validate file
-    if not file.filename:
+    if not AudioFile.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
     
     allowed_extensions = {'.wav', '.mp3', '.m4a', '.flac', '.ogg', '.aac'}
-    file_ext = os.path.splitext(file.filename)[1].lower()
+    file_ext = os.path.splitext(AudioFile.filename)[1].lower()
     if file_ext not in allowed_extensions:
         raise HTTPException(
             status_code=400, 
@@ -213,11 +215,11 @@ async def transcribe(file: UploadFile = File(...), language: Optional[str] = Non
     
     try:
         # Read file content vào memory
-        content = await file.read()
+        content = await AudioFile.read()
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="Empty file uploaded")
         
-        logger.info(f"Processing file: {file.filename} ({len(content)} bytes)")
+        logger.info(f"Processing file: {AudioFile.filename} ({len(content)} bytes)")
         
         # Xử lý audio trực tiếp từ memory
         try:
@@ -294,15 +296,15 @@ async def transcribe(file: UploadFile = File(...), language: Optional[str] = Non
         memory_info = gpu_manager.get_memory_info()
         
         return {
-            "transcript": output_text.strip(),
-            "duration_seconds": audio_duration,
-            "file_size_bytes": len(content),
-            "audio_shape": list(audio.shape),
-            "sample_rate": sr,
-            "model_used": getattr(current_transcriber.model, 'name_or_path', 'unknown'),
-            "device_used": str(device),
-            "memory_info": memory_info if torch.cuda.is_available() else None,
-            "processing_mode": "memory_direct"  # Indicator that we processed directly from memory
+            "Transcript": output_text.strip(),
+            "DurationSeconds": audio_duration,
+            "FileSizeBytes": len(content),
+            "AudioShape": list(audio.shape),
+            "SampleRate": sr,
+            "ModelUsed": getattr(current_transcriber.model, 'name_or_path', 'unknown'),
+            "DeviceUsed": str(device),
+            "MemoryInfo": memory_info if torch.cuda.is_available() else None,
+            "ProcessingMode": "memory_direct"  # Indicator that we processed directly from memory
         }
         
     except HTTPException:

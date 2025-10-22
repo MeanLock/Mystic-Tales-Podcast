@@ -34,6 +34,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<PodcastEpisodeLicenseType> PodcastEpisodeLicenseTypes { get; set; }
 
+    public virtual DbSet<PodcastEpisodePublishDuplicateDetection> PodcastEpisodePublishDuplicateDetections { get; set; }
+
     public virtual DbSet<PodcastEpisodePublishReviewSession> PodcastEpisodePublishReviewSessions { get; set; }
 
     public virtual DbSet<PodcastEpisodePublishReviewSessionStatus> PodcastEpisodePublishReviewSessionStatuses { get; set; }
@@ -208,12 +210,21 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
-            entity.Property(e => e.AudioFileKey).HasColumnName("audioFileKey");
-            entity.Property(e => e.AudioFileSize).HasColumnName("audioFileSize");
+            entity.Property(e => e.AudioFileKey)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnName("audioFileKey");
+            entity.Property(e => e.AudioFileSize)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnName("audioFileSize");
             entity.Property(e => e.AudioFingerPrint)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnName("audioFingerPrint");
-            entity.Property(e => e.AudioLength).HasColumnName("audioLength");
+            entity.Property(e => e.AudioLength)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnName("audioLength");
+            entity.Property(e => e.AudioTranscript)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnName("audioTranscript");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
@@ -349,6 +360,30 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
                 .HasColumnName("name");
+        });
+
+        modelBuilder.Entity<PodcastEpisodePublishDuplicateDetection>(entity =>
+        {
+            entity.HasKey(e => new { e.PodcastEpisodePublishReviewSessionId, e.DuplicatePodcastEpisodeId }).HasName("PK__PodcastE__DBBCD2BD53BD9FDE");
+
+            entity.ToTable("PodcastEpisodePublishDuplicateDetection");
+
+            entity.Property(e => e.PodcastEpisodePublishReviewSessionId).HasColumnName("podcastEpisodePublishReviewSessionId");
+            entity.Property(e => e.DuplicatePodcastEpisodeId).HasColumnName("duplicatePodcastEpisodeId");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+
+            entity.HasOne(d => d.DuplicatePodcastEpisode).WithMany(p => p.PodcastEpisodePublishDuplicateDetections)
+                .HasForeignKey(d => d.DuplicatePodcastEpisodeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__PodcastEp__dupli__1D7B6025");
+
+            entity.HasOne(d => d.PodcastEpisodePublishReviewSession).WithMany(p => p.PodcastEpisodePublishDuplicateDetections)
+                .HasForeignKey(d => d.PodcastEpisodePublishReviewSessionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__PodcastEp__podca__1C873BEC");
         });
 
         modelBuilder.Entity<PodcastEpisodePublishReviewSession>(entity =>

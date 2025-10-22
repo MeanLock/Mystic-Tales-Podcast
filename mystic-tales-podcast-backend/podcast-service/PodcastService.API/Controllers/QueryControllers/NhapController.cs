@@ -5,6 +5,8 @@ using PodcastService.BusinessLogic.Models.CrossService;
 using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using PodcastService.Infrastructure.Services.Audio.AcoustID;
 using PodcastService.Infrastructure.Models.Audio.AcoustID;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace PodcastService.API.Controllers.QueryControllers
 {
@@ -29,6 +31,33 @@ namespace PodcastService.API.Controllers.QueryControllers
             _fileIOHelper = fileIOHelper;
             _acoustIDAudioFingerprintGenerator = acoustIDAudioFingerprintGenerator;
             _acoustIDAudioFingerprintComparator = acoustIDAudioFingerprintComparator;
+        }
+
+        [HttpGet("test-get-restricted-terms")]
+        public async Task<IActionResult> TestGetRestrictedTerms()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastRestrictedTerms",
+                            QueryType = "findall",
+                            EntityType = "PodcastRestrictedTerm",
+                                Parameters = JObject.FromObject(new
+                                {
+
+                                }),
+                            Fields = new[] { "Id", "Term" }
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+
+            // return Ok((JArray)result.Results["podcastRestrictedTerms"]);
+            List<string> terms = ((JArray)result.Results["podcastRestrictedTerms"]).Select(terms => terms["Term"].ToString()).ToList();
+            return Ok(terms);
         }
 
         [HttpPost("generate-audio-fingerprint")]

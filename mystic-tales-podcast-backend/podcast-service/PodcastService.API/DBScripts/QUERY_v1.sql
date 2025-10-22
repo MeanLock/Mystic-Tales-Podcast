@@ -1,22 +1,59 @@
 ﻿select * from PodcastChannel
 select * from PodcastChannelStatusTracking
 select * from PodcastShow
-select * from PodcastShowStatusTracking
+select * from PodcastShowReview
+select * from PodcastShowStatusTracking where podcastShowId = N'89709A6A-11A3-4574-B94A-3ED61A0BE627'
 select * from Hashtag
 select * from PodcastChannelHashtag
 select * from PodcastShow
 select * from PodcastCategory
 select * from PodcastSubCategory
 select * from PodcastShowSubscriptionType
+select * from PodcastEpisode
+select * from PodcastEpisodeStatusTracking order by createdAt
+select * from PodcastEpisodeLicense
 
 
 
 delete from PodcastChannelStatusTracking
 delete from PodcastChannel
+delete from PodcastShowReview
+
+
+ALTER TABLE PodcastEpisode
+    ALTER COLUMN audioFileKey NVARCHAR(MAX) NULL ;
+
+ALTER TABLE PodcastEpisode
+    ALTER COLUMN audioFileSize FLOAT NULL ;
+
+ALTER TABLE PodcastEpisode
+    ALTER COLUMN audioLength INT NULL ;
+
+
+
+-- 1. Thêm DEFAULT NULL cho audioFileKey
+ALTER TABLE PodcastEpisode
+    ADD CONSTRAINT DF_PodcastEpisode_audioFileKey DEFAULT NULL FOR audioFileKey;
+PRINT '✓ DEFAULT NULL added for audioFileKey';
+
+-- 2. Thêm DEFAULT NULL cho audioFileSize
+ALTER TABLE PodcastEpisode
+    ADD CONSTRAINT DF_PodcastEpisode_audioFileSize DEFAULT NULL FOR audioFileSize;
+PRINT '✓ DEFAULT NULL added for audioFileSize';
+
+-- 3. Thêm DEFAULT NULL cho audioLength
+ALTER TABLE PodcastEpisode
+    ADD CONSTRAINT DF_PodcastEpisode_audioLength DEFAULT NULL FOR audioLength;
+PRINT '✓ DEFAULT NULL added for audioLength';
+
+ALTER TABLE PodcastEpisode
+    ADD audioTranscript NVARCHAR(MAX) NULL DEFAULT NULL;
+
 
 
 ALTER TABLE PodcastEpisode
 ADD episodeOrder INT NOT NULL DEFAULT 1;
+
 
 INSERT INTO PodcastShowHashtag (podcastShowId, hashtagId, createdAt)
 VALUES 
@@ -84,5 +121,96 @@ ADD CONSTRAINT FK_PodcastShow_PodcastShowSubscriptionType
 FOREIGN KEY (podcastShowSubscriptionTypeId) 
 REFERENCES PodcastShowSubscriptionType(id);
 
+
+INSERT INTO PodcastShowStatusTracking(podcastShowId, podcastShowStatusId) VALUES 
+(N'89709A6A-11A3-4574-B94A-3ED61A0BE627', 3)
+
+
+INSERT INTO PodcastEpisodeStatus (id, name) 
+VALUES (8, N'Audio Processing');
+INSERT INTO PodcastEpisodeStatusTracking(podcastEpisodeId, podcastEpisodeStatusId) VALUES 
+(N'FDE924E8-B1C1-49BB-BE2E-1F359A7866A7', 3)
+
+-- Tạo episode mới
+DECLARE @NewEpisodeId UNIQUEIDENTIFIER = NEWID();
+DECLARE @ShowId UNIQUEIDENTIFIER = '89709A6A-11A3-4574-B94A-3ED61A0BE627';
+
+-- Insert vào bảng PodcastEpisode
+INSERT INTO PodcastEpisode (
+    id,
+    name,
+    description,
+    explicitContent,
+    releaseDate,
+    isReleased,
+    mainImageFileKey,
+    audioFileKey,
+    audioFileSize,
+    audioLength,
+    audioFingerPrint,
+    audioTranscript,
+    podcastEpisodeSubscriptionTypeId,
+    podcastShowId,
+    seasonNumber,
+    episodeOrder,
+    totalSave,
+    listenCount,
+    isAudioPublishable,
+    takenDownReason,
+    deletedAt,
+    createdAt,
+    updatedAt
+)
+VALUES (
+    @NewEpisodeId,
+    N'Tên Episode Mới',  -- Thay đổi tên theo ý bạn
+    N'Mô tả cho episode',  -- Thay đổi mô tả theo ý bạn
+    0,  -- explicitContent
+    NULL,  -- releaseDate
+    NULL,  -- isReleased
+    NULL,  -- mainImageFileKey
+    NULL,  -- audioFileKey
+    NULL,  -- audioFileSize
+    NULL,  -- audioLength
+    NULL,  -- audioFingerPrint
+    NULL,  -- audioTranscript
+    1,  -- podcastEpisodeSubscriptionTypeId (Free)
+    @ShowId,  -- podcastShowId
+    0,  -- seasonNumber
+    1,  -- episodeOrder
+    0,  -- totalSave
+    0,  -- listenCount
+    NULL,  -- isAudioPublishable
+    NULL,  -- takenDownReason
+    NULL,  -- deletedAt
+    CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME),  -- createdAt
+    CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)   -- updatedAt
+);
+
+-- Insert vào bảng PodcastEpisodeStatusTracking với status id = 3 (Pending Edit Required)
+INSERT INTO PodcastEpisodeStatusTracking (
+    id,
+    podcastEpisodeId,
+    podcastEpisodeStatusId,
+    createdAt
+)
+VALUES (
+    NEWID(),
+    @NewEpisodeId,
+    3,  -- Pending Edit Required
+    CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)
+);
+
+-- Hiển thị kết quả
+SELECT @NewEpisodeId AS NewEpisodeId;
+
+CREATE TABLE PodcastEpisodePublishDuplicateDetection (
+    podcastEpisodePublishReviewSessionId INT NOT NULL,
+    duplicatePodcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+	PRIMARY KEY (podcastEpisodePublishReviewSessionId, duplicatePodcastEpisodeId),
+    FOREIGN KEY (podcastEpisodePublishReviewSessionId) REFERENCES PodcastEpisodePublishReviewSession(id),
+    FOREIGN KEY (duplicatePodcastEpisodeId) REFERENCES PodcastEpisode(id),
+);
 
 

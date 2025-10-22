@@ -7,6 +7,9 @@ public interface IUnitOfWork
     // IAccountRepository AccountRepository { get; }
     IPodcastChannelHashtagRepository PodcastChannelHashtagRepository { get; }
     IPodcastShowHashtagRepository PodcastShowHashtagRepository { get; }
+    IPodcastEpisodeHashtagRepository PodcastEpisodeHashtagRepository { get; }
+    IPodcastEpisodeIllegalContentTypeMarkingRepository PodcastEpisodeIllegalContentTypeMarkingRepository { get; }
+    IPodcastEpisodePublishDuplicateDetectionRepository PodcastEpisodePublishDuplicateDetectionRepository { get; }
 
     int Complete();
 }

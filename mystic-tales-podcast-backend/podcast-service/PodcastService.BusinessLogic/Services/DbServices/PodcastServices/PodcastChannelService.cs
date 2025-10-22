@@ -1448,7 +1448,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }).ToList(),
                         TotalFavorite = pc.TotalFavorite,
                         ListenCount = pc.ListenCount,
-                        ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Published && ps.DeletedAt == null) : 0,
+                        ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps =>
+                        {
+                            if (roleId == null || roleId == 1)
+                            {
+                                return ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Published && ps.DeletedAt == null;
+                            }
+                            return ps.DeletedAt == null;
+                        }) : 0,
                         Podcaster = new AccountSnippetResponseDTO
                         {
                             Id = podcaster.Id,
@@ -1618,6 +1625,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .Include(ps => ps.PodcastShowHashtags)
                         .ThenInclude(psh => psh.Hashtag)
                         .Include(ps => ps.PodcastShowSubscriptionType)
+                        .Include(ps => ps.PodcastEpisodes)
+                        .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
                 );
 
                 if (role == null || role == 1)
@@ -1631,6 +1640,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     throw new Exception("Podcaster with id " + channel.PodcasterId + " does not exist");
                 }
+
 
                 var channelDetail = new ChannelDetailResponseDTO
                 {
@@ -1689,6 +1699,21 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         UploadFrequency = ps.UploadFrequency,
                         ReleaseDate = ps.ReleaseDate,
                         TakenDownReason = role == null || role == 1 ? null : ps.TakenDownReason,
+                        // EpisodeCount = ps.PodcastEpisodes != null ? (
+                        //     role == null || role == 1 ?
+                        //      (ps.PodcastEpisodes.Count(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null)) : ((pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null)
+                        //     )),
+                        EpisodeCount = ps.PodcastEpisodes != null ? ps.PodcastEpisodes.Count(pe =>
+                            {
+                                if (role == null || role == 1)
+                                {
+                                    return pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null;
+                                }
+                                else
+                                {
+                                    return pe.DeletedAt == null;
+                                }
+                            }) : 0, 
                         PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
                         {
                             Id = ps.PodcastCategory.Id,
@@ -1842,6 +1867,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .Include(ps => ps.PodcastShowHashtags)
                         .ThenInclude(psh => psh.Hashtag)
                         .Include(ps => ps.PodcastShowSubscriptionType)
+                        .Include(ps => ps.PodcastEpisodes)
+                        .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
                 );
 
 
@@ -1910,6 +1937,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         UploadFrequency = ps.UploadFrequency,
                         ReleaseDate = ps.ReleaseDate,
                         TakenDownReason = ps.TakenDownReason,
+                        EpisodeCount = ps.PodcastEpisodes != null ? ps.PodcastEpisodes.Count(pe => pe.DeletedAt == null) : 0,
                         PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
                         {
                             Id = ps.PodcastCategory.Id,
