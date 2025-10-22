@@ -1,0 +1,90 @@
+query {
+  _jsonQueries{
+    _nhapJson_1_Queries {
+        complexJsonAbc {
+          title
+          description
+          items {
+            id
+            name
+            values
+          }
+          metadata {
+            createdAt
+            source
+          }
+        }
+      }
+  }
+  _jsonQueries{
+    _nhapJson_2_Queries {
+        complexJsonXyz {
+          rootElement
+        }
+      }
+  }
+  book{
+    id
+  	Title_Configured
+  	author
+  	publishedDate
+    summary
+  	price
+  	doSomething
+  	
+  }
+  _dbQueries{
+    _productQueries {
+    allProducts(where: { price: { gt: 200 } }, order: { price: DESC }) {
+      productId
+      productName
+      price
+      stockQuantity
+    	}
+  	}
+  } 
+}
+
+
+
+
+
+
+
+
+
+    // "react-native-quick-sqlite": "^8.2.7",
+
+
+
+
+
+- Java Version Type:
+    - java: ngôn ngữ java
+    - javac: java complier
+    - JDBC: java Database Drivers
+    - SDK: Software Development Kit
+        - Yêu cầu phiên bản: **Hệ điều hành** (Windows, macOS, Linux), **JDK** (cho một số SDK như Android SDK)
+    - Java SDK:  Java Software Development Kit
+        - bao gồm: **JRE** và các công cụ phát triển như **javac**, **java**, và **javadoc,..**.
+        - Yêu cầu phiên bản: JDK
+    - Android SDK: Android Software Development Kit
+        - Yêu cầu phiên bản: JDK, Android Studio
+    - **JVM:  Java Virtual Machine**
+    - **JRE: Java Runtime Environment**
+        - **JRE** = **JVM** + Thư viện Java để chạy ứng dụng.
+    - **JDK**:
+        - **JDK** = **JRE** + Công cụ phát triển (như `javac`, `javadoc`, `jar`...).
+        - **có thể gọi là Oracle JDK** là bản phân phối chính thức của **JDK** từ Oracle
+        - Yêu cầu phiên bản: java
+    - OpenJDK:
+        - là **phiên bản mã nguồn mở** của **JDK, do cộng đồng phát triển**
+        - Yêu cầu phiên bản: java
+    - Java SE: Java Standard Edition (nền tảng chuẩn để phát triển ứng dụng Java với các API cơ bản)
+        - Yêu cầu phiên bản: JDK
+    - Java EE: Java Enterprise Edition (nền tảng mở rộng, cung cấp các API và các dịch vụ nâng cao)
+        - Yêu cầu phiên bản: JDK
+    - Maven :
+        - Yêu cầu phiên bản: JDK
+    - **Gradle:**
+        - Yêu cầu phiên bản: JDK

@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  survey-talk-postgres-database-server:
+    # image: postgres:17.5
+    # image: ankane/pgvector:latest
+    build:
+      context: .
+      dockerfile: Dockerfile-pgvector
+    container_name: survey-talk-postgres-database-server
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Banana100
+      POSTGRES_DB: SurveyTalkEmbeddingDB
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  survey-talk-embedding-vector-service:
+    build: .
+    container_name: survey-talk-embedding-vector-service
+    ports:
+      - "8000:8000"
+
+
+volumes:
+  db_data:

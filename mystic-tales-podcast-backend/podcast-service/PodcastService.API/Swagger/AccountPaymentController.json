@@ -1,0 +1,26 @@
+[
+    {
+        "method": "POST",
+        "url": "/api/Payment/account/balance-deposits/create-payment-link",
+        "description": "Tạo đường dẫn nạp tiền",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/Payment/account/balance-withdrawal",
+        "description": "Rút tiền",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Payment/account/balance-deposits/history",
+        "description": "Lịch sử nạp tiền",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Payment/account/balance-withdrawal/history",
+        "description": "Lịch sử rút tiền",
+        "completed": true
+    }
+]

@@ -1,0 +1,12 @@
+.vs/
+SystemConfigurationService.API/bin/
+SystemConfigurationService.API/obj/
+SystemConfigurationService.BusinessLogic/bin/
+SystemConfigurationService.BusinessLogic/obj/
+SystemConfigurationService.Infrastructure/bin/
+SystemConfigurationService.Infrastructure/obj/
+SystemConfigurationService.DataAccess/bin/
+SystemConfigurationService.DataAccess/obj/
+SystemConfigurationService.Common/bin/
+SystemConfigurationService.Common/obj/
+

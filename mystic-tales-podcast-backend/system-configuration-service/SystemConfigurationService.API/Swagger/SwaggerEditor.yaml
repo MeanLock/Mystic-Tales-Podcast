@@ -1,0 +1,3640 @@
+openapi: 3.0.0
+info:
+  title: Account API
+  version: 1.0.0
+tags:
+  - name: AccountController
+paths:
+
+##### AuthController
+  /api/User/auth/login:
+    post:
+      summary: Đăng nhập
+      tags:
+        - AuthController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManualLoginDTO'
+              
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  AccessToken:
+                    type: string
+                  # RefreshToken:
+                  #   type: string
+                  Message:
+                    type: string
+
+  /api/User/auth/register/customer:
+    post:
+      summary: Đăng ký tài khoản customer
+      tags:
+        - AuthController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerRegisterDTO'
+      responses:
+        '201':
+          description: Tạo tài khoản thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+  /api/User/auth/register/staff:
+    post:
+      summary: Đăng ký tài khoản staff
+      tags:
+        - AuthController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                RegisterInfo:
+                  type: object
+                  properties:
+                    Email:
+                      type: string
+                      maxLength: 250
+                    Password:
+                      type: string
+                      maxLength: 250
+                    RoleId:
+                      type: integer
+                    FullName:
+                      type: string
+                      maxLength: 250
+                    Dob:
+                      type: string
+                      format: date
+                    Gender:
+                      type: string
+                      maxLength: 250
+                    Address:
+                      type: string
+                      maxLength: 250
+                    Phone:
+                      type: string
+                      maxLength: 20
+                    ImageBase64:
+                      type: string
+                      description: Ảnh đại diện base64
+                  required:
+                    - Email
+                    - Password
+                    - RoleId
+                    - IsFilterSurveyRequired
+      responses:
+        '201':
+          description: Tạo tài khoản thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+  /api/User/auth/refresh-token:
+    post:
+      summary: Làm mới token
+      tags:
+        - AuthController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                RefreshToken:
+                  type: string
+              required:
+                - RefreshToken
+      responses:
+        '200':
+          description: Làm mới token thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  AccessToken:
+                    type: string
+                  RefreshToken:
+                    type: string
+                  Message:
+                    type: string
+
+  /api/User/auth/forgot-password:
+    post:
+      summary: Gửi yêu cầu đổi mật khẩu
+      tags:
+        - AuthController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Email:
+                  type: string
+                  maxLength: 250
+              required:
+                - Email
+      responses:
+        '200':
+          description: Gửi yêu cầu thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+  /api/User/auth/new-reset-password:
+    post:
+      summary: Gửi lại password mới để update
+      tags:
+        - AuthController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Email:
+                  type: string
+                  maxLength: 250
+                NewPassword:
+                  type: string
+                  maxLength: 250
+                PasswordResetToken:
+                  type: string
+              required:
+                - Email
+                - NewPassword
+                - Otp
+      responses:
+        '200':
+          description: Đổi mật khẩu thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+###### AccountController
+  /api/User/accounts/customer:
+    get:
+      summary: Lấy danh sách tài khoản customer [ADMIN]
+      tags:
+        - AccountController
+      responses:
+        '200':
+          description: Danh sách tài khoản
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccountListItemDTO'
+  /api/User/accounts/staff:
+    get:
+      summary: Lấy danh sách tài khoản staff [ADMIN]
+      tags:
+        - AccountController
+      responses:
+        '200':
+          description: Danh sách tài khoản
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccountListItemDTO'
+    
+    
+
+  /api/User/accounts/{AccountId}:
+    get:
+      summary: Lấy chi tiết tài khoản, tuỳ role
+      tags:
+        - AccountController
+      parameters:
+        - name: AccountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thông tin tài khoản
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Account:
+                    allOf:
+                        - $ref: '#/components/schemas/AccountListItemDTO'
+                        - type: object
+                          properties:
+                            Profile:
+                              $ref: '#/components/schemas/AccountProfile'
+
+    put:
+      summary: Cập nhật tài khoản
+      tags:
+        - AccountController
+      parameters:
+        - name: AccountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                FullName:
+                  type: string
+                  maxLength: 250
+                Dob:
+                  type: string
+                  format: date
+                Gender:
+                  type: string
+                  maxLength: 250
+                Address:
+                  type: string
+                  maxLength: 250
+                Phone:
+                  type: string
+                  maxLength: 20
+                ImageBase64:
+                  type: string
+                  description: Ảnh đại diện base64
+      responses:
+        '200':
+          description: Tài khoản đã được cập nhật
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+  /api/User/accounts/me:
+    get:
+      summary: Lấy chi tiết tài khoản của người gọi 
+      tags:
+        - AccountController
+      responses:
+        '200':
+          description: Thông tin tài khoản
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Account:
+                    allOf:
+                        - $ref: '#/components/schemas/AccountListItemDTO'
+                        - type: object
+                          properties:
+                            Profile:
+                              $ref: '#/components/schemas/AccountProfile'
+  /api/User/accounts/{AccountId}/update-profile:
+    put:
+      tags:
+        - AccountController
+      summary: Update account profile (AccountProfile fields + favorite topics)
+      parameters:
+        - name: AccountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                AccountProfile:
+                  type: object
+                  properties:
+                    CountryRegion:
+                      type: string
+                      nullable: true
+                    MaritalStatus:
+                      type: string
+                      nullable: true
+                    AverageIncome:
+                      type: string
+                      nullable: true
+                    EducationLevel:
+                      type: string
+                      nullable: true
+                    JobField:
+                      type: string
+                      nullable: true
+                    ProvinceCode:
+                      type: integer
+                      nullable: true
+                    DistrictCode:
+                      type: integer
+                      nullable: true
+                    WardCode:
+                      type: integer
+                      nullable: true
+                SurveyTopicFavorites:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      SurveyTopicId:
+                        type: integer
+                      FavoriteScore:
+                        type: integer
+              required:
+                - AccountId
+      responses:
+        '200':
+          description: Update successful
+        '400':
+          description: Invalid input
+        '404':
+          description: Account not found
+
+  /api/User/accounts/{AccountId}/deactivate/{IsDeactivate}:
+    put:
+      summary: Vô hiệu hoá tài khoản
+      tags:
+        - AccountController
+      parameters:
+        - name: AccountId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: IsDeactivate
+          in: path
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Trạng thái cập nhật thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+
+              
+##### SurveyCoreController                  
+  /api/Survey/core/feature/surveys:
+    get:
+      summary: Lấy 3 mảng survey trong home page + reward tracking hiện tại
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách survey home page và reward tracking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  BestmatchSurveys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommunitySurveyListItemDTO'
+                  BigbonusSurveys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommunitySurveyListItemDTO'
+                  FavoriteSurveys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommunitySurveyListItemDTO'
+
+  /api/Survey/core/filter/surveys:
+    get:
+      summary: Lấy danh sách filter survey (MANAGER)
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách filter survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Surveys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FilterSurveyListItemDTO'
+
+    post:
+      summary: Tạo filter survey mới (MANAGER)
+      tags:
+        - SurveyCoreController
+      responses:
+        '201':
+          description: Tạo filter survey thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  NewSurveyId:
+                    type: integer
+                  Message:
+                    type: string
+
+  /api/Survey/core/available-filter-survey:
+    get:
+      summary: Lấy filter survey hiện tại đang available
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Filter survey đang available
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Survey:
+                    $ref: '#/components/schemas/SurveyListItemDTO'
+
+  /api/Survey/core/filter/surveys/{SurveyId}:
+    get:
+      summary: Lấy chi tiết + danh sách question/options của filter survey (MANAGER)
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chi tiết filter survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Survey:
+                    $ref: '#/components/schemas/FilterSurveyDetailDTO'
+
+  /api/Survey/core/filter/surveys/{SurveyId}/publish:
+    put:
+      summary: Đăng filter survey
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Đăng filter survey thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+  /api/Survey/core/community/surveys:
+    get:
+      summary: Lấy danh sách community survey + reward tracking  (MANAGER, CUSTOMER) 
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: Keyword
+          in: query
+          schema:
+            type: string
+        - name: Additional
+          in: query
+          schema:
+            type: string
+            description: bigbonus, favorite topic
+        - name: Deadline
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Danh sách community survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Surveys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommunitySurveyListItemDTO'
+    post:
+      summary: Tạo community survey mới (REQUESTER)
+      tags:
+        - SurveyCoreController
+      
+      responses:
+        '201':
+          description: Tạo community survey thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  NewSurveyId:
+                    type: integer
+                  Message:
+                    type: string               
+
+  /api/Survey/core/community/surveys/me:
+    get:
+      summary: Lấy danh sách survey đã tạo (REQUESTER)
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: Keyword
+          in: query
+          schema:
+            type: string
+        - name: Deadline
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: StatusId
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Danh sách survey đã tạo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Surveys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommunitySurveyListItemDTO'
+                
+  /api/Survey/core/community/surveys/{SurveyId}:
+    get:
+      summary: Lấy chi tiết + danh sách question/options + taken result + reward tracking (tuỳ role) của community survey (MANAGER, REQUESTER)
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chi tiết community survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Survey:
+                    $ref: '#/components/schemas/CommunitySurveyDetailDTO'
+                          
+                          
+
+    put:
+      summary: Điều chỉnh thông số của community survey (MAX XP) (MANAGER)
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                MaxXp:
+                  type: integer
+      responses:
+        '200':
+          description: Điều chỉnh thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+    
+
+  /api/Survey/core/community/surveys/{SurveyId}/deactivate:
+    put:
+      summary: Dừng community survey để về editing
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dừng survey thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+  /api/Survey/core/community/surveys/{SurveyId}/summary-filter-tag:
+    post:
+      summary: Trả về danh sách filter tag summary + maxKPI + minDeadlineDuration (lấy từ ngày hôm sau trở đi)  và summary từ filter questions và prompt + accuracy
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                SurveyTakerSegment:
+                  type: object
+                  properties:
+                    CountryRegion:
+                      type: string
+                      maxLength: 250
+                    MaritalStatus:
+                      type: string
+                      maxLength: 250
+                    AverageIncome:
+                      type: string
+                      maxLength: 250
+                    EducationLevel:
+                      type: string
+                      maxLength: 250
+                    JobField:
+                      type: string
+                      maxLength: 250
+                    Prompt:
+                      type: string
+                    TagFilterAccuracyRate:
+                      type: number
+                      format: float
+      responses:
+        '200':
+          description: Thông tin filter tag và summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  FilterTags:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/FilterTag'
+                        - type: object
+                          properties:
+                            Summary:
+                              type: string
+                  MaxKpi:
+                    type: integer
+
+  /api/Survey/core/community/surveys/{SurveyId}/min-deadline-duration-calcular:
+    post:
+      summary: Trả về min deadline duration phù hợp (kpi và )
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Kpi:
+                  type: integer
+                FilterTags:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/FilterTag'
+                        - type: object
+                          properties:
+                            Summary:
+                              type: string
+                SurveyTakerSegment:
+                  type: object
+                  properties:
+                    CountryRegion:
+                      type: string
+                      maxLength: 250
+                    MaritalStatus:
+                      type: string
+                      maxLength: 250
+                    AverageIncome:
+                      type: string
+                      maxLength: 250
+                    EducationLevel:
+                      type: string
+                      maxLength: 250
+                    JobField:
+                      type: string
+                      maxLength: 250
+                    Prompt:
+                      type: string
+                    TagFilterAccuracyRate:
+                      type: number
+                      format: float
+                    
+                
+      responses:
+        '200':
+          description: Thông tin filter tag và summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  MinDeadlineDuration:
+                    type: integer
+
+
+  /api/Survey/core/market-research/surveys:
+    get:
+      summary: Lấy danh sách market survey (MANAGER, CUSTOMER)
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách market survey
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MarketResearchSurveyListItemDTO'
+    post:
+      summary: Tạo version mới cho survey (nếu có Id thì version +1, không có thì tạo survey mới)
+      tags:
+        - SurveyCoreController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                TargetSurveyId:
+                  type: integer
+      responses:
+        '201':
+          description: Tạo version mới thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  NewSurveyId:
+                    type: string
+                  Message:
+                    type: string
+
+  /api/Survey/core/market-research/surveys/{SurveyId}:
+    get:
+      summary: Lấy chi tiết + danh sách question(version)/options market survey (MANAGER, CUSTOMER)
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chi tiết market survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Survey:
+                    $ref: '#/components/schemas/MarketResearchSurveyDetailDTO'
+
+  /api/Survey/core/market-research/contributed-surveys:
+    get:
+      summary: Lấy các market survey đã contribute (CUSTOMER)
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách market survey đã contribute
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Surveys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketResearchSurveyListItemDTO'
+
+  /api/Survey/core/market-research/bought-surveys:
+    get:
+      summary: Lấy các market survey đã mua (CUSTOMER)
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách market survey đã mua
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Surveys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MarketResearchSurveyListItemDTO'
+
+  /api/Survey/core/market-research/bought-surveys/{SurveyId}:
+    get:
+      summary: Lấy chi tiết + danh sách question/options (có version đã mua) market survey (BUYER)
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chi tiết market survey đã mua
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Survey:
+                    $ref: '#/components/schemas/MarketResearchSurveyDetailDTO'
+
+  /api/Survey/core/market-research/surveys/{SurveyId}/version-publish:
+    put:
+      summary: Đăng version mới nhất của market survey (MANAGER)
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Đăng version thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+  /api/Survey/core/market-research/surveys/{SurveyId}/version-deactivate:
+    put:
+      summary: Dừng/activate version hiện tại của market survey (ngừng/tiếp tục tiếp nhận contributor)
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Cập nhật trạng thái version thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+  /api/Survey/core/surveys/{SurveyId}:
+    put:
+      summary: Cập nhật thông tin cơ bản của 1 survey (title, description, main image, background image)
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Title:
+                  type: string
+                  maxLength: 250
+                Description:
+                  type: string
+                MainImageBase64:
+                  type: string
+                  description: Ảnh chính base64
+                BackgroundImageBase64:
+                  type: string
+                  description: Ảnh nền base64
+      responses:
+        '200':
+          description: Cập nhật thông tin survey thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+    delete:
+      summary: Xóa survey tuỳ loại
+      tags:
+        - SurveyCoreController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Xóa survey thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+  /api/Survey/core/topics:
+    get:
+      summary: Lấy danh sách topic
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách topic
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SurveyTopic'
+
+  /api/Survey/core/specific-topics:
+    get:
+      summary: Lấy danh sách specific topic
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách specific topic
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SurveySpecificTopic'
+
+  /api/Survey/core/security-modes:
+    get:
+      summary: Lấy danh sách security mode
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách security mode
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SurveySecurityMode'
+
+  /api/Survey/core/survey-question-types:
+    get:
+      summary: Lấy danh sách survey question type
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách survey question type
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SurveyQuestionType'
+
+  /api/Survey/core/survey-field-input-types:
+    get:
+      summary: Lấy danh sách survey field input type
+      tags:
+        - SurveyCoreController
+      responses:
+        '200':
+          description: Danh sách survey field input type
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SurveyFieldInputType'
+
+##### SurveyResponseController
+
+  /api/Survey/response/filter/surveys/{SurveyId}:
+    post:
+      summary: Ghi nhận response cho filter survey 
+      tags:
+        - SurveyResponseController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                InvalidReason:
+                  type: string
+                SurveyResponses:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SurveyResponseTakenDTO'
+      responses:
+        '200':
+          description: Ghi nhận response thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  IsValid:
+                    type: boolean
+                  Message:
+                    type: string                  
+  /api/Survey/response/community/surveys/{SurveyId}:
+    get:
+      summary: Lấy summary của community survey (REQUESTER)
+      tags:
+        - SurveyResponseController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Summary community survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  QuestionResponseSummaryLists:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommunityResponseSummaryListItemDTO'
+    post:
+      summary: Ghi nhận response cho community survey trả về thông báo kết quả 
+      tags:
+        - SurveyResponseController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                InvalidReason:
+                  type: string
+                SurveyResponses:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SurveyResponseTakenDTO'
+      responses:
+        '200':
+          description: Ghi nhận response thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  IsValid:
+                    type: boolean
+                  Message:
+                    type: string
+
+  /api/Survey/response/market-research/surveys/{SurveyId}:
+    get:
+      summary: Lấy summary của market survey có query version (MANAGER lấy tất cả version, BUYER lấy version đã mua)
+      tags:
+        - SurveyResponseController
+      parameters:
+        - name: Version
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Summary market survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  QuestionResponseSummaryLists:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CommunityResponseSummaryListItemDTO'
+
+  /api/Survey/response/market-research/surveys/{SurveyId}/version/{Version}:
+    post:
+      summary: Ghi nhận response cho market survey cho version cụ thể trả về thông báo kết quả 
+      tags:
+        - SurveyResponseController        
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Version
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                InvalidReason:
+                  type: string
+                SurveyResponses:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SurveyResponseTakenDTO'
+      responses:
+        '200':
+          description: Ghi nhận response thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  IsValid:
+                    type: boolean
+                  Message:
+                    type: string
+
+    
+
+##### SurveySessionController
+  /api/Survey/session/survey-default-background-themes:
+    get:
+      summary: Lấy danh sách default background theme
+      tags:
+        - SurveySessionController
+      responses:
+        '200':
+          description: Danh sách survey home page và reward tracking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  SurveyDefaultBackgroundThemes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SurveyDefaultBackgroundThemeListItemDTO'
+  /api/Survey/session/surveys/{SurveyId}/taking-session:
+    get:
+      summary: Tạo phiên làm từ survey, check role tuỳ loại (có query Preview)
+      tags:
+        - SurveySessionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Preview
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Thông tin phiên làm survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  TakingAllow:
+                    type: boolean
+                  Message:
+                    type: string
+                  TakingSession:
+                    $ref: '#/components/schemas/SurveyTakingSessionDTO'
+
+  /api/Survey/session/surveys/{SurveyId}/editing-session:
+    get:
+      summary: Lấy xường survey để chạy phiên editing, check role để cho phép edit hay không
+      tags:
+        - SurveySessionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Version
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thông tin phiên editing survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  EditingAllow:
+                    type: boolean
+                  Message:
+                    type: string
+                  EditingSession:
+                    $ref: '#/components/schemas/SurveyEditingSessionDTO'
+                    
+
+  /api/Survey/session/surveys/{SurveyId}/editing-auto-trigger:
+    put:
+      summary: Cập nhật survey tự động (tool tạo survey mỗi 5s) đối với status editing
+      tags:
+        - SurveySessionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                EditingSession:
+                    $ref: '#/components/schemas/SurveyEditingSessionDTO'
+      responses:
+        '200':
+          description: Cập nhật tự động thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+                  IsSuccess:
+                    type: boolean
+
+  /api/Survey/session/surveys/{SurveyId}/editing-manual-trigger:
+    put:
+      summary: Cập nhật survey thủ công (bằng nút trong tool tạo survey) đối với status publish và là community survey
+      tags:
+        - SurveySessionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                EditingSession:
+                    $ref: '#/components/schemas/SurveyEditingSessionDTO'
+      responses:
+        '200':
+          description: Cập nhật thủ công thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+                  IsSuccess:
+                    type: boolean
+
+
+  /api/Survey/session/speech-check:
+    post:
+      summary: Kiểm tra câu hỏi bằng speech (gửi về Content câu hỏi)
+      tags:
+        - SurveySessionController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                QuestionContent:
+                  type: object
+                  properties:
+                    Id:
+                      type: integer
+                    QuestionTypeId:
+                      type: integer
+                    Content:
+                      type: string
+                    Description:
+                      type: string
+                    ConfigJson:
+                        type: object
+                        properties:
+                          Min:
+                            type: number
+                            description: Áp dụng cho QuestionTypeId 3, 4
+                          Max:
+                            type: number
+                            description: Áp dụng cho QuestionTypeId 3, 4
+                          Step:
+                            type: number
+                            description: Áp dụng cho QuestionTypeId 3, 4
+                          Unit:
+                            type: string
+                            description: Áp dụng cho QuestionTypeId 3, 4
+                          RatingLength:
+                            type: integer
+                            description: Áp dụng cho QuestionTypeId 6
+                          RatingIcon:
+                            type: string
+                            description: Áp dụng cho QuestionTypeId 6
+                          MinChoiceCount:
+                            type: integer
+                            description: Áp dụng cho QuestionTypeId 2
+                          MaxChoiceCount:
+                            type: integer
+                            description: Áp dụng cho QuestionTypeId 2
+                          FieldInputTypeId:
+                            type: integer
+                            description: Áp dụng cho QuestionTypeId 5
+                    Options:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          SurveyOptionId:
+                            type: integer
+                          Content:
+                            type: string
+                SpeechText:
+                  type: string
+
+      responses:
+        '200':
+          description: Kết quả kiểm tra speech
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+  /api/Survey/session/open-ai/realtime/token:
+    get:
+      summary: Lấy token realtime để chạy speech to text
+      tags:
+        - SurveySessionController
+      responses:
+        '200':
+          description: Token realtime
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Token:
+                    type: string
+
+##### SurveyTransactionController
+  /api/Survey/transaction/market-research/surveys/{SurveyId}/data-contribution-income:
+    get:
+      summary: Lấy lịch sử doanh thu của contributor đối với market survey đó (CONTRIBUTOR)
+      tags:
+        - SurveyTransactionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lịch sử doanh thu contributor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  DataContributionIncome:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Version:
+                          type: integer
+                        SurveyTakenResult:
+                          $ref: '#/components/schemas/SurveyTakenResult'
+                        Earn:
+                          type: number
+                          format: double
+                        EarnedAt:
+                          type: number
+                          format: date
+
+  /api/Survey/transaction/market-research/surveys/{SurveyId}/bought-data:
+    get:
+      summary: Lấy mảng version + version taken result id mà customer đã mua + số tiền đã bỏ ra mua thuộc survey đó (CUSTOMER)
+      tags:
+        - SurveyTransactionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Version
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Danh sách version đã mua
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  BoughtData:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Version:
+                          type: integer
+                        SurveyTakenResultIds:
+                          type: array
+                          items:
+                            type: integer
+                        AmountPaid:
+                          type: number
+                          format: double
+
+  /api/Survey/transaction/market-research/surveys/{SurveyId}/available-data:
+    get:
+      summary: Lấy mảng version + version taken result id mà customer chưa mua + tiền phải trả để cho chọn version tiến hành purchase (CUSTOMER)
+      tags:
+        - SurveyTransactionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Version
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Danh sách version chưa mua
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  AvailableData:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Version:
+                          type: integer
+                        SurveyTakenResultIds:
+                          type: array
+                          items:
+                            type: integer
+                        Price:
+                          type: number
+                          format: double
+
+  /api/Survey/transaction/community/surveys/{SurveyId}/publish-price-calcular:
+    post:
+      summary: Tính tiền đăng survey từ KPI đã chọn + deadline đã chọn + giá base đã bao gồm security của survey  đó
+      tags:
+        - SurveyTransactionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Kpi:
+                  type: integer
+                Deadline:
+                  type: string
+                  format: date                
+      responses:
+        '200':
+          description: Kết quả tính tiền đăng survey
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  TotalPrice:
+                    type: number
+                    format: double
+
+  /api/Survey/transaction/community/surveys/{SurveyId}/publish:
+    post:
+      summary: Đăng community survey, nhận và lưu mảng filter tag + cast vector lưu postgres
+      tags:
+        - SurveyTransactionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Kpi:
+                  type: integer
+                Deadline:
+                  type: string
+                  format: date
+                FilterTags:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/FilterTag'
+                        - type: object
+                          properties:
+                            Summary:
+                              type: string
+                SurveyTakerSegment:
+                  type: object
+                  properties:
+                    CountryRegion:
+                      type: string
+                      maxLength: 250
+                    MaritalStatus:
+                      type: string
+                      maxLength: 250
+                    AverageIncome:
+                      type: string
+                      maxLength: 250
+                    EducationLevel:
+                      type: string
+                      maxLength: 250
+                    JobField:
+                      type: string
+                      maxLength: 250
+                    Prompt:
+                      type: string
+                    TagFilterAccuracyRate:
+                      type: number
+                      format: float
+                ExtraPrice:
+                  type: integer  
+      responses:
+        '200':
+          description: Đăng community survey thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+  /api/Survey/transaction/market-research/surveys/{SurveyId}/data-purchase:
+    post:
+      summary: Mua data trong mảng version (truyền vào mảng TakenResultIds)
+      tags:
+        - SurveyTransactionController
+      parameters:
+        - name: SurveyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                SurveyTakenResultIds:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '200':
+          description: Mua data thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+##### PayOSController                    
+  /api/Payment/payos/account-balance-deposits/create-payment-link:
+    post:
+      summary: Tạo đường dẫn nạp tiền
+      tags:
+        - PayOSController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Amount:
+                  type: number
+                  format: double
+                Description:
+                  type: string
+              required:
+                - Amount
+      responses:
+        '200':
+          description: Tạo đường dẫn nạp tiền thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  PaymentLink:
+                    type: string
+                  Message:
+                    type: string
+
+  /api/Payment/payos/account-balance-withdrawal:
+    post:
+      summary: Rút tiền
+      tags:
+        - PayOSController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Amount:
+                  type: number
+                  format: double
+                BankAccountNumber:
+                  type: string
+                BankCode:
+                  type: string
+                Description:
+                  type: string
+              required:
+                - Amount
+                - BankAccountNumber
+                - BankCode
+      responses:
+        '200':
+          description: Rút tiền thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Message:
+                    type: string
+
+
+##### SystemConfigurationController
+  /api/Configuration/system/config-profiles:
+    get:
+      summary: Lấy danh sách profile cấu hình hệ thống
+      tags:
+        - SystemConfigurationController
+      responses:
+        '200':
+          description: Danh sách profile cấu hình hệ thống
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  SystemConfigProfiles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SystemConfigProfile'
+
+  /api/Configuration/system/config-profiles/{ConfigProfileId}:
+    get:
+      summary: Lấy chi tiết cấu hình hệ thống theo ConfigProfileId
+      tags:
+        - SystemConfigurationController
+      parameters:
+        - name: ConfigProfileId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chi tiết cấu hình hệ thống
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  SystemConfigProfile:
+                    $ref: '#/components/schemas/SystemConfigProfileDetailDTO'
+
+  /api/Configuration/system/active/config-profile:
+    get:
+      summary: Lấy profile config đang active hiện tại (chứa tất cả các config của profile đó)
+      tags:
+        - SystemConfigurationController
+      responses:
+        '200':
+          description: Profile config đang active hiện tại
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  SystemConfigProfile:
+                    $ref: '#/components/schemas/SystemConfigProfileDetailDTO'
+
+components:
+  schemas:
+    AccountListItemDTO:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Email:
+          type: string
+          maxLength: 250
+        Role:
+          $ref: '#/components/schemas/Role'
+        FullName:
+          type: string
+          maxLength: 250
+        Dob:
+          type: string
+          format: date
+        Gender:
+          type: string
+          maxLength: 250
+        Address:
+          type: string
+          maxLength: 250
+        Phone:
+          type: string
+          maxLength: 20
+        Balance:
+          type: number
+          format: double
+        IsVerified:
+          type: boolean
+        Xp:
+          type: integer
+        Level:
+          type: integer
+        ProgressionSurveyCount:
+          type: integer
+        IsFilterSurveyRequired:
+          type: boolean
+        LastFilterSurveyTakenAt:
+          type: string
+          format: date-time
+        DeactivatedAt:
+          type: string
+          format: date-time
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+        MainImageUrl:
+          type: string
+    TakerListItemDTO:
+      type: object
+      properties:
+        Id:
+          type: integer
+        FullName:
+          type: string
+          maxLength: 250
+        Dob:
+          type: string
+          format: date
+        Gender:
+          type: string
+          maxLength: 250
+        MainImageUrl:
+          type: string
+
+    SurveyPrivateDataDTO:
+      type: object
+      properties:
+        RequesterId:
+          type: integer
+        SurveyTypeId:
+          type: integer
+        Kpi:
+          type: integer
+        TheoryPrice:
+          type: number
+          format: double
+        ExtraPrice:
+          type: number
+          format: double
+        ProfitPrice:
+          type: number
+          format: double
+        AllocBaseAmount:
+          type: number
+          format: double
+        AllocTimeAmount:
+          type: number
+          format: double
+        AllocLevelAmount:
+          type: number
+          format: double
+        MaxXp:
+          type: integer
+        DeletedAt:
+          type: string
+          format: date-time
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+
+    SurveyListItemDTO:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Title:
+          type: string
+          maxLength: 250
+        Description:
+          type: string
+        SurveyTopicId:
+          type: integer
+        SurveySpecificTopicId:
+          type: integer
+        StartDate:
+          type: string
+          format: date
+        EndDate:
+          type: string
+          format: date
+        SecurityModeId:
+          type: integer
+        IsAvailable:
+          type: boolean
+        PublishedAt:
+          type: string
+          format: date-time
+        TakerBaseRewardPrice:
+          type: number
+          format: double
+        ConfigJsonString:
+          type: string
+        SurveyPrivateData:
+          $ref: '#/components/schemas/SurveyPrivateDataDTO'
+        SurveyStatusId:
+          type: integer
+        MainImageUrl:
+          type: string
+        BackgroundImageUrl:
+          type: string
+        QuestionCount:
+          type: integer
+
+        
+    FilterSurveyListItemDTO:
+      allOf:
+        - $ref: '#/components/schemas/SurveyListItemDTO'
+    CommunitySurveyListItemDTO:
+      allOf:
+        - $ref: '#/components/schemas/SurveyListItemDTO'
+        - type: object
+          properties:
+            CurrentSurveyRewardTracking:
+              $ref: '#/components/schemas/SurveyRewardTracking'
+    MarketResearchSurveyListItemDTO:
+      allOf:
+        - $ref: '#/components/schemas/SurveyListItemDTO'
+        - type: object
+          properties:
+            VersionTrackings:
+              type: array
+              items:
+                $ref: '#/components/schemas/VersionTrackingListItemDTO'
+                  
+    SurveyDetailDTO:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Title:
+          type: string
+          maxLength: 250
+        Description:
+          type: string
+        SurveyTopicId:
+          type: integer
+        SurveySpecificTopicId:
+          type: integer
+        StartDate:
+          type: string
+          format: date
+        EndDate:
+          type: string
+          format: date
+        SecurityModeId:
+          type: integer
+        IsAvailable:
+          type: boolean
+        PublishedAt:
+          type: string
+          format: date-time
+        TakerBaseRewardPrice:
+          type: number
+          format: double
+        ConfigJsonString:
+          type: string
+        SurveyPrivateData:
+          $ref: '#/components/schemas/SurveyPrivateDataDTO'
+        SurveyStatusId:
+          type: integer
+        MainImageUrl:
+          type: string
+        BackgroundImageUrl:
+          type: string
+        QuestionCount:
+          type: integer
+            
+    FilterSurveyDetailDTO:
+      allOf:
+        - $ref: '#/components/schemas/SurveyDetailDTO'
+        - type: object
+          properties:
+            Questions:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/SurveyQuestion'
+                  - type: object
+                    properties:
+                      MainImageUrl:
+                        type: string
+                      Options:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/SurveyOption'
+                            - type: object
+                              properties:
+                                MainImageUrl:
+                                  type: string
+
+    CommunitySurveyDetailDTO:
+      allOf:
+        - $ref: '#/components/schemas/SurveyDetailDTO'
+        - type: object
+          properties:
+            Questions:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/SurveyQuestion'
+                  - type: object
+                    properties:
+                      MainImageUrl:
+                        type: string
+                      Options:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/SurveyOption'
+                            - type: object
+                              properties:
+                                MainImageUrl:
+                                  type: string
+            SurveyTakenResults:
+              type: array
+              items:
+                $ref: '#/components/schemas/SurveyTakenResultListItemDTO'
+            SurveyRewardTrackings:
+              type: array
+              items:
+                $ref: '#/components/schemas/SurveyRewardTracking'
+
+    MarketResearchSurveyDetailDTO:
+      allOf:
+        - $ref: '#/components/schemas/SurveyDetailDTO'
+        - type: object
+          properties:
+            VersionTrackings:
+              type: array
+              items:
+                $ref: '#/components/schemas/VersionTrackingListItemDTO'
+            Questions:
+              type: array
+              items:
+                allOf:
+                  - $ref: '#/components/schemas/SurveyQuestion'
+                  - type: object
+                    properties:
+                      Version:
+                        type: integer
+                      MainImageUrl:
+                        type: string
+                      Options:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/SurveyOption'
+                            - type: object
+                              properties:
+                                MainImageUrl:
+                                  type: string
+        
+    VersionTrackingListItemDTO:
+      type: object
+      properties:
+        Version:
+          type: integer
+        SurveyVersionStatusId:
+          type: integer
+        ContributorCount:
+          type: integer
+        CurrentVersionPrice:
+          type: number
+        ExpiredAt:
+          type: string
+          format: date-time
+        PublishAt:
+          type: string
+          format: date-time
+
+    SurveyTakenResultListItemDTO:
+      type: object
+      properties:
+        Id:
+          type: integer
+        IsValid:
+          type: boolean
+        InvalidReason:
+          type: string
+          maxLength: 500
+        MoneyEarned:
+          type: number
+          format: double
+        XpEarned:
+          type: integer
+        CompletedAt:
+          type: string
+          format: date-time
+        Taker:
+          $ref: '#/components/schemas/TakerListItemDTO'
+    
+    CommunityResponseSummaryListItemDTO:
+      type: object
+      properties:
+        Question:
+          allOf:
+            - $ref: '#/components/schemas/SurveyQuestion'
+            - type: object
+              properties:
+                Version:
+                  type: integer
+                MainImageUrl:
+                  type: string
+                Options:
+                  type: array
+                  items:
+                    allOf:
+                      - $ref: '#/components/schemas/SurveyOption'
+                      - type: object
+                        properties:
+                          MainImageUrl:
+                            type: string
+        SurveyResponses:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyResponse'
+
+    SystemConfigProfileDetailDTO:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+        Description:
+          type: string
+        IsActive:
+          type: boolean
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+        AccountGeneralConfig:
+          $ref: '#/components/schemas/AccountGeneralConfig'
+        AccountLevelSettingConfigs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountLevelSettingConfig'
+        SurveyGeneralConfig:
+          $ref: '#/components/schemas/SurveyGeneralConfig'
+        SurveyTimeRateConfigs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveyTimeRateConfig'
+        SurveyMarketConfig:
+          $ref: '#/components/schemas/SurveyMarketConfig'
+        SurveySecurityModeConfigs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SurveySecurityModeConfig'
+    
+    SurveyEditingSessionDTO:
+        type: object
+        properties:
+          Id:
+            type: integer
+          RequesterId:
+            type: integer
+          Title:
+            type: string
+          Description:
+            type: string
+          SurveyTypeId:
+            type: integer
+          SurveyTopicId:
+            type: integer
+          SurveySpecificTopicId:
+            type: integer
+          MainImageBase64:
+            type: string
+          BackgroundImageBase64:
+            type: string
+          SurveyStatusId:
+            type: integer
+          Version:
+            type: integer
+          MarketSurveyVersionStatusId:
+            type: integer
+          SecurityModeId:
+            type: integer
+          ConfigJson:
+            type: object
+            properties:
+              BackgroundGradient1Color:
+                type: string
+              BackgroundGradient2Color:
+                type: string
+              TitleColor:
+                type: string
+              ContentColor:
+                type: string
+              ButtonBackgroundColor:
+                type: string
+              ButtonContentColor:
+                type: string
+              Password:
+                type: string
+          Questions:
+            type: array
+            items:
+              type: object
+              properties:
+                Id:
+                  type: integer
+                QuestionTypeId:
+                  type: integer
+                MainImageBase64:
+                  type: string
+                Version:
+                  type: integer
+                IsReanswerRequired:
+                  type: boolean
+                ReferenceSurveyQuestionId:
+                  type: boolean
+                Content:
+                  type: string
+                Description:
+                  type: string
+                  nullable: true
+                TimeLimit:
+                  type: integer
+                IsVoiced:
+                  type: boolean
+                Order:
+                  type: integer
+                ConfigJson:
+                  type: object
+                  properties:
+                    Min:
+                      type: integer
+                    Max:
+                      type: integer
+                    Step:
+                      type: integer
+                    Unit:
+                      type: string
+                    RatingLength:
+                      type: integer
+                    RatingIcon:
+                      type: string
+                    MinChoiceCount:
+                      type: integer
+                    MaxChoiceCount:
+                      type: integer
+                    FieldInputTypeId:
+                      type: integer
+                    JumpLogics:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          Conditions:
+                            type: array
+                            Items:
+                              type: object
+                              properties:
+                                QuestionOrder:
+                                  type: integer
+                                Conjunction:
+                                  type: string
+                                  nullable: true
+                                Operator:
+                                  type: string
+                                OptionOrder:
+                                  type: integer
+                                  nullable: true
+                                CompareValue:
+                                  type: integer
+                                  nullable: true
+                          TargetQuestionOrder:
+                            type: integer
+                Options:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      Id:
+                        type: integer
+                      Content:
+                        type: string
+                      Order:
+                        type: integer
+                      MainImageBase64:
+                        type: string
+                        nullable: true
+    
+    SurveyDefaultBackgroundThemeListItemDTO:
+      type: object
+      properties:
+        Id:
+          type: integer
+        ConfigJson:
+          type: object
+          properties:
+            TitleColor:
+              type: string
+            ContentColor:
+              type: string
+            ButtonBackgroundColor:
+              type: string
+            ButtonContentColor:
+              type: string
+      required:
+        - Id
+        - ConfigJson
+
+    SurveyTakingSessionDTO:
+      type: object
+      properties:
+        Id:
+          type: integer
+        RequesterId:
+          type: integer
+        Title:
+          type: string
+        Description:
+          type: string
+        SurveyTypeId:
+          type: integer
+        SurveyTopicId:
+          type: integer
+        SurveySpecificTopicId:
+          type: integer
+        MainImageUrl:
+          type: string
+        BackgroundImageUrl:
+          type: string
+        SurveyStatusId:
+          type: integer
+        Version:
+          type: integer
+        MarketSurveyVersionStatusId:
+          type: integer
+        SecurityModeId:
+          type: integer
+        ConfigJson:
+          type: object
+          properties:
+            BackgroundGradient1Color:
+              type: string
+            BackgroundGradient2Color:
+              type: string
+            TitleColor:
+              type: string
+            ContentColor:
+              type: string
+            ButtonBackgroundColor:
+              type: string
+            ButtonContentColor:
+              type: string
+            Password:
+              type: string
+        Questions:
+          type: array
+          items:
+            type: object
+            properties:
+              Id:
+                type: integer
+              QuestionTypeId:
+                type: integer
+              MainImageUrl:
+                type: string
+              Version:
+                type: integer
+              Content:
+                type: string
+              Description:
+                type: string
+                nullable: true
+              TimeLimit:
+                type: integer
+              IsVoiced:
+                type: boolean
+              Order:
+                type: integer
+              ConfigJson:
+                type: object
+                properties:
+                  Min:
+                    type: integer
+                  Max:
+                    type: integer
+                  Step:
+                    type: integer
+                  Unit:
+                    type: string
+                  RatingLength:
+                    type: integer
+                  RatingIcon:
+                    type: string
+                  MinChoiceCount:
+                    type: integer
+                  MaxChoiceCount:
+                    type: integer
+                  FieldInputTypeId:
+                    type: integer
+                  JumpLogics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Conditions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              QuestionOrder:
+                                type: integer
+                              Conjunction:
+                                type: string
+                                nullable: true
+                              Operator:
+                                type: string
+                              OptionOrder:
+                                type: integer
+                                nullable: true
+                              CompareValue:
+                                type: integer
+                                nullable: true
+                        TargetQuestionOrder:
+                          type: integer
+              Options:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    Id:
+                      type: integer
+                    Content:
+                      type: string
+                    Order:
+                      type: integer
+                    MainImageUrl:
+                      type: string
+                      nullable: true
+
+    SurveyResponseTakenDTO:
+      type: object
+      properties:
+        IsValid:
+          type: boolean
+        ValueJson:
+          type: object
+          properties:
+            QuestionContent:
+              type: object
+              properties:
+                Id:
+                  type: integer
+                MainImageUrl:
+                  type: string
+                  nullable: true
+                QuestionTypeId:
+                  type: integer
+                Content:
+                  type: string
+                Description:
+                  type: string
+                ConfigJson:
+                  type: object
+                  properties:
+                    min:
+                      type: integer
+                    max:
+                      type: integer
+                    step:
+                      type: integer
+                    unit:
+                      type: string
+                    ratingLength:
+                      type: integer
+                    ratingIcon:
+                      type: string
+                    minChoiceCount:
+                      type: integer
+                    maxChoiceCount:
+                      type: integer
+                    fieldInputTypeId:
+                      type: integer
+                Options:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      Id:
+                        type: integer
+                      Content:
+                        type: string
+                      Order:
+                        type: integer
+                      MainImageUrl:
+                        type: string
+                        nullable: true
+            QuestionResponse:
+              type: object
+              properties:
+                Input:
+                  type: object
+                  nullable: true
+                  properties:
+                    Value:
+                      oneOf:
+                        - type: string
+                        - type: number
+                    ValueType:
+                      type: string
+                Range:
+                  type: object
+                  nullable: true
+                  properties:
+                    Min:
+                      type: number
+                    Max:
+                      type: number
+                Ranking:
+                  type: array
+                  nullable: true
+                  items:
+                    type: object
+                    properties:
+                      SurveyOptionId:
+                        type: integer
+                      RankIndex:
+                        type: integer
+                SingleChoice:
+                  type: integer
+                  nullable: true
+                MultipleChoice:
+                  type: array
+                  nullable: true
+                  items:
+                    type: integer
+                SpeechText:
+                  type: string
+                  nullable: true
+
+    
+    CustomerRegisterDTO:
+      type: object
+      required:
+        - RegisterInfo
+      properties:
+        RegisterInfo:
+          type: object
+          required:
+            - Email
+            - Password
+            - FullName
+            - Dob
+            - Gender
+            - Address
+            - Phone
+          properties:
+            Email:
+              type: string
+              format: email
+            Password:
+              type: string
+            FullName:
+              type: string
+            Dob:
+              type: string
+              format: date-time
+            Gender:
+              type: string
+              enum: [male, female]
+            Address:
+              type: string
+            Phone:
+              type: string
+            ImageBase64:
+              type: string
+              nullable: true
+
+    ManualLoginDTO:
+      type: object
+      required:
+        - LoginInfo
+      properties:
+        LoginInfo:
+          type: object
+          required:
+            - Email
+            - Password
+          properties:
+            Email:
+              type: string
+              format: email
+            Password:
+              type: string
+            
+    Role:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 20
+      required:
+        - Id
+        - Name
+
+    Account:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Email:
+          type: string
+          maxLength: 250
+        Password:
+          type: string
+          maxLength: 250
+        RoleId:
+          type: integer
+        FullName:
+          type: string
+          maxLength: 250
+        Dob:
+          type: string
+          format: date
+        Gender:
+          type: string
+          maxLength: 250
+        Address:
+          type: string
+          maxLength: 250
+        Phone:
+          type: string
+          maxLength: 20
+        Balance:
+          type: number
+          format: double
+        IsVerified:
+          type: boolean
+        Xp:
+          type: integer
+        Level:
+          type: integer
+        ProgressionSurveyCount:
+          type: integer
+        IsFilterSurveyRequired:
+          type: boolean
+        LastFilterSurveyTakenAt:
+          type: string
+          format: date-time
+        DeactivatedAt:
+          type: string
+          format: date-time
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required:
+        - Email
+        - Password
+        - RoleId
+        - IsFilterSurveyRequired
+
+    AccountOnlineTracking:
+      type: object
+      properties:
+        Id:
+          type: integer
+        AccountId:
+          type: integer
+        OnlineDate:
+          type: string
+          format: date
+        SurveyTakenCount:
+          type: integer
+      required:
+        - AccountId
+
+    AccountVerification:
+      type: object
+      properties:
+        AccountId:
+          type: integer
+        NationalCardNumber:
+          type: integer
+        ExpirationDate:
+          type: string
+          format: date
+        VerifiedAt:
+          type: string
+          format: date-time
+      required:
+        - AccountId
+        - NationalCardNumber
+        - VerifiedAt
+
+    AccountProfile:
+      type: object
+      properties:
+        AccountId:
+          type: integer
+        CountryRegion:
+          type: string
+          maxLength: 250
+        MaritalStatus:
+          type: string
+          maxLength: 250
+        AverageIncome:
+          type: string
+          maxLength: 250
+        EducationLevel:
+          type: string
+          maxLength: 250
+        JobField:
+          type: string
+          maxLength: 250
+        ProvinceCode:
+          type: integer
+        DistrictCode:
+          type: integer
+        WardCode:
+          type: integer
+      required:
+        - AccountId
+
+    SystemConfigProfile:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 100
+        Description:
+          type: string
+        IsActive:
+          type: boolean
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required:
+        - Name
+
+    AccountGeneralConfig:
+      type: object
+      properties:
+        ConfigProfileId:
+          type: integer
+        XpLevelThreshold:
+          type: integer
+        FilterSurveyCycle:
+          type: integer
+        DailyActiveCountPeriod:
+          type: integer
+        SafetyFilterRate:
+          type: number
+          format: float
+      required:
+        - ConfigProfileId
+        - XpLevelThreshold
+        - FilterSurveyCycle
+        - DailyActiveCountPeriod
+        - SafetyFilterRate
+
+    AccountLevelSettingConfig:
+      type: object
+      properties:
+        ConfigProfileId:
+          type: integer
+        Level:
+          type: integer
+        DailyReductionXp:
+          type: integer
+        ProgressionSurveyCount:
+          type: integer
+        BonusRate:
+          type: number
+          format: float
+      required:
+        - ConfigProfileId
+        - Level
+        - DailyReductionXp
+        - ProgressionSurveyCount
+        - BonusRate
+
+    SurveyGeneralConfig:
+      type: object
+      properties:
+        ConfigProfileId:
+          type: integer
+        PricePerQuestion:
+          type: number
+          format: double
+        XpPerQuestion:
+          type: integer
+        PublishProfitRate:
+          type: number
+          format: float
+        BasePriceAllocationRate:
+          type: number
+          format: float
+        TimePriceAllocationRate:
+          type: number
+          format: float
+        LevelPriceAllocationRate:
+          type: number
+          format: float
+      required:
+        - ConfigProfileId
+        - PricePerQuestion
+        - XpPerQuestion
+        - PublishProfitRate
+        - BasePriceAllocationRate
+        - TimePriceAllocationRate
+        - LevelPriceAllocationRate
+
+    SurveyTimeRateConfig:
+      type: object
+      properties:
+        Id:
+          type: integer
+        ConfigProfileId:
+          type: integer
+        MinDurationRate:
+          type: number
+          format: float
+        MaxDurationRate:
+          type: number
+          format: float
+        Rate:
+          type: number
+          format: float
+      required:
+        - ConfigProfileId
+        - MinDurationRate
+        - MaxDurationRate
+        - Rate
+
+    SurveyMarketConfig:
+      type: object
+      properties:
+        ConfigProfileId:
+          type: integer
+        DataTransactionProfitRate:
+          type: number
+          format: float
+      required:
+        - ConfigProfileId
+        - DataTransactionProfitRate
+
+    SurveySecurityMode:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 50
+        Description:
+          type: string
+      required:
+        - Id
+        - Name
+
+    SurveySecurityModeConfig:
+      type: object
+      properties:
+        ConfigProfileId:
+          type: integer
+        SurveySecurityModeId:
+          type: integer
+        Rate:
+          type: number
+          format: float
+      required:
+        - ConfigProfileId
+        - SurveySecurityModeId
+        - Rate
+
+    SurveyStatus:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 50
+      required:
+        - Id
+        - Name
+
+    SurveyType:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 50
+      required:
+        - Id
+        - Name
+
+    SurveyTopic:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 50
+      required:
+        - Id
+        - Name
+
+    SurveySpecificTopic:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 50
+        SurveyTopicId:
+          type: integer
+      required:
+        - Id
+        - Name
+        - SurveyTopicId
+
+    SurveyQuestionType:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 50
+        Price:
+          type: number
+          format: double
+        DeactivatedAt:
+          type: string
+          format: date-time
+      required:
+        - Id
+        - Name
+        - Price
+
+    SurveyFieldInputType:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 250
+      required:
+        - Id
+        - Name
+
+    Survey:
+      type: object
+      properties:
+        Id:
+          type: integer
+        RequesterId:
+          type: integer
+        Title:
+          type: string
+          maxLength: 250
+        Description:
+          type: string
+        SurveyTypeId:
+          type: integer
+        SurveyTopicId:
+          type: integer
+        SurveySpecificTopicId:
+          type: integer
+        StartDate:
+          type: string
+          format: date
+        EndDate:
+          type: string
+          format: date
+        Kpi:
+          type: integer
+        SecurityModeId:
+          type: integer
+        TheoryPrice:
+          type: number
+          format: double
+        ExtraPrice:
+          type: number
+          format: double
+        TakerBaseRewardPrice:
+          type: number
+          format: double
+        ProfitPrice:
+          type: number
+          format: double
+        AllocBaseAmount:
+          type: number
+          format: double
+        AllocTimeAmount:
+          type: number
+          format: double
+        AllocLevelAmount:
+          type: number
+          format: double
+        MaxXp:
+          type: integer
+        IsAvailable:
+          type: boolean
+        ConfigJsonString:
+          type: string
+        PublishedAt:
+          type: string
+          format: date-time
+        DeletedAt:
+          type: string
+          format: date-time
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required:
+        - RequesterId
+        - Title
+        - SurveyTypeId
+        - IsAvailable
+        - ConfigJsonString
+
+    SurveyStatusTracking:
+      type: object
+      properties:
+        Id:
+          type: integer
+        SurveyId:
+          type: integer
+        SurveyStatusId:
+          type: integer
+        CreatedAt:
+          type: string
+          format: date-time
+      required:
+        - SurveyId
+        - SurveyStatusId
+
+    SurveyQuestion:
+      type: object
+      properties:
+        Id:
+          type: integer
+        SurveyId:
+          type: integer
+        QuestionTypeId:
+          type: integer
+        Content:
+          type: string
+          maxLength: 500
+        Description:
+          type: string
+          maxLength: 500
+        TimeLimit:
+          type: integer
+        IsVoiced:
+          type: boolean
+        Order:
+          type: integer
+        ConfigJsonString:
+          type: string
+        DeletedAt:
+          type: string
+          format: date-time
+      required:
+        - SurveyId
+        - QuestionTypeId
+        - Content
+        - TimeLimit
+        - IsVoiced
+        - Order
+        - ConfigJsonString
+
+    SurveyOption:
+      type: object
+      properties:
+        Id:
+          type: integer
+        SurveyQuestionId:
+          type: integer
+        Content:
+          type: string
+          maxLength: 500
+        Order:
+          type: integer
+      required:
+        - SurveyQuestionId
+        - Content
+        - Order
+
+    SurveyMarketVersionStatusTracking:
+      type: object
+      properties:
+        Id:
+          type: integer
+        SurveyId:
+          type: integer
+        Version:
+          type: integer
+        SurveyStatusId:
+          type: integer
+        CreatedAt:
+          type: string
+          format: date-time
+      required:
+        - SurveyId
+        - Version
+        - SurveyStatusId
+
+    SurveyMarket:
+      type: object
+      properties:
+        SurveyId:
+          type: integer
+        Version:
+          type: integer
+        Description:
+          type: string
+        PricePerResponse:
+          type: number
+          format: double
+        IsAvailable:
+          type: boolean
+        ExpiredAt:
+          type: string
+          format: date-time
+        PublishAt:
+          type: string
+          format: date-time
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required:
+        - SurveyId
+        - Version
+        - IsAvailable
+
+    SurveyMarketQuestionVersion:
+      type: object
+      properties:
+        SurveyQuestionId:
+          type: integer
+        Version:
+          type: integer
+        IsReanswerRequired:
+          type: boolean
+        ReferenceSurveyQuestionId:
+          type: integer
+      required:
+        - SurveyQuestionId
+        - Version
+        - IsReanswerRequired
+
+    SurveyTakenResult:
+      type: object
+      properties:
+        Id:
+          type: integer
+        SurveyId:
+          type: integer
+        TakerId:
+          type: integer
+        IsValid:
+          type: boolean
+        InvalidReason:
+          type: string
+          maxLength: 500
+        MoneyEarned:
+          type: number
+          format: double
+        XpEarned:
+          type: integer
+        CompletedAt:
+          type: string
+          format: date-time
+      required:
+        - SurveyId
+        - TakerId
+        - IsValid
+        - CompletedAt
+
+    SurveyResponse:
+      type: object
+      properties:
+        Id:
+          type: integer
+        SurveyTakenResultId:
+          type: integer
+        SurveyQuestionId:
+          type: integer
+        IsValid:
+          type: boolean
+        ValueJsonString:
+          type: string
+      required:
+        - SurveyTakenResultId
+        - SurveyQuestionId
+        - IsValid
+        - ValueJsonString
+
+    SurveyMarketResponseVersion:
+      type: object
+      properties:
+        SurveyResponseId:
+          type: integer
+        Version:
+          type: integer
+      required:
+        - SurveyResponseId
+        - Version
+
+    DataPurchase:
+      type: object
+      properties:
+        Id:
+          type: integer
+        BuyerId:
+          type: integer
+        MarketSurveyId:
+          type: integer
+        Version:
+          type: integer
+        PurchasedAt:
+          type: string
+          format: date-time
+      required:
+        - BuyerId
+        - MarketSurveyId
+        - Version
+
+    DataPurchaseDetail:
+      type: object
+      properties:
+        DataPurchaseId:
+          type: integer
+        SurveyResponseId:
+          type: integer
+      required:
+        - DataPurchaseId
+        - SurveyResponseId
+
+    SurveyRewardTracking:
+      type: object
+      properties:
+        Id:
+          type: integer
+        SurveyId:
+          type: integer
+        RewardPrice:
+          type: number
+          format: double
+        RewardXp:
+          type: integer
+        CreatedAt:
+          type: string
+          format: date-time
+      required:
+        - SurveyId
+        - RewardPrice
+        - RewardXp
+
+    FilterTagType:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 50
+      required:
+        - Id
+        - Name
+
+    FilterTag:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 250
+        TagColor:
+          type: string
+          maxLength: 50
+        FilterTagTypeId:
+          type: integer
+      required:
+        - Id
+        - Name
+        - TagColor
+        - FilterTagTypeId
+
+    SurveyTakenResultTagFilter:
+      type: object
+      properties:
+        SurveyTakenResultId:
+          type: integer
+        AdditionalFilterTag:
+          type: integer
+        Summary:
+          type: string
+      required:
+        - SurveyTakenResultId
+        - AdditionalFilterTag
+
+    TakerTagFilter:
+      type: object
+      properties:
+        TakerId:
+          type: integer
+        FilterTagId:
+          type: integer
+        Summary:
+          type: string
+      required:
+        - TakerId
+        - FilterTagId
+
+    SurveyTagFilter:
+      type: object
+      properties:
+        SurveyId:
+          type: integer
+        FilterTagId:
+          type: integer
+        Summary:
+          type: string
+      required:
+        - SurveyId
+        - FilterTagId
+
+    SurveyTopicFavorite:
+      type: object
+      properties:
+        AccountId:
+          type: integer
+        SurveyTopicId:
+          type: integer
+        FavoriteScore:
+          type: integer
+      required:
+        - AccountId
+        - SurveyTopicId
+        - FavoriteScore
+
+    SurveyTakerSegment:
+      type: object
+      properties:
+        SurveyId:
+          type: integer
+        CountryRegion:
+          type: string
+          maxLength: 250
+        MaritalStatus:
+          type: string
+          maxLength: 250
+        AverageIncome:
+          type: string
+          maxLength: 250
+        EducationLevel:
+          type: string
+          maxLength: 250
+        JobField:
+          type: string
+          maxLength: 250
+        Prompt:
+          type: string
+        TagFilterAccuracyRate:
+          type: number
+          format: float
+      required:
+        - SurveyId
+
+    SurveyFeedback:
+      type: object
+      properties:
+        SurveyId:
+          type: integer
+        TakerId:
+          type: integer
+        RatingScore:
+          type: number
+          format: float
+        Comment:
+          type: string
+          maxLength: 500
+        CreatedAt:
+          type: string
+          format: date-time
+        UpdatedAt:
+          type: string
+          format: date-time
+      required:
+        - SurveyId
+        - TakerId
+        - RatingScore
+
+    PaymentType:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 50
+        OperationType:
+          type: string
+          maxLength: 20
+      required:
+        - Id
+        - Name
+        - OperationType
+
+    PaymentStatus:
+      type: object
+      properties:
+        Id:
+          type: integer
+        Name:
+          type: string
+          maxLength: 50
+      required:
+        - Id
+        - Name
+
+    PaymentHistory:
+      type: object
+      properties:
+        Id:
+          type: integer
+        AccountId:
+          type: integer
+        Amount:
+          type: number
+          format: double
+        PaymentTypeId:
+          type: integer
+        PaymentStatusId:
+          type: integer
+        CreatedAt:
+          type: string
+          format: date-time
+      required:
+        - AccountId
+        - Amount
+        - PaymentTypeId
+        - PaymentStatusId
+
+

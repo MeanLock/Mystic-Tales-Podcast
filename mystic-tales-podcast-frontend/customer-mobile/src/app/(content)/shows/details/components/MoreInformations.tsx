@@ -20,7 +20,7 @@ interface MoreInformationsProps {
   } | null;
   ShowEpisodeList: {
     Id: string;
-    Title: string;
+    Name: string;
     Description: string;
     ExplicitContent: boolean;
     ReleaseDate: string;
@@ -57,7 +57,7 @@ interface MoreInformationsProps {
 
 type Episode = {
   Id: string;
-  Title: string;
+  Name: string;
   Description: string;
   ExplicitContent: boolean;
   ReleaseDate: string;

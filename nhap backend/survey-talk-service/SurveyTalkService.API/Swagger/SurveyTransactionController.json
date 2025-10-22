@@ -1,0 +1,44 @@
+[
+    {
+        "method": "GET",
+        "url": "/api/Survey/transaction/market-research/surveys/{SurveyId}/data-contribution-income",
+        "description": "Lấy lịch sử doanh thu của contributor đối với market survey đó (CONTRIBUTOR)",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/transaction/market-research/surveys/{SurveyId}/bought-data",
+        "description": "Lấy mảng version + version taken result id mà customer đã mua + số tiền đã bỏ ra mua thuộc survey đó (CUSTOMER)",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/transaction/market-research/surveys/{SurveyId}/available-data",
+        "description": "Lấy mảng version + version taken result id mà customer chưa mua + tiền phải trả để cho chọn version tiến hành purchase (CUSTOMER)",
+        "completed": false
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/transaction/community/surveys/{SurveyId}/publish-price-calcular",
+        "description": "Tính tiền đăng survey từ KPI đã chọn + deadline đã chọn + giá base đã bao gồm security của survey  đó",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/transaction/community/surveys/{SurveyId}/publish",
+        "description": "Đăng community survey, nhận và lưu mảng filter tag + cast vector lưu postgres",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/transaction/market-research/surveys/{SurveyId}/data-purchase",
+        "description": "Mua data trong mảng version (truyền vào mảng TakenResultIds)",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/transaction/community/survey-taken-earn/history",
+        "description": "Lấy lịch sử thu nhập từ việc tham gia khảo sát cộng đồng (taker earn history)",
+        "completed": true
+    }
+]

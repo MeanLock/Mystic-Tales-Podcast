@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- YARP Reverse Proxy -->
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
+    
+    <!-- Consul Service Discovery -->
+    <PackageReference Include="Consul" Version="1.7.14.3" />
+    <PackageReference Include="Winton.Extensions.Configuration.Consul" Version="3.3.0" />
+    
+    <!-- Redis -->
+    <PackageReference Include="StackExchange.Redis" Version="2.8.37" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.0" />
+    
+    <!-- Health Checks -->
+    <PackageReference Include="AspNetCore.HealthChecks.Consul" Version="8.0.1" />
+    <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.0" />
+    
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ApiGatewayService.Common\ApiGatewayService.Common.csproj" />
+  </ItemGroup>
+</Project>

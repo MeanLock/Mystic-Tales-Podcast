@@ -1,0 +1,188 @@
+[
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/feature/surveys",
+        "description": "Lấy 3 mảng survey trong home page + reward tracking hiện tại",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/filter/surveys",
+        "description": "Lấy danh sách filter survey (MANAGER)",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/core/filter/surveys",
+        "description": "Tạo filter survey mới (MANAGER)",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/available-filter-survey",
+        "description": "Lấy filter survey hiện tại đang available",
+        "completed": true // CHỜ TEST
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/filter/surveys/{SurveyId}",
+        "description": "Lấy chi tiết + danh sách question/options của filter survey (MANAGER)",
+        "completed": true
+    },
+    {
+        "method": "PUT",
+        "url": "/api/Survey/core/filter/surveys/{SurveyId}/publish",
+        "description": "Đăng filter survey",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/community/surveys",
+        "description": "Lấy danh sách community survey + reward tracking  (MANAGER, CUSTOMER)",
+        "completed": false
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/core/community/surveys",
+        "description": "Tạo community survey mới (REQUESTER)",
+        "completed": true  // CHỜ TEST, CHƯA CÓ HANDLE QUERY + FILTER PHÙ HỢP + CHƯA CÓ LẦN TAKEN NÀO LÀ VALID CHO CUSTOMER
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/level-update-community-survey",
+        "description": "Lấy 1 level update survey cho account",
+        "completed": true // CHỜ TEST
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/community/surveys/me",
+        "description": "Lấy danh sách survey đã tạo (REQUESTER)",
+        "completed": true // CHỜ TEST, CHƯA CÓ HANDLE QUERY, thiếu chỉ lấy taken result từ lần publish gần nhất
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/community/surveys/{SurveyId}",
+        "description": "Lấy chi tiết + danh sách question/options + taken result + reward tracking (tuỳ role) của community survey (MANAGER, REQUESTER)",
+        "completed": true
+    },
+    {
+        "method": "PUT",
+        "url": "/api/Survey/core/community/surveys/{SurveyId}",
+        "description": "Điều chỉnh thông số của community survey (MAX XP) (MANAGER)",
+        "completed": true  // CHỜ TEST, APPLY TẠO REWARD TRACKING MỚI, thiếu chỉ lấy taken result từ lần publish gần nhất
+    },
+    {
+        "method": "PUT",
+        "url": "/api/Survey/core/community/surveys/{SurveyId}/unpublished",
+        "description": "Dừng community survey để về editing",
+        "completed": true
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/core/community/surveys/{SurveyId}/summary-filter-tag",
+        "description": "Trả về danh sách filter tag summary + maxKPI + minDeadlineDuration (lấy từ ngày hôm sau trở đi)  và summary từ filter questions và prompt + accuracy",
+        "completed": true
+    },
+    // {
+    //     "method": "POST",
+    //     "url": "/api/Survey/core/community/surveys/{SurveyId}/min-deadline-duration-calcular",
+    //     "description": "Trả về min deadline duration phù hợp (kpi và )",
+    //     "completed": false
+    // },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/market-research/surveys",
+        "description": "Lấy danh sách market survey (MANAGER, CUSTOMER)",
+        "completed": false
+    },
+    {
+        "method": "POST",
+        "url": "/api/Survey/core/market-research/surveys",
+        "description": "Tạo version mới cho survey (nếu có Id thì version +1, không có thì tạo survey mới)",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/market-research/surveys/{SurveyId}",
+        "description": "Lấy chi tiết + danh sách question(version)/options market survey (MANAGER, CUSTOMER)",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/market-research/contributed-surveys",
+        "description": "Lấy các market survey đã contribute (CUSTOMER)",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/market-research/bought-surveys",
+        "description": "Lấy các market survey đã mua (CUSTOMER)",
+        "completed": false
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/market-research/bought-surveys/{SurveyId}",
+        "description": "Lấy chi tiết + danh sách question/options (có version đã mua) market survey (BUYER)",
+        "completed": false
+    },
+    {
+        "method": "PUT",
+        "url": "/api/Survey/core/market-research/surveys/{SurveyId}/version-publish",
+        "description": "Đăng version mới nhất của market survey (MANAGER)",
+        "completed": false
+    },
+    {
+        "method": "PUT",
+        "url": "/api/Survey/core/market-research/surveys/{SurveyId}/version-deactivate",
+        "description": "Dừng/activate version hiện tại của market survey (ngừng/tiếp tục tiếp nhận contributor)",
+        "completed": false
+    },
+    {
+        "method": "PUT",
+        "url": "/api/Survey/core/surveys/{SurveyId}",
+        "description": "Cập nhật thông tin cơ bản của 1 survey (title, description, main image, background image)",
+        "completed": false
+    },
+    {
+        "method": "DELETE",
+        "url": "/api/Survey/core/surveys/{SurveyId}",
+        "description": "Xóa survey tuỳ loại",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/topics",
+        "description": "Lấy danh sách topic",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/specific-topics",
+        "description": "Lấy danh sách specific topic",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/security-modes",
+        "description": "Lấy danh sách security mode",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/survey-question-types",
+        "description": "Lấy danh sách survey question type",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/survey-field-input-types",
+        "description": "Lấy danh sách survey field input type",
+        "completed": true
+    },
+    {
+        "method": "GET",
+        "url": "/api/Survey/core/survey-default-background-themes",
+        "description": "Lấy danh sách default background theme",
+        "completed": true
+    }
+]

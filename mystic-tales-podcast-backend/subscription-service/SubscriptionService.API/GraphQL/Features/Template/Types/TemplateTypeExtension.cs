@@ -1,0 +1,23 @@
+﻿using Microsoft.EntityFrameworkCore;
+
+
+namespace SubscriptionService.API.GraphQL.Features.Template.Types
+{
+    public class TemplateTypeExtension : ObjectTypeExtension<Template>
+    {
+        protected override void Configure(IObjectTypeDescriptor<Template> descriptor)
+        {
+            descriptor.Name("TemplateDayNe");   // descriptor.Name("TemplateType") trong ObjectTypeExtension<T> chỉ định tên type mục tiêu để extend chứ không có tác dụng đặt tên cho type mới
+            descriptor.Field(t => t.Name).Name("Name").Type<StringType>();
+            descriptor.Field(t => t.Description).Name("Description").Type<StringType>();
+            descriptor.Field("abc_xyz")
+                  .Resolve(ctx =>
+                  {
+                      return $"[{ctx.Parent<Template>().Name}] - {ctx.Parent<Template>().Description}";
+                  });
+
+        }
+    }
+
+
+}

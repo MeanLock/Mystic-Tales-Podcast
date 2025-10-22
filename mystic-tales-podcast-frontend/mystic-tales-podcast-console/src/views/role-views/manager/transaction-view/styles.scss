@@ -1,0 +1,85 @@
+.transaction {
+
+  &__title {
+  
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 600;
+    color: #3E5DAB;
+
+  }
+
+  &__table {
+    font-family: 'inter', sans-serif;
+  }
+}
+.transaction__title {
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+#withdrawal-table {
+  .ag-theme-alpine {
+    --ag-header-height: 50px;
+    --ag-row-height: 70px;
+    --ag-header-foreground-color: #333;
+    --ag-header-background-color: #f8f9fa;
+    --ag-odd-row-background-color: #ffffff;
+    --ag-even-row-background-color: #f8f9fa;
+  }
+
+  .ag-header-cell-text {
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .ag-cell {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+  }
+
+  .ag-row {
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .ag-row:hover {
+    background-color: #f1f3f4 !important;
+  }
+}
+
+.modal-body {
+  .qr-container {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+  }
+}
+
+.status-badge {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.currency-text {
+  font-weight: 600;
+  color: #28a745;
+}
+
+.date-text {
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.eye-button {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+}

@@ -1,0 +1,8 @@
+[
+    {
+        "method": "GET",
+        "url": "/api/Report/survey/community/summary-count",
+        "description": "Thống kê khảo sát Community hiện tại. Trả về số lượng khảo sát theo các trạng thái: Published, OnDeadline, NearDeadline, LateForDeadline, Achieved.",
+        "completed": false
+    }
+]

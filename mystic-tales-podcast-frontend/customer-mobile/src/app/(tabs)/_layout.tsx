@@ -98,6 +98,7 @@ export default function TabLayout() {
     >
       <View style={{ flex: 1 }}>
         <Tabs
+          initialRouteName="home"
           screenOptions={{
             tabBarActiveTintColor: tintColorDark,
             tabBarInactiveTintColor: Colors.dark.tabIconDefault,

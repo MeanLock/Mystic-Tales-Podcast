@@ -1,0 +1,100 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\account-service\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{941CB096-42C2-4530-A012-5D9295BDA6F6}|AccountService.Infrastructure\\AccountService.Infrastructure.csproj|d:\\vscode\\my project\\mystic tales podcast\\mystic-tales-podcast\\mystic-tales-podcast-backend\\account-service\\accountservice.infrastructure\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{941CB096-42C2-4530-A012-5D9295BDA6F6}|AccountService.Infrastructure\\AccountService.Infrastructure.csproj|solutionrelative:accountservice.infrastructure\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2ECADD2A-098F-401F-B2BC-ADAB7247A756}|AccountService.DataAccess\\AccountService.DataAccess.csproj|d:\\vscode\\my project\\mystic tales podcast\\mystic-tales-podcast\\mystic-tales-podcast-backend\\account-service\\accountservice.dataaccess\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2ECADD2A-098F-401F-B2BC-ADAB7247A756}|AccountService.DataAccess\\AccountService.DataAccess.csproj|solutionrelative:accountservice.dataaccess\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0441EBEA-006B-4780-9CDE-73758410F6E0}|AccountService.Common\\AccountService.Common.csproj|d:\\vscode\\my project\\mystic tales podcast\\mystic-tales-podcast\\mystic-tales-podcast-backend\\account-service\\accountservice.common\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0441EBEA-006B-4780-9CDE-73758410F6E0}|AccountService.Common\\AccountService.Common.csproj|solutionrelative:accountservice.common\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{907F639D-3CF4-4432-878C-3F100720B792}|AccountService.BusinessLogic\\AccountService.BusinessLogic.csproj|d:\\vscode\\my project\\mystic tales podcast\\mystic-tales-podcast\\mystic-tales-podcast-backend\\account-service\\accountservice.businesslogic\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{907F639D-3CF4-4432-878C-3F100720B792}|AccountService.BusinessLogic\\AccountService.BusinessLogic.csproj|solutionrelative:accountservice.businesslogic\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\account-service\\AccountService.Infrastructure\\Program.cs",
+              "RelativeDocumentMoniker": "AccountService.Infrastructure\\Program.cs",
+              "ToolTip": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\account-service\\AccountService.Infrastructure\\Program.cs",
+              "RelativeToolTip": "AccountService.Infrastructure\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-25T08:43:32.939Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\account-service\\AccountService.DataAccess\\Program.cs",
+              "RelativeDocumentMoniker": "AccountService.DataAccess\\Program.cs",
+              "ToolTip": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\account-service\\AccountService.DataAccess\\Program.cs",
+              "RelativeToolTip": "AccountService.DataAccess\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-25T08:43:02.782Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\account-service\\AccountService.Common\\Program.cs",
+              "RelativeDocumentMoniker": "AccountService.Common\\Program.cs",
+              "ToolTip": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\account-service\\AccountService.Common\\Program.cs",
+              "RelativeToolTip": "AccountService.Common\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-25T08:42:11.512Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\account-service\\AccountService.BusinessLogic\\Program.cs",
+              "RelativeDocumentMoniker": "AccountService.BusinessLogic\\Program.cs",
+              "ToolTip": "D:\\vscode\\MY PROJECT\\Mystic Tales Podcast\\Mystic-Tales-Podcast\\mystic-tales-podcast-backend\\account-service\\AccountService.BusinessLogic\\Program.cs",
+              "RelativeToolTip": "AccountService.BusinessLogic\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-25T08:41:44.414Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{56df62a4-05a3-4e5b-aa1a-99371ccfb997}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

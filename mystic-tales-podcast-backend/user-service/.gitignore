@@ -1,0 +1,12 @@
+.vs/
+UserService.API/bin/
+UserService.API/obj/
+UserService.BusinessLogic/bin/
+UserService.BusinessLogic/obj/
+UserService.Infrastructure/bin/
+UserService.Infrastructure/obj/
+UserService.DataAccess/bin/
+UserService.DataAccess/obj/
+UserService.Common/bin/
+UserService.Common/obj/
+

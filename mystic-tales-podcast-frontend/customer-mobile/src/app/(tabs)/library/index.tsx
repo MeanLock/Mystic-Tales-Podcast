@@ -42,9 +42,9 @@ const tabNavigation = [
     to: "favorites",
   },
   {
-    title: "Downloads",
+    title: "Saved",
     iconName: "download",
-    to: "downloads",
+    to: "saved",
   },
   {
     title: "Bookings",
@@ -85,7 +85,7 @@ const TabComponent = ({
         case "favorites":
           router.push("/library/favorites");
           break;
-        case "downloads":
+        case "saved":
           router.push("/library/downloads");
           break;
         case "bookings":

@@ -1,0 +1,85 @@
+.dashboard-tabs {
+    font-family: 'Bricolage Grotesque', sans-serif;
+
+    .nav-tabs {
+        border-bottom: none;
+        display: flex;
+        gap: 16px;
+        justify-content: flex-end;
+    }
+
+    button.nav-link {
+        border: none;
+        background: #fff;
+        color: #000;
+        border-radius: 999px;
+        padding: 0.5rem 2.8rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-right: 0;
+        transition: all 0.3s ease;
+
+        &:hover {
+            background: #FFC40D;
+            color: #fff;
+        }
+
+        &.active {
+            background: #FFC40D;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(62, 93, 171, 0.08);
+        }
+    }
+
+    &__calendar {
+        border: none;
+        background: #fff;
+        color: #000;
+
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-right: 0;
+        transition: all 0.3s ease;
+
+        &:hover {
+            background: #FFC40D;
+            color: #fff;
+        }
+
+        &.active {
+            background: #FFC40D;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(62, 93, 171, 0.08);
+        }
+    }
+
+
+}
+
+.dashboard-card {
+    border-radius: 20px;
+
+    &__title {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-weight: 600;
+
+    }
+}
+
+.MetricsCards {
+
+    &__card {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        font-family: 'inter', sans-serif;
+        border-radius: 15px;
+        font-family: 'Bricolage Grotesque', sans-serif;
+        &:hover {
+            background: #3E5DAB;
+            color: #fff;
+        }
+    }
+}
+
+.progress-bar {
+    background-color: #3E5DAB;
+}

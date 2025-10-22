@@ -1,10 +1,20 @@
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
-import { Image, Platform, Pressable, StyleSheet } from "react-native";
+import {
+  Image,
+  ImageBackground,
+  Platform,
+  Pressable,
+  StyleSheet,
+} from "react-native";
 import { ShowDetails } from "../[id]";
 import { useEffect, useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/src/store/store";
+
+import { BlurView } from "expo-blur";
 
 type ShowInfoProps = Pick<
   ShowDetails,
@@ -100,6 +110,7 @@ const ShowInformations = ({
 
   // HOOKS
   const router = useRouter();
+  const dispatch = useDispatch();
 
   // FUNCTIONS
   const formatRating = (ratingList: RatingType[]) => {
@@ -162,93 +173,110 @@ const ShowInformations = ({
   };
 
   return (
-    <View style={[style.container]}>
-      <View style={style.navigationContainer}>
-        {Platform.OS === "ios" ? (
-          <Pressable onPress={() => router.back()} style={style.backIcon}>
-            <MaterialIcons
-              style={{ padding: 0, margin: 0 }}
-              name="keyboard-arrow-left"
-              color={"#fff"}
-              size={25}
-            />
-          </Pressable>
-        ) : (
-          <Pressable onPress={() => router.back()} style={style.backIcon}>
-            <MaterialIcons name="arrow-back" color={"#fff"} />
-          </Pressable>
-        )}
-      </View>
+    <View style={[style.containerWrapper]}>
+      {/* Background Image with Overlay */}
+      <ImageBackground
+        source={{ uri: ImageUrl }}
+        style={[StyleSheet.absoluteFill]}
+        blurRadius={60} // High blur radius
+      >
+        {/* Dark overlay to dim the background image */}
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "rgba(0, 0, 0, 0.6)" },
+          ]}
+        />
+      </ImageBackground>
 
-      <View style={style.showImageContainer}>
-        <Image style={style.showImage} source={{ uri: ImageUrl }} />
-      </View>
+      <View style={style.container}>
+        <View style={style.navigationContainer}>
+          {Platform.OS === "ios" ? (
+            <Pressable onPress={() => router.back()} style={style.backIcon}>
+              <MaterialIcons
+                style={{ padding: 0, margin: 0 }}
+                name="keyboard-arrow-left"
+                color={"#fff"}
+                size={25}
+              />
+            </Pressable>
+          ) : (
+            <Pressable onPress={() => router.back()} style={style.backIcon}>
+              <MaterialIcons name="arrow-back" color={"#fff"} />
+            </Pressable>
+          )}
+        </View>
 
-      <View className="w-full items-center justify-center">
-        <Text className="font-bold text-3xl text-white">{Name}</Text>
-      </View>
+        <View style={style.showImageContainer}>
+          <Image style={style.showImage} source={{ uri: ImageUrl }} />
+        </View>
 
-      <View className="flex-row w-full items-center justify-center">
-        {PodcastChannel ? (
-          <Pressable className="w-full gap-3 h-[35px] flex flex-row items-center justify-center">
-            <Image
-              source={{ uri: PodcastChannel.ImageUrl }}
-              className="w-[20px] h-[20px] rounded-full"
-            />
-            <Text className="text-[#999999]">{PodcastChannel.Name}</Text>
-            <MaterialIcons
-              name="keyboard-arrow-right"
-              color={"#999999"}
-              size={20}
-            />
-          </Pressable>
-        ) : (
-          <Pressable className="w-full gap-3 h-[35px] flex flex-row items-center justify-center">
-            <Image
-              source={{ uri: Podcaster.ImageUrl }}
-              className="w-[20px] h-[20px] rounded-full"
-            />
-            <Text className="text-[#999999]">{Podcaster.FullName}</Text>
-            <MaterialIcons
-              name="keyboard-arrow-right"
-              color={"#999999"}
-              size={20}
-            />
-          </Pressable>
-        )}
-      </View>
+        <View className="w-full items-center justify-center">
+          <Text className="font-bold text-3xl text-white">{Name}</Text>
+        </View>
 
-      <View className="w-full items-center justify-center p-2">
-        {isSubscribed ? (
-          <Pressable style={style.whiteButton}>
-            <MaterialIcons name="play-arrow" size={20} color={"#000"} />
-            <Text className="text-black font-bold">Continue Listening</Text>
-          </Pressable>
-        ) : (
-          <Pressable style={style.whiteButton}>
-            <MaterialIcons name="play-arrow" size={20} color={"#000"} />
-            <Text className="text-black font-bold">Trailer Audio</Text>
-          </Pressable>
-        )}
-      </View>
+        <View className="flex-row w-full items-center justify-center">
+          {PodcastChannel ? (
+            <Pressable className="w-full gap-3 h-[35px] flex flex-row items-center justify-center">
+              <Image
+                source={{ uri: PodcastChannel.ImageUrl }}
+                className="w-[20px] h-[20px] rounded-full"
+              />
+              <Text className="text-[#999999]">{PodcastChannel.Name}</Text>
+              <MaterialIcons
+                name="keyboard-arrow-right"
+                color={"#999999"}
+                size={20}
+              />
+            </Pressable>
+          ) : (
+            <Pressable className="w-full gap-3 h-[35px] flex flex-row items-center justify-center">
+              <Image
+                source={{ uri: Podcaster.ImageUrl }}
+                className="w-[20px] h-[20px] rounded-full"
+              />
+              <Text className="text-[#999999]">{Podcaster.FullName}</Text>
+              <MaterialIcons
+                name="keyboard-arrow-right"
+                color={"#999999"}
+                size={20}
+              />
+            </Pressable>
+          )}
+        </View>
 
-      <View className="w-full px-[10px] text-justify py-3">
-        <Text numberOfLines={5} className="font-light">
-          {Description}
-        </Text>
-      </View>
+        <View className="w-full items-center justify-center p-2">
+          {isSubscribed ? (
+            <Pressable style={style.whiteButton}>
+              <MaterialIcons name="play-arrow" size={20} color={"#000"} />
+              <Text className="text-black font-bold">Continue Listening</Text>
+            </Pressable>
+          ) : (
+            <Pressable style={style.whiteButton}>
+              <MaterialIcons name="play-arrow" size={20} color={"#000"} />
+              <Text className="text-black font-bold">Trailer Audio</Text>
+            </Pressable>
+          )}
+        </View>
 
-      <View className="w-full px-[10px]">
-        {renderFooterInformations(
-          RatingList,
-          PodcastCategory.Name,
-          UploadFrequency,
-          Language,
-          ShowSubscriptionList
-        )}
-      </View>
+        <View className="w-full px-[10px] text-justify py-3">
+          <Text numberOfLines={5} className="font-light">
+            {Description}
+          </Text>
+        </View>
 
-      {!isSubscribed && calculateSubscription(ShowSubscriptionList)}
+        <View className="w-full px-[10px]">
+          {renderFooterInformations(
+            RatingList,
+            PodcastCategory.Name,
+            UploadFrequency,
+            Language,
+            ShowSubscriptionList
+          )}
+        </View>
+
+        {!isSubscribed && calculateSubscription(ShowSubscriptionList)}
+      </View>
     </View>
   );
 };
@@ -256,15 +284,15 @@ const ShowInformations = ({
 export default ShowInformations;
 
 const style = StyleSheet.create({
+  containerWrapper: {
+    width: "100%",
+    overflow: "hidden",
+  },
   container: {
-    // height: "100%",
     width: "100%",
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 20,
-    borderBottomColor: "#514F4F",
-    borderBottomWidth: 0.3,
-    backgroundColor: "#22281B",
   },
   navigationContainer: {
     width: "100%",
