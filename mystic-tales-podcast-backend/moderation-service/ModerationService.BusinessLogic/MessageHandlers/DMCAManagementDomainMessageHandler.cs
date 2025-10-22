@@ -1,0 +1,106 @@
+﻿using Microsoft.Extensions.Logging;
+using ModerationService.BusinessLogic.Attributes;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.AssignDMCAAccusationToStaff;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateCounterNotice;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusation;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateLawsuitProof;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreatePodcastBuddyReport;
+using ModerationService.BusinessLogic.Enums.Kafka;
+using ModerationService.BusinessLogic.Services.DbServices.DMCAServices;
+using ModerationService.BusinessLogic.Services.DbServices.ReportServices;
+using ModerationService.BusinessLogic.Services.MessagingServices.interfaces;
+using ModerationService.Infrastructure.Services.Kafka;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.Metrics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ModerationService.BusinessLogic.MessageHandlers
+{
+    public class DMCAManagementDomainMessageHandler : BaseSagaCommandMessageHandler
+    {
+        private readonly ILogger<DMCAManagementDomainMessageHandler> _logger;
+        private readonly DMCAAccusationService _dmcaAccusationService;
+        private readonly DMCANoticeService _dmcaNoticeService;
+        private readonly CounterNoticeService _counterNoticeService;
+        private readonly LawsuitProofService _lawsuitProofService;
+        private const string SAGA_TOPIC = KafkaTopicEnum.DmcaManagementDomain;
+        public DMCAManagementDomainMessageHandler(
+            IMessagingService messagingService, 
+            KafkaProducerService kafkaProducerService, 
+            ILogger<DMCAManagementDomainMessageHandler> logger,
+            DMCAAccusationService dmcaAccusationService,
+            DMCANoticeService dmcaNoticeService,
+            CounterNoticeService counterNoticeService,
+            LawsuitProofService lawsuitProofService) : base(messagingService, kafkaProducerService, logger)
+        {
+            _logger = logger;
+            _dmcaAccusationService = dmcaAccusationService;
+            _dmcaNoticeService = dmcaNoticeService;
+            _counterNoticeService = counterNoticeService;
+            _lawsuitProofService = lawsuitProofService;
+        }
+        [MessageHandler("create-dmca-accusation", SAGA_TOPIC)]
+        public async Task HandleCreateDMCAAccusationAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<CreateDMCAAccusationParameterDTO>();
+                   await _dmcaAccusationService.CreateDMCAAccusationAsync(parameter, command);
+                   _logger.LogInformation("Handled create-dmca-accusation command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "create-dmca-accusation.failed"
+           );
+        }
+        [MessageHandler("create-counter-notice", SAGA_TOPIC)]
+        public async Task HandleCreateCounterNoticeAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<CreateCounterNoticeParameterDTO>();
+                   await _counterNoticeService.CreateCounterNoticeAsync(parameter, command);
+                   _logger.LogInformation("Handled create-counter-notice command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "create-counter-notice.failed"
+           );
+        }
+        [MessageHandler("create-lawsuit-proof", SAGA_TOPIC)]
+        public async Task HandleCreateLawsuitProofAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<CreateLawsuitProofParameterDTO>();
+                   await _lawsuitProofService.CreateLawsuitProofAsync(parameter, command);
+                   _logger.LogInformation("Handled create-lawsuit-proof command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "create-lawsuit-proof.failed"
+           );
+        }
+        [MessageHandler("assign-dmca-accusation-to-staff", SAGA_TOPIC)]
+        public async Task HandlerAssignDMCAAccusationToStaffAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<AssignDMCAAccusationToStaffParameterDTO>();
+                   await _dmcaAccusationService.AssignDMCAAccusationToStaffAsync(parameter, command);
+                   _logger.LogInformation("Handled assign-dmca-accusation-to-staff command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "assign-dmca-accusation-to-staff.failed"
+           );
+        }
+    }
+}

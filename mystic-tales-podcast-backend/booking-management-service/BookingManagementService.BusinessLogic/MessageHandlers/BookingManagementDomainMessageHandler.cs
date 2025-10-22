@@ -10,6 +10,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateTrackListenSlot;
+using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Infrastructure.Services.Kafka;
@@ -24,6 +25,7 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
         private readonly ILogger<BookingManagementDomainMessageHandler> _logger;
         private readonly BookingService _bookingService;
         private readonly BookingProducingRequestService _bookingProducingRequestService;
+        private const string SAGA_TOPIC = KafkaTopicEnum.BookingManagementDomain;
         public BookingManagementDomainMessageHandler(
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
@@ -38,7 +40,7 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
             _bookingService = bookingService;
             _bookingProducingRequestService = bookingProducingRequestService;
         }
-        [MessageHandler("create-booking", "booking-management-domain")]
+        [MessageHandler("create-booking", SAGA_TOPIC)]
         public async Task HandleCreateBookingAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -48,11 +50,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     var requestData = command.RequestData.ToObject<CreateBookingParameterDTO>();
                     await _bookingService.CreateBookingAsync(requestData, command);
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-booking.failed"
             );
         }
-        [MessageHandler("reject-booking", "booking-management-domain")]
+        [MessageHandler("reject-booking", SAGA_TOPIC)]
         public async Task HandleRejectBookingAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -62,11 +64,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     var requestData = command.RequestData.ToObject<RejectBookingParameterDTO>();
                     await _bookingService.RejectBookingAsync(requestData, command);
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "reject-booking.failed"
             );
         }
-        [MessageHandler("cancel-booking-manual", "booking-management-domain")]
+        [MessageHandler("cancel-booking-manual", SAGA_TOPIC)]
         public async Task HandleCancelBookingAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -77,11 +79,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     await _bookingService.ManualCancelBookingAsync(requestData, command);
                     
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "cancel-booking-manual.failed"
             );
         }
-        [MessageHandler("create-booking-negotiation", "booking-management-domain")]
+        [MessageHandler("create-booking-negotiation", SAGA_TOPIC)]
         public async Task HandleCreateBookingNegotiationAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -91,11 +93,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     var requestData = command.RequestData.ToObject<CreateBookingNegotiationParameterDTO>();
                     await _bookingService.CreateBookingNegotiationAsync(requestData, command);
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-booking-negotiation.failed"
             );
         }
-        [MessageHandler("agree-booking-negotiation", "booking-management-domain")]
+        [MessageHandler("agree-booking-negotiation", SAGA_TOPIC)]
         public async Task HandleAgreeBookingNegotiationAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -105,11 +107,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     var requestData = command.RequestData.ToObject<AgreeBookingNegotiationParameterDTO>();
                     await _bookingService.AgreeBookingNegotiationAsync(requestData, command);
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "agree-booking-negotiation.failed"
             );
         }
-        [MessageHandler("create-producing-request", "booking-management-domain")]
+        [MessageHandler("create-producing-request", SAGA_TOPIC)]
         public async Task HandleCreateProducingRequestAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -120,11 +122,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     await _bookingProducingRequestService.CreateProducingRequestAsync(requestData, command);
                     
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-producing-request.failed"
             );
         }
-        [MessageHandler("submit-booking-track", "booking-management-domain")]
+        [MessageHandler("submit-booking-track", SAGA_TOPIC)]
         public async Task HandleSubmitBookingTrackAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -135,11 +137,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     await _bookingProducingRequestService.SubmitBookingTrack(requestData, command);
                     
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "submit-booking-track.failed"
             );
         }
-        [MessageHandler("agree-producing-request", "booking-management-domain")]
+        [MessageHandler("agree-producing-request", SAGA_TOPIC)]
         public async Task HandleAgreeProducingRequestAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -149,11 +151,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     var requestData = command.RequestData.ToObject<AgreeProducingRequestParameterDTO>();
                     await _bookingProducingRequestService.AgreementProducingRequest(requestData, command);
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "agree-producing-request.failed"
             );
         }
-        [MessageHandler("complete-booking", "booking-management-domain")]
+        [MessageHandler("complete-booking", SAGA_TOPIC)]
         public async Task HandleCompleteBookingAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -163,11 +165,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     var bookingId = command.RequestData.ToObject<CompleteBookingParameterDTO>();
                     await _bookingService.CompleteBookingAsync(bookingId, command);
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "complete-booking.failed"
             );
         }
-        [MessageHandler("booking-track-preview-flow", "booking-management-domain")]
+        [MessageHandler("booking-track-preview-flow", SAGA_TOPIC)]
         public async Task HandleBookingTrackPreviewFlowAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -177,11 +179,11 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     var bookingPodcastTrackId = command.RequestData.ToObject<UpdateTrackListenSlotParameterDTO>();
                     await _bookingProducingRequestService.UpdateBookingPodcastTrackPreviewListenSlot(bookingPodcastTrackId, command);
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "booking-track-preview-flow.failed"
             );
         }
-        [MessageHandler("terminate-booking-of-podcaster", "booking-management-domain")]
+        [MessageHandler("terminate-booking-of-podcaster", SAGA_TOPIC)]
         public async Task HandleTerminateBookingOfPodcasterAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -191,7 +193,7 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                     var parameter = command.RequestData.ToObject<TerminateBookingOfPodcasterParameterDTO>();
                     await _bookingService.TerminateBookingOfPodcasterAsync(parameter, command);
                 },
-                responseTopic: "booking-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "terminate-booking-of-podcaster.failed"
             );
         }

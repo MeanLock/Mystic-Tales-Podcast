@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using TransactionService.API.Filters.ExceptionFilters;
 using TransactionService.BusinessLogic.DTOs.BookingTransaction;
 using TransactionService.BusinessLogic.DTOs.Cache;
+using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Models.CrossService;
 using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -22,6 +23,7 @@ namespace TransactionService.API.Controllers.BaseControllers
         private readonly ILogger<BookingTransactionController> _logger;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
+        private const string SAGA_TOPIC = KafkaTopicEnum.PaymentProcessingDomain;
 
         public BookingTransactionController(
             GenericQueryService genericQueryService, 
@@ -53,7 +55,7 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "TransactionTypeId", 3 }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "payment-processing-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "booking-deposit-payment-flow");
@@ -84,7 +86,7 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "TransactionTypeId", 6 }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "payment-processing-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "booking-final-payment-flow");

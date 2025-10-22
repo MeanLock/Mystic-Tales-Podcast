@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using TransactionService.API.Filters.ExceptionFilters;
 using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction;
 using TransactionService.BusinessLogic.DTOs.Cache;
+using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Models.CrossService;
 using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -24,7 +25,7 @@ namespace TransactionService.API.Controllers.BaseControllers
         private readonly ILogger<AccountBalanceTransactionController> _logger;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
-
+        private const string SAGA_TOPIC = KafkaTopicEnum.PaymentProcessingDomain;
         public AccountBalanceTransactionController(
             GenericQueryService genericQueryService,
             HttpServiceQueryClient httpServiceQueryClient,
@@ -66,7 +67,7 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "CancelUrl", request.AccountBalanceTransactionCreateInfo.CancelUrl ?? string.Empty }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "payment-processing-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "account-balance-create-payment-link-flow");
@@ -95,7 +96,7 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "WebHookBody", JObject.FromObject(webhookBody) },
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "payment-processing-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "account-balance-confirm-payment-flow");
@@ -123,7 +124,7 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "TransactionTypeId", 2 }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "payment-processing-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "account-balance-withdrawal-flow");

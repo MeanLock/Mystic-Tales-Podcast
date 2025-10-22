@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ModerationService.BusinessLogic.DTOs.Snippet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

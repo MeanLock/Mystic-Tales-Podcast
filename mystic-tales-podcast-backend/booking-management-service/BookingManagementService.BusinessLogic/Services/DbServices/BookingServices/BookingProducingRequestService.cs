@@ -206,6 +206,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
+                var processedFiles = new List<string>();
                 try
                 {
                     var messageName = command.MessageName;
@@ -240,6 +241,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"{bookingPodcastTrack.Id}_track_audio{FilePathHelper.GetExtension(trackInfo.AudioFileKey)}");
                             await _fileIOHelper.CopyFileToFileAsync(trackInfo.AudioFileKey, TrackAudioFileKey);
+                            processedFiles.Add(TrackAudioFileKey);
                             await _fileIOHelper.DeleteFileAsync(trackInfo.AudioFileKey);
                             newBookingPodcastTrack.AudioFileKey = TrackAudioFileKey;
                             await _bookingPodcastTrackGenericRepository.UpdateAsync(newBookingPodcastTrack.Id, newBookingPodcastTrack);
@@ -305,6 +307,28 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
+
+                    foreach (var processedFile in processedFiles)
+                    {
+                        try
+                        {
+                            await _fileIOHelper.DeleteFileAsync(processedFile);
+                            _logger.LogInformation("Cleaned up processed file: {FilePath}", processedFile);
+                        }
+                        catch (Exception deleteEx)
+                        {
+                            _logger.LogWarning(deleteEx, "Failed to clean up processed file: {FilePath}", processedFile);
+                        }
+                    }
+
+                    foreach (var trackInfo in parameter.Tracks)
+                    {
+                        if (trackInfo.AudioFileKey != null && trackInfo.AudioFileKey != "")
+                        {
+                            await _fileIOHelper.DeleteFileAsync(trackInfo.AudioFileKey);
+                        }
+                    }
+
                     _logger.LogError(ex, "Error occurred while submitting booking tracks for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                         {

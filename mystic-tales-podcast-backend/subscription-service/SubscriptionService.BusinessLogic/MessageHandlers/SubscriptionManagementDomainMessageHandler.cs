@@ -9,6 +9,7 @@ using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagement
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeactivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeletePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.UpdatePodcastSubscription;
+using SubscriptionService.BusinessLogic.Enums.Kafka;
 using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
 using SubscriptionService.BusinessLogic.Services.MessagingServices.interfaces;
 using SubscriptionService.Infrastructure.Services.Kafka;
@@ -25,6 +26,7 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
         private readonly ILogger<SubscriptionManagementDomainMessageHandler> _logger;
         private readonly PodcastSubscriptionService _podcastSubscriptionService;
         private readonly MemberSubscriptionService _memberSubscriptionService;
+        private const string SAGA_TOPIC = KafkaTopicEnum.SubscriptionManagementDomain;
         public SubscriptionManagementDomainMessageHandler(
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
@@ -36,7 +38,7 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
             _podcastSubscriptionService = podcastSubscriptionService;
             _memberSubscriptionService = memberSubscriptionService;
         }
-        [MessageHandler("create-podcast-subscription", "subscription-management-domain")]
+        [MessageHandler("create-podcast-subscription", SAGA_TOPIC)]
         public async Task HandleCreatePodcastSubscriptionCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -47,11 +49,11 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                     await _podcastSubscriptionService.CreatePodcastSubscriptionAsync(parameters, command);
                     _logger.LogInformation("Handled create-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "subscription-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-podcast-subscription.failed"
             );
         }
-        [MessageHandler("update-podcast-subscription", "subscription-management-domain")]
+        [MessageHandler("update-podcast-subscription", SAGA_TOPIC)]
         public async Task HandleUpdatePodcastSubscriptionCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -62,11 +64,11 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                     await _podcastSubscriptionService.UpdatePodcastSubscriptionAsync(parameters, command);
                     _logger.LogInformation("Handled update-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "subscription-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "update-podcast-subscription.failed"
             );
         }
-        [MessageHandler("delete-podcast-subscription", "subscription-management-domain")]
+        [MessageHandler("delete-podcast-subscription", SAGA_TOPIC)]
         public async Task HandleDeletePodcastSubscriptionCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -77,11 +79,11 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                     await _podcastSubscriptionService.DeletePodcastSubscriptionAsync(parameter, command);
                     _logger.LogInformation("Handled delete-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "subscription-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "delete-podcast-subscription.failed"
             );
         }
-        [MessageHandler("create-account-podcast-subscription-registration", "subscription-management-domain")]
+        [MessageHandler("create-account-podcast-subscription-registration", SAGA_TOPIC)]
         public async Task HandleCreateAccountPodcastSubscriptionRegistrationCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -92,11 +94,11 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                     await _podcastSubscriptionService.CreateAccountPodcastSubscriptionRegistrationAsync(parameter, command);
                     _logger.LogInformation("Handled create-account-podcast-subscription-registration command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "subscription-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-account-podcast-subscription-registration.failed"
             );
         }
-        [MessageHandler("activate-podcast-subscription", "subscription-management-domain")]
+        [MessageHandler("activate-podcast-subscription", SAGA_TOPIC)]
         public async Task HandleActivatePodcastSubscriptionCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -107,11 +109,11 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                     await _podcastSubscriptionService.ActivatePodcastSubscriptionAsync(parameter, command);
                     _logger.LogInformation("Handled activate-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "subscription-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "activate-podcast-subscription.failed"
             );
         }
-        [MessageHandler("deactivate-podcast-subscription", "subscription-management-domain")]
+        [MessageHandler("deactivate-podcast-subscription", SAGA_TOPIC)]
         public async Task HandleDeactivatePodcastSubscriptionCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -122,11 +124,11 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                     await _podcastSubscriptionService.DeactivatePodcastSubscriptionAsync(parameter, command);
                     _logger.LogInformation("Handled deactivate-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "subscription-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "deactivate-podcast-subscription.failed"
             );
         }
-        [MessageHandler("cancel-podcast-subscription-registration", "subscription-management-domain")]
+        [MessageHandler("cancel-podcast-subscription-registration", SAGA_TOPIC)]
         public async Task HandleCancelPodcastSubscriptionRegistrationCommandAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -137,11 +139,11 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                     await _podcastSubscriptionService.CancelPodcastSubscriptionRegistrationAsync(parameter, command);
                     _logger.LogInformation("Handled cancel-podcast-subscription-registration command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "subscription-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "cancel-podcast-subscription-registration.failed"
             );
         }
-        [MessageHandler("cancel-podcast-subscription", "subscription-management-domain")]
+        [MessageHandler("cancel-podcast-subscription", SAGA_TOPIC)]
         public async Task HandlerCancelPodcastSubscriptionAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -152,11 +154,11 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                     await _podcastSubscriptionService.CancelPodcastSubscriptionAsync(parameter, command);
                     _logger.LogInformation("Handled cancel-podcast-subscription command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "subscription-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "cancel-podcast-subscription.failed"
             );
         }
-        [MessageHandler("create-member-subscription", "subscription-management-domain")]
+        [MessageHandler("create-member-subscription", SAGA_TOPIC)]
         public async Task HandleCreateMemberSubscriptionAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -167,7 +169,7 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                     await _memberSubscriptionService.CreateMemberSubscriptionAsync(parameter, command);
                     _logger.LogInformation("Handled create-member-subscriptio command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
-                responseTopic: "subscription-management-domain",
+                responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-member-subscriptio.failed"
             );
         }

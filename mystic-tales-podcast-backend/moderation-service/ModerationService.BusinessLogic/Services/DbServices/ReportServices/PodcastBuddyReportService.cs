@@ -1,26 +1,42 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreatePodcastBuddyReport;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastBuddyReport;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastShowReport;
 using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport;
+using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.Details;
 using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.ListItems;
+using ModerationService.BusinessLogic.DTOs.PodcastShowReport.Details;
+using ModerationService.BusinessLogic.DTOs.PodcastShowReport.ListItems;
+using ModerationService.BusinessLogic.DTOs.Snippet;
+using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Helpers.DateHelpers;
+using ModerationService.BusinessLogic.Models.CrossService;
 using ModerationService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using ModerationService.BusinessLogic.Services.DbServices.MiscServices;
+using ModerationService.BusinessLogic.Services.MessagingServices;
 using ModerationService.BusinessLogic.Services.MessagingServices.interfaces;
 using ModerationService.DataAccess.Data;
 using ModerationService.DataAccess.Entities.SqlServer;
 using ModerationService.DataAccess.Repositories.interfaces;
+using ModerationService.Infrastructure.Models.Kafka;
 using ModerationService.Infrastructure.Services.Kafka;
+using Newtonsoft.Json.Linq;
+using RazorLight.Generation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
 {
     public class PodcastBuddyReportService
     {
-        private readonly IGenericRepository<PodcastBuddyReport> _podcastBuddyReportGenericRepository; 
+        private readonly IGenericRepository<PodcastBuddyReport> _podcastBuddyReportGenericRepository;
+        private readonly IGenericRepository<PodcastBuddyReportReviewSession> _podcastBuddyReportReviewSessionGenericRepository;
+        private readonly IGenericRepository<PodcastBuddyReportType> _podcastBuddyReportTypeGenericRepository;
 
         private readonly AccountCachingService _accountCachingService;
 
@@ -33,6 +49,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         private readonly DateHelper _dateHelper;
         public PodcastBuddyReportService(
             IGenericRepository<PodcastBuddyReport> podcastBuddyReportGenericRepository,
+            IGenericRepository<PodcastBuddyReportReviewSession> podcastBuddyReportReviewSessionGenericRepository,
+            IGenericRepository<PodcastBuddyReportType> podcastBuddyReportTypeGenericRepository,
             AccountCachingService accountCachingService,
             ILogger<PodcastBuddyReportService> logger,
             KafkaProducerService kafkaProducerService,
@@ -43,6 +61,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             )
         {
             _podcastBuddyReportGenericRepository = podcastBuddyReportGenericRepository;
+            _podcastBuddyReportReviewSessionGenericRepository = podcastBuddyReportReviewSessionGenericRepository;
+            _podcastBuddyReportTypeGenericRepository = podcastBuddyReportTypeGenericRepository;
             _accountCachingService = accountCachingService;
             _logger = logger;
             _kafkaProducerService = kafkaProducerService;
@@ -51,7 +71,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             _appDbContext = appDbContext;
             _dateHelper = dateHelper;
         }
-        public async Task<List<PodcastBuddyReportListItemResponseDTO>> GetAllPodcastReport()
+        public async Task<List<PodcastBuddyReportListItemResponseDTO>> GetAllPodcastBuddyReportAsync()
         {
             var query = await _podcastBuddyReportGenericRepository.FindAll(
                 predicate: null,
@@ -84,5 +104,399 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 }))).ToList();
             return podcastBuddyReport;
         }
+        public async Task CreatePodcastBuddyReportAsync(CreatePodcastBuddyReportParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var systemConfig = await GetActiveSystemConfigProfile();
+
+                    var newBuddyReport = new PodcastBuddyReport()
+                    {
+                        AccountId = parameter.AccountId,
+                        Content = parameter.Content,
+                        PodcastBuddyId = parameter.PodcastBuddyId,
+                        PodcastBuddyReportTypeId = parameter.PodcastBuddyReportTypeId,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                    };
+
+                    var buddyReport = await _podcastBuddyReportGenericRepository.CreateAsync(newBuddyReport);
+
+                    var existingBuddyReport = await _podcastBuddyReportGenericRepository.FindAll()
+                        .Where(br => br.PodcastBuddyId == parameter.PodcastBuddyId && br.ResolvedAt == null)
+                        .ToListAsync();
+                    if (existingBuddyReport.Count() >= systemConfig["ReviewSessionConfig"].Value<int>("PodcastBuddyUnResolvedReportStreak"))
+                    {
+                        var staffList = await GetStaffList();
+                        var randomStaff = GetRandomItemFromJArray(staffList);
+                        var staffId = randomStaff["Id"]?.Value<int>();
+
+                        var newBuddyReportReviewSession = new PodcastBuddyReportReviewSession()
+                        {
+                            AssignedStaff = staffId ?? 0,
+                            PodcastBuddyId = buddyReport.PodcastBuddyId,
+                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                            UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                        };
+
+                        var buddyReportReviewSession = await _podcastBuddyReportReviewSessionGenericRepository.CreateAsync(newBuddyReportReviewSession);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = new JObject
+                    {
+                        { "PodcastBuddyReportId", buddyReport.Id },
+                        { "AccountId", buddyReport.AccountId },
+                        { "PodcastBuddyId", buddyReport.PodcastBuddyId },
+                        { "PodcastBuddyReportTypeId", buddyReport.PodcastBuddyReportTypeId },
+                        { "CreatedAt", buddyReport.CreatedAt }
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully create podcast buddy report for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while create podcast buddy report for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Create podcast buddy report failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Create podcast buddy report failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task<List<PodcastBuddyReportTypeDTO>> GetPodcastBuddyReportTypeAsync()
+        {
+            return await _podcastBuddyReportTypeGenericRepository.FindAll()
+                .Select(brt => new PodcastBuddyReportTypeDTO()
+                {
+                    Id = brt.Id,
+                    Name = brt.Name
+                })
+                .ToListAsync();
+        }
+        public async Task<List<PodcastBuddyReportReviewSessionListItemResponseDTO>> GetBuddyReportReviewSessionAsync(int? staffId, int roleId)
+        {
+            var query = await _podcastBuddyReportReviewSessionGenericRepository.FindAll(
+                predicate: null
+                ).ToListAsync();
+            if(roleId == 3)
+            {
+                query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
+            }
+            var podcastBuddyReportReviewSession = (await Task.WhenAll(query.Select(async pbrrs =>
+            {
+                var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbrrs.PodcastBuddyId);
+                var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
+                return new PodcastBuddyReportReviewSessionListItemResponseDTO()
+                {
+                    Id = pbrrs.Id,
+                    PodcastBuddy = new PodcastBuddySnippetDTO()
+                    {
+                        Id = podcaster.Id,
+                        FullName = podcaster.FullName,
+                        Email = podcaster.Email,
+                        MainImageFileKey = podcaster.MainImageFileKey
+                    },
+                    AssignedStaff = new AssignedStaffSnippetDTO()
+                    {
+                        Id = staff.Id,
+                        FullName = staff.FullName,
+                        Email = staff.Email,
+                        MainImageFileKey = staff.MainImageFileKey
+                    },
+                    ResolvedViolationPoint = pbrrs.ResolvedViolationPoint,
+                    IsResolved = pbrrs.IsResolved,
+                    CreatedAt = pbrrs.CreatedAt,
+                    UpdatedAt = pbrrs.UpdatedAt,
+                };
+            }))).ToList();
+            return podcastBuddyReportReviewSession;
+        }
+        public async Task<PodcastBuddyReportReviewSessionDetailResponseDTO> GetBuddyReportReviewSessionByIdAsync(Guid id)
+        {
+            var pbrrs = await _podcastBuddyReportReviewSessionGenericRepository.FindByIdAsync(id);
+            if (pbrrs == null)
+                return null;
+
+            var query = await _podcastBuddyReportGenericRepository.FindAll(
+                predicate: null,
+                includeFunc: source => source
+                    .Include(r => r.PodcastBuddyReportType)
+                )
+                .Where(r => r.PodcastBuddyId == pbrrs.PodcastBuddyId && r.ResolvedAt == null)
+                .ToListAsync();
+            var podcastBuddyReport = (await Task.WhenAll(query.Select(async pbr =>
+            {
+                var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbr.PodcastBuddyId);
+                return new PodcastBuddyReportListItemResponseDTO()
+                {
+                    Id = pbr.Id,
+                    Content = pbr.Content,
+                    AccountId = pbr.AccountId,
+                    PodcastBuddy = new PodcastBuddySnippetDTO()
+                    {
+                        Id = podcaster.Id,
+                        FullName = podcaster.FullName,
+                        Email = podcaster.Email,
+                        MainImageFileKey = podcaster.MainImageFileKey
+                    },
+                    PodcastBuddyReportType = new PodcastBuddyReportTypeDTO()
+                    {
+                        Id = pbr.PodcastBuddyReportType.Id,
+                        Name = pbr.PodcastBuddyReportType.Name,
+                    },
+                    ResolvedAt = pbr.ResolvedAt,
+                    CreatedAt = pbr.CreatedAt,
+                };
+            }))).ToList();
+
+            var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbrrs.PodcastBuddyId);
+            var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
+
+            return new PodcastBuddyReportReviewSessionDetailResponseDTO()
+            {
+                Id = pbrrs.Id,
+                PodcastBuddy = new PodcastBuddySnippetDTO()
+                {
+                    Id = podcaster.Id,
+                    FullName = podcaster.FullName,
+                    Email = podcaster.Email,
+                    MainImageFileKey = podcaster.MainImageFileKey
+                },
+                AssignedStaff = new AssignedStaffSnippetDTO()
+                {
+                    Id = staff.Id,
+                    FullName = staff.FullName,
+                    Email = staff.Email,
+                    MainImageFileKey = staff.MainImageFileKey
+                },
+                ResolvedViolationPoint = pbrrs.ResolvedViolationPoint,
+                IsResolved = pbrrs.IsResolved ?? false,
+                CreatedAt = pbrrs.CreatedAt,
+                UpdatedAt = pbrrs.UpdatedAt,
+                BuddyReportList = podcastBuddyReport
+            };
+        }
+        public async Task ResolvePodcastBuddyReportReviewSessionAsync(ResolvePodcastBuddyReportParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcastBuddyReportReviewSessions = await _podcastBuddyReportReviewSessionGenericRepository.FindByIdAsync(parameter.PodcastBuddyReportReviewSessionId);
+                    if(podcastBuddyReportReviewSessions.AssignedStaff != parameter.AccountId)
+                    {
+                        throw new Exception("The logged in Account is not authorize to resolve this buddy report review session");
+                    }
+                    podcastBuddyReportReviewSessions.IsResolved = parameter.IsResolved;
+                    var podcastBuddyReportList = await _podcastBuddyReportGenericRepository.FindAll()
+                        .Where(pbr => pbr.PodcastBuddyId == podcastBuddyReportReviewSessions.PodcastBuddyId)
+                        .ToListAsync();
+                    foreach(var buddyReport in podcastBuddyReportList)
+                    {
+                        buddyReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastBuddyReportGenericRepository.UpdateAsync(buddyReport.Id, buddyReport);
+                    }
+
+                    if (parameter.IsTakenEffect && parameter.IsResolved)
+                    {
+                        var resolveRequestData = new JObject
+                        {
+                            { "AccountId", podcastBuddyReportReviewSessions.PodcastBuddyId },
+                            { "ViolationPoint", podcastBuddyReportReviewSessions.ResolvedViolationPoint }
+                        };
+                        var resolveReportMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.UserManagementDomain,
+                            requestData: resolveRequestData,
+                            sagaInstanceId: null,
+                            messageName: "user-violation-punishment-flow");
+                        await _messagingService.SendSagaMessageAsync(resolveReportMessage, null);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = new JObject
+                    {
+                        { "IsResolved", podcastBuddyReportReviewSessions.IsResolved },
+                        { "IsTakenEffect", parameter.IsTakenEffect },
+                        { "ResolvedViolationPoint", podcastBuddyReportReviewSessions.ResolvedViolationPoint },
+                        { "PodcastBuddyReportReviewSessionId", podcastBuddyReportReviewSessions.Id },
+                        { "UpdatedAt", podcastBuddyReportReviewSessions.UpdatedAt }
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully resolve podcast buddy report review session for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while resolve podcast buddy report review session for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Resolve podcast buddy report review session failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve podcast buddy report review session failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        private async Task<JArray?> GetStaffList()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "activeStaffList",
+                            QueryType = "findall",
+                            EntityType = "Account",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        IsVerify = true,
+                                        RoleId = 3
+                                    },
+                                }),                        
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+
+            return result.Results?["activeStaffList"] is JArray staffListArray && staffListArray.Count > 0
+                ? staffListArray as JArray
+                : null;
+        }
+        private async Task<JObject?> GetActiveSystemConfigProfile()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "activeSystemConfigProfile",
+                            QueryType = "findall",
+                            EntityType = "SystemConfigProfile",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        IsActive = true
+                                    },
+                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+
+                                }),
+                            Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+
+            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                ? configArray.First as JObject
+                : null;
+        }
+        private JToken? GetRandomItemFromJArray(JArray? array)
+        {
+            if (array == null || array.Count == 0)
+                return null;
+            
+            var random = new Random();
+            var randomIndex = random.Next(array.Count);
+            return array[randomIndex];
+        }
+        //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //{
+        //    try
+        //    {
+        //        var messageName = command.MessageName;
+        //        var sagaId = command.SagaInstanceId;
+        //        var flowName = command.FlowName;
+        //        var responseData = command.LastStepResponseData;
+
+                //await transaction.CommitAsync();
+
+                //var newResponseData = new JObject
+                //            {
+                //                { "AccountId", registrationResult.AccountId },
+                //                { "PodcastSubscriptionRegistrationId", registrationResult.Id },
+                //                { "CancelledAt", registrationResult.CancelledAt }
+                //            };
+                //var newMessageName = messageName + ".success";
+                //var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                //    topic: KafkaTopicEnum.PaymentProcessingDomain,
+                //    requestData: command.RequestData,
+                //    responseData: newResponseData,
+                //    sagaInstanceId: sagaId,
+                //    flowName: flowName,
+                //    messageName: newMessageName);
+                //await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                //_logger.LogInformation("Successfully cancel podcast subscription registration for SagaId: {SagaId}", sagaId);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await transaction.RollbackAsync();
+        //        _logger.LogError(ex, "Error occurred while create podcast buddy report for SagaId: {SagaId}", command.SagaInstanceId);
+        //        var newResponseData = new JObject{
+        //            { "ErrorMessage", "Create podcast buddy report failed, error: " + ex.Message }
+        //        };
+        //        var newMessageName = command.MessageName + ".failed";
+        //        var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //            topic: KafkaTopicEnum.PaymentProcessingDomain,
+        //            requestData: command.RequestData,
+        //            responseData: newResponseData,
+        //            sagaInstanceId: command.SagaInstanceId,
+        //            flowName: command.FlowName,
+        //            messageName: newMessageName);
+        //        await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+        //        _logger.LogInformation("Create podcast buddy report failed for SagaId: {SagaId}", command.SagaInstanceId);
+        //    }
+        //}
     }
 }

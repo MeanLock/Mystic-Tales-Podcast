@@ -12,6 +12,8 @@ namespace ModerationService.BusinessLogic.Registrations
         {
             // Message Handlers
             services.AddScoped<AuthMessageHandler>();
+            services.AddScoped<ReportManagementDomainMessageHandler>();
+            services.AddScoped<DMCAManagementDomainMessageHandler>();
             
             // Messaging Services (trong MessagingServices folder)
             services.AddScoped<IMessagingService, MessagingService>();

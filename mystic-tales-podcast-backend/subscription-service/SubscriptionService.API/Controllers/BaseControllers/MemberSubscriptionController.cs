@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using SubscriptionService.API.Filters.ExceptionFilters;
 using SubscriptionService.BusinessLogic.DTOs.Cache;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription;
+using SubscriptionService.BusinessLogic.Enums.Kafka;
 using SubscriptionService.BusinessLogic.Models.CrossService;
 using SubscriptionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
@@ -24,7 +25,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         private readonly MemberSubscriptionService _memberSubscriptionService;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
-
+        private const string SAGA_TOPIC = KafkaTopicEnum.SubscriptionManagementDomain;
         public MemberSubscriptionController(
             GenericQueryService genericQueryService, 
             HttpServiceQueryClient httpServiceQueryClient,
@@ -58,7 +59,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             var roleId = account.RoleId;
 
             var memberSubscriptions = await _memberSubscriptionService.GetAllMemberSubscriptionsAsync(roleId);
-            return Ok(memberSubscriptions);
+            return Ok(new
+            {
+                MemberSubscriptionList = memberSubscriptions
+            });
         }
         [HttpPost]
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]
@@ -75,7 +79,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.MemberSubscriptionCreateInfo.MemberSubscriptionBenefitMappingCreateInfoList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "subscription-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "member-subscription-creation-flow");

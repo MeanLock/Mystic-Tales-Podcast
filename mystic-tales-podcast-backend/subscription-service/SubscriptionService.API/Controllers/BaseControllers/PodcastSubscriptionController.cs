@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using SubscriptionService.API.Filters.ExceptionFilters;
 using SubscriptionService.BusinessLogic.DTOs.Cache;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription;
+using SubscriptionService.BusinessLogic.Enums.Kafka;
 using SubscriptionService.BusinessLogic.Models.CrossService;
 using SubscriptionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
@@ -24,6 +25,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         private readonly ILogger<PodcastSubscriptionController> _logger;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
+        private const string SAGA_TOPIC = KafkaTopicEnum.SubscriptionManagementDomain;
 
         public PodcastSubscriptionController(
             GenericQueryService genericQueryService,
@@ -57,7 +59,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             //{
             //    return NotFound($"No podcast subscription found with Show Id: {PodcastShowId}");
             //}
-            return Ok(podcastSubscription);
+            return Ok(new
+            {
+                ShowSubscriptionList = podcastSubscription
+            });
         }
         [HttpPost("shows/{PodcastShowId}")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
@@ -78,7 +83,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionCreateInfo.PodcastSubscriptionBenefitMappingCreateInfoList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "subscription-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "podcast-subscription-creation-flow");
@@ -109,7 +114,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             //{
             //    return NotFound($"No podcast subscription found with Channel Id: {PodcastChannelId}");
             //}
-            return Ok(podcastSubscription);
+            return Ok(new
+            {
+                PodcastSubscriptionList = podcastSubscription
+            });
         }
         [HttpPost("channels/{PodcastChannelId}")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
@@ -134,7 +142,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionCreateInfo.PodcastSubscriptionBenefitMappingCreateInfoList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "subscription-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "podcast-subscription-creation-flow");
@@ -166,7 +174,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             //    return NotFound($"No podcast subscription found with Id: {PodcastSubscriptionId}");
             //}
 
-            return Ok(podcastSubscription);
+            return Ok(new
+            {
+                PodcastSubscription = podcastSubscription
+            });
         }
         [HttpPut("{PodcastSubscriptionId}")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
@@ -191,7 +202,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(request.PodcastSubscriptionUpdateInfo.PodcastSubscriptionBenefitMappingUpdateInfoList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "subscription-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "podcast-subscription-update-flow");
@@ -223,7 +234,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 { "PodcastSubscriptionId", PodcastSubscriptionId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "subscription-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "podcast-subscription-deletion-flow");
@@ -257,7 +268,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 { "SubscriptionCycleTypeId", request.SubscriptionCycleTypeId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "subscription-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "podcast-subscription-registration-flow");
@@ -279,7 +290,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             var accountId = account.Id;
 
             var podcastSubscriptionsRegistrations = await _podcastSubscriptionService.GetChannelPodcastSubscriptionsRegistrationsByAccountIdAsync(accountId);
-            return Ok(podcastSubscriptionsRegistrations);
+            return Ok(new
+            {
+                ChannelSubscriptionRegistrationList = podcastSubscriptionsRegistrations
+            });
         }
         [HttpGet("shows/podcast-subscriptions-registrations")]
         [Authorize(Policy = "Customer.BasicAccess")]
@@ -288,7 +302,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
             var podcastSubscriptionsRegistrations = await _podcastSubscriptionService.GetShowPodcastSubscriptionsRegistrationsByAccountIdAsync(accountId);
-            return Ok(podcastSubscriptionsRegistrations);
+            return Ok(new
+            {
+                ShowSubscriptionRegistrationList = podcastSubscriptionsRegistrations
+            });
         }
         [HttpGet("podcast-subscriptions-registrations/{PodcastSubscriptionRegistrationId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
@@ -306,7 +323,10 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             //{
             //    return NotFound($"No podcast subscription registration found with Id: {PodcastSubscriptionRegistrationId}");
             //}
-            return Ok(podcastSubscriptionRegistration);
+            return Ok(new
+            {
+                PodcastSubscriptionRegistration = podcastSubscriptionRegistration
+            });
         }
         [HttpPut("{PodcastSubscriptionId}/active/{IsActive}")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
@@ -332,7 +352,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 { "PodcastSubscriptionId", PodcastSubscriptionId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "subscription-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: messageName);
@@ -360,7 +380,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 { "PodcastSubscriptionRegistrationId", PodcastSubscriptionRegistrationId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "subscription-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "podcast-subscription-cancellation-flow");

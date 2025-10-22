@@ -240,7 +240,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: sagaId,
@@ -258,7 +258,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,
@@ -480,7 +480,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: sagaId,
@@ -498,7 +498,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,
@@ -610,7 +610,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: sagaId,
@@ -628,7 +628,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,
@@ -687,7 +687,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: sagaId,
@@ -705,7 +705,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,
@@ -928,7 +928,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: sagaId,
@@ -946,7 +946,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,
@@ -1034,7 +1034,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: sagaId,
@@ -1052,7 +1052,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,
@@ -1158,7 +1158,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: sagaId,
@@ -1176,7 +1176,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,
@@ -1271,7 +1271,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
                         requestData: command.RequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,

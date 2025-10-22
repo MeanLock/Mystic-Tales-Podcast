@@ -3,6 +3,7 @@ using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
+using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Helpers.AuthHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Models.CrossService;
@@ -37,6 +38,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         private readonly IFilePathConfig _filePathConfig;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
+        private const string SAGA_TOPIC = KafkaTopicEnum.BookingManagementDomain;
 
         public BookingController(
             GenericQueryService genericQueryService, 
@@ -61,7 +63,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpGet]
-        [Authorize(Policy = "Customer.BasicAccess")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetAllBookings()
         {
             var result = await _bookingService.GetAllBookingsAsync();
@@ -70,7 +72,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             //{
             //    return NotFound("No bookings found.");
             //}
-            return Ok(result);
+            return Ok(new
+            {
+                BookingList = result
+            });
         }
 
         [HttpGet("{BookingId}")]
@@ -82,7 +87,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             //{
             //    return NotFound($"Booking with ID {BookingId} not found.");
             //}
-            return Ok(result);
+            return Ok(new
+            {
+                Booking = result
+            });
         }
 
         [HttpPost]
@@ -101,7 +109,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "booking-management-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "booking-creation-flow");
@@ -167,7 +175,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 requestData["DemoAudioFileKey"] = demoAudioFileKey;
 
                 var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                    topic: "booking-management-domain", 
+                    topic: SAGA_TOPIC, 
                     requestData: requestData, 
                     sagaInstanceId: null, 
                     messageName: "booking-negotiation-flow");
@@ -195,6 +203,22 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 return StatusCode(500, $"An error occurred while creating the booking negotiation: {ex.Message}");
             }
         }
+        [HttpGet("podcaster")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetPodcasterBookings()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var result = await _bookingService.GetBookingsByPodcasterIdAsync(accountId);
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No bookings found for the current podcaster.");
+            //}
+            return Ok(new
+            {
+                BookingList = result
+            });
+        }
 
         [HttpGet("me")]
         [Authorize(Policy = "Customer.BasicAccess")]
@@ -208,7 +232,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             //{
             //    return NotFound("No bookings found for the current user.");
             //}
-            return Ok(result);
+            return Ok(new
+            {
+                BookingList = result
+            });
         }
 
         [HttpPut("{BookingId}/reject")]
@@ -230,7 +257,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "booking-management-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "booking-reject-flow");
@@ -266,7 +293,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "booking-management-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "booking-manual-cancellation-flow");

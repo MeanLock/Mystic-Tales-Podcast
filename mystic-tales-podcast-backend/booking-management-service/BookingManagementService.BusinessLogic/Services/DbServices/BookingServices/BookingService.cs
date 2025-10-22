@@ -1,5 +1,6 @@
 ﻿using Amazon.Runtime.Internal;
 using Amazon.Runtime.Internal.Util;
+using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Booking.Details;
 using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
@@ -83,21 +84,34 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         }
         public Task<List<BookingListItemResponseDTO>> GetAllBookingsAsync()
         {
-            var result = _bookingGenericRepository.FindAll().Select(booking => new BookingListItemResponseDTO
-            {
-                Id = booking.Id,
-                Title = booking.Title,
-                Description = booking.Description,
-                AccountId = booking.AccountId,
-                PodcastBuddyId = booking.PodcastBuddyId,
-                Price = booking.Price,
-                Deadline = booking.Deadline,
-                DemoAudioFileKey = booking.DemoAudioFileKey,
-                BookingManualCancelledReason = booking.BookingManualCancelledReason,
-                BookingAutoCancelledReason = booking.BookingAutoCancelReason,
-                CreatedAt = booking.CreatedAt,
-                UpdatedAt = booking.UpdatedAt
-            }).ToList();
+            var result = _bookingGenericRepository.FindAll(
+                includeFunc: function => function.
+                    Include(b => b.BookingStatusTrackings)
+                    .ThenInclude(bs => bs.BookingStatus))
+                .Select(booking => new BookingListItemResponseDTO
+                {
+                    Id = booking.Id,
+                    Title = booking.Title,
+                    Description = booking.Description,
+                    AccountId = booking.AccountId,
+                    PodcastBuddyId = booking.PodcastBuddyId,
+                    Price = booking.Price,
+                    Deadline = booking.Deadline,
+                    DemoAudioFileKey = booking.DemoAudioFileKey,
+                    BookingManualCancelledReason = booking.BookingManualCancelledReason,
+                    BookingAutoCancelledReason = booking.BookingAutoCancelReason,
+                    CreatedAt = booking.CreatedAt,
+                    UpdatedAt = booking.UpdatedAt,
+                    CurrentStatus = new BookingStatusResponseDTO
+                    {
+                        Id = booking.BookingStatusTrackings
+                            .OrderByDescending(bst => bst.CreatedAt)
+                            .FirstOrDefault().BookingStatus.Id,
+                        Name = booking.BookingStatusTrackings
+                            .OrderByDescending(bst => bst.CreatedAt)
+                            .FirstOrDefault().BookingStatus.Name
+                    }
+                }).ToList();
             return Task.FromResult(result);
         }
         public async Task<BookingDetailResponseDTO?> GetBookingByIdAsync(int bookingId)
@@ -105,7 +119,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             var booking = await _bookingGenericRepository.FindByIdWithPaths(
                 bookingId,
                 "BookingNegotiations",
-                "BookingProducingRequests"
+                "BookingProducingRequests",
+                "BookingStatusTrackings.BookingStatus"
             );
 
             if (booking == null)
@@ -147,7 +162,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     IsAccepted = prod.IsAccepted ?? false,
                     FinishedAt = prod.FinishedAt ?? default,
                     CreatedAt = prod.CreatedAt
-                }).ToList() ?? new List<BookingProducingRequestListItemResponseDTO>()
+                }).ToList() ?? new List<BookingProducingRequestListItemResponseDTO>(),
+                CurrentStatus = new BookingStatusResponseDTO
+                {
+                    Id = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault().BookingStatus.Id,
+                    Name = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault().BookingStatus.Name
+                }
             };
         }
         public async Task CreateBookingAsync(CreateBookingParameterDTO parameter, SagaCommandMessage command)
@@ -224,9 +248,45 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
+        public Task<List<BookingListItemResponseDTO>> GetBookingsByPodcasterIdAsync(int podcastBuddyId)
+        {
+            var result = _bookingGenericRepository.FindAll(
+                includeFunc: function => function.
+                    Include(b => b.BookingStatusTrackings)
+                    .ThenInclude(bs => bs.BookingStatus))
+                .Where(b => b.PodcastBuddyId == podcastBuddyId).Select(booking => new BookingListItemResponseDTO
+                {
+                    Id = booking.Id,
+                    Title = booking.Title,
+                    Description = booking.Description,
+                    AccountId = booking.AccountId,
+                    PodcastBuddyId = booking.PodcastBuddyId,
+                    Price = booking.Price,
+                    Deadline = booking.Deadline,
+                    DemoAudioFileKey = booking.DemoAudioFileKey,
+                    BookingManualCancelledReason = booking.BookingManualCancelledReason,
+                    BookingAutoCancelledReason = booking.BookingAutoCancelReason,
+                    CreatedAt = booking.CreatedAt,
+                    UpdatedAt = booking.UpdatedAt,
+                    CurrentStatus = new BookingStatusResponseDTO
+                    {
+                        Id = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault().BookingStatus.Id,
+                        Name = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault().BookingStatus.Name
+                    }
+                }).ToList();
+            return Task.FromResult(result);
+        }
         public Task<List<BookingListItemResponseDTO>> GetBookingsByAccountIdAsync(int accountId)
         {
-            var result = _bookingGenericRepository.FindAll().Where(b => b.AccountId == accountId).Select(booking => new BookingListItemResponseDTO
+            var result = _bookingGenericRepository.FindAll(
+                includeFunc: function => function.
+                    Include(b => b.BookingStatusTrackings)
+                    .ThenInclude(bs => bs.BookingStatus))
+                .Where(b => b.AccountId == accountId).Select(booking => new BookingListItemResponseDTO
             {
                 Id = booking.Id,
                 Title = booking.Title,
@@ -239,8 +299,17 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 BookingManualCancelledReason = booking.BookingManualCancelledReason,
                 BookingAutoCancelledReason = booking.BookingAutoCancelReason,
                 CreatedAt = booking.CreatedAt,
-                UpdatedAt = booking.UpdatedAt
-            }).ToList();
+                UpdatedAt = booking.UpdatedAt,
+                    CurrentStatus = new BookingStatusResponseDTO
+                    {
+                        Id = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault().BookingStatus.Id,
+                        Name = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault().BookingStatus.Name
+                    }
+                }).ToList();
             return Task.FromResult(result);
         }
 

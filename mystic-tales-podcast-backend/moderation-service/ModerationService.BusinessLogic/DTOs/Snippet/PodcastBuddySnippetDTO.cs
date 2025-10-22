@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ModerationService.BusinessLogic.DTOs.PodcastBuddyReport
+namespace ModerationService.BusinessLogic.DTOs.Snippet
 {
     public class PodcastBuddySnippetDTO
     {

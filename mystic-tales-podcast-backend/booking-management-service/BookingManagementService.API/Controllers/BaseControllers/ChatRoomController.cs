@@ -33,7 +33,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 return NotFound($"Chat messages for Booking ID {BookingId} not found.");
             }
-            return Ok(chatMessage);
+            return Ok(new
+            {
+                BookingChatMessage = chatMessage
+            });
         }
     }
 }

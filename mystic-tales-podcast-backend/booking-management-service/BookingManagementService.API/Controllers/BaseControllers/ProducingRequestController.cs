@@ -2,6 +2,7 @@
 using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
+using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices;
@@ -35,6 +36,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         private readonly FileIOHelper _fileIOHelper;
         private readonly AcoustIDAudioFingerprintGenerator _audioFingerprintGenerator;
         private readonly ILogger<ProducingRequestController> _logger;
+        private const string SAGA_TOPIC = KafkaTopicEnum.BookingManagementDomain;
 
         public ProducingRequestController(
             GenericQueryService genericQueryService,
@@ -71,7 +73,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             //{
             //    return NotFound($"Booking Producing Request with ID {BookingProducingRequestId} not found.");
             //}
-            return Ok(result);
+            return Ok(new
+            {
+                BookingProducingRequest = result
+            });
         }
 
         [HttpPost("bookings/{BookingId}")]
@@ -100,7 +105,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "booking-management-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "booking-producing-request-creation-flow");
@@ -194,7 +199,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "booking-management-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "booking-track-submission-flow");
@@ -253,7 +258,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "IsAccepted", isAccepted }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "booking-management-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "booking-producing-request-agreement-flow");
@@ -278,7 +283,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "BookingPodcastTrackId", BookingPodcastTrackId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "booking-management-domain", 
+                topic: SAGA_TOPIC, 
                 requestData: requestData, 
                 sagaInstanceId: null, 
                 messageName: "booking-track-preview-flow");

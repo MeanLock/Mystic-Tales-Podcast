@@ -49,7 +49,10 @@ namespace TransactionService.API.Controllers.BaseControllers
             //{
             //    return NotFound($"No transaction found for Podcast Subscription Registration Id: {PodcastSubscriptionRegistrationId}");
             //}
-            return Ok(result);
+            return Ok(new
+            {
+                PodcastSubscriptionTransactionList = result
+            });
         }
         [HttpGet("member-subscription-registrations/{MemberSubscriptionRegistrationId}")]
         public async Task<IActionResult> GetMemberSubscriptionRegistrationById([FromRoute] Guid MemberSubscriptionRegistrationId)
@@ -67,7 +70,10 @@ namespace TransactionService.API.Controllers.BaseControllers
             //{
             //    return NotFound($"No transaction found for Member Subscription Registration Id: {MemberSubscriptionRegistrationId}");
             //}
-            return Ok(result);
+            return Ok(new
+            {
+                MemberSubscriptionTransactionList = result
+            });
         }
     }
 }
