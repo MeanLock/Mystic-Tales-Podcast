@@ -107,7 +107,7 @@ const mediaPlayerSlice = createSlice({
 
     // Action8: Next Audio
     // Check playMode.nextMode để quyết định next thế nào
-    // Case1: nextMode === "normal": 
+    // Case1: nextMode === "normal":
     //   - Nếu có audio trong queue -> phát audio đầu tiên trong queue (đưa nó lên làm current), xóa nó khỏi queue
     //   - Nếu không có audio trong queue -> dừng phát (stop luôn)
 
@@ -118,12 +118,12 @@ const mediaPlayerSlice = createSlice({
     // Case 3: nextMode === "saved":
     //   - Nếu có audio trong queue -> phát audio đầu tiên trong queue (đưa nó lên làm current), xóa nó khỏi queue
     //   - Tương tự case "show", nhưng gọi API getNextInSaved(currentAudio.Id)
-    
+
     // Case 4: nextMode === "bookings":
     //   - Nếu có audio trong queue -> phát audio đầu tiên trong queue (đưa nó lên làm current), xóa nó khỏi queue
     //   - Nếu không có audio trong queue -> dừng phát (stop luôn) (tạm thời chưa implement API getNextInBookings)
 
-    nextAudio(state) {}
+    nextAudio(state) {},
   },
 });
 
@@ -135,3 +135,5 @@ export const {
   removeFromQueue,
   setNextMode,
 } = mediaPlayerSlice.actions;
+
+export default mediaPlayerSlice.reducer;

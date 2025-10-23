@@ -54,7 +54,7 @@ export const SidebarNavItems: React.FC<SidebarNavItemsProps> = ({
 
   return (
     <div
-      className="w-full flex flex-col gap-2 overflow-y-auto
+      className="w-full flex-1 flex flex-col gap-2 overflow-y-auto
         [&::-webkit-scrollbar]:hidden
         [-ms-overflow-style:none]
         [scrollbar-width:none]"

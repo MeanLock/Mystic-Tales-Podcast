@@ -18,6 +18,7 @@ import ForgotPasswordPage from "./pages/auth/forgot-password/index.tsx";
 import { store, persistor } from "./redux/store.ts";
 import MediaPlayerLayout from "./layouts/mediaPlayer/index.tsx";
 import DiscoveryPage from "./pages/mediaPlayer/discovery/index.tsx";
+import TrendingPage from "./pages/mediaPlayer/trending/index.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -116,6 +117,7 @@ createRoot(document.getElementById("root")!).render(
 
             <Route path="/media-player" element={<MediaPlayerLayout />}>
               <Route path="discovery" element={<DiscoveryPage />} />
+              <Route path="trending" element={<TrendingPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

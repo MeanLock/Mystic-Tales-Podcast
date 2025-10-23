@@ -4,14 +4,21 @@ import MediaPlayerControl from "./components/MediaPlayerControlBar";
 
 const MediaPlayerLayout = () => {
   return (
-    <div className="w-full h-screen flex flex-col justify-between bg-[url(/background/mediaplayer4.png)] bg-cover object-cover gap-5">
+    <div className="w-full h-screen flex flex-col justify-between bg-[url(/background/mediaplayer4.png)] bg-cover object-cover gap-5 overflow-hidden">
       <div className="w-full flex gap-5 flex-1 px-5 pt-5">
         <MediaPlayerSidebar />
         <div
           className="
-            flex-1 h-full 
+            flex-1 
             bg-white/10 backdrop-blur-[5px] shadow-2xl 
             rounded-xl
+            p-5
+            min-w-[500px]
+            h-[734px]
+            overflow-y-auto
+            [&::-webkit-scrollbar]:hidden
+            [-ms-overflow-style:none]
+            [scrollbar-width:none]
           "
         >
           <Outlet />

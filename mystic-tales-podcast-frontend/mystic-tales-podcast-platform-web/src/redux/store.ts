@@ -2,19 +2,26 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { appApi } from "@/core/api/appApi";
 import authReducer from "./slices/authSlice/authSlice";
+import mediaPlayerReducer from "./slices/mediaPlayerSlice/mediaPlayerSlice";
 
 // ⬇️ redux-persist
 import storage from "redux-persist/lib/storage"; // web: localStorage
 import {
   persistStore,
   persistReducer,
-  FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
 } from "redux-persist";
 
 // Gộp reducers trước khi persist
 const rootReducer = combineReducers({
   [appApi.reducerPath]: appApi.reducer,
   auth: authReducer,
+  player: mediaPlayerReducer,
   // ...reducers khác
 });
 

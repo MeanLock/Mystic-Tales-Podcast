@@ -196,7 +196,7 @@ const MediaPlayerSidebar = () => {
       className="
         bg-white/10 backdrop-blur-[5px] shadow-2xl
         flex flex-col items-center justify-between gap-5
-        w-[50px] rounded-md py-3 px-2
+        min-w-[50px] rounded-md py-3 px-2
         sm:w-[80px]
         md:w-[290px] md:rounded-xl md:p-5
         h-full
