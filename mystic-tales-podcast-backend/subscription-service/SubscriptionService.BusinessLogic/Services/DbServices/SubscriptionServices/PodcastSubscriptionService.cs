@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Identity.Client;
+using ModerationService.BusinessLogic.DTOs.Podcast;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscription;
@@ -10,17 +10,20 @@ using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagement
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeactivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeletePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.UpdatePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.Podcast;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.Details;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems;
 using SubscriptionService.BusinessLogic.DTOs.Subscription;
 using SubscriptionService.BusinessLogic.Enums.Kafka;
+using SubscriptionService.BusinessLogic.Enums.Podcast;
+using SubscriptionService.BusinessLogic.Enums.Subscription;
+using SubscriptionService.BusinessLogic.Enums.Transaction;
 using SubscriptionService.BusinessLogic.Helpers.DateHelpers;
 using SubscriptionService.BusinessLogic.Models.CrossService;
 using SubscriptionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using SubscriptionService.BusinessLogic.Services.MessagingServices.interfaces;
 using SubscriptionService.DataAccess.Data;
-using SubscriptionService.DataAccess.Entities;
 using SubscriptionService.DataAccess.Entities.SqlServer;
 using SubscriptionService.DataAccess.Repositories.interfaces;
 using SubscriptionService.Infrastructure.Models.Kafka;
@@ -144,6 +147,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new Exception($"An Active Podcast Subscription already exists for PodcastShow Id: {parameter.PodcastShowId}");
                         }
+                        var showValidation = await ValidateShow(parameter.PodcastShowId.Value);
+                        if(!showValidation.isValid)
+                        {
+                            throw new Exception(showValidation.errorMessage);
+                        }
                     }
                     if (parameter.PodcastChannelId != null)
                     {
@@ -158,28 +166,33 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new Exception($"An Active Podcast Subscription already exists for PodcastChannel Id: {parameter.PodcastChannelId}");
                         }
+                        var channelValidation = await ValidateChannel(parameter.PodcastChannelId.Value);
+                        if (!channelValidation.isValid)
+                        {
+                            throw new Exception(channelValidation.errorMessage);
+                        }
                     }
 
-                    if(show.Count > 0 && show.HasValues)
-                    {
-                        var status = show["PodcastShowStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
-                        // FIX: Properly convert JToken to int for comparison
-                        int podcastShowStatusId = status["PodcastShowStatusId"].ToObject<int>();
-                        if (podcastShowStatusId != 2 && podcastShowStatusId != 3)
-                        {
-                            throw new Exception($"Podcast Show with Id: {parameter.PodcastShowId} is not elligle for creating subscription");
-                        }
-                    }
-                    if(channel.Count > 0 && channel.HasValues)
-                    {
-                        var status = channel["PodcastChannelStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
-                        // FIX: Properly convert JToken to int for comparison
-                        int podcastChannelStatusId = status["PodcastChannelStatusId"].ToObject<int>();
-                        if (podcastChannelStatusId != 2)
-                        {
-                            throw new Exception($"Podcast Channel with Id: {parameter.PodcastChannelId} is not elligle for creating subscription");
-                        }
-                    }
+                    //if(show.Count > 0 && show.HasValues)
+                    //{
+                    //    var status = show["PodcastShowStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
+                    //    // FIX: Properly convert JToken to int for comparison
+                    //    int podcastShowStatusId = status.ToObject<PodcastShowStatusTrackingListItemDTO>().PodcastShowStatusId;
+                    //    if (podcastShowStatusId != (int)PodcastShowStatusEnum.ReadyToRelease && podcastShowStatusId != (int)PodcastShowStatusEnum.Published)
+                    //    {
+                    //        throw new Exception($"Podcast Show with Id: {parameter.PodcastShowId} is not elligle for creating subscription");
+                    //    }
+                    //}
+                    //if(channel.Count > 0 && channel.HasValues)
+                    //{
+                    //    var status = channel["PodcastChannelStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
+                    //    // FIX: Properly convert JToken to int for comparison
+                    //    int podcastChannelStatusId = status.ToObject<PodcastChannelStatusTrackingListItemDTO>().PodcastChannelStatusId;
+                    //    if (podcastChannelStatusId != (int)PodcastChannelStatusEnum.Published)
+                    //    {
+                    //        throw new Exception($"Podcast Channel with Id: {parameter.PodcastChannelId} is not elligle for creating subscription");
+                    //    }
+                    //}
 
                     var newPodcastSubscription = new PodcastSubscription
                     {
@@ -385,6 +398,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to update PodcastSubscription for PodcastShow with Id: {existPodcastSubscription.PodcastShowId}");
                         }
+                        var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
+                        if (!showValidation.isValid)
+                        {
+                            throw new Exception(showValidation.errorMessage);
+                        }
                     }
                     if (existPodcastSubscription.PodcastChannelId != null)
                     {
@@ -393,28 +411,33 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to update PodcastSubscription for PodcastChannel with Id: {existPodcastSubscription.PodcastChannelId}");
                         }
+                        var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
+                        if (!channelValidation.isValid)
+                        {
+                            throw new Exception(channelValidation.errorMessage);
+                        }
                     }
 
-                    if (show.Count > 0 && show.HasValues)
-                    {
-                        var status = show["PodcastShowStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
-                        // FIX: Properly convert JToken to int for comparison
-                        int podcastShowStatusId = status["PodcastShowStatusId"].ToObject<int>();
-                        if (podcastShowStatusId != 2 && podcastShowStatusId != 3)
-                        {
-                            throw new Exception($"Podcast Show with Id: {podcastSubscription.PodcastShowId} is not elligle for creating subscription");
-                        }
-                    }
-                    if (channel.Count > 0 && channel.HasValues)
-                    {
-                        var status = channel["PodcastChannelStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
-                        // FIX: Properly convert JToken to int for comparison
-                        int podcastChannelStatusId = status["PodcastChannelStatusId"].ToObject<int>();
-                        if (podcastChannelStatusId != 2)
-                        {
-                            throw new Exception($"Podcast Channel with Id: {podcastSubscription.PodcastChannelId} is not elligle for creating subscription");
-                        }
-                    }
+                    //if (show.Count > 0 && show.HasValues)
+                    //{
+                    //    var status = show["PodcastShowStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
+                    //    // FIX: Properly convert JToken to int for comparison
+                    //    int podcastShowStatusId = status.ToObject<PodcastShowStatusTrackingListItemDTO>().PodcastShowStatusId;
+                    //    if (podcastShowStatusId != (int)PodcastShowStatusEnum.ReadyToRelease && podcastShowStatusId != (int)PodcastShowStatusEnum.Published)
+                    //    {
+                    //        throw new Exception($"Podcast Show with Id: {podcastSubscription.PodcastShowId} is not elligle for creating subscription");
+                    //    }
+                    //}
+                    //if (channel.Count > 0 && channel.HasValues)
+                    //{
+                    //    var status = channel["PodcastChannelStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
+                    //    // FIX: Properly convert JToken to int for comparison
+                    //    int podcastChannelStatusId = status.ToObject<PodcastChannelStatusTrackingListItemDTO>().PodcastChannelStatusId;
+                    //    if (podcastChannelStatusId != (int)PodcastChannelStatusEnum.Published)
+                    //    {
+                    //        throw new Exception($"Podcast Channel with Id: {podcastSubscription.PodcastChannelId} is not elligle for creating subscription");
+                    //    }
+                    //}
 
                     existPodcastSubscription.Name = parameter.Name;
                     existPodcastSubscription.Description = parameter.Description;
@@ -537,6 +560,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to delete PodcastSubscription for PodcastShow with Id: {existPodcastSubscription.PodcastShowId}");
                         }
+                        var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
+                        if (!showValidation.isValid)
+                        {
+                            throw new Exception(showValidation.errorMessage);
+                        }
                     }
                     if (existPodcastSubscription.PodcastChannelId != null)
                     {
@@ -545,28 +573,33 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to delete PodcastSubscription for PodcastChannel with Id: {existPodcastSubscription.PodcastChannelId}");
                         }
+                        var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
+                        if (!channelValidation.isValid)
+                        {
+                            throw new Exception(channelValidation.errorMessage);
+                        }
                     }
 
-                    if (show.Count > 0 && show.HasValues)
-                    {
-                        var status = show["PodcastShowStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
-                        // FIX: Properly convert JToken to int for comparison
-                        int podcastShowStatusId = status["PodcastShowStatusId"].ToObject<int>();
-                        if (podcastShowStatusId != 2 && podcastShowStatusId != 3)
-                        {
-                            throw new Exception($"Podcast Show with Id: {existPodcastSubscription.PodcastShowId} is not elligle for creating subscription");
-                        }
-                    }
-                    if (channel.Count > 0 && channel.HasValues)
-                    {
-                        var status = channel["PodcastChannelStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
-                        // FIX: Properly convert JToken to int for comparison
-                        int podcastChannelStatusId = status["PodcastChannelStatusId"].ToObject<int>();
-                        if (podcastChannelStatusId != 2)
-                        {
-                            throw new Exception($"Podcast Channel with Id: {existPodcastSubscription.PodcastChannelId} is not elligle for creating subscription");
-                        }
-                    }
+                    //if (show.Count > 0 && show.HasValues)
+                    //{
+                    //    var status = show["PodcastShowStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
+                    //    // FIX: Properly convert JToken to int for comparison
+                    //    int podcastShowStatusId = status.ToObject<PodcastShowStatusTrackingListItemDTO>().PodcastShowStatusId;
+                    //    if (podcastShowStatusId != (int)PodcastShowStatusEnum.ReadyToRelease && podcastShowStatusId != (int)PodcastShowStatusEnum.Published)
+                    //    {
+                    //        throw new Exception($"Podcast Show with Id: {existPodcastSubscription.PodcastShowId} is not elligle for creating subscription");
+                    //    }
+                    //}
+                    //if (channel.Count > 0 && channel.HasValues)
+                    //{
+                    //    var status = channel["PodcastChannelStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
+                    //    // FIX: Properly convert JToken to int for comparison
+                    //    int podcastChannelStatusId = status.ToObject<PodcastChannelStatusTrackingListItemDTO>().PodcastChannelStatusId;
+                    //    if (podcastChannelStatusId != (int)PodcastChannelStatusEnum.Published)
+                    //    {
+                    //        throw new Exception($"Podcast Channel with Id: {existPodcastSubscription.PodcastChannelId} is not elligle for creating subscription");
+                    //    }
+                    //}
 
                     existPodcastSubscription.IsActive = false;
                     existPodcastSubscription.DeletedAt = _dateHelper.GetNowByAppTimeZone();
@@ -590,7 +623,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 { "Profit", null },
                                 { "AccountId", registration.AccountId },
                                 { "Amount", amount },
-                                { "TransactionTypeId", 9 }
+                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
                             };
                             var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -855,6 +888,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to activate PodcastSubscription for PodcastShow with Id: {podcastSubscription.PodcastShowId}");
                         }
+                        var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
+                        if (!showValidation.isValid)
+                        {
+                            throw new Exception(showValidation.errorMessage);
+                        }
                     }
                     if (podcastSubscription.PodcastChannelId != null)
                     {
@@ -863,17 +901,23 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to activate PodcastSubscription for PodcastChannel with Id: {podcastSubscription.PodcastChannelId}");
                         }
-                    }
-                    if (show.Count > 0 && show.HasValues)
-                    {
-                        var result = await _podcastSubscriptionGenericRepository.FindAll().
-                            Where(ps => ps.PodcastChannelId.Equals(show["PodcastChannelId"]) && ps.IsActive == true && ps.DeletedAt == null)
-                            .FirstOrDefaultAsync();
-                        if(result != null)
+                        var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
+                        if (!channelValidation.isValid)
                         {
-                            throw new Exception($"An Active Channel Podcast Subscription exists for PodcastShow Id: {podcastSubscription.PodcastShowId}");
+                            throw new Exception(channelValidation.errorMessage);
                         }
                     }
+
+                    //if (show.Count > 0 && show.HasValues)
+                    //{
+                    //    var result = await _podcastSubscriptionGenericRepository.FindAll().
+                    //        Where(ps => ps.PodcastChannelId.Equals(show["PodcastChannelId"]) && ps.IsActive == true && ps.DeletedAt == null)
+                    //        .FirstOrDefaultAsync();
+                    //    if(result != null)
+                    //    {
+                    //        throw new Exception($"An Active Channel Podcast Subscription exists for PodcastShow Id: {podcastSubscription.PodcastShowId}");
+                    //    }
+                    //}
 
                     var existingActivePodcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll()
                         .Where(ps => ps.IsActive)
@@ -901,7 +945,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 { "Profit", null },
                                 { "AccountId", registration.AccountId },
                                 { "Amount", amount },
-                                { "TransactionTypeId", 9 }
+                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
                             };
                                 var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                     topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -982,6 +1026,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to deactivate PodcastSubscription for PodcastShow with Id: {podcastSubscription.PodcastShowId}");
                         }
+                        var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
+                        if (!showValidation.isValid)
+                        {
+                            throw new Exception(showValidation.errorMessage);
+                        }
                     }
                     if (podcastSubscription.PodcastChannelId != null)
                     {
@@ -989,6 +1038,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         if (isValid == null)
                         {
                             throw new($"The Logged In Account is unauthorized to deactivate PodcastSubscription for PodcastChannel with Id: {podcastSubscription.PodcastChannelId}");
+                        }
+                        var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
+                        if (!channelValidation.isValid)
+                        {
+                            throw new Exception(channelValidation.errorMessage);
                         }
                     }
                     podcastSubscription.IsActive = false;
@@ -1012,7 +1066,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 { "Profit", null },
                                 { "AccountId", registration.AccountId },
                                 { "Amount", amount },
-                                { "TransactionTypeId", 9 }
+                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
                             };
                             var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -1080,7 +1134,14 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         throw new Exception($"No Active Podcast Subscription Registration exists for Id: {parameter.PodcastSubscriptionRegistrationId}");
                     }
-
+                    if (podcastSubscriptionRegistration.CancelledAt != null)
+                    {
+                        throw new Exception($"Podcast Subscription Registration has already been cancelled for Id: {parameter.PodcastSubscriptionRegistrationId}");
+                    }
+                    if (podcastSubscriptionRegistration.AccountId != parameter.AccountId)
+                    {
+                        throw new Exception($"The Logged In Account is unauthorized to cancel Podcast Subscription Registration with Id: {parameter.PodcastSubscriptionRegistrationId}");
+                    }
                     var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
                         .Where(ps => ps.Id == podcastSubscriptionRegistration.PodcastSubscriptionId && ps.DeletedAt == null)
@@ -1115,7 +1176,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             { "Profit", profit },
                             { "AccountId", podcastSubscriptionRegistration.AccountId },
                             { "Amount", amount },
-                            { "TransactionTypeId", 11 }
+                            { "TransactionTypeId", (int)TransactionTypeEnum.PodcasterSubscriptionIncome }
                         };
                         var transactionMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                             topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -1136,7 +1197,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             { "Profit", null },
                             { "AccountId", podcastSubscriptionRegistration.AccountId },
                             { "Amount", originalPrice },
-                            { "TransactionTypeId", 9 }
+                            { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
                         };
                         var transactionMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                             topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -1202,8 +1263,16 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
                         .Include(ps => ps.PodcastSubscriptionRegistrations)
                         .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId);
+                    if (podcastSubscription.DeletedAt != null)
+                    {
+                        throw new Exception($"Podcast Subscription has already been deleted for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
+                    }
                     if (parameter.IsActive != null)
                     {
+                        if(podcastSubscription.IsActive == false)
+                        {
+                            throw new Exception($"Podcast Subscription is already inactive for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
+                        }
                         podcastSubscription.IsActive = false;
                         podcastSubscription.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _podcastSubscriptionGenericRepository.UpdateAsync(podcastSubscription.Id, podcastSubscription);
@@ -1232,7 +1301,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     { "Profit", null },
                                     { "AccountId", registration.AccountId },
                                     { "Amount", amount },
-                                    { "TransactionTypeId", 9 }
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
                                 };
                             var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -1290,10 +1359,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 {
                     var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                         .Where(psr => psr.CancelledAt == null
-                            && psr.SubscriptionCycleTypeId == 1
+                            && psr.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Monthly
                             && psr.LastPaidAt.AddDays(30) < _dateHelper.GetNowByAppTimeZone() ||
                             psr.CancelledAt == null 
-                            && psr.SubscriptionCycleTypeId == 2
+                            && psr.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Annually
                             && psr.LastPaidAt.AddYears(1) < _dateHelper.GetNowByAppTimeZone())
                         .ToListAsync();
                     foreach (var registration in registrationsList)
@@ -1316,7 +1385,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     && ptcp.Version == registration.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault() },
-                                { "TransactionTypeId", 8 }
+                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
                             };
                             var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -1344,7 +1413,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     && ptcp.Version == podcastSubscription.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault() },
-                                { "TransactionTypeId", 8 }
+                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
                             };
                             var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -1400,12 +1469,12 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if(podcastSubscription.PodcastChannelId != null)
                             {
                                 var temp = await GetPodcastChannel(podcastSubscription.PodcastChannelId.Value);
-                                podcasterId = temp["PodcasterId"].ToObject<int>();
+                                podcasterId = temp.PodcasterId;
                             }
                             if (podcastSubscription.PodcastShowId != null)
                             {
                                 var temp = await GetPodcastShow(podcastSubscription.PodcastShowId.Value);
-                                podcasterId = temp["PodcasterId"].ToObject<int>();
+                                podcasterId = temp.PodcasterId;
                             }
                             int incomeTakenDelayDays = config["IncomeTakenDelayDays"]?.ToObject<int>() ?? 0;
                             decimal profitRate = config["ProfitRate"]?.ToObject<decimal>() ?? 0;
@@ -1422,7 +1491,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     { "AccountId", null },
                                     { "PodcasterId", podcasterId },
                                     { "Amount", originalPrice - originalPrice * profitRate },
-                                    { "TransactionTypeId", 11 }
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.PodcasterSubscriptionIncome }
                                 };
                                 var incomeMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -1558,7 +1627,133 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 ? podcastChannelArray.First as JObject
                 : null;
         }
-        public async Task<JObject?> GetPodcastChannel(Guid podcastChannelId)
+        private async Task<(bool isValid, string errorMessage)> ValidateEpisode(Guid podcastEpisodeId)
+        {
+            var episode = await GetPodcastEpisode(podcastEpisodeId);
+            if (episode == null)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is not found");
+            }
+            var (isValid, errorMessage) = await ValidateShow(episode.PodcastShowId, podcastEpisodeId);
+            if (!isValid)
+            {
+                return (isValid, errorMessage);
+            }
+            if (episode.DeletedAt != null)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} has already been deleted");
+            }
+            var episodeStatusId = episode.PodcastEpisodeStatusTrackings.OrderByDescending(es => es.CreatedAt).Select(es => es.PodcastEpisodeStatusId).First();
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.Draft)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is in Draft status");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.PendingReview)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is pending review");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.PendingEditRequired)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is pending edit required");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} has been taken down");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.Removed)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} has been removed");
+            }
+            return (true, string.Empty);
+        }
+        private async Task<(bool isValid, string errorMessage)> ValidateShow(Guid podcastShowId, Guid? podcastEpisodeId = null)
+        {
+            var insideMessage = podcastEpisodeId != null ? $" for Episode Id: {podcastEpisodeId}" : string.Empty;
+            var show = await GetPodcastShow(podcastShowId);
+            if (show == null)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} is not found {insideMessage}");
+            }
+            if (show.PodcastChannelId != null)
+            {
+                var (isValid, errorMessage) = await ValidateChannel(show.PodcastChannelId.Value, podcastShowId, podcastEpisodeId);
+                if (!isValid)
+                {
+                    return (isValid, errorMessage);
+                }
+            }
+            if (show.DeletedAt != null)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} has already been deleted {insideMessage}");
+            }
+            var showStatusId = show.PodcastShowStatusTrackings.OrderByDescending(ss => ss.CreatedAt).Select(ss => ss.PodcastShowStatusId).First();
+            if (showStatusId == (int)PodcastShowStatusEnum.Draft)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} is in Draft status {insideMessage}");
+            }
+            if (showStatusId == (int)PodcastShowStatusEnum.TakenDown)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} has been taken down {insideMessage}");
+            }
+            if (showStatusId == (int)PodcastShowStatusEnum.Removed)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} has been removed {insideMessage}");
+            }
+            return (true, string.Empty);
+        }
+        private async Task<(bool isValid, string errorMessage)> ValidateChannel(Guid podcastChannelId, Guid? podcastShowId = null, Guid? podcastEpisodeId = null)
+        {
+            var insideMessage = podcastEpisodeId != null
+                ? $" for Episode Id: {podcastEpisodeId}"
+                : (podcastShowId != null
+                    ? $" for Show Id: {podcastShowId}"
+                    : string.Empty);
+            var channel = await GetPodcastChannel(podcastChannelId);
+            if (channel == null)
+            {
+                return (false, $"Podcast channel with Id: {podcastChannelId} is not found {insideMessage}");
+            }
+            if (channel.DeletedAt != null)
+            {
+                return (false, $"Podcast channel with Id: {podcastChannelId} has already been deleted {insideMessage}");
+            }
+            var channelStatusId = channel.PodcastChannelStatusTrackings.OrderByDescending(cs => cs.CreatedAt).Select(cs => cs.PodcastChannelStatusId).First();
+            if (channelStatusId == (int)PodcastChannelStatusEnum.Unpublished)
+            {
+                return (false, $"Podcast channel with Id: {podcastChannelId} is in Draft status {insideMessage}");
+            }
+            return (true, string.Empty);
+        }
+        public async Task<PodcastEpisodeDTO?> GetPodcastEpisode(Guid podcastEpisodeId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastEpisode",
+                            QueryType = "findall",
+                            EntityType = "PodcastEpisode",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastEpisodeId
+                                },
+                                include = "PodcastEpisodeStatusTracking"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
+                ? podcastEpisodeArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<PodcastEpisodeDTO>() : null;
+        }
+        public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -1582,11 +1777,12 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            return result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
                 ? podcastChannelArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
         }
-        public async Task<JObject?> GetPodcastShow(Guid podcastShowId)
+        public async Task<PodcastShowDTO?> GetPodcastShow(Guid podcastShowId)
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -1610,9 +1806,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
                 ? podcastShowArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
         }
     }
 }

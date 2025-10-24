@@ -14,6 +14,7 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateAccountBalanceTransactionRollback;
 using TransactionService.BusinessLogic.DTOs.Transaction;
 using TransactionService.BusinessLogic.Enums.Kafka;
+using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
 using TransactionService.DataAccess.Data;
 using TransactionService.DataAccess.Entities.SqlServer;
@@ -67,8 +68,8 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         AccountId = parameter.AccountId,
                         Amount = parameter.Amount,
                         OrderCode = orderCode.ToString(),
-                        TransactionTypeId = 1,
-                        TransactionStatusId = 1,
+                        TransactionTypeId = (int)TransactionTypeEnum.AccountBalanceDeposits,
+                        TransactionStatusId = (int)TransactionStatusEnum.Pending,
                     };
 
                     // Save payment history to the database
@@ -149,11 +150,11 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
 
                     if (webhookBody.code == "00")
                     {
-                        accountBalanceTransaction.TransactionStatusId = 2;
+                        accountBalanceTransaction.TransactionStatusId = (int)TransactionStatusEnum.Success;
                     }
                     else
                     {
-                        accountBalanceTransaction.TransactionStatusId = 4;
+                        accountBalanceTransaction.TransactionStatusId = (int)TransactionStatusEnum.Error;
                     }
 
                     await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
@@ -218,7 +219,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         throw new Exception("Payment not found.");
                     }
                     ;
-                    accountBalanceTransaction.TransactionStatusId = 4; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    accountBalanceTransaction.TransactionStatusId = (int)TransactionStatusEnum.Error; // Thay đổi trạng thái giao dịch thành "Thất bại"
                     await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
                     await transaction.CommitAsync();
                     var newResponseData = new JObject{
@@ -273,7 +274,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         throw new Exception("Account Balance Transaction not found.");
                     }
                     ;
-                    accountBalanceTransaction.TransactionStatusId = 4; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    accountBalanceTransaction.TransactionStatusId = (int)TransactionStatusEnum.Error; // Thay đổi trạng thái giao dịch thành "Thất bại"
                     await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
                     await transaction.CommitAsync();
                     var newResponseData = new JObject{

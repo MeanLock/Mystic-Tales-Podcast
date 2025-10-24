@@ -1,13 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ModerationService.BusinessLogic.DTOs.Account;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreateEpisodeReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReport;
-using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport;
+using ModerationService.BusinessLogic.DTOs.Podcast;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport.Details;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport.ListItems;
 using ModerationService.BusinessLogic.DTOs.Snippet;
+using ModerationService.BusinessLogic.Enums.Account;
 using ModerationService.BusinessLogic.Enums.Kafka;
+using ModerationService.BusinessLogic.Enums.Podcast;
 using ModerationService.BusinessLogic.Helpers.DateHelpers;
 using ModerationService.BusinessLogic.Models.CrossService;
 using ModerationService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -19,6 +22,7 @@ using ModerationService.DataAccess.Repositories.interfaces;
 using ModerationService.Infrastructure.Models.Kafka;
 using ModerationService.Infrastructure.Services.Kafka;
 using Newtonsoft.Json.Linq;
+using SubscriptionService.BusinessLogic.DTOs.Podcast;
 
 namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
 {
@@ -70,7 +74,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 ).ToListAsync();
             var podcastEpisodeReport = (await Task.WhenAll(query.Select(async pbr =>
             {
-                var Episode = await GetPodcastEpisode(pbr.PodcastEpisodeId);
+                var episode = await GetPodcastEpisode(pbr.PodcastEpisodeId);
                 return new PodcastEpisodeReportListItemResponseDTO()
                 {
                     Id = pbr.Id,
@@ -78,9 +82,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     AccountId = pbr.AccountId,
                     PodcastEpisode = new PodcastEpisodeSnippetDTO()
                     {
-                        Id = Episode != null && Episode["Id"] != null ? Episode.Value<Guid>("Id") : Guid.Empty,
-                        Name = Episode != null && Episode["Name"] != null ? Episode.Value<string>("Name") : "",
-                        MainImageFileKey = Episode != null && Episode["MainImageFileKey"] != null ? Episode.Value<string>("MainImageFileKey") : "",
+                        Id = episode.Id,
+                        Name = episode.Name,
+                        MainImageFileKey = episode.MainImageFileKey,
                     },
                     PodcastEpisodeReportType = new PodcastEpisodeReportTypeDTO()
                     {
@@ -106,6 +110,12 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
 
                     var systemConfig = await GetActiveSystemConfigProfile();
 
+                    var validation = await ValidateEpisode(parameter.PodcastEpisodeId);
+                    if (!validation.isValid)
+                    {
+                        throw new Exception(validation.errorMessage);
+                    }
+
                     var newEpisodeReport = new PodcastEpisodeReport()
                     {
                         AccountId = parameter.AccountId,
@@ -123,12 +133,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     if (existingEpisodeReport.Count() >= systemConfig["ReviewSessionConfig"].Value<int>("PodcastEpisodeUnResolvedReportStreak"))
                     {
                         var staffList = await GetStaffList();
-                        var randomStaff = GetRandomItemFromJArray(staffList);
-                        var staffId = randomStaff["Id"]?.Value<int>();
+                        var randomStaff = await GetRandomItemFromJArray(staffList);
 
                         var newEpisodeReportReviewSession = new PodcastEpisodeReportReviewSession()
                         {
-                            AssignedStaff = staffId ?? 0,
+                            AssignedStaff = randomStaff,
                             PodcastEpisodeId = EpisodeReport.PodcastEpisodeId,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -193,22 +202,22 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             var query = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll(
                 predicate: null
                 ).ToListAsync();
-            if (roleId == 3)
+            if (roleId == (int)RoleEnum.Staff)
             {
                 query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
             }
             var podcastEpisodeReportReviewSession = (await Task.WhenAll(query.Select(async pbrrs =>
             {
-                var Episode = await GetPodcastEpisode(pbrrs.PodcastEpisodeId);
+                var episode = await GetPodcastEpisode(pbrrs.PodcastEpisodeId);
                 var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
                 return new PodcastEpisodeReportReviewSessionListItemResponseDTO()
                 {
                     Id = pbrrs.Id,
                     PodcastEpisode = new PodcastEpisodeSnippetDTO()
                     {
-                        Id = Episode != null && Episode["Id"] != null ? Episode.Value<Guid>("Id") : Guid.Empty,
-                        Name = Episode != null && Episode["Name"] != null ? Episode.Value<string>("Name") : "",
-                        MainImageFileKey = Episode != null && Episode["MainImageFileKey"] != null ? Episode.Value<string>("MainImageFileKey") : "",
+                        Id = episode.Id,
+                        Name = episode.Name,
+                        MainImageFileKey = episode.MainImageFileKey,
                     },
                     AssignedStaff = new AssignedStaffSnippetDTO()
                     {
@@ -240,7 +249,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 .ToListAsync();
             var podcastEpisodeReport = (await Task.WhenAll(query.Select(async pbr =>
             {
-                var Episode = await GetPodcastEpisode(pbr.PodcastEpisodeId);
+                var episode = await GetPodcastEpisode(pbr.PodcastEpisodeId);
                 return new PodcastEpisodeReportListItemResponseDTO()
                 {
                     Id = pbr.Id,
@@ -248,9 +257,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     AccountId = pbr.AccountId,
                     PodcastEpisode = new PodcastEpisodeSnippetDTO()
                     {
-                        Id = Episode != null && Episode["Id"] != null ? Episode.Value<Guid>("Id") : Guid.Empty,
-                        Name = Episode != null && Episode["Name"] != null ? Episode.Value<string>("Name") : "",
-                        MainImageFileKey = Episode != null && Episode["MainImageFileKey"] != null ? Episode.Value<string>("MainImageFileKey") : "",
+                        Id = episode.Id,
+                        Name = episode.Name,
+                        MainImageFileKey = episode.MainImageFileKey,
                     },
                     PodcastEpisodeReportType = new PodcastEpisodeReportTypeDTO()
                     {
@@ -262,7 +271,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 };
             }))).ToList();
 
-            var Episode = await GetPodcastEpisode(pbrrs.PodcastEpisodeId);
+            var episode = await GetPodcastEpisode(pbrrs.PodcastEpisodeId);
             var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
 
             return new PodcastEpisodeReportReviewSessionDetailResponseDTO()
@@ -270,9 +279,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 Id = pbrrs.Id,
                 PodcastEpisode = new PodcastEpisodeSnippetDTO()
                 {
-                    Id = Episode != null && Episode["Id"] != null ? Episode.Value<Guid>("Id") : Guid.Empty,
-                    Name = Episode != null && Episode["Name"] != null ? Episode.Value<string>("Name") : "",
-                    MainImageFileKey = Episode != null && Episode["MainImageFileKey"] != null ? Episode.Value<string>("MainImageFileKey") : "",
+                    Id = episode.Id,
+                    Name = episode.Name,
+                    MainImageFileKey = episode.MainImageFileKey,
                 },
                 AssignedStaff = new AssignedStaffSnippetDTO()
                 {
@@ -315,16 +324,24 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
 
                     if (parameter.IsTakenEffect && parameter.IsResolved)
                     {
-                        var resolveRequestData = new JObject
+                        var validation = await ValidateEpisode(podcastEpisodeReportReviewSessions.PodcastEpisodeId);
+                        if (!validation.isValid)
                         {
-                            { "PodcastEpisodeId", podcastEpisodeReportReviewSessions.PodcastEpisodeId }
-                        };
-                        var resolveReportMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.ContentManagementDomain,
-                            requestData: resolveRequestData,
-                            sagaInstanceId: null,
-                            messageName: "episode-remove-flow");
-                        await _messagingService.SendSagaMessageAsync(resolveReportMessage, null);
+                            _logger.LogInformation(validation.errorMessage);
+                        }
+                        else
+                        {
+                            var resolveRequestData = new JObject
+                            {
+                                { "PodcastEpisodeId", podcastEpisodeReportReviewSessions.PodcastEpisodeId }
+                            };
+                            var resolveReportMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ContentManagementDomain,
+                                requestData: resolveRequestData,
+                                sagaInstanceId: null,
+                                messageName: "episode-remove-flow");
+                            await _messagingService.SendSagaMessageAsync(resolveReportMessage, null);
+                        }   
                     }
 
                     await transaction.CommitAsync();
@@ -367,7 +384,104 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 }
             }
         }
-        public async Task<JObject?> GetPodcastEpisode(Guid podcastEpisodeId)
+        private async Task<(bool isValid, string errorMessage)> ValidateEpisode(Guid podcastEpisodeId)
+        {
+            var episode = await GetPodcastEpisode(podcastEpisodeId);
+            if (episode == null)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is not found");
+            }
+            var (isValid, errorMessage) = await ValidateShow(episode.PodcastShowId, podcastEpisodeId);
+            if (!isValid)
+            {
+                return (isValid, errorMessage);
+            }
+            if (episode.DeletedAt != null)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} has already been deleted");
+            }
+            var episodeStatusId = episode.PodcastEpisodeStatusTrackings.OrderByDescending(es => es.CreatedAt).Select(es => es.PodcastEpisodeStatusId).First();
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.Draft)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is in Draft status");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.PendingReview)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is pending review");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.PendingEditRequired)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is pending edit required");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} has been taken down");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.Removed)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} has been removed");
+            }
+            return (true, string.Empty);
+        }
+        private async Task<(bool isValid, string errorMessage)> ValidateShow(Guid podcastShowId, Guid? podcastEpisodeId = null)
+        {
+            var insideMessage = podcastEpisodeId != null ? $" for Episode Id: {podcastEpisodeId}" : string.Empty;
+            var show = await GetPodcastShow(podcastShowId);
+            if (show == null)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} is not found {insideMessage}");
+            }
+            if (show.PodcastChannelId != null)
+            {
+                var (isValid, errorMessage) = await ValidateChannel(show.PodcastChannelId.Value, podcastShowId, podcastEpisodeId);
+                if (!isValid)
+                {
+                    return (isValid, errorMessage);
+                }
+            }
+            if (show.DeletedAt != null)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} has already been deleted {insideMessage}");
+            }
+            var showStatusId = show.PodcastShowStatusTrackings.OrderByDescending(ss => ss.CreatedAt).Select(ss => ss.PodcastShowStatusId).First();
+            if (showStatusId == (int)PodcastShowStatusEnum.Draft)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} is in Draft status {insideMessage}");
+            }
+            if (showStatusId == (int)PodcastShowStatusEnum.TakenDown)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} has been taken down {insideMessage}");
+            }
+            if (showStatusId == (int)PodcastShowStatusEnum.Removed)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} has been removed {insideMessage}");
+            }
+            return (true, string.Empty);
+        }
+        private async Task<(bool isValid, string errorMessage)> ValidateChannel(Guid podcastChannelId, Guid? podcastShowId = null, Guid? podcastEpisodeId = null)
+        {
+            var insideMessage = podcastEpisodeId != null
+                ? $" for Episode Id: {podcastEpisodeId}"
+                : (podcastShowId != null
+                    ? $" for Show Id: {podcastShowId}"
+                    : string.Empty);
+            var channel = await GetPodcastChannel(podcastChannelId);
+            if (channel == null)
+            {
+                return (false, $"Podcast channel with Id: {podcastChannelId} is not found {insideMessage}");
+            }
+            if (channel.DeletedAt != null)
+            {
+                return (false, $"Podcast channel with Id: {podcastChannelId} has already been deleted {insideMessage}");
+            }
+            var channelStatusId = channel.PodcastChannelStatusTrackings.OrderByDescending(cs => cs.CreatedAt).Select(cs => cs.PodcastChannelStatusId).First();
+            if (channelStatusId == (int)PodcastChannelStatusEnum.Unpublished)
+            {
+                return (false, $"Podcast channel with Id: {podcastChannelId} is in Draft status {insideMessage}");
+            }
+            return (true, string.Empty);
+        }
+        public async Task<PodcastEpisodeDTO?> GetPodcastEpisode(Guid podcastEpisodeId)
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -383,17 +497,76 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                 where = new
                                 {
                                     Id = podcastEpisodeId
-                                }
-                            }),
-                            Fields = new[] { "Id", "Name", "MainImageFileKey" }
+                                },
+                                include = "PodcastEpisodeStatusTracking"
+                            })
                         }
                     }
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            return result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
+            var realResult = result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
                 ? podcastEpisodeArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<PodcastEpisodeDTO>() : null;
+        }
+        public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastChannel",
+                            QueryType = "findall",
+                            EntityType = "PodcastChannel",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastChannelId
+                                },
+                                include = "PodcastChannelStatusTracking"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                ? podcastChannelArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
+        }
+        public async Task<PodcastShowDTO?> GetPodcastShow(Guid podcastShowId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastShowId
+                                },
+                                include = "PodcastShowStatusTracking"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                ? podcastShowArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
         }
         private async Task<JArray?> GetStaffList()
         {
@@ -411,7 +584,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                     where = new
                                     {
                                         IsVerify = true,
-                                        RoleId = 3
+                                        RoleId = (int)RoleEnum.Staff
                                     },
                                 }),
                         }
@@ -453,14 +626,35 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 ? configArray.First as JObject
                 : null;
         }
-        private JToken? GetRandomItemFromJArray(JArray? array)
+        private async Task<int> GetRandomItemFromJArray(JArray? array)
         {
-            if (array == null || array.Count == 0)
-                return null;
+            //if (array == null || array.Count == 0)
+            //    return null;
 
-            var random = new Random();
-            var randomIndex = random.Next(array.Count);
-            return array[randomIndex];
+            //var random = new Random();
+            //var randomIndex = random.Next(array.Count);
+            //return array[randomIndex];
+
+            var assignedStaffIds = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                .Select(pbrrs => pbrrs.AssignedStaff)
+                .ToListAsync();
+
+            List<AccountDTO> availableStaff = array.ToObject<List<AccountDTO>>();
+            Dictionary<int, int> staffAssignmentCount = new Dictionary<int, int>();
+            foreach (var staff in availableStaff)
+            {
+                int count = assignedStaffIds.Count(id => id == staff.Id);
+                staffAssignmentCount[staff.Id] = count;
+            }
+
+            int minAssignmentCount = staffAssignmentCount.Values.Min();
+            List<int> leastAssignedStaffIds = staffAssignmentCount
+                .Where(kvp => kvp.Value == minAssignmentCount)
+                .Select(kvp => kvp.Key)
+                .ToList();
+            Random rand = new Random();
+            int randomIndex = rand.Next(leastAssignedStaffIds.Count);
+            return leastAssignedStaffIds[randomIndex];
         }
     }
 }

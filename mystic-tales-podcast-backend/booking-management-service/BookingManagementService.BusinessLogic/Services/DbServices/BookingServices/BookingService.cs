@@ -11,11 +11,14 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
+using BookingManagementService.BusinessLogic.Enums.Booking;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
+using BookingManagementService.BusinessLogic.Enums.Transaction;
 using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Models.CrossService;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using BookingManagementService.BusinessLogic.Services.DbServices.MiscServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.DataAccess.Data;
@@ -44,6 +47,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
+        private readonly AccountCachingService _accountCachingService;
         private readonly ILogger<BookingService> _logger;
 
         private readonly AppDbContext _appDbContext;
@@ -60,6 +64,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
+            AccountCachingService accountCachingService,
             ILogger<BookingService> logger,
             AppDbContext appDbContext,
             IFilePathConfig filePathConfig,
@@ -76,6 +81,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _httpServiceQueryClient = httpServiceQueryClient;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
+            _accountCachingService = accountCachingService;
             _logger = logger;
             _appDbContext = appDbContext;
             _filePathConfig = filePathConfig;
@@ -201,7 +207,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         Id = Guid.NewGuid(),
                         BookingId = newBooking.Id,
-                        BookingStatusId = 1,
+                        BookingStatusId = (int)BookingStatusEnum.QuotationUnderNegotiation,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     });
 
@@ -339,7 +345,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         Id = Guid.NewGuid(),
                         BookingId = bookingId,
-                        BookingStatusId = 3,
+                        BookingStatusId = (int)BookingStatusEnum.QuotationRejected,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     };
                     await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
@@ -407,11 +413,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     if (booking != null && booking.Price.HasValue)
                     {
                         var newBookingStatusId = 0;
-                        if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId < 5)
+                        if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId < (int)BookingStatusEnum.Producing)
                         {
-                            newBookingStatusId = 4;
+                            newBookingStatusId = (int)BookingStatusEnum.QuotationCancelled;
                         }
-                        else newBookingStatusId = 10;
+                        else newBookingStatusId = (int)BookingStatusEnum.CancelledManually;
 
                         var newBookingStatusTracking = new BookingStatusTracking
                         {
@@ -426,7 +432,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         booking.BookingManualCancelledReason = bookingManualCancelledReason;
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
-                        if(newBookingStatusId == 10)
+                        if(newBookingStatusId == (int)BookingStatusEnum.CancelledManually)
                         {
                             var profitRate = systemConfig?["BookingConfig"]?.Value<double?>("ProfitRate") ?? 0;
                             var depositRate = systemConfig?["BookingConfig"]?.Value<double?>("DepositRate") ?? 0;
@@ -442,7 +448,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     { "Amount", Amount },
                                     { "AccountId", parameter.AccountId },
                                     { "PodcasterId", booking.PodcastBuddyId },
-                                    { "TransactionTypeId", 4 }
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
                                 };
                                 var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                     topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -462,7 +468,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     { "Amount", Amount },
                                     { "AccountId", parameter.AccountId },
                                     { "PodcasterId", booking.AccountId },
-                                    { "TransactionTypeId", 5 }
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositCompensation }
                                 };
                                 var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                     topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -585,26 +591,26 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     var currentStatus = booking.BookingStatusTrackings?.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
 
-                    if (currentStatus == 2 && newBookingNegotiation.IsFromCustomer)
+                    if (currentStatus == (int)BookingStatusEnum.QuotationDealing && newBookingNegotiation.IsFromCustomer)
                     {
                         var newBookingStatusTracking = new BookingStatusTracking
                         {
                             Id = Guid.NewGuid(),
                             BookingId = booking.Id,
-                            BookingStatusId = 1,
+                            BookingStatusId = (int)BookingStatusEnum.QuotationUnderNegotiation,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
                         booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
                     }
-                    else if(currentStatus == 1 && !newBookingNegotiation.IsFromCustomer)
+                    else if(currentStatus == (int)BookingStatusEnum.QuotationUnderNegotiation && !newBookingNegotiation.IsFromCustomer)
                     {
                         var newBookingStatusTracking = new BookingStatusTracking
                         {
                             Id = Guid.NewGuid(),
                             BookingId = booking.Id,
-                            BookingStatusId = 2,
+                            BookingStatusId = (int)BookingStatusEnum.QuotationDealing,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
@@ -679,7 +685,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         "BookingStatusTrackings"
                     );
 
-                    if (booking?.BookingStatusTrackings?.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId != 2)
+                    if (booking?.BookingStatusTrackings?.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId != (int)BookingStatusEnum.QuotationDealing)
                     {
                         throw new Exception("Cannot agree on negotiation when booking is rejected");
                     }
@@ -719,7 +725,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         Id = Guid.NewGuid(),
                         BookingId = booking.Id,
-                        BookingStatusId = 5,
+                        BookingStatusId = (int)BookingStatusEnum.Producing,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     };
                     await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
@@ -822,7 +828,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         Id = Guid.NewGuid(),
                         BookingId = bookingId,
-                        BookingStatusId = 8,
+                        BookingStatusId = (int)BookingStatusEnum.Completed,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     };
                     await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
@@ -885,13 +891,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var currentDateTime = _dateHelper.GetNowByAppTimeZone();
                     var previewingBookingList = _bookingGenericRepository.FindAll()
                         .Include(b => b.BookingProducingRequests)
-                        .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == 6 &&
+                        .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.TrackPreviewing &&
                         b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt.HasValue &&
                         b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt!.Value.AddDays(previewResponseAllowedDays ?? 0) < currentDateTime)
                         .ToList();
 
                     var producingRequestBookingList = _bookingGenericRepository.FindAll()
-                        .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == 7 &&
+                        .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.ProducingRequested &&
                         b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().IsAccepted == null &&
                         b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().CreatedAt.AddDays(producingRequestResponseAllowedDays ?? 0) < currentDateTime)
                         .Include(b => b.BookingProducingRequests)
@@ -902,7 +908,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             Id = Guid.NewGuid(),
                             BookingId = booking.Id,
-                            BookingStatusId = 9,
+                            BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
@@ -920,7 +926,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 { "Amount", Amount },
                                 { "AccountId", booking.AccountId },
                                 { "PodcasterId", booking.PodcastBuddyId },
-                                { "TransactionTypeId", 5 }
+                                { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositCompensation }
                             };
                             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -937,7 +943,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             Id = Guid.NewGuid(),
                             BookingId = booking.Id,
-                            BookingStatusId = 9,
+                            BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
@@ -966,7 +972,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 { "Amount", Amount },
                                 { "AccountId", booking.AccountId },
                                 { "PodcasterId", booking.PodcastBuddyId },
-                                { "TransactionTypeId", 4 }
+                                { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
                             };
                             var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
@@ -1035,24 +1041,24 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     foreach (var b in booking)
                     {
                         var currentStatus = b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
-                        if(currentStatus != 3 &&
-                           currentStatus != 4 &&
-                           currentStatus != 8 &&
-                           currentStatus != 9 &&
-                           currentStatus != 10)
+                        if(currentStatus != (int)BookingStatusEnum.QuotationRejected &&
+                           currentStatus != (int)BookingStatusEnum.QuotationCancelled &&
+                           currentStatus != (int)BookingStatusEnum.Completed &&
+                           currentStatus != (int)BookingStatusEnum.CancelledAutomatically &&
+                           currentStatus != (int)BookingStatusEnum.CancelledManually)
                         {
                             var newBookingStatusTracking = new BookingStatusTracking
                             {
                                 Id = Guid.NewGuid(),
                                 BookingId = b.Id,
-                                BookingStatusId = 9,
+                                BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                             };
                             await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
                             b.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             b.BookingAutoCancelReason = "TerminatedByPodcaster (bị hủy bởi podcaster)";
                             await _bookingGenericRepository.UpdateAsync(b.Id, b);
-                            if (currentStatus >= 5)
+                            if (currentStatus >= (int)BookingStatusEnum.Producing)
                             {
                                 var systemConfig = await GetActiveSystemConfigProfile();
                                 var profitRate = systemConfig?["BookingConfig"]?.Value<double?>("ProfitRate") ?? 0;
@@ -1064,7 +1070,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     { "Amount", Amount },
                                     { "AccountId", b.AccountId },
                                     { "PodcasterId", b.PodcastBuddyId },
-                                    { "TransactionTypeId", 4 }
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
                                 };
                                 var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                     topic: KafkaTopicEnum.PaymentProcessingDomain,

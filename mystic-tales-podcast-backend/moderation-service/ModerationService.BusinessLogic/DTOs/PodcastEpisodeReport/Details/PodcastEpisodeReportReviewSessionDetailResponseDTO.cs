@@ -1,5 +1,4 @@
-﻿using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport;
-using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.ListItems;
+﻿using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.ListItems;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport.ListItems;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport.ListItems;

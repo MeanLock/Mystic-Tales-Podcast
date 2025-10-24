@@ -11,6 +11,7 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransactionRollback;
 using TransactionService.BusinessLogic.Enums.Kafka;
+using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
 using TransactionService.BusinessLogic.Models.CrossService;
 using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -91,53 +92,53 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var newPodcastSubscriptionTransaction = null as PodcastSubscriptionTransaction;
                     switch (transactionTypeId)
                     {
-                        case 8:
+                        case (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment:
                             var cyclePaymentPodcastSubscriptionTransaction = new PodcastSubscriptionTransaction
                             {
                                 PodcastSubscriptionRegistrationId = parameter.PodcastSubscriptionRegistrationId,
                                 Amount = parameter.Amount,
                                 Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
-                                TransactionStatusId = 1,
+                                TransactionStatusId = (int)TransactionStatusEnum.Pending,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             newPodcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.CreateAsync(cyclePaymentPodcastSubscriptionTransaction);
                             break;
-                        case 9:
+                        case (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund:
                             var cyclePaymentRefundPodcastSubscriptionTransaction = new PodcastSubscriptionTransaction
                             {
                                 PodcastSubscriptionRegistrationId = parameter.PodcastSubscriptionRegistrationId,
                                 Amount = parameter.Amount,
                                 Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
-                                TransactionStatusId = 1,
+                                TransactionStatusId = (int)TransactionStatusEnum.Pending,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             newPodcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.CreateAsync(cyclePaymentRefundPodcastSubscriptionTransaction);
                             break;
-                        case 10:
+                        case (int)TransactionTypeEnum.SystemSubscriptionIncome:
                             var systemIncomePodcastSubscriptionTransaction = new PodcastSubscriptionTransaction
                             {
                                 PodcastSubscriptionRegistrationId = parameter.PodcastSubscriptionRegistrationId,
                                 Amount = parameter.Amount,
                                 Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
-                                TransactionStatusId = 2,
+                                TransactionStatusId = (int)TransactionStatusEnum.Success,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             newPodcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.CreateAsync(systemIncomePodcastSubscriptionTransaction);
                             break;
-                        case 11:
+                        case (int)TransactionTypeEnum.PodcasterSubscriptionIncome:
                             var podcasterIncomePodcastSubscriptionTransaction = new PodcastSubscriptionTransaction
                             {
                                 PodcastSubscriptionRegistrationId = parameter.PodcastSubscriptionRegistrationId,
                                 Amount = parameter.Amount,
                                 Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
-                                TransactionStatusId = 1,
+                                TransactionStatusId = (int)TransactionStatusEnum.Pending,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
@@ -217,11 +218,11 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     {
                         throw new Exception($"No podcast subscription transaction found for Id: {parameter.PodcastSubscriptionTransactionId}");
                     }
-                    if (podcastSubscriptionTransaction.TransactionStatusId != 1)
+                    if (podcastSubscriptionTransaction.TransactionStatusId != (int)TransactionStatusEnum.Pending)
                     {
                         throw new Exception($"This podcast subscription transaction is not eligible for completion");
                     }
-                    podcastSubscriptionTransaction.TransactionStatusId = 2;
+                    podcastSubscriptionTransaction.TransactionStatusId = (int)TransactionStatusEnum.Success;
                     var newPodcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.UpdateAsync(podcastSubscriptionTransaction.Id, podcastSubscriptionTransaction);
 
                     await transaction.CommitAsync();
@@ -275,7 +276,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         throw new Exception("Podcast Subscription Transaction not found.");
                     }
                     ;
-                    podcastSubscriptionTransaction.TransactionStatusId = 4; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    podcastSubscriptionTransaction.TransactionStatusId = (int)TransactionStatusEnum.Error; // Thay đổi trạng thái giao dịch thành "Thất bại"
                     await _podcastSubscriptionTransactionGenericRepository.UpdateAsync(podcastSubscriptionTransaction.Id, podcastSubscriptionTransaction);
                     await transaction.CommitAsync();
                     var newResponseData = new JObject{

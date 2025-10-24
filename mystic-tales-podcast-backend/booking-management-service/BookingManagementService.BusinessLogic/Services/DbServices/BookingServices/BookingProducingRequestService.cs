@@ -4,6 +4,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateTrackListenSlot;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.Detail;
+using BookingManagementService.BusinessLogic.Enums.Booking;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
@@ -139,13 +140,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         "BookingStatusTrackings"
                     );
 
-                    if(booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == 6)
+                    if(booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.TrackPreviewing
                     {
                         await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                         {
                             Id = Guid.NewGuid(),
                             BookingId = booking.Id,
-                            BookingStatusId = 7,
+                            BookingStatusId = (int)BookingStatusEnum.ProducingRequested,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         });
                     } else
@@ -255,13 +256,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         "BookingStatusTrackings"
                     );
 
-                    if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == 5)
+                    if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Producing)
                     {
                         await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                         {
                             Id = Guid.NewGuid(),
                             BookingId = booking.Id,
-                            BookingStatusId = 6,
+                            BookingStatusId = (int)BookingStatusEnum.TrackPreviewing,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         });
                     }
@@ -370,7 +371,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     bookingProducingRequest.IsAccepted = parameter.IsAccepted;
                     bookingProducingRequest = await _bookingProducingRequestGenericRepository.UpdateAsync(bookingProducingRequest.Id, bookingProducingRequest);
 
-                    if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == 7)
+                    if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.ProducingRequested)
                     {
                         if(isAccepted == true)
                         {
@@ -378,7 +379,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             {
                                 Id = Guid.NewGuid(),
                                 BookingId = booking.Id,
-                                BookingStatusId = 5,
+                                BookingStatusId = (int)BookingStatusEnum.Producing,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             });
                         } else
@@ -387,7 +388,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             {
                                 Id = Guid.NewGuid(),
                                 BookingId = booking.Id,
-                                BookingStatusId = 6,
+                                BookingStatusId = (int)BookingStatusEnum.TrackPreviewing,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             });
                         }

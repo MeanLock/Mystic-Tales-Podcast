@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using ModerationService.API.Filters.ExceptionFilters;
 using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport;
+using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Models.CrossService;
 using ModerationService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using ModerationService.BusinessLogic.Services.DbServices.ReportServices;
@@ -23,7 +24,7 @@ namespace ModerationService.API.Controllers.BaseControllers
         private readonly PodcastEpisodeReportService _podcastEpisodeReportService;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
-
+        private const string SAGA_TOPIC = KafkaTopicEnum.ReportManagementDomain;
         public EpisodeReportController(
             GenericQueryService genericQueryService, 
             HttpServiceQueryClient httpServiceQueryClient,
@@ -64,7 +65,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 { "Content", request.EpisodeReportCreateInfo.Content }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "report-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "Episode-report-submission-flow");
@@ -128,7 +129,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 { "IsTakenEffect", true }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "report-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "podcast-episode-report-resolve-flow");

@@ -7,6 +7,7 @@ using TransactionService.API.Filters.ExceptionFilters;
 using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction;
 using TransactionService.BusinessLogic.DTOs.Cache;
 using TransactionService.BusinessLogic.Enums.Kafka;
+using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Models.CrossService;
 using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -121,7 +122,7 @@ namespace TransactionService.API.Controllers.BaseControllers
             {
                 { "AccountId", accountId },
                 { "Amount", request.Amount },
-                { "TransactionTypeId", 2 }
+                { "TransactionTypeId", (int)TransactionTypeEnum.AccountBalanceWithdrawal }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC, 

@@ -21,7 +21,7 @@ namespace ModerationService.BusinessLogic.DTOs.DMCAAccusation.Details
         public DateTime UpdatedAt { get; set; }
         public DMCAAccusationStatusDTO CurrentStatus { get; set; }
         public DMCANoticeDetailResponseDTO DMCANotice { get; set; }
-        public CounterNoticeDetailResponsDTO? CounterNotice { get; set; }
+        public CounterNoticeDetailResponseDTO? CounterNotice { get; set; }
         public LawsuitProofDetailResponseDTO? LawsuitProof { get; set; }
     }
 }

@@ -5,6 +5,8 @@ using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.CounterNotice;
 using ModerationService.BusinessLogic.DTOs.DMCANotice;
 using ModerationService.BusinessLogic.DTOs.LawsuitProof;
+using ModerationService.BusinessLogic.Enums.DMCA;
+using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Helpers.FileHelpers;
 using ModerationService.BusinessLogic.Models.CrossService;
 using ModerationService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -38,6 +40,7 @@ namespace ModerationService.API.Controllers.BaseControllers
         private readonly IFileValidationConfig _fileValidationConfig;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
+        private const string SAGA_TOPIC = KafkaTopicEnum.DmcaManagementDomain;
 
         private readonly ILogger<DMCAAccusationController> _logger;
         public DMCAAccusationController(
@@ -137,7 +140,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 { "DMCANoticeAttachFileKeys", JArray.FromObject(attachFileList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "dmca-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "content-dmca-accusation-creation-flow");
@@ -207,7 +210,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 { "DMCANoticeAttachFileKeys", JArray.FromObject(attachFileList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "dmca-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "content-dmca-accusation-creation-flow");
@@ -363,7 +366,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 { "LawsuitProofAttachFileKeys", DMCAAccusationId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "dmca-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "content-dmca-lawsuit-creation-flow");
@@ -397,6 +400,35 @@ namespace ModerationService.API.Controllers.BaseControllers
             if (!result)
             {
                 return StatusCode(500, "Failed to initiate dmca staff assignment");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpPut("{DMCAAccusationId}")]
+        [Authorize(Policy = "BasicAccess")]
+        public async Task<IActionResult> UpdateDMCAAccusationById(
+            [FromRoute] int DMCAAccusationId,
+            [FromQuery] DMCAAccusationQueryEnum request)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var loginAccountId = account.Id;
+            var requestData = new JObject
+            {
+                { "AccountId", loginAccountId },
+                { "DMCAAccusationId", DMCAAccusationId },
+                { "DMCAAccusationAction", (int)request },
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "update-dmca-accusation-status-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate dmca accusation update.");
             }
             return Ok(new
             {

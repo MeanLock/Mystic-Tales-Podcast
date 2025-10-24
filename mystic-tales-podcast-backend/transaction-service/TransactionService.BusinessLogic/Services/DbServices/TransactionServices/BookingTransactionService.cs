@@ -9,6 +9,7 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransactionRollback;
 using TransactionService.BusinessLogic.Enums.Kafka;
+using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
 using TransactionService.DataAccess.Data;
@@ -62,53 +63,53 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var newBookingTransaction = new BookingTransaction();
                     switch (transactionTypeId)
                     {
-                        case 3:
+                        case (int)TransactionTypeEnum.BookingDeposit:
                             var depositBookingTransaction = new BookingTransaction
                             {
                                 BookingId = parameter.BookingId,
                                 Amount = parameter.Amount,
                                 Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
-                                TransactionStatusId = 1,
+                                TransactionStatusId = (int)TransactionStatusEnum.Pending,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(depositBookingTransaction);
                             break;
-                        case 4:
+                        case (int)TransactionTypeEnum.BookingDepositRefund:
                             var depositRefundBookingTransaction = new BookingTransaction
                             {
                                 BookingId = parameter.BookingId,
                                 Amount = parameter.Amount,
                                 Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
-                                TransactionStatusId = 1,
+                                TransactionStatusId = (int)TransactionStatusEnum.Pending,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(depositRefundBookingTransaction);
                             break;
-                        case 5:
+                        case (int)TransactionTypeEnum.BookingDepositCompensation:
                             var depositCompensationBookingTransaction = new BookingTransaction
                             {
                                 BookingId = parameter.BookingId,
                                 Amount = parameter.Amount,
                                 Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
-                                TransactionStatusId = 1,
+                                TransactionStatusId = (int)TransactionStatusEnum.Pending,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(depositCompensationBookingTransaction);
                             break;
-                        case 6:
+                        case (int)TransactionTypeEnum.BookingPayTheRest:
                             var payTheRestBookingTransaction = new BookingTransaction
                             {
                                 BookingId = parameter.BookingId,
                                 Amount = parameter.Amount,
                                 Profit = parameter.Profit,
                                 TransactionTypeId = parameter.TransactionTypeId,
-                                TransactionStatusId = 1,
+                                TransactionStatusId = (int)TransactionStatusEnum.Pending,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
@@ -173,11 +174,11 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     {
                         throw new Exception($"No booking transaction found for Id: {parameter.BookingTransactionId}");
                     }
-                    if(bookingTransaction.TransactionStatusId != 1)
+                    if(bookingTransaction.TransactionStatusId != (int)TransactionStatusEnum.Pending)
                     {
                         throw new Exception($"This booking transaction is not eligible for completion");
                     }
-                    bookingTransaction.TransactionStatusId = 2;
+                    bookingTransaction.TransactionStatusId = (int)TransactionStatusEnum.Success;
                     var newBookingTransaction = await _bookingTransactionGenericRepository.UpdateAsync(bookingTransaction.Id, bookingTransaction);
 
                     await transaction.CommitAsync();
@@ -259,7 +260,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         throw new Exception("Booking Transaction not found.");
                     }
                     ;
-                    bookingTransaction.TransactionStatusId = 4; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    bookingTransaction.TransactionStatusId = (int)TransactionStatusEnum.Error; // Thay đổi trạng thái giao dịch thành "Thất bại"
                     await _bookingTransactionGenericRepository.UpdateAsync(bookingTransaction.Id, bookingTransaction);
                     await transaction.CommitAsync();
                     var newResponseData = new JObject{

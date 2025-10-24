@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ModerationService.BusinessLogic.DTOs.Account;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreatePodcastBuddyReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastBuddyReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastShowReport;
@@ -9,6 +10,7 @@ using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.ListItems;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport.Details;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport.ListItems;
 using ModerationService.BusinessLogic.DTOs.Snippet;
+using ModerationService.BusinessLogic.Enums.Account;
 using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Helpers.DateHelpers;
 using ModerationService.BusinessLogic.Models.CrossService;
@@ -117,6 +119,12 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
 
                     var systemConfig = await GetActiveSystemConfigProfile();
 
+                    var podcaster = await ValidatePodcaster(parameter.PodcastBuddyId);
+                    if (!podcaster.isValid)
+                    {
+                        throw new Exception(podcaster.errorMessage);
+                    }
+
                     var newBuddyReport = new PodcastBuddyReport()
                     {
                         AccountId = parameter.AccountId,
@@ -134,12 +142,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     if (existingBuddyReport.Count() >= systemConfig["ReviewSessionConfig"].Value<int>("PodcastBuddyUnResolvedReportStreak"))
                     {
                         var staffList = await GetStaffList();
-                        var randomStaff = GetRandomItemFromJArray(staffList);
-                        var staffId = randomStaff["Id"]?.Value<int>();
+                        var randomStaff = await GetRandomItemFromJArray(staffList);
 
                         var newBuddyReportReviewSession = new PodcastBuddyReportReviewSession()
                         {
-                            AssignedStaff = staffId ?? 0,
+                            AssignedStaff = randomStaff,
                             PodcastBuddyId = buddyReport.PodcastBuddyId,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -204,7 +211,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             var query = await _podcastBuddyReportReviewSessionGenericRepository.FindAll(
                 predicate: null
                 ).ToListAsync();
-            if(roleId == 3)
+            if(roleId == (int)RoleEnum.Staff)
             {
                 query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
             }
@@ -400,7 +407,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                     where = new
                                     {
                                         IsVerify = true,
-                                        RoleId = 3
+                                        RoleId = (int)RoleEnum.Staff
                                     },
                                 }),                        
                         }
@@ -442,14 +449,54 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 ? configArray.First as JObject
                 : null;
         }
-        private JToken? GetRandomItemFromJArray(JArray? array)
+        private async Task<int> GetRandomItemFromJArray(JArray? array)
         {
-            if (array == null || array.Count == 0)
-                return null;
+            //if (array == null || array.Count == 0)
+            //    return null;
             
-            var random = new Random();
-            var randomIndex = random.Next(array.Count);
-            return array[randomIndex];
+            //var random = new Random();
+            //var randomIndex = random.Next(array.Count);
+            //return array[randomIndex];
+
+            var assignedStaffIds = await _podcastBuddyReportReviewSessionGenericRepository.FindAll()
+                .Select(pbrrs => pbrrs.AssignedStaff)
+                .ToListAsync();
+
+            List<AccountDTO> availableStaff = array.ToObject<List<AccountDTO>>();
+            Dictionary<int, int> staffAssignmentCount = new Dictionary<int, int>();
+            foreach (var staff in availableStaff)
+            {
+                int count = assignedStaffIds.Count(id => id == staff.Id);
+                staffAssignmentCount[staff.Id] = count;
+            }
+
+            int minAssignmentCount = staffAssignmentCount.Values.Min();
+            List<int> leastAssignedStaffIds = staffAssignmentCount
+                .Where(kvp => kvp.Value == minAssignmentCount)
+                .Select(kvp => kvp.Key)
+                .ToList();
+            Random rand = new Random();
+            int randomIndex = rand.Next(leastAssignedStaffIds.Count);
+            return leastAssignedStaffIds[randomIndex];
+        }
+        private async Task<(bool isValid, string errorMessage)> ValidatePodcaster(int accountId)
+        {
+            var podcaster = await _accountCachingService.GetAccountStatusCacheById(accountId);
+            if (podcaster == null)
+            {
+                return (false, "Podcaster not found");
+            }
+            
+            if (podcaster.DeactivatedAt != null)
+            {
+                return (false, $"Podcaster with Id: {podcaster.Id} has already been deactivated");
+            }
+            
+            if (!podcaster.HasVerifiedPodcasterProfile)
+            {
+                return (false, $"Podcaster with Id: {podcaster.Id} profile has not been verify");
+            }
+            return (true, string.Empty);
         }
         //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
         //{

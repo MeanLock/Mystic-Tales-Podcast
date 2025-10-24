@@ -5,6 +5,7 @@ using TransactionService.API.Filters.ExceptionFilters;
 using TransactionService.BusinessLogic.DTOs.BookingTransaction;
 using TransactionService.BusinessLogic.DTOs.Cache;
 using TransactionService.BusinessLogic.Enums.Kafka;
+using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Models.CrossService;
 using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -52,7 +53,7 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "BookingId", BookingId },
                 { "AccountId", accountId },
                 { "Amount", request.Amount },
-                { "TransactionTypeId", 3 }
+                { "TransactionTypeId", (int)TransactionTypeEnum.BookingDeposit }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC, 
@@ -83,7 +84,7 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "BookingId", BookingId },
                 { "AccountId", accountId },
                 { "Amount", request.Amount },
-                { "TransactionTypeId", 6 }
+                { "TransactionTypeId", (int)TransactionTypeEnum.BookingPayTheRest }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC, 

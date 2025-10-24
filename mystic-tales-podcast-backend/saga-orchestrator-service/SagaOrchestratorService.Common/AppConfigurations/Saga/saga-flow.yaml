@@ -6456,7 +6456,7 @@ flows:
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
-            - name: "add-account-balance-amount"
+            - name: "add-podcaster-balance-amount"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
@@ -8256,12 +8256,15 @@ flows:
         handle-service: "ModerationService"
         description: "Cập nhật status của DMCAAccusation và chạy flow dựa status đó"
         parameters:
+          - AccountId
           - DMCAAccusationId
           - DMCAAccusationAction
         next-request-data:
+          - AccountId
           - DMCAAccusationId
           - DMCAAccusationAction
         response-data:
+          - AccountId
           - DMCAAccusationId
           - DMCAAccusationAction
           - UpdatedAt

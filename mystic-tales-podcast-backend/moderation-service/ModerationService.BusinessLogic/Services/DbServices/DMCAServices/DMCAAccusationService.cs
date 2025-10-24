@@ -6,15 +6,18 @@ using ModerationService.BusinessLogic.DTOs.DMCAAccusation.Details;
 using ModerationService.BusinessLogic.DTOs.DMCAAccusation.ListItems;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.AssignDMCAAccusationToStaff;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusation;
-using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.ListItems;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.UpdateDMCAAccusationStatus;
+using ModerationService.BusinessLogic.DTOs.Podcast;
 using ModerationService.BusinessLogic.DTOs.Snippet;
+using ModerationService.BusinessLogic.Enums.Account;
+using ModerationService.BusinessLogic.Enums.DMCA;
 using ModerationService.BusinessLogic.Enums.Kafka;
+using ModerationService.BusinessLogic.Enums.Podcast;
 using ModerationService.BusinessLogic.Helpers.DateHelpers;
 using ModerationService.BusinessLogic.Helpers.FileHelpers;
 using ModerationService.BusinessLogic.Models.CrossService;
 using ModerationService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using ModerationService.BusinessLogic.Services.DbServices.MiscServices;
-using ModerationService.BusinessLogic.Services.DbServices.ReportServices;
 using ModerationService.BusinessLogic.Services.MessagingServices.interfaces;
 using ModerationService.Common.AppConfigurations.BusinessSetting.interfaces;
 using ModerationService.Common.AppConfigurations.FilePath.interfaces;
@@ -24,11 +27,7 @@ using ModerationService.DataAccess.Repositories.interfaces;
 using ModerationService.Infrastructure.Models.Kafka;
 using ModerationService.Infrastructure.Services.Kafka;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using SubscriptionService.BusinessLogic.DTOs.Podcast;
 
 namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 {
@@ -98,22 +97,15 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     .Include(da => da.DmcaaccusationStatusTrackings)
                     .ThenInclude(dast => dast.DmcaAccusationStatus)
                 ).ToListAsync();
-            if (roleId == 3)
+            if (roleId == (int)RoleEnum.Staff)
             {
                 query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
             }
             var dmcaAccusation = (await Task.WhenAll(query.Select(async pbrrs =>
             {
-                JObject? episode = null;
-                if (pbrrs.PodcastEpisodeId.HasValue)
-                {
-                    episode = await GetPodcastShow(pbrrs.PodcastEpisodeId.Value);
-                }
-                JObject? show = null;
-                if (pbrrs.PodcastShowId.HasValue)
-                {
-                    show = await GetPodcastShow(pbrrs.PodcastShowId.Value);
-                }
+                var episode = await GetPodcastEpisode(pbrrs.PodcastEpisodeId.Value);
+                
+                var show = await GetPodcastShow(pbrrs.PodcastShowId.Value);
                 AccountStatusCache? staff = null;
                 if (pbrrs.AssignedStaff.HasValue)
                 {
@@ -125,17 +117,17 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     PodcastShow = show != null
                         ? new PodcastShowSnippetDTO()
                         {
-                            Id = show.Value<Guid>("Id"),
-                            Name = show.Value<string>("Name")!,
-                            MainImageFileKey = show.Value<string>("MainImageFileKey")!
+                            Id = show.Id,
+                            Name = show.Name,
+                            MainImageFileKey = show.MainImageFileKey
                         }
                         : null,
                     PodcastEpisode = episode != null
                         ? new PodcastEpisodeSnippetDTO()
                         {
-                            Id = episode.Value<Guid>("Id"),
-                            Name = episode.Value<string>("Name")!,
-                            MainImageFileKey = episode.Value<string>("MainImageFileKey")!
+                            Id = episode.Id,
+                            Name = episode.Name,
+                            MainImageFileKey = episode.MainImageFileKey
                         }
                         : null,
                     AssignedStaff = staff != null
@@ -176,6 +168,24 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
+
+                    if(parameter.PodcastShowId != null)
+                    {
+                        var showValidation = await ValidateShow(parameter.PodcastShowId.Value);
+                        if (!showValidation.isValid)
+                        {
+                            throw new Exception(showValidation.errorMessage);
+                        }
+                    }
+
+                    if(parameter.PodcastEpisodeId != null)
+                    {
+                        var episodeValidation = await ValidateEpisode(parameter.PodcastEpisodeId.Value);
+                        if (!episodeValidation.isValid)
+                        {
+                            throw new Exception(episodeValidation.errorMessage);
+                        }
+                    }
 
                     var newDmcaAccusation = new Dmcaaccusation
                     {
@@ -244,10 +254,12 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var newDMCAAccusationStatusTracking = new DmcaaccusationStatusTracking
                     {
                         DmcaAccusationId = createdDmcaAccusation.Id,
-                        DmcaAccusationStatusId = 1,
+                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Pending,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
                     await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(newDMCAAccusationStatusTracking);
+
+                    //Send email to B
 
                     await transaction.CommitAsync();
 
@@ -328,7 +340,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                )
                 .Where(da => da.Id == dmcaAccusationId);
 
-            if (roleId == 3)
+            if (roleId == (int)RoleEnum.Staff)
             {
                 query = query.Where(pbrrs => pbrrs.AssignedStaff == accountId);
             }
@@ -338,16 +350,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             if (da == null)
                 return null;
 
-            JObject? episode = null;
-            if (da.PodcastEpisodeId.HasValue)
-            {
-                episode = await GetPodcastShow(da.PodcastEpisodeId.Value);
-            }
-            JObject? show = null;
-            if (da.PodcastShowId.HasValue)
-            {
-                show = await GetPodcastShow(da.PodcastShowId.Value);
-            }
+            var episode = await GetPodcastShow(da.PodcastEpisodeId.Value);
+
+            var show = await GetPodcastShow(da.PodcastShowId.Value);
             AccountStatusCache? staff = null;
             if (da.AssignedStaff.HasValue)
             {
@@ -362,17 +367,17 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 PodcastShow = show != null
                     ? new PodcastShowSnippetDTO()
                     {
-                        Id = show.Value<Guid>("Id"),
-                        Name = show.Value<string>("Name")!,
-                        MainImageFileKey = show.Value<string>("MainImageFileKey")!
+                        Id = show.Id,
+                        Name = show.Name,
+                        MainImageFileKey = show.MainImageFileKey
                     }
                     : null,
                 PodcastEpisode = episode != null
                     ? new PodcastEpisodeSnippetDTO()
                     {
-                        Id = episode.Value<Guid>("Id"),
-                        Name = episode.Value<string>("Name")!,
-                        MainImageFileKey = episode.Value<string>("MainImageFileKey")!
+                        Id = episode.Id,
+                        Name = episode.Name,
+                        MainImageFileKey = episode.MainImageFileKey
                     }
                     : null,
                 AssignedStaff = staff != null
@@ -419,6 +424,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     var createdDmcaAccusation =  await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
 
+                    var newDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                    {
+                        DmcaAccusationId = createdDmcaAccusation.Id,
+                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Reviewing,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                    };
+                    await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(newDmcaAccusationStatusTracking);
+
                     await transaction.CommitAsync();
 
                     var newResponseData = new JObject
@@ -458,35 +471,484 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 }
             }
         }
-        public async Task<JObject?> GetPodcastShow(Guid podcastShowId)
+        public async Task UpdateDMCAAccusationStatusAsync(UpdateDMCAAccusationStatusParameterDTO parameter, SagaCommandMessage command)
         {
-            var batchRequest = new BatchQueryRequest
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
-                Queries = new List<BatchQueryItem>
-                    {
-                        new BatchQueryItem
-                        {
-                            Key = "podcastShow",
-                            QueryType = "findall",
-                            EntityType = "PodcastShow",
-                            Parameters = JObject.FromObject(new
-                            {
-                                where = new
-                                {
-                                    Id = podcastShowId
-                                }
-                            }),
-                            Fields = new[] { "Id", "Name", "MainImageFileKey" }
-                        }
-                    }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
 
-            return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.First as JObject
-                : null;
+                    var dmcaAccusation = await _dmcaAccusationGenericRepository.FindByIdWithPaths(parameter.DMCAAccusationId,
+                        "DMCAAccusationStatusTracking",
+                        "DMCANotice",
+                        "CounterNotice",
+                        "LawsuitProof");
+                    if(dmcaAccusation == null)
+                    {
+                        throw new Exception($"DMCA Accusation with Id: {parameter.DMCAAccusationId} not found");
+                    }
+                    var accusedId = 0;
+                    switch (parameter.DMCAAccusationAction)
+                    {
+                        case (int)DMCAAccusationQueryEnum.TAKEDOWN_ACTIVE:
+                            //Validate Staff Account
+                            if (dmcaAccusation.AssignedStaff != parameter.AccountId)
+                            {
+                                throw new Exception($"The logged in staff Id: {parameter.AccountId} is not authorized to update this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
+                            }
+
+                            //Validate DMCA Accusation status
+                            var currentStatus1 = dmcaAccusation.DmcaaccusationStatusTrackings
+                                .OrderByDescending(dast => dast.CreatedAt)
+                                .First()
+                                .DmcaAccusationStatusId;
+                            if (currentStatus1 != (int)DMCAAccusationStatusEnum.Reviewing)
+                            {
+                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation with Reviewing status can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
+                            }
+
+                            //Send Confirm email to Accuser
+
+                            //Send Email to Accused
+
+                            //Switch Status
+                            var takedownDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                            {
+                                DmcaAccusationId = dmcaAccusation.Id,
+                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.TakeDownPermanent,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(takedownDmcaAccusationStatusTracking);
+                            dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
+                            break;
+                        case (int)DMCAAccusationQueryEnum.REJECTED:
+                            //Validate Staff Account
+                            if (dmcaAccusation.AssignedStaff != parameter.AccountId)
+                            {
+                                throw new Exception($"The logged in staff Id: {parameter.AccountId} is not authorized to update this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
+                            }
+
+                            //Validate DMCA Accusation status
+                            var currentStatus2 = dmcaAccusation.DmcaaccusationStatusTrackings
+                                .OrderByDescending(dast => dast.CreatedAt)
+                                .First()
+                                .DmcaAccusationStatusId;
+                            if (currentStatus2 != (int)DMCAAccusationStatusEnum.Reviewing)
+                            {
+                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation with Reviewing status can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
+                            }
+
+                            //Send Confirm email to Accuser
+
+                            //Punish Accuser (B -10 point)
+                            var accuserPunishmentRequestData1 = new JObject
+                            {
+                                { "AccountId", dmcaAccusation.Dmcanotices.First().AccountId },
+                                { "ViolationPoint", 10 }
+                            };
+                            var accountPunishmentStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.UserManagementDomain,
+                                requestData: accuserPunishmentRequestData1,
+                                sagaInstanceId: null,
+                                messageName: "user-violation-punishment-flow");
+                            var accountPunishmentResult1 = await _messagingService.SendSagaMessageAsync(accountPunishmentStartSagaTriggerMessage1);
+                            _logger.LogInformation($"Send user-violation-punishment-flow with Saga Id: {accountPunishmentStartSagaTriggerMessage1.SagaInstanceId}");
+
+                            //Switch Status
+                            var rejectDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                            {
+                                DmcaAccusationId = dmcaAccusation.Id,
+                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Rejected,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(rejectDmcaAccusationStatusTracking);
+                            dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
+                            break;
+                        case (int)DMCAAccusationQueryEnum.CLOSED_WITHDRAWN:
+                            //Validate Accuser Account
+                            if (dmcaAccusation.Dmcanotices.First().AccountId != parameter.AccountId)
+                            {
+                                throw new Exception($"The logged in account Id: {parameter.AccountId} is not authorized to perform this action this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
+                            }
+
+                            //Validate DMCA Accusation status
+                            var currentStatus3 = dmcaAccusation.DmcaaccusationStatusTrackings
+                                .OrderByDescending(dast => dast.CreatedAt)
+                                .First()
+                                .DmcaAccusationStatusId;
+                            if (currentStatus3 >= (int)DMCAAccusationStatusEnum.LawsuitFiled)
+                            {
+                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation that havent file a lawsuit can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
+                            }
+
+                            //Send Email to Accused
+
+                            //Send Confirm email to Accuser
+
+                            //Switch Status
+                            var withdrawDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                            {
+                                DmcaAccusationId = dmcaAccusation.Id,
+                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.CloseWithdrawn,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(withdrawDmcaAccusationStatusTracking);
+                            dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
+                            break;
+                        case (int)DMCAAccusationQueryEnum.TAKEDOWN_PERMANENT:
+                            //Validate Accused Account
+                            if (dmcaAccusation.PodcastShowId != null)
+                            {
+                                var show = await GetPodcastShow(dmcaAccusation.PodcastShowId.Value);
+                                accusedId = show.PodcasterId;
+                                if (accusedId != parameter.AccountId)
+                                {
+                                    throw new Exception($"The logged in account Id: {parameter.AccountId} is not authorized to perform this action this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
+                                }
+                            }
+                            if (dmcaAccusation.PodcastEpisodeId != null)
+                            {
+                                var episode = await GetPodcastShow(dmcaAccusation.PodcastEpisodeId.Value);
+                                accusedId = episode.PodcasterId;
+                                if (accusedId != parameter.AccountId)
+                                {
+                                    throw new Exception($"The logged in account Id: {parameter.AccountId} is not authorized to perform this action this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
+                                }
+                            }
+
+                            //Validate DMCA Accusation status
+                            var currentStatus4 = dmcaAccusation.DmcaaccusationStatusTrackings
+                                .OrderByDescending(dast => dast.CreatedAt)
+                                .First()
+                                .DmcaAccusationStatusId;
+                            if (currentStatus4 >= (int)DMCAAccusationStatusEnum.LawsuitFiled)
+                            {
+                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation that havent file a lawsuit can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
+                            }
+
+                            //Send Confirm email to Accused
+
+                            //Send Email to Accuser
+
+                            //Remove Content
+                            if (dmcaAccusation.PodcastShowId != null)
+                            {
+                                var removeShowRequestData1 = new JObject
+                                {
+                                    { "PodcastShowId", dmcaAccusation.PodcastShowId.Value }
+                                };
+                                var showRemoveStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: removeShowRequestData1,
+                                    sagaInstanceId: null,
+                                    messageName: "remove-show-flow");
+                                var showRemoveResult1 = await _messagingService.SendSagaMessageAsync(showRemoveStartSagaTriggerMessage1);
+                                _logger.LogInformation($"Send remove-show-flow with Saga Id: {showRemoveStartSagaTriggerMessage1.SagaInstanceId}");
+                            } else if (dmcaAccusation.PodcastEpisodeId != null)
+                            {
+                                //Take down Episode
+                                var removeEpisodeRequestData1 = new JObject
+                                {
+                                    { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId.Value }
+                                };
+                                var episodeRemoveStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: removeEpisodeRequestData1,
+                                    sagaInstanceId: null,
+                                    messageName: "remove-episode-flow");
+                                var episodeRemoveResult1 = await _messagingService.SendSagaMessageAsync(episodeRemoveStartSagaTriggerMessage1);
+                                _logger.LogInformation($"Send remove-episode-flow with Saga Id: {episodeRemoveStartSagaTriggerMessage1.SagaInstanceId}");
+                            };
+
+                            //Punish Accused (A -200 point)
+                            var accuserPunishmentRequestData2 = new JObject
+                            {
+                                { "AccountId", accusedId },
+                                { "ViolationPoint", 200 }
+                            };
+                            var accountPunishmentStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.UserManagementDomain,
+                                requestData: accuserPunishmentRequestData2,
+                                sagaInstanceId: null,
+                                messageName: "user-violation-punishment-flow");
+                            var accountPunishmentResult2 = await _messagingService.SendSagaMessageAsync(accountPunishmentStartSagaTriggerMessage2);
+                            _logger.LogInformation($"Send user-violation-punishment-flow with Saga Id: {accountPunishmentStartSagaTriggerMessage2.SagaInstanceId}");
+
+                            //Switch Status
+                            var permanentTakeDownDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                            {
+                                DmcaAccusationId = dmcaAccusation.Id,
+                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.TakeDownPermanent,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(permanentTakeDownDmcaAccusationStatusTracking);
+                            dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
+                            break;
+                        case (int)DMCAAccusationQueryEnum.COUNTER_ACCEPTED:
+                            //Validate Staff Account
+                            if (dmcaAccusation.AssignedStaff != parameter.AccountId)
+                            {
+                                throw new Exception($"The logged in staff Id: {parameter.AccountId} is not authorized to update this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
+                            }
+
+                            //Validate DMCA Accusation status
+                            var currentStatus5 = dmcaAccusation.DmcaaccusationStatusTrackings
+                                .OrderByDescending(dast => dast.CreatedAt)
+                                .First()
+                                .DmcaAccusationStatusId;
+                            if (currentStatus5 != (int)DMCAAccusationStatusEnum.CounterReviewing)
+                            {
+                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation that has counter notice in reviewing can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
+                            }
+
+                            //Send email to Accuser
+
+                            //Switch Status
+                            var counterAcceptedDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                            {
+                                DmcaAccusationId = dmcaAccusation.Id,
+                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.LawsuitPending,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(counterAcceptedDmcaAccusationStatusTracking);
+                            dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
+                            break;
+                        case (int)DMCAAccusationQueryEnum.COUNTER_REJECTED:
+                            //Validate Staff Account
+                            if (dmcaAccusation.AssignedStaff != parameter.AccountId)
+                            {
+                                throw new Exception($"The logged in staff Id: {parameter.AccountId} is not authorized to update this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
+                            }
+
+                            //Validate DMCA Accusation status
+                            var currentStatus6 = dmcaAccusation.DmcaaccusationStatusTrackings
+                                .OrderByDescending(dast => dast.CreatedAt)
+                                .First()
+                                .DmcaAccusationStatusId;
+                            if (currentStatus6 != (int)DMCAAccusationStatusEnum.CounterReviewing)
+                            {
+                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation that has counter notice in reviewing can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
+                            }
+
+                            //Send email to Accused
+
+                            //Send email to Accuser
+
+                            if(dmcaAccusation.PodcastShowId != null)
+                            {
+                                var show = await GetPodcastShow(dmcaAccusation.PodcastShowId.Value);
+                                accusedId = show.PodcasterId;
+                            }
+                            if (dmcaAccusation.PodcastEpisodeId != null)
+                            {
+                                var episode = await GetPodcastShow(dmcaAccusation.PodcastEpisodeId.Value);
+                                accusedId = episode.PodcasterId;
+                            }
+
+                            //Punish Accused (A -10 point)
+                            var accuserPunishmentRequestData3 = new JObject
+                            {
+                                { "AccountId", accusedId },
+                                { "ViolationPoint", 10 }
+                            };
+                            var accountPunishmentStartSagaTriggerMessage3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.UserManagementDomain,
+                                requestData: accuserPunishmentRequestData3,
+                                sagaInstanceId: null,
+                                messageName: "user-violation-punishment-flow");
+                            var accountPunishmentResult3 = await _messagingService.SendSagaMessageAsync(accountPunishmentStartSagaTriggerMessage3);
+                            _logger.LogInformation($"Send user-violation-punishment-flow with Saga Id: {accountPunishmentStartSagaTriggerMessage3.SagaInstanceId}");
+
+                            //Remove Content
+                            if (dmcaAccusation.PodcastShowId != null)
+                            {
+                                var removeShowRequestData2 = new JObject
+                                {
+                                    { "PodcastShowId", dmcaAccusation.PodcastShowId.Value }
+                                };
+                                var showRemoveStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: removeShowRequestData2,
+                                    sagaInstanceId: null,
+                                    messageName: "remove-show-flow");
+                                var showRemoveResult2 = await _messagingService.SendSagaMessageAsync(showRemoveStartSagaTriggerMessage2);
+                                _logger.LogInformation($"Send remove-show-flow with Saga Id: {showRemoveStartSagaTriggerMessage2.SagaInstanceId}");
+                            }
+                            else if (dmcaAccusation.PodcastEpisodeId != null)
+                            {
+                                //Take down Episode
+                                var removeEpisodeRequestData2 = new JObject
+                                {
+                                    { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId.Value }
+                                };
+                                var episodeRemoveStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: removeEpisodeRequestData2,
+                                    sagaInstanceId: null,
+                                    messageName: "remove-episode-flow");
+                                var episodeRemoveResult2 = await _messagingService.SendSagaMessageAsync(episodeRemoveStartSagaTriggerMessage2);
+                                _logger.LogInformation($"Send remove-episode-flow with Saga Id: {episodeRemoveStartSagaTriggerMessage2.SagaInstanceId}");
+                            };
+                            break;
+                        case (int)DMCAAccusationQueryEnum.LAWSUIT_VERIFIED:
+                            break;
+                        case (int)DMCAAccusationQueryEnum.LAWSUIT_REJECTED:
+                            break;
+                        case (int)DMCAAccusationQueryEnum.DMCA_WINS:
+                            break;
+                        case (int)DMCAAccusationQueryEnum.COUNTER_WINS:
+                            break;
+                        default:
+                            throw new Exception("DMCAAccusationAction not recognize");
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = new JObject
+                        {
+                            { "StaffAccountId", dmcaAccusation.AssignedStaff },
+                            { "DMCAAccusationId", dmcaAccusation.Id },
+                            { "DMCAAccusationAction", Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction) },
+                            { "UpdatedAt", dmcaAccusation.UpdatedAt }
+                        };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.DmcaManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Update DMCA Accusation status for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Updating DMCA Accusation for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Update DMCA Accusation failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.DmcaManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Update DMCA Accusation failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
         }
-        public async Task<JObject?> GetPodcastEpisode(Guid podcastEpisodeId)
+        private async Task<(bool isValid, string errorMessage)> ValidateEpisode(Guid podcastEpisodeId)
+        {
+            var episode = await GetPodcastEpisode(podcastEpisodeId);
+            if (episode == null)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is not found");
+            }
+            var (isValid, errorMessage) = await ValidateShow(episode.PodcastShowId, podcastEpisodeId);
+            if (!isValid)
+            {
+                return (isValid, errorMessage);
+            }
+            if (episode.DeletedAt != null)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} has already been deleted");
+            }
+            var episodeStatusId = episode.PodcastEpisodeStatusTrackings.OrderByDescending(es => es.CreatedAt).Select(es => es.PodcastEpisodeStatusId).First();
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.Draft)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is in Draft status");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.PendingReview)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is pending review");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.PendingEditRequired)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} is pending edit required");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} has been taken down");
+            }
+            if (episodeStatusId == (int)PodcastEpisodeStatusEnum.Removed)
+            {
+                return (false, $"Podcast episode with Id: {podcastEpisodeId} has been removed");
+            }
+            return (true, string.Empty);
+        }
+        private async Task<(bool isValid, string errorMessage)> ValidateShow(Guid podcastShowId, Guid? podcastEpisodeId = null)
+        {
+            var insideMessage = podcastEpisodeId != null ? $" for Episode Id: {podcastEpisodeId}" : string.Empty;
+            var show = await GetPodcastShow(podcastShowId);
+            if (show == null)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} is not found {insideMessage}");
+            }
+            if (show.PodcastChannelId != null)
+            {
+                var (isValid, errorMessage) = await ValidateChannel(show.PodcastChannelId.Value, podcastShowId, podcastEpisodeId);
+                if (!isValid)
+                {
+                    return (isValid, errorMessage);
+                }
+            }
+            if (show.DeletedAt != null)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} has already been deleted {insideMessage}");
+            }
+            var showStatusId = show.PodcastShowStatusTrackings.OrderByDescending(ss => ss.CreatedAt).Select(ss => ss.PodcastShowStatusId).First();
+            if (showStatusId == (int)PodcastShowStatusEnum.Draft)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} is in Draft status {insideMessage}");
+            }
+            if (showStatusId == (int)PodcastShowStatusEnum.TakenDown)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} has been taken down {insideMessage}");
+            }
+            if (showStatusId == (int)PodcastShowStatusEnum.Removed)
+            {
+                return (false, $"Podcast show with Id: {podcastShowId} has been removed {insideMessage}");
+            }
+            return (true, string.Empty);
+        }
+        private async Task<(bool isValid, string errorMessage)> ValidateChannel(Guid podcastChannelId, Guid? podcastShowId = null, Guid? podcastEpisodeId = null)
+        {
+            var insideMessage = podcastEpisodeId != null
+                ? $" for Episode Id: {podcastEpisodeId}"
+                : (podcastShowId != null
+                    ? $" for Show Id: {podcastShowId}"
+                    : string.Empty);
+            var channel = await GetPodcastChannel(podcastChannelId);
+            if (channel == null)
+            {
+                return (false, $"Podcast channel with Id: {podcastChannelId} is not found {insideMessage}");
+            }
+            if (channel.DeletedAt != null)
+            {
+                return (false, $"Podcast channel with Id: {podcastChannelId} has already been deleted {insideMessage}");
+            }
+            var channelStatusId = channel.PodcastChannelStatusTrackings.OrderByDescending(cs => cs.CreatedAt).Select(cs => cs.PodcastChannelStatusId).First();
+            if (channelStatusId == (int)PodcastChannelStatusEnum.Unpublished)
+            {
+                return (false, $"Podcast channel with Id: {podcastChannelId} is in Draft status {insideMessage}");
+            }
+            return (true, string.Empty);
+        }
+        public async Task<PodcastEpisodeDTO?> GetPodcastEpisode(Guid podcastEpisodeId)
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -502,17 +964,76 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 where = new
                                 {
                                     Id = podcastEpisodeId
-                                }
-                            }),
-                            Fields = new[] { "Id", "Name", "MainImageFileKey" }
+                                },
+                                include = "PodcastEpisodeStatusTracking"
+                            })
                         }
                     }
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            return result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
+            var realResult = result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
                 ? podcastEpisodeArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<PodcastEpisodeDTO>() : null;
+        }
+        public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastChannel",
+                            QueryType = "findall",
+                            EntityType = "PodcastChannel",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastChannelId
+                                },
+                                include = "PodcastChannelStatusTracking"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                ? podcastChannelArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
+        }
+        public async Task<PodcastShowDTO?> GetPodcastShow(Guid podcastShowId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastShowId
+                                },
+                                include = "PodcastShowStatusTracking"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                ? podcastShowArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
         }
         public async Task<DmcaaccusationStatusTracking> CreateDMCAAccusationStatusTracking(DmcaaccusationStatusTracking status)
         {
@@ -520,7 +1041,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             {
                 try
                 {
+                    var dmcaAccusation = await _dmcaAccusationGenericRepository.FindByIdAsync(status.DmcaAccusationId);
                     var result = await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(status);
+                    dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                    await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
                     await transaction.CommitAsync();
                     _logger.LogInformation("Created DMCA Accusation Status Tracking with ID: {DmcaAccusationStatusTrackingId}", result.Id);
                     return result;

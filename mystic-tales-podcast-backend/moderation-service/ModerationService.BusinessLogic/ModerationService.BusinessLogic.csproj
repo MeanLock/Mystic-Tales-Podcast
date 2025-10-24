@@ -16,7 +16,6 @@
     <Folder Include="Exceptions\" />
     <Folder Include="Services\BackgroundServices\interfaces\" />
     <Folder Include="Services\DbServices\MiscServices\" />
-    <Folder Include="Services\DbServices\DMCAServices\" />
   </ItemGroup>
 
   <ItemGroup>

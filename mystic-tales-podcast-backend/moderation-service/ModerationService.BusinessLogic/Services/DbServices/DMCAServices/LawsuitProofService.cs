@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using ModerationService.BusinessLogic.DTOs.LawsuitProof.Details;
 using ModerationService.BusinessLogic.DTOs.LawsuitProof.ListItems;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateLawsuitProof;
+using ModerationService.BusinessLogic.Enums.DMCA;
 using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Helpers.DateHelpers;
 using ModerationService.BusinessLogic.Helpers.FileHelpers;
@@ -203,7 +204,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var newDmcaStatusTracking = new DmcaaccusationStatusTracking
                     {
                         DmcaAccusationId = createdLawsuitProof.DmcaAccusationId,
-                        DmcaAccusationStatusId = 8,
+                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.LawsuitFiled,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
 

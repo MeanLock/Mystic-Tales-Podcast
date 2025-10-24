@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Proxies.Internal;
-using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport;
+using ModerationService.BusinessLogic.DTOs.Snippet;
 using System;
 using System.Collections.Generic;
 using System.Linq;

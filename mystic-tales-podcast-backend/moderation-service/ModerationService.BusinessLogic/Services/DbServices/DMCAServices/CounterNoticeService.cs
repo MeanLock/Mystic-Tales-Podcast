@@ -5,6 +5,7 @@ using ModerationService.BusinessLogic.DTOs.CounterNotice.ListItems;
 using ModerationService.BusinessLogic.DTOs.DMCANotice.Details;
 using ModerationService.BusinessLogic.DTOs.DMCANotice.ListItems;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateCounterNotice;
+using ModerationService.BusinessLogic.Enums.DMCA;
 using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Helpers.DateHelpers;
 using ModerationService.BusinessLogic.Helpers.FileHelpers;
@@ -165,7 +166,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var newDmcaStatusTracking = new DmcaaccusationStatusTracking
                     {
                         DmcaAccusationId = createdCounterNotice.DmcaAccusationId,
-                        DmcaAccusationStatusId = 6,
+                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.CounterReviewing,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
 
@@ -174,6 +175,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         throw new Exception("Failed to created dmca status tracking");
                     }
+
+                    //Send confirm email to accused
 
                     await transaction.CommitAsync();
 

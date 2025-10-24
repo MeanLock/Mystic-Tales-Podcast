@@ -4,6 +4,7 @@ using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.Ass
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateCounterNotice;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusation;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateLawsuitProof;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.UpdateDMCAAccusationStatus;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreatePodcastBuddyReport;
 using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Services.DbServices.DMCAServices;
@@ -28,8 +29,8 @@ namespace ModerationService.BusinessLogic.MessageHandlers
         private readonly LawsuitProofService _lawsuitProofService;
         private const string SAGA_TOPIC = KafkaTopicEnum.DmcaManagementDomain;
         public DMCAManagementDomainMessageHandler(
-            IMessagingService messagingService, 
-            KafkaProducerService kafkaProducerService, 
+            IMessagingService messagingService,
+            KafkaProducerService kafkaProducerService,
             ILogger<DMCAManagementDomainMessageHandler> logger,
             DMCAAccusationService dmcaAccusationService,
             DMCANoticeService dmcaNoticeService,
@@ -100,6 +101,21 @@ namespace ModerationService.BusinessLogic.MessageHandlers
                },
                responseTopic: SAGA_TOPIC,
                failedEmitMessage: "assign-dmca-accusation-to-staff.failed"
+           );
+        }
+        [MessageHandler("update-dmca-accusation-status", SAGA_TOPIC)]
+        public async Task HandleUpdateDMCAAccusationStatusAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<UpdateDMCAAccusationStatusParameterDTO>();
+                   await _dmcaAccusationService.UpdateDMCAAccusationStatusAsync(parameter, command);
+                   _logger.LogInformation("Handled update-dmca-accusation-status command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "update-dmca-accusation-status.failed"
            );
         }
     }

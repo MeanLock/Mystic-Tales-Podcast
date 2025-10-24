@@ -5,6 +5,7 @@ using ModerationService.API.Filters.ExceptionFilters;
 using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport;
+using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Models.CrossService;
 using ModerationService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using ModerationService.BusinessLogic.Services.DbServices.ReportServices;
@@ -25,7 +26,7 @@ namespace ModerationService.API.Controllers.BaseControllers
         private readonly PodcastBuddyReportService _podcastBuddyReportService;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
-
+        private const string SAGA_TOPIC = KafkaTopicEnum.ReportManagementDomain;
         public BuddyReportController(
             GenericQueryService genericQueryService, 
             HttpServiceQueryClient httpServiceQueryClient,
@@ -78,7 +79,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 { "Content", request.BuddyReportCreateInfo.Content }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "report-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "podcast-buddy-report-submission-flow");
@@ -145,7 +146,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 { "PodcastBuddyReportReviewSessionId", PodcastBuddyReportReviewSessionId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: "report-management-domain",
+                topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
                 messageName: "podcast-buddy-report-resolve-flow");
