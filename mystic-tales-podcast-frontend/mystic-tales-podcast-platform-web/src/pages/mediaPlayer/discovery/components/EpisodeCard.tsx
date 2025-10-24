@@ -46,18 +46,18 @@ const EpisodeCard = ({ episode }: { episode: EpisodeCardProps["episode"] }) => {
   return (
     <div
       style={{ backgroundImage: `url(${episode.ImageUrl})` }}
-      className="bg-cover w-full aspect-[3/4] rounded-md relative transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+      className="bg-cover w-full aspect-[3/4] rounded-xl relative transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >
       <div className="w-full aspect-square">
         <img
           src={episode.ImageUrl}
-          className="w-full aspect-square object-cover rounded-t-md"
+          className="w-full aspect-square object-cover rounded-t-xl"
         />
       </div>
 
       <div
         className="
-            rounded-b-md
+            rounded-b-xl
             pointer-events-none absolute inset-0
             backdrop-blur-[200px] backdrop-saturate-200
             [mask-image:linear-gradient(to_top,black_30%,transparent_100%)]
@@ -67,7 +67,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeCardProps["episode"] }) => {
 
       <div
         className="
-            rounded-md
+            rounded-xl
             pointer-events-none absolute inset-0
             bg-gradient-to-t from-black/50 via-transparent/30 to-transparent
             [mask-image:linear-gradient(to_top,black_70%,transparent_100%)]
@@ -78,7 +78,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeCardProps["episode"] }) => {
         <div className="w-full flex items-center justify-start">
           <img
             src={episode.Show.ImageUrl}
-            className="w-10 h-10 rounded-md aspect-square object-cover shadow-sm"
+            className="w-10 h-10 rounded-xl aspect-square object-cover shadow-sm"
           />
         </div>
 
@@ -94,7 +94,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeCardProps["episode"] }) => {
           </p>
         </div>
         <div className="w-full flex items-center justify-between">
-          <div className="px-5 py-1 gap-1 bg-white rounded-2xl flex items-center justify-center">
+          <div className="px-5 py-1 gap-1 bg-white rounded-xl flex items-center justify-center">
             <IoPlay size={15} color="#333" />
             <p className="font-poppins m-0 text-sm font-semibold text-[#333]">
               {formatAudioLength(episode.AudioLength)}

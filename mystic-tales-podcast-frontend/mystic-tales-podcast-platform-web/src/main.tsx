@@ -15,10 +15,28 @@ import AuthLayout from "./layouts/auth/index.tsx";
 import LoginPage from "./pages/auth/login/index.tsx";
 import RegisterPage from "./pages/auth/register/index.tsx";
 import ForgotPasswordPage from "./pages/auth/forgot-password/index.tsx";
+import TestAPILoginPage from "./pages/auth/testAPILogin/index.tsx";
 import { store, persistor } from "./redux/store.ts";
 import MediaPlayerLayout from "./layouts/mediaPlayer/index.tsx";
 import DiscoveryPage from "./pages/mediaPlayer/discovery/index.tsx";
 import TrendingPage from "./pages/mediaPlayer/trending/index.tsx";
+import PlayerCore from "./core/services/player/playerCore.tsx";
+import CategoryPage from "./pages/mediaPlayer/category/index.tsx";
+import CategoryDetailsPage from "./pages/mediaPlayer/category/details/index.tsx";
+import SearchPage from "./pages/mediaPlayer/search/index.tsx";
+import PodcastersPage from "./pages/mediaPlayer/podcasters/index.tsx";
+import PodcasterDetailsPage from "./pages/mediaPlayer/podcasters/details/index.tsx";
+import RecentPage from "./pages/mediaPlayer/library/recent/index.tsx";
+import SavedPage from "./pages/mediaPlayer/library/saved/index.tsx";
+import SubscribedChannelsPage from "./pages/mediaPlayer/library/subscribed-channels/index.tsx";
+import SubscribedShowsPage from "./pages/mediaPlayer/library/subscribed-shows/index.tsx";
+import FollowedPodcastersPage from "./pages/mediaPlayer/library/followed-podcasters/index.tsx";
+import BookingsPage from "./pages/mediaPlayer/management/booking/index.tsx";
+import BookingDetailsPage from "./pages/mediaPlayer/management/booking/details/index.tsx";
+import TopUpPage from "./pages/mediaPlayer/management/transaction/top-up/index.tsx";
+import WithDrawPage from "./pages/mediaPlayer/management/transaction/withdraw/index.tsx";
+import ManagementSubscriptionsPage from "./pages/mediaPlayer/management/transaction/subscriptions/index.tsx";
+import ProfilePage from "./pages/mediaPlayer/management/profile/index.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -95,6 +113,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
+        <PlayerCore />
         <BrowserRouter>
           <Routes>
             {/* 1️⃣ NORMAL LAYOUT */}
@@ -113,11 +132,54 @@ createRoot(document.getElementById("root")!).render(
                 path="forgot-password/step-:step"
                 element={<ForgotPasswordPage />}
               />
+              <Route path="test-login" element={<TestAPILoginPage />} />
             </Route>
 
             <Route path="/media-player" element={<MediaPlayerLayout />}>
+              {/* Normal */}
               <Route path="discovery" element={<DiscoveryPage />} />
               <Route path="trending" element={<TrendingPage />} />
+              <Route path="categories" element={<CategoryPage />} />
+              <Route path="categories/:id" element={<CategoryDetailsPage />} />
+              <Route path="search" element={<SearchPage />} />
+              <Route path="podcasters" element={<PodcastersPage />} />
+              <Route path="podcasters/:id" element={<PodcasterDetailsPage />} />
+
+              {/* Library */}
+              <Route path="library/recent" element={<RecentPage />} />
+              <Route path="library/saved" element={<SavedPage />} />
+              <Route
+                path="library/subscribed-channels"
+                element={<SubscribedChannelsPage />}
+              />
+              <Route
+                path="library/subscribed-shows"
+                element={<SubscribedShowsPage />}
+              />
+              <Route
+                path="library/followed-podcasters"
+                element={<FollowedPodcastersPage />}
+              />
+
+              {/* Management */}
+              <Route path="management/bookings" element={<BookingsPage />} />
+              <Route path="management/profile" element={<ProfilePage />} />
+              <Route
+                path="management/bookings/:id"
+                element={<BookingDetailsPage />}
+              />
+              <Route
+                path="management/transactions/top-up"
+                element={<TopUpPage />}
+              />
+              <Route
+                path="management/transactions/withdraw"
+                element={<WithDrawPage />}
+              />
+              <Route
+                path="management/transactions/subscriptions"
+                element={<ManagementSubscriptionsPage />}
+              />
             </Route>
           </Routes>
         </BrowserRouter>

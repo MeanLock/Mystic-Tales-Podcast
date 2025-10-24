@@ -1,9 +1,9 @@
 "use client";
 import { FaRegCompass } from "react-icons/fa";
-import { FiBarChart2 } from "react-icons/fi";
+import { FiBarChart2, FiInfo } from "react-icons/fi";
 import { BiCategoryAlt } from "react-icons/bi";
 import { TbMusicSearch } from "react-icons/tb";
-import { IoMdMicrophone } from "react-icons/io";
+import { IoIosNotificationsOutline, IoMdMicrophone } from "react-icons/io";
 import { RiHistoryLine } from "react-icons/ri";
 import { FaHeart } from "react-icons/fa";
 import { RiSlideshow4Line } from "react-icons/ri";
@@ -11,7 +11,11 @@ import { CgMediaPodcast } from "react-icons/cg";
 import { BsPersonCheck } from "react-icons/bs";
 import { PiReceipt } from "react-icons/pi";
 import { TbTransactionDollar } from "react-icons/tb";
-import { MdOutlinePayments } from "react-icons/md";
+import {
+  MdNotificationsNone,
+  MdNotificationsPaused,
+  MdOutlinePayments,
+} from "react-icons/md";
 import { PiHandWithdrawBold } from "react-icons/pi";
 import { MdOutlineSubscriptions } from "react-icons/md";
 import { AiOutlineHome } from "react-icons/ai";
@@ -21,6 +25,16 @@ import { MdOutlineNavigateNext } from "react-icons/md";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
 import { SidebarNavItems } from "./SideBarNavItem";
+import { GrCircleQuestion } from "react-icons/gr";
+import { IoInformationCircleOutline } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  PopoverPortal,
+} from "@radix-ui/react-popover";
 
 const navItems = [
   {
@@ -50,7 +64,7 @@ const navItems = [
         iconActive: <BiCategoryAlt color="#fff" size={15} />,
         iconWhenSmall: <BiCategoryAlt color="#333" size={11} />,
         name: "Category",
-        to: "/media-player/category",
+        to: "/media-player/categories",
         isSubItemsContain: false,
         subItems: [],
       },
@@ -184,53 +198,127 @@ const navItems = [
         isSubItemsContain: false,
         subItems: [],
       },
+      {
+        icon: <GrCircleQuestion color="#fff" size={11} />,
+        iconActive: <GrCircleQuestion color="#fff" size={15} />,
+        iconWhenSmall: <GrCircleQuestion color="#333" size={11} />,
+        name: "FAQs",
+        to: "/faqs",
+        isSubItemsContain: false,
+        subItems: [],
+      },
+      {
+        icon: <FiInfo color="#fff" size={11} />,
+        iconActive: <FiInfo color="#fff" size={15} />,
+        iconWhenSmall: <FiInfo color="#333" size={11} />,
+        name: "About Us",
+        to: "/about",
+        isSubItemsContain: false,
+        subItems: [],
+      },
     ],
   },
 ];
 
 const MediaPlayerSidebar = () => {
   const user = useSelector((state: RootState) => state.auth.user);
+  const navigate = useNavigate();
+
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notifications, setNotifications] = useState<Array<any>>([]);
 
   return (
     <div
       className="
-        bg-white/10 backdrop-blur-[5px] shadow-2xl
+        bg-white/10 backdrop-blur-[10px] shadow-2xl
         flex flex-col items-center justify-between gap-5
-        min-w-[50px] rounded-md py-3 px-2
+        min-w-[50px] rounded-xl py-3 px-2
         sm:w-[80px]
-        md:w-[290px] md:rounded-xl md:p-5
+        md:w-[290px] md:rounded-3xl md:p-5
         h-full
         md:h-[734px]
-        overflow-y-auto
-        [&::-webkit-scrollbar]:hidden
-        [-ms-overflow-style:none]
-        [scrollbar-width:none]
       "
     >
       {/* Mystic Tales Logo */}
       <div
         className="
         flex items-center justify-center gap-2 mb-2
-        md:justify-start
+        md:justify-between
         w-full 
       "
       >
-        <div className="">
-          <img
-            src="/images/logo/logo.png"
-            className="
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <div>
+            <img
+              src="/images/logo/logo.png"
+              className="
                 md:w-12 md:h-12
                 sm:w-12 sm:h-12
                 w-8 h-8 
                 rounded-full object-cover
             "
-          />
+            />
+          </div>
+          <div className="hidden md:inline-block">
+            <p className="font-poppins font-bold text-white">Mystic Tale</p>
+            <p className="text-sm italic font-poppins font-md text-white">
+              Podcast
+            </p>
+          </div>
         </div>
-        <div className="hidden md:inline-block">
-          <p className="font-poppins font-bold text-white">Mystic Tale</p>
-          <p className="text-sm italic font-poppins font-md text-white">
-            Podcast
-          </p>
+
+        <div className="z-50">
+          {/* Notification Modal */}
+          <Popover
+            open={showNotificationModal}
+            onOpenChange={setShowNotificationModal}
+          >
+            {/* chỉ icon mới toggle */}
+            <PopoverTrigger asChild>
+              {showNotificationModal ? (
+                <div className="flex items-center justify-center p-2 bg-gray-300/30 text-white rounded-full cursor-pointer">
+                  <MdNotificationsNone size={25} />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center p-2 hover:bg-gray-300/30 text-[#d9d9d9] hover:text-white rounded-full cursor-pointer">
+                  <MdNotificationsNone size={25} />
+                </div>
+              )}
+            </PopoverTrigger>
+
+            <PopoverPortal>
+              <PopoverContent
+                side="bottom" // mở phía bên trái icon
+                align="start" // căn theo giữa icon
+                sideOffset={5} // cách icon 12px
+                collisionPadding={2}
+                className="
+                  w-[300px] h-96 rounded-2xl shadow-2xl
+                  bg-[#333] backdrop-blur-lg border border-white/10
+                  text-white
+                  flex flex-col 
+                  z-[9999]
+                "
+              >
+                <div className="p-3 w-full flex items-center">
+                  <p className="font-semibold">Notifications</p>
+                </div>
+
+                {/* Danh sách thông báo */}
+                {notifications.length === 0 ? (
+                  <div className="flex-1 w-full flex flex-col items-center justify-center p-5">
+                    <IoIosNotificationsOutline color="#d9d9d9" size={150} />
+                    <p className="text-[#d9d9d9]">No notifications</p>
+                    <p className="text-center text-xs text-[#d9d9d9]">
+                      Any notifications will be display here...
+                    </p>
+                  </div>
+                ) : (
+                  <p>Heheheh</p>
+                )}
+              </PopoverContent>
+            </PopoverPortal>
+          </Popover>
         </div>
       </div>
 
@@ -238,7 +326,10 @@ const MediaPlayerSidebar = () => {
 
       {/* User Informations */}
       {user ? (
-        <div className="w-full flex items-center justify-center md:justify-start md:gap-2 cursor-pointer">
+        <div
+          onClick={() => navigate("/media-player/management/profile")}
+          className="w-full flex items-center justify-center md:justify-start md:gap-2 cursor-pointer hover:bg-white/20 py-2 px-2 rounded-lg"
+        >
           <div className="flex items-center justify-center">
             <img
               src={user.ImageUrl || "/placeholder.svg"}
@@ -248,9 +339,9 @@ const MediaPlayerSidebar = () => {
           <div className="hidden md:inline-block">
             <p className="font-bold text-white text-[15px]">{user.FullName}</p>
             <div className="flex items-center gap-1">
-              <TbCoinFilled color="#aae339" size={18} />
-              <p className="text-sm font-bold text-mystic-green">
-                {user.Balance.toLocaleString("vn")} đ
+              <TbCoinFilled color="#aae339" size={14} />
+              <p className="text-sm font-semibold text-mystic-green">
+                {user.Balance.toLocaleString("vn")}
               </p>
             </div>
           </div>

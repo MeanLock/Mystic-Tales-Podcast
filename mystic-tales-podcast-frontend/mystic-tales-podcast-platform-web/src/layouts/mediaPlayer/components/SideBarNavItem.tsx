@@ -207,6 +207,8 @@ export const SidebarNavItems: React.FC<SidebarNavItemsProps> = ({
           </div>
         );
       })}
+
+      <p>Become Podcaster</p>
     </div>
   );
 };

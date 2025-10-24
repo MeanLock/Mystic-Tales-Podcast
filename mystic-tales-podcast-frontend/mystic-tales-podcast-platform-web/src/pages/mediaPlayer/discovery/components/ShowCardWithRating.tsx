@@ -3,7 +3,7 @@ import { FaStar } from "react-icons/fa";
 
 interface CardProps {
   card: {
-    Id: number;
+    Id: string;
     Name: string;
     ImageUrl: string;
     Podcaster: {

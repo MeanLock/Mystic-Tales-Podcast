@@ -7,7 +7,7 @@ export type CurrentAudioFromApi = {
   MainFileKey: string;
   MainImageFileKey: string;
   PodcasterName: string;
-  Show: { Id: number; Name: string };
+  Show: { Id: string; Name: string };
 } | null;
 
 export type CurrentAudioUI = {
@@ -19,7 +19,7 @@ export type CurrentAudioUI = {
   FileUrl: string;
   ImageUrl: string;
   PodcasterName: string;
-  Show: { Id: number; Name: string };
+  Show: { Id: string; Name: string };
 } | null;
 
 export type QueuedAudio = {
@@ -31,7 +31,7 @@ export type QueuedAudio = {
   FileUrl: string;
   ImageUrl: string;
   PodcasterName: string;
-  Show: { Id: number; Name: string };
+  Show: { Id: string; Name: string };
 };
 
 export type QueuedAudioWithNoIndex = Omit<QueuedAudio, "Index">;
@@ -44,4 +44,5 @@ export type AddToQueuePayload = {
 export type PlayMode = {
   playStatus: "stop" | "pause" | "play";
   nextMode: "normal" | "show" | "saved" | "bookings";
+  volume: number;
 };

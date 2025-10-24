@@ -14,6 +14,7 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: (headers) => {
     // KHÔNG gắn token ở đây (để 3-mode tự quyết ở wrapper)
+    headers.set("ngrok-skip-browser-warning", "69420");
     return headers;
   },
 });

@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 interface CardProps {
   card: {
-    Id: number;
+    Id: string;
     Name: string;
     ImageUrl: string;
     Podcaster: {

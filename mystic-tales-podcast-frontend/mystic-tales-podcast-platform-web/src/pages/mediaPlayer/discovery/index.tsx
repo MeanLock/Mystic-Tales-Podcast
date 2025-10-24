@@ -19,40 +19,40 @@ import { ca } from "zod/v4/locales";
 import EpisodeCard from "./components/EpisodeCard";
 
 type YouMightLikeItShow = {
-  Id: number;
+  Id: string;
   ImageUrl: string;
 };
 
 const youMightLikeItData: YouMightLikeItShow[] = [
   {
-    Id: 1,
+    Id: "1",
     ImageUrl:
       "https://i.pinimg.com/736x/3c/af/ff/3cafff2e5ca0a4bcd96116afdae2a78b.jpg",
   },
   {
-    Id: 2,
+    Id: "2",
     ImageUrl:
       "https://i.pinimg.com/1200x/5f/f4/83/5ff483cf28501863e5415cd1546951de.jpg",
   },
   {
-    Id: 3,
+    Id: "3",
     ImageUrl:
       "https://i.pinimg.com/736x/e6/27/23/e62723569055c73d144400159652c87f.jpg",
   },
   {
-    Id: 4,
+    Id: "4",
     ImageUrl:
       "https://i.pinimg.com/736x/a0/fb/4d/a0fb4daeaee5f4422ebc488feff5e4a3.jpg",
   },
   {
-    Id: 5,
+    Id: "5",
     ImageUrl:
       "https://i.pinimg.com/736x/1b/b6/e3/1bb6e3635d8f5821603aa40638ae4e69.jpg",
   },
 ];
 
 type NewShow = {
-  Id: number;
+  Id: string;
   Name: string;
   ImageUrl: string;
   Podcaster: {
@@ -63,7 +63,7 @@ type NewShow = {
 
 const newShowsData: NewShow[] = [
   {
-    Id: 1,
+    Id: "1",
     Name: "Rồi Ta Sẽ Quên",
     ImageUrl:
       "https://i.pinimg.com/1200x/98/13/c4/9813c4234a5ea4149442a5e2aa3a84df.jpg",
@@ -73,7 +73,7 @@ const newShowsData: NewShow[] = [
     },
   },
   {
-    Id: 2,
+    Id: "2",
     Name: "Sa Mạc Giữa Đại Dương",
     ImageUrl:
       "https://i.pinimg.com/1200x/3f/a7/33/3fa73394e01c499d2d0059bb68a4c6e4.jpg",
@@ -83,7 +83,7 @@ const newShowsData: NewShow[] = [
     },
   },
   {
-    Id: 3,
+    Id: "3",
     Name: "Ngày Chưa Quên Mất",
     ImageUrl:
       "https://i.pinimg.com/736x/be/33/a1/be33a1612ca1402bf0450687f0665ebb.jpg",
@@ -93,7 +93,7 @@ const newShowsData: NewShow[] = [
     },
   },
   {
-    Id: 4,
+    Id: "4",
     Name: "Tòa Thị Chính",
     ImageUrl:
       "https://i.pinimg.com/1200x/c7/59/0b/c7590b3e16bfd8e841dd33e1b3c87da4.jpg",
@@ -103,7 +103,7 @@ const newShowsData: NewShow[] = [
     },
   },
   {
-    Id: 5,
+    Id: "5",
     Name: "Chiều Không Gian thứ 361",
     ImageUrl:
       "https://i.pinimg.com/736x/22/1d/5a/221d5a5e7f00224ee69ee5252fb054d3.jpg",
@@ -113,7 +113,7 @@ const newShowsData: NewShow[] = [
     },
   },
   {
-    Id: 6,
+    Id: "6",
     Name: "SkyFall",
     ImageUrl:
       "https://i.pinimg.com/736x/5e/aa/84/5eaa84f7c503a07e7d54c8b8f56321a9.jpg",
@@ -123,7 +123,7 @@ const newShowsData: NewShow[] = [
     },
   },
   {
-    Id: 7,
+    Id: "7",
     Name: "Cánh Chim Cuối Cùng",
     ImageUrl:
       "https://i.pinimg.com/736x/d4/15/71/d41571849b4aeacb01649b10753306cf.jpg",
@@ -245,7 +245,7 @@ const newEpisodesData: NewEpisode[] = [
 ];
 
 type HighlyRatedShow = {
-  Id: number;
+  Id: string;
   Name: string;
   ImageUrl: string;
   Podcaster: {
@@ -258,7 +258,7 @@ type HighlyRatedShow = {
 
 const higlyRatedShowsData: HighlyRatedShow[] = [
   {
-    Id: 8,
+    Id: "8",
     Name: "Chạy Khỏi Nhân Gian",
     ImageUrl:
       "https://i.pinimg.com/736x/8a/d5/bd/8ad5bd9c9874dc1220e872eeb35727ae.jpg",
@@ -270,7 +270,7 @@ const higlyRatedShowsData: HighlyRatedShow[] = [
     RatingCount: 224100,
   },
   {
-    Id: 9,
+    Id: "9",
     Name: "Mất Kết Nối",
     ImageUrl:
       "https://i.pinimg.com/1200x/83/77/ab/8377ab1fcad3cb89f46a74bddb4b2519.jpg",
@@ -282,7 +282,7 @@ const higlyRatedShowsData: HighlyRatedShow[] = [
     RatingCount: 1204110,
   },
   {
-    Id: 10,
+    Id: "10",
     Name: "Đuối Nước",
     ImageUrl:
       "https://i.pinimg.com/736x/46/fb/58/46fb582a9fa8011d4e07aeebb08947f3.jpg",
@@ -294,7 +294,7 @@ const higlyRatedShowsData: HighlyRatedShow[] = [
     RatingCount: 500210,
   },
   {
-    Id: 11,
+    Id: "11",
     Name: "Chuyện Công Viên Nọ",
     ImageUrl:
       "https://i.pinimg.com/736x/e1/b6/1e/e1b61e693884193515a20ba68b422ab7.jpg",
@@ -306,7 +306,7 @@ const higlyRatedShowsData: HighlyRatedShow[] = [
     RatingCount: 10214,
   },
   {
-    Id: 12,
+    Id: "12",
     Name: "Cảm Xúc Trên Lan Can",
     ImageUrl:
       "https://i.pinimg.com/736x/ca/92/a3/ca92a3676f829a7822182a54c3a6f188.jpg",
@@ -318,7 +318,7 @@ const higlyRatedShowsData: HighlyRatedShow[] = [
     RatingCount: 1256200,
   },
   {
-    Id: 13,
+    Id: "13",
     Name: "Mèo Dạy Hải Âu Bay",
     ImageUrl:
       "https://i.pinimg.com/736x/77/40/21/7740210dd5dccfd06c96d7457a5c5874.jpg",
@@ -330,7 +330,7 @@ const higlyRatedShowsData: HighlyRatedShow[] = [
     RatingCount: 320134,
   },
   {
-    Id: 14,
+    Id: "14",
     Name: "Đau Thương Từ Yêu Thương",
     ImageUrl:
       "https://i.pinimg.com/1200x/4d/27/9d/4d279de526e2f89721a026c2eeb41d33.jpg",
@@ -344,7 +344,7 @@ const higlyRatedShowsData: HighlyRatedShow[] = [
 ];
 
 type BaseOnListenedShow = {
-  Id: number;
+  Id: string;
   Name: string;
   ImageUrl: string;
   Podcaster: {
@@ -359,7 +359,7 @@ type BaseOnListenedShow = {
 
 const baseOnListenedShowsData: BaseOnListenedShow[] = [
   {
-    Id: 15,
+    Id: "15",
     Name: "Sống Giữa Bầy Cừu",
     ImageUrl:
       "https://i.pinimg.com/1200x/bd/60/28/bd60280b725148a153be71b31ea2de51.jpg",
@@ -373,7 +373,7 @@ const baseOnListenedShowsData: BaseOnListenedShow[] = [
     },
   },
   {
-    Id: 16,
+    Id: "16",
     Name: "The Eyes Man",
     ImageUrl:
       "https://i.pinimg.com/736x/3f/28/02/3f2802e59c9e8629b022dd6a9f213371.jpg",
@@ -387,7 +387,7 @@ const baseOnListenedShowsData: BaseOnListenedShow[] = [
     },
   },
   {
-    Id: 17,
+    Id: "17",
     Name: "Chủ Nghĩa Hư Vô",
     ImageUrl:
       "https://i.pinimg.com/1200x/fb/1e/83/fb1e8397b0a7a7a72fa8a765afcc21c9.jpg",
@@ -401,7 +401,7 @@ const baseOnListenedShowsData: BaseOnListenedShow[] = [
     },
   },
   {
-    Id: 18,
+    Id: "18",
     Name: "Toàn Trí Độc Giả",
     ImageUrl:
       "https://i.pinimg.com/736x/5e/e3/be/5ee3be0c77450f2cc6b3d303770a2e0e.jpg",
@@ -415,7 +415,7 @@ const baseOnListenedShowsData: BaseOnListenedShow[] = [
     },
   },
   {
-    Id: 19,
+    Id: "19",
     Name: "Xác Trắng Trong Rừng Đen",
     ImageUrl:
       "https://i.pinimg.com/736x/de/10/4d/de104d7b4a9518723202d011b93f38dd.jpg",
@@ -429,7 +429,7 @@ const baseOnListenedShowsData: BaseOnListenedShow[] = [
     },
   },
   {
-    Id: 20,
+    Id: "20",
     Name: "Bí Ẩn Hội Illuminati",
     ImageUrl:
       "https://i.pinimg.com/1200x/a1/0b/41/a10b41ef05d0884098e95496bf1fa841.jpg",
@@ -443,7 +443,7 @@ const baseOnListenedShowsData: BaseOnListenedShow[] = [
     },
   },
   {
-    Id: 21,
+    Id: "21",
     Name: "Mỹ và sự thao túng",
     ImageUrl:
       "https://i.pinimg.com/1200x/79/80/27/798027ef218d175ba97868df457b249c.jpg",
@@ -498,9 +498,9 @@ const DiscoveryPage = () => {
     "
     >
       {/* You might like it */}
-      <div className="w-full flex flex-col gap-4">
+      <div className="w-full flex flex-col gap-4 pt-2">
         <div className="hidden md:inline-flex w-full items-center justify-between">
-          <p className="font-poppins text-white text-4xl">
+          <p className="font-poppins text-white text-5xl font-bold">
             You Might <span className="text-mystic-green">Like It</span>
           </p>
           <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
