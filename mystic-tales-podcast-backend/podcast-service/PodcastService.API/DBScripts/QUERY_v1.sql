@@ -13,12 +13,25 @@ select * from PodcastEpisode
 select * from PodcastEpisodeStatusTracking order by createdAt
 select * from PodcastEpisodeLicense
 
+select * from PodcastEpisodePublishReviewSession
+select * from PodcastEpisodePublishReviewSessionStatusTracking
+select * from PodcastEpisodePublishDuplicateDetection
+select * from PodcastEpisodeIllegalContentTypeMarking
+
+delete from PodcastEpisodeIllegalContentTypeMarking
+delete from PodcastEpisodePublishDuplicateDetection
+delete from PodcastEpisodePublishReviewSession
 
 
 delete from PodcastChannelStatusTracking
 delete from PodcastChannel
 delete from PodcastShowReview
-
+INSERT INTO PodcastEpisodeStatusTracking (podcastEpisodeId, podcastEpisodeStatusId)
+VALUES (N'FDE924E8-B1C1-49BB-BE2E-1F359A7866A7' , 4); -- pending editrequest
+INSERT INTO PodcastShowStatusTracking(podcastShowId, podcastShowStatusId)
+VALUES (N'b4988aad-58cb-4c17-937e-3ad5e65336ce' , 3); 
+INSERT INTO PodcastEpisodePublishReviewSessionStatusTracking(podcastEpisodePublishReviewSessionId, podcastEpisodePublishReviewSessionStatusId)
+VALUES (7 , 3); 
 
 ALTER TABLE PodcastEpisode
     ALTER COLUMN audioFileKey NVARCHAR(MAX) NULL ;
@@ -108,34 +121,16 @@ INSERT INTO PodcastChannelStatusTracking (podcastChannelId, podcastChannelStatus
 
 
 
-ALTER TABLE PodcastShow DROP CONSTRAINT DF__PodcastSh__podca__6C190EBB
--- 2. Đổi tên bảng
-EXEC sp_rename 'PodcastShowsSubscriptionType', 'PodcastShowSubscriptionType';
+-- Khai báo biến
+DECLARE @ShowId UNIQUEIDENTIFIER = '172eb07f-2121-4ff7-8b5c-91eeec0dee86';
+DECLARE @Episode1Id UNIQUEIDENTIFIER = NEWID();
+DECLARE @Episode2Id UNIQUEIDENTIFIER = NEWID();
+DECLARE @Episode3Id UNIQUEIDENTIFIER = NEWID();
+DECLARE @CurrentDateTime DATETIME = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME);
 
--- 3. Đổi tên cột FK trong bảng PodcastShow
-EXEC sp_rename 'PodcastShow.podcastShowsSubscriptionTypeId', 'podcastShowSubscriptionTypeId', 'COLUMN';
-
--- 4. Tạo lại foreign key constraint với tên mới
-ALTER TABLE PodcastShow
-ADD CONSTRAINT FK_PodcastShow_PodcastShowSubscriptionType
-FOREIGN KEY (podcastShowSubscriptionTypeId) 
-REFERENCES PodcastShowSubscriptionType(id);
-
-
-INSERT INTO PodcastShowStatusTracking(podcastShowId, podcastShowStatusId) VALUES 
-(N'89709A6A-11A3-4574-B94A-3ED61A0BE627', 3)
-
-
-INSERT INTO PodcastEpisodeStatus (id, name) 
-VALUES (8, N'Audio Processing');
-INSERT INTO PodcastEpisodeStatusTracking(podcastEpisodeId, podcastEpisodeStatusId) VALUES 
-(N'FDE924E8-B1C1-49BB-BE2E-1F359A7866A7', 3)
-
--- Tạo episode mới
-DECLARE @NewEpisodeId UNIQUEIDENTIFIER = NEWID();
-DECLARE @ShowId UNIQUEIDENTIFIER = '89709A6A-11A3-4574-B94A-3ED61A0BE627';
-
--- Insert vào bảng PodcastEpisode
+-- ========================================
+-- EPISODE 1
+-- ========================================
 INSERT INTO PodcastEpisode (
     id,
     name,
@@ -162,55 +157,166 @@ INSERT INTO PodcastEpisode (
     updatedAt
 )
 VALUES (
-    @NewEpisodeId,
-    N'Tên Episode Mới',  -- Thay đổi tên theo ý bạn
-    N'Mô tả cho episode',  -- Thay đổi mô tả theo ý bạn
-    0,  -- explicitContent
-    NULL,  -- releaseDate
-    NULL,  -- isReleased
-    NULL,  -- mainImageFileKey
-    NULL,  -- audioFileKey
-    NULL,  -- audioFileSize
-    NULL,  -- audioLength
-    NULL,  -- audioFingerPrint
-    NULL,  -- audioTranscript
-    1,  -- podcastEpisodeSubscriptionTypeId (Free)
-    @ShowId,  -- podcastShowId
-    0,  -- seasonNumber
-    1,  -- episodeOrder
-    0,  -- totalSave
-    0,  -- listenCount
-    NULL,  -- isAudioPublishable
-    NULL,  -- takenDownReason
-    NULL,  -- deletedAt
-    CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME),  -- createdAt
-    CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)   -- updatedAt
+    @Episode1Id,
+    N'Episode 1 - Giới thiệu',
+    N'Episode đầu tiên của chương trình',
+    0,
+    CAST(DATEADD(DAY, -7, @CurrentDateTime) AS DATE), -- Phát hành 7 ngày trước
+    1, -- isReleased = true
+    N'episode1-cover.jpg',
+    N'episode1-audio.mp3',
+    25.5, -- 25.5 MB
+    1800, -- 30 phút (1800 giây)
+    NULL,
+    N'Nội dung transcript của episode 1...',
+    1, -- Free
+    @ShowId,
+    1, -- Season 1
+    1, -- Episode order 1
+    0,
+    0,
+    1, -- isAudioPublishable = true (đã được duyệt)
+    NULL,
+    NULL,
+    DATEADD(DAY, -10, @CurrentDateTime),
+    @CurrentDateTime
 );
 
--- Insert vào bảng PodcastEpisodeStatusTracking với status id = 3 (Pending Edit Required)
-INSERT INTO PodcastEpisodeStatusTracking (
+-- Status tracking cho Episode 1
+INSERT INTO PodcastEpisodeStatusTracking (id, podcastEpisodeId, podcastEpisodeStatusId, createdAt)
+VALUES (NEWID(), @Episode1Id, 1, DATEADD(DAY, -10, @CurrentDateTime)); -- Draft
+
+INSERT INTO PodcastEpisodeStatusTracking (id, podcastEpisodeId, podcastEpisodeStatusId, createdAt)
+VALUES (NEWID(), @Episode1Id, 4, DATEADD(DAY, -8, @CurrentDateTime)); -- Ready To Release
+
+INSERT INTO PodcastEpisodeStatusTracking (id, podcastEpisodeId, podcastEpisodeStatusId, createdAt)
+VALUES (NEWID(), @Episode1Id, 5, DATEADD(DAY, -7, @CurrentDateTime)); -- Published
+
+-- ========================================
+-- EPISODE 2
+-- ========================================
+INSERT INTO PodcastEpisode (
     id,
-    podcastEpisodeId,
-    podcastEpisodeStatusId,
-    createdAt
+    name,
+    description,
+    explicitContent,
+    releaseDate,
+    isReleased,
+    mainImageFileKey,
+    audioFileKey,
+    audioFileSize,
+    audioLength,
+    audioFingerPrint,
+    audioTranscript,
+    podcastEpisodeSubscriptionTypeId,
+    podcastShowId,
+    seasonNumber,
+    episodeOrder,
+    totalSave,
+    listenCount,
+    isAudioPublishable,
+    takenDownReason,
+    deletedAt,
+    createdAt,
+    updatedAt
 )
 VALUES (
-    NEWID(),
-    @NewEpisodeId,
-    3,  -- Pending Edit Required
-    CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)
+    @Episode2Id,
+    N'Episode 2 - Phát triển',
+    N'Episode thứ hai với nội dung chuyên sâu hơn',
+    0,
+    CAST(DATEADD(DAY, -5, @CurrentDateTime) AS DATE), -- Phát hành 5 ngày trước
+    1,
+    N'episode2-cover.jpg',
+    N'episode2-audio.mp3',
+    30.2, -- 30.2 MB
+    2100, -- 35 phút
+    NULL,
+    N'Nội dung transcript của episode 2...',
+    1, -- Free
+    @ShowId,
+    1, -- Season 1
+    2, -- Episode order 2
+    0,
+    0,
+    1,
+    NULL,
+    NULL,
+    DATEADD(DAY, -8, @CurrentDateTime),
+    @CurrentDateTime
 );
 
--- Hiển thị kết quả
-SELECT @NewEpisodeId AS NewEpisodeId;
+-- Status tracking cho Episode 2
+INSERT INTO PodcastEpisodeStatusTracking (id, podcastEpisodeId, podcastEpisodeStatusId, createdAt)
+VALUES (NEWID(), @Episode2Id, 1, DATEADD(DAY, -8, @CurrentDateTime)); -- Draft
 
-CREATE TABLE PodcastEpisodePublishDuplicateDetection (
-    podcastEpisodePublishReviewSessionId INT NOT NULL,
-    duplicatePodcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
-    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-	PRIMARY KEY (podcastEpisodePublishReviewSessionId, duplicatePodcastEpisodeId),
-    FOREIGN KEY (podcastEpisodePublishReviewSessionId) REFERENCES PodcastEpisodePublishReviewSession(id),
-    FOREIGN KEY (duplicatePodcastEpisodeId) REFERENCES PodcastEpisode(id),
+INSERT INTO PodcastEpisodeStatusTracking (id, podcastEpisodeId, podcastEpisodeStatusId, createdAt)
+VALUES (NEWID(), @Episode2Id, 4, DATEADD(DAY, -6, @CurrentDateTime)); -- Ready To Release
+
+INSERT INTO PodcastEpisodeStatusTracking (id, podcastEpisodeId, podcastEpisodeStatusId, createdAt)
+VALUES (NEWID(), @Episode2Id, 5, DATEADD(DAY, -5, @CurrentDateTime)); -- Published
+
+-- ========================================
+-- EPISODE 3
+-- ========================================
+INSERT INTO PodcastEpisode (
+    id,
+    name,
+    description,
+    explicitContent,
+    releaseDate,
+    isReleased,
+    mainImageFileKey,
+    audioFileKey,
+    audioFileSize,
+    audioLength,
+    audioFingerPrint,
+    audioTranscript,
+    podcastEpisodeSubscriptionTypeId,
+    podcastShowId,
+    seasonNumber,
+    episodeOrder,
+    totalSave,
+    listenCount,
+    isAudioPublishable,
+    takenDownReason,
+    deletedAt,
+    createdAt,
+    updatedAt
+)
+VALUES (
+    @Episode3Id,
+    N'Episode 3 - Kết nối',
+    N'Episode thứ ba với các câu chuyện thú vị',
+    0,
+    CAST(DATEADD(DAY, -3, @CurrentDateTime) AS DATE), -- Phát hành 3 ngày trước
+    1,
+    N'episode3-cover.jpg',
+    N'episode3-audio.mp3',
+    28.7, -- 28.7 MB
+    1950, -- 32.5 phút
+    NULL,
+    N'Nội dung transcript của episode 3...',
+    1, -- Free
+    @ShowId,
+    1, -- Season 1
+    3, -- Episode order 3
+    0,
+    0,
+    1,
+    NULL,
+    NULL,
+    DATEADD(DAY, -6, @CurrentDateTime),
+    @CurrentDateTime
 );
+
+-- Status tracking cho Episode 3
+INSERT INTO PodcastEpisodeStatusTracking (id, podcastEpisodeId, podcastEpisodeStatusId, createdAt)
+VALUES (NEWID(), @Episode3Id, 1, DATEADD(DAY, -6, @CurrentDateTime)); -- Draft
+
+INSERT INTO PodcastEpisodeStatusTracking (id, podcastEpisodeId, podcastEpisodeStatusId, createdAt)
+VALUES (NEWID(), @Episode3Id, 4, DATEADD(DAY, -4, @CurrentDateTime)); -- Ready To Release
+
+
 
 

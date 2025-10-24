@@ -8,7 +8,9 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Plu
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusEpisodeTotalSaved;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusShowTotalFollow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.ProcessingEpisodeDraftAudio;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.ProcessingEpisodePublishAudio;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishEpisode;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitEpisodeAudioFile;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitShowTrailerAudioFile;
@@ -676,7 +678,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
         }
 
         [MessageHandler("processing-episode-draft-audio", SAGA_TOPIC)]
-        public async Task HandlePublishEpisodeAsync(string key, string messageJson)
+        public async Task HandleProcessingEpisodeDraftAudioAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
                 messageJson: messageJson,
@@ -689,6 +691,37 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "publish-episode.failed"    // From YAML onFailure.emit
             );
         }
+
+        [MessageHandler("publish-episode", SAGA_TOPIC)]
+        public async Task HandlePublishEpisodeAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var episode = command.RequestData.ToObject<PublishEpisodeParameterDTO>();
+                    await _podcastEpisodeService.PublishPodcastEpisode(episode, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "publish-episode.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("processing-episode-publish-audio", SAGA_TOPIC)]
+        public async Task HandleProcessingEpisodePublishAudioAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var episode = command.RequestData.ToObject<ProcessingEpisodePublishAudioParameterDTO>();
+                    await _podcastEpisodeService.ProcessPodcastEpisodePublishAudio(episode, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "processing-episode-publish-audio.failed"    // From YAML onFailure.emit
+            );
+        }
+
     }
 }
 

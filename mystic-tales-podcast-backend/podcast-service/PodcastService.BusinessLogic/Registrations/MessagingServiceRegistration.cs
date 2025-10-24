@@ -13,6 +13,7 @@ namespace PodcastService.BusinessLogic.Registrations
             // Message Handlers
             services.AddScoped<ContentManagementDomainMessageHandler>();
             services.AddScoped<PublicReviewManagementDomainMessageHandler>();
+            services.AddScoped<ContentModerationDomainMessageHandler>();
             
             // Messaging Services (trong MessagingServices folder)
             services.AddScoped<IMessagingService, MessagingService>();

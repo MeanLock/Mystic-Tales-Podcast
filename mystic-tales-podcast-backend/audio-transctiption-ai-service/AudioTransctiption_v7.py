@@ -1,3 +1,4 @@
+from AudioConverter import AudioConverter
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from transformers import pipeline, AutoModelForSpeechSeq2Seq, AutoProcessor
 from datetime import datetime
@@ -38,6 +39,7 @@ model_config = {
 
 # Initialize GPU Manager
 gpu_manager = GPUManager()
+converter = AudioConverter()
 
 # Parallel config
 PARALLEL_CONFIG = {
@@ -474,7 +476,7 @@ async def transcribe(
     if not AudioFile.filename:
         raise HTTPException(status_code=400, detail="No filename")
     
-    allowed_extensions = {'.wav', '.mp3', '.m4a', '.flac', '.ogg', '.aac'}
+    allowed_extensions = {'.wav', '.flac', '.mp3', '.m4a', '.aac'}
     file_ext = os.path.splitext(AudioFile.filename)[1].lower()
     if file_ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail=f"Unsupported format")
@@ -487,6 +489,24 @@ async def transcribe(
     # ============================================
     # ACQUIRE LOCK - Wait for our turn
     # ============================================
+    if file_ext not in {'.wav', '.flac'}:
+        logger.info(f"Converting {file_ext} to WAV...")
+        try:
+            content = await converter.convert_async(
+                content, 
+                file_ext[1:],  # 'mp3', 'm4a', etc.
+                method='pydub'
+            )   
+            
+            logger.info(f"✓ Converted to WAV: {len(content)} bytes")
+            
+        except Exception as conv_error:
+            logger.error(f"Conversion failed: {conv_error}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot convert {file_ext} to WAV. Ensure ffmpeg is installed."
+            )
+    
     await transcription_queue.acquire(job_id, AudioFile.filename)
     
     try:

@@ -44,6 +44,14 @@ using PodcastService.Infrastructure.Services.Audio.AcoustID;
 using PodcastService.Infrastructure.Models.Audio.AcoustID;
 using Newtonsoft.Json;
 using PodcastService.BusinessLogic.Enums.Account;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.RequestEpisodeAudioExamination;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.DiscardEpisodePublishReviewSession;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishEpisode;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.ProcessingEpisodePublishAudio;
+using PodcastService.Infrastructure.Models.Audio.Hls;
+using PodcastService.Infrastructure.Services.Audio.Hls;
+using PodcastService.BusinessLogic.DTOs.Episode.ListItems;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.RequireEpisodePublishReviewSessionEdit;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -85,6 +93,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         private readonly IGenericRepository<PodcastEpisodeLicenseType> _podcastEpisodeLicenseTypeGenericRepository;
         private readonly IGenericRepository<PodcastEpisodePublishReviewSession> _podcastEpisodePublishReviewSessionGenericRepository;
         private readonly IGenericRepository<PodcastEpisodePublishDuplicateDetection> _podcastEpisodePublishDuplicateDetectionGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodeIllegalContentTypeMarking> _podcastEpisodeIllegalContentTypeMarkingGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodePublishReviewSessionStatusTracking> _podcastEpisodePublishReviewSessionStatusTrackingGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
@@ -105,6 +115,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         private readonly AudioTranscriptionService _audioTranscriptionService;
         private readonly AcoustIDAudioFingerprintGenerator _acoustIDAudioFingerprintGenerator;
         private readonly AcoustIDAudioFingerprintComparator _acoustIDAudioFingerprintComparator;
+        private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
+
 
         public PodcastEpisodeService(
             ILogger<PodcastEpisodeService> logger,
@@ -129,6 +141,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             IGenericRepository<PodcastEpisodeLicense> podcastEpisodeLicenseGenericRepository,
             IGenericRepository<PodcastEpisodeLicenseType> podcastEpisodeLicenseTypeGenericRepository,
             IGenericRepository<PodcastEpisodePublishReviewSession> podcastEpisodePublishReviewSessionGenericRepository,
+            IGenericRepository<PodcastEpisodePublishDuplicateDetection> podcastEpisodePublishDuplicateDetectionGenericRepository,
+            IGenericRepository<PodcastEpisodeIllegalContentTypeMarking> podcastEpisodeIllegalContentTypeMarkingGenericRepository,
+            IGenericRepository<PodcastEpisodePublishReviewSessionStatusTracking> podcastEpisodePublishReviewSessionStatusTrackingGenericRepository,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -148,7 +163,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
             AudioTranscriptionService audioTranscriptionService,
             AcoustIDAudioFingerprintGenerator audioFingerprintService,
-            AcoustIDAudioFingerprintComparator audioFingerprintComparator
+            AcoustIDAudioFingerprintComparator audioFingerprintComparator,
+            FFMpegCoreHlsService ffMpegCoreHlsService
             )
         {
             _logger = logger;
@@ -169,6 +185,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _podcastEpisodeHashtagGenericRepository = podcastEpisodeHashtagGenericRepository;
             _podcastEpisodeLicenseGenericRepository = podcastEpisodeLicenseGenericRepository;
             _podcastEpisodeLicenseTypeGenericRepository = podcastEpisodeLicenseTypeGenericRepository;
+            _podcastEpisodePublishReviewSessionGenericRepository = podcastEpisodePublishReviewSessionGenericRepository;
+            _podcastEpisodePublishDuplicateDetectionGenericRepository = podcastEpisodePublishDuplicateDetectionGenericRepository;
+            _podcastEpisodeIllegalContentTypeMarkingGenericRepository = podcastEpisodeIllegalContentTypeMarkingGenericRepository;
+            _podcastEpisodePublishReviewSessionStatusTrackingGenericRepository = podcastEpisodePublishReviewSessionStatusTrackingGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -193,6 +213,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _audioTranscriptionService = audioTranscriptionService;
             _acoustIDAudioFingerprintGenerator = audioFingerprintService;
             _acoustIDAudioFingerprintComparator = audioFingerprintComparator;
+            _ffMpegCoreHlsService = ffMpegCoreHlsService;
         }
 
 
@@ -393,14 +414,15 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     new BatchQueryItem
                     {
                         Key = "account",
-                        QueryType = "findbyid",
+                        QueryType = "findall",
                         EntityType = "Account",
 
                         Parameters = JObject.FromObject(new
                         {
                             where = new
                             {
-                                RoleId = (int) RoleEnum.Staff
+                                RoleId = (int) RoleEnum.Staff,
+                                DeactivatedAt = (DateTime?) null
                             },
                         }),
                     }
@@ -420,8 +442,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         /////////////////////////////////////////////////////////////
 
-                #region Sample coding format must be followed
-                #endregion
+        #region Sample coding format must be followed
+        #endregion
 
         public async Task<EpisodeDetailResponseDTO> GetEpisodeByIdAsync(Guid episodeId, int? role)
         {
@@ -1346,20 +1368,22 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
 
                     // 	+ DRAFT:
+                    //      + IsAudioPublishable = null
                     // 		+ xoá audio cũ (bao gồm cả playlist nếu có)
                     // 		+ Update: AudioFileKey, AudioFileSize, AudioLength
                     // 		+ Lưu audio mới
                     // 		+ Reset: AudioFingerPrint = null, AudioTranscript = null
                     // 	+ PENDING EDIT REQUIRED:
-                    //  		+ xoá audio cũ (bao gồm cả playlist nếu có)
-                    //  		+ Update: AudioFileKey, AudioFileSize, AudioLength
-                    //  		+ Lưu audio mới
-                    //  		+ Reset: AudioFingerPrint = null, AudioTranscript = null
+                    //      + IsAudioPublishable = null
+                    //  	+ xoá audio cũ (bao gồm cả playlist nếu có)
+                    //  	+ Update: AudioFileKey, AudioFileSize, AudioLength
+                    //  	+ Lưu audio mới
+                    //  	+ Reset: AudioFingerPrint = null, AudioTranscript = null
                     // 		+ Chuyển episode status → Audio Processing (processing để cập nhật (AudioFingerPrint/AudioTranscript) xong sẽ chuyển qua Pending Review)
                     // 		+ Update review session status → Pending Review (Tăng reReviewCount += 1)
                     // 	+ READY TO RELEASE:
                     // 		+ xoá audio cũ (bao gồm cả playlist nếu có)
-                    //  		+ Update: AudioFileKey, AudioFileSize, AudioLength
+                    //  	+ Update: AudioFileKey, AudioFileSize, AudioLength
                     // 		+ Lưu audio mới
                     // 		+ Reset: AudioFingerPrint = null, AudioTranscript = null, IsAudioPublishable = null
                     // 		+ Xóa tất cả PodcastEpisodeIllegalContentTypeMarking
@@ -1391,6 +1415,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         existingPodcastEpisode.AudioLength = submitEpisodeAudioFileParameterDTO.AudioLength;
                         existingPodcastEpisode.AudioFingerPrint = null;
                         existingPodcastEpisode.AudioTranscript = null;
+                        existingPodcastEpisode.IsAudioPublishable = null;
+                        await _podcastEpisodeGenericRepository.UpdateAsync(existingPodcastEpisode.Id, existingPodcastEpisode);
+                        await transaction.CommitAsync();
+
                     }
                     else if (episodeCurrentStatus == (int)PodcastEpisodeStatusEnum.PendingEditRequired)
                     {
@@ -1416,6 +1444,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         existingPodcastEpisode.AudioLength = submitEpisodeAudioFileParameterDTO.AudioLength;
                         existingPodcastEpisode.AudioFingerPrint = null;
                         existingPodcastEpisode.AudioTranscript = null;
+                        existingPodcastEpisode.IsAudioPublishable = null;
 
                         // Change episode status to Audio Processing
                         var newStatusTracking = new PodcastEpisodeStatusTracking
@@ -1424,8 +1453,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.AudioProcessing
                         };
                         await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        await _podcastEpisodeGenericRepository.UpdateAsync(existingPodcastEpisode.Id, existingPodcastEpisode);
 
-                        // Update review session status to Pending Review (increase reReviewCount by 1)
                         JObject requestData = JObject.FromObject(
                             new
                             {
@@ -1433,6 +1462,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 PodcasterId = existingPodcaster.Id,
                             }
                         );
+
+                        await transaction.CommitAsync();
 
                         var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-draft-audio-processing-flow");
                         await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
@@ -1483,10 +1514,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.Draft
                         };
                         await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        await _podcastEpisodeGenericRepository.UpdateAsync(existingPodcastEpisode.Id, existingPodcastEpisode);
+                        await transaction.CommitAsync();
+
                     }
 
 
-                    await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
                     messageNextRequestData["PodcastEpisodeId"] = existingPodcastEpisode.Id;
@@ -1563,6 +1596,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         throw new Exception("Podcast episode with id " + processingEpisodeDraftAudioParameterDTO.PodcastEpisodeId + " has been deleted");
                     }
 
+                    Console.WriteLine("Start processing audio for episode id: " + existingPodcastEpisode.Id + ", audio file key: " + existingPodcastEpisode.AudioFileKey);
+
                     var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(existingPodcastEpisode.PodcastShow.PodcasterId);
                     if (existingPodcaster == null || existingPodcaster.Id != existingPodcastEpisode.PodcastShow.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
                     {
@@ -1629,23 +1664,38 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Console.WriteLine($"Scan restrict terms: {string.Join(", ", detectedRestrictTerms)}");
 
                         // Chuẩn bị so sánh fingerprint
+                        // lọc các episode đã published hoặc taken down, khác episode hiện tại, khác podcaster
                         var publishedEpisode = await _podcastEpisodeGenericRepository.FindAll(
                             predicate: pe => pe.Id != existingPodcastEpisode.Id &&
                                 pe.AudioFingerPrint != null &&
                                 pe.DeletedAt == null &&
+                                pe.PodcastShow.PodcasterId != existingPodcastEpisode.PodcastShow.PodcasterId && // không so sánh với episode của cùng podcaster
+                                (pe.PodcastEpisodeStatusTrackings
+                                    .OrderByDescending(pet => pet.CreatedAt)
+                                    .FirstOrDefault()
+                                    .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published ||
                                 pe.PodcastEpisodeStatusTrackings
                                     .OrderByDescending(pet => pet.CreatedAt)
                                     .FirstOrDefault()
-                                    .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published,
+                                    .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown),
                             includeFunc: q => q.Include(pe => pe.PodcastEpisodeStatusTrackings)
+                            .Include(pe => pe.PodcastShow)
                         ).ToListAsync();
-                        AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison comparison = null;
+                        AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison comparison = new AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison
+                        {
+                            Target = null,
+                            Candidates = new List<AcoustIDAudioFingerprintComparisonObject>()
+                        };
                         AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparisonPercentageResult comparisonResult = new AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparisonPercentageResult
                         {
                             results = new List<AcoustIDAudioFingerprintSimilarityPercentageResult>()
                         };
                         if (publishedEpisode.Count > 0)
                         {
+                            foreach (var pe in publishedEpisode)
+                            {
+                                Console.WriteLine("Comparing with published episode id: " + pe.Id);
+                            }
                             comparison.Target = new AcoustIDAudioFingerprintComparisonObject
                             {
                                 AudioFingerPrint = audioFingerPrint.FingerprintData,
@@ -1660,14 +1710,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }
                         // Lọc ra các episode bị trùng dựa trên ngưỡng similarity
                         List<Guid> duplicateEpisodeIds = comparisonResult.results
-                            .Where(res => res.SimilarityPercentage >= _podcastPublishReviewSessionConfig.MinDuplicateSimilarityRate)
+                            .Where(res => res.SimilarityPercentage / 100 >= _podcastPublishReviewSessionConfig.MinDuplicateSimilarityRate)
                             .Select(res => Guid.Parse(res.Id.ToString()))
                             .ToList();
 
-                        // Đếm số term bị vi phạm so với TranscriptionMinRestrictedTermCount
-                        bool violatedTermCount = detectedRestrictTerms.Count >= _podcastPublishReviewSessionConfig.TranscriptionMinRestrictedTermCount;
+                        foreach (var dupId in duplicateEpisodeIds)
+                        {
+                            Console.WriteLine("Detected duplicate episode id: " + dupId);
+                        }
 
-                        existingPodcastEpisode.AudioTranscript = transcript;
+                        // Đếm số term bị vi phạm so với HighTranscriptionMinRestrictedTermCount
+                        bool isViolatedTermExceeded = detectedRestrictTerms.Count >= _podcastPublishReviewSessionConfig.HighTranscriptionMinRestrictedTermCount || (detectedRestrictTerms.Count >= _podcastPublishReviewSessionConfig.MediumTranscriptionMinRestrictedTermCount && existingPodcastEpisode.ExplicitContent == false);
+
+                        existingPodcastEpisode.AudioTranscript = transcript != null ? transcript : "";
                         existingPodcastEpisode.AudioFingerPrint = audioFingerPrint.FingerprintData != null
                             ? System.Text.Encoding.UTF8.GetBytes(audioFingerPrint.FingerprintData)
                             : null;
@@ -1694,6 +1749,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             // CỘNG 1 VÀO PRENDING REVIEW
                             pendingReviewSession.ReReviewCount += 1;
+                            pendingReviewSession.Deadline = null; // reset deadline khi có re-review
 
                             // xoá toàn bộ các PodcastEpisodePublishDuplicateDetection cũ để thêm mới
                             await _unitOfWork.PodcastEpisodePublishDuplicateDetectionRepository.DeleteByPublishReviewSessionIdAsync(pendingReviewSession.Id);
@@ -1720,7 +1776,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                             await _podcastEpisodePublishReviewSessionGenericRepository.UpdateAsync(pendingReviewSession.Id, pendingReviewSession);
                         }
-                        else if (pendingReviewSession == null && (violatedTermCount || duplicateEpisodeIds.Count > 0))
+                        else if (pendingReviewSession == null && (isViolatedTermExceeded || duplicateEpisodeIds.Count > 0))
                         {
                             // 			+ KHÔNG CÓ && THOẢ 1 TRONG 2 ĐIỀU KIỀN VI PHẠM (RESTRICT TERM / DUPLICATION):
                             // 				+ tạo 1 publish review session
@@ -1733,22 +1789,50 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             ).Select(pprs => pprs.AssignedStaff).ToListAsync();
 
                             List<AccountDTO> availableStaff = await GetAllAvailableStaffs();
-
+                            Dictionary<int, int> staffAssignmentCount = new Dictionary<int, int>();
                             foreach (var staff in availableStaff)
                             {
-                                if (!assignedStaffIds.Contains(staff.Id))
-                                {
-                                    assignedStaffIds.Add(staff.Id);
-                                }
+                                int count = assignedStaffIds.Count(id => id == staff.Id);
+                                staffAssignmentCount[staff.Id] = count;
                             }
-                            
+
+                            int minAssignmentCount = staffAssignmentCount.Values.Min();
+                            List<int> leastAssignedStaffIds = staffAssignmentCount
+                                .Where(kvp => kvp.Value == minAssignmentCount)
+                                .Select(kvp => kvp.Key)
+                                .ToList();
+                            Random rand = new Random();
+                            int randomIndex = rand.Next(leastAssignedStaffIds.Count);
+                            int chosenStaffId = leastAssignedStaffIds[randomIndex];
+
+
+
+
                             var newPublishReviewSession = new PodcastEpisodePublishReviewSession
                             {
                                 PodcastEpisodeId = existingPodcastEpisode.Id,
-                                AssignedStaffIds = AssignedStaff,    
+                                AssignedStaff = chosenStaffId,
                                 ReReviewCount = 0,
                             };
                             await _podcastEpisodePublishReviewSessionGenericRepository.CreateAsync(newPublishReviewSession);
+                            var newPublishReviewSessionStatusTracking = new PodcastEpisodePublishReviewSessionStatusTracking
+                            {
+                                PodcastEpisodePublishReviewSessionId = newPublishReviewSession.Id,
+                                PodcastEpisodePublishReviewSessionStatusId = (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview
+                            };
+                            await _podcastEpisodePublishReviewSessionStatusTrackingGenericRepository.CreateAsync(newPublishReviewSessionStatusTracking);
+
+                            if (isViolatedTermExceeded == true)
+                            {
+                                var illegalContentTypeMarking = new PodcastEpisodeIllegalContentTypeMarking
+                                {
+                                    PodcastEpisodeId = existingPodcastEpisode.Id,
+                                    PodcastIllegalContentTypeId = (int)PodcastIllegalContentTypeEnum.ExcessiveRestrictedTerms
+                                };
+                                await _podcastEpisodeIllegalContentTypeMarkingGenericRepository.CreateAsync(illegalContentTypeMarking);
+                            }
+
+                            // 
 
                             // 				+ CẬP NHẬT LẠI SỐ AUDIO BỊ TRÙNG
                             if (duplicateEpisodeIds.Count > 0)
@@ -1762,6 +1846,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                     };
                                     await _podcastEpisodePublishDuplicateDetectionGenericRepository.CreateAsync(newDuplicateDetection);
                                 }
+                                var illegalContentTypeMarking = new PodcastEpisodeIllegalContentTypeMarking
+                                {
+                                    PodcastEpisodeId = existingPodcastEpisode.Id,
+                                    PodcastIllegalContentTypeId = (int)PodcastIllegalContentTypeEnum.DuplicateContent
+                                };
+                                await _podcastEpisodeIllegalContentTypeMarkingGenericRepository.CreateAsync(illegalContentTypeMarking);
                             }
 
                             var episodeNewStatusTracking = new PodcastEpisodeStatusTracking
@@ -1772,24 +1862,24 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(episodeNewStatusTracking);
 
                         }
-                        else
+                        else if (pendingReviewSession == null && !isViolatedTermExceeded && duplicateEpisodeIds.Count == 0) // phục vụ tình huống gọi request publish
                         {
                             // 			+ Không có && không thoả điều kiện vi phạm nào:
-                            // 				+ chuyển trạng thái của episode sang Ready to release
+                            // 				+ chuyển trạng thái của episode sang Ready to release và set isAudioPublishable = true
+                            existingPodcastEpisode.IsAudioPublishable = true;
+                            await _podcastEpisodeGenericRepository.UpdateAsync(existingPodcastEpisode.Id, existingPodcastEpisode);
+
+
+
                             var episodeNewStatusTracking = new PodcastEpisodeStatusTracking
                             {
                                 PodcastEpisodeId = existingPodcastEpisode.Id,
                                 PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.ReadyToRelease
                             };
                             await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(episodeNewStatusTracking);
+
                         }
-
-                        // chuyển trạng thái của episode sang pending review
-
                     }
-
-
-
 
                     await transaction.CommitAsync();
 
@@ -1831,5 +1921,534 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        public async Task RequestPodcastEpisodeAudioExamination(RequestEpisodeAudioExaminationParameterDTO requestEpisodeAudioExaminationParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Gửi yêu cầu kiểm duyệt audio cho staff
+                    var existingPodcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(requestEpisodeAudioExaminationParameterDTO.PodcastEpisodeId,
+                        includeFunc: q => q
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastChannel)
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                    );
+                    if (existingPodcastEpisode == null)
+                    {
+                        throw new Exception("Podcast episode with id " + requestEpisodeAudioExaminationParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast episode with id " + requestEpisodeAudioExaminationParameterDTO.PodcastEpisodeId + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Draft)
+                    {
+                        throw new Exception("Podcast episode with id " + requestEpisodeAudioExaminationParameterDTO.PodcastEpisodeId + " is not in Draft status");
+                    }
+                    else if (existingPodcastEpisode.IsAudioPublishable == false)
+                    {
+                        throw new Exception("Podcast episode with id " + requestEpisodeAudioExaminationParameterDTO.PodcastEpisodeId + " is marked as non-publishable due to audio content issues, please update a new audio file");
+                    }
+
+                    
+
+                    if (existingPodcastEpisode.PodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcasterId != requestEpisodeAudioExaminationParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not belong to podcaster with id " + requestEpisodeAudioExaminationParameterDTO.PodcasterId);
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been removed");
+                    }
+
+                    if (existingPodcastEpisode.PodcastShow.PodcastChannel != null)
+                    {
+                        if (existingPodcastEpisode.PodcastShow.PodcastChannel.DeletedAt != null)
+                        {
+                            throw new Exception("Podcast channel with id " + existingPodcastEpisode.PodcastShow.PodcastChannelId + " has been deleted");
+                        }
+                    }
+
+                    var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(existingPodcastEpisode.PodcastShow.PodcasterId);
+                    if (existingPodcaster == null || existingPodcaster.Id != existingPodcastEpisode.PodcastShow.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + existingPodcastEpisode.PodcastShow.PodcasterId + " does not exist");
+                    }
+
+                    // Change episode status to Audio Processing
+                    var newStatusTracking = new PodcastEpisodeStatusTracking
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.AudioProcessing
+                    };
+                    await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                    // xoá toàn bộ các đánh dấu vi phạm nội dung cũ
+                    await _unitOfWork.PodcastEpisodeIllegalContentTypeMarkingRepository.DeleteByPodcastEpisodeIdAsync(existingPodcastEpisode.Id);
+
+                    JObject requestData = JObject.FromObject(
+                            new
+                            {
+                                PodcastEpisodeId = existingPodcastEpisode.Id,
+                                PodcasterId = existingPodcaster.Id,
+                            }
+                        );
+
+                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-draft-audio-processing-flow");
+                    await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = existingPodcastEpisode.Id;
+                    messageNextRequestData["PodcasterId"] = existingPodcaster.Id;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcasterId = existingPodcaster.Id,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentModerationDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "request-episode-audio-examination.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentModerationDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Request podcast episode audio examination failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "request-episode-audio-examination.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+
+        }
+
+        public async Task DiscardPodcastEpisodePublishReviewSession(DiscardEpisodePublishReviewSessionParameterDTO discardEpisodePublishReviewSessionParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Huỷ bỏ phiên kiểm duyệt publish episode
+                    var existingPodcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(discardEpisodePublishReviewSessionParameterDTO.PodcastEpisodeId,
+                        includeFunc: q => q
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastChannel)
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                    );
+                    if (existingPodcastEpisode == null)
+                    {
+                        throw new Exception("Podcast episode with id " + discardEpisodePublishReviewSessionParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast episode with id " + discardEpisodePublishReviewSessionParameterDTO.PodcastEpisodeId + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.PendingReview)
+                    {
+                        throw new Exception("Podcast episode with id " + discardEpisodePublishReviewSessionParameterDTO.PodcastEpisodeId + " is not in Pending Review status");
+                    }
+
+
+                    if (existingPodcastEpisode.PodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcasterId != discardEpisodePublishReviewSessionParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not belong to podcaster with id " + discardEpisodePublishReviewSessionParameterDTO.PodcasterId);
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been removed");
+                    }
+
+                    if (existingPodcastEpisode.PodcastShow.PodcastChannel != null)
+                    {
+                        if (existingPodcastEpisode.PodcastShow.PodcastChannel.DeletedAt != null)
+                        {
+                            throw new Exception("Podcast channel with id " + existingPodcastEpisode.PodcastShow.PodcastChannelId + " has been deleted");
+                        }
+                    }
+
+                    var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(existingPodcastEpisode.PodcastShow.PodcasterId);
+                    if (existingPodcaster == null || existingPodcaster.Id != existingPodcastEpisode.PodcastShow.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + existingPodcastEpisode.PodcastShow.PodcasterId + " does not exist");
+                    }
+                    var pendingReviewSession = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
+                        predicate: pers => pers.PodcastEpisodeId == existingPodcastEpisode.Id &&
+                            pers.PodcastEpisodePublishReviewSessionStatusTrackings
+                                .OrderByDescending(persst => persst.CreatedAt)
+                                .FirstOrDefault()
+                                .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
+                        includeFunc: q => q.Include(pers => pers.PodcastEpisodePublishReviewSessionStatusTrackings)
+                    ).FirstOrDefaultAsync();
+                    if (pendingReviewSession == null)
+                    {
+                        throw new Exception("No pending review session found for podcast episode with id " + discardEpisodePublishReviewSessionParameterDTO.PodcastEpisodeId);
+                    }
+                    // Chuyển trạng thái phiên review sang Discarded
+                    var episodeNewStatusTracking = new PodcastEpisodePublishReviewSessionStatusTracking
+                    {
+                        PodcastEpisodePublishReviewSessionId = pendingReviewSession.Id,
+                        PodcastEpisodePublishReviewSessionStatusId = (int)PodcastEpisodePublishReviewSessionStatusEnum.Discard
+                    };
+                    await _podcastEpisodePublishReviewSessionStatusTrackingGenericRepository.CreateAsync(episodeNewStatusTracking);
+
+                    // Chuyển trạng thái episode về Draft
+                    var episodeStatusTracking = new PodcastEpisodeStatusTracking
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.Draft
+                    };
+                    await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(episodeStatusTracking);
+
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = existingPodcastEpisode.Id;
+                    messageNextRequestData["PodcasterId"] = existingPodcaster.Id;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcasterId = existingPodcaster.Id,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentModerationDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "discard-episode-publish-review-session.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentModerationDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Discard podcast episode publish review session failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "discard-episode-publish-review-session.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+
+                }
+            }
+        }
+
+        public async Task PublishPodcastEpisode(PublishEpisodeParameterDTO publishEpisodeParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Publish podcast episode
+                    var existingPodcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(publishEpisodeParameterDTO.PodcastEpisodeId,
+                        includeFunc: q => q
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastChannel)
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                    );
+                    if (existingPodcastEpisode == null)
+                    {
+                        throw new Exception("Podcast episode with id " + publishEpisodeParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast episode with id " + publishEpisodeParameterDTO.PodcastEpisodeId + " has been deleted");
+                    }else if (existingPodcastEpisode.IsAudioPublishable != true)
+                    {
+                        throw new Exception("Podcast episode with id " + publishEpisodeParameterDTO.PodcastEpisodeId + " is marked as non-publishable due to audio content issues, please update a new audio file");
+                    }
+                    else if (existingPodcastEpisode.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.ReadyToRelease)
+                    {
+                        throw new Exception("Podcast episode with id " + publishEpisodeParameterDTO.PodcastEpisodeId + " is not in Ready to Release status");
+                    }
+
+                    if (existingPodcastEpisode.PodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcasterId != publishEpisodeParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not belong to podcaster with id " + publishEpisodeParameterDTO.PodcasterId);
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been removed");
+                    }
+
+                    if (existingPodcastEpisode.PodcastShow.PodcastChannel != null)
+                    {
+                        if (existingPodcastEpisode.PodcastShow.PodcastChannel.DeletedAt != null)
+                        {
+                            throw new Exception("Podcast channel with id " + existingPodcastEpisode.PodcastShow.PodcastChannelId + " has been deleted");
+                        }
+                    }
+
+                    var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(existingPodcastEpisode.PodcastShow.PodcasterId);
+                    if (existingPodcaster == null || existingPodcaster.Id != existingPodcastEpisode.PodcastShow.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + existingPodcastEpisode.PodcastShow.PodcasterId + " does not exist");
+                    }
+
+                    // Change episode status to Published
+                    var newStatusTracking = new PodcastEpisodeStatusTracking
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.AudioProcessing
+                    };
+                    await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                    JObject requestData = JObject.FromObject(
+                            new
+                            {
+                                PodcastEpisodeId = existingPodcastEpisode.Id,
+                                PodcasterId = existingPodcaster.Id,
+                            }
+                        );
+
+                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-publish-audio-processing-flow");
+                    await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = existingPodcastEpisode.Id;
+                    messageNextRequestData["PodcasterId"] = existingPodcaster.Id;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcasterId = existingPodcaster.Id,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "publish-episode.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Publish podcast episode failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "publish-episode.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task ProcessPodcastEpisodePublishAudio(ProcessingEpisodePublishAudioParameterDTO processingEpisodePublishAudioParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Xử lý audio publish podcast episode
+                    var existingPodcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(processingEpisodePublishAudioParameterDTO.PodcastEpisodeId,
+                        includeFunc: q => q
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastChannel)
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                    );
+                    if (existingPodcastEpisode == null)
+                    {
+                        throw new Exception("Podcast episode with id " + processingEpisodePublishAudioParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast episode with id " + processingEpisodePublishAudioParameterDTO.PodcastEpisodeId + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.AudioProcessing)
+                    {
+                        throw new Exception("Podcast episode with id " + processingEpisodePublishAudioParameterDTO.PodcastEpisodeId + " is not in Audio Processing status");
+                    }
+                    else if (existingPodcastEpisode.AudioFileKey == null || existingPodcastEpisode.AudioFingerPrint == null || existingPodcastEpisode.AudioTranscript == null)
+                    {
+                        throw new Exception("Podcast episode with id " + processingEpisodePublishAudioParameterDTO.PodcastEpisodeId + " is missing audio data");
+                    }
+
+                    if (existingPodcastEpisode.PodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcasterId != processingEpisodePublishAudioParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not belong to podcaster with id " + processingEpisodePublishAudioParameterDTO.PodcasterId);
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been removed");
+                    }
+                    if (existingPodcastEpisode.PodcastShow.PodcastChannel != null)
+                    {
+                        if (existingPodcastEpisode.PodcastShow.PodcastChannel.DeletedAt != null)
+                        {
+                            throw new Exception("Podcast channel with id " + existingPodcastEpisode.PodcastShow.PodcastChannelId + " has been deleted");
+                        }
+                    }
+                    var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(existingPodcastEpisode.PodcastShow.PodcasterId);
+                    if (existingPodcaster == null || existingPodcaster.Id != existingPodcastEpisode.PodcastShow.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + existingPodcastEpisode.PodcastShow.PodcasterId + " does not exist");
+                    }
+
+
+                    var stream = await _fileIOHelper.GetFileStreamAsync(existingPodcastEpisode.AudioFileKey);
+                    if (stream == null)
+                    {
+                        throw new Exception("Could not retrieve uploaded file from storage");
+                    }
+
+                    HlsProcessingResult hlsResult = await _ffMpegCoreHlsService.ProcessAudioToHlsAsync(stream);
+                    if (hlsResult.Success == false)
+                    {
+                        throw new Exception("HLS processing failed: " + hlsResult.ErrorMessage);
+                    }
+
+                    // xoá hết các file cũ trong thư mục playlist (nếu có)
+                    var folderPath = _filePathConfig.PODCAST_EPISODE_FILE_PATH + "\\" + existingPodcastEpisode.Id;
+                    var existingPlaylistFolderKey = FilePathHelper.CombinePaths(
+                                folderPath,
+                                "playlist"
+                            );
+                    await _fileIOHelper.DeleteFolderAsync(existingPlaylistFolderKey);
+
+                    foreach (var segment in hlsResult.GeneratedFiles)
+                    {
+                        var segmentData = segment.FileContent;
+                        await _fileIOHelper.UploadBinaryFileAsync(segmentData, existingPlaylistFolderKey, segment.FileName);
+                    }
+
+                    // Change episode status to Published
+                    var newStatusTracking = new PodcastEpisodeStatusTracking
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.Published
+                    };
+                    await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = existingPodcastEpisode.Id;
+                    messageNextRequestData["PodcasterId"] = existingPodcaster.Id;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcasterId = existingPodcaster.Id,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "processing-episode-publish-audio.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Process podcast episode publish audio failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "processing-episode-publish-audio.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        
     }
 }

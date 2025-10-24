@@ -8,19 +8,22 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
     public class PodcastPublishReviewSessionConfigModel
     {
         public float MinDuplicateSimilarityRate { get; set; }
-        public int TranscriptionMinRestrictedTermCount { get; set; }
+        public int HighTranscriptionMinRestrictedTermCount { get; set; }
+        public int MediumTranscriptionMinRestrictedTermCount { get; set; }
     }
     public class PodcastPublishReviewSessionConfig : IPodcastPublishReviewSessionConfig
     {
         public float MinDuplicateSimilarityRate { get; set; }
-        public int TranscriptionMinRestrictedTermCount { get; set; }
+        public int HighTranscriptionMinRestrictedTermCount { get; set; }
+        public int MediumTranscriptionMinRestrictedTermCount { get; set; }
 
 
         public PodcastPublishReviewSessionConfig(IConfiguration configuration)
         {
             var podcastPublishReviewSessionConfig = configuration.GetSection("BusinessSettings:PodcastPublishReviewSession").Get<PodcastPublishReviewSessionConfigModel>();
             MinDuplicateSimilarityRate = podcastPublishReviewSessionConfig.MinDuplicateSimilarityRate;
-            TranscriptionMinRestrictedTermCount = podcastPublishReviewSessionConfig.TranscriptionMinRestrictedTermCount;
+            HighTranscriptionMinRestrictedTermCount = podcastPublishReviewSessionConfig.HighTranscriptionMinRestrictedTermCount;
+            MediumTranscriptionMinRestrictedTermCount = podcastPublishReviewSessionConfig.MediumTranscriptionMinRestrictedTermCount;
         }
     }
 }

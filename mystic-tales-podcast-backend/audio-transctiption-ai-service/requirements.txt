@@ -13,3 +13,4 @@ soundfile
 librosa
 python-jose
 aiofiles
+pydub

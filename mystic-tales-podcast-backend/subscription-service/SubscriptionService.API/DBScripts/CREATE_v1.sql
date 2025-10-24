@@ -61,7 +61,8 @@ CREATE TABLE PodcastSubscriptionBenefitMapping (
 
 -- PodcastSubscriptionRegistration table
 CREATE TABLE PodcastSubscriptionRegistration (
-    accountId INT PRIMARY KEY,
+	id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT,
     podcastSubscriptionId INT NOT NULL,
     subscriptionCycleTypeId INT NOT NULL,
     currentVersion INT NOT NULL,
@@ -75,14 +76,6 @@ CREATE TABLE PodcastSubscriptionRegistration (
     FOREIGN KEY (subscriptionCycleTypeId) REFERENCES SubscriptionCycleType(id)
 );
 
--- PodcastSubscriptionRegistrationBenefit table
-CREATE TABLE PodcastSubscriptionRegistrationBenefit (
-    podcastSubscriptionRegistrationId INT NOT NULL,
-    podcastSubscriptionBenefitId INT NOT NULL,
-    PRIMARY KEY (podcastSubscriptionRegistrationId, podcastSubscriptionBenefitId),
-    FOREIGN KEY (podcastSubscriptionRegistrationId) REFERENCES PodcastSubscriptionRegistration(accountId),
-    FOREIGN KEY (podcastSubscriptionBenefitId) REFERENCES PodcastSubscriptionBenefit(id)
-);
 
 -- MemberSubscription table
 CREATE TABLE MemberSubscription (
@@ -124,7 +117,8 @@ CREATE TABLE MemberSubscriptionBenefitMapping (
 
 -- MemberSubscriptionRegistration table
 CREATE TABLE MemberSubscriptionRegistration (
-    accountId INT PRIMARY KEY,
+	id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT,
     memberSubscriptionId INT NOT NULL,
     currentVersion INT NOT NULL,
     isAcceptNewestVersionSwitch BIT NULL,

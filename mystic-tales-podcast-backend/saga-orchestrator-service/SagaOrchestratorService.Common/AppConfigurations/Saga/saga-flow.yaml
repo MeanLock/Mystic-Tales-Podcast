@@ -3964,11 +3964,13 @@ flows:
         description: "Publish episode"
         parameters:
           - PodcastEpisodeId
+          - PodcasterId  # không dùng trong publish nhưng giữ để kiểm tra quyền (lấy từ jwt)  
         next-request-data:
           - PodcastEpisodeId
+          - PodcasterId
         response-data:
           - PodcastEpisodeId
-          - UpdatedAt
+          - PodcasterId
         onSuccess:
           emit: "publish-episode.success"
           topic: "content-management-domain"
@@ -4189,64 +4191,141 @@ flows:
     description: "Yêu cầu kiểm duyệt episode"
     save-file: ""
     steps:
-      - name: "audio-content-automatic-examination"
+      - name: "request-episode-audio-examination"
         topic: "content-moderation-domain"
         handle-service: "PodcastService"
         description: "Kiểm duyệt nội dung audio để flag episode và tạo review session nếu cần"
         parameters:
           - PodcastEpisodeId
+          - PodcasterId  # không dùng trong yêu cầu nhưng giữ để kiểm tra quyền (lấy từ jwt)
         next-request-data:
           - PodcastEpisodeId
+          - PodcasterId
         response-data:
           - PodcastEpisodeId
-          - PodcastEpisodePublishReviewSessionId
+          - PodcasterId
         onSuccess:
-          emit: "audio-content-automatic-examination.success"
+          emit: "request-episode-audio-examination.success"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "audio-content-automatic-examination.failed"
+          emit: "request-episode-audio-examination.failed"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
 
-  episode-content-review-flow:
+  episode-publish-review-session-edit-require-flow:
     topic: "content-moderation-domain"
     handle-service: "SagaOrchestratorService"
     description: "Đánh giá nội dung tập podcast"
     save-file: ""
     steps:
-      - name: "audio-content-staff-examination"
+      - name: "require-episode-publish-review-session-edit"
         topic: "content-moderation-domain"
         handle-service: "PodcastService"
         description: "Staff kiểm duyệt nội dung vào quyêt định có cho đăng hay không"
         parameters:
           - PodcastEpisodePublishReviewSessionId
-          - IsAccepted
           - Note
-          - Deadline
+          - PodcastIllegalContentTypeIds
+          - StaffId 
         next-request-data:
           - PodcastEpisodePublishReviewSessionId
-          - IsAccepted
           - Note
-          - Deadline
+          - PodcastIllegalContentTypeIds
+          - StaffId 
         response-data:
           - PodcastEpisodePublishReviewSessionId
-          - IsAccepted
           - Note
-          - Deadline
-          - UpdatedAt
+          - PodcastIllegalContentTypeIds
+          - StaffId 
         onSuccess:
-          emit: "review-podcast-episode-content.success"
+          emit: "require-episode-publish-review-session-edit.success"
           topic: "content-moderation-domain"
-          handle-service: "SagaOrchestratorService "
+          handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "review-podcast-episode-content.failed"
+          emit: "require-episode-publish-review-session-edit.failed"
+          topic: "content-moderation-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-publish-review-session-acceptance-flow:
+    topic: "content-moderation-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Đánh giá nội dung tập podcast"
+    save-file: ""
+    steps:
+      - name: "accept-episode-publish-review-session"
+        topic: "content-moderation-domain"
+        handle-service: "PodcastService"
+        description: "Staff đồng ý cho đăng tập podcast"
+        parameters:
+          - PodcastEpisodePublishReviewSessionId
+          - Note
+          - PodcastIllegalContentTypeIds
+          - StaffId 
+        next-request-data:
+          - PodcastEpisodePublishReviewSessionId
+          - Note
+          - PodcastIllegalContentTypeIds
+          - StaffId 
+        response-data:
+          - PodcastEpisodePublishReviewSessionId
+          - Note
+          - PodcastIllegalContentTypeIds
+          - StaffId 
+        onSuccess:
+          emit: "accept-episode-publish-review-session.success"
+          topic: "content-moderation-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "accept-episode-publish-review-session.failed"
+          topic: "content-moderation-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+  
+  episode-publish-review-session-rejection-flow:
+    topic: "content-moderation-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Từ chối xuất bản tập podcast"
+    save-file: ""
+    steps:
+      - name: "reject-episode-publish-review-session"
+        topic: "content-moderation-domain"
+        handle-service: "PodcastService"
+        description: "Từ chối xuất bản tập podcast"
+        parameters:
+          - PodcastEpisodePublishReviewSessionId
+          - Note
+          - PodcastIllegalContentTypeIds
+          - StaffId 
+        next-request-data:
+          - PodcastEpisodePublishReviewSessionId
+          - Note
+          - PodcastIllegalContentTypeIds
+          - StaffId 
+        response-data:
+          - PodcastEpisodePublishReviewSessionId
+          - Note
+          - PodcastIllegalContentTypeIds
+          - StaffId 
+        onSuccess:
+          emit: "reject-episode-publish-review-session.success"
+          topic: "content-moderation-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "reject-episode-publish-review-session.failed"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -4264,10 +4343,13 @@ flows:
         description: "Hủy phiên đánh giá xuất bản tập podcast"
         parameters:
           - PodcastEpisodeId
+          - PodcasterId # không dùng trong hủy nhưng giữ để kiểm tra quyền (lấy từ jwt)
         next-request-data:
           - PodcastEpisodeId
+          - PodcasterId
         response-data:
           - PodcastEpisodeId
+          - PodcasterId
         onSuccess:
           emit: "discard-episode-publish-review-session.success"
           topic: "content-moderation-domain"

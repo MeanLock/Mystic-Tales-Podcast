@@ -7,6 +7,8 @@ using PodcastService.Infrastructure.Services.Audio.AcoustID;
 using PodcastService.Infrastructure.Models.Audio.AcoustID;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using PodcastService.BusinessLogic.Enums.Account;
+using PodcastService.BusinessLogic.DTOs.Account;
 
 namespace PodcastService.API.Controllers.QueryControllers
 {
@@ -58,6 +60,34 @@ namespace PodcastService.API.Controllers.QueryControllers
             // return Ok((JArray)result.Results["podcastRestrictedTerms"]);
             List<string> terms = ((JArray)result.Results["podcastRestrictedTerms"]).Select(terms => terms["Term"].ToString()).ToList();
             return Ok(terms);
+        }
+
+        [HttpGet("test-get-staff")]
+        public async Task<IActionResult> TestGetStaff()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                {
+                    new BatchQueryItem
+                    {
+                        Key = "account",
+                        QueryType = "findall",
+                        EntityType = "Account",
+
+                        Parameters = JObject.FromObject(new
+                        {
+                            where = new
+                            {
+                                RoleId = (int) RoleEnum.Staff
+                            },
+                        }),
+                    }
+                }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+            var accounts = ((JArray)result.Results["account"]).ToObject<List<AccountDTO>>();
+            return Ok(accounts);
         }
 
         [HttpPost("generate-audio-fingerprint")]
