@@ -31,5 +31,7 @@ public partial class PodcasterProfile
 
     public int TotalFollow { get; set; }
 
+    public int ListenCount { get; set; }
+
     public virtual Account Account { get; set; } = null!;
 }

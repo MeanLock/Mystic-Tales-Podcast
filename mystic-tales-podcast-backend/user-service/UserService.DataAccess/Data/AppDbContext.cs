@@ -344,6 +344,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.IsVerified)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnName("isVerified");
+            entity.Property(e => e.ListenCount).HasColumnName("listenCount");
             entity.Property(e => e.Name)
                 .HasMaxLength(250)
                 .HasColumnName("name");
