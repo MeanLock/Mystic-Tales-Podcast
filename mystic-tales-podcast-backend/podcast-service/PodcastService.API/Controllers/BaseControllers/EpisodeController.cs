@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -12,11 +13,14 @@ using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
 using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
 using PodcastService.Common.AppConfigurations.FilePath.interfaces;
+using PodcastService.Common.AppConfigurations.Media.interfaces;
 using PodcastService.DataAccess.Data;
 using PodcastService.DataAccess.Entities.SqlServer;
 using PodcastService.DataAccess.Repositories.interfaces;
 using PodcastService.Infrastructure.Helpers.AudioHelpers;
+using PodcastService.Infrastructure.Models.Audio.Hls;
 using PodcastService.Infrastructure.Models.Audio.Transcription;
+using PodcastService.Infrastructure.Services.Audio.Hls;
 using PodcastService.Infrastructure.Services.Audio.Transcription;
 using PodcastService.Infrastructure.Services.Kafka;
 using PodcastService.Infrastructure.Services.Redis;
@@ -42,8 +46,10 @@ namespace PodcastService.API.Controllers.BaseControllers
         private readonly AudioTranscriptionApiService _audioTranscriptionApiService;
         private readonly AppDbContext _appDbContext;
         private readonly IGenericRepository<PodcastEpisode> _podcastEpisodeGenericRepository;
+        private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
+        private readonly IMediaTypeConfig _mediaTypeConfig;
 
-        public EpisodeController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService, PodcastEpisodeService podcastEpisodeService, AudioTranscriptionApiService audioTranscriptionApiService, AppDbContext appDbContext, IGenericRepository<PodcastEpisode> podcastEpisodeGenericRepository)
+        public EpisodeController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService, PodcastEpisodeService podcastEpisodeService, AudioTranscriptionApiService audioTranscriptionApiService, AppDbContext appDbContext, IGenericRepository<PodcastEpisode> podcastEpisodeGenericRepository, FFMpegCoreHlsService ffMpegCoreHlsService, IMediaTypeConfig mediaTypeConfig)
         {
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
@@ -56,6 +62,8 @@ namespace PodcastService.API.Controllers.BaseControllers
             _audioTranscriptionApiService = audioTranscriptionApiService;
             _appDbContext = appDbContext;
             _podcastEpisodeGenericRepository = podcastEpisodeGenericRepository;
+            _ffMpegCoreHlsService = ffMpegCoreHlsService;
+            _mediaTypeConfig = mediaTypeConfig;
         }
 
         #region Sample coding format must be followed
@@ -626,7 +634,17 @@ namespace PodcastService.API.Controllers.BaseControllers
             });
         }
 
-        
+        // /api/podcast-service/api/episodes/{PodcastEpisodeId}/listen
+        // [HttpPost("{PodcastEpisodeId}/listen")]
+        // [Authorize(Policy = "Customer.BasicAccess")]
+        // public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId)
+        // {
+        //     var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+        //     var episodeListenResponse = await _podcastEpisodeService.RecordEpisodeListenAsync(PodcastEpisodeId, account.Id);
+        // }
+
+
 
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -666,6 +684,76 @@ namespace PodcastService.API.Controllers.BaseControllers
             await _podcastEpisodeGenericRepository.UpdateAsync(episode.Id, episode);
 
             return Ok();
+        }
+        
+        [HttpPost("upload-audio-ffmpegCore")] // upload-audio return file key
+        public async Task<IActionResult> UploadAudioFFmpegCore(IFormFile file,
+            [FromForm] string folderPath, [FromForm] string fileName)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return BadRequest("No file provided");
+
+                using var memoryStream = new MemoryStream();
+                await file.CopyToAsync(memoryStream);
+                var fileData = memoryStream.ToArray();
+
+                await _fileIOHelper.UploadBinaryFileAsync(fileData, folderPath, fileName, file.ContentType);
+
+                var stream = await _fileIOHelper.GetFileStreamAsync(FilePathHelper.CombinePaths(folderPath, fileName));
+                if (stream == null)
+                {
+                    return BadRequest(new { error = "Failed to retrieve uploaded file stream" });
+                }
+
+                HlsProcessingResult hlsResult = await _ffMpegCoreHlsService.ProcessAudioToHlsAsync(stream);
+                if (hlsResult.Success == false)
+                {
+                    return BadRequest(new { error = hlsResult.ErrorMessage });
+                }
+
+                // xoá hết các file cũ trong thư mục playlist (nếu có)
+                await _fileIOHelper.DeleteFolderAsync(FilePathHelper.CombinePaths(folderPath, "playlist"));
+
+                foreach (var segment in hlsResult.GeneratedFiles)
+                {
+                    // var segmentData = await _fileIOHelper.GetFileBytesAsync(segment.FilePath);
+                    // if (segmentData == null)
+                    // {
+                    //     return BadRequest(new { error = $"Failed to read segment file: {segment.FilePath}" });
+                    // }
+                    var segmentData = segment.FileContent;
+
+                    await _fileIOHelper.UploadBinaryFileAsync(segmentData, FilePathHelper.CombinePaths(folderPath, "playlist"), segment.FileName);
+                }
+                await _fileIOHelper.UploadBinaryFileAsync(hlsResult.EncryptionKeyFile.FileContent, FilePathHelper.CombinePaths(folderPath, "playlist"), hlsResult.EncryptionKeyFile.FileName);
+
+                string playlistUrl = await _fileIOHelper.GeneratePresignedUrlAsync(FilePathHelper.CombinePaths(folderPath, "playlist", "playlist.m3u8"), 20);
+                string playlistFileKey = await _fileIOHelper.GetFullFileKeyAsync(FilePathHelper.CombinePaths(folderPath, "playlist", "playlist.m3u8"));
+                // string ePlaylistUrl = Convert.ToBase64String(Encoding.UTF8.GetBytes(playlistUrl));
+                string ePlaylistFileKey = Convert.ToBase64String(Encoding.UTF8.GetBytes(playlistFileKey));
+
+
+
+                return Ok(new
+                {
+                    message = "Binary file uploaded successfully",
+                    fileName,
+                    size = fileData.Length,
+                    contentType = file.ContentType,
+                    fileKey = FilePathHelper.NormalizeFilePath(FilePathHelper.CombinePaths(folderPath, $"{fileName}{_mediaTypeConfig.GetExtensionFromMimeType(file.ContentType)}")),
+                    playlistFileKey,
+                    folderPath = FilePathHelper.CombinePaths(folderPath, "playlist"),
+                    // playlistUrl,
+                    ePlaylistFileKey
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+
         }
 
         

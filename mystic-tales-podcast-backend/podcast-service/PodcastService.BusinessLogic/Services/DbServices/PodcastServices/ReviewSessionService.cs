@@ -595,7 +595,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Name = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.Name,
                         MainImageFileKey = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.MainImageFileKey,
                     } : null,
-                    Podcaster = new AccountStatusSnippetDTO
+                    Podcaster = new AccountStatusSnippetResponseDTO
                     {
                         Id = podcaster.Id,
                         Email = podcaster.Email,
@@ -1049,7 +1049,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         throw new Exception("Podcast channel with id " + existingEpisode.PodcastShow.PodcastChannel.Id + " has been deleted");
                     }
-                    
+
                     var episodeCurrentStatusId = existingEpisode.PodcastEpisodeStatusTrackings
                             .OrderByDescending(s => s.CreatedAt).Select(s =>s.PodcastEpisodeStatusId)
                             .FirstOrDefault();

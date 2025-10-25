@@ -6,15 +6,15 @@ namespace PodcastService.Infrastructure.Configurations.Audio.Hls.interfaces
         int DefaultShortSegmentSeconds { get; set; }
         int DefaultLongSegmentSeconds { get; set; }
         string FfmpegPath { get; set; }
-        string PlaylistName { get; set; }
-        string SegmentFilePattern { get; set; }
+        string PlaylistFileName { get; set; }
+        string SegmentFileNamePattern { get; set; }
         IHlsEncryptionConfig Encryption { get; set; }
     }
 
     public interface IHlsEncryptionConfig
     {
         bool Enabled { get; set; }
-        string KeyFile { get; set; }
-        string KeyInfoFile { get; set; }
+        string KeyFileName { get; set; }
+        string KeyInfoFileName { get; set; }
     }
 }

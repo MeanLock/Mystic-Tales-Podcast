@@ -36,16 +36,6 @@ CREATE TABLE Account (
     FOREIGN KEY (roleId) REFERENCES Role(id)
 );
 
--- AccountPodcastListenHistory table
-CREATE TABLE AccountPodcastListenHistory (
-    accountId INT NOT NULL,
-    podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
-    lastListenDurationSeconds INT NOT NULL DEFAULT 0,
-    isCompleted BIT NOT NULL DEFAULT 0,
-    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    PRIMARY KEY (accountId, podcastEpisodeId),
-    FOREIGN KEY (accountId) REFERENCES Account(id)
-);
 
 -- PasswordResetToken table
 CREATE TABLE PasswordResetToken (
@@ -498,6 +488,8 @@ CREATE TABLE PodcastEpisode (
     audioLength INT NULL DEFAULT NULL,
     audioFingerPrint VARBINARY(MAX) NULL DEFAULT NULL,
     audioTranscript NVARCHAR(MAX) NULL DEFAULT NULL,
+    audioEncryptionKeyId UNIQUEIDENTIFIER NULL DEFAULT NULL,
+    audioEncryptionKeyFileKey NVARCHAR(MAX) NULL DEFAULT NULL,
     podcastEpisodeSubscriptionTypeId INT NOT NULL DEFAULT 1,
     podcastShowId UNIQUEIDENTIFIER NOT NULL,
     seasonNumber INT NOT NULL DEFAULT 0,
@@ -511,6 +503,19 @@ CREATE TABLE PodcastEpisode (
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (podcastEpisodeSubscriptionTypeId) REFERENCES PodcastEpisodeSubscriptionType(id),
     FOREIGN KEY (podcastShowId) REFERENCES PodcastShow(id)
+);
+
+-- PodcastEpisodeListenSession table
+CREATE TABLE PodcastEpisodeListenSession (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL,
+    podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
+    lastListenDurationSeconds INT NOT NULL DEFAULT 0,
+    isCompleted BIT NOT NULL DEFAULT 0,
+    token NVARCHAR(MAX) NOT NULL,
+    expiredAt DATETIME NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    FOREIGN KEY (podcastEpisodeId) REFERENCES PodcastEpisode(id)
 );
 
 -- PodcastEpisodeLicense table

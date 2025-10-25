@@ -101,7 +101,7 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
             var hlsDir = Path.Combine(workingDir, "hls");
             Directory.CreateDirectory(hlsDir);
 
-            var playlistPath = Path.Combine(hlsDir, _hlsConfig.PlaylistName);
+            var playlistPath = Path.Combine(hlsDir, _hlsConfig.PlaylistFileName);
 
             try
             {
@@ -111,7 +111,7 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                 // Encryption disabled for performance optimization
 
                 // Generate HLS segments using FFmpeg
-                var segmentPattern = Path.Combine(hlsDir, _hlsConfig.SegmentFilePattern);
+                var segmentPattern = Path.Combine(hlsDir, _hlsConfig.SegmentFileNamePattern);
                 var success = await RunFfmpegHlsConversion(
                     audioFilePath,
                     playlistPath,

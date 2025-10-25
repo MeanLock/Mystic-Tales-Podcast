@@ -21,7 +21,7 @@ namespace PodcastService.BusinessLogic.DTOs.ReviewSession.Details
         public List<string> RestrictedTermFoundList { get; set; } = null!;
         public PodcastChannelSnippetResponseDTO? PodcastChannel { get; set; } = null!;
         public required PodcastShowSnippetResponseDTO PodcastShow { get; set; } = null!;
-        public required AccountStatusSnippetDTO Podcaster { get; set; } = null!;
+        public required AccountStatusSnippetResponseDTO Podcaster { get; set; } = null!;
         public required PodcastEpisodeStatusDTO EpisodeCurrentStatus { get; set; } = null!;
         public required PodcastShowStatusDTO ShowCurrentStatus { get; set; } = null!;
         public PodcastChannelStatusDTO? ChannelCurrentStatus { get; set; } = null!;

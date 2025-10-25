@@ -9,29 +9,29 @@ namespace PodcastService.Infrastructure.Configurations.Audio.Hls
         public int DefaultShortSegmentSeconds { get; set; }
         public int DefaultLongSegmentSeconds { get; set; }
         public string FfmpegPath { get; set; } = string.Empty;
-        public string PlaylistName { get; set; } = string.Empty;
-        public string SegmentFilePattern { get; set; } = string.Empty;
+        public string PlaylistFileName { get; set; } = string.Empty;
+        public string SegmentFileNamePattern { get; set; } = string.Empty;
         public HlsEncryptionConfigModel Encryption { get; set; } = new();
     }
 
     public class HlsEncryptionConfigModel
     {
         public bool Enabled { get; set; }
-        public string KeyFile { get; set; } = string.Empty;
-        public string KeyInfoFile { get; set; } = string.Empty;
+        public string KeyFileName { get; set; } = string.Empty;
+        public string KeyInfoFileName { get; set; } = string.Empty;
     }
 
     public class HlsEncryptionConfig : IHlsEncryptionConfig
     {
         public bool Enabled { get; set; }
-        public string KeyFile { get; set; } = string.Empty;
-        public string KeyInfoFile { get; set; } = string.Empty;
+        public string KeyFileName { get; set; } = string.Empty;
+        public string KeyInfoFileName { get; set; } = string.Empty;
 
         public HlsEncryptionConfig(HlsEncryptionConfigModel model)
         {
             Enabled = model.Enabled;
-            KeyFile = model.KeyFile;
-            KeyInfoFile = model.KeyInfoFile;
+            KeyFileName = model.KeyFileName;
+            KeyInfoFileName = model.KeyInfoFileName;
         }
     }
 
@@ -41,8 +41,8 @@ namespace PodcastService.Infrastructure.Configurations.Audio.Hls
         public int DefaultShortSegmentSeconds { get; set; }
         public int DefaultLongSegmentSeconds { get; set; }
         public string FfmpegPath { get; set; } = string.Empty;
-        public string PlaylistName { get; set; } = string.Empty;
-        public string SegmentFilePattern { get; set; } = string.Empty;
+        public string PlaylistFileName { get; set; } = string.Empty;
+        public string SegmentFileNamePattern { get; set; } = string.Empty;
         public IHlsEncryptionConfig Encryption { get; set; } = new HlsEncryptionConfig(new HlsEncryptionConfigModel());
 
         public HlsConfig(IConfiguration configuration)
@@ -54,8 +54,8 @@ namespace PodcastService.Infrastructure.Configurations.Audio.Hls
                 DefaultShortSegmentSeconds = hlsConfig.DefaultShortSegmentSeconds;
                 DefaultLongSegmentSeconds = hlsConfig.DefaultLongSegmentSeconds;
                 FfmpegPath = hlsConfig.FfmpegPath;
-                PlaylistName = hlsConfig.PlaylistName;
-                SegmentFilePattern = hlsConfig.SegmentFilePattern;
+                PlaylistFileName = hlsConfig.PlaylistFileName;
+                SegmentFileNamePattern = hlsConfig.SegmentFileNamePattern;
                 Encryption = new HlsEncryptionConfig(hlsConfig.Encryption);
             }
         }

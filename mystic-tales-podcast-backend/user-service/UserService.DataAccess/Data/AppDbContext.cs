@@ -22,8 +22,6 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<AccountNotification> AccountNotifications { get; set; }
 
-    public virtual DbSet<AccountPodcastListenHistory> AccountPodcastListenHistories { get; set; }
-
     public virtual DbSet<AccountSavedPodcastEpisode> AccountSavedPodcastEpisodes { get; set; }
 
     public virtual DbSet<NotificationType> NotificationTypes { get; set; }
@@ -200,27 +198,6 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__AccountNo__accou__17036CC0");
-        });
-
-        modelBuilder.Entity<AccountPodcastListenHistory>(entity =>
-        {
-            entity.HasKey(e => new { e.AccountId, e.PodcastEpisodeId }).HasName("PK__AccountP__A57FBD8420E4D733");
-
-            entity.ToTable("AccountPodcastListenHistory");
-
-            entity.Property(e => e.AccountId).HasColumnName("accountId");
-            entity.Property(e => e.PodcastEpisodeId).HasColumnName("podcastEpisodeId");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
-                .HasColumnType("datetime")
-                .HasColumnName("createdAt");
-            entity.Property(e => e.IsCompleted).HasColumnName("isCompleted");
-            entity.Property(e => e.LastListenDurationSeconds).HasColumnName("lastListenDurationSeconds");
-
-            entity.HasOne(d => d.Account).WithMany(p => p.AccountPodcastListenHistories)
-                .HasForeignKey(d => d.AccountId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__AccountPo__accou__6E01572D");
         });
 
         modelBuilder.Entity<AccountSavedPodcastEpisode>(entity =>

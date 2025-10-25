@@ -1956,7 +1956,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         throw new Exception("Podcast episode with id " + requestEpisodeAudioExaminationParameterDTO.PodcastEpisodeId + " is marked as non-publishable due to audio content issues, please update a new audio file");
                     }
 
-                    
+
 
                     if (existingPodcastEpisode.PodcastShow == null)
                     {
@@ -2207,7 +2207,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     else if (existingPodcastEpisode.DeletedAt != null)
                     {
                         throw new Exception("Podcast episode with id " + publishEpisodeParameterDTO.PodcastEpisodeId + " has been deleted");
-                    }else if (existingPodcastEpisode.IsAudioPublishable != true)
+                    }
+                    else if (existingPodcastEpisode.IsAudioPublishable != true)
                     {
                         throw new Exception("Podcast episode with id " + publishEpisodeParameterDTO.PodcastEpisodeId + " is marked as non-publishable due to audio content issues, please update a new audio file");
                     }
@@ -2401,6 +2402,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         await _fileIOHelper.UploadBinaryFileAsync(segmentData, existingPlaylistFolderKey, segment.FileName);
                     }
 
+                    await _fileIOHelper.UploadBinaryFileAsync(
+                        hlsResult.EncryptionKeyFile.FileContent,
+                        existingPlaylistFolderKey,
+                        hlsResult.EncryptionKeyFile.FileName
+                    );
+
+                    existingPodcastEpisode.AudioEncryptionKeyId = hlsResult.EncryptionKeyId;
+                    existingPodcastEpisode.AudioEncryptionKeyFileKey = FilePathHelper.CombinePaths(
+                        existingPlaylistFolderKey,
+                        hlsResult.EncryptionKeyFile.FileName
+                    );
+                    await _podcastEpisodeGenericRepository.UpdateAsync(existingPodcastEpisode.Id, existingPodcastEpisode);
+
                     // Change episode status to Published
                     var newStatusTracking = new PodcastEpisodeStatusTracking
                     {
@@ -2449,6 +2463,18 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        // public async Task RecordEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId)
+        // {
+        //     var podcastEpisodeListen = new PodcastEpisodeListen
+        //     {
+        //         PodcastEpisodeId = podcastEpisodeId,
+        //         ListenerAccountId = listenerAccountId,
+        //         ListenAt = DateTime.UtcNow
+        //     };
+
+        //     await _podcastEpisodeListenGenericRepository.CreateAsync(podcastEpisodeListen);
+
+        // }
         
     }
 }

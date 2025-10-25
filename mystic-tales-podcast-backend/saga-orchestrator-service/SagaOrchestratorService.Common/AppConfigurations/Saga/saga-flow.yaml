@@ -6758,7 +6758,7 @@ flows:
         handle-service: "UserService"
         description: "Thêm tiền vô ví podcaster"
         parameters:
-          - AccountId
+          - PodcasterId
           - Amount
         next-request-data:
           - BookingTransactionId
@@ -6769,7 +6769,7 @@ flows:
           - PodcasterId
           - TransactionTypeId
         response-data:
-          - AccountId
+          - PodcasterId
           - Amount
           - NewBalance
         onSuccess:
@@ -8900,15 +8900,12 @@ flows:
       description: "Rút lại tiền đã gửi tới ví (chỉ 1 trong 2 accountid và podcasterid được có id)"
       parameters:
         - AccountId
-        - PodcasterId
         - Amount
       next-request-data:
         - AccountId
-        - PodcasterId
         - Amount
       response-data:
         - AccountId
-        - PodcasterId
         - Amount
         - NewBalance
       onSuccess:
@@ -8936,15 +8933,12 @@ flows:
       description: "Thêm lại tiền đã rút từ ví (chỉ 1 trong 2 accountid và podcasterid được có id)"
       parameters:
         - AccountId
-        - PodcasterId
         - Amount
       next-request-data:
         - AccountId
-        - PodcasterId
         - Amount
       response-data:
         - AccountId
-        - PodcasterId
         - Amount
         - NewBalance
       onSuccess:
@@ -8993,38 +8987,6 @@ flows:
         nextSteps: []
         nextFlows: []
 
-  subtract-podcaster-balance-amount-rollback-flow:
-    topic: "user-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Các bước để rollback các hành động đã thực hiện trong các flow khác"
-    save-file: ""
-    steps:
-    - name: "subtract-podcaster-balance-amount-rollback"
-      topic: "user-management-domain"
-      handle-service: "UserService"
-      description: "Thêm lại tiền đã rút từ ví Podcaster"
-      parameters:
-        - PodcasterId
-        - Amount
-      next-request-data:
-        - PodcasterId
-        - Amount
-      response-data:
-        - PodcasterId
-        - Amount
-        - NewBalance
-      onSuccess:
-        emit: "subtract-podcaster-balance-amount-rollback.success"
-        topic: "user-management-domain"
-        handle-service: "SagaOrchestratorService"
-        nextSteps: []
-        nextFlows: []
-      onFailure:
-        emit: "subtract-podcaster-balance-amount-rollback.failed"
-        topic: "user-management-domain"
-        handle-service: "SagaOrchestratorService"
-        nextSteps: []
-        nextFlows: []
 
   create-account-balance-transaction-rollback-flow:
     topic: "payment-processing-domain"

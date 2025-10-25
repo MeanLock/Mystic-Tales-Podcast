@@ -39,6 +39,12 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateEpi
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateEpisodeSavedRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteEpisodeSaved;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteEpisodeSavedRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountBalanceAmount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountBalanceAmount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterBalanceAmount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountBalanceAmountRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountBalanceAmountRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterBalanceAmountRollback;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -554,6 +560,102 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "delete-episode-saved-rollback.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("add-account-balance-amount", SAGA_TOPIC)]
+        public async Task HandleAddAccountBalanceAmountAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var addAccountBalanceAmountParameterDTO = command.RequestData.ToObject<AddAccountBalanceAmountParameterDTO>();
+                    await _accountService.AddAccountBalanceAmount(addAccountBalanceAmountParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "add-account-balance-amount.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("add-account-balance-amount-rollback", SAGA_TOPIC)]
+        public async Task HandleAddAccountBalanceAmountRollbackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var addAccountBalanceAmountRollbackParameterDTO = command.RequestData.ToObject<AddAccountBalanceAmountRollbackParameterDTO>();
+                    await _accountService.AddAccountBalanceAmountRollback(addAccountBalanceAmountRollbackParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "add-account-balance-amount-rollback.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("subtract-account-balance-amount", SAGA_TOPIC)]
+        public async Task HandleSubtractAccountBalanceAmountAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var subtractAccountBalanceAmountParameterDTO = command.RequestData.ToObject<SubtractAccountBalanceAmountParameterDTO>();
+                    await _accountService.SubtractAccountBalanceAmount(subtractAccountBalanceAmountParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "subtract-account-balance-amount.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("subtract-account-balance-amount-rollback", SAGA_TOPIC)]
+        public async Task HandleSubtractAccountBalanceAmountRollbackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var subtractAccountBalanceAmountRollbackParameterDTO = command.RequestData.ToObject<SubtractAccountBalanceAmountRollbackParameterDTO>();
+                    await _accountService.SubtractAccountBalanceAmountRollback(subtractAccountBalanceAmountRollbackParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "subtract-account-balance-amount-rollback.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("add-podcaster-balance-amount", SAGA_TOPIC)]
+        public async Task HandleAddPodcasterBalanceAmountAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var addPodcasterBalanceAmountParameterDTO = command.RequestData.ToObject<AddPodcasterBalanceAmountParameterDTO>();
+                    await _accountService.AddPodcasterBalanceAmount(addPodcasterBalanceAmountParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "add-podcaster-balance-amount.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("add-podcaster-balance-amount-rollback", SAGA_TOPIC)]
+        public async Task HandleAddPodcasterBalanceAmountRollbackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var addPodcasterBalanceAmountRollbackParameterDTO = command.RequestData.ToObject<AddPodcasterBalanceAmountRollbackParameterDTO>();
+                    await _accountService.AddPodcasterBalanceAmountRollback(addPodcasterBalanceAmountRollbackParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "add-podcaster-balance-amount-rollback.failed"    // From YAML onFailure.emit
             );
         }
 

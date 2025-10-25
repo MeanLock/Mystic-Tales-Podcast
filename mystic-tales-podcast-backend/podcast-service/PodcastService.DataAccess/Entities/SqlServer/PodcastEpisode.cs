@@ -51,11 +51,17 @@ public partial class PodcastEpisode
 
     public string? AudioTranscript { get; set; }
 
+    public Guid? AudioEncryptionKeyId { get; set; }
+
+    public string? AudioEncryptionKeyFileKey { get; set; }
+
     public virtual ICollection<PodcastEpisodeHashtag> PodcastEpisodeHashtags { get; set; } = new List<PodcastEpisodeHashtag>();
 
     public virtual ICollection<PodcastEpisodeIllegalContentTypeMarking> PodcastEpisodeIllegalContentTypeMarkings { get; set; } = new List<PodcastEpisodeIllegalContentTypeMarking>();
 
     public virtual ICollection<PodcastEpisodeLicense> PodcastEpisodeLicenses { get; set; } = new List<PodcastEpisodeLicense>();
+
+    public virtual ICollection<PodcastEpisodeListenSession> PodcastEpisodeListenSessions { get; set; } = new List<PodcastEpisodeListenSession>();
 
     public virtual ICollection<PodcastEpisodePublishDuplicateDetection> PodcastEpisodePublishDuplicateDetections { get; set; } = new List<PodcastEpisodePublishDuplicateDetection>();
 

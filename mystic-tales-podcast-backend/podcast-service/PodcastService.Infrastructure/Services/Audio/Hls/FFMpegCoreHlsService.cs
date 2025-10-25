@@ -101,17 +101,17 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
             var hlsDir = Path.Combine(workingDir, "hls");
             Directory.CreateDirectory(hlsDir);
 
-            var playlistPath = Path.Combine(hlsDir, _hlsConfig.PlaylistName);
+            var playlistPath = Path.Combine(hlsDir, _hlsConfig.PlaylistFileName);
 
             try
             {
-                // Skip encryption for better performance (as requested)
-                string? keyInfoPath = null;
-                string? keyFilePath = null;
-                // Encryption disabled for performance optimization
+                // Generate encryption key and key info file
+                var (keyFilePath, keyInfoPath, keyId) = await CreateEncryptionKeyAsync(hlsDir, cancellationToken);
+                
+                _logger.LogInformation($"Encryption key generated successfully with ID: {keyId}");
 
-                // Generate HLS segments using FFmpeg
-                var segmentPattern = Path.Combine(hlsDir, _hlsConfig.SegmentFilePattern);
+                // Generate HLS segments using FFmpeg with encryption
+                var segmentPattern = Path.Combine(hlsDir, _hlsConfig.SegmentFileNamePattern);
                 var success = await RunFfmpegHlsConversion(
                     audioFilePath,
                     playlistPath,
@@ -133,11 +133,16 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                 // Collect all generated files
                 var generatedFiles = await CollectGeneratedFiles(hlsDir, keyFilePath);
 
+                // Get encryption key file
+                var encryptionKeyFile = generatedFiles.FirstOrDefault(f => f.FileType == HlsFileType.EncryptionKey);
+
                 return new HlsProcessingResult
                 {
                     Success = true,
                     PlaylistPath = playlistPath,
                     GeneratedFiles = generatedFiles,
+                    EncryptionKeyFile = encryptionKeyFile,
+                    EncryptionKeyId = keyId,
                     IsReused = false
                 };
             }
@@ -150,6 +155,56 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                     ErrorMessage = ex.Message,
                     GeneratedFiles = new List<HlsFile>()
                 };
+            }
+        }
+
+        /// <summary>
+        /// Create encryption key file and key info file for HLS encryption (AES-128)
+        /// </summary>
+        /// <returns>Tuple of (keyFilePath, keyInfoPath, keyId)</returns>
+        private async Task<(string keyFilePath, string keyInfoPath, Guid keyId)> CreateEncryptionKeyAsync(
+            string hlsDir, 
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                // Generate unique ID for encryption key (will be used as URI and stored in database)
+                var keyId = Guid.NewGuid();
+                
+                _logger.LogDebug($"Generated encryption key ID: {keyId}");
+
+                // Generate random 16-byte (128-bit) encryption key for AES-128
+                var encryptionKey = new byte[16];
+                using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+                {
+                    rng.GetBytes(encryptionKey);
+                }
+
+                // Save encryption key to file
+                var keyFileName = _hlsConfig.Encryption.KeyFileName; //"enc.key"
+                var keyFilePath = Path.Combine(hlsDir, keyFileName);
+                await File.WriteAllBytesAsync(keyFilePath, encryptionKey, cancellationToken);
+
+                _logger.LogDebug($"Encryption key created: {keyFilePath}");
+
+                // Create key info file for FFmpeg
+                // Format:
+                // Line 1: Key URI (using GUID - client will use this to request key from API)
+                // Line 2: Path to key file (for FFmpeg to read during encoding)
+                // Line 3: IV (initialization vector) - optional, using default
+                var keyInfoPath = Path.Combine(hlsDir, _hlsConfig.Encryption.KeyInfoFileName);
+                var keyInfoContent = $"{keyId}\n{keyFilePath}\n";
+                
+                await File.WriteAllTextAsync(keyInfoPath, keyInfoContent, cancellationToken);
+
+                _logger.LogDebug($"Key info file created: {keyInfoPath}");
+
+                return (keyFilePath, keyInfoPath, keyId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating encryption key");
+                throw;
             }
         }
 
@@ -174,7 +229,7 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                     TemporaryFilesFolder = Path.GetTempPath()
                 };
 
-                var success = await FFMpegArguments
+                var ffmpegArgs = FFMpegArguments
                     .FromFileInput(inputFile, false, options => options
                         // Input optimizations (from AudioController patterns)
                         .WithCustomArgument("-analyzeduration 10000000") // Analyze more data for better format detection
@@ -203,6 +258,11 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                         .WithCustomArgument("-hls_segment_type mpegts")
                         .WithCustomArgument("-hls_flags independent_segments+temp_file") // Atomic writes
                         
+                        // Encryption settings (if keyInfoPath is provided)
+                        .WithCustomArgument(!string.IsNullOrEmpty(keyInfoPath) 
+                            ? $"-hls_key_info_file \"{keyInfoPath}\"" 
+                            : "")
+                        
                         // Keyframe settings optimized for speed
                         .WithCustomArgument($"-g {segmentDuration * 2}") // GOP size
                         .WithCustomArgument($"-keyint_min {segmentDuration}") // Minimum keyframe interval
@@ -215,7 +275,9 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                         .WithCustomArgument("-hls_base_url \"\"") // Empty base URL for relative paths
                         .WithCustomArgument("-bufsize 1M -maxrate 192k") // Buffer optimizations
                         .WithCustomArgument("-movflags +faststart") // Enable fast start for web streaming
-                        .WithCustomArgument("-f hls")) // Explicitly specify HLS format
+                        .WithCustomArgument("-f hls")); // Explicitly specify HLS format
+
+                var success = await ffmpegArgs
                     .CancellableThrough(cancellationToken)
                     .ProcessAsynchronously(throwOnError: false, ffMpegOptions: ffOptions);
 
@@ -283,6 +345,10 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                     var fileExtension = Path.GetExtension(fileName).ToLowerInvariant();
                     var fileInfo = new FileInfo(filePath);
 
+                    // Skip keyinfo.txt (internal file, not needed for storage)
+                    if (fileName.Equals("keyinfo.txt", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
                     var fileType = fileExtension switch
                     {
                         ".m3u8" => HlsFileType.Playlist,
@@ -303,7 +369,10 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                     });
                 }
 
-                _logger.LogDebug($"Collected {files.Count} HLS files: {files.Count(f => f.FileType == HlsFileType.Playlist)} playlist(s), {files.Count(f => f.FileType == HlsFileType.Segment)} segment(s)");
+                _logger.LogDebug($"Collected {files.Count} HLS files: " +
+                    $"{files.Count(f => f.FileType == HlsFileType.Playlist)} playlist(s), " +
+                    $"{files.Count(f => f.FileType == HlsFileType.Segment)} segment(s), " +
+                    $"{files.Count(f => f.FileType == HlsFileType.EncryptionKey)} key(s)");
             }
             catch (Exception ex)
             {
@@ -327,10 +396,4 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
             // Cleanup resources if needed
         }
     }
-
 }
-
-    
-
-
-

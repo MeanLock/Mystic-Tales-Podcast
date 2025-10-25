@@ -61,8 +61,6 @@ public partial class Account
 
     public virtual ICollection<AccountNotification> AccountNotifications { get; set; } = new List<AccountNotification>();
 
-    public virtual ICollection<AccountPodcastListenHistory> AccountPodcastListenHistories { get; set; } = new List<AccountPodcastListenHistory>();
-
     public virtual ICollection<AccountSavedPodcastEpisode> AccountSavedPodcastEpisodes { get; set; } = new List<AccountSavedPodcastEpisode>();
 
     public virtual ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();

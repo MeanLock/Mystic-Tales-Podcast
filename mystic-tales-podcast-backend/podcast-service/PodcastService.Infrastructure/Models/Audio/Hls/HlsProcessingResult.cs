@@ -13,6 +13,9 @@ namespace PodcastService.Infrastructure.Models.Audio.Hls
         public bool IsReused { get; set; }
         public string? ErrorMessage { get; set; }
         public List<HlsFile> GeneratedFiles { get; set; } = new List<HlsFile>();
+        public HlsFile EncryptionKeyFile { get; set; }
+        public Guid EncryptionKeyId { get; set; }
+
     }
 
 

@@ -57,6 +57,12 @@ using UserService.BusinessLogic.DTOs.Episode;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreateEpisodeSavedRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteEpisodeSaved;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteEpisodeSavedRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountBalanceAmount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountBalanceAmount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterBalanceAmount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountBalanceAmountRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountBalanceAmountRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterBalanceAmountRollback;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -2952,6 +2958,475 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         flowName: command.FlowName,
                         messageName: "delete-episode-saved-rollback.failed"
                     );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task AddAccountBalanceAmount(AddAccountBalanceAmountParameterDTO addAccountBalanceAmountParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (addAccountBalanceAmountParameterDTO.Amount < 0)
+                    {
+                        throw new Exception("Amount to add must be greater than or equal to 0");
+                    }
+
+                    var account = await _accountGenericRepository.FindByIdAsync(addAccountBalanceAmountParameterDTO.AccountId);
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + addAccountBalanceAmountParameterDTO.AccountId + " does not exist");
+                    }
+                    else if (account.IsVerified == false)
+                    {
+                        throw new Exception("Account with id " + addAccountBalanceAmountParameterDTO.AccountId + " is not verified");
+                    }
+
+
+                    account.Balance += addAccountBalanceAmountParameterDTO.Amount;
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = addAccountBalanceAmountParameterDTO.AccountId;
+                    messageNextRequestData["Amount"] = addAccountBalanceAmountParameterDTO.Amount;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Add account balance amount successfully",
+                        AccountId = addAccountBalanceAmountParameterDTO.AccountId,
+                        Amount = addAccountBalanceAmountParameterDTO.Amount,
+                        NewBalance = account.Balance,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-account-balance-amount.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Add account balance amount failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-account-balance-amount.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task AddAccountBalanceAmountRollback(AddAccountBalanceAmountRollbackParameterDTO addAccountBalanceAmountRollbackParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (addAccountBalanceAmountRollbackParameterDTO.Amount < 0)
+                    {
+                        throw new Exception("Amount to subtract must be greater than or equal to 0");
+                    }
+
+                    var account = await _accountGenericRepository.FindByIdAsync(addAccountBalanceAmountRollbackParameterDTO.AccountId);
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + addAccountBalanceAmountRollbackParameterDTO.AccountId + " does not exist");
+                    }
+                    else if (account.IsVerified == false)
+                    {
+                        throw new Exception("Account with id " + addAccountBalanceAmountRollbackParameterDTO.AccountId + " is not verified");
+                    }
+
+                    var isNegativeBalance = false;
+                    account.Balance -= addAccountBalanceAmountRollbackParameterDTO.Amount;
+                    if (account.Balance < 0)
+                    {
+                        account.Balance = 0;
+                        isNegativeBalance = true;
+                    }
+
+
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    if (isNegativeBalance == true)
+                    {
+                        throw new Exception("Account balance cannot be negative, account balance is set to 0 instead of subsctract result of " + addAccountBalanceAmountRollbackParameterDTO.Amount);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = addAccountBalanceAmountRollbackParameterDTO.AccountId;
+                    messageNextRequestData["Amount"] = addAccountBalanceAmountRollbackParameterDTO.Amount;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Subtract account balance amount successfully",
+                        AccountId = addAccountBalanceAmountRollbackParameterDTO.AccountId,
+                        Amount = addAccountBalanceAmountRollbackParameterDTO.Amount,
+                        NewBalance = account.Balance,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-account-balance-amount-rollback.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Add account balance amount rollback failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-account-balance-amount-rollback.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task SubtractAccountBalanceAmount(SubtractAccountBalanceAmountParameterDTO subtractAccountBalanceAmountParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (subtractAccountBalanceAmountParameterDTO.Amount < 0)
+                    {
+                        throw new Exception("Amount to subtract must be greater than or equal to 0");
+                    }
+
+                    var account = await _accountGenericRepository.FindByIdAsync(subtractAccountBalanceAmountParameterDTO.AccountId);
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + subtractAccountBalanceAmountParameterDTO.AccountId + " does not exist");
+                    }
+                    else if (account.IsVerified == false)
+                    {
+                        throw new Exception("Account with id " + subtractAccountBalanceAmountParameterDTO.AccountId + " is not verified");
+                    }
+
+                    var isNegativeBalance = false;
+                    account.Balance -= subtractAccountBalanceAmountParameterDTO.Amount;
+                    if (account.Balance < 0)
+                    {
+                        account.Balance = 0;
+                        isNegativeBalance = true;
+                    }
+
+
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    if (isNegativeBalance == true)
+                    {
+                        throw new Exception("Account balance cannot be negative, account balance is set to 0 instead of subsctract result of " + subtractAccountBalanceAmountParameterDTO.Amount);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = subtractAccountBalanceAmountParameterDTO.AccountId;
+                    messageNextRequestData["Amount"] = subtractAccountBalanceAmountParameterDTO.Amount;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Subtract account balance amount successfully",
+                        AccountId = subtractAccountBalanceAmountParameterDTO.AccountId,
+                        Amount = subtractAccountBalanceAmountParameterDTO.Amount,
+                        NewBalance = account.Balance,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-account-balance-amount.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Subtract account balance amount failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-account-balance-amount.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task SubtractAccountBalanceAmountRollback(SubtractAccountBalanceAmountRollbackParameterDTO subtractAccountBalanceAmountRollbackParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (subtractAccountBalanceAmountRollbackParameterDTO.Amount < 0)
+                    {
+                        throw new Exception("Amount to add must be greater than or equal to 0");
+                    }
+
+                    var account = await _accountGenericRepository.FindByIdAsync(subtractAccountBalanceAmountRollbackParameterDTO.AccountId);
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + subtractAccountBalanceAmountRollbackParameterDTO.AccountId + " does not exist");
+                    }
+                    else if (account.IsVerified == false)
+                    {
+                        throw new Exception("Account with id " + subtractAccountBalanceAmountRollbackParameterDTO.AccountId + " is not verified");
+                    }
+
+
+                    account.Balance += subtractAccountBalanceAmountRollbackParameterDTO.Amount;
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = subtractAccountBalanceAmountRollbackParameterDTO.AccountId;
+                    messageNextRequestData["Amount"] = subtractAccountBalanceAmountRollbackParameterDTO.Amount;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Add account balance amount successfully",
+                        AccountId = subtractAccountBalanceAmountRollbackParameterDTO.AccountId,
+                        Amount = subtractAccountBalanceAmountRollbackParameterDTO.Amount,
+                        NewBalance = account.Balance,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-account-balance-amount-rollback.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Subtract account balance amount rollback failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-account-balance-amount-rollback.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task AddPodcasterBalanceAmount(AddPodcasterBalanceAmountParameterDTO addPodcasterBalanceAmountParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (addPodcasterBalanceAmountParameterDTO.Amount < 0)
+                    {
+                        throw new Exception("Amount to add must be greater than or equal to 0");
+                    }
+
+                    var account = await _accountGenericRepository.FindByIdAsync(addPodcasterBalanceAmountParameterDTO.PodcasterId,
+                    includeFunc: query => query.Include(a => a.PodcasterProfile));
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + addPodcasterBalanceAmountParameterDTO.PodcasterId + " does not exist");
+                    }
+                    else if (account.IsVerified == false)
+                    {
+                        throw new Exception("Account with id " + addPodcasterBalanceAmountParameterDTO.PodcasterId + " is not verified");
+                    }
+                    else if (account.PodcasterProfile == null)
+                    {
+                        throw new Exception("Account with id " + addPodcasterBalanceAmountParameterDTO.PodcasterId + " is not a podcaster");
+                    }
+                    else if (account.PodcasterProfile.IsVerified == false)
+                    {
+                        throw new Exception("Podcaster profile of account with id " + addPodcasterBalanceAmountParameterDTO.PodcasterId + " is not verified");
+                    }
+
+                    account.Balance += addPodcasterBalanceAmountParameterDTO.Amount;
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = addPodcasterBalanceAmountParameterDTO.PodcasterId;
+                    messageNextRequestData["Amount"] = addPodcasterBalanceAmountParameterDTO.Amount;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Add podcaster balance amount successfully",
+                        PodcasterId = addPodcasterBalanceAmountParameterDTO.PodcasterId,
+                        Amount = addPodcasterBalanceAmountParameterDTO.Amount,
+                        NewBalance = account.Balance,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-podcaster-balance-amount.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Add podcaster balance amount failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-podcaster-balance-amount.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+
+        public async Task AddPodcasterBalanceAmountRollback(AddPodcasterBalanceAmountRollbackParameterDTO addPodcasterBalanceAmountRollbackParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (addPodcasterBalanceAmountRollbackParameterDTO.Amount < 0)
+                    {
+                        throw new Exception("Amount to subtract must be greater than or equal to 0");
+                    }
+
+                    var account = await _accountGenericRepository.FindByIdAsync(addPodcasterBalanceAmountRollbackParameterDTO.PodcasterId,
+                    includeFunc: query => query.Include(a => a.PodcasterProfile));
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + addPodcasterBalanceAmountRollbackParameterDTO.PodcasterId + " does not exist");
+                    }
+                    else if (account.IsVerified == false)
+                    {
+                        throw new Exception("Account with id " + addPodcasterBalanceAmountRollbackParameterDTO.PodcasterId + " is not verified");
+                    }
+                    else if (account.PodcasterProfile == null)
+                    {
+                        throw new Exception("Account with id " + addPodcasterBalanceAmountRollbackParameterDTO.PodcasterId + " is not a podcaster");
+                    }
+                    else if (account.PodcasterProfile.IsVerified == false)
+                    {
+                        throw new Exception("Podcaster profile of account with id " + addPodcasterBalanceAmountRollbackParameterDTO.PodcasterId + " is not verified");
+                    }
+
+                    var isNegativeBalance = false;
+                    account.Balance -= addPodcasterBalanceAmountRollbackParameterDTO.Amount;
+                    if (account.Balance < 0)
+                    {
+                        account.Balance = 0;
+                        isNegativeBalance = true;
+                    }
+
+
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    if (isNegativeBalance == true)
+                    {
+                        throw new Exception("Podcaster balance cannot be negative, account balance is set to 0 instead of subsctract result of " + addPodcasterBalanceAmountRollbackParameterDTO.Amount);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = addPodcasterBalanceAmountRollbackParameterDTO.PodcasterId;
+                    messageNextRequestData["Amount"] = addPodcasterBalanceAmountRollbackParameterDTO.Amount;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Subtract podcaster balance amount successfully",
+                        PodcasterId = addPodcasterBalanceAmountRollbackParameterDTO.PodcasterId,
+                        Amount = addPodcasterBalanceAmountRollbackParameterDTO.Amount,
+                        NewBalance = account.Balance,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-podcaster-balance-amount-rollback.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Add podcaster balance amount rollback failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-podcaster-balance-amount-rollback.failed"
+                        );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }

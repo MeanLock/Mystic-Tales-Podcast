@@ -3,7 +3,7 @@ using PodcastService.BusinessLogic.Helpers.JsonHelpers;
 
 namespace PodcastService.BusinessLogic.DTOs.Cache
 {
-    public class AccountStatusSnippetDTO
+    public class AccountStatusSnippetResponseDTO
     {
         public required int Id { get; set; }
         public required string Email { get; set; }
