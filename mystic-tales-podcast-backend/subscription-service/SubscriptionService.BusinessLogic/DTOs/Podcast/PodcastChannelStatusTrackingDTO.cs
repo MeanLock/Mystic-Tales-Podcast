@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SubscriptionService.BusinessLogic.DTOs.Podcast.ListItems
+namespace SubscriptionService.BusinessLogic.DTOs.Podcast
 {
     public class PodcastChannelStatusTrackingDTO
     {

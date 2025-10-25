@@ -10,10 +10,6 @@ using ModerationService.DataAccess.Repositories.interfaces;
 using ModerationService.DataAccess.Entities;
 using Net.payOS;
 using Net.payOS.Types;
-using ModerationService.BusinessLogic.DTOs.Transaction;
-using System.Linq.Expressions;
-using ModerationService.BusinessLogic.DTOs.Auth;
-using ModerationService.BusinessLogic.DTOs.Feedback;
 using ModerationService.Infrastructure.Configurations.Payos.interfaces;
 using ModerationService.BusinessLogic.Helpers.AuthHelpers;
 using ModerationService.BusinessLogic.Helpers.FileHelpers;
@@ -91,50 +87,50 @@ namespace ModerationService.BusinessLogic.Services.DbServices.MiscServices
 
         /////////////////////////////////////////////////////////////
 
-        public async Task CreatePlatformFeedback(PlatformFeedbackRequestDTO platformFeedback, Account account)
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    // Check if the account has already given feedback
-                    var existingFeedback = await _platformFeedbackGenericRepository.FindAll(
-                        predicate: feedback => feedback.AccountId == account.Id
-                    ).FirstOrDefaultAsync();
-                    if (existingFeedback != null)
-                    {
-                        // update
-                        existingFeedback.RatingScore = platformFeedback.Feedback.RatingScore;
-                        existingFeedback.Comment = platformFeedback.Feedback.Comment;
+        //public async Task CreatePlatformFeedback(PlatformFeedbackRequestDTO platformFeedback, Account account)
+        //{
+        //    using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //    {
+        //        try
+        //        {
+        //            // Check if the account has already given feedback
+        //            var existingFeedback = await _platformFeedbackGenericRepository.FindAll(
+        //                predicate: feedback => feedback.AccountId == account.Id
+        //            ).FirstOrDefaultAsync();
+        //            if (existingFeedback != null)
+        //            {
+        //                // update
+        //                existingFeedback.RatingScore = platformFeedback.Feedback.RatingScore;
+        //                existingFeedback.Comment = platformFeedback.Feedback.Comment;
 
-                        await _platformFeedbackGenericRepository.UpdateAsync(existingFeedback.AccountId, existingFeedback);
-                    }
-                    else
-                    {
-                        PlatformFeedback platformFeedbackEntity = new PlatformFeedback
-                        {
-                            AccountId = account.Id,
-                            RatingScore = platformFeedback.Feedback.RatingScore,
-                            Comment = platformFeedback.Feedback.Comment
-                        };
-                        // Save feedback to the database
-                        await _platformFeedbackGenericRepository.CreateAsync(platformFeedbackEntity);
-                    }
+        //                await _platformFeedbackGenericRepository.UpdateAsync(existingFeedback.AccountId, existingFeedback);
+        //            }
+        //            else
+        //            {
+        //                PlatformFeedback platformFeedbackEntity = new PlatformFeedback
+        //                {
+        //                    AccountId = account.Id,
+        //                    RatingScore = platformFeedback.Feedback.RatingScore,
+        //                    Comment = platformFeedback.Feedback.Comment
+        //                };
+        //                // Save feedback to the database
+        //                await _platformFeedbackGenericRepository.CreateAsync(platformFeedbackEntity);
+        //            }
 
 
 
-                    // Commit the transaction
-                    await transaction.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine("\n" + ex.StackTrace + "\n");
-                    throw new HttpRequestException("Tạo phản hồi không thành công, lỗi: " + ex.Message);
-                }
-            }
-        }
+        //            // Commit the transaction
+        //            await transaction.CommitAsync();
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            await transaction.RollbackAsync();
+        //            Console.WriteLine(ex.Message);
+        //            Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //            throw new HttpRequestException("Tạo phản hồi không thành công, lỗi: " + ex.Message);
+        //        }
+        //    }
+        //}
     
     }
 }

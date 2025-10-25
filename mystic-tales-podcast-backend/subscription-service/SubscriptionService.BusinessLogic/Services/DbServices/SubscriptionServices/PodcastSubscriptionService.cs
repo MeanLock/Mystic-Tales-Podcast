@@ -697,6 +697,20 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         throw new Exception($"An Active Podcast Subscription Registration exists for Account Id: {parameter.AccountId} and PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
                     }
+
+                    //if(podcastSubscription.PodcastChannelId != null)
+                    //{
+                    //    var listShow = GetPodcastShowByPodcastChannelId(podcastSubscription.PodcastChannelId.Value);
+                    //    if (listShow != null && listShow.Count > 0)
+                    //    {
+                    //        var listRegistration = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                    //            .Where(psr => psr.AccountId == parameter.AccountId
+                    //                && listShow.Select(s => s.Id).Contains(psr.PodcastSubscription.PodcastShowId ?? Guid.Empty)
+                    //                && psr.CancelledAt == null)
+                    //            .ToListAsync();
+                    //    }
+                    //}
+
                     var newRegistration = new PodcastSubscriptionRegistration
                     {
                         AccountId = parameter.AccountId,
@@ -1811,5 +1825,34 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 : null;
             return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
         }
+        //public async Task<List<PodcastShowDTO>> GetPodcastShowByPodcastChannelId(Guid podcastChannelId)
+        //{
+        //    var batchRequest = new BatchQueryRequest
+        //    {
+        //        Queries = new List<BatchQueryItem>
+        //            {
+        //                new BatchQueryItem
+        //                {
+        //                    Key = "podcastShow",
+        //                    QueryType = "findall",
+        //                    EntityType = "PodcastShow",
+        //                    Parameters = JObject.FromObject(new
+        //                    {
+        //                        where = new
+        //                        {
+        //                            PodcastChannelId = podcastChannelId
+        //                        },
+        //                        include = "PodcastShowStatusTracking"
+        //                    })
+        //                }
+        //            }
+        //    };
+        //    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+        //    var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+        //        ? podcastShowArray as JArray
+        //        : null;
+        //    return realResult != null ? realResult.ToObject<List<PodcastShowDTO>>() : null;
+        //}
     }
 }

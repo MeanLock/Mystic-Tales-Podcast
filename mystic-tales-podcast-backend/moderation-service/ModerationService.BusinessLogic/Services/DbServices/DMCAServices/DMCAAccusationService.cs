@@ -28,6 +28,7 @@ using ModerationService.Infrastructure.Models.Kafka;
 using ModerationService.Infrastructure.Services.Kafka;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.Podcast;
+using SystemConfigurationService.DataAccess.Entities.SqlServer;
 
 namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 {
@@ -798,8 +799,34 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 var episodeRemoveResult2 = await _messagingService.SendSagaMessageAsync(episodeRemoveStartSagaTriggerMessage2);
                                 _logger.LogInformation($"Send remove-episode-flow with Saga Id: {episodeRemoveStartSagaTriggerMessage2.SagaInstanceId}");
                             };
+
+                            //Punish Accused (A -200 point)
+                            var accuserPunishmentRequestData4 = new JObject
+                            {
+                                { "AccountId", accusedId },
+                                { "ViolationPoint", 200 }
+                            };
+                            var accountPunishmentStartSagaTriggerMessage4 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.UserManagementDomain,
+                                requestData: accuserPunishmentRequestData4,
+                                sagaInstanceId: null,
+                                messageName: "user-violation-punishment-flow");
+                            var accountPunishmentResult4 = await _messagingService.SendSagaMessageAsync(accountPunishmentStartSagaTriggerMessage4);
+                            _logger.LogInformation($"Send user-violation-punishment-flow with Saga Id: {accountPunishmentStartSagaTriggerMessage4.SagaInstanceId}");
+
+                            //Switch Status
+                            var counterRejectedDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                            {
+                                DmcaAccusationId = dmcaAccusation.Id,
+                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.DMCAWins,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(counterRejectedDmcaAccusationStatusTracking);
+                            dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
                             break;
                         case (int)DMCAAccusationQueryEnum.LAWSUIT_VERIFIED:
+
                             break;
                         case (int)DMCAAccusationQueryEnum.LAWSUIT_REJECTED:
                             break;
@@ -1056,6 +1083,37 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     return null;
                 }
             }
+        }
+        private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "activeSystemConfigProfile",
+                            QueryType = "findall",
+                            EntityType = "SystemConfigProfile",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        IsActive = true
+                                    },
+                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+
+                                }),
+                            Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+
+            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                ? configArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
         //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
         //{
