@@ -45,6 +45,8 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcas
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountBalanceAmountRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountBalanceAmountRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterBalanceAmountRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountListenSlot;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterListenCount;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -659,6 +661,37 @@ namespace UserService.BusinessLogic.MessageHandlers
             );
         }
 
+        [MessageHandler("subtract-account-podcast-listen-slot", SAGA_TOPIC)]
+        public async Task HandleSubtractAccountListenSlotAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var subtractAccountListenSlotParameterDTO = command.RequestData.ToObject<SubtractAccountListenSlotParameterDTO>();
+                    await _accountService.SubtractAccountListenSlot(subtractAccountListenSlotParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "subtract-account-podcast-listen-slot.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("add-podcaster-listen-count", SAGA_TOPIC)]
+        public async Task HandleAddPodcasterListenCountAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var addPodcasterListenCountParameterDTO = command.RequestData.ToObject<AddPodcasterListenCountParameterDTO>();
+                    await _accountService.AddPodcasterListenCount(addPodcasterListenCountParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "add-podcaster-listen-count.failed"    // From YAML onFailure.emit
+            );
+        }
     }
 }
 

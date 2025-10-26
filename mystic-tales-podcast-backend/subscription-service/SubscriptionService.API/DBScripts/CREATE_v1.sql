@@ -22,7 +22,7 @@ CREATE TABLE MemberSubscriptionBenefit (
 
 -- PodcastSubscription table
 CREATE TABLE PodcastSubscription (
-    id INT PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     name NVARCHAR(250) NOT NULL,
     description NVARCHAR(MAX) NOT NULL DEFAULT '',
     podcastChannelId UNIQUEIDENTIFIER NULL,

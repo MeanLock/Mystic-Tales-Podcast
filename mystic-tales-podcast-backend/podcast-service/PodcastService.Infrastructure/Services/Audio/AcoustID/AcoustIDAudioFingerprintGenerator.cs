@@ -6,18 +6,20 @@ using PodcastService.Infrastructure.Models.Audio;
 using NAudio.MediaFoundation;
 using System.Security.Cryptography;
 using PodcastService.Infrastructure.Models.Audio.AcoustID;
+using PodcastService.Infrastructure.Helpers.AudioHelpers;
 
 namespace PodcastService.Infrastructure.Services.Audio.AcoustID
 {
     public class AcoustIDAudioFingerprintGenerator : IDisposable
     {
         private readonly ILogger<AcoustIDAudioFingerprintGenerator> _logger;
+        private readonly AudioFormatDetectorHelper _formatDetector;
         private bool _isMediaFoundationInitialized;
 
         public AcoustIDAudioFingerprintGenerator(ILogger<AcoustIDAudioFingerprintGenerator> logger)
         {
             _logger = logger;
-
+            _formatDetector = new AudioFormatDetectorHelper();
             // Initialize MediaFoundation for MP3/other format support
             try
             {
@@ -29,6 +31,116 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                 _logger.LogWarning(ex, "Failed to initialize MediaFoundation. Some audio formats may not be supported.");
                 _isMediaFoundationInitialized = false;
             }
+        }
+
+        private WaveStream? CreateWaveReader(Stream audioStream)
+        {
+            try
+            {
+                audioStream.Position = 0;
+
+                // ✅ STEP 1: Detect format using magic bytes
+                var formatInfo = _formatDetector.DetectFormat(audioStream);
+                audioStream.Position = 0; // Reset after detection
+
+                _logger.LogDebug($"Detected audio format: {formatInfo.Format}");
+
+                // ✅ STEP 2: Use appropriate reader based on format
+                return formatInfo.Format switch
+                {
+                    AudioFormat.MP3 => CreateMp3Reader(audioStream),
+                    AudioFormat.WAV => CreateWavReader(audioStream),
+                    AudioFormat.FLAC => CreateMediaFoundationReader(audioStream),
+                    AudioFormat.M4A => CreateMediaFoundationReader(audioStream),
+                    AudioFormat.AAC => CreateMediaFoundationReader(audioStream),
+                    _ => TryAllReaders(audioStream) // Fallback for unknown
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating wave reader");
+                return null;
+            }
+        }
+
+        private WaveStream? CreateMp3Reader(Stream audioStream)
+        {
+            try
+            {
+                return new Mp3FileReader(audioStream);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create MP3 reader");
+                return null;
+            }
+        }
+
+        private WaveStream? CreateWavReader(Stream audioStream)
+        {
+            try
+            {
+                return new WaveFileReader(audioStream);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create WAV reader");
+                return null;
+            }
+        }
+
+        private WaveStream? CreateMediaFoundationReader(Stream audioStream)
+        {
+            if (!_isMediaFoundationInitialized)
+            {
+                _logger.LogWarning("MediaFoundation not initialized");
+                return null;
+            }
+
+            try
+            {
+                return new StreamMediaFoundationReader(audioStream);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create MediaFoundation reader");
+                return null;
+            }
+        }
+
+        // ✅ Fallback: Try all readers (existing logic)
+        private WaveStream? TryAllReaders(Stream audioStream)
+        {
+            _logger.LogWarning("Unknown format, trying all readers...");
+
+            // Try MP3
+            try
+            {
+                audioStream.Position = 0;
+                return new Mp3FileReader(audioStream);
+            }
+            catch { }
+
+            // Try WAV
+            try
+            {
+                audioStream.Position = 0;
+                return new WaveFileReader(audioStream);
+            }
+            catch { }
+
+            // Try MediaFoundation
+            if (_isMediaFoundationInitialized)
+            {
+                try
+                {
+                    audioStream.Position = 0;
+                    return new StreamMediaFoundationReader(audioStream);
+                }
+                catch { }
+            }
+
+            return null;
         }
 
         public async Task<AcoustIDAudioFingerprintGeneratedResult> GenerateFingerprintAsync(Stream audioStream)
@@ -180,54 +292,54 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             }
         }
 
-        private WaveStream? CreateWaveReader(Stream audioStream)
-        {
-            try
-            {
-                // Try different readers based on stream content
-                audioStream.Position = 0;
+        // private WaveStream? CreateWaveReader(Stream audioStream)
+        // {
+        //     try
+        //     {
+        //         // Try different readers based on stream content
+        //         audioStream.Position = 0;
 
-                // Try MP3 first (most common)
-                try
-                {
-                    return new Mp3FileReader(audioStream);
-                }
-                catch
-                {
-                    audioStream.Position = 0;
-                }
+        //         // Try MP3 first (most common)
+        //         try
+        //         {
+        //             return new Mp3FileReader(audioStream);
+        //         }
+        //         catch
+        //         {
+        //             audioStream.Position = 0;
+        //         }
 
-                // Try WAV
-                try
-                {
-                    return new WaveFileReader(audioStream);
-                }
-                catch
-                {
-                    audioStream.Position = 0;
-                }
+        //         // Try WAV
+        //         try
+        //         {
+        //             return new WaveFileReader(audioStream);
+        //         }
+        //         catch
+        //         {
+        //             audioStream.Position = 0;
+        //         }
 
-                // Try MediaFoundation reader (supports multiple formats)
-                if (_isMediaFoundationInitialized)
-                {
-                    try
-                    {
-                        return new StreamMediaFoundationReader(audioStream);
-                    }
-                    catch
-                    {
-                        audioStream.Position = 0;
-                    }
-                }
+        //         // Try MediaFoundation reader (supports multiple formats)
+        //         if (_isMediaFoundationInitialized)
+        //         {
+        //             try
+        //             {
+        //                 return new StreamMediaFoundationReader(audioStream);
+        //             }
+        //             catch
+        //             {
+        //                 audioStream.Position = 0;
+        //             }
+        //         }
 
-                return null;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating wave reader");
-                return null;
-            }
-        }
+        //         return null;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error creating wave reader");
+        //         return null;
+        //     }
+        // }
 
         private async Task<short[]> ReadAllSamplesAsync(IWaveProvider waveProvider)
         {

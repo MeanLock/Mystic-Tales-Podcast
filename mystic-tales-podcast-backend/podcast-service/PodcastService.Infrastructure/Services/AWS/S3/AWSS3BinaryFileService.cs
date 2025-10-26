@@ -422,6 +422,7 @@ namespace PodcastService.Infrastructure.Services.AWS.S3
 
             try
             {
+                Console.WriteLine("Getting file bytes for: " + filePath);
                 // Get the actual file key with extension
                 string? fileKey = await GetFullFileKeyAsync(filePath);
                 if (string.IsNullOrEmpty(fileKey))

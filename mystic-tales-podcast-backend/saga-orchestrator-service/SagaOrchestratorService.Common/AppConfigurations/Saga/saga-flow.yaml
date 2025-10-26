@@ -890,13 +890,13 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  account-listen-slot-update:
+  account-podcast-listen-slot-subtraction-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"
     description: "Cập nhật số lượt nghe còn lại của tài khoản"
     save-file: ""
     steps:
-      - name: "update-account-listen-slot"
+      - name: "subtract-account-podcast-listen-slot"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Cập nhật số lượt nghe còn lại của tài khoản"
@@ -909,15 +909,48 @@ flows:
         response-data:
           - AccountId
           - PodcastListenSlotAmount
-          - NewPodcastListenSlotAmount
+          - NewPodcastListenSlot
         onSuccess:
-          emit: "update-account-listen-slot.success"
+          emit: "subtract-account-podcast-listen-slot.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "update-account-listen-slot.failed"
+          emit: "subtract-account-podcast-listen-slot.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  podcaster-listen-count-add-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật số lượt nghe của podcaster"
+    save-file: ""
+    steps:
+      - name: "add-podcaster-listen-count"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Cập nhật số lượt nghe của podcaster"
+        parameters:
+          - PodcasterId
+          - ListenCountAmount
+        next-request-data:
+          - PodcasterId
+          - ListenCountAmount
+        response-data:
+          - PodcasterId
+          - ListenCountAmount
+          - NewListenCount
+        onSuccess:
+          emit: "add-podcaster-listen-count.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "add-podcaster-listen-count.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []

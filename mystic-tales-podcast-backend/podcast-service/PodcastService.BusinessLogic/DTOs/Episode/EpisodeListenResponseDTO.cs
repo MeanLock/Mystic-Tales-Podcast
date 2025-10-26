@@ -10,5 +10,6 @@ namespace PodcastService.BusinessLogic.DTOs.Episode
         public required PodcastEpisodeSnippetResponseDTO PodcastEpisode { get; set; } = null!;
         public required AccountSnippetResponseDTO Podcaster { get; set; } = null!;
         public required string PlaylistFileKey { get; set; } = null!;
+        public required string Token { get; set; } = null!;
     }
 }

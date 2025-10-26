@@ -63,6 +63,8 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcas
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddAccountBalanceAmountRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountBalanceAmountRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterBalanceAmountRollback;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountListenSlot;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterListenCount;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -3427,6 +3429,155 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         flowName: command.FlowName,
                         messageName: "add-podcaster-balance-amount-rollback.failed"
                         );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task SubtractAccountListenSlot(SubtractAccountListenSlotParameterDTO subtractAccountListenSlotParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (subtractAccountListenSlotParameterDTO.PodcastListenSlotAmount < 0)
+                    {
+                        throw new Exception("Podcast listen slot amount to subtract must be greater than or equal to 0");
+                    }
+
+                    var account = await _accountGenericRepository.FindByIdAsync(subtractAccountListenSlotParameterDTO.AccountId);
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + subtractAccountListenSlotParameterDTO.AccountId + " does not exist");
+                    }
+                    else if (account.IsVerified == false)
+                    {
+                        throw new Exception("Account with id " + subtractAccountListenSlotParameterDTO.AccountId + " is not verified");
+                    }
+
+                    account.PodcastListenSlot -= subtractAccountListenSlotParameterDTO.PodcastListenSlotAmount;
+                    account.LastPodcastListenSlotChanged = _dateHelper.GetNowByAppTimeZone();
+                    if (account.PodcastListenSlot < 0)
+                    {
+                        account.PodcastListenSlot = 0;
+                    }
+
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = subtractAccountListenSlotParameterDTO.AccountId;
+                    messageNextRequestData["PodcastListenSlotAmount"] = subtractAccountListenSlotParameterDTO.PodcastListenSlotAmount;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Subtract account podcast listen slot successfully",
+                        AccountId = subtractAccountListenSlotParameterDTO.AccountId,
+                        PodcastListenSlotAmount = subtractAccountListenSlotParameterDTO.PodcastListenSlotAmount,
+                        NewPodcastListenSlot = account.PodcastListenSlot,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-account-podcast-listen-slot.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Subtract account podcast listen slot failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "subtract-account-podcast-listen-slot.failed"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task AddPodcasterListenCount(AddPodcasterListenCountParameterDTO addPodcasterListenCountParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (addPodcasterListenCountParameterDTO.ListenCountAmount < 0)
+                    {
+                        throw new Exception("Listen count amount to add must be greater than or equal to 0");
+                    }
+
+                    var account = await _accountGenericRepository.FindByIdAsync(addPodcasterListenCountParameterDTO.PodcasterId,
+                    includeFunc: query => query.Include(a => a.PodcasterProfile));
+                    if (account == null)
+                    {
+                        throw new Exception("Account with id " + addPodcasterListenCountParameterDTO.PodcasterId + " does not exist");
+                    }
+                    else if (account.IsVerified == false)
+                    {
+                        throw new Exception("Account with id " + addPodcasterListenCountParameterDTO.PodcasterId + " is not verified");
+                    }
+                    else if (account.PodcasterProfile == null)
+                    {
+                        throw new Exception("Account with id " + addPodcasterListenCountParameterDTO.PodcasterId + " is not a podcaster");
+                    }
+                    else if (account.PodcasterProfile.IsVerified == false)
+                    {
+                        throw new Exception("Podcaster profile of account with id " + addPodcasterListenCountParameterDTO.PodcasterId + " is not verified");
+                    }
+
+                    account.PodcasterProfile.ListenCount += addPodcasterListenCountParameterDTO.ListenCountAmount;
+                    // await _accountGenericRepository.UpdateAsync(account.Id, account);
+                    await _podcasterProfileGenericRepository.UpdateAsync(account.PodcasterProfile.AccountId, account.PodcasterProfile);
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = addPodcasterListenCountParameterDTO.PodcasterId;
+                    messageNextRequestData["ListenCountAmount"] = addPodcasterListenCountParameterDTO.ListenCountAmount;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Add podcaster listen count successfully",
+                        PodcasterId = addPodcasterListenCountParameterDTO.PodcasterId,
+                        ListenCountAmount = addPodcasterListenCountParameterDTO.ListenCountAmount,
+                        NewListenCount = account.PodcasterProfile.ListenCount,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-podcaster-listen-count.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Add podcaster listen count failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "add-podcaster-listen-count.failed"
+                    );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }

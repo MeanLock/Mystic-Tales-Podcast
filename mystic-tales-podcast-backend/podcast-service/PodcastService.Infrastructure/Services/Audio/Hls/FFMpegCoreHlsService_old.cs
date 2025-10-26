@@ -1,25 +1,21 @@
 using Microsoft.Extensions.Logging;
 using PodcastService.Infrastructure.Configurations.Audio.Hls.interfaces;
-using PodcastService.Infrastructure.Models.Audio;
 using PodcastService.Infrastructure.Models.Audio.Hls;
 using FFMpegCore;
 using FFMpegCore.Enums;
 using System.Text;
-using PodcastService.Infrastructure.Helpers.AudioHelpers;
 
 namespace PodcastService.Infrastructure.Services.Audio.Hls
 {
-    public class FFMpegCoreHlsService : IDisposable
+    public class FFMpegCoreHlsService_Old : IDisposable
     {
-        private readonly ILogger<FFMpegCoreHlsService> _logger;
+        private readonly ILogger<FFMpegCoreHlsService_Old> _logger;
         private readonly IHlsConfig _hlsConfig;
-        private readonly AudioFormatDetectorHelper _formatDetector;
 
-        public FFMpegCoreHlsService(ILogger<FFMpegCoreHlsService> logger, IHlsConfig hlsConfig)
+        public FFMpegCoreHlsService_Old(ILogger<FFMpegCoreHlsService_Old> logger, IHlsConfig hlsConfig)
         {
             _logger = logger;
             _hlsConfig = hlsConfig;
-            _formatDetector = new AudioFormatDetectorHelper(logger as ILogger<AudioFormatDetectorHelper>);
         }
 
         /// <summary>
@@ -34,75 +30,19 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
             CancellationToken cancellationToken = default)
         {
             string? workingDir = null;
-            AudioFormatInfo? formatInfo = null;
-            Stream? processStream = null;
 
             try
             {
                 _logger.LogInformation("Starting HLS processing");
-
-                // ✅ STEP 1: Handle non-seekable streams (S3 HashStream, network streams, etc.)
-                // Check if stream is seekable
-                if (!audioStream.CanSeek)
-                {
-                    _logger.LogInformation("Input stream is not seekable (likely S3 HashStream or network stream). Copying to MemoryStream...");
-                    
-                    // Copy to MemoryStream for seekable operations
-                    var memoryStream = new MemoryStream();
-                    await audioStream.CopyToAsync(memoryStream, cancellationToken);
-                    memoryStream.Position = 0; // Reset to beginning
-                    
-                    processStream = memoryStream;
-                    _logger.LogInformation($"Copied {memoryStream.Length} bytes to MemoryStream");
-                }
-                else
-                {
-                    _logger.LogInformation("Input stream is seekable, using directly");
-                    processStream = audioStream;
-                    
-                    // Ensure stream is at beginning
-                    if (processStream.Position != 0)
-                    {
-                        processStream.Position = 0;
-                    }
-                }
-
-                // ✅ STEP 2: Detect audio format from stream (reads first 12 bytes)
-                formatInfo = _formatDetector.DetectFormat(processStream);
-                
-                // After detection, reset position for subsequent reads
-                processStream.Position = 0;
-
-                _logger.LogInformation($"Detected audio format: {formatInfo.Format} " +
-                                      $"(Extension: {formatInfo.Extension}, " +
-                                      $"Lossless: {formatInfo.IsLossless}, " +
-                                      $"Codec: {formatInfo.FfmpegCodec})");
-
-                // ✅ STEP 3: Validate format support
-                if (!formatInfo.IsSupported)
-                {
-                    _logger.LogError($"Unsupported audio format detected");
-                    return new HlsProcessingResult
-                    {
-                        Success = false,
-                        ErrorMessage = "Unsupported audio format. Supported formats: MP3, AAC, M4A, FLAC, WAV",
-                        GeneratedFiles = new List<HlsFile>()
-                    };
-                }
-
-                // ✅ STEP 4: Log codec strategy
-                var strategyDescription = HlsCodecStrategy.GetStrategyDescription(formatInfo);
-                var qualityImpact = HlsCodecStrategy.GetQualityImpactDescription(formatInfo);
-                _logger.LogInformation($"HLS Codec Strategy: {strategyDescription}");
-                _logger.LogInformation($"Quality Impact: {qualityImpact}");
+                Console.WriteLine($"path nè: {_hlsConfig.FfmpegPath}");
 
                 // Create temporary working directory
                 workingDir = Path.Combine(Path.GetTempPath(), "hls_processing", Guid.NewGuid().ToString());
                 Directory.CreateDirectory(workingDir);
 
-                // ✅ STEP 5: Save stream with correct extension (DYNAMIC)
-                var tempAudioFile = Path.Combine(workingDir, $"audio{formatInfo.Extension}");
-                await SaveStreamToFileAsync(processStream, tempAudioFile, cancellationToken);
+                // Save stream to temporary audio file
+                var tempAudioFile = Path.Combine(workingDir, "audio.mp3");
+                await SaveStreamToFileAsync(audioStream, tempAudioFile, cancellationToken);
 
                 // Get audio duration using optimized FFmpeg/FFprobe
                 var audioDurationSeconds = await GetAudioDurationAsync(tempAudioFile, cancellationToken);
@@ -115,13 +55,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
 
                 _logger.LogInformation($"Using segment duration: {segmentDuration} seconds for audio of {audioDurationSeconds} seconds");
 
-                // ✅ STEP 6: Create HLS segments with format-aware strategy
-                var hlsResult = await CreateHlsSegmentsAsync(
-                    tempAudioFile, 
-                    workingDir, 
-                    segmentDuration, 
-                    formatInfo,  // ← Pass format info
-                    cancellationToken);
+                // Create HLS segments
+                var hlsResult = await CreateHlsSegmentsAsync(tempAudioFile, workingDir, segmentDuration, cancellationToken);
 
                 _logger.LogInformation("HLS processing completed");
                 return hlsResult;
@@ -138,17 +73,6 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
             }
             finally
             {
-                // Cleanup copied MemoryStream if created
-                if (processStream != null && processStream != audioStream)
-                {
-                    try
-                    {
-                        processStream.Dispose();
-                        _logger.LogDebug("Disposed copied MemoryStream");
-                    }
-                    catch { }
-                }
-
                 // Cleanup working directory after caller reads the files
                 if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
                 {
@@ -173,7 +97,6 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
             string audioFilePath,
             string workingDir,
             int segmentDuration,
-            AudioFormatInfo inputFormat,  // ← NEW PARAMETER
             CancellationToken cancellationToken)
         {
             var hlsDir = Path.Combine(workingDir, "hls");
@@ -188,6 +111,9 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
 
                 _logger.LogInformation($"Encryption key generated successfully with ID: {keyId}");
 
+                // Generate HLS segments using FFmpeg with encryption
+                // var segmentPattern = Path.Combine(hlsDir, _hlsConfig.SegmentFileNamePattern);
+
                 // Generate unique UID for this batch of segments
                 var batchUid = Guid.NewGuid().ToString("N").Substring(0, 8); // Short UID (8 chars)
 
@@ -197,14 +123,12 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
 
                 _logger.LogInformation($"Using segment pattern: {segmentFileNamePattern}");
 
-                // ✅ Run FFmpeg with format-aware codec strategy
                 var success = await RunFfmpegHlsConversion(
                     audioFilePath,
                     playlistPath,
                     segmentPattern,
                     keyInfoPath,
                     segmentDuration,
-                    inputFormat,  // ← Pass format info
                     cancellationToken);
 
                 if (!success || !File.Exists(playlistPath))
@@ -268,17 +192,17 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                 }
 
                 // Save encryption key to file
-                var keyFileName = _hlsConfig.Encryption.KeyFileName;
+                var keyFileName = _hlsConfig.Encryption.KeyFileName; //"enc.key"
                 var keyFilePath = Path.Combine(hlsDir, keyFileName);
                 await File.WriteAllBytesAsync(keyFilePath, encryptionKey, cancellationToken);
 
-                _logger.LogDebug($"Encryption key saved to: {keyFilePath}");
+                _logger.LogDebug($"Encryption key created: {keyFilePath}");
 
                 // Create key info file for FFmpeg
                 // Format:
-                // Line 1: Key URI (will be in m3u8 playlist)
-                // Line 2: Path to key file
-                // Line 3: IV (optional, we'll let FFmpeg generate it)
+                // Line 1: Key URI (using GUID - client will use this to request key from API)
+                // Line 2: Path to key file (for FFmpeg to read during encoding)
+                // Line 3: IV (initialization vector) - optional, using default
                 var keyInfoPath = Path.Combine(hlsDir, _hlsConfig.Encryption.KeyInfoFileName);
                 var keyInfoContent = $"{keyId}\n{keyFilePath}\n";
 
@@ -296,26 +220,19 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
         }
 
         /// <summary>
-        /// Run FFmpeg to convert audio to HLS format with encryption
-        /// ✅ REFACTORED: Now uses dynamic codec strategy based on input format
+        /// Run FFmpeg command with AudioController optimizations using FFMpegCore
         /// </summary>
         private async Task<bool> RunFfmpegHlsConversion(
-            string audioFilePath,
+            string inputFile,
             string playlistPath,
             string segmentPattern,
-            string keyInfoPath,
+            string? keyInfoPath,
             int segmentDuration,
-            AudioFormatInfo inputFormat,  // ← NEW PARAMETER
             CancellationToken cancellationToken)
         {
             try
             {
-                _logger.LogInformation($"Starting FFmpeg HLS conversion for input: {audioFilePath}");
-
-                // ✅ Get codec strategy based on input format
-                var (codecArg, bitrateArg, shouldCopyCodec) = HlsCodecStrategy.GetCodecStrategy(inputFormat);
-
-                _logger.LogInformation($"FFmpeg codec strategy: codec={codecArg}, bitrate={bitrateArg ?? "N/A"}, copy={shouldCopyCodec}");
+                _logger.LogDebug($"Running FFMpegCore HLS conversion from {inputFile} to {playlistPath}");
 
                 var ffOptions = new FFOptions
                 {
@@ -323,16 +240,53 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                     TemporaryFilesFolder = Path.GetTempPath()
                 };
 
-                // ✅ Build FFmpeg arguments with dynamic codec
                 var ffmpegArgs = FFMpegArguments
-                    .FromFileInput(audioFilePath)
-                    .OutputToFile(playlistPath, overwrite: true, options => options
+                    .FromFileInput(inputFile, false, options => options
+                        // Input optimizations (from AudioController patterns)
+                        .WithCustomArgument("-analyzeduration 10000000") // Analyze more data for better format detection
+                        .WithCustomArgument("-probesize 10000000")       // Larger probe size for complex files
+                        .WithCustomArgument("-fflags +discardcorrupt+genpts") // Handle corrupt data and generate PTS
+                        .WithCustomArgument("-err_detect ignore_err")    // Ignore minor errors
+                        .WithCustomArgument("-avoid_negative_ts make_zero")) // Handle timestamp issues
+                    .OutputToFile(playlistPath, true, options => options
+                        // Audio stream selection and processing (AudioController approach)
+                        .WithCustomArgument("-map 0:a:0") // Map first audio stream explicitly
+                        .WithAudioCodec(AudioCodec.Aac)
+                        .WithAudioBitrate(128)
+                        .WithAudioSamplingRate(44100)
+                        .WithCustomArgument("-ac 2") // 2 audio channels
+                        .WithCustomArgument("-profile:a aac_low") // Use AAC-LC profile
+
+                        // Performance presets (from AudioController)
+                        .WithSpeedPreset(Speed.UltraFast) // Fastest encoding preset
+                        .WithCustomArgument("-tune zerolatency") // Optimize for low latency
+                        .WithCustomArgument("-threads 0") // Use all available CPU cores
+
+                        // HLS specific optimizations
                         .WithCustomArgument($"-hls_time {segmentDuration}")
-                        .WithCustomArgument($"-hls_key_info_file \"{keyInfoPath}\"")
+                        .WithCustomArgument("-hls_list_size 0") // Keep all segments in playlist
                         .WithCustomArgument("-hls_playlist_type vod")
+                        .WithCustomArgument("-hls_segment_type mpegts")
+                        .WithCustomArgument("-hls_flags independent_segments+temp_file") // Atomic writes
+
+                        // Encryption settings (if keyInfoPath is provided)
+                        .WithCustomArgument(!string.IsNullOrEmpty(keyInfoPath)
+                            ? $"-hls_key_info_file \"{keyInfoPath}\""
+                            : "")
+
+                        // Keyframe settings optimized for speed
+                        .WithCustomArgument($"-g {segmentDuration * 2}") // GOP size
+                        .WithCustomArgument($"-keyint_min {segmentDuration}") // Minimum keyframe interval
+                        .WithCustomArgument("-sc_threshold 0") // Disable scene change detection
+
                         .WithCustomArgument($"-hls_segment_filename \"{segmentPattern}\"")
-                        .WithCustomArgument($"-c:a {codecArg}")  // ← DYNAMIC CODEC
-                        .WithCustomArgument(bitrateArg != null ? $"-b:a {bitrateArg}" : "")); // ← DYNAMIC BITRATE
+
+                        // Memory and I/O optimizations
+                        .WithCustomArgument("-hls_allow_cache 1")
+                        .WithCustomArgument("-hls_base_url \"\"") // Empty base URL for relative paths
+                        .WithCustomArgument("-bufsize 1M -maxrate 192k") // Buffer optimizations
+                        .WithCustomArgument("-movflags +faststart") // Enable fast start for web streaming
+                        .WithCustomArgument("-f hls")); // Explicitly specify HLS format
 
                 var success = await ffmpegArgs
                     .CancellableThrough(cancellationToken)
@@ -340,18 +294,18 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
 
                 if (success)
                 {
-                    _logger.LogInformation("FFmpeg HLS conversion completed successfully");
+                    _logger.LogInformation("FFMpegCore HLS conversion completed successfully");
                     return true;
                 }
                 else
                 {
-                    _logger.LogError("FFmpeg HLS conversion failed");
+                    _logger.LogError("FFMpegCore HLS conversion failed");
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error running FFmpeg HLS conversion");
+                _logger.LogError(ex, "Error running FFMpegCore HLS conversion");
                 return false;
             }
         }
@@ -487,7 +441,6 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                 throw new InvalidOperationException("Failed to parse and modify playlist content", ex);
             }
         }
-
         public static string CombinePaths(params string[] pathParts)
         {
             if (pathParts == null || pathParts.Length == 0)
@@ -510,6 +463,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
             return result;
         }
 
+
+
         /// <summary>
         /// Save stream content to file
         /// </summary>
@@ -524,4 +479,5 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
             // Cleanup resources if needed
         }
     }
+
 }

@@ -43,6 +43,7 @@ namespace PodcastService.Common.Registrations
             services.AddSingleton<IFileValidationConfig, FileValidationConfig>();
             services.AddSingleton<IMailPropertiesConfig, MailPropertiesConfig>();
             services.AddSingleton<IPodcastPublishReviewSessionConfig, PodcastPublishReviewSessionConfig>();
+            services.AddSingleton<IPodcastListenSessionConfig, PodcastListenSessionConfig>();
 
             // SystemService
             services.AddSingleton<ISystemServiceConfig,SystemServiceConfig>();

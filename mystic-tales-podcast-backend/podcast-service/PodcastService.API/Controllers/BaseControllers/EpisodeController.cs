@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using PodcastService.API.Filters.ExceptionFilters;
 using PodcastService.BusinessLogic.DTOs.Cache;
 using PodcastService.BusinessLogic.DTOs.Episode;
+using PodcastService.BusinessLogic.Enums.App;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
 using PodcastService.BusinessLogic.Models.CrossService;
 using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -635,14 +636,87 @@ namespace PodcastService.API.Controllers.BaseControllers
         }
 
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/listen
-        // [HttpPost("{PodcastEpisodeId}/listen")]
-        // [Authorize(Policy = "Customer.BasicAccess")]
-        // public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId)
-        // {
-        //     var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+        [HttpGet("{PodcastEpisodeId}/listen")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId, [FromQuery] string? Token = null)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
-        //     var episodeListenResponse = await _podcastEpisodeService.RecordEpisodeListenAsync(PodcastEpisodeId, account.Id);
-        // }
+            var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, Token);
+
+            return Ok(episodeListenResponse);
+        }
+
+        // /api/podcast-service/api/episodes/{PodcastEpisodeId}/hls-encryption-key/{KeyId}
+        [HttpGet("{PodcastEpisodeId}/hls-encryption-key/{KeyId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetEpisodeHlsEncryptionKeyFileUrl(Guid PodcastEpisodeId, Guid KeyId, [FromQuery] string? Token = null)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var encryptionKeyBytes = await _podcastEpisodeService.GetEpisodeHlsEncryptionKeyFileAsync(PodcastEpisodeId, KeyId, Token);
+
+            Response.Headers.CacheControl = "no-store";
+            return File(encryptionKeyBytes, "application/octet-stream", enableRangeProcessing : false);
+        }
+
+        // /api/podcast-service/api/episodes/hls-playlist/get-file-data/{**FileKey}
+        [HttpGet("hls-playlist/get-file-data/{**FileKey}")]
+        // [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetHlsPlaylistFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS playlist
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.HlsPlaylist)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be an HLS playlist file",
+                    actualCategory = category.ToString()
+                });
+            }
+
+            // Generate presigned URL (2 minutes expiration)
+            var fileData = await _fileIOHelper.GetFileBytesAsync(FileKey);
+            var segmentRootPath = FilePathHelper.GetFolderPathFromFilePath(FileKey);
+            string fileString = _ffMpegCoreHlsService.GetPlaylistContentAsync(fileData, segmentRootPath);
+            Response.Headers.CacheControl = "no-store";
+
+            return Content(fileString, "application/vnd.apple.mpegurl");
+        }
+
+        // /api/podcast-service/api/episodes/hls-segment/get-file-data/{**FileKey}
+        [HttpGet("hls-segment/get-file-data/{**FileKey}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetHlsSegmentFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS segment
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.HlsSegment)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be an HLS segment file",
+                    actualCategory = category.ToString()
+                });
+            }
+
+            // Generate presigned URL (2 minutes expiration)
+            var fileData = await _fileIOHelper.GetFileBytesAsync(FileKey);
+            if (fileData == null)
+                return NotFound("Unable to read segment");
+
+            Response.Headers.CacheControl = "no-store";
+            return File(fileData, "video/MP2T");
+        }
+
+        
 
 
 
@@ -685,7 +759,7 @@ namespace PodcastService.API.Controllers.BaseControllers
 
             return Ok();
         }
-        
+
         [HttpPost("upload-audio-ffmpegCore")] // upload-audio return file key
         public async Task<IActionResult> UploadAudioFFmpegCore(IFormFile file,
             [FromForm] string folderPath, [FromForm] string fileName)
@@ -756,8 +830,8 @@ namespace PodcastService.API.Controllers.BaseControllers
 
         }
 
-        
 
-        
+
+
     }
 }
