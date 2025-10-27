@@ -52,7 +52,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             var isValid = await _podcastSubscriptionService.GetPodcastShowWithAccountId(accountId, PodcastShowId);
             if (isValid == null)
             {
-                return Forbid($"The Logged In Account is unauthorized to access Podcast Show Id: {PodcastShowId}");
+                return StatusCode(403, new { message = $"The Logged In Account is unauthorized to access Podcast Show Id: {PodcastShowId}" });
             }
             var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionListByPodcastShowIdAsync(PodcastShowId);
             //if (podcastSubscription == null)

@@ -12,7 +12,8 @@ namespace TransactionService.BusinessLogic.Registrations
         {
             // Message Handlers
             services.AddScoped<AuthMessageHandler>();
-            
+            services.AddScoped<PaymentProcessingDomainMessageHandler>();
+
             // Messaging Services (trong MessagingServices folder)
             services.AddScoped<IMessagingService, MessagingService>();
             

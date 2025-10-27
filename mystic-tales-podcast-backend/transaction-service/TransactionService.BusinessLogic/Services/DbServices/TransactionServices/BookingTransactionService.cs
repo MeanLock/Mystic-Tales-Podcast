@@ -115,6 +115,32 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                             };
                             newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(payTheRestBookingTransaction);
                             break;
+                        case (int)TransactionTypeEnum.PodcasterBookingIncome:
+                            var additionalStoragePurchaseBookingTransaction = new BookingTransaction
+                            {
+                                BookingId = parameter.BookingId,
+                                Amount = parameter.Amount,
+                                Profit = parameter.Profit,
+                                TransactionTypeId = parameter.TransactionTypeId,
+                                TransactionStatusId = (int)TransactionStatusEnum.Pending,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(additionalStoragePurchaseBookingTransaction);
+                            break;
+                        case (int)TransactionTypeEnum.SystemBookingIncome:
+                            var systemBookingIncomeTransaction = new BookingTransaction
+                            {
+                                BookingId = parameter.BookingId,
+                                Amount = parameter.Amount,
+                                Profit = parameter.Profit,
+                                TransactionTypeId = parameter.TransactionTypeId,
+                                TransactionStatusId = (int)TransactionStatusEnum.Success,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(systemBookingIncomeTransaction);
+                            break;
                         default:
                             throw new Exception("Unsupported transaction type for booking transaction: " + transactionTypeId);
                     }
