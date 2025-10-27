@@ -28,6 +28,20 @@ CREATE TABLE AccountBalanceTransaction (
     FOREIGN KEY (transactionStatusId) REFERENCES TransactionStatus(id)
 );
 
+-- AccountBalanceWithdrawalRequest table
+CREATE TABLE AccountBalanceWithdrawalRequest
+(
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL, -- Không có FK vì Account nằm trong UserService
+    amount DECIMAL(18,2) NOT NULL,
+    transferReceiptImageFileKey NVARCHAR(MAX) NULL,
+    rejectReason NVARCHAR(MAX) NULL,
+    isRejected BIT NULL, -- NULL: đang chờ, 1: rejected, 0: approved
+    completedAt DATETIME NULL,
+    createdAt DATETIME NOT NULL DEFAULT GETDATE(),
+    updatedAt DATETIME NOT NULL DEFAULT GETDATE()
+);
+
 -- PodcastSubscriptionTransaction table
 CREATE TABLE PodcastSubscriptionTransaction (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),

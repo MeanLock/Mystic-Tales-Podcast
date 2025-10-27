@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
-using PodcastService.BusinessLogic.Enums.App;
+using TransactionService.BusinessLogic.Enums.App;
 
-namespace PodcastService.BusinessLogic.Helpers.FileHelpers
+namespace TransactionService.BusinessLogic.Helpers.FileHelpers
 {
     public class FileAccessValidator
     {

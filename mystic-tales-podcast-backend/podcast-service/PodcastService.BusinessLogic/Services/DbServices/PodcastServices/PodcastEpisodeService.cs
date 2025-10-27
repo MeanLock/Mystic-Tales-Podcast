@@ -3077,12 +3077,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                         .ToList();
 
                                     bool hasAllConditions = true;
+                                    HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
                                     foreach (var condition in listenPermissionConditions)
                                     {
                                         if (!listenerBenefits.Contains((int)condition))
                                         {
                                             hasAllConditions = false;
-                                            break;
+                                            // break;
+                                            missingConditions.Add(condition);
                                         }
                                     }
 
@@ -3093,7 +3095,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                         await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
                                         await transaction.CommitAsync();
                                         transactionCompleted = true;
-                                        throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits");
+                                        throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits - missing conditions: " + string.Join(", ", missingConditions));
                                     }
                                     else
                                     {
@@ -3209,12 +3211,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                         .ToList();
 
                                     bool hasAllConditions = true;
+                                    HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
                                     foreach (var condition in listenPermissionConditions)
                                     {
                                         if (!listenerBenefits.Contains((int)condition))
                                         {
                                             hasAllConditions = false;
-                                            break;
+                                            // break;
+                                            missingConditions.Add(condition);
                                         }
                                     }
 
@@ -3223,7 +3227,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                         // không có đủ benefit để nghe => từ chối nghe
                                         await transaction.CommitAsync();
                                         transactionCompleted = true;
-                                        throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits");
+                                        throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits - missing conditions: " + string.Join(", ", missingConditions));
                                     }
                                     else
                                     {
