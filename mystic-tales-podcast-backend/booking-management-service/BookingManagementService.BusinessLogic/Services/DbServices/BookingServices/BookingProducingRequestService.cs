@@ -140,7 +140,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         "BookingStatusTrackings"
                     );
 
-                    if(booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.TrackPreviewing
+                    if(booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
                     {
                         await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                         {
@@ -237,10 +237,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.CreateAsync(newBookingPodcastTrack);
 
-                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + bookingProducingRequest.BookingId;
+                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + bookingProducingRequest.BookingId + "\\" + bookingPodcastTrack.Id;
                         if (trackInfo.AudioFileKey != null && trackInfo.AudioFileKey != "")
                         {
-                            var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"{bookingPodcastTrack.Id}_track_audio{FilePathHelper.GetExtension(trackInfo.AudioFileKey)}");
+                            var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"audio{FilePathHelper.GetExtension(trackInfo.AudioFileKey)}");
                             await _fileIOHelper.CopyFileToFileAsync(trackInfo.AudioFileKey, TrackAudioFileKey);
                             processedFiles.Add(TrackAudioFileKey);
                             await _fileIOHelper.DeleteFileAsync(trackInfo.AudioFileKey);
