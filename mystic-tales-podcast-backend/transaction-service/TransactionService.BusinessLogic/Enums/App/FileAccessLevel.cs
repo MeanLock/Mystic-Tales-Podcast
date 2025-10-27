@@ -1,4 +1,4 @@
-namespace PodcastService.BusinessLogic.Enums.App
+namespace TransactionService.BusinessLogic.Enums.App
 {
     public enum FileAccessLevelEnum
     {
