@@ -33,11 +33,11 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         private void LoadConfiguration(IConfiguration configuration)
         {
             var fileValidationSection = configuration.GetSection("BusinessSettings:FileValidation");
-
+            
             if (fileValidationSection.Exists())
             {
                 var configData = fileValidationSection.Get<Dictionary<string, FileValidationRuleModel>>();
-
+                
                 if (configData != null)
                 {
                     foreach (var kvp in configData)
@@ -66,32 +66,20 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         {
             var rule = GetValidationRule(fieldName);
             if (rule == null)
-            {
-                Console.WriteLine($"No validation rule found for field: {fieldName}");
                 return false;
-            }
 
             // Check file size
             if (fileSizeBytes > rule.MaxSizeBytes)
-            {
-                Console.WriteLine($"File size exceeds maximum limit for field: {fieldName}");
                 return false;
-            }
 
             // Check file extension
             var extension = Path.GetExtension(fileName).ToLowerInvariant();
             if (!rule.AllowedExtensions.Contains(extension))
-            {
-                Console.WriteLine($"File extension is not allowed for field: {fieldName}");
                 return false;
-            }
 
             // Check MIME type
             if (!rule.AllowedMimeTypes.Contains(mimeType.ToLowerInvariant()))
-            {
-                Console.WriteLine($"MIME type is not allowed for field: {fieldName}, got: {mimeType}");
                 return false;
-            }
 
             return true;
         }

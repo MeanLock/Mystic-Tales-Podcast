@@ -23,7 +23,7 @@ namespace PodcastService.Infrastructure.Helpers.AudioHelpers
         /// </summary>
         /// <param name="stream">Audio stream to analyze (will be read from current position)</param>
         /// <returns>Audio format information</returns>
-        public AudioFormatInfo DetectFormat(Stream stream)
+        public AudioFormatInfo DetectFormatFromStream(Stream stream)
         {
             if (stream == null || !stream.CanRead)
             {
@@ -67,7 +67,7 @@ namespace PodcastService.Infrastructure.Helpers.AudioHelpers
         /// </summary>
         /// <param name="stream">Seekable stream</param>
         /// <returns>Audio format information</returns>
-        public AudioFormatInfo DetectFormatSeekable(Stream stream)
+        public AudioFormatInfo DetectFormatSeekableFromStream(Stream stream)
         {
             if (stream == null || !stream.CanRead)
             {
@@ -77,8 +77,8 @@ namespace PodcastService.Infrastructure.Helpers.AudioHelpers
 
             if (!stream.CanSeek)
             {
-                _logger?.LogWarning("Stream is not seekable. Use DetectFormat() instead or copy to MemoryStream.");
-                return DetectFormat(stream); // Fallback to non-seekable version
+                _logger?.LogWarning("Stream is not seekable. Use DetectFormatFromStream() instead or copy to MemoryStream.");
+                return DetectFormatFromStream(stream); // Fallback to non-seekable version
             }
 
             try

@@ -10,7 +10,7 @@ namespace PodcastService.Infrastructure.Models.Audio
         AAC = 2,
         M4A = 3,
         FLAC = 4,
-        WAV = 5
+        WAV = 5,
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ namespace PodcastService.Infrastructure.Models.Audio
         public int? RecommendedBitrate { get; set; }
 
         /// <summary>
-        /// MIME type
+        /// MIME type, ví dụ: "audio/mpeg", "audio/flac", "audio/aac"
         /// </summary>
         public string MimeType { get; set; } = string.Empty;
 

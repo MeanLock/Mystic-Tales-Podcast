@@ -13,13 +13,13 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
     public class AcoustIDAudioFingerprintGenerator : IDisposable
     {
         private readonly ILogger<AcoustIDAudioFingerprintGenerator> _logger;
-        private readonly AudioFormatDetectorHelper _formatDetector;
+        private readonly AudioFormatDetectorHelper _audioFormatDetectorHelper;
         private bool _isMediaFoundationInitialized;
 
         public AcoustIDAudioFingerprintGenerator(ILogger<AcoustIDAudioFingerprintGenerator> logger)
         {
             _logger = logger;
-            _formatDetector = new AudioFormatDetectorHelper();
+            _audioFormatDetectorHelper = new AudioFormatDetectorHelper(logger as ILogger<AudioFormatDetectorHelper>);
             // Initialize MediaFoundation for MP3/other format support
             try
             {
@@ -40,7 +40,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                 audioStream.Position = 0;
 
                 // ✅ STEP 1: Detect format using magic bytes
-                var formatInfo = _formatDetector.DetectFormat(audioStream);
+                var formatInfo = _audioFormatDetectorHelper.DetectFormatFromStream(audioStream);
                 audioStream.Position = 0; // Reset after detection
 
                 _logger.LogDebug($"Detected audio format: {formatInfo.Format}");

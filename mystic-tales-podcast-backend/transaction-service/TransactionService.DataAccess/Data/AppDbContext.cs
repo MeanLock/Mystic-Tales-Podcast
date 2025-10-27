@@ -14,6 +14,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<AccountBalanceTransaction> AccountBalanceTransactions { get; set; }
 
+    public virtual DbSet<AccountBalanceWithdrawalRequest> AccountBalanceWithdrawalRequests { get; set; }
+
     public virtual DbSet<BookingStorageTransaction> BookingStorageTransactions { get; set; }
 
     public virtual DbSet<BookingTransaction> BookingTransactions { get; set; }
@@ -62,6 +64,35 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.TransactionTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__AccountBa__trans__4F7CD00D");
+        });
+
+        modelBuilder.Entity<AccountBalanceWithdrawalRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__AccountB__3213E83FF213F1AE");
+
+            entity.ToTable("AccountBalanceWithdrawalRequest");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("(newid())")
+                .HasColumnName("id");
+            entity.Property(e => e.AccountId).HasColumnName("accountId");
+            entity.Property(e => e.Amount)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("amount");
+            entity.Property(e => e.CompletedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("completedAt");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.IsRejected).HasColumnName("isRejected");
+            entity.Property(e => e.RejectReason).HasColumnName("rejectReason");
+            entity.Property(e => e.TransferReceiptImageFileKey).HasColumnName("transferReceiptImageFileKey");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updatedAt");
         });
 
         modelBuilder.Entity<BookingStorageTransaction>(entity =>

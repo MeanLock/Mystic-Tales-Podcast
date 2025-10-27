@@ -406,6 +406,18 @@ CREATE TABLE PodcastShowSubscriptionType (
     name NVARCHAR(50) NOT NULL
 );
 
+-- PodcastBackgroundSoundTrack table
+CREATE TABLE PodcastBackgroundSoundTrack
+(
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    name NVARCHAR(50) NOT NULL,
+    description NVARCHAR(MAX) NULL,
+    mainImageFileKey NVARCHAR(MAX) NULL,
+    audioFileKey NVARCHAR(MAX) NULL,
+    createdAt DATETIME NOT NULL DEFAULT GETDATE(),
+    updatedAt DATETIME NOT NULL DEFAULT GETDATE()
+);
+
 -- PodcastIllegalContentType table
 CREATE TABLE PodcastIllegalContentType (
     id INT PRIMARY KEY,
@@ -1019,6 +1031,20 @@ CREATE TABLE AccountBalanceTransaction (
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (transactionTypeId) REFERENCES TransactionType(id),
     FOREIGN KEY (transactionStatusId) REFERENCES TransactionStatus(id)
+);
+
+-- AccountBalanceWithdrawalRequest table
+CREATE TABLE AccountBalanceWithdrawalRequest
+(
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL, -- Không có FK vì Account nằm trong UserService
+    amount DECIMAL(18,2) NOT NULL,
+    transferReceiptImageFileKey NVARCHAR(MAX) NULL,
+    rejectReason NVARCHAR(MAX) NULL,
+    isRejected BIT NULL, -- NULL: đang chờ, 1: rejected, 0: approved
+    completedAt DATETIME NULL,
+    createdAt DATETIME NOT NULL DEFAULT GETDATE(),
+    updatedAt DATETIME NOT NULL DEFAULT GETDATE()
 );
 
 -- PodcastSubscriptionTransaction table

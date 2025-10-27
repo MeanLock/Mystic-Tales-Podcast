@@ -46,6 +46,18 @@ CREATE TABLE PodcastShowSubscriptionType (
     name NVARCHAR(50) NOT NULL
 );
 
+-- PodcastBackgroundSoundTrack table
+CREATE TABLE PodcastBackgroundSoundTrack
+(
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    name NVARCHAR(50) NOT NULL,
+    description NVARCHAR(MAX) NULL,
+    mainImageFileKey NVARCHAR(MAX) NULL,
+    audioFileKey NVARCHAR(MAX) NULL,
+    createdAt DATETIME NOT NULL DEFAULT GETDATE(),
+    updatedAt DATETIME NOT NULL DEFAULT GETDATE()
+);
+
 -- PodcastIllegalContentType table
 CREATE TABLE PodcastIllegalContentType (
     id INT PRIMARY KEY,

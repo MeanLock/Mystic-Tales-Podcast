@@ -2,20 +2,31 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using PodcastService.Infrastructure.Configurations.Audio.Tuning;
 using PodcastService.Infrastructure.Helpers.AudioHelpers;
+using PodcastService.Infrastructure.Models.Audio;
 using PodcastService.Infrastructure.Models.Audio.Tuning;
+using PodcastService.Infrastructure.Services.Audio;
 
 namespace PodcastService.Infrastructure.Services.Audio.Tuning
 {
     public class EqualizerTuningService
     {
+        private readonly ILogger<EqualizerTuningService>? _logger;
         private readonly IMoodConfig _moodConfig;
         private readonly IEqualizerConfig _equalizerConfig;
-        public EqualizerTuningService(IMoodConfig moodConfig, IEqualizerConfig equalizerConfig)
+        private readonly AudioFormatDetectorHelper _audioFormatDetectorHelper; // ← NEW
+
+        public EqualizerTuningService(
+            ILogger<EqualizerTuningService> logger,
+            IMoodConfig moodConfig,
+            IEqualizerConfig equalizerConfig)
         {
+            _logger = logger;
             _moodConfig = moodConfig;
             _equalizerConfig = equalizerConfig;
+            _audioFormatDetectorHelper = new AudioFormatDetectorHelper(logger as ILogger<AudioFormatDetectorHelper>); // ← Initialize
         }
 
         #region CreateFilterChain
@@ -93,89 +104,151 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
                 return direct;
             }
 
+            // ✅ STEP 1: Handle non-seekable streams
+            Stream processStream;
+            if (!fileStream.CanSeek)
+            {
+                Console.WriteLine("[DEBUG] Non-seekable stream, copying to MemoryStream");
+                var memStream = new MemoryStream();
+                await fileStream.CopyToAsync(memStream);
+                memStream.Position = 0;
+                processStream = memStream;
+            }
+            else
+            {
+                processStream = fileStream;
+                processStream.Position = 0;
+            }
+
+            // ✅ STEP 2: Detect audio format
+            var formatInfo = _audioFormatDetectorHelper.DetectFormatFromStream(processStream);
+            processStream.Position = 0;
+
+            Console.WriteLine($"[DEBUG] Detected format: {formatInfo.Format} ({formatInfo.Extension})");
+            Console.WriteLine($"[DEBUG] Lossless: {formatInfo.IsLossless}, Codec: {formatInfo.FfmpegCodec}");
+
+            // ✅ STEP 3: Determine encoding strategy
+            var encodingStrategy = DetermineEncodingStrategy(formatInfo);
+            Console.WriteLine($"[DEBUG] Encoding strategy: {encodingStrategy.Description}");
+
             string workDir = Path.Combine(Path.GetTempPath(), "eqseg_" + Guid.NewGuid().ToString("N"));
             Console.WriteLine($"[DEBUG] WorkDir: {workDir}");
             Directory.CreateDirectory(workDir);
-            // kiểm tra folder tạo được chưa
-            if (!Directory.Exists(workDir))
-                Console.WriteLine($"[DEBUG] Failed to create workDir: {workDir}");
 
-            string inputPath = Path.Combine(workDir, "input.mp3");
+            // ✅ STEP 4: Use dynamic extension
+            string inputPath = Path.Combine(workDir, $"input{formatInfo.Extension}");
 
             try
             {
-                //  Ghi stream vào file tạm
+                // Ghi stream vào file tạm
                 using (var fs = new FileStream(inputPath, FileMode.Create, FileAccess.Write))
-                    await fileStream.CopyToAsync(fs);
+                    await processStream.CopyToAsync(fs);
 
                 double durationSeconds = await FFmpegCoreHelper.GetAudioDurationSecondsAsync(inputPath);
-                Console.WriteLine($"[DEBUG] Audio duration seconds (initial): {durationSeconds}");
+                Console.WriteLine($"[DEBUG] Audio duration: {durationSeconds}s");
 
                 int segmentTime = ComputeSegmentTime(durationSeconds);
+                Console.WriteLine($"[DEBUG] Segment time: {segmentTime}s");
 
-                Console.WriteLine($"[DEBUG] Audio duration seconds: {durationSeconds}");
-                Console.WriteLine($"[DEBUG] Computed segment time: {segmentTime}");
-                // int segmentTime = 1000; // Cố định 1 phút
-
+                // Short audio or single segment processing
                 if (durationSeconds > 0 && (durationSeconds <= 90 || durationSeconds <= segmentTime))
                 {
-                    var outFile = Path.Combine(workDir, "single.mp3");
-                    Console.WriteLine($"[DEBUG] Single pass processing, outFile: {outFile}");
-                    var success = await FFmpegCoreHelper.RunFfmpegAsync($"-hide_banner -loglevel error -nostdin -i \"{inputPath}\" -vn -af \"{filterChain}\" -c:a libmp3lame -b:a 192k -threads 1 -y \"{outFile}\"");
-                    Console.WriteLine($"[DEBUG] Single pass processing success: {success}");
+                    var outFile = Path.Combine(workDir, $"single{formatInfo.Extension}");
+                    Console.WriteLine($"[DEBUG] Single pass processing: {outFile}");
+
+                    // ✅ Use dynamic encoding
+                    var success = await FFmpegCoreHelper.RunFfmpegAsync(
+                        $"-hide_banner -loglevel error -nostdin " +
+                        $"-i \"{inputPath}\" -vn -af \"{filterChain}\" " +
+                        $"{encodingStrategy.FfmpegArgs} -threads 1 -y \"{outFile}\"");
+
+                    Console.WriteLine($"[DEBUG] Success: {success}");
+
                     if (!success || !File.Exists(outFile))
                     {
-                        Console.WriteLine($"[DEBUG] Single pass processing failed.");
+                        Console.WriteLine($"[DEBUG] Single pass failed");
                         return null;
                     }
 
-                    var memoryStream = await FFmpegCoreHelper.LoadToMemory(outFile);
-
-                    return memoryStream;
+                    return await FFmpegCoreHelper.LoadToMemory(outFile);
                 }
 
-                // Split
+                // ✅ Multi-segment processing with format awareness
                 var segmentDir = Path.Combine(workDir, "parts");
-                var segments = await SplitIntoSegmentsAsync(inputPath, segmentDir, segmentTime);
+                var segments = await SplitIntoSegmentsAsync(inputPath, segmentDir, segmentTime, formatInfo);
                 if (segments == null || segments.Length == 0) return null;
 
-                // song song từng segment
-                var processed = await ProcessSegmentsAsync(segments, filterChain);
+                var processed = await ProcessSegmentsAsync(segments, filterChain, encodingStrategy, formatInfo);
                 if (processed == null || processed.Count == 0) return null;
 
-                //  Combine
-                var finalPath = await CombineAsync(processed, workDir);
+                var finalPath = await CombineAsync(processed, workDir, formatInfo);
                 if (finalPath == null) return null;
 
-
-                //  Load vào MemoryStream
-                Console.WriteLine($"[DEBUG] Final output path: {finalPath}");
+                Console.WriteLine($"[DEBUG] Final output: {finalPath}");
                 var result = await FFmpegCoreHelper.LoadToMemory(finalPath);
-                Console.WriteLine($"[DEBUG] Final output size: {result.Length}");
+                Console.WriteLine($"[DEBUG] Final size: {result.Length} bytes");
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"[ERROR] {ex.Message}");
                 return null;
             }
             finally
             {
+                // Cleanup copied stream if needed
+                if (processStream != fileStream)
+                {
+                    processStream.Dispose();
+                }
+
                 try { Directory.Delete(workDir, true); } catch { }
             }
         }
 
-        // hàm này tính segment time dựa trên duration
-        // ý tưởng là audio càng dài thì segment càng dài để giảm số segment, tránh overhead
-        // private static int ComputeSegmentTime(double durationSeconds)
-        // {
-        //     if (durationSeconds <= 0) return 30;
-        //     int parallelism = Math.Max(1, Environment.ProcessorCount - 1);
-        //     int targetSegments = Math.Max(3, parallelism * 3);
-        //     int seg = (int)Math.Ceiling(durationSeconds / targetSegments);
-        //     return Math.Clamp(seg, 20, 120);
-        // }
+        // ✅ NEW: Determine encoding strategy based on format
+        private static AudioEncodingStrategy DetermineEncodingStrategy(AudioFormatInfo formatInfo)
+        {
+            return formatInfo.Format switch
+            {
+                // Lossless → High quality lossy encoding
+                AudioFormat.FLAC or AudioFormat.WAV => new AudioEncodingStrategy
+                {
+                    Codec = "aac",
+                    Bitrate = "256k",
+                    FfmpegArgs = "-c:a aac -b:a 256k",
+                    Description = "Lossless → AAC 256k (preserve quality)"
+                },
 
-        // hàm này tính segment time dựa trên duration
+                // AAC/M4A → Keep AAC with same/better quality
+                AudioFormat.AAC or AudioFormat.M4A => new AudioEncodingStrategy
+                {
+                    Codec = "aac",
+                    Bitrate = "256k",
+                    FfmpegArgs = "-c:a aac -b:a 256k",
+                    Description = "AAC → AAC 256k (maintain quality)"
+                },
+
+                // MP3 → Keep MP3 with good quality
+                AudioFormat.MP3 => new AudioEncodingStrategy
+                {
+                    Codec = "libmp3lame",
+                    Bitrate = "192k",
+                    FfmpegArgs = "-c:a libmp3lame -b:a 192k",
+                    Description = "MP3 → MP3 192k (standard)"
+                },
+
+                // Unknown → Safe fallback
+                _ => new AudioEncodingStrategy
+                {
+                    Codec = "libmp3lame",
+                    Bitrate = "192k",
+                    FfmpegArgs = "-c:a libmp3lame -b:a 192k",
+                    Description = "Unknown → MP3 192k (fallback)"
+                }
+            };
+        }
+
         private int ComputeSegmentTime(double durationSeconds)
         {
             if (durationSeconds <= 0)
@@ -187,21 +260,41 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
             return _equalizerConfig.DefaultLongSegmentSeconds;
         }
 
-        private static async Task<string[]?> SplitIntoSegmentsAsync(string inputPath, string segmentDir, int segmentTime)
+        // ✅ REFACTORED: Dynamic extension support
+        private static async Task<string[]?> SplitIntoSegmentsAsync(
+            string inputPath,
+            string segmentDir,
+            int segmentTime,
+            AudioFormatInfo formatInfo)
         {
             Directory.CreateDirectory(segmentDir);
-            var pattern = Path.Combine(segmentDir, "part_%03d.mp3");
-            Console.WriteLine($"[DEBUG] Splitting into segments with pattern: {pattern}");
+
+            // ✅ Dynamic pattern based on format
+            var pattern = Path.Combine(segmentDir, $"part_%03d{formatInfo.Extension}");
+            Console.WriteLine($"[DEBUG] Split pattern: {pattern}");
+
             bool ok = await FFmpegCoreHelper.RunFfmpegAsync(
-                $"-hide_banner -loglevel error -nostdin -i \"{inputPath}\" -vn -f segment -segment_time {segmentTime} -c copy \"{pattern}\"");
-            Console.WriteLine($"[DEBUG] Splitting success: {ok}");
+                $"-hide_banner -loglevel error -nostdin " +
+                $"-i \"{inputPath}\" -vn -f segment -segment_time {segmentTime} " +
+                $"-c copy \"{pattern}\"");
+
+            Console.WriteLine($"[DEBUG] Split success: {ok}");
+
             if (!ok) return null;
-            return Directory.GetFiles(segmentDir, "part_*.mp3");
+
+            // ✅ Dynamic file search
+            return Directory.GetFiles(segmentDir, $"part_*{formatInfo.Extension}");
         }
 
-        private static async Task<List<string>?> ProcessSegmentsAsync(string[] segments, string filterChain)
+        // ✅ REFACTORED: Format-aware processing
+        private static async Task<List<string>?> ProcessSegmentsAsync(
+            string[] segments,
+            string filterChain,
+            AudioEncodingStrategy encodingStrategy,
+            AudioFormatInfo formatInfo)
         {
             if (segments.Length == 0) return null;
+
             var processed = new ConcurrentBag<string>();
             int maxPar = Math.Max(1, Environment.ProcessorCount - 1);
 
@@ -210,11 +303,16 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
                 new ParallelOptions { MaxDegreeOfParallelism = maxPar },
                 async (seg, _) =>
                 {
-                    string outSeg = seg.Replace(".mp3", "_proc.mp3");
-                    Console.WriteLine($"[DEBUG] Processing segment: {seg} to {outSeg}");
+                    // ✅ Dynamic output extension
+                    string outSeg = seg.Replace(formatInfo.Extension, $"_proc{formatInfo.Extension}");
+                    Console.WriteLine($"[DEBUG] Processing: {Path.GetFileName(seg)}");
+
+                    // ✅ Use encoding strategy
                     await FFmpegCoreHelper.RunFfmpegAsync(
-                        $"-hide_banner -loglevel error -nostdin -i \"{seg}\" -vn -af \"{filterChain}\" -c:a libmp3lame -b:a 192k -threads 1 -y \"{outSeg}\"");
-                    Console.WriteLine($"[DEBUG] Finished processing segment: {seg}");
+                        $"-hide_banner -loglevel error -nostdin " +
+                        $"-i \"{seg}\" -vn -af \"{filterChain}\" " +
+                        $"{encodingStrategy.FfmpegArgs} -threads 1 -y \"{outSeg}\"");
+
                     if (File.Exists(outSeg))
                         processed.Add(outSeg);
                 });
@@ -226,70 +324,69 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
             return ordered.Count == 0 ? null : ordered;
         }
 
-        // private static async Task<string?> CombineAsync(List<string> orderedProcessed, string workDir)
-        // {
-        //     string listFile = Path.Combine(workDir, "concat.txt");
-        //     Console.WriteLine($"[DEBUG] Combining segments, list file: {listFile}");
-        //     await File.WriteAllLinesAsync(
-        //         listFile,
-        //         orderedProcessed.Select(p => $"file '{p.Replace("\\", "/")}'"));
-
-        //     Console.WriteLine($"[DEBUG] Written concat list file.");
-
-        //     string finalPath = Path.Combine(workDir, "final.mp3");
-        //     Console.WriteLine($"[DEBUG] Final output path will be: {finalPath}");
-        //     bool ok = await FFmpegCoreHelper.RunFfmpegAsync(
-        //         $"-hide_banner -loglevel error -nostdin -f concat -safe 0 -i \"{listFile}\" -c copy -y \"{finalPath}\"");
-        //     Console.WriteLine($"[DEBUG] Combining segments success: {ok}");
-        //     return ok && File.Exists(finalPath) ? finalPath : null;
-        // }
-
-        private static async Task<string?> CombineAsync(List<string> orderedProcessed, string workDir)
+        // ✅ REFACTORED: Dynamic final extension
+        private static async Task<string?> CombineAsync(
+            List<string> orderedProcessed,
+            string workDir,
+            AudioFormatInfo formatInfo)
         {
             if (orderedProcessed.Count == 0) return null;
 
-            // Nếu chỉ có 1 segment, copy trực tiếp
+            // ✅ Dynamic final path
+            string finalPath = Path.Combine(workDir, $"final{formatInfo.Extension}");
+
+            // Single segment optimization
             if (orderedProcessed.Count == 1)
             {
-                string singleFinalPath = Path.Combine(workDir, "final.mp3");
-                File.Copy(orderedProcessed[0], singleFinalPath, true);
-                Console.WriteLine($"[DEBUG] Single segment, copied directly to: {singleFinalPath}");
-                return singleFinalPath;
+                File.Copy(orderedProcessed[0], finalPath, true);
+                Console.WriteLine($"[DEBUG] Single segment copied to: {finalPath}");
+                return finalPath;
             }
 
-            string finalPath = Path.Combine(workDir, "final.mp3");
-            Console.WriteLine($"[DEBUG] Binary combining {orderedProcessed.Count} segments to: {finalPath}");
+            Console.WriteLine($"[DEBUG] Combining {orderedProcessed.Count} segments to: {finalPath}");
 
             try
             {
-                // Binary concat - nhanh nhất cho MP3
-                using var finalStream = new FileStream(finalPath, FileMode.Create, FileAccess.Write, FileShare.None,
-                    bufferSize: 1024 * 1024); // 1MB buffer cho performance
+                // Binary concat for efficiency
+                using var finalStream = new FileStream(
+                    finalPath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 1024 * 1024); // 1MB buffer
 
                 foreach (var segment in orderedProcessed)
                 {
-                    Console.WriteLine($"[DEBUG] Appending segment: {Path.GetFileName(segment)}");
+                    Console.WriteLine($"[DEBUG] Appending: {Path.GetFileName(segment)}");
 
-                    using var segmentStream = new FileStream(segment, FileMode.Open, FileAccess.Read, FileShare.Read,
-                        bufferSize: 1024 * 1024); // 1MB buffer
+                    using var segmentStream = new FileStream(
+                        segment,
+                        FileMode.Open,
+                        FileAccess.Read,
+                        FileShare.Read,
+                        bufferSize: 1024 * 1024);
 
                     await segmentStream.CopyToAsync(finalStream);
                 }
 
-                Console.WriteLine($"[DEBUG] Binary concat completed, final size: {finalStream.Length} bytes");
+                Console.WriteLine($"[DEBUG] Combine complete, size: {finalStream.Length} bytes");
                 return finalPath;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Binary concat failed: {ex.Message}");
+                Console.WriteLine($"[ERROR] Combine failed: {ex.Message}");
                 return null;
             }
         }
-
-
-
         #endregion
     }
+
+    // ✅ NEW: Encoding strategy model
+    public class AudioEncodingStrategy
+    {
+        public string Codec { get; set; } = string.Empty;
+        public string Bitrate { get; set; } = string.Empty;
+        public string FfmpegArgs { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
 }
-
-

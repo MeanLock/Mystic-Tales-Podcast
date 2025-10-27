@@ -12,6 +12,7 @@ namespace PodcastService.BusinessLogic.Registrations
         public static IServiceCollection AddAudioServices(this IServiceCollection services)
         {
             services.AddScoped<AudioTranscriptionService>();
+            services.AddScoped<AudioTuningService>();
             return services;
         }
     }

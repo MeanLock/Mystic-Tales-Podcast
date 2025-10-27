@@ -9,7 +9,7 @@ select * from PodcastShow
 select * from PodcastCategory
 select * from PodcastSubCategory
 select * from PodcastShowSubscriptionType
-select * from PodcastEpisode
+select * from PodcastEpisode where id = N'01637F78-27A5-4D7F-9EC6-B94CBAA53771'
 select * from PodcastEpisodeStatusTracking order by createdAt
 select * from PodcastEpisodeLicense
 
@@ -27,11 +27,31 @@ delete from PodcastChannelStatusTracking
 delete from PodcastChannel
 delete from PodcastShowReview
 INSERT INTO PodcastEpisodeStatusTracking (podcastEpisodeId, podcastEpisodeStatusId)
-VALUES (N'FDE924E8-B1C1-49BB-BE2E-1F359A7866A7' , 4); -- pending editrequest
+VALUES (N'9735b0a8-f38e-4f93-a86d-1fda7558872a' , 4); -- pending editrequest
 INSERT INTO PodcastShowStatusTracking(podcastShowId, podcastShowStatusId)
 VALUES (N'b4988aad-58cb-4c17-937e-3ad5e65336ce' , 3); 
 INSERT INTO PodcastEpisodePublishReviewSessionStatusTracking(podcastEpisodePublishReviewSessionId, podcastEpisodePublishReviewSessionStatusId)
 VALUES (7 , 3); 
+
+-- chạy trong user db
+DROP TABLE AccountPodcastListenHistory
+-- chạy trong podcast db
+CREATE TABLE PodcastEpisodeListenSession (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL,
+    podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
+    lastListenDurationSeconds INT NOT NULL DEFAULT 0,
+    isCompleted BIT NOT NULL DEFAULT 0,
+    token NVARCHAR(MAX) NOT NULL,
+    expiredAt DATETIME NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    FOREIGN KEY (podcastEpisodeId) REFERENCES PodcastEpisode(id)
+);
+
+ALTER TABLE PodcastEpisode
+ADD 
+    audioEncryptionKeyId UNIQUEIDENTIFIER NULL DEFAULT NULL,
+    audioEncryptionKeyFileKey NVARCHAR(MAX) NULL DEFAULT NULL;
 
 ALTER TABLE PodcastEpisode
     ALTER COLUMN audioFileKey NVARCHAR(MAX) NULL ;

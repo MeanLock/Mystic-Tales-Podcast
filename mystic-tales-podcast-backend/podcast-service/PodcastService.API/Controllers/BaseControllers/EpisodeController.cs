@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PodcastService.API.Filters.ExceptionFilters;
+using PodcastService.BusinessLogic.DTOs.AudioTuning;
 using PodcastService.BusinessLogic.DTOs.Cache;
 using PodcastService.BusinessLogic.DTOs.Episode;
 using PodcastService.BusinessLogic.Enums.App;
@@ -49,6 +50,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         private readonly IGenericRepository<PodcastEpisode> _podcastEpisodeGenericRepository;
         private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
         private readonly IMediaTypeConfig _mediaTypeConfig;
+        private readonly AudioFormatDetectorHelper _formatDetector;
 
         public EpisodeController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService, PodcastEpisodeService podcastEpisodeService, AudioTranscriptionApiService audioTranscriptionApiService, AppDbContext appDbContext, IGenericRepository<PodcastEpisode> podcastEpisodeGenericRepository, FFMpegCoreHlsService ffMpegCoreHlsService, IMediaTypeConfig mediaTypeConfig)
         {
@@ -65,6 +67,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             _podcastEpisodeGenericRepository = podcastEpisodeGenericRepository;
             _ffMpegCoreHlsService = ffMpegCoreHlsService;
             _mediaTypeConfig = mediaTypeConfig;
+            _formatDetector = new AudioFormatDetectorHelper();
         }
 
         #region Sample coding format must be followed
@@ -657,7 +660,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             var encryptionKeyBytes = await _podcastEpisodeService.GetEpisodeHlsEncryptionKeyFileAsync(PodcastEpisodeId, KeyId, Token);
 
             Response.Headers.CacheControl = "no-store";
-            return File(encryptionKeyBytes, "application/octet-stream", enableRangeProcessing : false);
+            return File(encryptionKeyBytes, "application/octet-stream", enableRangeProcessing: false);
         }
 
         // /api/podcast-service/api/episodes/hls-playlist/get-file-data/{**FileKey}
@@ -712,11 +715,64 @@ namespace PodcastService.API.Controllers.BaseControllers
             if (fileData == null)
                 return NotFound("Unable to read segment");
 
-            Response.Headers.CacheControl = "no-store";
             return File(fileData, "video/MP2T");
         }
 
-        
+        // /api/podcast-service/api/episodes/{PodcastEpisodeId}/audio-tuning/general
+        [HttpPost("{PodcastEpisodeId}/audio-tuning/general")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetEpisodeAudioGeneralTuningSettings(Guid PodcastEpisodeId, [FromForm] GeneralAudioTuningRequestDTO generalAudioTuningRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            Stream tunedAudio;
+            GeneralTuningProfileRequestInfo generalTuningProfileRequestInfo = JsonConvert.DeserializeObject<GeneralTuningProfileRequestInfo>(generalAudioTuningRequestDTO.GeneralTuningProfileRequestInfo);
+
+            // using (var stream = generalAudioTuningRequestDTO.AudioFile.OpenReadStream())
+            // {
+            //     tunedAudio = await _podcastEpisodeService.GetEpisodeAudioGeneralTuningSettingsAsync(generalTuningProfileRequestInfo, stream, PodcastEpisodeId, account.Id);
+            //     // ĐẢM BẢO STREAM HỢP LỆ
+            //     if (tunedAudio == null)
+            //     {
+            //         return BadRequest("Tuning process returned null stream");
+            //     }
+
+            //     // RESET POSITION
+            //     if (tunedAudio.CanSeek)
+            //     {
+            //         tunedAudio.Position = 0;
+            //     }
+
+
+            //     Response.Headers.CacheControl = "no-store";
+            //     return File(tunedAudio, _formatDetector.DetectFormatFromStream(tunedAudio).MimeType, enableRangeProcessing: false);
+            // }
+            var inputStream = generalAudioTuningRequestDTO.AudioFile.OpenReadStream();
+
+            tunedAudio = await _podcastEpisodeService.GetEpisodeAudioGeneralTuningSettingsAsync(
+                generalTuningProfileRequestInfo, inputStream, PodcastEpisodeId, account.Id);
+
+            if (tunedAudio == null)
+            {
+                return BadRequest("Tuning process returned null stream");
+            }
+
+            // ✅ Detect format TRƯỚC khi reset position
+            var formatInfo = _formatDetector.DetectFormatFromStream(tunedAudio);
+
+            // ✅ Reset position SAU khi detect
+            if (tunedAudio.CanSeek)
+            {
+                tunedAudio.Position = 0;
+            }
+
+            Response.Headers.CacheControl = "no-store";
+
+            // ✅ Disable range processing để tránh partial content
+            return File(tunedAudio, formatInfo.MimeType, enableRangeProcessing: false);
+
+        }
+
+
 
 
 

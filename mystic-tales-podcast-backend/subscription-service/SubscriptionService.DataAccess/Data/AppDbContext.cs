@@ -179,13 +179,11 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<PodcastSubscription>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__PodcastS__3213E83F867647BC");
+            entity.HasKey(e => e.Id).HasName("PK__PodcastS__3213E83FDBC7EF35");
 
-            entity.ToTable("PodcastSubscription", tb => tb.HasTrigger("TR_PodcastSubscription_UpdatedAt"));
+            entity.ToTable("PodcastSubscription");
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedNever()
-                .HasColumnName("id");
+            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")

@@ -13,13 +13,13 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
     {
         private readonly ILogger<FFMpegCoreHlsService> _logger;
         private readonly IHlsConfig _hlsConfig;
-        private readonly AudioFormatDetectorHelper _formatDetector;
+        private readonly AudioFormatDetectorHelper _audioFormatDetectorHelper;
 
         public FFMpegCoreHlsService(ILogger<FFMpegCoreHlsService> logger, IHlsConfig hlsConfig)
         {
             _logger = logger;
             _hlsConfig = hlsConfig;
-            _formatDetector = new AudioFormatDetectorHelper(logger as ILogger<AudioFormatDetectorHelper>);
+            _audioFormatDetectorHelper = new AudioFormatDetectorHelper(logger as ILogger<AudioFormatDetectorHelper>);
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                 }
 
                 // ✅ STEP 2: Detect audio format from stream (reads first 12 bytes)
-                formatInfo = _formatDetector.DetectFormat(processStream);
+                formatInfo = _audioFormatDetectorHelper.DetectFormatFromStream(processStream);
                 
                 // After detection, reset position for subsequent reads
                 processStream.Position = 0;

@@ -6,7 +6,16 @@ select * from AccountFavoritedPodcastChannel
 select * from AccountFollowedPodcastShow
 select * from AccountSavedPodcastEpisode
 
+ALTER TABLE PodcasterProfile
+ADD listenCount INT NOT NULL DEFAULT 0;
 
+DROP TABLE AccountPodcastListenHistory
+
+ALTER TABLE PodcasterProfile
+drop column ListenCount ;
+
+ALTER TABLE PodcasterProfile
+DROP CONSTRAINT DF__Podcaster__Liste__73852659
 
 
 Delete from AccountFavoritedPodcastChannel

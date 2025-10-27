@@ -14,6 +14,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Hashtag> Hashtags { get; set; }
 
+    public virtual DbSet<PodcastBackgroundSoundTrack> PodcastBackgroundSoundTracks { get; set; }
+
     public virtual DbSet<PodcastCategory> PodcastCategories { get; set; }
 
     public virtual DbSet<PodcastChannel> PodcastChannels { get; set; }
@@ -78,6 +80,31 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(250)
                 .HasColumnName("name");
+        });
+
+        modelBuilder.Entity<PodcastBackgroundSoundTrack>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__PodcastB__3213E83F74D8844E");
+
+            entity.ToTable("PodcastBackgroundSoundTrack");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("(newid())")
+                .HasColumnName("id");
+            entity.Property(e => e.AudioFileKey).HasColumnName("audioFileKey");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.MainImageFileKey).HasColumnName("mainImageFileKey");
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .HasColumnName("name");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updatedAt");
         });
 
         modelBuilder.Entity<PodcastCategory>(entity =>
