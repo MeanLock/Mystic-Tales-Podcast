@@ -198,6 +198,11 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.AccountId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__AccountNo__accou__17036CC0");
+
+            entity.HasOne(d => d.NotificationType).WithMany(p => p.AccountNotifications)
+                .HasForeignKey(d => d.NotificationTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AccountNotification_NotificationType");
         });
 
         modelBuilder.Entity<AccountSavedPodcastEpisode>(entity =>

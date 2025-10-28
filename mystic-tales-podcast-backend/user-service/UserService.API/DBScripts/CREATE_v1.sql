@@ -128,6 +128,7 @@ CREATE TABLE AccountNotification (
     isSeen BIT NOT NULL DEFAULT 0,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (accountId) REFERENCES Account(id)
+    FOREIGN KEY (notificationTypeId) REFERENCES NotificationType(id)
 );
 
 -- NotificationType table
