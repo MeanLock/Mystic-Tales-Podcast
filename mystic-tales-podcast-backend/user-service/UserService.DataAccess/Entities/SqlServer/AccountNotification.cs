@@ -18,4 +18,6 @@ public partial class AccountNotification
     public DateTime CreatedAt { get; set; }
 
     public virtual Account Account { get; set; } = null!;
+
+    public virtual NotificationType NotificationType { get; set; } = null!;
 }
