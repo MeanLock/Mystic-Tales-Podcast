@@ -56,12 +56,12 @@ const DefaultLayout = () => {
   // }
   const detectContextFromPath = (pathname: string) => {
     // Channel context: /my-channel/:id/*
-    const channelMatch = pathname.match(/^\/my-channel\/([^\/]+)/);
+    const channelMatch = pathname.match(/^\/channel\/([^\/]+)/);
     if (channelMatch) {
       return {
         type: 'channel' as const,
         id: channelMatch[1],
-        basePath: `/my-channel/${channelMatch[1]}`
+        basePath: `/channel/${channelMatch[1]}`
       };
     }
 

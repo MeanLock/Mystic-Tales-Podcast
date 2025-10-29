@@ -40,7 +40,7 @@
         &-container {
             position: relative;
             border-radius: 8px;
-            background-color: #161616;
+            background-color: #282828;
             width: 100%;
             max-width: 550px;
             border: 1px solid transparent;
@@ -396,32 +396,7 @@
         }
     }
 
-    &__empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 64px 24px;
-        text-align: center;
-
-        &-icon {
-            font-size: 4rem;
-            color: #555;
-            margin-bottom: 16px;
-        }
-
-        &-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: white;
-            margin-bottom: 8px;
-        }
-
-        &-description {
-            color: #888;
-            margin-bottom: 24px;
-        }
-    }
+   
 }
 
 // Responsive adjustments

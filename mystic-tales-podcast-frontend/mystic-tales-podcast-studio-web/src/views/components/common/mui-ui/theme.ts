@@ -23,6 +23,15 @@ const theme = createTheme({
                 },
             },
         },
+         MuiIconButton: {
+            styleOverrides: {
+                root: {
+                    "&:focus, &:focus-visible": {
+                        outline: "none",
+                    },
+                },
+            },
+        },
         MuiInputBase: {
             styleOverrides: {
                 root: {

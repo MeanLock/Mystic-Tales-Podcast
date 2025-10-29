@@ -1,0 +1,83 @@
+D:\FPTU\Capstone\Mystic-Tales-Podcast\mystic-tales-podcast-frontend\mystic-tales-podcast-studio-web\src
+├── assets
+├── config
+├── core
+|  ├── api
+|  |  ├── graphql
+|  |  |  ├── config
+|  |  |  |  └── clients
+|  |  |  |     ├── v1
+|  |  |  |     └── v2
+|  |  |  └── main
+|  |  |     ├── api-call
+|  |  |     ├── errors
+|  |  |     └── response-generator
+|  |  |        ├── v1
+|  |  |        └── v2
+|  |  └── rest-api
+|  |     ├── config
+|  |     |  └── instances
+|  |     |     ├── v1
+|  |     |     └── v2
+|  |     └── main
+|  |        ├── api-call
+|  |        ├── errors
+|  |        └── response-generator
+|  |           └── v1
+|  ├── graphql
+|  |  ├── mutation
+|  |  ├── query
+|  |  └── subscriptions
+|  ├── hooks
+|  ├── services
+|  |  └── account
+|  ├── types
+|  └── utils
+├── lib
+├── modules
+├── redux
+|  ├── auth
+|  ├── navigation
+|  └── ui
+├── router
+├── styles
+|  ├── base
+|  ├── themes
+|  |  ├── app
+|  |  └── chat-room
+|  └── variables
+|     ├── FunctionArea
+|     └── MainArea
+└── views
+   ├── components
+   |  ├── common
+   |  |  ├── empty
+   |  |  └── mui-ui
+   |  |     └── customizations
+   |  └── layouts
+   |     ├── auth-layout
+   |     ├── default-layout
+   |     └── error-boundary
+   └── pages
+      ├── audio-tuning-page
+      ├── dashboard
+      ├── home-page
+      ├── login-page
+      ├── my-channel-detail-page
+      |  ├── dashboard-page
+      |  ├── overview-page
+      |  ├── show-page
+      |  └── subscription-page
+      ├── my-channel-page
+      ├── my-show-detail-page
+      |  ├── episode-detail-page
+      |  ├── episode-page
+      |  ├── overview-page
+      |  └── subscription-page
+      ├── my-show-page
+      ├── profile-page
+      ├── register-page
+      └── survey-page
+
+directory: 79
+

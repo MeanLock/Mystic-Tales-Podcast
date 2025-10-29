@@ -19,13 +19,13 @@ import AppTheme from '../../components/common/mui-ui/AppTheme';
 import { GoogleIcon } from '../../components/common/mui-ui/MuiUiCustomIcons';
 import { SignInContainer } from './SignInContainer';
 import { Card } from './Card';
-
-
+import logo from "../../../assets/login.png"
+import './styles.scss'
 interface LoginPageProps {
     disableCustomTheme?: boolean;
 }
 
-const LoginPage : FC<LoginPageProps> = (props) => {
+const LoginPage: FC<LoginPageProps> = (props) => {
     // REDUX
     const dispatch = useDispatch();
 
@@ -60,13 +60,13 @@ const LoginPage : FC<LoginPageProps> = (props) => {
             setPasswordError(false);
             setPasswordErrorMessage('');
         }
-    
+
         return isValid;
     };
 
     const handleLoginManual = async () => {
         setManualLoading(true);
-        if(validateInputs() === false) {
+        if (validateInputs() === false) {
             setManualLoading(false);
             return;
         }
@@ -102,7 +102,7 @@ const LoginPage : FC<LoginPageProps> = (props) => {
             errorAlert(login_result.message.content || "Login failed. Please try again.");
         }
         setManualLoading(false);
-        
+
     }
 
     const handleLoginGoogleOAuth2 = useGoogleLogin(
@@ -164,73 +164,79 @@ const LoginPage : FC<LoginPageProps> = (props) => {
     }
 
     return (
-        <AppTheme {...props}>
-            <CssBaseline enableColorScheme />
-            <SignInContainer direction="column" justifyContent="space-between">
-                <Card variant="outlined">
-                    <Typography
-                        component="h1"
-                        variant="h4"
-                        sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
-                    >
-                        Sign in
-                    </Typography>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            width: '100%',
-                            gap: 2,
-                        }}
-                    >
-                        <FormControl>
-                            <FormLabel htmlFor="email">membername or email</FormLabel>
-                            <TextField
-                                error={membernameError}
-                                helperText={membernameErrorMessage}
-                                id="email"
-                                type="email"
-                                name="email"
-                                placeholder="handsomeboy"
-                                autoComplete="email"
-                                autoFocus
-                                required
-                                fullWidth
-                                variant="outlined"
-                                color={membernameError ? 'error' : 'primary'}
-                                onChange={(e) => setMembername(e.target.value)}
-                            />
-                        </FormControl>
-                        <FormControl>
-                            <FormLabel htmlFor="password">Password</FormLabel>
-                            <TextField
-                                error={passwordError}
-                                helperText={passwordErrorMessage}
-                                name="password"
-                                placeholder="••••••"
-                                type="password"
-                                id="password"
-                                autoComplete="current-password"
-                                autoFocus
-                                required
-                                fullWidth
-                                variant="outlined"
-                                color={passwordError ? 'error' : 'primary'}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </FormControl>
-                        
-                        <Button
-                            fullWidth
-                            variant="contained"
-                            onClick={handleLoginManual}
-                            loading={manualLoading}
+        <div
+            style={{
+                backgroundImage: 'url("https://images.unsplash.com/photo-1660914256311-918659fae88f?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=2070")',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                minHeight: '100vh',
+                width: '100vw'
+            }}
+        >        <AppTheme {...props}>
+                <CssBaseline enableColorScheme />
+                <SignInContainer direction="column" justifyContent="space-between">
+                    <Card variant="outlined" className="login-card">
+                        <img src={logo || "/placeholder.svg"} alt="Logo" />
+                        <Box className="login-text my-6">
+                            <p className="login-text-title">Mystic Tales Podcast</p>
+                            <p className="login-text-subtitle">STUDIO</p>
+                        </Box>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                width: '100%',
+                                gap: 2,
+                            }}
                         >
-                            Sign in
-                        </Button>
-                    </Box>
-                    <Divider>or</Divider>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <FormControl>
+                                <FormLabel className="text-left" htmlFor="email">Email</FormLabel>
+                                <TextField
+                                    error={membernameError}
+                                    helperText={membernameErrorMessage}
+                                    id="email"
+                                    type="email"
+                                    name="email"
+                                    placeholder="Please enter your email"
+                                    autoComplete="email"
+                                    autoFocus
+                                    required
+                                    fullWidth
+                                    variant="outlined"
+                                    color={membernameError ? 'error' : 'primary'}
+                                    onChange={(e) => setMembername(e.target.value)}
+                                />
+                            </FormControl>
+                            <FormControl >
+                                <FormLabel className="text-left" htmlFor="password">Password</FormLabel>
+                                <TextField
+                                    error={passwordError}
+                                    helperText={passwordErrorMessage}
+                                    name="password"
+                                    placeholder="•••••••••"
+                                    type="password"
+                                    id="password"
+                                    autoComplete="current-password"
+                                    autoFocus
+                                    required
+                                    fullWidth
+                                    variant="outlined"
+                                    color={passwordError ? 'error' : 'primary'}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                            </FormControl>
+
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                onClick={handleLoginManual}
+                                loading={manualLoading}
+                            >
+                                Sign in
+                            </Button>
+                        </Box>
+                        <Divider>or</Divider>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <Button
                             fullWidth
                             variant="outlined"
@@ -240,20 +246,11 @@ const LoginPage : FC<LoginPageProps> = (props) => {
                         >
                             Sign in with Google
                         </Button>
-                        <Typography sx={{ textAlign: 'center' }}>
-                            Don&apos;t have an account?{' '}
-                            <Link
-                                href="/register"
-                                variant="body2"
-                                sx={{ alignSelf: 'center' }}
-                            >
-                                Create account
-                            </Link>
-                        </Typography>
                     </Box>
-                </Card>
-            </SignInContainer>
-        </AppTheme>
+                    </Card>
+                </SignInContainer>
+            </AppTheme>
+        </div>
     );
 }
 

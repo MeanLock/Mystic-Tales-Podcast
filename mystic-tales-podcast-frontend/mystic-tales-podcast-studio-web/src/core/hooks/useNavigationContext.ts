@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { setChannelContext, setUserContext,  } from '../../redux/navigation/navigationSlice';
-import { _channelDetailNav, _podcasterNav } from '../../router/_roleNav';
+import { setChannelContext, setShowContext, setUserContext, } from '../../redux/navigation/navigationSlice';
+import { _channelDetailNav, _podcasterNav, _showDetailNav } from '../../router/_roleNav';
 
 export const useNavigationContext = () => {
   const dispatch = useDispatch();
@@ -11,14 +11,20 @@ export const useNavigationContext = () => {
   };
 
   const switchToChannelContext = (channel: any) => {
-     const navItemsWithId = _channelDetailNav.map(item => ({
+    const navItemsWithId = _channelDetailNav.map(item => ({
       ...item,
       path: item.path.replace(':id', channel.id) // Thay thế :id bằng ID thực tế
     }));
     dispatch(setChannelContext({ channel, navItems: navItemsWithId }));
   };
+  const switchToShowContext = (show: any) => {
+    const navItemsWithId = _showDetailNav.map(item => ({
+      ...item,
+      path: item.path.replace(':id', show.id) // Thay thế :id bằng ID thực tế
+    }));
+    dispatch(setShowContext({ show, navItems: navItemsWithId }));
+  };
 
- 
   const switchContextByType = (contextInfo: { type: string; id: string; basePath: string }) => {
     switch (contextInfo.type) {
       case 'channel':
@@ -29,8 +35,17 @@ export const useNavigationContext = () => {
         };
         switchToChannelContext(channelInfo);
         break;
-    
-      default: 
+
+      case 'show':
+        const showInfo = {
+          id: contextInfo.id,
+          name: `Show ${contextInfo.id}`,
+          avatar: `https://picsum.photos/300/300?random=${contextInfo.id}`
+        };
+        switchToShowContext(showInfo);
+        break;
+
+      default:
         const user = {
           id: "u_1",
           name: "SAMURICE",

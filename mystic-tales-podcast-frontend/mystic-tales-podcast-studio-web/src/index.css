@@ -43,8 +43,9 @@
 }
 
 :root {
-  --primary-grey: #282828;
+  --primary-grey: #171717;
   --secondary-grey: #666666;
+  --third-grey: #999999;
   --primary-green: #AEE339;
   --white: #ffffff;
   --white-75: rgba(255, 255, 255, 0.75);

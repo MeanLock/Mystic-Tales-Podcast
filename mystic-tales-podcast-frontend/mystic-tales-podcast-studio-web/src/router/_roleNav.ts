@@ -1,11 +1,13 @@
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import {
   ApplePodcastsLogo,
   ListBullets,
   Money,
   Queue,
   Copyright,
-  Info
+  CreditCard ,
+  Equalizer  
 } from "phosphor-react";
 import React, { JSX } from 'react';
 
@@ -20,6 +22,26 @@ export const _podcasterNav: {
       icon: React.createElement(DashboardOutlinedIcon, { style: { fontSize: '24px' } }),
     },
     {
+      label: "Audio Tuning",
+      icon: React.createElement(Equalizer  , { size: 24 }),
+      path: "/audio-tuning",
+    },
+    {
+      label: "My Channels",
+      icon: React.createElement(ApplePodcastsLogo, { size: 24 }),
+      path: "/channel",
+    },
+    {
+      label: "My Shows",
+      icon: React.createElement(Queue, { size: 24 }),
+      path: "/show",
+    },
+    {
+      label: "Booking Management",
+      icon: React.createElement(ListBullets, { size: 24 }),
+      path: "/booking-management",
+    },
+    {
       label: "Earn",
       icon: React.createElement(Money, { size: 24 }),
       path: "/earn",
@@ -29,21 +51,6 @@ export const _podcasterNav: {
       icon: React.createElement(Copyright, { size: 24 }),
       path: "/copyright",
     },
-    {
-      label: "My Channels",
-      icon: React.createElement(ApplePodcastsLogo, { size: 24 }),
-      path: "/my-channels",
-    },
-    {
-      label: "My Shows",
-      icon: React.createElement(Queue, { size: 24 }),
-      path: "/my-shows",
-    },
-    {
-      label: "Booking Management",
-      icon: React.createElement(ListBullets, { size: 24 }),
-      path: "/booking-management",
-    },
   ];
 
 export const _channelDetailNav: {
@@ -51,27 +58,65 @@ export const _channelDetailNav: {
   icon: JSX.Element;
   path: string;
 }[] = [
-    {
-      label: "Dashboard",
-      path: "/my-channel/:id/dashboard",
-      icon: React.createElement(DashboardOutlinedIcon, { style: { fontSize: '24px' } }),
-    },
+    // {
+    //   label: "Dashboard",
+    //   path: "/my-channel/:id/dashboard",
+    //   icon: React.createElement(DashboardOutlinedIcon, { style: { fontSize: '24px' } }),
+    // },
     {
       label: "Overview",
-      path: "/my-channel/:id/overview",
-      icon: React.createElement(Info, { size: 24 }),
+      path: "/channel/:id/overview",
+      icon: React.createElement(FeedOutlinedIcon, { style: { fontSize: '24px' } }),
+    },
+    {
+      label: "Subscription",
+      path: "/channel/:id/subscription",
+      icon: React.createElement(CreditCard , { style: { fontSize: '24px' } }),
     },
      {
       label: "Shows",
-      path: "/my-channel/:id/show",
+      path: "/channel/:id/show",
       icon: React.createElement(Queue, { size: 24 }),
     },
-    {
-      label: "Earn",
-      path: "/my-channel/:id/earn",
-      icon: React.createElement(DashboardOutlinedIcon, { style: { fontSize: '24px' } }),
-    },
+    // {
+    //   label: "Earn",
+    //   path: "/channel/:id/earn",
+    //   icon: React.createElement(DashboardOutlinedIcon, { style: { fontSize: '24px' } }),
+    // },
 
 
   ];
 
+export const _showDetailNav: {
+  label: string;
+  icon: JSX.Element;
+  path: string;
+}[] = [
+    // {
+    //   label: "Dashboard",
+    //   path: "/my-channel/:id/dashboard",
+    //   icon: React.createElement(DashboardOutlinedIcon, { style: { fontSize: '24px' } }),
+    // },
+    {
+      label: "Overview",
+      path: "/show/:id/overview",
+      icon: React.createElement(FeedOutlinedIcon, { style: { fontSize: '24px' } }),
+    },
+    {
+      label: "Subscription",
+      path: "/show/:id/subscription",
+      icon: React.createElement(CreditCard , { style: { fontSize: '24px' } }),
+    },
+     {
+      label: "Episodes",
+      path: "/show/:id/episode",
+      icon: React.createElement(Queue, { size: 24 }),
+    },
+    // {
+    //   label: "Earn",
+    //   path: "/channel/:id/earn",
+    //   icon: React.createElement(DashboardOutlinedIcon, { style: { fontSize: '24px' } }),
+    // },
+
+
+  ];
