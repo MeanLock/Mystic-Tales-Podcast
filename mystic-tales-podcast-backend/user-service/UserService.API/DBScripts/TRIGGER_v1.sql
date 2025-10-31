@@ -466,6 +466,20 @@ BEGIN
 END;
 GO
 
+-- Trigger for DMCAAccusationConclusionReport table
+CREATE TRIGGER TR_DMCAAccusationConclusionReport_UpdatedAt
+ON DMCAAccusationConclusionReport
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE DMCAAccusationConclusionReport
+    SET updatedAt = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)
+    FROM DMCAAccusationConclusionReport d
+    INNER JOIN inserted i ON d.id = i.id;
+END;
+GO
+
 -- =====================================================
 -- TRANSACTION SERVICE TRIGGERS [Port: 8076]
 -- =====================================================
