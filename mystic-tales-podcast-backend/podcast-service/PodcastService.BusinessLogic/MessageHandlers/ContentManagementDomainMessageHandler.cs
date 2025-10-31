@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Logging;
 using PodcastService.BusinessLogic.Attributes;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateBackgroundSoundTrack;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateEpisode;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateShow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteBackgroundSoundTrack;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeLicenses;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusEpisodeTotalSaved;
@@ -17,6 +19,7 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Sub
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractEpisodeTotalSaved;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractShowTotalFollow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateBackgroundSoundTrack;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateEpisode;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateShow;
@@ -38,6 +41,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
         private readonly PodcastChannelService _podcastChannelService;
         private readonly PodcastShowService _podcastShowService;
         private readonly PodcastEpisodeService _podcastEpisodeService;
+        private readonly PodcastBackgroundSoundTrackService _podcastBackgroundSoundTrackService;
         private readonly MailOperationService _mailOperationService;
         // private readonly AuthService _authService;
         private readonly KafkaProducerService _kafkaProducerService;
@@ -51,6 +55,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
             PodcastChannelService podcastChannelService,
             PodcastShowService podcastShowService,
             PodcastEpisodeService podcastEpisodeService,
+            PodcastBackgroundSoundTrackService podcastBackgroundSoundTrackService,
             MailOperationService mailOperationService,
 
             KafkaProducerService kafkaProducerService,
@@ -62,6 +67,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
             _podcastChannelService = podcastChannelService;
             _podcastShowService = podcastShowService;
             _podcastEpisodeService = podcastEpisodeService;
+            _podcastBackgroundSoundTrackService = podcastBackgroundSoundTrackService;
 
             _mailPropertiesConfig = mailPropertiesConfig;
         }
@@ -719,6 +725,51 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "processing-episode-publish-audio.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("create-background-sound-track", SAGA_TOPIC)]
+        public async Task HandleCreateBackgroundSoundTrackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var backgroundSoundTrack = command.RequestData.ToObject<CreateBackgroundSoundTrackParameterDTO>();
+                    await _podcastBackgroundSoundTrackService.CreateBackgroundSoundTrack(backgroundSoundTrack, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "create-background-sound-track.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("update-background-sound-track", SAGA_TOPIC)]
+        public async Task HandleUpdateBackgroundSoundTrackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var backgroundSoundTrack = command.RequestData.ToObject<UpdateBackgroundSoundTrackParameterDTO>();
+                    await _podcastBackgroundSoundTrackService.UpdateBackgroundSoundTrack(backgroundSoundTrack, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "update-background-sound-track.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-background-sound-track", SAGA_TOPIC)]
+        public async Task HandleDeleteBackgroundSoundTrackAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var backgroundSoundTrack = command.RequestData.ToObject<DeleteBackgroundSoundTrackParameterDTO>();
+                    await _podcastBackgroundSoundTrackService.DeleteBackgroundSoundTrack(backgroundSoundTrack, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-background-sound-track.failed"    // From YAML onFailure.emit
             );
         }
 

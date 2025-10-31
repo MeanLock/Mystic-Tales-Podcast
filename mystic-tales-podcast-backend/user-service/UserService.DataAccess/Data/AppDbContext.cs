@@ -331,6 +331,10 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(250)
                 .HasColumnName("name");
             entity.Property(e => e.OwnedBookingStorageSize).HasColumnName("ownedBookingStorageSize");
+            entity.Property(e => e.PricePerBookingWord)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("pricePerBookingWord");
             entity.Property(e => e.RatingCount).HasColumnName("ratingCount");
             entity.Property(e => e.TotalFollow).HasColumnName("totalFollow");
             entity.Property(e => e.UpdatedAt)

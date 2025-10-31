@@ -19,6 +19,8 @@ public partial class BookingProducingRequest
 
     public DateTime CreatedAt { get; set; }
 
+    public string? RejectReason { get; set; }
+
     public virtual Booking Booking { get; set; } = null!;
 
     public virtual ICollection<BookingPodcastTrack> BookingPodcastTracks { get; set; } = new List<BookingPodcastTrack>();

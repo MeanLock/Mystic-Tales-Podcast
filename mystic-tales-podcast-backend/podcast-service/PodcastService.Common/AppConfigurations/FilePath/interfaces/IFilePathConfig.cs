@@ -10,6 +10,8 @@
         string PODCAST_SHOW_TEMP_FILE_PATH { get; set; }
         string PODCAST_EPISODE_FILE_PATH { get; set; }
         string PODCAST_EPISODE_TEMP_FILE_PATH { get; set; }
+        string PODCAST_BACKGROUND_SOUND_TRACK_FILE_PATH { get; set; }
+        string PODCAST_BACKGROUND_SOUND_TRACK_TEMP_FILE_PATH { get; set; }
         string BOOKING_FILE_PATH { get; set; }
         string BOOKING_TEMP_FILE_PATH { get; set; }
         string DMCA_ACCUSATION_FILE_PATH { get; set; }

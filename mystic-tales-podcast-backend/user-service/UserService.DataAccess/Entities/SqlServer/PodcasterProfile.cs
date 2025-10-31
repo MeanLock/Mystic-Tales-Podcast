@@ -33,5 +33,7 @@ public partial class PodcasterProfile
 
     public int ListenCount { get; set; }
 
+    public decimal? PricePerBookingWord { get; set; }
+
     public virtual Account Account { get; set; } = null!;
 }

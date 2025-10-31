@@ -13,6 +13,8 @@ namespace PodcastService.Common.AppConfigurations.FilePath
         public string PODCAST_SHOW_TEMP_FILE_PATH { get; set; }
         public string PODCAST_EPISODE_FILE_PATH { get; set; }
         public string PODCAST_EPISODE_TEMP_FILE_PATH { get; set; }
+        public string PODCAST_BACKGROUND_SOUND_TRACK_FILE_PATH { get; set; }
+        public string PODCAST_BACKGROUND_SOUND_TRACK_TEMP_FILE_PATH { get; set; }
         public string BOOKING_FILE_PATH { get; set; }
         public string BOOKING_TEMP_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_FILE_PATH { get; set; }
@@ -29,6 +31,8 @@ namespace PodcastService.Common.AppConfigurations.FilePath
         public string PODCAST_SHOW_TEMP_FILE_PATH { get; set; }
         public string PODCAST_EPISODE_FILE_PATH { get; set; }
         public string PODCAST_EPISODE_TEMP_FILE_PATH { get; set; }
+        public string PODCAST_BACKGROUND_SOUND_TRACK_FILE_PATH { get; set; }
+        public string PODCAST_BACKGROUND_SOUND_TRACK_TEMP_FILE_PATH { get; set; }
         public string BOOKING_FILE_PATH { get; set; }
         public string BOOKING_TEMP_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_FILE_PATH { get; set; }
@@ -46,6 +50,8 @@ namespace PodcastService.Common.AppConfigurations.FilePath
             PODCAST_SHOW_TEMP_FILE_PATH = filePaths.PODCAST_SHOW_TEMP_FILE_PATH;
             PODCAST_EPISODE_FILE_PATH = filePaths.PODCAST_EPISODE_FILE_PATH;
             PODCAST_EPISODE_TEMP_FILE_PATH = filePaths.PODCAST_EPISODE_TEMP_FILE_PATH;
+            PODCAST_BACKGROUND_SOUND_TRACK_FILE_PATH = filePaths.PODCAST_BACKGROUND_SOUND_TRACK_FILE_PATH;
+            PODCAST_BACKGROUND_SOUND_TRACK_TEMP_FILE_PATH = filePaths.PODCAST_BACKGROUND_SOUND_TRACK_TEMP_FILE_PATH;
             BOOKING_FILE_PATH = filePaths.BOOKING_FILE_PATH;
             BOOKING_TEMP_FILE_PATH = filePaths.BOOKING_TEMP_FILE_PATH;
             DMCA_ACCUSATION_FILE_PATH = filePaths.DMCA_ACCUSATION_FILE_PATH;

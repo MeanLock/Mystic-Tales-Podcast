@@ -17,6 +17,8 @@ select * from PodcastEpisodePublishReviewSession
 select * from PodcastEpisodePublishReviewSessionStatusTracking
 select * from PodcastEpisodePublishDuplicateDetection
 select * from PodcastEpisodeIllegalContentTypeMarking
+select * from PodcastBackgroundSoundTrack
+
 
 delete from PodcastEpisodeIllegalContentTypeMarking
 delete from PodcastEpisodePublishDuplicateDetection

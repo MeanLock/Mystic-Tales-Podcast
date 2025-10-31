@@ -17,6 +17,7 @@ namespace PodcastService.BusinessLogic.Registrations
             // MiscServices
             services.AddScoped<PlatformFeedbackService>();
             services.AddScoped<MailOperationService>();
+            services.AddScoped<PodcastBackgroundSoundTrackService>();
 
             // CachingServices
             services.AddScoped<AccountCachingService>();
