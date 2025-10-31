@@ -58,7 +58,7 @@ const TrendingPage = () => {
   const addCurrentAudio = () => {
     dispatch(
       playAudio({
-        Id: "1",
+        Id: "9735b0a8-f38e-4f93-a86d-1fda7558872a",
         Name: "STAR BOY - The Weeknd",
         ImageUrl:
           "https://i.pinimg.com/1200x/5f/f4/83/5ff483cf28501863e5415cd1546951de.jpg",

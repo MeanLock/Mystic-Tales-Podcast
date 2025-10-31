@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAudioEngine } from "./audioEngine";
+import { getAudioEngine } from "./playerBridge";
 
 export function useAudioProgress(pollMs = 250) {
   const [time, setTime] = useState(0);

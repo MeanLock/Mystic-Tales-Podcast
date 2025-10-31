@@ -7,13 +7,14 @@ import { pollSagaResult } from "./polling";
 
 /** Thay theo backend thực tế của bạn */
 export const BASE_URL =
-  import.meta.env.VITE_PUBLIC_API_URL ?? "https://your.backend";
+  import.meta.env.VITE_PUBLIC_API_URL ?? "https://65662aa8a6e5.ngrok-free.app";
 
 /** raw baseQuery (fetchBaseQuery) */
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
+  // Include credentials (cookies) like axios withCredentials: true — some endpoints rely on cookies.
+  credentials: "include",
   prepareHeaders: (headers) => {
-    // KHÔNG gắn token ở đây (để 3-mode tự quyết ở wrapper)
     headers.set("ngrok-skip-browser-warning", "69420");
     return headers;
   },
@@ -30,11 +31,19 @@ const modeAwareBaseQuery: BaseQueryFn<
     body?: any;
     params?: any;
     authMode?: AuthMode;
+    responseHandler?: "json" | "text";
   },
   unknown,
   ApiErrorModel
 > = async (args, api, extraOptions) => {
-  const { url, method = "GET", body, params, authMode = "public" } = args;
+  const {
+    url,
+    method = "GET",
+    body,
+    params,
+    authMode = "public",
+    responseHandler,
+  } = args;
 
   // Clone headers tạm để gắn token theo mode
   const headers = new Headers();
@@ -45,12 +54,11 @@ const modeAwareBaseQuery: BaseQueryFn<
     };
   }
 
-  // Truyền headers sang fetchBaseQuery qua "headers"
-  const res: any = await rawBaseQuery(
-    { url, method, body, params, headers },
-    api,
-    extraOptions
-  );
+  // Truyền headers sang fetchBaseQuery qua "headers" và cho phép override responseHandler
+  const baseQueryArgs: any = { url, method, body, params, headers };
+  if (responseHandler) baseQueryArgs.responseHandler = responseHandler;
+
+  const res: any = await rawBaseQuery(baseQueryArgs, api, extraOptions);
 
   // Chuẩn hoá lỗi (tối giản)
   if (res?.error) {

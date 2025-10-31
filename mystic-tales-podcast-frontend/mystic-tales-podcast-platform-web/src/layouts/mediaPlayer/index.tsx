@@ -14,7 +14,6 @@ const MediaPlayerLayout = () => {
             flex-1 
             bg-white/10 backdrop-blur-[10px] shadow-2xl 
             rounded-3xl
-            p-8
             min-w-[500px]
             h-[734px]
             overflow-y-auto

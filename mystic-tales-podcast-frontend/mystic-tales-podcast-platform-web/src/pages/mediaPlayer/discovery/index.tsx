@@ -494,7 +494,7 @@ const DiscoveryPage = () => {
   return (
     <div
       className="
-      flex flex-col items-center gap-5 mb-20
+      flex flex-col items-center gap-5 mb-20 p-8
     "
     >
       {/* You might like it */}

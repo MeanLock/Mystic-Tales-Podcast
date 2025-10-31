@@ -35,7 +35,7 @@ import {
 } from "react-icons/fa6";
 
 import { Slider } from "@/components/ui/slider";
-import { getAudioEngine } from "@/core/services/player/audioEngine";
+import { getAudioEngine } from "@/core/services/player/playerBridge";
 import { useAudioProgress } from "@/core/services/player/useAudioPress";
 import Waving from "@/components/loader/Waving";
 
