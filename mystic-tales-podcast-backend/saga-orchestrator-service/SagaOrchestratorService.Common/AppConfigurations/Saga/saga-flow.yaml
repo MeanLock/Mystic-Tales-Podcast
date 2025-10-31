@@ -1372,6 +1372,115 @@ flows:
               topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
 
+  background-sound-track-creation-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Tạo background sound track"
+    save-file: "MainImageFile, AudioFile"
+    steps:
+      - name: "create-background-sound-track"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Tạo background sound track mới"
+        parameters:
+          - Name
+          - Description
+          - MainImageFileKey
+          - AudioFileKey
+        next-request-data:
+          - Name
+          - Description
+          - MainImageFileKey
+          - AudioFileKey
+        response-data:
+          - PodcastBackgroundSoundTrackId
+          - Name
+          - Description
+          - MainImageFileKey
+          - AudioFileKey
+        onSuccess:
+          emit: "create-background-sound-track.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-background-sound-track.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+  
+  background-sound-track-update-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật background sound track"
+    save-file: "MainImageFile, AudioFile"
+    steps:
+      - name: "update-background-sound-track"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật thông tin background sound track"
+        parameters:
+          - PodcastBackgroundSoundTrackId
+          - Name
+          - Description
+          - MainImageFileKey
+          - AudioFileKey
+        next-request-data:
+          - PodcastBackgroundSoundTrackId
+          - Name
+          - Description
+          - MainImageFileKey
+          - AudioFileKey
+        response-data:
+          - PodcastBackgroundSoundTrackId
+          - Name
+          - Description
+          - MainImageFileKey
+          - AudioFileKey
+        onSuccess:
+          emit: "update-background-sound-track.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-background-sound-track.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+  
+  background-sound-track-deletion-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Xóa background sound track"
+    save-file: ""
+    steps:
+      - name: "delete-background-sound-track"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Xóa background sound track"
+        parameters:
+          - PodcastBackgroundSoundTrackId
+        next-request-data:
+          - PodcastBackgroundSoundTrackId
+        response-data:
+          - PodcastBackgroundSoundTrackId
+        onSuccess:
+          emit: "delete-background-sound-track.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "delete-background-sound-track.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   channel-creation-flow:
     topic: "content-management-domain"
     handle-service: "SagaOrchestratorService"

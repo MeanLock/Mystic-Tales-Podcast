@@ -17,6 +17,9 @@ drop column ListenCount ;
 ALTER TABLE PodcasterProfile
 DROP CONSTRAINT DF__Podcaster__Liste__73852659
 
+ALTER TABLE AccountNotification
+ADD CONSTRAINT FK_AccountNotification_NotificationType 
+FOREIGN KEY (notificationTypeId) REFERENCES NotificationType(id);
 
 Delete from AccountFavoritedPodcastChannel
 Delete from PodcasterProfile

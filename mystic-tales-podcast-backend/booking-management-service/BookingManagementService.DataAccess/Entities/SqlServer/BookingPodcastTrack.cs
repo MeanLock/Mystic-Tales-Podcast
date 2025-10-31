@@ -19,9 +19,13 @@ public partial class BookingPodcastTrack
 
     public int RemainingPreviewListenSlot { get; set; }
 
+    public Guid BookingRequirementId { get; set; }
+
     public virtual Booking Booking { get; set; } = null!;
 
     public virtual BookingProducingRequest BookingProducingRequest { get; set; } = null!;
 
     public virtual ICollection<BookingProducingRequestPodcastTrackToEdit> BookingProducingRequestPodcastTrackToEdits { get; set; } = new List<BookingProducingRequestPodcastTrackToEdit>();
+
+    public virtual BookingRequirement BookingRequirement { get; set; } = null!;
 }

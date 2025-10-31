@@ -29,15 +29,19 @@ public partial class Booking
 
     public DateTime UpdatedAt { get; set; }
 
-    public virtual ICollection<BookingChatRoom> BookingChatRooms { get; set; } = new List<BookingChatRoom>();
+    public int? AssignedStaffId { get; set; }
 
-    public virtual ICollection<BookingNegotiation> BookingNegotiations { get; set; } = new List<BookingNegotiation>();
+    public double? CustomerBookingCancelDepositRefundRate { get; set; }
+
+    public double? PodcastBuddyBookingCancelDepositRefundRate { get; set; }
+
+    public virtual ICollection<BookingChatRoom> BookingChatRooms { get; set; } = new List<BookingChatRoom>();
 
     public virtual ICollection<BookingPodcastTrack> BookingPodcastTracks { get; set; } = new List<BookingPodcastTrack>();
 
     public virtual ICollection<BookingProducingRequest> BookingProducingRequests { get; set; } = new List<BookingProducingRequest>();
 
-    public virtual ICollection<BookingRequirementAttachFile> BookingRequirementAttachFiles { get; set; } = new List<BookingRequirementAttachFile>();
+    public virtual ICollection<BookingRequirement> BookingRequirements { get; set; } = new List<BookingRequirement>();
 
     public virtual ICollection<BookingStatusTracking> BookingStatusTrackings { get; set; } = new List<BookingStatusTracking>();
 }

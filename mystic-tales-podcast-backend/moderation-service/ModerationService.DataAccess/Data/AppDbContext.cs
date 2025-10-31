@@ -7,10 +7,6 @@ namespace ModerationService.DataAccess.Data;
 
 public partial class AppDbContext : DbContext
 {
-    public AppDbContext()
-    {
-    }
-
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
@@ -21,6 +17,10 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<CounterNoticeAttachFile> CounterNoticeAttachFiles { get; set; }
 
     public virtual DbSet<Dmcaaccusation> Dmcaaccusations { get; set; }
+
+    public virtual DbSet<DmcaaccusationConclusionReport> DmcaaccusationConclusionReports { get; set; }
+
+    public virtual DbSet<DmcaaccusationConclusionReportType> DmcaaccusationConclusionReportTypes { get; set; }
 
     public virtual DbSet<DmcaaccusationStatus> DmcaaccusationStatuses { get; set; }
 
@@ -52,10 +52,6 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<PodcastShowReportType> PodcastShowReportTypes { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost,1434;Database=MTP_ModerationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=True;");
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<CounterNotice>(entity =>
@@ -67,20 +63,13 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
-            entity.Property(e => e.AccountEmail).HasColumnName("accountEmail");
-            entity.Property(e => e.AccountId).HasColumnName("accountId");
-            entity.Property(e => e.AccountPhone).HasColumnName("accountPhone");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
             entity.Property(e => e.DmcaAccusationId).HasColumnName("dmcaAccusationId");
-            entity.Property(e => e.FiledDate).HasColumnName("filedDate");
             entity.Property(e => e.InvalidReason).HasColumnName("invalidReason");
             entity.Property(e => e.IsValid).HasColumnName("isValid");
-            entity.Property(e => e.Jurisdiction).HasColumnName("jurisdiction");
-            entity.Property(e => e.Signature).HasColumnName("signature");
-            entity.Property(e => e.StatementPerjury).HasColumnName("statementPerjury");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
@@ -128,21 +117,93 @@ public partial class AppDbContext : DbContext
             entity.ToTable("DMCAAccusation", tb => tb.HasTrigger("TR_DMCAAccusation_UpdatedAt"));
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.AccuserEmail)
+                .HasMaxLength(254)
+                .HasColumnName("accuserEmail");
+            entity.Property(e => e.AccuserFullName)
+                .HasMaxLength(500)
+                .HasColumnName("accuserFullName");
+            entity.Property(e => e.AccuserPhone)
+                .HasMaxLength(20)
+                .HasColumnName("accuserPhone");
             entity.Property(e => e.AssignedStaff).HasColumnName("assignedStaff");
+            entity.Property(e => e.CancelledAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime")
+                .HasColumnName("cancelledAt");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
-            entity.Property(e => e.LastLawsuitCheckingAlertAt)
-                .HasDefaultValueSql("(NULL)")
-                .HasColumnType("datetime")
-                .HasColumnName("lastLawsuitCheckingAlertAt");
+            entity.Property(e => e.DismissReason).HasColumnName("dismissReason");
             entity.Property(e => e.PodcastEpisodeId).HasColumnName("podcastEpisodeId");
             entity.Property(e => e.PodcastShowId).HasColumnName("podcastShowId");
+            entity.Property(e => e.ResolvedAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime")
+                .HasColumnName("resolvedAt");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
                 .HasColumnName("updatedAt");
+        });
+
+        modelBuilder.Entity<DmcaaccusationConclusionReport>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__DMCAAccu__3213E83F1DB404F7");
+
+            entity.ToTable("DMCAAccusationConclusionReport");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("(newid())")
+                .HasColumnName("id");
+            entity.Property(e => e.CancelledAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime")
+                .HasColumnName("cancelledAt");
+            entity.Property(e => e.CompletedAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime")
+                .HasColumnName("completedAt");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.DmcaAccusationConclusionReportTypeId).HasColumnName("dmcaAccusationConclusionReportTypeId");
+            entity.Property(e => e.DmcaAccusationId).HasColumnName("dmcaAccusationId");
+            entity.Property(e => e.InvalidReason).HasColumnName("invalidReason");
+            entity.Property(e => e.IsRejected)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnName("isRejected");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("updatedAt");
+
+            entity.HasOne(d => d.DmcaAccusationConclusionReportType).WithMany(p => p.DmcaaccusationConclusionReports)
+                .HasForeignKey(d => d.DmcaAccusationConclusionReportTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__DMCAAccus__dmcaA__46B27FE2");
+
+            entity.HasOne(d => d.DmcaAccusation).WithMany(p => p.DmcaaccusationConclusionReports)
+                .HasForeignKey(d => d.DmcaAccusationId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__DMCAAccus__dmcaA__45BE5BA9");
+        });
+
+        modelBuilder.Entity<DmcaaccusationConclusionReportType>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__DMCAAccu__3213E83F9D118DBC");
+
+            entity.ToTable("DMCAAccusationConclusionReportType");
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedNever()
+                .HasColumnName("id");
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .HasColumnName("name");
         });
 
         modelBuilder.Entity<DmcaaccusationStatus>(entity =>
@@ -195,20 +256,13 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
-            entity.Property(e => e.AccountEmail).HasColumnName("accountEmail");
-            entity.Property(e => e.AccountId).HasColumnName("accountId");
-            entity.Property(e => e.AccountPhone).HasColumnName("accountPhone");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
             entity.Property(e => e.DmcaAccusationId).HasColumnName("dmcaAccusationId");
-            entity.Property(e => e.GoodFaithStatement).HasColumnName("goodFaithStatement");
             entity.Property(e => e.InvalidReason).HasColumnName("invalidReason");
             entity.Property(e => e.IsValid).HasColumnName("isValid");
-            entity.Property(e => e.PodcastEpisodeId).HasColumnName("podcastEpisodeId");
-            entity.Property(e => e.PodcastShowId).HasColumnName("podcastShowId");
-            entity.Property(e => e.Signature).HasColumnName("signature");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
@@ -220,7 +274,6 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ValidatedBy)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnName("validatedBy");
-            entity.Property(e => e.WorkClaimed).HasColumnName("workClaimed");
 
             entity.HasOne(d => d.DmcaAccusation).WithMany(p => p.Dmcanotices)
                 .HasForeignKey(d => d.DmcaAccusationId)
@@ -259,34 +312,13 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
-            entity.Property(e => e.AccountId).HasColumnName("accountId");
-            entity.Property(e => e.CaseNumber)
-                .HasMaxLength(100)
-                .HasColumnName("caseNumber");
-            entity.Property(e => e.CourtName).HasColumnName("courtName");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
-            entity.Property(e => e.DateResolved)
-                .HasDefaultValueSql("(NULL)")
-                .HasColumnName("dateResolved");
             entity.Property(e => e.DmcaAccusationId).HasColumnName("dmcaAccusationId");
-            entity.Property(e => e.FilingDate).HasColumnName("filingDate");
-            entity.Property(e => e.GoodFaithStatement).HasColumnName("goodFaithStatement");
             entity.Property(e => e.InValidReason).HasColumnName("inValidReason");
-            entity.Property(e => e.IsDefendantWon)
-                .HasDefaultValueSql("(NULL)")
-                .HasColumnName("isDefendantWon");
             entity.Property(e => e.IsValid).HasColumnName("isValid");
-            entity.Property(e => e.JudgmentDetails).HasColumnName("judgmentDetails");
-            entity.Property(e => e.Outcome)
-                .HasDefaultValueSql("(NULL)")
-                .HasColumnName("outcome");
-            entity.Property(e => e.RulingDocumentFileUrl)
-                .HasDefaultValueSql("(NULL)")
-                .HasColumnName("rulingDocumentFileUrl");
-            entity.Property(e => e.Signature).HasColumnName("signature");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
