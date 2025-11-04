@@ -34,7 +34,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         private readonly AccountCachingService _accountCachingService;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
-        private readonly DMCAAccusationService _dmcaAccusationService;
 
         private readonly ILogger<LawsuitProofService> _logger;
         private readonly KafkaProducerService _kafkaProducerService;
@@ -49,7 +48,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             AccountCachingService accountCachingService,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
-            DMCAAccusationService dmcaAccusationService,
             ILogger<LawsuitProofService> logger,
             KafkaProducerService kafkaProducerService,
             IMessagingService messagingService,
@@ -63,7 +61,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             _accountCachingService = accountCachingService;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
-            _dmcaAccusationService = dmcaAccusationService;
             _logger = logger;
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;

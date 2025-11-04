@@ -34,7 +34,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         private readonly IGenericRepository<CounterNoticeAttachFile> _counterNoticeAttachFileGenericRepository;
 
         private readonly AccountCachingService _accountCachingService;
-        private readonly DMCAAccusationService _dmcaAccusationService;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
 
@@ -49,7 +48,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             IGenericRepository<CounterNotice> counterNoticeGenericRepository,
             IGenericRepository<CounterNoticeAttachFile> counterNoticeAttachFileGenericRepository,
             AccountCachingService accountCachingService,
-            DMCAAccusationService dmcaAccusationService,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
             ILogger<CounterNoticeService> logger,
@@ -63,7 +61,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             _counterNoticeGenericRepository = counterNoticeGenericRepository;
             _counterNoticeAttachFileGenericRepository = counterNoticeAttachFileGenericRepository;
             _accountCachingService = accountCachingService;
-            _dmcaAccusationService = dmcaAccusationService;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
             _logger = logger;

@@ -13,10 +13,15 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPayment;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPaymentRollback;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateAccountBalanceTransactionRollback;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateWithdrawalRequest;
 using TransactionService.BusinessLogic.DTOs.Transaction;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Enums.Transaction;
+using TransactionService.BusinessLogic.Helpers.DateHelpers;
+using TransactionService.BusinessLogic.Helpers.FileHelpers;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
+using TransactionService.Common.AppConfigurations.BusinessSetting.interfaces;
+using TransactionService.Common.AppConfigurations.FilePath.interfaces;
 using TransactionService.DataAccess.Data;
 using TransactionService.DataAccess.Entities.SqlServer;
 using TransactionService.DataAccess.Repositories.interfaces;
@@ -32,23 +37,40 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
         private readonly AppDbContext _appDbContext;
         private readonly ILogger<AccountBalanceTransactionService> _logger;
         private readonly IGenericRepository<AccountBalanceTransaction> _accountBalanceTransactionGenericRepository;
+        private readonly IGenericRepository<AccountBalanceWithdrawalRequest> _accountBalanceWithdrawalRequestGenericRepository;
+
+        private readonly IFileValidationConfig _fileValidationConfig;
+        private readonly IFilePathConfig _filePathConfig;
+        private readonly FileIOHelper _fileIOHelper;
         private readonly IPayosConfig _payosConfig;
+
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
+        private readonly DateHelper _dateHelper;
         public AccountBalanceTransactionService(
             AppDbContext appDbContext, 
             ILogger<AccountBalanceTransactionService> logger,
             IGenericRepository<AccountBalanceTransaction> accountBalanceTransactionGenericRepository,
+            IGenericRepository<AccountBalanceWithdrawalRequest> accountBalanceWithdrawalRequestGenericRepository,
+            IFileValidationConfig fileValidationConfig,
+            IFilePathConfig filePathConfig,
+            FileIOHelper fileIOHelper,
             IPayosConfig payosConfig,
             KafkaProducerService kafkaProducerService,
-            IMessagingService messagingService)
+            IMessagingService messagingService,
+            DateHelper dateHelper)
         {
             _appDbContext = appDbContext;
             _logger = logger;
             _accountBalanceTransactionGenericRepository = accountBalanceTransactionGenericRepository;
+            _accountBalanceWithdrawalRequestGenericRepository = accountBalanceWithdrawalRequestGenericRepository;
+            _fileValidationConfig = fileValidationConfig;
+            _filePathConfig = filePathConfig;
+            _fileIOHelper = fileIOHelper;
             _payosConfig = payosConfig;
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
+            _dateHelper = dateHelper;
         }
         public async Task CreateAccountBalanceTransactionDepositPaymentLinkAsync(AccountBalanceCreatePaymentLinkParameterDTO parameter, SagaCommandMessage command)
         {
@@ -313,6 +335,62 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 }
             }
         }
+        public async Task CreateAccountBalanceTransactionWithdrawalRequestAsync(CreateWithdrawalRequestParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var newAccountBalanceWithdrawalRequest = new AccountBalanceWithdrawalRequest
+                    {
+                        AccountId = parameter.AccountId,
+                        Amount = parameter.Amount,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                        UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                    };
+                    var createdAccountBalanceWithdrawalRequest = await _accountBalanceWithdrawalRequestGenericRepository.CreateAsync(newAccountBalanceWithdrawalRequest);
+
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject{
+                        { "AccountBalanceWithdrawalRequestId", createdAccountBalanceWithdrawalRequest.Id },
+                        { "CreatedAt", createdAccountBalanceWithdrawalRequest.CreatedAt }
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Creating account balance withdrawal request successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while creating account balance withdrawal request for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Creating account balance withdrawal request failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Creating account balance withdrawal request failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
         public async Task ConfirmAccountBalanceWithdrawalAsync(ConfirmAccountBalanceWithdrawalParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -323,6 +401,64 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
+
+                    var accountBalanceWithdrawalRequest = await _accountBalanceWithdrawalRequestGenericRepository.FindByIdAsync(parameter.AccountBalanceWithdrawalRequestId);
+                    if (accountBalanceWithdrawalRequest == null)
+                    {
+                        throw new Exception("Account balance withdrawal request not found.");
+                    }
+                    if (parameter.IsReject)
+                    {
+                        accountBalanceWithdrawalRequest.RejectReason = parameter.RejectedReason;
+                        accountBalanceWithdrawalRequest.IsRejected = parameter.IsReject;
+                        accountBalanceWithdrawalRequest.CompletedAt = _dateHelper.GetNowByAppTimeZone();
+                        accountBalanceWithdrawalRequest.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _accountBalanceWithdrawalRequestGenericRepository.UpdateAsync(accountBalanceWithdrawalRequest.Id, accountBalanceWithdrawalRequest);
+                    }
+                    else
+                    {
+                        accountBalanceWithdrawalRequest.IsRejected = parameter.IsReject;
+                        accountBalanceWithdrawalRequest.CompletedAt = _dateHelper.GetNowByAppTimeZone();
+                        accountBalanceWithdrawalRequest.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+
+                        var folderPath = _filePathConfig.ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_FILE_PATH + "\\" + accountBalanceWithdrawalRequest.Id;
+                        if (parameter.ImageFileKey != null && parameter.ImageFileKey != "")
+                        {
+                            throw new Exception("Image file key is required.");
+                        }
+                        var newImageFileKey = FilePathHelper.CombinePaths(folderPath, $"transfer_receipt_image{FilePathHelper.GetExtension(parameter.ImageFileKey)}");
+                        await _fileIOHelper.CopyFileToFileAsync(parameter.ImageFileKey, newImageFileKey);
+                        await _fileIOHelper.DeleteFileAsync(parameter.ImageFileKey);
+                        accountBalanceWithdrawalRequest.TransferReceiptImageFileKey = newImageFileKey;
+                        await _accountBalanceWithdrawalRequestGenericRepository.UpdateAsync(accountBalanceWithdrawalRequest.Id, accountBalanceWithdrawalRequest);
+
+                        var subtractAccountBalanceRequest = new JObject
+                        {
+                            { "AccountId", accountBalanceWithdrawalRequest.AccountId },
+                            { "Amount", accountBalanceWithdrawalRequest.Amount }
+                        };
+                        var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.PaymentProcessingDomain,
+                            requestData: subtractAccountBalanceRequest,
+                            messageName: "account-balance-subtraction-flow",
+                            sagaInstanceId: sagaId);
+                        await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, sagaId.ToString());
+                        _logger.LogInformation("Started account balance subtraction flow for Account Balance Withdrawal Request Id: {AccountBalanceWithdrawalRequestId}", accountBalanceWithdrawalRequest.Id);
+                    }
+
+                    await transaction.CommitAsync();
+                    var newResponseData = command.RequestData;
+                    newResponseData["UpdatedAt"] = accountBalanceWithdrawalRequest.UpdatedAt;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Confirm account balance withdrawal request successfully for SagaId: {SagaId}", command.SagaInstanceId);
                 }
                 catch (Exception ex)
                 {

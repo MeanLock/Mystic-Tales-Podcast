@@ -5833,6 +5833,156 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  booking-dealing-flow:
+    topic: "booking-management-domain"
+    handler-service: "BookingService"
+    description: "Handles the booking dealings."
+    save-files: ""
+    steps: 
+      - name: "process-booking-dealing"
+        topic: "booking-management-domain"
+        handler-service: "BookingService"
+        description: "Processes booking dealings."
+        parameters:
+          - BookingId
+          - AccountId
+          - BookingRequirementList
+          - Price
+          - Deadline
+        next-request-data:
+          - BookingId
+          - AccountId
+          - BookingRequirementList
+          - Price
+          - Deadline
+        response-data:
+          - BookingId
+          - AccountId
+          - BookingRequirementList
+          - Price
+          - Deadline
+          - UpdatedAt
+        onSuccess:
+          emit: "process-booking-dealing.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "process--booking-dealing.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  accept-booking-dealing-flow:
+    topic: "booking-management-domain"
+    handler-service: "BookingService"
+    description: "Handles accepting booking dealings."
+    save-files: ""
+    steps:
+      - name: "accept-booking-dealing"
+        topic: "booking-management-domain"
+        handler-service: "BookingService"
+        description: "Accepts booking dealings."
+        parameters:
+          - BookingId
+        next-request-data:
+          - BookingId
+        response-data:
+          - BookingId
+          - UpdatedAt
+        onSuccess:
+          emit: "accept-booking-dealing.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "accept-booking-dealing.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-producing-request-cancellation-flow:
+    topic: "booking-management-domain"
+    handler-service: "BookingService"
+    description: "Handles booking producing request cancellations."
+    save-files: ""
+    steps:
+      - name: "cancel-booking-producing-request"
+        topic: "booking-management-domain"
+        handler-service: "BookingService"
+        description: "Cancels booking producing requests."
+        parameters:
+          - AccountId
+          - BookingId
+          - CancellationReason
+        next-request-data:
+          - AccountId
+          - BookingId
+          - CancellationReason
+        response-data:
+          - AccountId
+          - BookingId
+          - CancellationReason
+          - UpdatedAt
+        onSuccess:
+          emit: "cancel-booking-producing-request.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "cancel-booking-producing-request.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-cancel-validation-flow:
+    topic: "booking-management-domain"
+    handler-service: "BookingService"
+    description: "Handles the validation of booking cancellations."
+    save-files: ""
+    steps:
+      - name: "validate-booking-cancellation"
+        topic: "booking-management-domain"
+        handler-service: "BookingService"
+        description: "Validates a booking cancellation."
+        parameters:
+          - AccountId
+          - BookingId
+          - IsAccepted
+          - CustomerBookingCancelDepositRefundRate
+          - PodcastBuddyBookingCancelDepositRefundRate
+        next-request-data:
+          - AccountId
+          - BookingId
+          - IsAccepted
+          - CustomerBookingCancelDepositRefundRate
+          - PodcastBuddyBookingCancelDepositRefundRate
+        response-data:
+          - AccountId
+          - BookingId
+          - IsAccepted
+          - CustomerBookingCancelDepositRefundRate
+          - PodcastBuddyBookingCancelDepositRefundRate
+          - UpdatedAt
+        onSuccess:
+          emit: "validate-booking-cancellation.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "validate-booking-cancellation.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   podcast-subscription-creation-flow:
     topic: "subscription-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -6480,13 +6630,11 @@ flows:
         parameters:
           - AccountId
           - Amount
-          - TransactionTypeId
         next-request-data:
           - AccountId
           - Amount
-          - TransactionTypeId
         response-data:
-          - AccountBalanceTransactionId
+          - AccountBalanceWithdrawalRequestId
           - CreatedAt
         onSuccess:
           emit: "create-withdrawal-request.success"
@@ -6536,6 +6684,45 @@ flows:
             - name: "create-withdrawal-request-rollback-flow"
               topic: "payment-processing-domain"
               handle-service: "SagaOrchestratorService"
+
+  account-balance-withdrawal-confirmation-flow:
+    topic: "payment-processing-domain"
+    handler-service: "PaymentService"
+    description: "Handles the confirmation of account balance withdrawals."
+    save-files: ""
+    steps:
+      - name: "confirm-account-balance-withdrawal"
+        topic: "payment-processing-domain"
+        handler-service: "PaymentService"
+        description: "Confirms an account balance withdrawal."
+        parameters:
+          - AccountBalanceWithdrawalRequestId
+          - ImageFileKey
+          - RejectedReason
+          - IsReject
+        next-request-data:
+          - AccountBalanceWithdrawalRequestId
+          - ImageFileKey
+          - RejectedReason
+          - IsReject
+        response-data:
+          - AccountBalanceWithdrawalRequestId
+          - ImageFileKey
+          - RejectedReason
+          - IsReject
+          - UpdatedAt
+        onSuccess:
+          emit: "confirm-account-balance-withdrawal.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "confirm-account-balance-withdrawal.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
 
   booking-deposit-payment-flow:
     topic: "payment-processing-domain"
@@ -8774,6 +8961,115 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+
+  dmca-accusation-report-creation-flow:
+    topic: "dmca-management-domain"
+    handler-service: "ModerationService"
+    description: "Handles the creation of dmca accusation reports."
+    save-files: ""
+    steps:
+      - name: "create-dmca-accusation-report"
+        topic: "dmca-management-domain"
+        handler-service: "ModerationService"
+        description: "Creates a dmca accusation report."
+        parameters:
+          - AccountId
+          - DMCAAccusationId
+          - DmcaAccusationConclusionReportTypeId
+          - Description
+          - InvalidReason
+        next-request-data:
+          - AccountId
+          - DMCAAccusationId
+          - DmcaAccusationConclusionReportTypeId
+          - Description
+          - InvalidReason
+        response-data:
+          - AccountId
+          - DMCAAccusationId
+          - DmcaAccusationConclusionReportTypeId
+          - Description
+          - InvalidReason
+          - CreatedAt
+        onSuccess:
+          emit: "create-dmca-accusation-report.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "create-dmca-accusation-report.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  dmca-accusation-report-validation-flow:
+    topic: "dmca-management-domain"
+    handler-service: "ModerationService"
+    description: "Handles the validation of dmca accusation reports."
+    save-files: ""
+    steps:
+      - name: "validate-dmca-accusation-report"
+        topic: "dmca-management-domain"
+        handler-service: "ModerationService"
+        description: "Validates a dmca accusation report."
+        parameters:
+          - DMCAAccusationReportId
+          - IsValid
+        next-request-data:
+          - DMCAAccusationReportId
+          - IsValid
+        response-data:
+          - DMCAAccusationReportId
+          - IsValid
+          - UpdatedAt
+        onSuccess:
+          emit: "validate-dmca-accusation-report.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "validate-dmca-accusation-report.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  dmca-accusation-report-cancellation-flow:
+    topic: "dmca-management-domain"
+    handler-service: "ModerationService"
+    description: "Handles the cancellation of dmca accusation reports."
+    save-files: ""
+    steps:
+      - name: "cancel-dmca-accusation-report"
+        topic: "dmca-management-domain"
+        handler-service: "ModerationService"
+        description: "Cancels a dmca accusation report."
+        parameters:
+          - AccountId
+          - DMCAAccusationReportId
+        next-request-data:
+          - AccountId
+          - DMCAAccusationReportId
+        response-data:
+          - AccountId
+          - DMCAAccusationReportId
+          - CancelledAt
+        onSuccess:
+          emit: "cancel-dmca-accusation-report.success"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "cancel-dmca-accusation-report.failed"
+          topic: "dmca-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
 
   config-creation-flow:
     topic: "system-configuration-domain"

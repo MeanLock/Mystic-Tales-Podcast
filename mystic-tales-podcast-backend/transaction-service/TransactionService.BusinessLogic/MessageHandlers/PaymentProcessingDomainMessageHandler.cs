@@ -19,6 +19,7 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateMemberSubscriptionTransactionRollback;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransactionRollback;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateWithdrawalRequest;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Services.DbServices.TransactionServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -86,7 +87,8 @@ namespace TransactionService.BusinessLogic.MessageHandlers
                 messageJson,
                 async (command) =>
                 {
-                    // Placeholder for future implementation
+                    var parameters = command.RequestData.ToObject<CreateWithdrawalRequestParameterDTO>();
+                    await _accountBalanceTransactionService.CreateAccountBalanceTransactionWithdrawalRequestAsync(parameters, command);
                     _logger.LogInformation("Handled create-withdrawal-request command for SagaId: {SagaId}", command.SagaInstanceId);
                 },
                 responseTopic: SAGA_TOPIC,
