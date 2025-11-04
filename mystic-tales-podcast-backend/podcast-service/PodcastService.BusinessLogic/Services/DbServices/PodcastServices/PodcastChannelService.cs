@@ -26,7 +26,7 @@ using PodcastService.BusinessLogic.DTOs.Channel.ListItems;
 using PodcastService.BusinessLogic.DTOs.Cache;
 using PodcastService.BusinessLogic.DTOs.Channel;
 using PodcastService.BusinessLogic.DTOs.Channel.Details;
-using PodcastService.BusinessLogic.DTOs.Cachegory;
+using PodcastService.BusinessLogic.DTOs.Category;
 using PodcastService.BusinessLogic.DTOs.Hashtag;
 using PodcastService.BusinessLogic.DTOs.Subscription.ListItems;
 using PodcastService.BusinessLogic.DTOs.Subscription;

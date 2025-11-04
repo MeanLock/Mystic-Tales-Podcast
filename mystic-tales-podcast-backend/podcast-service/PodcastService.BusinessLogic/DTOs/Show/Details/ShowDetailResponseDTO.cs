@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Http;
-using PodcastService.BusinessLogic.DTOs.Cachegory;
+using PodcastService.BusinessLogic.DTOs.Category;
 using PodcastService.BusinessLogic.DTOs.Channel.ListItems;
 using PodcastService.BusinessLogic.DTOs.Episode.ListItems;
 using PodcastService.BusinessLogic.DTOs.Hashtag;

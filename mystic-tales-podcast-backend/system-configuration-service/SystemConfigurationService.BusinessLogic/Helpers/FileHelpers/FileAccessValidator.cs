@@ -75,7 +75,7 @@ namespace SystemConfigurationService.BusinessLogic.Helpers.FileHelpers
                 "Buddy commitment document"
             ),
             [FileCategoryEnum.EpisodeLicenseDocument] = (
-                $@"^main_files/PodcastEpisodes/{GUID_PATTERN}/{INT_PATTERN}_license_document({DOCUMENT_EXT}|{IMAGE_EXT})",
+                $@"^main_files/PodcastEpisodes/{GUID_PATTERN}/{GUID_PATTERN}_license_document({DOCUMENT_EXT}|{IMAGE_EXT})",
                 FileAccessLevelEnum.RequiresOwnership,
                 "Episode license document"
             ),

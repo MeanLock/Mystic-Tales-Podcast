@@ -1,4 +1,4 @@
-namespace UserService.BusinessLogic.DTOs.Account
+namespace UserService.BusinessLogic.DTOs.Account.ListItems
 {
     public class ReviewListItemDTO
     {

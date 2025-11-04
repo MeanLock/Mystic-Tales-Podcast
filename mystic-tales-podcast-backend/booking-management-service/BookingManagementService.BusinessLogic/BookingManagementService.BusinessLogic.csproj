@@ -18,9 +18,6 @@
     <None Remove="Services\OpenAIServices\**" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="DTOs\MessageQueue\BookingManagementDomain\ValidateBookingCancellation\ValidateBookingCancellationParameterDTO.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\BookingManagementService.Infrastructure\BookingManagementService.Infrastructure.csproj" />

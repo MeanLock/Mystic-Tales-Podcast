@@ -25,23 +25,23 @@ namespace UserService.API.Controllers.MiscControllers
         }
 
 
-        // /api/user-service/get-file-url/{fileKey}
-        [HttpGet("get-file-url/{**fileKey}")]
-        public async Task<IActionResult> GetFileUrl(string fileKey)
+        // /api/user-service/get-file-url/{**FileKey}
+        [HttpGet("get-file-url/{**FileKey}")]
+        public async Task<IActionResult> GetFileUrl(string FileKey)
         {
             // kiểm tra filkey có phải có pattern là "main_files/Bookings/<BookingId>/<BookingPodcastTrackId>_track_audio.<audio extension>" hoặc "main_files/PodcastEpisodes/<PodcastEpisodeId>/audio.<audio extension>" không, nếu có thì trả về exception 400
             // tức là sẽ có 2 loại fileKey không thể lấy url được từ url , các file còn lại thì được lấy binh thường
-            // Console.WriteLine($"[DEBUG] Requested fileKey: {fileKey.StartsWith("main_files/Bookings/")}");
-            // Console.WriteLine($"[DEBUG] Requested fileKey: {fileKey.Contains("_track_audio.")}");
-            // Console.WriteLine($"[DEBUG] Requested fileKey: {fileKey.StartsWith("main_files/PodcastEpisodes/")}");
-            // Console.WriteLine($"[DEBUG] Requested fileKey: {fileKey.Contains("/audio.")}");
+            // Console.WriteLine($"[DEBUG] Requested fileKey: {FileKey.StartsWith("main_files/Bookings/")}");
+            // Console.WriteLine($"[DEBUG] Requested fileKey: {FileKey.Contains("_track_audio.")}");
+            // Console.WriteLine($"[DEBUG] Requested fileKey: {FileKey.StartsWith("main_files/PodcastEpisodes/")}");
+            // Console.WriteLine($"[DEBUG] Requested fileKey: {FileKey.Contains("/audio.")}");
 
 
             // Determine access level dựa trên user auth status
             var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
             var requiredLevel = isAuthenticated ? FileAccessLevelEnum.RequiresAuth : FileAccessLevelEnum.Public;
 
-            var validation = FileAccessValidator.ValidateFileAccess(fileKey, requiredLevel);
+            var validation = FileAccessValidator.ValidateFileAccess(FileKey, requiredLevel);
 
             if (!validation.IsValid)
             {
@@ -50,7 +50,7 @@ namespace UserService.API.Controllers.MiscControllers
 
             // Additional ownership checks...
 
-            var url = await _fileIOHelper.GeneratePresignedUrlAsync(fileKey);
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
             return Ok(new { fileUrl = url });
         }
     }

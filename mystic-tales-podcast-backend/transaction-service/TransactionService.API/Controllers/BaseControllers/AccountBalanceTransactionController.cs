@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using TransactionService.API.Filters.ExceptionFilters;
 using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction;
 using TransactionService.BusinessLogic.DTOs.Cache;
+using TransactionService.BusinessLogic.Enums.App;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Helpers.FileHelpers;
@@ -94,6 +95,29 @@ namespace TransactionService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
+
+        // /api/transaction-service/api/account-balance-transactions/transfer-receipt-image/get-file-url/{**FileKey}
+        [HttpGet("transfer-receipt-image/get-file-url/{**FileKey}")]
+        public async Task<IActionResult> GetTransferReceiptImageFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS segment
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.WithdrawalRequestTransferReceiptImage)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be a Withdrawal Request Transfer Receipt Image file",
+                    actualCategory = category.ToString()
+                });
+            }
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            return Ok(new { FileUrl = url });
+        }
+
         [HttpPost("confirm-payment")]
         public async Task<IActionResult> ConfirmPayment([FromBody] WebhookType? webhookBody)
         {

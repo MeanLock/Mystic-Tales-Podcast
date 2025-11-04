@@ -20,6 +20,7 @@ using BookingManagementService.Infrastructure.Configurations.Payos;
 using Net.payOS;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using BookingManagementService.Infrastructure.Services.Audio.AcoustID;
+using BookingManagementService.Infrastructure.Services.Audio.Hls;
 
 namespace BookingManagementService.Infrastructure.Registrations
 {
@@ -209,6 +210,9 @@ namespace BookingManagementService.Infrastructure.Registrations
             services.AddScoped<AcoustIDAudioFingerprintGenerator>();
             services.AddScoped<AcoustIDAudioFingerprintComparator>();
 
+            // HLS Service
+            services.AddScoped<FFMegLocalHlsService>();
+            services.AddScoped<FFMpegCoreHlsService>();
 
             return services;
         }

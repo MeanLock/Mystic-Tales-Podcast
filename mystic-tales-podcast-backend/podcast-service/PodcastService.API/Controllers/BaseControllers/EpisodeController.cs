@@ -479,6 +479,28 @@ namespace PodcastService.API.Controllers.BaseControllers
             return File(fileData, "video/MP2T");
         }
 
+        // /api/podcast-service/api/episodes/license-document/get-file-url/{**FileKey}
+        [HttpGet("license-document/get-file-url/{**FileKey}")]
+        public async Task<IActionResult> GetLicenseDocumentFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS segment
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.EpisodeLicenseDocument)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be an Episode License Document file",
+                    actualCategory = category.ToString()
+                });
+            }
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            return Ok(new { FileUrl = url });
+        }
+
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/audio-tuning/general
         [HttpPost("{PodcastEpisodeId}/audio-tuning/general")]
         [Authorize(Policy = "Customer.PodcasterAccess")]
