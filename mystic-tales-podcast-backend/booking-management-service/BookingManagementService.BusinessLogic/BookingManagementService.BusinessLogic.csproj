@@ -8,18 +8,17 @@
 
   <ItemGroup>
     <Compile Remove="DTOs\MessageQueue\BookingManagementDomain\UpdateBookingTrackPreviewListenSlot\**" />
+    <Compile Remove="DTOs\MessageQueue\BookingManagementDomain\ValidateBookingProducingRequestCancellation\**" />
     <Compile Remove="Services\EmbeddingVectorServices\**" />
     <Compile Remove="Services\OpenAIServices\**" />
     <EmbeddedResource Remove="DTOs\MessageQueue\BookingManagementDomain\UpdateBookingTrackPreviewListenSlot\**" />
+    <EmbeddedResource Remove="DTOs\MessageQueue\BookingManagementDomain\ValidateBookingProducingRequestCancellation\**" />
     <EmbeddedResource Remove="Services\EmbeddingVectorServices\**" />
     <EmbeddedResource Remove="Services\OpenAIServices\**" />
     <None Remove="DTOs\MessageQueue\BookingManagementDomain\UpdateBookingTrackPreviewListenSlot\**" />
+    <None Remove="DTOs\MessageQueue\BookingManagementDomain\ValidateBookingProducingRequestCancellation\**" />
     <None Remove="Services\EmbeddingVectorServices\**" />
     <None Remove="Services\OpenAIServices\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="DTOs\MessageQueue\BookingManagementDomain\ValidateBookingCancellation\ValidateBookingCancellationParameterDTO.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,7 +28,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTOs\MessageQueue\BookingManagementDomain\ValidateBookingProducingRequestCancellation\" />
     <Folder Include="Exceptions\" />
     <Folder Include="Services\BackgroundServices\interfaces\" />
     <Folder Include="Services\DbServices\MiscServices\" />
