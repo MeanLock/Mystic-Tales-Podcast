@@ -6,6 +6,7 @@ using ModerationService.BusinessLogic.DTOs.CounterNotice;
 using ModerationService.BusinessLogic.DTOs.DMCANotice;
 using ModerationService.BusinessLogic.DTOs.DMCAReport;
 using ModerationService.BusinessLogic.DTOs.LawsuitProof;
+using ModerationService.BusinessLogic.Enums.App;
 using ModerationService.BusinessLogic.Enums.DMCA;
 using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Helpers.FileHelpers;
@@ -71,6 +72,73 @@ namespace ModerationService.API.Controllers.BaseControllers
             _fileIOHelper = fileIOHelper;
             _logger = logger;
         }
+
+        // /api/moderation-service/api/dmca-accusations/dmca-notice/get-file-url/{**FileKey}
+        [HttpGet("dmca-notice/get-file-url/{**FileKey}")]
+        public async Task<IActionResult> GetDMCAAccusationFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS segment
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.DMCANotice)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be a DMCA Notice file",
+                    actualCategory = category.ToString()
+                });
+            }
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            return Ok(new { FileUrl = url });
+        }
+
+        // /api/moderation-service/api/dmca-accusations/counter-notice/get-file-url/{**FileKey}
+        [HttpGet("counter-notice/get-file-url/{**FileKey}")]
+        public async Task<IActionResult> GetCounterNoticeFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS segment
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.CounterNotice)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be a Counter Notice file",
+                    actualCategory = category.ToString()
+                });
+            }
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            return Ok(new { FileUrl = url });
+        }
+
+        // /api/moderation-service/api/dmca-accusations/lawsuit-document/get-file-url/{**FileKey}
+        [HttpGet("lawsuit-document/get-file-url/{**FileKey}")]
+        public async Task<IActionResult> GetLawsuitDocumentFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS segment
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.LawsuitDocument)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be a Lawsuit Document file",
+                    actualCategory = category.ToString()
+                });
+            }
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            return Ok(new { FileUrl = url });
+        }
+
         [HttpGet]
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetDMCAAccusations()

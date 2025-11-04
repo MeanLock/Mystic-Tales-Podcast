@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UserService.API.Enums.Api;
 using UserService.API.Filters.ExceptionFilters;
 using UserService.BusinessLogic.DTOs.Account;
 using UserService.BusinessLogic.DTOs.Cache;
+using UserService.BusinessLogic.Enums.App;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -132,25 +134,25 @@ namespace UserService.API.Controllers.BaseControllers
             return Ok(new { result });
         }
 
-        // /api/user-service/get-file-url/{fileKey}
-        [HttpGet("get-file-url/{**fileKey}")]
-        [Authorize]
-        public async Task<IActionResult> GetFileUrl(string fileKey)
-        {
-            // kiểm tra filkey có phải có pattern là "main_files/Bookings/<BookingId>/<BookingPodcastTrackId>_track_audio.<audio extension>" hoặc "main_files/PodcastEpisodes/<PodcastEpisodeId>/audio.<audio extension>" không, nếu có thì trả về exception 400
-            // tức là sẽ có 2 loại fileKey không thể lấy url được từ url , các file còn lại thì được lấy binh thường
-            if (fileKey.StartsWith("main_files/Bookings/") && fileKey.Contains("_track_audio."))
-            {
-                return Forbid("Cannot get URL for booking track audio files.");
-            }
-            if (fileKey.StartsWith("main_files/PodcastEpisodes/") && fileKey.Contains("/audio."))
-            {
-                return Forbid("Cannot get URL for podcast episode audio files.");
-            }
-            var fileUrl = await _fileIOHelper.GeneratePresignedUrlAsync(fileKey);
+        // // /api/user-service/get-file-url/{**FileKey}
+        // [HttpGet("get-file-url/{**FileKey}")]
+        // [Authorize]
+        // public async Task<IActionResult> GetFileUrl(string FileKey)
+        // {
+        //     // kiểm tra FileKey có phải có pattern là "main_files/Bookings/<BookingId>/<BookingPodcastTrackId>_track_audio.<audio extension>" hoặc "main_files/PodcastEpisodes/<PodcastEpisodeId>/audio.<audio extension>" không, nếu có thì trả về exception 400
+        //     // tức là sẽ có 2 loại FileKey không thể lấy url được từ url , các file còn lại thì được lấy binh thường
+        //     if (FileKey.StartsWith("main_files/Bookings/") && FileKey.Contains("_track_audio."))
+        //     {
+        //         return Forbid("Cannot get URL for booking track audio files.");
+        //     }
+        //     if (FileKey.StartsWith("main_files/PodcastEpisodes/") && FileKey.Contains("/audio."))
+        //     {
+        //         return Forbid("Cannot get URL for podcast episode audio files.");
+        //     }
+        //     var fileUrl = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
 
-            return Ok(new { FileUrl = fileUrl });
-        }
+        //     return Ok(new { FileUrl = fileUrl });
+        // }
 
         // /api/user-service/api/accounts/customers
         [HttpGet("customers")]
@@ -173,7 +175,7 @@ namespace UserService.API.Controllers.BaseControllers
         // /api/user-service/api/accounts/podcasters
         [HttpGet("podcasters")]
         [Authorize(Policy = "Admin.BasicAccess")]
-        public async Task<IActionResult> GetPodcasters()
+        public async Task<IActionResult> GetPodcasters([FromQuery] PodcasterQueryEnum? QueryType = null, [FromQuery] int? PodcastCategoryId = null)
         {
             var podcasters = await _accountService.GetPodcasterAccounts();
 
@@ -249,7 +251,7 @@ namespace UserService.API.Controllers.BaseControllers
             {
                 return StatusCode(403, "Customer accounts can only view their own podcaster profiles.");
             }
-            return Ok(podcasterProfile);
+            return Ok(new { PodcasterAccount = podcasterProfile });
         }
 
         // /api/user-service/api/accounts/podcast-buddies/{AccountId}
@@ -314,6 +316,16 @@ namespace UserService.API.Controllers.BaseControllers
             });
         }
 
+        // /api/user-service/api/accounts/me
+        [HttpGet("me")]
+        [Authorize(Policy = "BasicAccess")]
+        public async Task<IActionResult> GetMyAccount()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var myAccount = await _accountService.GetAccountMe(account.Id);
+            return Ok(new { Account = myAccount });
+        }
+
         // /api/user-service/api/accounts/{AccountId}
         [HttpGet("{AccountId}")]
         [Authorize]
@@ -325,7 +337,7 @@ namespace UserService.API.Controllers.BaseControllers
             {
                 return StatusCode(403, "Customer accounts can only view their own account details.");
             }
-            return Ok(account);
+            return Ok(new { Account = account });
         }
 
         // /api/user-service/api/accounts/{AccountId}
@@ -544,8 +556,29 @@ namespace UserService.API.Controllers.BaseControllers
             }
             );
         }
-        
 
+        // /api/user-service/api/accounts/buddy-commitment-document/get-file-url/{**FileKey}
+        [HttpGet("buddy-commitment-document/get-file-url/{**FileKey}")]
+        [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
+        public async Task<IActionResult> GetBuddyCommitmentDocumentFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS segment
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.BuddyCommitmentDocument)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be an HLS segment file",
+                    actualCategory = category.ToString()
+                });
+            }
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            return Ok(new { FileUrl = url });
+        }
 
 
 

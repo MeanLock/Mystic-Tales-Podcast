@@ -85,6 +85,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAcc
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFavoritedPodcasterChannelsTerminatePodcasterForce;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedPodcasterShowsTerminatePodcasterForce;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForce;
+using UserService.BusinessLogic.DTOs.Account.ListItems;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -1198,7 +1199,44 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         }
 
+        public async Task<AccountMeResponseDTO> GetAccountMe(int accountId)
+        {
+            try
+            {
+                var account = await _accountCachingService.GetAccountStatusCacheById(accountId);
+                var accountFromDb = await _accountGenericRepository.FindByIdAsync(accountId,
+                    includeFunc: a => a.Include(ac => ac.Role)
+                    .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+                );
 
+                if (accountFromDb == null)
+                {
+                    throw new Exception("Account with id " + accountId + " does not exist");
+                }
+
+                return new AccountMeResponseDTO
+                {
+                    Id = accountFromDb.Id,
+                    Email = accountFromDb.Email,
+                    FullName = accountFromDb.FullName,
+                    MainImageFileKey = accountFromDb.MainImageFileKey,
+                    Address = accountFromDb.Address,
+                    Balance = accountFromDb.Balance,
+                    DeactivatedAt = accountFromDb.DeactivatedAt?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                    Dob = accountFromDb.Dob?.ToString("yyyy-MM-dd"),
+                    Gender = accountFromDb.Gender,
+                    Phone = accountFromDb.Phone,
+                    PodcastListenSlot = accountFromDb.PodcastListenSlot,
+                    IsPodcaster = accountFromDb.RoleId == 1 && accountFromDb.PodcasterProfile != null && accountFromDb.PodcasterProfile.IsVerified == true ? true : false
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get account me failed, error: " + ex.Message);
+            }
+        }
+                    
         public async Task UpdatePodcasterProfile(UpdatePodcasterProfileParameterDTO updatePodcasterProfileParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())

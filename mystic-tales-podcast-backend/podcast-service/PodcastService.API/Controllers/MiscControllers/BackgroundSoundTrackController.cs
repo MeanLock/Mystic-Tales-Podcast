@@ -43,15 +43,15 @@ namespace PodcastService.API.Controllers.MiscControllers
         }
 
 
-        // /api/user-service/get-file-url/{fileKey}
-        [HttpGet("get-file-url/{**fileKey}")]
-        public async Task<IActionResult> GetFileUrl(string fileKey)
+        // /api/podcast-service/api/misc/background-sound-tracks/get-file-url/{**FileKey}
+        [HttpGet("get-file-url/{**FileKey}")]
+        public async Task<IActionResult> GetFileUrl(string FileKey)
         {
             // Determine access level dựa trên user auth status
             var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
             var requiredLevel = isAuthenticated ? FileAccessLevelEnum.RequiresAuth : FileAccessLevelEnum.Public;
 
-            var validation = FileAccessValidator.ValidateFileAccess(fileKey, requiredLevel);
+            var validation = FileAccessValidator.ValidateFileAccess(FileKey, requiredLevel);
 
             if (!validation.IsValid)
             {
@@ -59,7 +59,7 @@ namespace PodcastService.API.Controllers.MiscControllers
             }
 
 
-            var url = await _fileIOHelper.GeneratePresignedUrlAsync(fileKey);
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
             return Ok(new { fileUrl = url });
         }
 

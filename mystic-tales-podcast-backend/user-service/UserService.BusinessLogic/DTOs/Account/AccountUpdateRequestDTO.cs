@@ -9,7 +9,6 @@ namespace UserService.BusinessLogic.DTOs.Account
     }
     public class AccountUpdateInfoDTO
     {
-        public required string Email { get; set; }
         public required string FullName { get; set; }
         public DateTime? Dob { get; set; }
         public string? Gender { get; set; }
