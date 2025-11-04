@@ -14,6 +14,7 @@ public interface IUnitOfWork
     IAccountFavoritedPodcastChannelRepository AccountFavoritedPodcastChannelRepository { get; }
     IAccountFollowedPodcastShowRepository AccountFollowedPodcastShowRepository { get; }
     IAccountSavedPodcastEpisodeRepository AccountSavedPodcastEpisodeRepository { get; }
+    IPodcastBuddyReviewRepository PodcastBuddyReviewRepository { get; }
     // ISurveyTakenResultRepository SurveyTakenResultRepository { get; }
     // ISurveyStatusTrackingRepository SurveyStatusTrackingRepository { get; }
     // IFilterTagRepository FilterTagRepository { get; }

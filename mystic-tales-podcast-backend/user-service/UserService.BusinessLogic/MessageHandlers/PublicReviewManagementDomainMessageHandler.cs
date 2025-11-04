@@ -10,6 +10,7 @@ using UserService.Infrastructure.Services.Kafka;
 using UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeletePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.UpdatePodcastBuddyReview;
 using UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.CreatePodcastBuddyReview;
+using UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteBuddyReviewTerminatePodcasterForce;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -88,6 +89,21 @@ namespace UserService.BusinessLogic.MessageHandlers
             );
         }
 
+        [MessageHandler("delete-buddy-review-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleDeleteBuddyReviewTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deletePodcastBuddyReviewParameterDTO = command.RequestData.ToObject<DeleteBuddyReviewTerminatePodcasterForceParameterDTO>();
+                    await _accountService.DeleteBuddyReviewTerminatePodcasterForce(deletePodcastBuddyReviewParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-buddy-review-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
     }
 }
 

@@ -35,7 +35,27 @@ VALUES (N'b4988aad-58cb-4c17-937e-3ad5e65336ce' , 3);
 INSERT INTO PodcastEpisodePublishReviewSessionStatusTracking(podcastEpisodePublishReviewSessionId, podcastEpisodePublishReviewSessionStatusId)
 VALUES (7 , 3); 
 
-
+-- Query cơ bản: Lấy tất cả episode của podcaster 17
+SELECT 
+    pe.id AS EpisodeId,
+    pe.name AS EpisodeName,
+    pe.description AS EpisodeDescription,
+    pe.releaseDate AS ReleaseDate,
+    pe.isReleased AS IsReleased,
+    pe.seasonNumber AS Season,
+    pe.episodeOrder AS EpisodeNumber,
+    pe.listenCount AS ListenCount,
+    pe.totalSave AS TotalSave,
+    pe.audioLength AS AudioLengthSeconds,
+    pe.deletedAt AS DeletedAt,
+    ps.id AS ShowId,
+    ps.name AS ShowName,
+    ps.podcastChannelId AS ChannelId
+FROM PodcastEpisode pe
+INNER JOIN PodcastShow ps ON pe.podcastShowId = ps.id
+WHERE ps.podcasterId = 17
+    AND pe.deletedAt IS NULL  -- Chỉ lấy episode chưa bị xóa
+ORDER BY ps.name, pe.seasonNumber, pe.episodeOrder;
 -- chạy trong podcast db
 CREATE TABLE PodcastBackgroundSoundTrack
 (

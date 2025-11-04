@@ -13,7 +13,7 @@ namespace UserService.BusinessLogic.DTOs.Account
         public int RatingCount { get; set; }
         public int TotalFollow { get; set; }
         public int ListenCount { get; set; }
-
+        public decimal? PricePerBookingWord { get; set; }
         public string CommitmentDocumentFileKey { get; set; } = null!;
 
         public string? BuddyAudioFileKey { get; set; }

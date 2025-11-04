@@ -27,6 +27,7 @@ namespace UserService.DataAccess.Registrations
             services.AddScoped<IAccountFavoritedPodcastChannelRepository, AccountFavoritedPodcastChannelRepository>();
             services.AddScoped<IAccountFollowedPodcastShowRepository, AccountFollowedPodcastShowRepository>();
             services.AddScoped<IAccountSavedPodcastEpisodeRepository, AccountSavedPodcastEpisodeRepository>();
+            services.AddScoped<IPodcastBuddyReviewRepository, PodcastBuddyReviewRepository>();
             // services.AddScoped<ISurveyTakenResultRepository, SurveyTakenResultRepository>();
             // services.AddScoped<ISurveyStatusTrackingRepository, SurveyStatusTrackingRepository>();
             // services.AddScoped<IFilterTagRepository, FilterTagRepository>();

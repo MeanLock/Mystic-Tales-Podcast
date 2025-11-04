@@ -47,6 +47,25 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractA
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterBalanceAmountRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountListenSlot;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterListenCount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedEpisodeDMCARemoveEpisodeForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedEpisodeUnpublishEpisodeForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedShowDMCARemoveShowForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedShowUnpublishShowForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedShowEpisodesUnpublishShowForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedShowEpisodesDMCARemoveShowForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFavoritedChannelUnpublishChannelForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedEpisodeEpisodeDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedShowShowDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedShowEpisodesShowDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFavoritedChannelChannelDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedChannelShowsUnpublishChannelForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedChannelShowsChannelDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedChannelEpisodesUnpublishChannelForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedChannelEpisodesChannelDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedPodcasterTerminatePodcasterForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFavoritedPodcasterChannelsTerminatePodcasterForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedPodcasterShowsTerminatePodcasterForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForce;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -690,6 +709,301 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "add-podcaster-listen-count.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-saved-episode-dmca-remove-episode-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountSavedEpisodeDMCARemoveEpisodeForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountSavedEpisodeDMCARemoveEpisodeForceParameterDTO = command.RequestData.ToObject<DeleteAccountSavedEpisodeDMCARemoveEpisodeForceParameterDTO>();
+                    await _accountService.DeleteAccountSavedEpisodeDMCARemoveEpisodeForce(deleteAccountSavedEpisodeDMCARemoveEpisodeForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-saved-episode-dmca-remove-episode-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-saved-episode-unpublish-episode-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountSavedEpisodeUnpublishEpisodeForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountSavedEpisodeUnpublishEpisodeForceParameterDTO = command.RequestData.ToObject<DeleteAccountSavedEpisodeUnpublishEpisodeForceParameterDTO>();
+                    await _accountService.DeleteAccountSavedEpisodeUnpublishEpisodeForce(deleteAccountSavedEpisodeUnpublishEpisodeForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-saved-episode-unpublish-episode-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-followed-show-dmca-remove-show-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFollowedShowDMCARemoveShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountFollowedShowDMCARemoveShowForceParameterDTO = command.RequestData.ToObject<DeleteAccountFollowedShowDMCARemoveShowForceParameterDTO>();
+                    await _accountService.DeleteAccountFollowedShowDMCARemoveShowForce(deleteAccountFollowedShowDMCARemoveShowForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-followed-show-dmca-remove-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-saved-show-episodes-dmca-remove-show-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountSavedShowEpisodeDMCARemoveShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountSavedShowEpisodesDMCARemoveShowForceParameterDTO = command.RequestData.ToObject<DeleteAccountSavedShowEpisodesDMCARemoveShowForceParameterDTO>();
+                    await _accountService.DeleteAccountSavedShowEpisodesDMCARemoveShowForce(deleteAccountSavedShowEpisodesDMCARemoveShowForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-saved-show-episodes-dmca-remove-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-followed-show-unpublish-show-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFollowedShowUnpublishShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountFollowedShowUnpublishShowForceParameterDTO = command.RequestData.ToObject<DeleteAccountFollowedShowUnpublishShowForceParameterDTO>();
+                    await _accountService.DeleteAccountFollowedShowUnpublishShowForce(deleteAccountFollowedShowUnpublishShowForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-followed-show-unpublish-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-saved-show-episodes-unpublish-show-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountSavedShowEpisodesUnpublishShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO = command.RequestData.ToObject<DeleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO>();
+                    await _accountService.DeleteAccountSavedShowEpisodesUnpublishShowForce(deleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-saved-show-episodes-unpublish-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-favorited-channel-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFavoritedChannelUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteAccountFavoritedChannelUnpublishChannelForceParameterDTO>();
+                    await _accountService.DeleteAccountFavoritedChannelUnpublishChannelForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-favorited-channel-unpublish-channel-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-followed-channel-shows-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFollowedChannelShowsUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteAccountFollowedChannelShowsUnpublishChannelForceParameterDTO>();
+                    await _accountService.DeleteAccountFollowedChannelShowsUnpublishChannelForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-followed-channel-shows-unpublish-channel-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-saved-channel-episodes-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountSavedChannelEpisodesUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteAccountSavedChannelEpisodesUnpublishChannelForceParameterDTO>();
+                    await _accountService.DeleteAccountSavedChannelEpisodesUnpublishChannelForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-saved-channel-episodes-unpublish-channel-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-saved-episode-episode-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountSavedEpisodeEpisodeDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteAccountSavedEpisodeEpisodeDeletionForceParameterDTO>();
+                    await _accountService.DeleteAccountSavedEpisodeEpisodeDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-saved-episode-episode-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-followed-show-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFollowedShowShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteAccountFollowedShowShowDeletionForceParameterDTO>();
+                    await _accountService.DeleteAccountFollowedShowShowDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-followed-show-show-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-saved-show-episodes-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountSavedShowEpisodesShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteAccountSavedShowEpisodesShowDeletionForceParameterDTO>();
+                    await _accountService.DeleteAccountSavedShowEpisodesShowDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-saved-show-episodes-show-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-favorited-channel-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFavoritedChannelChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteAccountFavoritedChannelChannelDeletionForceParameterDTO>();
+                    await _accountService.DeleteAccountFavoritedChannelChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-favorited-channel-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-followed-channel-shows-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFollowedChannelShowsChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteAccountFollowedChannelShowsChannelDeletionForceParameterDTO>();
+                    await _accountService.DeleteAccountFollowedChannelShowsChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-followed-channel-shows-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-saved-channel-episodes-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountSavedChannelEpisodesChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteAccountSavedChannelEpisodesChannelDeletionForceParameterDTO>();
+                    await _accountService.DeleteAccountSavedChannelEpisodesChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-saved-channel-episodes-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-followed-podcaster-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFollowedPodcasterTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO = command.RequestData.ToObject<DeleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO>();
+                    await _accountService.DeleteAccountFollowedPodcasterTerminatePodcasterForce(deleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-followed-podcaster-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-favorited-podcaster-channels-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFavoritedPodcasterChannelsTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountFavoritedPodcasterChannelsTerminatePodcasterForceParameterDTO = command.RequestData.ToObject<DeleteAccountFavoritedPodcasterChannelsTerminatePodcasterForceParameterDTO>();
+                    await _accountService.DeleteAccountFavoritedPodcasterChannelsTerminatePodcasterForce(deleteAccountFavoritedPodcasterChannelsTerminatePodcasterForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-favorited-podcaster-channels-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-followed-podcaster-shows-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountFollowedPodcasterShowsTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountFollowedPodcasterShowsTerminatePodcasterForceParameterDTO = command.RequestData.ToObject<DeleteAccountFollowedPodcasterShowsTerminatePodcasterForceParameterDTO>();
+                    await _accountService.DeleteAccountFollowedPodcasterShowsTerminatePodcasterForce(deleteAccountFollowedPodcasterShowsTerminatePodcasterForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-followed-podcaster-shows-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-account-saved-podcaster-episodes-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleDeleteAccountSavedPodcasterEpisodesTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteAccountSavedPodcasterEpisodesTerminatePodcasterForceParameterDTO = command.RequestData.ToObject<DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForceParameterDTO>();
+                    await _accountService.DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForce(deleteAccountSavedPodcasterEpisodesTerminatePodcasterForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-account-saved-podcaster-episodes-terminate-podcaster-force.failed"    // From YAML onFailure.emit
             );
         }
     }

@@ -65,6 +65,26 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractA
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterBalanceAmountRollback;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SubtractAccountListenSlot;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.AddPodcasterListenCount;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedEpisodeDMCARemoveEpisodeForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedEpisodeUnpublishEpisodeForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedShowDMCARemoveShowForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedShowUnpublishShowForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedShowEpisodesDMCARemoveShowForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedShowEpisodesUnpublishShowForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFavoritedChannelUnpublishChannelForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedEpisodeEpisodeDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedShowShowDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedShowEpisodesShowDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFavoritedChannelChannelDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedChannelShowsUnpublishChannelForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedChannelShowsChannelDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedChannelEpisodesUnpublishChannelForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedChannelEpisodesChannelDeletionForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteBuddyReviewTerminatePodcasterForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedPodcasterTerminatePodcasterForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFavoritedPodcasterChannelsTerminatePodcasterForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedPodcasterShowsTerminatePodcasterForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForce;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -295,6 +315,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             return violationLevel;
         }
 
+        public bool IsViolationLevelMax(int violationLevel, JArray accountViolationLevelConfigs)
+        {
+            int maxViolationLevel = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationLevel"));
+            return violationLevel >= maxViolationLevel;
+        }
+
         /////////////////////////////////////////////////////////////
 
 
@@ -514,7 +540,6 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
-                    // throw new HttpRequestException("Đăng kí tài khoản thất bại, lỗi: " + ex.Message);
                 }
             }
 
@@ -672,6 +697,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             RatingCount = item.PodcasterProfile.RatingCount,
                             TotalFollow = item.PodcasterProfile.TotalFollow,
                             ListenCount = item.PodcasterProfile.ListenCount,
+                            PricePerBookingWord = item.PodcasterProfile.PricePerBookingWord,
                             CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
                             OwnedBookingStorageSize = item.PodcasterProfile.OwnedBookingStorageSize,
@@ -745,6 +771,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             RatingCount = item.PodcasterProfile.RatingCount,
                             TotalFollow = item.PodcasterProfile.TotalFollow,
                             ListenCount = item.PodcasterProfile.ListenCount,
+                            PricePerBookingWord = item.PodcasterProfile.PricePerBookingWord,
                             CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
                             IsVerified = item.PodcasterProfile.IsVerified,
@@ -833,6 +860,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         RatingCount = podcaster.PodcasterProfile.RatingCount,
                         TotalFollow = podcaster.PodcasterProfile.TotalFollow,
                         ListenCount = podcaster.PodcasterProfile.ListenCount,
+                        PricePerBookingWord = podcaster.PodcasterProfile.PricePerBookingWord,
                         CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
                         BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
                         OwnedBookingStorageSize = podcaster.PodcasterProfile.OwnedBookingStorageSize,
@@ -909,6 +937,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         RatingCount = podcaster.PodcasterProfile.RatingCount,
                         TotalFollow = podcaster.PodcasterProfile.TotalFollow,
                         ListenCount = podcaster.PodcasterProfile.ListenCount,
+                        PricePerBookingWord = podcaster.PodcasterProfile.PricePerBookingWord,
                         CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
                         BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
                         IsVerified = podcaster.PodcasterProfile.IsVerified,
@@ -1197,6 +1226,11 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     podcasterProfile.Name = updatePodcasterProfileParameterDTO.Name;
                     podcasterProfile.Description = updatePodcasterProfileParameterDTO.Description;
 
+                    if (updatePodcasterProfileParameterDTO.PricePerBookingWord != null)
+                    {
+                        podcasterProfile.PricePerBookingWord = updatePodcasterProfileParameterDTO.PricePerBookingWord;
+                    }
+
                     var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + podcasterProfile.AccountId;
                     if (updatePodcasterProfileParameterDTO.BuddyAudioFileKey != null && updatePodcasterProfileParameterDTO.BuddyAudioFileKey != "")
                     {
@@ -1383,7 +1417,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     await SendChangeAccountStatusMessage(account.Id);
                     // [CHỈNH SỬA SAU] CHẠY CÁC FLOW XOÁ TRONG booking, chanel/show/episode (AccountFavoritedPodcastChannel/AccountFollowedPodcastShow/AccountSavedPodcastEpisode), podcast subscription, Report review session, publish review session, DMCA Accusation, AccountFollowedPodcaster
-
+                    JObject podcasterTerminateRequestData = JObject.FromObject(new
+                    {
+                        PodcasterId = account.Id
+                    });
+                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", podcasterTerminateRequestData, null, "terminate-podcaster-flow");
+                    await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
                 }
                 catch (Exception ex)
                 {
@@ -1512,7 +1551,15 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     await SendChangeAccountStatusMessage(account.Id);
                     // [CHỈNH SỬA SAU] NẾU ACCOUNT VIOLATION LEVEL == MAX VIOLATION LEVEL THÌ CHẠY CÁC FLOW XOÁ TRONG booking, chanel/show/episode (AccountFavoritedPodcastChannel/AccountFollowedPodcastShow/AccountSavedPodcastEpisode), podcast subscription, Report review session, publish review session, DMCA Accusation, AccountFollowedPodcaster
-
+                    if (IsViolationLevelMax(account.ViolationLevel, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray) == true)
+                    {
+                        JObject podcasterTerminateRequestData = JObject.FromObject(new
+                        {
+                            PodcasterId = account.Id
+                        });
+                        var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", podcasterTerminateRequestData, null, "terminate-podcaster-flow");
+                        await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -2256,6 +2303,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         messageName: "delete-channel-favorited.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }
             }
         }
@@ -2574,6 +2622,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         messageName: "delete-show-followed.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }
             }
         }
@@ -2898,6 +2947,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         messageName: "delete-episode-saved.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }
             }
         }
@@ -3577,6 +3627,1213 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "add-podcaster-listen-count.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountSavedEpisodeDMCARemoveEpisodeForce(DeleteAccountSavedEpisodeDMCARemoveEpisodeForceParameterDTO deleteAccountSavedEpisodeDMCARemoveEpisodeForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(deleteAccountSavedEpisodeDMCARemoveEpisodeForceParameterDTO.PodcastEpisodeId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = deleteAccountSavedEpisodeDMCARemoveEpisodeForceParameterDTO.PodcastEpisodeId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete episode saved successfully",
+                        PodcastEpisodeId = deleteAccountSavedEpisodeDMCARemoveEpisodeForceParameterDTO.PodcastEpisodeId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-episode-dmca-remove-episode-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account saved episode DMCA remove episode force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-episode-dmca-remove-episode-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountSavedEpisodeUnpublishEpisodeForce(DeleteAccountSavedEpisodeUnpublishEpisodeForceParameterDTO deleteAccountSavedEpisodeUnpublishEpisodeForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(deleteAccountSavedEpisodeUnpublishEpisodeForceParameterDTO.PodcastEpisodeId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = deleteAccountSavedEpisodeUnpublishEpisodeForceParameterDTO.PodcastEpisodeId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete episode saved successfully",
+                        PodcastEpisodeId = deleteAccountSavedEpisodeUnpublishEpisodeForceParameterDTO.PodcastEpisodeId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-episode-unpublish-episode-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account saved episode unpublish episode force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-episode-unpublish-episode-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFollowedShowDMCARemoveShowForce(DeleteAccountFollowedShowDMCARemoveShowForceParameterDTO deleteAccountFollowedShowDMCARemoveShowForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = await _unitOfWork.AccountFollowedPodcastShowRepository.DeleteByPodcastShowIdAsync(deleteAccountFollowedShowDMCARemoveShowForceParameterDTO.PodcastShowId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteAccountFollowedShowDMCARemoveShowForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete followed show successfully",
+                        PodcastShowId = deleteAccountFollowedShowDMCARemoveShowForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-show-dmca-remove-show-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account followed show DMCA remove show force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-show-dmca-remove-show-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFollowedShowUnpublishShowForce(DeleteAccountFollowedShowUnpublishShowForceParameterDTO deleteAccountFollowedShowUnpublishShowForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = await _unitOfWork.AccountFollowedPodcastShowRepository.DeleteByPodcastShowIdAsync(deleteAccountFollowedShowUnpublishShowForceParameterDTO.PodcastShowId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteAccountFollowedShowUnpublishShowForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete followed show successfully",
+                        PodcastShowId = deleteAccountFollowedShowUnpublishShowForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-show-unpublish-show-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account followed show unpublish show force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-show-unpublish-show-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountSavedShowEpisodesDMCARemoveShowForce(DeleteAccountSavedShowEpisodesDMCARemoveShowForceParameterDTO deleteAccountSavedShowEpisodesDMCARemoveShowForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                        {
+                            new BatchQueryItem
+                            {
+                                Key = "podcastEpisode",
+                                QueryType = "findall",
+                                EntityType = "PodcastEpisode",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        PodcastShowId = deleteAccountSavedShowEpisodesDMCARemoveShowForceParameterDTO.PodcastShowId
+                                    },
+                                }),
+                            }
+                        }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+
+                    var podcastEpisode = result.Results["podcastEpisode"].ToObject<List<PodcastEpisodeDTO>>();
+
+                    List<Guid> podcastEpisodeIds = podcastEpisode.Select(pe => pe.Id).ToList();
+
+                    foreach (var podcastEpisodeId in podcastEpisodeIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(podcastEpisodeId);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteAccountSavedShowEpisodesDMCARemoveShowForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete saved show successfully",
+                        PodcastShowId = deleteAccountSavedShowEpisodesDMCARemoveShowForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-show-episodes-dmca-remove-show-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account saved show episodes DMCA remove show force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-show-episodes-dmca-remove-show-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountSavedShowEpisodesUnpublishShowForce(DeleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO deleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    foreach (var podcastEpisodeId in deleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO.DmcaDismissedEpisodeIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(podcastEpisodeId);
+                    }
+
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO.PodcastShowId;
+                    messageNextRequestData["DmcaDismissedEpisodeIds"] = JArray.FromObject(deleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO.DmcaDismissedEpisodeIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete saved show successfully",
+                        PodcastShowId = deleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO.PodcastShowId,
+                        DmcaDismissedEpisodeIds = deleteAccountSavedShowEpisodesUnpublishShowForceParameterDTO.DmcaDismissedEpisodeIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-show-episodes-unpublish-show-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account saved show episodes unpublish show force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-show-episodes-unpublish-show-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+
+        }
+
+        public async Task DeleteAccountSavedShowEpisodesShowDeletionForce(DeleteAccountSavedShowEpisodesShowDeletionForceParameterDTO deleteAccountSavedShowEpisodesShowDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // lấy ra danh sách episode của show để xoá 
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                        {
+                            new BatchQueryItem
+                            {
+                                Key = "podcastEpisode",
+                                QueryType = "findall",
+                                EntityType = "PodcastEpisode",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        PodcastShowId = deleteAccountSavedShowEpisodesShowDeletionForceParameterDTO.PodcastShowId
+                                    },
+                                }),
+                            }
+                        }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+
+                    var podcastEpisode = result.Results["podcastEpisode"].ToObject<List<PodcastEpisodeDTO>>();
+
+                    List<Guid> podcastEpisodeIds = podcastEpisode.Select(pe => pe.Id).ToList();
+
+                    foreach (var podcastEpisodeId in podcastEpisodeIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(podcastEpisodeId);
+                    }
+
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteAccountSavedShowEpisodesShowDeletionForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete saved show successfully",
+                        PodcastShowId = deleteAccountSavedShowEpisodesShowDeletionForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-show-episodes-show-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account saved show episodes show deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-show-episodes-show-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountSavedChannelEpisodesUnpublishChannelForce(DeleteAccountSavedChannelEpisodesUnpublishChannelForceParameterDTO deleteAccountSavedChannelEpisodesUnpublishChannelForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    foreach (var podcastEpisodeId in deleteAccountSavedChannelEpisodesUnpublishChannelForceParameterDTO.DmcaDismissedEpisodeIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(podcastEpisodeId);
+                    }
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = deleteAccountSavedChannelEpisodesUnpublishChannelForceParameterDTO.PodcastChannelId;
+                    messageNextRequestData["DmcaDismissedEpisodeIds"] = JArray.FromObject(deleteAccountSavedChannelEpisodesUnpublishChannelForceParameterDTO.DmcaDismissedEpisodeIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete saved channel episodes successfully",
+                        PodcastChannelId = deleteAccountSavedChannelEpisodesUnpublishChannelForceParameterDTO.PodcastChannelId,
+                        DmcaDismissedEpisodeIds = deleteAccountSavedChannelEpisodesUnpublishChannelForceParameterDTO.DmcaDismissedEpisodeIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-channel-episodes-unpublish-channel-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account saved channel episode unpublish channel force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-channel-episodes-unpublish-channel-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountSavedChannelEpisodesChannelDeletionForce(DeleteAccountSavedChannelEpisodesChannelDeletionForceParameterDTO deleteAccountSavedChannelEpisodesChannelDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                        {
+                            new BatchQueryItem
+                            {
+                                Key = "podcastChannel",
+                                QueryType = "findbyid",
+                                EntityType = "PodcastChannel",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where =  new {
+                                    DeletedAt = (DateTime?)null,
+                                    },
+                                    id = "7c50ec4d-dd32-47c8-955a-084c2cc640bf",
+                                    include = "PodcastShows, PodcastShows.PodcastEpisodes"
+                                }),
+                                // Fields = new string[] { "PodcastShows.PodcastEpisodes.Id" }
+                                Fields = new[] {
+                                    "PodcastShows",
+                                }
+                            }
+                        }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+                    // var podcastEpisodeIds = result.Results["podcastChannel"]["PodcastShows"]
+                    //     .SelectMany(ps => ps["PodcastEpisodes"])
+                    //     .Select(pe => pe["Id"].ToObject<Guid>())
+                    //     .ToList();
+                    var podcastChannel = result.Results["podcastChannel"].ToObject<PodcastChannelDTO>();
+                    var podcastEpisodeIds = podcastChannel.PodcastShows.SelectMany(ps => ps.PodcastEpisodes).Select(pe => pe.Id).ToList();
+                    foreach (var podcastEpisodeId in podcastEpisodeIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(podcastEpisodeId);
+                    }
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = deleteAccountSavedChannelEpisodesChannelDeletionForceParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete saved channel episodes successfully",
+                        PodcastChannelId = deleteAccountSavedChannelEpisodesChannelDeletionForceParameterDTO.PodcastChannelId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-channel-episodes-channel-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account saved channel episodes channel deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-channel-episodes-channel-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForce(DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForceParameterDTO deleteAccountSavedPodcasterEpisodesTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                        {
+                            new BatchQueryItem
+                            {
+                                Key = "podcastShow",
+                                QueryType = "findall",
+                                EntityType = "PodcastShow",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        PodcasterId = 17
+                                    },
+                                    include = "PodcastEpisodes"
+                                }),
+                            }
+                        }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+
+                    var podcastShow = result.Results["podcastShow"].ToObject<List<PodcastShowDTO>>();
+
+                    List<Guid> podcastEpisodeIds = podcastShow.SelectMany(ps => ps.PodcastEpisodes).Select(pe => pe.Id).ToList();
+
+                    foreach (var podcastEpisodeId in podcastEpisodeIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(podcastEpisodeId);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = deleteAccountSavedPodcasterEpisodesTerminatePodcasterForceParameterDTO.PodcasterId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete saved podcaster episodes successfully",
+                        PodcasterId = deleteAccountSavedPodcasterEpisodesTerminatePodcasterForceParameterDTO.PodcasterId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-podcaster-episodes-terminate-podcaster-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account saved podcaster episodes terminate podcaster force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-podcaster-episodes-terminate-podcaster-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountSavedEpisodeEpisodeDeletionForce(DeleteAccountSavedEpisodeEpisodeDeletionForceParameterDTO deleteAccountSavedEpisodeEpisodeDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = await _unitOfWork.AccountSavedPodcastEpisodeRepository.DeleteByPodcastEpisodeIdAsync(deleteAccountSavedEpisodeEpisodeDeletionForceParameterDTO.PodcastEpisodeId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = deleteAccountSavedEpisodeEpisodeDeletionForceParameterDTO.PodcastEpisodeId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete episode saved successfully",
+                        PodcastEpisodeId = deleteAccountSavedEpisodeEpisodeDeletionForceParameterDTO.PodcastEpisodeId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-episode-episode-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account saved episode episode deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-saved-episode-episode-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFavoritedChannelUnpublishChannelForce(DeleteAccountFavoritedChannelUnpublishChannelForceParameterDTO deleteAccountFavoritedChannelUnpublishChannelForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByPodcastChannelIdAsync(deleteAccountFavoritedChannelUnpublishChannelForceParameterDTO.PodcastChannelId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = deleteAccountFavoritedChannelUnpublishChannelForceParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete favorited channel successfully",
+                        PodcastChannelId = deleteAccountFavoritedChannelUnpublishChannelForceParameterDTO.PodcastChannelId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-favorited-channel-unpublish-channel-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account favorited channel unpublish channel force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-favorited-channel-unpublish-channel-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFavoritedChannelChannelDeletionForce(DeleteAccountFavoritedChannelChannelDeletionForceParameterDTO deleteAccountFavoritedChannelChannelDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByPodcastChannelIdAsync(deleteAccountFavoritedChannelChannelDeletionForceParameterDTO.PodcastChannelId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = deleteAccountFavoritedChannelChannelDeletionForceParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete favorited channel successfully",
+                        PodcastChannelId = deleteAccountFavoritedChannelChannelDeletionForceParameterDTO.PodcastChannelId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-favorited-channel-channel-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account favorited channel channel deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-favorited-channel-channel-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFavoritedPodcasterChannelsTerminatePodcasterForce(DeleteAccountFavoritedPodcasterChannelsTerminatePodcasterForceParameterDTO deleteAccountFavoritedPodcasterChannelsTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                        {
+                            new BatchQueryItem
+                            {
+                                Key = "podcastChannels",
+                                QueryType = "findall",
+                                EntityType = "PodcastChannel",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where =  new {
+                                        PodcasterId = deleteAccountFavoritedPodcasterChannelsTerminatePodcasterForceParameterDTO.PodcasterId,
+                                        DeletedAt = (DateTime?)null,
+                                    },
+                                }),
+                                Fields = new[] {
+                                    "Id",
+                                }
+                            }
+                        }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                    var podcastChannels = result.Results["podcastChannels"].ToObject<List<PodcastChannelDTO>>();
+                    var podcastEpisodeIds = podcastChannels.Select(pc => pc.Id).ToList();
+
+                    foreach (var podcastChannelId in podcastEpisodeIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountFavoritedPodcastChannelRepository.DeleteByPodcastChannelIdAsync(podcastChannelId);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = deleteAccountFavoritedPodcasterChannelsTerminatePodcasterForceParameterDTO.PodcasterId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete favorited podcaster channels successfully",
+                        PodcasterId = deleteAccountFavoritedPodcasterChannelsTerminatePodcasterForceParameterDTO.PodcasterId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-favorited-podcaster-channels-terminate-podcaster-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account favorited podcaster channels terminate podcaster force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-favorited-podcaster-channels-terminate-podcaster-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFollowedChannelShowsUnpublishChannelForce(DeleteAccountFollowedChannelShowsUnpublishChannelForceParameterDTO deleteAccountFollowedChannelShowsUnpublishChannelForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    // List<int> affectedAccountIds = await _unitOfWork.AccountFollowedPodcastChannelRepository.DeleteByPodcastChannelIdAsync(deleteAccountFollowedChannelShowsUnpublishChannelForceParameterDTO.PodcastChannelId);
+                    foreach (var podcastShowId in deleteAccountFollowedChannelShowsUnpublishChannelForceParameterDTO.DmcaDismissedShowIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountFollowedPodcastShowRepository.DeleteByPodcastShowIdAsync(podcastShowId);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = deleteAccountFollowedChannelShowsUnpublishChannelForceParameterDTO.PodcastChannelId;
+                    messageNextRequestData["DmcaDismissedShowIds"] = JArray.FromObject(deleteAccountFollowedChannelShowsUnpublishChannelForceParameterDTO.DmcaDismissedShowIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete followed channel successfully",
+                        PodcastChannelId = deleteAccountFollowedChannelShowsUnpublishChannelForceParameterDTO.PodcastChannelId,
+                        DmcaDismissedShowIds = deleteAccountFollowedChannelShowsUnpublishChannelForceParameterDTO.DmcaDismissedShowIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-channel-shows-unpublish-channel-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account followed channel show unpublish channel force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-channel-shows-unpublish-channel-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFollowedChannelShowsChannelDeletionForce(DeleteAccountFollowedChannelShowsChannelDeletionForceParameterDTO deleteAccountFollowedChannelShowsChannelDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // lấy ra tất cả các show của channel để xoá
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                        {
+                            new BatchQueryItem
+                            {
+                                Key = "podcastShow",
+                                QueryType = "findall",
+                                EntityType = "PodcastShow",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        PodcastChannelId = deleteAccountFollowedChannelShowsChannelDeletionForceParameterDTO.PodcastChannelId
+                                    },
+                                }),
+                            }
+                        }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+
+                    var podcastShow = result.Results["podcastShow"].ToObject<List<PodcastShowDTO>>();
+
+                    List<Guid> podcastShowIds = podcastShow.Select(ps => ps.Id).ToList();
+
+                    foreach (var podcastShowId in podcastShowIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountFollowedPodcastShowRepository.DeleteByPodcastShowIdAsync(podcastShowId);
+                    }
+
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = deleteAccountFollowedChannelShowsChannelDeletionForceParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete followed channel successfully",
+                        PodcastChannelId = deleteAccountFollowedChannelShowsChannelDeletionForceParameterDTO.PodcastChannelId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-channel-shows-channel-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account followed channel shows channel deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-channel-shows-channel-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFollowedPodcasterShowsTerminatePodcasterForce(DeleteAccountFollowedPodcasterShowsTerminatePodcasterForceParameterDTO deleteAccountFollowedPodcasterShowsTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                        {
+                            new BatchQueryItem
+                            {
+                                Key = "podcastShow",
+                                QueryType = "findall",
+                                EntityType = "PodcastShow",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        PodcasterId = deleteAccountFollowedPodcasterShowsTerminatePodcasterForceParameterDTO.PodcasterId
+                                    },
+                                }),
+                            }
+                        }
+                    };
+
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+
+                    var podcastShow = result.Results["podcastShow"].ToObject<List<PodcastShowDTO>>();
+
+                    List<Guid> podcastShowIds = podcastShow.Select(ps => ps.Id).ToList();
+
+                    foreach (var podcastShowId in podcastShowIds)
+                    {
+                        List<int> affectedAccountIds = await _unitOfWork.AccountFollowedPodcastShowRepository.DeleteByPodcastShowIdAsync(podcastShowId);
+                    }
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = deleteAccountFollowedPodcasterShowsTerminatePodcasterForceParameterDTO.PodcasterId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete followed podcaster shows successfully",
+                        PodcasterId = deleteAccountFollowedPodcasterShowsTerminatePodcasterForceParameterDTO.PodcasterId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-podcaster-shows-terminate-podcaster-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account followed podcaster shows terminate podcaster force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-podcaster-shows-terminate-podcaster-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFollowedShowShowDeletionForce(DeleteAccountFollowedShowShowDeletionForceParameterDTO deleteAccountFollowedShowShowDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+
+                    List<int> affectedAccountIds = await _unitOfWork.AccountFollowedPodcastShowRepository.DeleteByPodcastShowIdAsync(deleteAccountFollowedShowShowDeletionForceParameterDTO.PodcastShowId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteAccountFollowedShowShowDeletionForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete followed show successfully",
+                        PodcastShowId = deleteAccountFollowedShowShowDeletionForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-show-show-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account followed show show deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-show-show-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteBuddyReviewTerminatePodcasterForce(DeleteBuddyReviewTerminatePodcasterForceParameterDTO deleteBuddyReviewTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    List<int> affectedAccountIds = await _unitOfWork.PodcastBuddyReviewRepository.DeleteByPodcasterIdAsync(deleteBuddyReviewTerminatePodcasterForceParameterDTO.PodcasterId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = deleteBuddyReviewTerminatePodcasterForceParameterDTO.PodcasterId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete buddy review terminate podcaster force successfully",
+                        PodcasterId = deleteBuddyReviewTerminatePodcasterForceParameterDTO.PodcasterId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-buddy-review-terminate-podcaster-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete buddy review terminate podcaster force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-buddy-review-terminate-podcaster-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteAccountFollowedPodcasterTerminatePodcasterForce(DeleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO deleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    List<int> affectedAccountIds = await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByPodcasterIdAsync(deleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO.PodcasterId);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = deleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO.PodcasterId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Delete followed podcaster terminate podcaster force successfully",
+                        PodcasterId = deleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO.PodcasterId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-podcaster-terminate-podcaster-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete account followed podcaster terminate podcaster force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-account-followed-podcaster-terminate-podcaster-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");

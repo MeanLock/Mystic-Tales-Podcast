@@ -405,7 +405,10 @@ namespace PodcastService.API.Controllers.BaseControllers
 
             var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, Token);
 
-            return Ok(episodeListenResponse);
+            return Ok(new
+            {
+                ListenSession = episodeListenResponse
+            });
         }
 
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/hls-encryption-key/{KeyId}
@@ -495,10 +498,8 @@ namespace PodcastService.API.Controllers.BaseControllers
                 return BadRequest("Tuning process returned null stream");
             }
 
-            // ✅ Detect format TRƯỚC khi reset position
             var formatInfo = _formatDetector.DetectFormatFromStream(tunedAudio);
 
-            // ✅ Reset position SAU khi detect
             if (tunedAudio.CanSeek)
             {
                 tunedAudio.Position = 0;
@@ -506,11 +507,61 @@ namespace PodcastService.API.Controllers.BaseControllers
 
             Response.Headers.CacheControl = "no-store";
 
-            // ✅ Disable range processing để tránh partial content
             return File(tunedAudio, formatInfo.MimeType, enableRangeProcessing: false);
 
         }
 
+        // /api/podcast-service/api/episodes/listen-sessions/podcast-episode-listen-history
+        [HttpGet("listen-sessions/podcast-episode-listen-history")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastEpisodeListenHistory([FromQuery] int PageNumber = 1, [FromQuery] int PageSize = 10)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var listenHistory = await _podcastEpisodeService.GetPodcastEpisodeListenHistoryAsync(account.Id);
+
+            return Ok(new
+            {
+                ListenHistory = listenHistory
+            });
+        }
+
+        // /api/podcast-service/api/episodes/listen-sessions/latest
+        [HttpGet("listen-sessions/latest")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetLatestPodcastEpisodeListenSession()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var listenSession = await _podcastEpisodeService.GetLatestPodcastEpisodeListenSessionAsync(account.Id);
+
+            return Ok(new
+            {
+                ListenSession = listenSession
+            });
+        }
+
+        // /api/podcast-service/api/episodes/listen-sessions/{PodcastEpisodeListenSessionId}/last-duration-seconds/{LastListenDurationSeconds}
+        [HttpPut("listen-sessions/{PodcastEpisodeListenSessionId}/last-duration-seconds/{LastListenDurationSeconds}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> UpdatePodcastEpisodeListenSessionLastDurationSeconds(Guid PodcastEpisodeListenSessionId, int LastListenDurationSeconds)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            JObject requestData = new JObject
+            {
+                ["PodcastEpisodeListenSessionId"] = PodcastEpisodeListenSessionId,
+                ["ListenerId"] = account.Id,
+                ["LastListenDurationSeconds"] = LastListenDurationSeconds
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-listen-session-duration-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
 
 
 
