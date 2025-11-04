@@ -124,26 +124,34 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             return new LawsuitProofDetailResponseDTO
             {
                 Id = lawsuitProof.Id,
-                AccountId = lawsuitProof.AccountId,
-                GoodFaithStatement = lawsuitProof.GoodFaithStatement,
-                CourtName = lawsuitProof.CourtName,
-                CaseNumber = lawsuitProof.CaseNumber,
-                FilingDate = lawsuitProof.FilingDate,
-                Signature = lawsuitProof.Signature,
                 DMCAAccusationId = lawsuitProof.DmcaAccusationId,
                 IsValid = lawsuitProof.IsValid,
                 InValidReason = lawsuitProof.InValidReason,
                 ValidatedBy = lawsuitProof.ValidatedBy,
                 ValidatedAt = lawsuitProof.ValidatedAt,
-                JudgmentDetails = lawsuitProof.JudgmentDetails,
-                DateResolved = lawsuitProof.DateResolved,
-                Outcome = lawsuitProof.Outcome,
-                RulingDocumentFileUrl = lawsuitProof.RulingDocumentFileUrl,
-                IsDefendantWon = lawsuitProof.IsDefendantWon,
                 CreatedAt = lawsuitProof.CreatedAt,
                 UpdatedAt = lawsuitProof.UpdatedAt,
                 LawsuitProofAttachFileList = lawsuitProofAttachFile
             };
+        }
+        public async Task<LawsuitProof> UpdateLawsuitProof(LawsuitProof lawsuitProof)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var result = await _lawsuitProofGenericRepository.UpdateAsync(lawsuitProof.Id, lawsuitProof);
+                    await transaction.CommitAsync();
+                    _logger.LogInformation("Updated DMCA Lawsuit Proof with ID: {LawsuitProofId}", result.Id);
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error updating LawsuitProof");
+                    throw;
+                }
+            }
         }
         public async Task CreateLawsuitProofAsync(CreateLawsuitProofParameterDTO parameter, SagaCommandMessage command)
         {
@@ -159,13 +167,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var newLawsuitProof = new LawsuitProof
                     {
-                        AccountId = parameter.AccountId,
-                        CaseNumber = parameter.CaseNumber,
-                        CourtName = parameter.CourtName,
                         DmcaAccusationId = parameter.DMCAAccusationId,
-                        GoodFaithStatement = parameter.GoodFaithStatement,
-                        Signature = parameter.Signature,
-                        FilingDate = DateOnly.FromDateTime(parameter.FilingDate),
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
@@ -201,18 +203,18 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         createLawsuitProofAttachFile.Add(createdLawsuitProofAttachFile.AttachFileKey);
                     }
 
-                    var newDmcaStatusTracking = new DmcaaccusationStatusTracking
-                    {
-                        DmcaAccusationId = createdLawsuitProof.DmcaAccusationId,
-                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.LawsuitFiled,
-                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                    };
+                    //var newDmcaStatusTracking = new DmcaaccusationStatusTracking
+                    //{
+                    //    DmcaAccusationId = createdLawsuitProof.DmcaAccusationId,
+                    //    DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.LawsuitFiled,
+                    //    CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                    //};
 
-                    var createDmcaStatusTracking = await _dmcaAccusationService.CreateDMCAAccusationStatusTracking(newDmcaStatusTracking);
-                    if (createDmcaStatusTracking == null)
-                    {
-                        throw new Exception("Failed to created dmca status tracking");
-                    }
+                    //var createDmcaStatusTracking = await _dmcaAccusationService.CreateDMCAAccusationStatusTracking(newDmcaStatusTracking);
+                    //if (createDmcaStatusTracking == null)
+                    //{
+                    //    throw new Exception("Failed to created dmca status tracking");
+                    //}
 
                     await transaction.CommitAsync();
 
@@ -220,12 +222,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         { "DMCAAccusationId", createdLawsuitProof.DmcaAccusationId },
                         { "LawsuitProofId", createdLawsuitProof.Id },
-                        { "AccountId", createdLawsuitProof.AccountId },
-                        { "GoodFaithStatement", createdLawsuitProof.GoodFaithStatement },
-                        { "CourtName", createdLawsuitProof.CourtName },
-                        { "CaseNumber", createdLawsuitProof.CaseNumber },
-                        { "Signature", createdLawsuitProof.Signature },
-                        { "FilingDate", createdLawsuitProof.FilingDate.ToString("yyyy-MM-dd") },
                         { "LawsuitProofAttachFileKeys", JArray.FromObject(createLawsuitProofAttachFile) },
                         { "CreatedAt", createdLawsuitProof.CreatedAt }
                     };

@@ -19,7 +19,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking.Details
         public DateOnly Deadline { get; set; }
         public string? DemoAudioFileKey { get; set; }
         public string? BookingManualCancelledReason { get; set; }
-        public List<BookingNegotiationListItemResponseDTO> BookingNegotiationList { get; set; } = new List<BookingNegotiationListItemResponseDTO>();
+        public List<BookingRequirementListItemResponseDTO> BookingRequirementFileList { get; set; } = new List<BookingRequirementListItemResponseDTO>();
         public List<BookingProducingRequestListItemResponseDTO> BookingProducingRequestList { get; set; } = new List<BookingProducingRequestListItemResponseDTO>();
         public string? BookingAutoCancelledReason { get; set; }
         public DateTime CreatedAt { get; set; }

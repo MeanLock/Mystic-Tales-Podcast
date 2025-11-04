@@ -74,6 +74,25 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 }
             }
         }
+        public async Task<Dmcanotice> UpdateDMCANoticeAsync(Dmcanotice dmcaNotice)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var result = await _dmcaNoticeGenericRepository.UpdateAsync(dmcaNotice.Id, dmcaNotice);
+                    await transaction.CommitAsync();
+                    _logger.LogInformation("Updated DMCA Notice with ID: {DmcaNoticeId}", result.Id);
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError($"Something went wrong. Error: {ex.StackTrace}");
+                    return null;
+                }
+            }
+        }
         public async Task<DmcanoticeAttachFile> CreateDMCANoticeAttachFile(DmcanoticeAttachFile dmcanoticeAttachFile)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -129,14 +148,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             return new DMCANoticeDetailResponseDTO
             {
                 Id = dmcaNotice.Id,
-                PodcastShowId = dmcaNotice.PodcastShowId,
-                PodcastEpisodeId = dmcaNotice.PodcastEpisodeId,
-                AccountId = dmcaNotice.AccountId,
-                AccountEmail = dmcaNotice.AccountEmail,
-                AccountPhone = dmcaNotice.AccountPhone,
-                GoodFaithStatement = dmcaNotice.GoodFaithStatement,
-                WorkClaimed = dmcaNotice.WorkClaimed,
-                Signature = dmcaNotice.Signature,
                 IsValid = dmcaNotice.IsValid,
                 InValidReason = dmcaNotice.InvalidReason,
                 ValidatedBy = dmcaNotice.ValidatedBy,

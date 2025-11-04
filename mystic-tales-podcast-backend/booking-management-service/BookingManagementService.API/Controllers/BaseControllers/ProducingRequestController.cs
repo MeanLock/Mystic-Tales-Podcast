@@ -105,9 +105,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "booking-producing-request-creation-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
@@ -151,6 +151,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
 
             var trackSubmissions = new List<JObject>();
+            var requirementSubmission = request.BookingRequirementIdList;
 
             // Process all audio files and prepare track submission items
             foreach (var audioFile in request.AudioFiles)
@@ -182,9 +183,13 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
                 var trackAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newTrackAudioFileName);
 
+                var matchingRequirement = requirementSubmission
+                    .FirstOrDefault(re => re != null && re.ToString() == audioFile.FileName);
+
                 // Add to track submissions list
                 trackSubmissions.Add(new JObject
                 {
+                    { "Id", matchingRequirement },
                     { "AudioFileKey", trackAudioFileKey },
                     { "AudioFileSize", audioFile.Length },
                     { "AudioLength", (int)(audioMetadata?.Duration ?? 0) }
@@ -199,9 +204,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "booking-track-submission-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
 
@@ -258,9 +263,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "IsAccepted", isAccepted }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "booking-producing-request-agreement-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
@@ -283,9 +288,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "BookingPodcastTrackId", BookingPodcastTrackId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "booking-track-preview-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
@@ -293,6 +298,73 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 return StatusCode(500, "Failed to initiate booking podcast track preview update process.");
             }
             return Ok("Booking podcast track details updated successfully.");
+        }
+        [HttpPost("{BookingId}/cancel")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
+        public async Task<IActionResult> CancelProducingRequest(
+            [FromRoute] int BookingId,
+            [FromBody] BookingCancelRequestRequestDTO request)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            //var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
+            //if (!isValid)
+            //{
+            //    return Forbid("You are not authorized to cancel producing request for this booking.");
+            //}
+            var requestData = new JObject
+            {
+                { "AccountId", accountId },
+                { "BookingId", BookingId },
+                { "BookingManualCancelledReason", request.BookingManualCancelledReason }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "booking-producing-request-cancellation-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate booking producing request cancellation process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpPut("{BookingId}/cancel/{IsAccepted}")]
+        [Authorize (Policy = "Staff.BasicAccess")]
+        public async Task<IActionResult> ProcessCancelRequest(
+            [FromRoute] int BookingId,
+            [FromRoute] bool IsAccepted,
+            [FromBody] BookingCancelRequestProcessRequestDTO request)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var requestData = new JObject
+            {
+                { "AccountId", accountId },
+                { "BookingId", BookingId },
+                { "IsAccepted", IsAccepted },
+                { "CustomerBookingCancelDepositRefundRate", request.CustomerBookingCancelDepositRefundRate },
+                { "PodcastBuddyBookingCancelDepositRefundRate", request.PodcastBuddyBookingCancelDepositRefundRate }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "booking-cancel-validation-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate booking producing request cancel validation process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
         }
     }
 }

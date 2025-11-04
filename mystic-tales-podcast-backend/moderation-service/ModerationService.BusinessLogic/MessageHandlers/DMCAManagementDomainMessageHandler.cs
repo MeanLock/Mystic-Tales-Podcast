@@ -1,10 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using ModerationService.BusinessLogic.Attributes;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.AssignDMCAAccusationToStaff;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CancelDMCAAccusationReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateCounterNotice;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusation;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusationReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateLawsuitProof;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.UpdateDMCAAccusationStatus;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.ValidateDMCAAccusationReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreatePodcastBuddyReport;
 using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Services.DbServices.DMCAServices;
@@ -103,6 +106,21 @@ namespace ModerationService.BusinessLogic.MessageHandlers
                failedEmitMessage: "assign-dmca-accusation-to-staff.failed"
            );
         }
+        [MessageHandler("create-dmca-accusation-report", SAGA_TOPIC)]
+        public async Task HandleCreateDMCAAccusationReportAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                     var parameter = command.RequestData.ToObject<CreateDMCAAccusationReportParameterDTO>();
+                     await _dmcaAccusationService.CreateDMCAAccusationReportAsync(parameter, command);
+                     _logger.LogInformation("Handled create-dmca-accusation-report command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "create-dmca-accusation-report.failed"
+           );
+        }
         [MessageHandler("update-dmca-accusation-status", SAGA_TOPIC)]
         public async Task HandleUpdateDMCAAccusationStatusAsync(string key, string messageJson)
         {
@@ -116,6 +134,36 @@ namespace ModerationService.BusinessLogic.MessageHandlers
                },
                responseTopic: SAGA_TOPIC,
                failedEmitMessage: "update-dmca-accusation-status.failed"
+           );
+        }
+        [MessageHandler("validate-dmca-accusation-report", SAGA_TOPIC)]
+        public async Task HandleValidateDMCAAccusationReportAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ValidateDMCAAccusationReportParameterDTO>();
+                   await _dmcaAccusationService.ValidateDMCAAccusationReportAsync(parameter, command);
+                   _logger.LogInformation("Handled validate-dmca-accusation-report command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "validate-dmca-accusation-report.failed"
+           );
+        }
+        [MessageHandler("cancel-dmca-accusation-report", SAGA_TOPIC)]
+        public async Task HandleCancelDMCAAccusationReportAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<CancelDMCAAccusationReportParameterDTO>();
+                   await _dmcaAccusationService.CancelDMCAAccusationReportAsync(parameter, command);
+                   _logger.LogInformation("Handled cancel-dmca-accusation-report command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "cancel-dmca-accusation-report.failed"
            );
         }
     }

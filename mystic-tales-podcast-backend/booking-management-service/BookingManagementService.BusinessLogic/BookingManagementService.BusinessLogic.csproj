@@ -19,12 +19,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="DTOs\MessageQueue\BookingManagementDomain\ValidateBookingCancellation\ValidateBookingCancellationParameterDTO.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\BookingManagementService.Infrastructure\BookingManagementService.Infrastructure.csproj" />
     <ProjectReference Include="..\BookingManagementService.Common\BookingManagementService.Common.csproj" />
     <ProjectReference Include="..\BookingManagementService.DataAccess\BookingManagementService.DataAccess.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="DTOs\MessageQueue\BookingManagementDomain\ValidateBookingProducingRequestCancellation\" />
     <Folder Include="Exceptions\" />
     <Folder Include="Services\BackgroundServices\interfaces\" />
     <Folder Include="Services\DbServices\MiscServices\" />

@@ -42,6 +42,7 @@ namespace BookingManagementService.Common.Registrations
             services.AddSingleton<IAccountConfig, AccountConfig>();
             services.AddSingleton<IFileValidationConfig, FileValidationConfig>();
             services.AddSingleton<IMailPropertiesConfig, MailPropertiesConfig>();
+            services.AddSingleton<IDMCAAccusationConfig, DMCAAccusationConfig>();
 
             // SystemService
             services.AddSingleton<ISystemServiceConfig,SystemServiceConfig>();

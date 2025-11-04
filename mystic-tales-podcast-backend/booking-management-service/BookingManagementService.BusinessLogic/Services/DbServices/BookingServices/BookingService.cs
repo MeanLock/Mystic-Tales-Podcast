@@ -1,16 +1,21 @@
 ﻿using Amazon.Runtime.Internal;
 using Amazon.Runtime.Internal.Util;
+using BookingManagementService.BusinessLogic.DTOs.Account;
 using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Booking.Details;
 using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AcceptBookingDealing;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingDealing;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
+using BookingManagementService.BusinessLogic.DTOs.SystemConfiguration;
+using BookingManagementService.BusinessLogic.Enums.Account;
 using BookingManagementService.BusinessLogic.Enums.Booking;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Enums.Transaction;
@@ -40,9 +45,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IGenericRepository<Booking> _bookingGenericRepository;
         private readonly IGenericRepository<BookingStatusTracking> _bookingStatusTrackingGenericRepository;
         private readonly IGenericRepository<BookingProducingRequest> _bookingProducingRequestGenericRepository;
-        private readonly IGenericRepository<BookingNegotiation> _bookingNegotiationGenericRepository;
+        private readonly IGenericRepository<BookingRequirement> _bookingRequirementGenericRepository;
         private readonly IGenericRepository<BookingChatRoom> _bookingChatRoomGenericRepository;
         private readonly IGenericRepository<BookingChatMember> _bookingChatMemberGenericRepository;
+        private readonly IGenericRepository<PodcastBookingTone> _podcastBookingToneGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly IMessagingService _messagingService;
@@ -58,9 +64,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             IGenericRepository<Booking> bookingGenericRepository,
             IGenericRepository<BookingStatusTracking> bookingStatusTrackingGenericRepository,
             IGenericRepository<BookingProducingRequest> bookingProducingRequestGenericRepository,
-            IGenericRepository<BookingNegotiation> bookingNegotiationGenericRepository,
+            IGenericRepository<BookingRequirement> bookingRequirementGenericRepository,
             IGenericRepository<BookingChatRoom> bookingChatRoomGenericRepository,
             IGenericRepository<BookingChatMember> bookingChatMemberGenericRepository,
+            IGenericRepository<PodcastBookingTone> podcastBookingToneGenericRepository,
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
@@ -75,9 +82,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _bookingGenericRepository = bookingGenericRepository;
             _bookingStatusTrackingGenericRepository = bookingStatusTrackingGenericRepository;
             _bookingProducingRequestGenericRepository = bookingProducingRequestGenericRepository;
-            _bookingNegotiationGenericRepository = bookingNegotiationGenericRepository;
+            _bookingRequirementGenericRepository = bookingRequirementGenericRepository;
             _bookingChatRoomGenericRepository = bookingChatRoomGenericRepository;
             _bookingChatMemberGenericRepository = bookingChatMemberGenericRepository;
+            _podcastBookingToneGenericRepository = podcastBookingToneGenericRepository;
+
             _httpServiceQueryClient = httpServiceQueryClient;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
@@ -124,7 +133,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         {
             var booking = await _bookingGenericRepository.FindByIdWithPaths(
                 bookingId,
-                "BookingNegotiations",
+                "BookingRequirements.PodcastBookingTones.PodcastBookingToneCategories",
                 "BookingProducingRequests",
                 "BookingStatusTrackings.BookingStatus"
             );
@@ -146,19 +155,29 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 BookingAutoCancelledReason = booking.BookingAutoCancelReason,
                 CreatedAt = booking.CreatedAt,
                 UpdatedAt = booking.UpdatedAt,
-                BookingNegotiationList = booking.BookingNegotiations?.Select(nego => new BookingNegotiationListItemResponseDTO
+                BookingRequirementFileList = booking.BookingRequirements?.Select(re => new BookingRequirementListItemResponseDTO
                 {
-                    Id = nego.Id,
-                    BookingId = nego.BookingId,
-                    Note = nego.Note,
-                    Deadline = nego.Deadline ?? default,
-                    Price = nego.Price ?? 0,
-                    DemoAudioRequired = nego.DemoAudioRequired,
-                    DemoAudioFileKey = nego.DemoAudioFileKey,
-                    IsCompleted = nego.IsCompleted,
-                    IsFromCustomer = nego.IsFromCustomer,
-                    CreatedAt = nego.CreatedAt
-                }).ToList() ?? new List<BookingNegotiationListItemResponseDTO>(),
+                    Id = re.Id,
+                    BookingId = re.BookingId,
+                    Name = re.Name,
+                    Description = re.Description,
+                    RequirementDocumentFileKey = re.RequirementDocumentFileKey,
+                    Order = re.Order,
+                    WordCount = re.WordCount,
+                    PodcastBookingTone = new PodcastBookingToneDetailResponseDTO()
+                    {
+                        Id = re.PodcastBookingTone.Id,
+                        Name = re.PodcastBookingTone.Name,
+                        Description = re.PodcastBookingTone.Description,
+                        CreatedAt = re.PodcastBookingTone.CreatedAt,
+                        DeletedAt = re.PodcastBookingTone.DeletedAt,
+                        PodcastBookingToneCategory = new PodcastBookingToneCategoryDetailResponseDTO()
+                        {
+                            Id = re.PodcastBookingTone.PodcastBookingToneCategory.Id,
+                            Name = re.PodcastBookingTone.PodcastBookingToneCategory.Name
+                        }
+                    }
+                }).ToList() ?? new List<BookingRequirementListItemResponseDTO>(),
                 BookingProducingRequestList = booking.BookingProducingRequests?.Select(prod => new BookingProducingRequestListItemResponseDTO
                 {
                     Id = prod.Id,
@@ -184,6 +203,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
+                var processedFiles = new List<string>();
                 try
                 {
                     var messageName = command.MessageName;
@@ -201,13 +221,45 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
 
-                    await _bookingGenericRepository.CreateAsync(newBooking);
+                    var createdBooking = await _bookingGenericRepository.CreateAsync(newBooking);
+
+                    var createdRequirementDocumentList = new List<BookingRequirement>();
+
+                    // Process each track
+                    foreach (var requirementDocumentInfo in parameter.BookingRequirementInfoList)
+                    {
+
+                        var newBookingRequirement = new BookingRequirement()
+                        {
+                            BookingId = createdBooking.Id,
+                            Name = requirementDocumentInfo.Name,
+                            Description = requirementDocumentInfo.Description,
+                            Order = requirementDocumentInfo.Order,
+                            PodcastBookingToneId = requirementDocumentInfo.PodcastBookingToneId,
+                            RequirementDocumentFileKey = ""
+                        };
+
+                        var createdBookingRequirement = await _bookingRequirementGenericRepository.CreateAsync(newBookingRequirement);
+
+                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + createdBooking.Id;
+                        if (requirementDocumentInfo.RequirementDocumentFileKey != null && requirementDocumentInfo.RequirementDocumentFileKey != "")
+                        {
+                            var requirementDocumentFileKey = FilePathHelper.CombinePaths(folderPath, $"{createdBookingRequirement.Id}_requirement_document");
+                            await _fileIOHelper.CopyFileToFileAsync(requirementDocumentInfo.RequirementDocumentFileKey, requirementDocumentFileKey);
+                            processedFiles.Add(requirementDocumentFileKey);
+                            await _fileIOHelper.DeleteFileAsync(requirementDocumentInfo.RequirementDocumentFileKey);
+                            createdBookingRequirement.RequirementDocumentFileKey = requirementDocumentFileKey;
+                            await _bookingRequirementGenericRepository.UpdateAsync(createdBookingRequirement.Id, createdBookingRequirement);
+                        }
+
+                        createdRequirementDocumentList.Add(createdBookingRequirement);
+                    }
 
                     await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking
                     {
                         Id = Guid.NewGuid(),
                         BookingId = newBooking.Id,
-                        BookingStatusId = (int)BookingStatusEnum.QuotationUnderNegotiation,
+                        BookingStatusId = (int)BookingStatusEnum.QuotationRequest,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     });
 
@@ -220,6 +272,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         { "Description", newBooking.Description },
                         { "AccountId", newBooking.AccountId },
                         { "PodcastBuddyId", newBooking.PodcastBuddyId },
+                        { "CreatedBookingRequirementDocumentList", JArray.FromObject(createdRequirementDocumentList) },
                         { "CreatedAt", newBooking.CreatedAt }
                     };
                     var newMessageName = messageName + ".success";
@@ -293,19 +346,19 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     Include(b => b.BookingStatusTrackings)
                     .ThenInclude(bs => bs.BookingStatus))
                 .Where(b => b.AccountId == accountId).Select(booking => new BookingListItemResponseDTO
-            {
-                Id = booking.Id,
-                Title = booking.Title,
-                Description = booking.Description,
-                AccountId = booking.AccountId,
-                PodcastBuddyId = booking.PodcastBuddyId,
-                Price = booking.Price,
-                Deadline = booking.Deadline,
-                DemoAudioFileKey = booking.DemoAudioFileKey,
-                BookingManualCancelledReason = booking.BookingManualCancelledReason,
-                BookingAutoCancelledReason = booking.BookingAutoCancelReason,
-                CreatedAt = booking.CreatedAt,
-                UpdatedAt = booking.UpdatedAt,
+                {
+                    Id = booking.Id,
+                    Title = booking.Title,
+                    Description = booking.Description,
+                    AccountId = booking.AccountId,
+                    PodcastBuddyId = booking.PodcastBuddyId,
+                    Price = booking.Price,
+                    Deadline = booking.Deadline,
+                    DemoAudioFileKey = booking.DemoAudioFileKey,
+                    BookingManualCancelledReason = booking.BookingManualCancelledReason,
+                    BookingAutoCancelledReason = booking.BookingAutoCancelReason,
+                    CreatedAt = booking.CreatedAt,
+                    UpdatedAt = booking.UpdatedAt,
                     CurrentStatus = new BookingStatusResponseDTO
                     {
                         Id = booking.BookingStatusTrackings
@@ -318,7 +371,56 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }).ToList();
             return Task.FromResult(result);
         }
-
+        public async Task<List<PodcastBookingToneListItemResponseDTO>> GetAllPodcastBookingTonesAsync()
+        {
+            return await _podcastBookingToneGenericRepository.FindAll(
+                includeFunc: function => function
+                .Include(pbt => pbt.PodcastBookingToneCategory))
+                .Select(pbt => new PodcastBookingToneListItemResponseDTO
+                {
+                    Id = pbt.Id,
+                    Name = pbt.Name,
+                    Description = pbt.Description,
+                    PodcastBookingToneCategory = new PodcastBookingToneCategoryDetailResponseDTO
+                    {
+                        Id = pbt.PodcastBookingToneCategory.Id,
+                        Name = pbt.PodcastBookingToneCategory.Name
+                    },
+                    CreatedAt = pbt.CreatedAt,
+                    DeletedAt = pbt.DeletedAt,
+                }).ToListAsync();
+        }
+        public async Task<List<BookingRequirementListItemResponseDTO>> GetAllBookingRequirementByBookingIdAsync(int bookingId)
+        {
+            return await _bookingRequirementGenericRepository.FindAll(
+                includeFunc: function => function
+                .Include(br => br.PodcastBookingTone)
+                .ThenInclude(pbt => pbt.PodcastBookingToneCategory))
+                .Where(br => br.BookingId == bookingId)
+                .Select(br => new BookingRequirementListItemResponseDTO
+                {
+                    Id = br.Id,
+                    BookingId = bookingId,
+                    Name = br.Name,
+                    Description = br.Description,
+                    Order = br.Order,
+                    RequirementDocumentFileKey = br.RequirementDocumentFileKey,
+                    WordCount = br.WordCount,
+                    PodcastBookingTone = new PodcastBookingToneDetailResponseDTO
+                    {
+                        Id = br.PodcastBookingTone.Id,
+                        Name = br.PodcastBookingTone.Name,
+                        Description = br.PodcastBookingTone.Description,
+                        PodcastBookingToneCategory = new PodcastBookingToneCategoryDetailResponseDTO
+                        {
+                            Id = br.PodcastBookingTone.PodcastBookingToneCategory.Id,
+                            Name = br.PodcastBookingTone.PodcastBookingToneCategory.Name
+                        },
+                        CreatedAt = br.PodcastBookingTone.CreatedAt,
+                        DeletedAt = br.PodcastBookingTone.DeletedAt
+                    }
+                }).ToListAsync();
+        }
         public async Task RejectBookingAsync(RejectBookingParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -408,7 +510,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     var booking = await _bookingGenericRepository.FindByIdWithPaths(
                         bookingId,
-                        "BookingStatusTrackings"
+                        "BookingStatusTrackings",
+                        "BookingProducingRequests"
                     );
                     if (booking != null && booking.Price.HasValue)
                     {
@@ -417,7 +520,15 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             newBookingStatusId = (int)BookingStatusEnum.QuotationCancelled;
                         }
-                        else newBookingStatusId = (int)BookingStatusEnum.CancelledManually;
+                        else if(booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Producing)
+                        {
+                            if(booking.BookingProducingRequests.Count() == 1 && booking.BookingProducingRequests.Select(b => b.Deadline).FirstOrDefault() <= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()))
+                                newBookingStatusId = (int)BookingStatusEnum.CancelledManually;
+                        }
+                        else
+                        {
+                            throw new Exception("Invalid booking status for manual cancellation");
+                        }
 
                         var newBookingStatusTracking = new BookingStatusTracking
                         {
@@ -432,12 +543,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         booking.BookingManualCancelledReason = bookingManualCancelledReason;
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
-                        if(newBookingStatusId == (int)BookingStatusEnum.CancelledManually)
+                        if (newBookingStatusId == (int)BookingStatusEnum.CancelledManually)
                         {
-                            var profitRate = systemConfig?["BookingConfig"]?.Value<double?>("ProfitRate") ?? 0;
-                            var depositRate = systemConfig?["BookingConfig"]?.Value<double?>("DepositRate") ?? 0;
-                            
-                            if(booking.AccountId == parameter.AccountId)
+                            var profitRate = systemConfig.BookingConfig.ProfitRate;
+                            var depositRate = systemConfig.BookingConfig.DepositRate;
+
+                            if (booking.AccountId == parameter.AccountId)
                             {
                                 var Amount = booking.Price - booking.Price * (decimal)profitRate;
                                 var refundMessageName = "booking-refund-flow";
@@ -457,7 +568,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     messageName: refundMessageName);
                                 await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, sagaId.ToString());
                                 _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
-                            } else
+                            }
+                            else
                             {
                                 var Amount = booking.Price * (decimal)depositRate;
                                 var refundMessageName = "booking-refund-flow";
@@ -524,111 +636,342 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
-        public async Task CreateBookingNegotiationAsync(CreateBookingNegotiationParameterDTO parameter, SagaCommandMessage command)
+        //public async Task CreateBookingNegotiationAsync(CreateBookingNegotiationParameterDTO parameter, SagaCommandMessage command)
+        //{
+        //    using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //    {
+        //        try
+        //        {
+        //            var messageName = command.MessageName;
+        //            var sagaId = command.SagaInstanceId;
+        //            var flowName = command.FlowName;
+        //            var responseData = command.LastStepResponseData;
+        //            var bookingNegotitationId = Guid.NewGuid();
+
+        //            var booking = await _bookingGenericRepository.FindByIdWithPaths(
+        //                parameter.BookingId,
+        //                "BookingStatusTrackings"
+        //            );
+
+        //            if (booking == null)
+        //            {
+        //                throw new Exception($"Booking with ID {parameter.BookingId} not found");
+        //            }
+
+        //            if(booking.AccountId != parameter.AccountId && booking.PodcastBuddyId != parameter.AccountId)
+        //            {
+        //                throw new Exception("Only customer or podcast buddy can create negotiation");
+        //            }
+
+        //            bool isFromCustomer = booking.AccountId == parameter.AccountId;
+
+        //            var newBookingNegotiation = new BookingNegotiation()
+        //            {
+        //                Id = bookingNegotitationId,
+        //                BookingId = parameter.BookingId,
+        //                Note = parameter.Note ?? string.Empty,
+        //                Deadline = parameter.Deadline,
+        //                Price = parameter.Price,
+        //                DemoAudioRequired = parameter.DemoAudioRequired ?? false,
+        //                DemoAudioFileKey = null,
+        //                IsCompleted = false,
+        //                IsFromCustomer = isFromCustomer,
+        //                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+        //            };
+        //            await _bookingNegotiationGenericRepository.CreateAsync(newBookingNegotiation);
+
+        //            var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + newBookingNegotiation.BookingId;
+        //            if (!string.IsNullOrEmpty(parameter.DemoAudioFileKey) && !isFromCustomer)
+        //            {
+        //                var DemoAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"{bookingNegotitationId}_negotiation_demo_audio{FilePathHelper.GetExtension(parameter.DemoAudioFileKey)}");
+        //                await _fileIOHelper.CopyFileToFileAsync(parameter.DemoAudioFileKey, DemoAudioFileKey);
+        //                await _fileIOHelper.DeleteFileAsync(parameter.DemoAudioFileKey);
+        //                newBookingNegotiation.DemoAudioFileKey = DemoAudioFileKey;
+        //                await _bookingNegotiationGenericRepository.UpdateAsync(newBookingNegotiation.Id, newBookingNegotiation);
+        //            }
+
+        //            // Fix concurrency issue by handling updates one by one
+        //            var oldNegotiations = _bookingNegotiationGenericRepository.FindAll()
+        //                .Where(bn => bn.BookingId == parameter.BookingId && bn.IsCompleted == false && bn.Id != newBookingNegotiation.Id)
+        //                .ToList();
+
+        //            foreach (var bn in oldNegotiations)
+        //            {
+        //                bn.IsCompleted = true;
+        //                await _bookingNegotiationGenericRepository.UpdateAsync(bn.Id, bn);
+        //            }
+
+        //            var currentStatus = booking.BookingStatusTrackings?.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
+
+        //            if (currentStatus == (int)BookingStatusEnum.QuotationDealing && newBookingNegotiation.IsFromCustomer)
+        //            {
+        //                var newBookingStatusTracking = new BookingStatusTracking
+        //                {
+        //                    Id = Guid.NewGuid(),
+        //                    BookingId = booking.Id,
+        //                    BookingStatusId = (int)BookingStatusEnum.QuotationUnderNegotiation,
+        //                    CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+        //                };
+        //                await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+        //                booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+        //                await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+        //            }
+        //            else if(currentStatus == (int)BookingStatusEnum.QuotationUnderNegotiation && !newBookingNegotiation.IsFromCustomer)
+        //            {
+        //                var newBookingStatusTracking = new BookingStatusTracking
+        //                {
+        //                    Id = Guid.NewGuid(),
+        //                    BookingId = booking.Id,
+        //                    BookingStatusId = (int)BookingStatusEnum.QuotationDealing,
+        //                    CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+        //                };
+        //                await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+        //                booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+        //                await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+        //            }
+        //            else
+        //            {
+        //                throw new Exception("Cannot create negotiation in the current booking status");
+        //            }
+
+        //            await transaction.CommitAsync();
+
+        //            var newResponseData = new JObject
+        //            {
+        //                { "BookingNegotiationId", newBookingNegotiation.Id },
+        //                { "CreatedAt", newBookingNegotiation.CreatedAt }
+        //            };
+        //            var newMessageName = messageName + ".success";
+        //            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                topic: KafkaTopicEnum.BookingManagementDomain,
+        //                requestData: command.RequestData,
+        //                responseData: newResponseData,
+        //                sagaInstanceId: sagaId,
+        //                flowName: flowName,
+        //                messageName: newMessageName);
+        //            var result = await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+        //            _logger.LogInformation("Booking negotiation created successfully for SagaId: {SagaId}", command.SagaInstanceId);
+
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            await transaction.RollbackAsync();
+        //            _logger.LogError(ex, "Error occurred while creating booking negotiation for SagaId: {SagaId}", command.SagaInstanceId);
+
+        //            if (!string.IsNullOrEmpty(parameter.DemoAudioFileKey))
+        //            {
+        //                await _fileIOHelper.DeleteFileAsync(parameter.DemoAudioFileKey);
+        //            }
+
+        //            var newResponseData = new JObject
+        //                {
+        //                    { "ErrorMessage", "Create booking negotiation failed, error: " + ex.Message },
+        //                };
+        //            var newMessageName = command.MessageName + ".failed";
+        //            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                topic: KafkaTopicEnum.BookingManagementDomain,
+        //                requestData: command.RequestData,
+        //                responseData: newResponseData,
+        //                sagaInstanceId: command.SagaInstanceId,
+        //                flowName: command.FlowName,
+        //                messageName: newMessageName);
+        //            var result = await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+        //            _logger.LogError("Booking negotiation created failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
+        //        }
+        //    }
+        //}
+        //public async Task AgreeBookingNegotiationAsync(AgreeBookingNegotiationParameterDTO parameter, SagaCommandMessage command)
+        //{
+        //    using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //    {
+        //        try
+        //        {
+        //            var messageName = command.MessageName;
+        //            var sagaId = command.SagaInstanceId;
+        //            var flowName = command.FlowName;
+        //            var responseData = command.LastStepResponseData;
+
+        //            var booking = await _bookingGenericRepository.FindByIdWithPaths(
+        //                parameter.BookingId,
+        //                "BookingNegotiations",
+        //                "BookingStatusTrackings"
+        //            );
+
+        //            if (booking?.BookingStatusTrackings?.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId != (int)BookingStatusEnum.QuotationDealing)
+        //            {
+        //                throw new Exception("Cannot agree on negotiation when booking is rejected");
+        //            }
+
+        //            var latestNegotiation = booking.BookingNegotiations?.OrderByDescending(bn => bn.CreatedAt).FirstOrDefault();
+        //            if (latestNegotiation == null)
+        //            {
+        //                throw new Exception("No negotiations found for this booking");
+        //            }
+
+        //            var bookingNegotiation = await _bookingNegotiationGenericRepository.FindByIdAsync(latestNegotiation.Id);
+
+        //            if (bookingNegotiation == null)
+        //            {
+        //                throw new Exception("Booking negotiation not found");
+        //            }
+
+        //            bookingNegotiation.IsCompleted = true;
+
+        //            await _bookingNegotiationGenericRepository.UpdateAsync(bookingNegotiation.Id, bookingNegotiation);
+
+        //            booking.Price = bookingNegotiation.Price;
+        //            booking.Deadline = bookingNegotiation.Deadline;
+
+        //            if (!string.IsNullOrEmpty(bookingNegotiation.DemoAudioFileKey))
+        //            {
+        //                var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + booking.Id;
+        //                var DemoAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"demo_audio{FilePathHelper.GetExtension(bookingNegotiation.DemoAudioFileKey)}");
+        //                await _fileIOHelper.CopyFileToFileAsync(bookingNegotiation.DemoAudioFileKey, DemoAudioFileKey);
+        //                await _fileIOHelper.DeleteFileAsync(bookingNegotiation.DemoAudioFileKey);
+        //                booking.DemoAudioFileKey = DemoAudioFileKey;
+        //            }
+
+        //            booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+        //            await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+        //            var newBookingStatusTracking = new BookingStatusTracking
+        //            {
+        //                Id = Guid.NewGuid(),
+        //                BookingId = booking.Id,
+        //                BookingStatusId = (int)BookingStatusEnum.Producing,
+        //                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+        //            };
+        //            await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+
+        //            await _bookingProducingRequestGenericRepository.CreateAsync(new BookingProducingRequest
+        //            {
+        //                Id = Guid.NewGuid(),
+        //                BookingId = booking.Id,
+        //                Note = bookingNegotiation.Note,
+        //                Deadline = booking.Deadline ?? default,
+        //                IsAccepted = true,
+        //                FinishedAt = _dateHelper.GetNowByAppTimeZone(),
+        //                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+        //            });
+
+        //            var chatRoom = await _bookingChatRoomGenericRepository.CreateAsync(new BookingChatRoom
+        //            {
+        //                Id = Guid.NewGuid(),
+        //                BookingId = booking.Id,
+        //                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+        //            });
+
+        //            if (chatRoom != null)
+        //            {
+        //                await _bookingChatMemberGenericRepository.CreateAsync(new BookingChatMember
+        //                {
+        //                    ChatRoomId = chatRoom.Id,
+        //                    AccountId = booking.AccountId
+        //                });
+        //                await _bookingChatMemberGenericRepository.CreateAsync(new BookingChatMember
+        //                {
+        //                    ChatRoomId = chatRoom.Id,
+        //                    AccountId = booking.PodcastBuddyId,
+        //                });
+        //            }
+
+        //            await transaction.CommitAsync();
+
+        //            var newResponseData = new JObject
+        //            {
+        //                { "BookingId", booking.Id },
+        //                { "UpdatedAt", booking.UpdatedAt }
+        //            };
+        //            var newMessageName = messageName + ".success";
+        //            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                topic: KafkaTopicEnum.BookingManagementDomain,
+        //                requestData: command.RequestData,
+        //                responseData: newResponseData,
+        //                sagaInstanceId: sagaId,
+        //                flowName: flowName,
+        //                messageName: newMessageName);
+        //            await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+        //            _logger.LogInformation("Booking negotiation agreed successfully for SagaId: {SagaId}", command.SagaInstanceId);
+
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            await transaction.RollbackAsync();
+        //            _logger.LogError(ex, "Error occurred while agreeing booking negotiation for SagaId: {SagaId}", command.SagaInstanceId);
+        //            var newResponseData = new JObject
+        //            {
+        //                { "ErrorMessage", "Agree booking negotiation failed, error: " + ex.Message }
+        //            };
+        //            var newMessageName = command.MessageName + ".failed";
+        //            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                topic: KafkaTopicEnum.BookingManagementDomain,
+        //                requestData: command.RequestData,
+        //                responseData: newResponseData,
+        //                sagaInstanceId: command.SagaInstanceId,
+        //                flowName: command.FlowName,
+        //                messageName: newMessageName);
+        //            await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+        //            _logger.LogError("Booking negotiation agree failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+        //        }
+        //    }
+        //}
+        public async Task ProcessBookingDealingAsync(ProcessBookingDealingParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
+                    var bookingId = parameter.BookingId;
                     var messageName = command.MessageName;
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
-                    var responseData = command.LastStepResponseData;
-                    var bookingNegotitationId = Guid.NewGuid();
+                    var requestData = command.RequestData;
+
+                    var isValid = await ValidateBookingPodcasterAsync(bookingId, parameter.AccountId);
+                    if (!isValid)
+                    {
+                        throw new Exception("The logged in account are not authorized to deal with this booking.");
+                    }
 
                     var booking = await _bookingGenericRepository.FindByIdWithPaths(
-                        parameter.BookingId,
+                        bookingId,
                         "BookingStatusTrackings"
                     );
-
                     if (booking == null)
                     {
-                        throw new Exception($"Booking with ID {parameter.BookingId} not found");
+                        throw new Exception($"Booking with ID {bookingId} not found");
+                    }
+                    if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId != (int)BookingStatusEnum.QuotationRequest)
+                    {
+                        throw new Exception("Cannot deal booking that is not in 'Quotation Request' status.");
                     }
 
-                    if(booking.AccountId != parameter.AccountId && booking.PodcastBuddyId != parameter.AccountId)
+                    var newBookingStatusTracking = new BookingStatusTracking
                     {
-                        throw new Exception("Only customer or podcast buddy can create negotiation");
-                    }
-
-                    bool isFromCustomer = booking.AccountId == parameter.AccountId;
-
-                    var newBookingNegotiation = new BookingNegotiation()
-                    {
-                        Id = bookingNegotitationId,
-                        BookingId = parameter.BookingId,
-                        Note = parameter.Note ?? string.Empty,
-                        Deadline = parameter.Deadline,
-                        Price = parameter.Price,
-                        DemoAudioRequired = parameter.DemoAudioRequired ?? false,
-                        DemoAudioFileKey = null,
-                        IsCompleted = false,
-                        IsFromCustomer = isFromCustomer,
-                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                        Id = Guid.NewGuid(),
+                        BookingId = bookingId,
+                        BookingStatusId = (int)BookingStatusEnum.QuotationDealing,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     };
-                    await _bookingNegotiationGenericRepository.CreateAsync(newBookingNegotiation);
+                    await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
 
-                    var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + newBookingNegotiation.BookingId;
-                    if (!string.IsNullOrEmpty(parameter.DemoAudioFileKey) && !isFromCustomer)
+                    foreach (var reqInfo in parameter.BookingRequirementInfoList)
                     {
-                        var DemoAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"{bookingNegotitationId}_negotiation_demo_audio{FilePathHelper.GetExtension(parameter.DemoAudioFileKey)}");
-                        await _fileIOHelper.CopyFileToFileAsync(parameter.DemoAudioFileKey, DemoAudioFileKey);
-                        await _fileIOHelper.DeleteFileAsync(parameter.DemoAudioFileKey);
-                        newBookingNegotiation.DemoAudioFileKey = DemoAudioFileKey;
-                        await _bookingNegotiationGenericRepository.UpdateAsync(newBookingNegotiation.Id, newBookingNegotiation);
-                    }
-
-                    // Fix concurrency issue by handling updates one by one
-                    var oldNegotiations = _bookingNegotiationGenericRepository.FindAll()
-                        .Where(bn => bn.BookingId == parameter.BookingId && bn.IsCompleted == false && bn.Id != newBookingNegotiation.Id)
-                        .ToList();
-                    
-                    foreach (var bn in oldNegotiations)
-                    {
-                        bn.IsCompleted = true;
-                        await _bookingNegotiationGenericRepository.UpdateAsync(bn.Id, bn);
-                    }
-
-                    var currentStatus = booking.BookingStatusTrackings?.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
-
-                    if (currentStatus == (int)BookingStatusEnum.QuotationDealing && newBookingNegotiation.IsFromCustomer)
-                    {
-                        var newBookingStatusTracking = new BookingStatusTracking
+                        var bookingRequirement = await _bookingRequirementGenericRepository.FindByIdAsync(reqInfo.Id);
+                        if (bookingRequirement != null)
                         {
-                            Id = Guid.NewGuid(),
-                            BookingId = booking.Id,
-                            BookingStatusId = (int)BookingStatusEnum.QuotationUnderNegotiation,
-                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
-                        };
-                        await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
-                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                        await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+                            bookingRequirement.WordCount = reqInfo.WordCount;
+                            await _bookingRequirementGenericRepository.UpdateAsync(bookingRequirement.Id, bookingRequirement);
+                        }
                     }
-                    else if(currentStatus == (int)BookingStatusEnum.QuotationUnderNegotiation && !newBookingNegotiation.IsFromCustomer)
-                    {
-                        var newBookingStatusTracking = new BookingStatusTracking
-                        {
-                            Id = Guid.NewGuid(),
-                            BookingId = booking.Id,
-                            BookingStatusId = (int)BookingStatusEnum.QuotationDealing,
-                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
-                        };
-                        await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
-                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                        await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
-                    }
-                    else
-                    {
-                        throw new Exception("Cannot create negotiation in the current booking status");
-                    }
+
+                    booking.Price = parameter.Price;
+                    booking.Deadline = DateOnly.FromDateTime(parameter.Deadline.Value);
+                    booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                    await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                     await transaction.CommitAsync();
-
-                    var newResponseData = new JObject
-                    {
-                        { "BookingNegotiationId", newBookingNegotiation.Id },
-                        { "CreatedAt", newBookingNegotiation.CreatedAt }
-                    };
+                    var newResponseData = requestData;
+                    newResponseData["UpdatedAt"] = booking.UpdatedAt;
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.BookingManagementDomain,
@@ -637,24 +980,17 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         sagaInstanceId: sagaId,
                         flowName: flowName,
                         messageName: newMessageName);
-                    var result = await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
-                    _logger.LogInformation("Booking negotiation created successfully for SagaId: {SagaId}", command.SagaInstanceId);
-
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Dealing booking successfully for SagaId: {SagaId}", command.SagaInstanceId);
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while creating booking negotiation for SagaId: {SagaId}", command.SagaInstanceId);
-
-                    if (!string.IsNullOrEmpty(parameter.DemoAudioFileKey))
-                    {
-                        await _fileIOHelper.DeleteFileAsync(parameter.DemoAudioFileKey);
-                    }
-
+                    _logger.LogError(ex, "Error occurred while dealing booking for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
-                        {
-                            { "ErrorMessage", "Create booking negotiation failed, error: " + ex.Message },
-                        };
+                    {
+                        { "ErrorMessage", "Dealing booking failed, error: " + ex.Message }
+                    };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.BookingManagementDomain,
@@ -663,110 +999,63 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: newMessageName);
-                    var result = await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
-                    _logger.LogError("Booking negotiation created failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogError("Dealing booking failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
         }
-        public async Task AgreeBookingNegotiationAsync(AgreeBookingNegotiationParameterDTO parameter, SagaCommandMessage command)
+
+        public async Task AcceptBookingDealingAsync(AcceptBookingDealingParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
+                    var bookingId = parameter.BookingId;
                     var messageName = command.MessageName;
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
-                    var responseData = command.LastStepResponseData;
 
                     var booking = await _bookingGenericRepository.FindByIdWithPaths(
-                        parameter.BookingId,
-                        "BookingNegotiations",
+                        bookingId,
                         "BookingStatusTrackings"
                     );
-
-                    if (booking?.BookingStatusTrackings?.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId != (int)BookingStatusEnum.QuotationDealing)
+                    if (booking == null)
                     {
-                        throw new Exception("Cannot agree on negotiation when booking is rejected");
+                        throw new Exception($"Booking with ID {bookingId} not found");
                     }
-
-                    var latestNegotiation = booking.BookingNegotiations?.OrderByDescending(bn => bn.CreatedAt).FirstOrDefault();
-                    if (latestNegotiation == null)
+                    if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId != (int)BookingStatusEnum.QuotationDealing)
                     {
-                        throw new Exception("No negotiations found for this booking");
+                        throw new Exception("Cannot accept dealing for booking that is not in 'Quotation Dealing' status.");
                     }
-
-                    var bookingNegotiation = await _bookingNegotiationGenericRepository.FindByIdAsync(latestNegotiation.Id);
-
-                    if (bookingNegotiation == null)
-                    {
-                        throw new Exception("Booking negotiation not found");
-                    }
-
-                    bookingNegotiation.IsCompleted = true;
-
-                    await _bookingNegotiationGenericRepository.UpdateAsync(bookingNegotiation.Id, bookingNegotiation);
-
-                    booking.Price = bookingNegotiation.Price;
-                    booking.Deadline = bookingNegotiation.Deadline;
-
-                    if (!string.IsNullOrEmpty(bookingNegotiation.DemoAudioFileKey))
-                    {
-                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + booking.Id;
-                        var DemoAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"demo_audio{FilePathHelper.GetExtension(bookingNegotiation.DemoAudioFileKey)}");
-                        await _fileIOHelper.CopyFileToFileAsync(bookingNegotiation.DemoAudioFileKey, DemoAudioFileKey);
-                        await _fileIOHelper.DeleteFileAsync(bookingNegotiation.DemoAudioFileKey);
-                        booking.DemoAudioFileKey = DemoAudioFileKey;
-                    }
-
-                    booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                    await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
                     var newBookingStatusTracking = new BookingStatusTracking
                     {
                         Id = Guid.NewGuid(),
-                        BookingId = booking.Id,
+                        BookingId = bookingId,
                         BookingStatusId = (int)BookingStatusEnum.Producing,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     };
                     await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+                    booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                    var staffList = await GetStaffList();
+                    booking.AssignedStaffId = await GetRandomItemFromJArray(staffList);
+                    await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
-                    await _bookingProducingRequestGenericRepository.CreateAsync(new BookingProducingRequest
+                    var newBookingProducingRequest = new BookingProducingRequest
                     {
                         Id = Guid.NewGuid(),
-                        BookingId = booking.Id,
-                        Note = bookingNegotiation.Note,
+                        BookingId = bookingId,
+                        Note = string.Empty,
                         Deadline = booking.Deadline ?? default,
-                        IsAccepted = true,
-                        FinishedAt = _dateHelper.GetNowByAppTimeZone(),
+                        IsAccepted = null,
+                        FinishedAt = null,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                    });
-
-                    var chatRoom = await _bookingChatRoomGenericRepository.CreateAsync(new BookingChatRoom
-                    {
-                        Id = Guid.NewGuid(),
-                        BookingId = booking.Id,
-                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                    });
-
-                    if (chatRoom != null)
-                    {
-                        await _bookingChatMemberGenericRepository.CreateAsync(new BookingChatMember
-                        {
-                            ChatRoomId = chatRoom.Id,
-                            AccountId = booking.AccountId
-                        });
-                        await _bookingChatMemberGenericRepository.CreateAsync(new BookingChatMember
-                        {
-                            ChatRoomId = chatRoom.Id,
-                            AccountId = booking.PodcastBuddyId,
-                        });
-                    }
-
+                    };
+                    await _bookingProducingRequestGenericRepository.CreateAsync(newBookingProducingRequest);
                     await transaction.CommitAsync();
-
                     var newResponseData = new JObject
                     {
-                        { "BookingId", booking.Id },
+                        { "BookingId", bookingId },
                         { "UpdatedAt", booking.UpdatedAt }
                     };
                     var newMessageName = messageName + ".success";
@@ -778,16 +1067,15 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         flowName: flowName,
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
-                    _logger.LogInformation("Booking negotiation agreed successfully for SagaId: {SagaId}", command.SagaInstanceId);
-
+                    _logger.LogInformation("Accepting booking dealing successfully for SagaId: {SagaId}", command.SagaInstanceId);
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while agreeing booking negotiation for SagaId: {SagaId}", command.SagaInstanceId);
+                    _logger.LogError(ex, "Error occurred while accepting booking dealing for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                     {
-                        { "ErrorMessage", "Agree booking negotiation failed, error: " + ex.Message }
+                        { "ErrorMessage", "Accepting booking dealing failed, error: " + ex.Message }
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
@@ -798,10 +1086,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         flowName: command.FlowName,
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
-                    _logger.LogError("Booking negotiation agree failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                    _logger.LogError("Accepting booking dealing failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
         }
+
         public async Task CompleteBookingAsync(CompleteBookingParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -818,7 +1107,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         bookingId,
                         "BookingStatusTrackings"
                     );
-                    
+
                     if (booking == null)
                     {
                         throw new Exception($"Booking with ID {bookingId} not found");
@@ -882,10 +1171,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 try
                 {
                     var systemConfig = await GetActiveSystemConfigProfile();
-                    var previewResponseAllowedDays = systemConfig?["BookingConfig"]?.Value<int?>("PreviewResponseAllowedDays");
-                    var producingRequestResponseAllowedDays = systemConfig?["BookingConfig"]?.Value<int?>("ProducingRequestResponseAllowedDays");
-                    var profitRate = systemConfig?["BookingConfig"]?.Value<double?>("ProfitRate") ?? 0;
-                    var depositRate = systemConfig?["BookingConfig"]?.Value<double?>("DepositRate") ?? 0;
+                    var previewResponseAllowedDays = systemConfig.BookingConfig.PreviewResponseAllowedDays;
+                    var producingRequestResponseAllowedDays = systemConfig.BookingConfig.ProducingRequestResponseAllowedDays;
+                    var profitRate = systemConfig.BookingConfig.ProfitRate;
+                    var depositRate = systemConfig.BookingConfig.DepositRate;
 
 
                     var currentDateTime = _dateHelper.GetNowByAppTimeZone();
@@ -893,13 +1182,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .Include(b => b.BookingProducingRequests)
                         .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.TrackPreviewing &&
                         b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt.HasValue &&
-                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt!.Value.AddDays(previewResponseAllowedDays ?? 0) < currentDateTime)
+                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt!.Value.AddDays(previewResponseAllowedDays) < currentDateTime)
                         .ToList();
 
                     var producingRequestBookingList = _bookingGenericRepository.FindAll()
                         .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.ProducingRequested &&
                         b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().IsAccepted == null &&
-                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().CreatedAt.AddDays(producingRequestResponseAllowedDays ?? 0) < currentDateTime)
+                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().CreatedAt.AddDays(producingRequestResponseAllowedDays) < currentDateTime)
                         .Include(b => b.BookingProducingRequests)
                         .ToList();
                     foreach (var booking in previewingBookingList)
@@ -992,6 +1281,64 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
+        private async Task<JArray?> GetStaffList()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "activeStaffList",
+                            QueryType = "findall",
+                            EntityType = "Account",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        IsVerify = true,
+                                        RoleId = (int)RoleEnum.Staff
+                                    },
+                                }),
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+
+            return result.Results?["activeStaffList"] is JArray staffListArray && staffListArray.Count > 0
+                ? staffListArray as JArray
+                : null;
+        }
+        private async Task<int> GetRandomItemFromJArray(JArray? array)
+        {
+            //if (array == null || array.Count == 0)
+            //    return null;
+
+            //var random = new Random();
+            //var randomIndex = random.Next(array.Count);
+            //return array[randomIndex];
+
+            var assignedStaffIds = await _bookingGenericRepository.FindAll()
+                .Select(pbrrs => pbrrs.AssignedStaffId)
+                .ToListAsync();
+
+            List<AccountDTO> availableStaff = array.ToObject<List<AccountDTO>>();
+            Dictionary<int, int> staffAssignmentCount = new Dictionary<int, int>();
+            foreach (var staff in availableStaff)
+            {
+                int count = assignedStaffIds.Count(id => id == staff.Id);
+                staffAssignmentCount[staff.Id] = count;
+            }
+
+            int minAssignmentCount = staffAssignmentCount.Values.Min();
+            List<int> leastAssignedStaffIds = staffAssignmentCount
+                .Where(kvp => kvp.Value == minAssignmentCount)
+                .Select(kvp => kvp.Key)
+                .ToList();
+            Random rand = new Random();
+            int randomIndex = rand.Next(leastAssignedStaffIds.Count);
+            return leastAssignedStaffIds[randomIndex];
+        }
         public async Task<bool> ValidateBookingAccountOrPodcasterAsync(int bookingId, int accountId)
         {
             return await ValidateBookingAccountAsync(bookingId, accountId) || await ValidateBookingPodcasterAsync(bookingId, accountId);
@@ -1041,7 +1388,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     foreach (var b in booking)
                     {
                         var currentStatus = b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
-                        if(currentStatus != (int)BookingStatusEnum.QuotationRejected &&
+                        if (currentStatus != (int)BookingStatusEnum.QuotationRejected &&
                            currentStatus != (int)BookingStatusEnum.QuotationCancelled &&
                            currentStatus != (int)BookingStatusEnum.Completed &&
                            currentStatus != (int)BookingStatusEnum.CancelledAutomatically &&
@@ -1061,8 +1408,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             if (currentStatus >= (int)BookingStatusEnum.Producing)
                             {
                                 var systemConfig = await GetActiveSystemConfigProfile();
-                                var profitRate = systemConfig?["BookingConfig"]?.Value<double?>("ProfitRate") ?? 0;
-                                var depositRate = systemConfig?["BookingConfig"]?.Value<double?>("DepositRate") ?? 0;
+                                var profitRate = systemConfig.BookingConfig.ProfitRate;
+                                var depositRate = systemConfig.BookingConfig.DepositRate;
                                 var Amount = b.Price * (decimal)depositRate;
                                 var newRequestData = new JObject
                                 {
@@ -1120,7 +1467,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
-        private async Task<JObject?> GetActiveSystemConfigProfile()
+        private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -1137,7 +1484,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     {
                                         IsActive = true
                                     },
-                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+                                    include = "AccountConfig, AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
 
                                 }),
                             Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
@@ -1146,9 +1493,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
                 ? configArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
     }
 }

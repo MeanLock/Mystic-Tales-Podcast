@@ -5,8 +5,11 @@ using ModerationService.BusinessLogic.DTOs.DMCAAccusation;
 using ModerationService.BusinessLogic.DTOs.DMCAAccusation.Details;
 using ModerationService.BusinessLogic.DTOs.DMCAAccusation.ListItems;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.AssignDMCAAccusationToStaff;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CancelDMCAAccusationReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusation;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusationReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.UpdateDMCAAccusationStatus;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.ValidateDMCAAccusationReport;
 using ModerationService.BusinessLogic.DTOs.Podcast;
 using ModerationService.BusinessLogic.DTOs.Snippet;
 using ModerationService.BusinessLogic.Enums.Account;
@@ -37,6 +40,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         private readonly IGenericRepository<Dmcaaccusation> _dmcaAccusationGenericRepository;
         private readonly IGenericRepository<DmcaaccusationStatus> _dmcaAccusationStatusGenericRepository;
         private readonly IGenericRepository<DmcaaccusationStatusTracking> _dmcaAccusationStatusTrackingGenericRepository;
+        private readonly IGenericRepository<DmcaaccusationConclusionReport> _dmcaAccusationConclusionReportGenericRepository;
 
         private readonly AccountCachingService _accountCachingService;
         private readonly DMCANoticeService _dmcaNoticeService;
@@ -58,6 +62,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             IGenericRepository<Dmcaaccusation> dmcaAccusationGenericRepository,
             IGenericRepository<DmcaaccusationStatus> dmcaAccusationStatusGenericRepository,
             IGenericRepository<DmcaaccusationStatusTracking> dmcaAccusationStatusTrackingGenericRepository,
+            IGenericRepository<DmcaaccusationConclusionReport> dmcaAccusationConclusionReportGenericRepository,
             AccountCachingService accountCachingService,
             DMCANoticeService dmcaNoticeService,
             CounterNoticeService counterNoticeService,
@@ -76,6 +81,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             _dmcaAccusationGenericRepository = dmcaAccusationGenericRepository;
             _dmcaAccusationStatusGenericRepository = dmcaAccusationStatusGenericRepository;
             _dmcaAccusationStatusTrackingGenericRepository = dmcaAccusationStatusTrackingGenericRepository;
+            _dmcaAccusationConclusionReportGenericRepository = dmcaAccusationConclusionReportGenericRepository;
             _accountCachingService = accountCachingService;
             _dmcaNoticeService = dmcaNoticeService;
             _counterNoticeService = counterNoticeService;
@@ -115,6 +121,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 return new DMCAAccusationListItemResponseDTO()
                 {
                     Id = pbrrs.Id,
+                    AccuserEmail = pbrrs.AccuserEmail,
+                    AccuserPhone = pbrrs.AccuserPhone,
+                    AccuserFullName = pbrrs.AccuserFullName,
                     PodcastShow = show != null
                         ? new PodcastShowSnippetDTO()
                         {
@@ -140,7 +149,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             MainImageFileKey = staff.MainImageFileKey
                         }
                         : null,
-                    LastLawsuitCheckingAlertAt = pbrrs.LastLawsuitCheckingAlertAt,
                     CreatedAt = pbrrs.CreatedAt,
                     UpdatedAt = pbrrs.UpdatedAt,
                     CurrentStatus = new DMCAAccusationStatusDTO()
@@ -190,6 +198,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var newDmcaAccusation = new Dmcaaccusation
                     {
+                        AccuserEmail = parameter.AccuserEmail,
+                        AccuserPhone = parameter.AccuserPhone,
+                        AccuserFullName = parameter.AccuserFullName,
                         PodcastShowId = parameter.PodcastShowId,
                         PodcastEpisodeId = parameter.PodcastEpisodeId,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -199,14 +210,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var newDmcaNotice = new Dmcanotice
                     {
-                        PodcastShowId = parameter.PodcastShowId,
-                        PodcastEpisodeId = parameter.PodcastEpisodeId,
-                        AccountId = parameter.AccountId,
-                        AccountEmail = parameter.AccuserEmail,
-                        AccountPhone = parameter.AccuserPhone,
-                        GoodFaithStatement = parameter.GoodFaithStatement,
-                        WorkClaimed = parameter.WorkClaimed,
-                        Signature = parameter.Signature,
                         DmcaAccusationId = createdDmcaAccusation.Id,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -255,7 +258,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var newDMCAAccusationStatusTracking = new DmcaaccusationStatusTracking
                     {
                         DmcaAccusationId = createdDmcaAccusation.Id,
-                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Pending,
+                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.PendingDMCANoticeReview,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
                     await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(newDMCAAccusationStatusTracking);
@@ -268,14 +271,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         {
                             { "DMCAAccusationId", createdDmcaAccusation.Id },
                             { "DMCANoticeId", createDmcaNotice.Id },
-                            { "AccountId", createDmcaNotice.AccountId },
-                            { "AccountEmail", createDmcaNotice.AccountEmail },
-                            { "AccountPhone", createDmcaNotice.AccountPhone },
+                            { "AccuserEmail", createdDmcaAccusation.AccuserEmail },
+                            { "AccuserPhone", createdDmcaAccusation.AccuserPhone },
+                            { "AccuserFullName", createdDmcaAccusation.AccuserFullName },
                             { "PodcastShowId", createdDmcaAccusation.PodcastShowId },
                             { "PodcastEpisodeId", createdDmcaAccusation.PodcastEpisodeId },
-                            { "GoodFaithStatement", createDmcaNotice.GoodFaithStatement },
-                            { "WorkClaimed", createDmcaNotice.WorkClaimed },
-                            { "Signature", createDmcaNotice.Signature },
                             { "DMCAAttachFileKeys", JArray.FromObject(createDMCANoticeAttachFile) },
                             { "CreatedAt", createdDmcaAccusation.CreatedAt }
                         };
@@ -331,6 +331,70 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 }
             }
         }
+        public async Task CreateDMCAAccusationReportAsync(CreateDMCAAccusationReportParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                var processedFiles = new List<string>();
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var newDmcaAccusationReport = new DmcaaccusationConclusionReport
+                    {
+                        DmcaAccusationId = parameter.DmcaAccusationId,
+                        DmcaAccusationConclusionReportTypeId = parameter.DmcaAccusationConclusionReportTypeId,
+                        Description = parameter.Description,
+                        InvalidReason = parameter.InvalidReason,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                        UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                    };
+                    var createdDmcaAccusationReport = await _dmcaAccusationConclusionReportGenericRepository.CreateAsync(newDmcaAccusationReport);
+
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject
+                        {
+                            { "DMCAAccusationReportId", createdDmcaAccusationReport.Id },
+                            { "DMCAAccusationId", createdDmcaAccusationReport.DmcaAccusationId },
+                            { "DmcaAccusationConclusionReportTypeId", createdDmcaAccusationReport.DmcaAccusationConclusionReportTypeId },
+                            { "Description", createdDmcaAccusationReport.Description },
+                            { "InvalidReason", createdDmcaAccusationReport.InvalidReason },
+                            { "CreatedAt", createdDmcaAccusationReport.CreatedAt }
+                        };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.DmcaManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully create dmca accusation report for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while creating dmca accusation report for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Creating dmca accusation report failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.DmcaManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Creating dmca accusation report failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
         public async Task<DMCAAccusationDetailResponseDTO> GetDMCAAccusationByIdForStaffOrAdminAsync(int dmcaAccusationId, int? accountId, int roleId)
         {
             var query = _dmcaAccusationGenericRepository.FindAll(
@@ -365,6 +429,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             return new DMCAAccusationDetailResponseDTO()
             {
                 Id = da.Id,
+                AccuserEmail = da.AccuserEmail,
+                AccuserPhone = da.AccuserPhone,
+                AccuserFullName = da.AccuserFullName,
                 PodcastShow = show != null
                     ? new PodcastShowSnippetDTO()
                     {
@@ -390,7 +457,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         MainImageFileKey = staff.MainImageFileKey
                     }
                     : null,
-                LastLawsuitCheckingAlertAt = da.LastLawsuitCheckingAlertAt,
                 CreatedAt = da.CreatedAt,
                 UpdatedAt = da.UpdatedAt,
                 CurrentStatus = new DMCAAccusationStatusDTO()
@@ -424,14 +490,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     dmcaAccusation.AssignedStaff = parameter.AccountId;
                     dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     var createdDmcaAccusation =  await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
-
-                    var newDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
-                    {
-                        DmcaAccusationId = createdDmcaAccusation.Id,
-                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Reviewing,
-                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                    };
-                    await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(newDmcaAccusationStatusTracking);
 
                     await transaction.CommitAsync();
 
@@ -488,14 +546,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         "DMCANotice",
                         "CounterNotice",
                         "LawsuitProof");
-                    if(dmcaAccusation == null)
+                    if (dmcaAccusation == null)
                     {
                         throw new Exception($"DMCA Accusation with Id: {parameter.DMCAAccusationId} not found");
                     }
                     var accusedId = 0;
                     switch (parameter.DMCAAccusationAction)
                     {
-                        case (int)DMCAAccusationQueryEnum.TAKEDOWN_ACTIVE:
+                        case (int)DMCAAccusationQueryEnum.VALID_DMCA_NOTICE:
                             //Validate Staff Account
                             if (dmcaAccusation.AssignedStaff != parameter.AccountId)
                             {
@@ -507,27 +565,34 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 .OrderByDescending(dast => dast.CreatedAt)
                                 .First()
                                 .DmcaAccusationStatusId;
-                            if (currentStatus1 != (int)DMCAAccusationStatusEnum.Reviewing)
+                            if (currentStatus1 != (int)DMCAAccusationStatusEnum.PendingDMCANoticeReview)
                             {
-                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation with Reviewing status can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
+                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation with Pending Dmca Notice Review status can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
                             }
+
+                            //Send TakeDownFlow
 
                             //Send Confirm email to Accuser
 
                             //Send Email to Accused
 
+                            var dmcaNotice = dmcaAccusation.Dmcanotices.OrderByDescending(d => d.CreatedAt).FirstOrDefault();
+                            dmcaNotice.ValidatedAt = _dateHelper.GetNowByAppTimeZone();
+                            dmcaNotice.ValidatedBy = parameter.AccountId;
+                            await _dmcaNoticeService.UpdateDMCANoticeAsync(dmcaNotice);
+
                             //Switch Status
                             var takedownDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
                             {
                                 DmcaAccusationId = dmcaAccusation.Id,
-                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.TakeDownPermanent,
+                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.ValidDMCANotice,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(takedownDmcaAccusationStatusTracking);
                             dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
                             break;
-                        case (int)DMCAAccusationQueryEnum.REJECTED:
+                        case (int)DMCAAccusationQueryEnum.VALID_DMCA_COUNTER_NOTICE:
                             //Validate Staff Account
                             if (dmcaAccusation.AssignedStaff != parameter.AccountId)
                             {
@@ -539,43 +604,36 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 .OrderByDescending(dast => dast.CreatedAt)
                                 .First()
                                 .DmcaAccusationStatusId;
-                            if (currentStatus2 != (int)DMCAAccusationStatusEnum.Reviewing)
+                            if (currentStatus2 != (int)DMCAAccusationStatusEnum.ValidDMCANotice)
                             {
-                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation with Reviewing status can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
+                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation with Valid DMCA Notice status can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
                             }
+
+                            //Send TakeDownFlow
 
                             //Send Confirm email to Accuser
 
-                            //Punish Accuser (B -10 point)
-                            var accuserPunishmentRequestData1 = new JObject
-                            {
-                                { "AccountId", dmcaAccusation.Dmcanotices.First().AccountId },
-                                { "ViolationPoint", 10 }
-                            };
-                            var accountPunishmentStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.UserManagementDomain,
-                                requestData: accuserPunishmentRequestData1,
-                                sagaInstanceId: null,
-                                messageName: "user-violation-punishment-flow");
-                            var accountPunishmentResult1 = await _messagingService.SendSagaMessageAsync(accountPunishmentStartSagaTriggerMessage1);
-                            _logger.LogInformation($"Send user-violation-punishment-flow with Saga Id: {accountPunishmentStartSagaTriggerMessage1.SagaInstanceId}");
+                            var counterNotice = dmcaAccusation.CounterNotices.OrderByDescending(d => d.CreatedAt).FirstOrDefault();
+                            counterNotice.ValidatedAt = _dateHelper.GetNowByAppTimeZone();
+                            counterNotice.ValidatedBy = parameter.AccountId;
+                            await _counterNoticeService.UpdateCounterNotice(counterNotice);
 
                             //Switch Status
                             var rejectDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
                             {
                                 DmcaAccusationId = dmcaAccusation.Id,
-                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Rejected,
+                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.ValidCounterNotice,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(rejectDmcaAccusationStatusTracking);
                             dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
                             break;
-                        case (int)DMCAAccusationQueryEnum.CLOSED_WITHDRAWN:
-                            //Validate Accuser Account
-                            if (dmcaAccusation.Dmcanotices.First().AccountId != parameter.AccountId)
+                        case (int)DMCAAccusationQueryEnum.VALID_LAWSUIT_PROOF:
+                            //Validate Staff Account
+                            if (dmcaAccusation.AssignedStaff != parameter.AccountId)
                             {
-                                throw new Exception($"The logged in account Id: {parameter.AccountId} is not authorized to perform this action this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
+                                throw new Exception($"The logged in staff Id: {parameter.AccountId} is not authorized to update this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
                             }
 
                             //Validate DMCA Accusation status
@@ -583,256 +641,31 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 .OrderByDescending(dast => dast.CreatedAt)
                                 .First()
                                 .DmcaAccusationStatusId;
-                            if (currentStatus3 >= (int)DMCAAccusationStatusEnum.LawsuitFiled)
+                            if (currentStatus3 != (int)DMCAAccusationStatusEnum.ValidCounterNotice)
                             {
-                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation that havent file a lawsuit can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
+                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation with Valid Counter Notice can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
                             }
+
+                            //Send TakeDownFlow
 
                             //Send Email to Accused
 
                             //Send Confirm email to Accuser
 
+                            var lawsuitProof = dmcaAccusation.LawsuitProofs.OrderByDescending(d => d.CreatedAt).FirstOrDefault();
+                            lawsuitProof.ValidatedAt = _dateHelper.GetNowByAppTimeZone();
+                            lawsuitProof.ValidatedBy = parameter.AccountId;
+                            await _lawsuitProofService.UpdateLawsuitProof(lawsuitProof);
                             //Switch Status
                             var withdrawDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
                             {
                                 DmcaAccusationId = dmcaAccusation.Id,
-                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.CloseWithdrawn,
+                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.ValidLawsuitProof,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(withdrawDmcaAccusationStatusTracking);
                             dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
-                            break;
-                        case (int)DMCAAccusationQueryEnum.TAKEDOWN_PERMANENT:
-                            //Validate Accused Account
-                            if (dmcaAccusation.PodcastShowId != null)
-                            {
-                                var show = await GetPodcastShow(dmcaAccusation.PodcastShowId.Value);
-                                accusedId = show.PodcasterId;
-                                if (accusedId != parameter.AccountId)
-                                {
-                                    throw new Exception($"The logged in account Id: {parameter.AccountId} is not authorized to perform this action this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
-                                }
-                            }
-                            if (dmcaAccusation.PodcastEpisodeId != null)
-                            {
-                                var episode = await GetPodcastShow(dmcaAccusation.PodcastEpisodeId.Value);
-                                accusedId = episode.PodcasterId;
-                                if (accusedId != parameter.AccountId)
-                                {
-                                    throw new Exception($"The logged in account Id: {parameter.AccountId} is not authorized to perform this action this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
-                                }
-                            }
-
-                            //Validate DMCA Accusation status
-                            var currentStatus4 = dmcaAccusation.DmcaaccusationStatusTrackings
-                                .OrderByDescending(dast => dast.CreatedAt)
-                                .First()
-                                .DmcaAccusationStatusId;
-                            if (currentStatus4 >= (int)DMCAAccusationStatusEnum.LawsuitFiled)
-                            {
-                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation that havent file a lawsuit can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
-                            }
-
-                            //Send Confirm email to Accused
-
-                            //Send Email to Accuser
-
-                            //Remove Content
-                            if (dmcaAccusation.PodcastShowId != null)
-                            {
-                                var removeShowRequestData1 = new JObject
-                                {
-                                    { "PodcastShowId", dmcaAccusation.PodcastShowId.Value }
-                                };
-                                var showRemoveStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.ContentManagementDomain,
-                                    requestData: removeShowRequestData1,
-                                    sagaInstanceId: null,
-                                    messageName: "remove-show-flow");
-                                var showRemoveResult1 = await _messagingService.SendSagaMessageAsync(showRemoveStartSagaTriggerMessage1);
-                                _logger.LogInformation($"Send remove-show-flow with Saga Id: {showRemoveStartSagaTriggerMessage1.SagaInstanceId}");
-                            } else if (dmcaAccusation.PodcastEpisodeId != null)
-                            {
-                                //Take down Episode
-                                var removeEpisodeRequestData1 = new JObject
-                                {
-                                    { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId.Value }
-                                };
-                                var episodeRemoveStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.ContentManagementDomain,
-                                    requestData: removeEpisodeRequestData1,
-                                    sagaInstanceId: null,
-                                    messageName: "remove-episode-flow");
-                                var episodeRemoveResult1 = await _messagingService.SendSagaMessageAsync(episodeRemoveStartSagaTriggerMessage1);
-                                _logger.LogInformation($"Send remove-episode-flow with Saga Id: {episodeRemoveStartSagaTriggerMessage1.SagaInstanceId}");
-                            };
-
-                            //Punish Accused (A -200 point)
-                            var accuserPunishmentRequestData2 = new JObject
-                            {
-                                { "AccountId", accusedId },
-                                { "ViolationPoint", 200 }
-                            };
-                            var accountPunishmentStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.UserManagementDomain,
-                                requestData: accuserPunishmentRequestData2,
-                                sagaInstanceId: null,
-                                messageName: "user-violation-punishment-flow");
-                            var accountPunishmentResult2 = await _messagingService.SendSagaMessageAsync(accountPunishmentStartSagaTriggerMessage2);
-                            _logger.LogInformation($"Send user-violation-punishment-flow with Saga Id: {accountPunishmentStartSagaTriggerMessage2.SagaInstanceId}");
-
-                            //Switch Status
-                            var permanentTakeDownDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
-                            {
-                                DmcaAccusationId = dmcaAccusation.Id,
-                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.TakeDownPermanent,
-                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                            };
-                            await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(permanentTakeDownDmcaAccusationStatusTracking);
-                            dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                            await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
-                            break;
-                        case (int)DMCAAccusationQueryEnum.COUNTER_ACCEPTED:
-                            //Validate Staff Account
-                            if (dmcaAccusation.AssignedStaff != parameter.AccountId)
-                            {
-                                throw new Exception($"The logged in staff Id: {parameter.AccountId} is not authorized to update this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
-                            }
-
-                            //Validate DMCA Accusation status
-                            var currentStatus5 = dmcaAccusation.DmcaaccusationStatusTrackings
-                                .OrderByDescending(dast => dast.CreatedAt)
-                                .First()
-                                .DmcaAccusationStatusId;
-                            if (currentStatus5 != (int)DMCAAccusationStatusEnum.CounterReviewing)
-                            {
-                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation that has counter notice in reviewing can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
-                            }
-
-                            //Send email to Accuser
-
-                            //Switch Status
-                            var counterAcceptedDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
-                            {
-                                DmcaAccusationId = dmcaAccusation.Id,
-                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.LawsuitPending,
-                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                            };
-                            await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(counterAcceptedDmcaAccusationStatusTracking);
-                            dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                            await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
-                            break;
-                        case (int)DMCAAccusationQueryEnum.COUNTER_REJECTED:
-                            //Validate Staff Account
-                            if (dmcaAccusation.AssignedStaff != parameter.AccountId)
-                            {
-                                throw new Exception($"The logged in staff Id: {parameter.AccountId} is not authorized to update this DMCA Accusation with Id: {parameter.DMCAAccusationId}");
-                            }
-
-                            //Validate DMCA Accusation status
-                            var currentStatus6 = dmcaAccusation.DmcaaccusationStatusTrackings
-                                .OrderByDescending(dast => dast.CreatedAt)
-                                .First()
-                                .DmcaAccusationStatusId;
-                            if (currentStatus6 != (int)DMCAAccusationStatusEnum.CounterReviewing)
-                            {
-                                throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation that has counter notice in reviewing can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
-                            }
-
-                            //Send email to Accused
-
-                            //Send email to Accuser
-
-                            if(dmcaAccusation.PodcastShowId != null)
-                            {
-                                var show = await GetPodcastShow(dmcaAccusation.PodcastShowId.Value);
-                                accusedId = show.PodcasterId;
-                            }
-                            if (dmcaAccusation.PodcastEpisodeId != null)
-                            {
-                                var episode = await GetPodcastShow(dmcaAccusation.PodcastEpisodeId.Value);
-                                accusedId = episode.PodcasterId;
-                            }
-
-                            //Punish Accused (A -10 point)
-                            var accuserPunishmentRequestData3 = new JObject
-                            {
-                                { "AccountId", accusedId },
-                                { "ViolationPoint", 10 }
-                            };
-                            var accountPunishmentStartSagaTriggerMessage3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.UserManagementDomain,
-                                requestData: accuserPunishmentRequestData3,
-                                sagaInstanceId: null,
-                                messageName: "user-violation-punishment-flow");
-                            var accountPunishmentResult3 = await _messagingService.SendSagaMessageAsync(accountPunishmentStartSagaTriggerMessage3);
-                            _logger.LogInformation($"Send user-violation-punishment-flow with Saga Id: {accountPunishmentStartSagaTriggerMessage3.SagaInstanceId}");
-
-                            //Remove Content
-                            if (dmcaAccusation.PodcastShowId != null)
-                            {
-                                var removeShowRequestData2 = new JObject
-                                {
-                                    { "PodcastShowId", dmcaAccusation.PodcastShowId.Value }
-                                };
-                                var showRemoveStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.ContentManagementDomain,
-                                    requestData: removeShowRequestData2,
-                                    sagaInstanceId: null,
-                                    messageName: "remove-show-flow");
-                                var showRemoveResult2 = await _messagingService.SendSagaMessageAsync(showRemoveStartSagaTriggerMessage2);
-                                _logger.LogInformation($"Send remove-show-flow with Saga Id: {showRemoveStartSagaTriggerMessage2.SagaInstanceId}");
-                            }
-                            else if (dmcaAccusation.PodcastEpisodeId != null)
-                            {
-                                //Take down Episode
-                                var removeEpisodeRequestData2 = new JObject
-                                {
-                                    { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId.Value }
-                                };
-                                var episodeRemoveStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.ContentManagementDomain,
-                                    requestData: removeEpisodeRequestData2,
-                                    sagaInstanceId: null,
-                                    messageName: "remove-episode-flow");
-                                var episodeRemoveResult2 = await _messagingService.SendSagaMessageAsync(episodeRemoveStartSagaTriggerMessage2);
-                                _logger.LogInformation($"Send remove-episode-flow with Saga Id: {episodeRemoveStartSagaTriggerMessage2.SagaInstanceId}");
-                            };
-
-                            //Punish Accused (A -200 point)
-                            var accuserPunishmentRequestData4 = new JObject
-                            {
-                                { "AccountId", accusedId },
-                                { "ViolationPoint", 200 }
-                            };
-                            var accountPunishmentStartSagaTriggerMessage4 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.UserManagementDomain,
-                                requestData: accuserPunishmentRequestData4,
-                                sagaInstanceId: null,
-                                messageName: "user-violation-punishment-flow");
-                            var accountPunishmentResult4 = await _messagingService.SendSagaMessageAsync(accountPunishmentStartSagaTriggerMessage4);
-                            _logger.LogInformation($"Send user-violation-punishment-flow with Saga Id: {accountPunishmentStartSagaTriggerMessage4.SagaInstanceId}");
-
-                            //Switch Status
-                            var counterRejectedDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
-                            {
-                                DmcaAccusationId = dmcaAccusation.Id,
-                                DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.DMCAWins,
-                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                            };
-                            await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(counterRejectedDmcaAccusationStatusTracking);
-                            dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                            await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
-                            break;
-                        case (int)DMCAAccusationQueryEnum.LAWSUIT_VERIFIED:
-
-                            break;
-                        case (int)DMCAAccusationQueryEnum.LAWSUIT_REJECTED:
-                            break;
-                        case (int)DMCAAccusationQueryEnum.DMCA_WINS:
-                            break;
-                        case (int)DMCAAccusationQueryEnum.COUNTER_WINS:
                             break;
                         default:
                             throw new Exception("DMCAAccusationAction not recognize");
@@ -875,6 +708,191 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Update DMCA Accusation failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ValidateDMCAAccusationReportAsync(ValidateDMCAAccusationReportParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var dmcaAccusationReport = await _dmcaAccusationConclusionReportGenericRepository.FindByIdAsync(parameter.DMCAAccusationReportId);
+
+                    if (parameter.IsValid)
+                    {
+                        dmcaAccusationReport.IsRejected = true;
+                        dmcaAccusationReport.CompletedAt = _dateHelper.GetNowByAppTimeZone();
+                        dmcaAccusationReport.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+
+                        switch(dmcaAccusationReport.DmcaAccusationConclusionReportTypeId)
+                        {
+                            case (int)DMCAAccusationConclusionReportTypeEnum.InvalidDMCANotice:
+                                //Send Email to Accuser
+                                //Send Email to Accused
+                                //Switch Status
+                                var invalidDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                                {
+                                    DmcaAccusationId = dmcaAccusationReport.DmcaAccusationId,
+                                    DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.InvalidDMCANotice,
+                                    CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                                };
+                                await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(invalidDmcaAccusationStatusTracking);
+                                break;
+                            case (int)DMCAAccusationConclusionReportTypeEnum.InvalidCounterNotice:
+                                //Send Email to Accuser
+                                //Switch Status
+                                var invalidCounterNoticeDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                                {
+                                    DmcaAccusationId = dmcaAccusationReport.DmcaAccusationId,
+                                    DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.InvalidCounterNotice,
+                                    CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                                };
+                                await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(invalidCounterNoticeDmcaAccusationStatusTracking);
+                                break;
+                            case (int)DMCAAccusationConclusionReportTypeEnum.InvalidLawsuitProof:
+                                //Restore Content
+                                //Send Email to Accuser
+                                //Switch Status
+                                var invalidLawsuitProofDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                                {
+                                    DmcaAccusationId = dmcaAccusationReport.DmcaAccusationId,
+                                    DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.InvalidLawsuitProof,
+                                    CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                                };
+                                await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(invalidLawsuitProofDmcaAccusationStatusTracking);
+                                break;
+                            case (int)DMCAAccusationConclusionReportTypeEnum.AccuserLawsuitWin:
+                                //Send Email to Accuser
+                                //Send Email to Accused
+                                //Switch Status
+                                var accuserWinDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                                {
+                                    DmcaAccusationId = dmcaAccusationReport.DmcaAccusationId,
+                                    DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.AccuserLawsuitWin,
+                                    CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                                };
+                                await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(accuserWinDmcaAccusationStatusTracking);
+                                break;
+                            case (int)DMCAAccusationConclusionReportTypeEnum.PodcasterLawsuitWin:
+                                //Send Email to Accuser
+                                //Send Email to Accused
+                                //Switch Status
+                                var podcasterWinDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
+                                {
+                                    DmcaAccusationId = dmcaAccusationReport.DmcaAccusationId,
+                                    DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.PodcasterLawsuitWin,
+                                    CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                                };
+                                await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(podcasterWinDmcaAccusationStatusTracking);
+                                break;
+                            default:
+                                throw new Exception("DMCA Accusation Conclusion Report Type not recognize");
+                        }
+                    } else
+                    {
+                        dmcaAccusationReport.IsRejected = false;
+                        dmcaAccusationReport.CompletedAt = _dateHelper.GetNowByAppTimeZone();
+                        dmcaAccusationReport.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                    }
+                    await _dmcaAccusationConclusionReportGenericRepository.UpdateAsync(dmcaAccusationReport.Id, dmcaAccusationReport);
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject
+                        {
+                            { "DMCAAccusationReportId", dmcaAccusationReport.Id },
+                            { "IsValid", parameter.IsValid },
+                            { "UpdatedAt", dmcaAccusationReport.UpdatedAt }
+                        };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.DmcaManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully validate DMCA Accusation report for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while validating DMCA Accusation report for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Validating DMCA Accusation report failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.DmcaManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Validating DMCA Accusation report failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task CancelDMCAAccusationReportAsync(CancelDMCAAccusationReportParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var dmcaAccusationConclusionReport = await _dmcaAccusationConclusionReportGenericRepository.FindByIdAsync(parameter.DMCAAccusationConclusionReportId);
+
+                    if(dmcaAccusationConclusionReport == null)
+                    {
+                        throw new Exception($"DMCA Report with id {dmcaAccusationConclusionReport.Id} not found");
+                    }
+                    if(dmcaAccusationConclusionReport.IsRejected != null)
+                    {
+                        throw new Exception($"DMCA Report with id {dmcaAccusationConclusionReport.Id} has been processed and cannot be cancelled");
+                    }
+                    dmcaAccusationConclusionReport.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                    await _dmcaAccusationConclusionReportGenericRepository.UpdateAsync(dmcaAccusationConclusionReport.Id, dmcaAccusationConclusionReport);
+
+                    var newResponseData = command.RequestData;
+                    newResponseData["CancelledAt"] = dmcaAccusationConclusionReport.CancelledAt;
+                    var newMessageName = messageName = ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.DmcaManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully cancel DMCA Accusation report for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while cancelling DMCA Accusation report for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Cancelling DMCA Accusation report failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.DmcaManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Cancelling DMCA Accusation report failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }

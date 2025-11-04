@@ -8,9 +8,12 @@ using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction;
 using TransactionService.BusinessLogic.DTOs.Cache;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Enums.Transaction;
+using TransactionService.BusinessLogic.Helpers.FileHelpers;
 using TransactionService.BusinessLogic.Models.CrossService;
 using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
+using TransactionService.Common.AppConfigurations.BusinessSetting.interfaces;
+using TransactionService.Common.AppConfigurations.FilePath.interfaces;
 using TransactionService.Infrastructure.Services.Kafka;
 
 namespace TransactionService.API.Controllers.BaseControllers
@@ -23,6 +26,9 @@ namespace TransactionService.API.Controllers.BaseControllers
     {
         private readonly GenericQueryService _genericQueryService;
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
+        private readonly IFileValidationConfig _fileValidationConfig;
+        private readonly IFilePathConfig _filePathConfig;
+        private readonly FileIOHelper _fileIOHelper;
         private readonly ILogger<AccountBalanceTransactionController> _logger;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
@@ -30,12 +36,18 @@ namespace TransactionService.API.Controllers.BaseControllers
         public AccountBalanceTransactionController(
             GenericQueryService genericQueryService,
             HttpServiceQueryClient httpServiceQueryClient,
+            IFileValidationConfig fileValidationConfig,
+            IFilePathConfig filePathConfig,
+            FileIOHelper fileIOHelper,
             ILogger<AccountBalanceTransactionController> logger,
             KafkaProducerService kafkaProducerService,
             IMessagingService messagingService)
         {
             _genericQueryService = genericQueryService;
             _httpServiceQueryClient = httpServiceQueryClient;
+            _fileValidationConfig = fileValidationConfig;
+            _filePathConfig = filePathConfig;
+            _fileIOHelper = fileIOHelper;
             _logger = logger;
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
@@ -133,6 +145,52 @@ namespace TransactionService.API.Controllers.BaseControllers
             if (!result)
             {
                 return StatusCode(500, "Failed to initiate withdrawal process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpPut("balance-withdrawal/{AccountBalanceWithdrawalRequestId}/confirm/{IsReject}")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> ConfirmBalanceWithdrawalRequest(
+            [FromRoute] bool IsReject,
+            [FromRoute] Guid AccountBalanceWithdrawalRequestId,
+            [FromBody] AccountBalanceWithdrawalConfirmationRequestDTO request)
+        {
+            var isValidFile = _fileValidationConfig.IsValidFile("AccountBalanceWithdrawalRequest.transferReceiptImageFileKey", request.TransferReceiptImageFile.FileName, request.TransferReceiptImageFile.Length, request.TransferReceiptImageFile.ContentType);
+            if (!isValidFile)
+            {
+                return BadRequest("Invalid upload file.");
+            }
+
+            string newImageFileName = $"{Guid.NewGuid()}_{request.TransferReceiptImageFile.FileName}";
+            using (var stream = request.TransferReceiptImageFile.OpenReadStream())
+            {
+                await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                    stream,
+                                    _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
+                                    newImageFileName
+                                );
+            }
+            var imageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_TEMP_FILE_PATH, newImageFileName);
+
+            var requestData = new JObject
+            {
+                { "AccountBalanceWithdrawalRequestId", AccountBalanceWithdrawalRequestId },
+                { "ImageFileKey", imageFileKey },
+                { "RejectedReason", request.AccountBalanceWithdrawalRequestInfo.RejectedReason ?? string.Empty },
+                { "IsReject", IsReject }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC, 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "account-balance-withdrawal-confirmation-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate withdrawal confirmation process.");
             }
             return Ok(new
             {

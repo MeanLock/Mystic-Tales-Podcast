@@ -9,6 +9,7 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteBookingTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteMemberSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompletePodcastSubscriptionTransaction;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmAccountBalanceWithdrawal;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPayment;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPaymentRollback;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateAccountBalanceTransactionRollback;
@@ -269,6 +270,21 @@ namespace TransactionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-podcast-subscription-transaction-rollback.failed"
+            );
+        }
+        [MessageHandler("confirm-account-balance-withdrawal", SAGA_TOPIC)]
+        public async Task HandleConfirmAccountBalanceWithdrawalCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameters = command.RequestData.ToObject<ConfirmAccountBalanceWithdrawalParameterDTO>();
+                    await _accountBalanceTransactionService.ConfirmAccountBalanceWithdrawalAsync(parameters, command);
+                    _logger.LogInformation("Handled confirm-account-balance-withdrawal command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "confirm-account-balance-withdrawal.failed"
             );
         }
     }

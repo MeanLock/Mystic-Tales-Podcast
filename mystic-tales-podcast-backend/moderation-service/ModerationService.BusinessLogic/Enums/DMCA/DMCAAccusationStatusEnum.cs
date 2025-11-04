@@ -8,16 +8,15 @@ namespace ModerationService.BusinessLogic.Enums.DMCA
 {
     public enum DMCAAccusationStatusEnum
     {
-        Pending = 1,
-        Reviewing = 2,
-        Rejected = 3,
-        TakeDownPermanent = 4,
-        CloseWithdrawn = 5,
-        CounterReviewing = 6,
-        LawsuitPending = 7,
-        LawsuitFiled = 8,
-        LawsuitVerified = 9,
-        DMCAWins = 10,
-        CounterWins = 11
+        PendingDMCANoticeReview = 1,
+        InvalidDMCANotice = 2,
+        ValidDMCANotice = 3,
+        InvalidCounterNotice = 4,
+        ValidCounterNotice = 5,
+        InvalidLawsuitProof = 6,
+        ValidLawsuitProof = 7,
+        PodcasterLawsuitWin = 8,
+        AccuserLawsuitWin = 9,
+        Dismissed = 10
     }
 }

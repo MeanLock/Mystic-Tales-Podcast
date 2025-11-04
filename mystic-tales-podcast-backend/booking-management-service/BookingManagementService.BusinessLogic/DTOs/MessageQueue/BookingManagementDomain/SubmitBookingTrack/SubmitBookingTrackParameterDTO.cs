@@ -14,6 +14,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
 
     public class TracksParameterDTO
     {
+        public Guid Id { get; set; }
         public string AudioFileKey { get; set; }
         public double AudioFileSize { get; set; }
         public int AudioLength { get; set; }

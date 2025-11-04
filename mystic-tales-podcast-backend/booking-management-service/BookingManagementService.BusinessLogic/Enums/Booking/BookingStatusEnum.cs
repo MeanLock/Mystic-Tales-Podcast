@@ -8,7 +8,7 @@ namespace BookingManagementService.BusinessLogic.Enums.Booking
 {
     public enum BookingStatusEnum
     {
-        QuotationUnderNegotiation = 1,
+        QuotationRequest = 1,
         QuotationDealing = 2,
         QuotationRejected = 3,
         QuotationCancelled = 4,
@@ -16,7 +16,9 @@ namespace BookingManagementService.BusinessLogic.Enums.Booking
         TrackPreviewing = 6,
         ProducingRequested = 7,
         Completed = 8,
-        CancelledAutomatically = 9,
-        CancelledManually = 10
+        CustomerCancelledRequest = 9,
+        PodcastBuddyCancelledRequest = 10,
+        CancelledAutomatically = 11,
+        CancelledManually = 12
     }
 }

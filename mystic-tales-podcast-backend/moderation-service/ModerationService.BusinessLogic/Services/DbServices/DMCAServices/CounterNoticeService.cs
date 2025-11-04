@@ -90,22 +90,34 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             return new CounterNoticeDetailResponseDTO
             {
                 Id = counterNotice.Id,
-                AccountId = counterNotice.AccountId,
-                AccountEmail = counterNotice.AccountEmail,
-                AccountPhone = counterNotice.AccountPhone,
-                StatementPerjury = counterNotice.StatementPerjury,
-                Signature = counterNotice.Signature,
                 DMCAAccusationId = counterNotice.DmcaAccusationId,
-                Jurisdiction = counterNotice.Jurisdiction,
                 IsValid = counterNotice.IsValid,
                 InValidReason = counterNotice.InvalidReason,
                 ValidatedBy = counterNotice.ValidatedBy,
                 ValidatedAt = counterNotice.ValidatedAt,
-                FiledDate = counterNotice.FiledDate,
                 CreatedAt = counterNotice.CreatedAt,
                 UpdatedAt = counterNotice.UpdatedAt,
                 CounterNoticeAttachFileList = counterNoticeAttachFile
             };
+        }
+        public async Task<CounterNotice> UpdateCounterNotice(CounterNotice counterNotice)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var result = await _counterNoticeGenericRepository.UpdateAsync(counterNotice.Id, counterNotice);
+                    await transaction.CommitAsync();
+                    _logger.LogInformation("Updated DMCA Counter Notice with ID: {CounterNoticeId}", result.Id);
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error updating CounterNotice");
+                    throw;
+                }
+            }
         }
         public async Task CreateCounterNoticeAsync(CreateCounterNoticeParameterDTO parameter, SagaCommandMessage command)
         {
@@ -121,13 +133,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var newCounterNotice = new CounterNotice
                     {
-                        AccountId = parameter.AccountId,
-                        AccountEmail = parameter.AccountEmail,
-                        AccountPhone = parameter.AccountPhone,
-                        StatementPerjury = parameter.StatementPerjury,
-                        Signature = parameter.Signature,
-                        Jurisdiction = parameter.Jurisdiction,
-                        FiledDate = DateOnly.FromDateTime(parameter.FiledDate),
+                        DmcaAccusationId = parameter.DMCAAccusationId,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
@@ -163,18 +169,18 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         createCounterNoticeAttachFile.Add(counterNoticeAttachFile.AttachFileKey);
                     }
 
-                    var newDmcaStatusTracking = new DmcaaccusationStatusTracking
-                    {
-                        DmcaAccusationId = createdCounterNotice.DmcaAccusationId,
-                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.CounterReviewing,
-                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                    };
+                    //var newDmcaStatusTracking = new DmcaaccusationStatusTracking
+                    //{
+                    //    DmcaAccusationId = createdCounterNotice.DmcaAccusationId,
+                    //    DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.CounterReviewing,
+                    //    CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                    //};
 
-                    var createDmcaStatusTracking = await _dmcaAccusationService.CreateDMCAAccusationStatusTracking(newDmcaStatusTracking);
-                    if(createDmcaStatusTracking == null)
-                    {
-                        throw new Exception("Failed to created dmca status tracking");
-                    }
+                    //var createDmcaStatusTracking = await _dmcaAccusationService.CreateDMCAAccusationStatusTracking(newDmcaStatusTracking);
+                    //if(createDmcaStatusTracking == null)
+                    //{
+                    //    throw new Exception("Failed to created dmca status tracking");
+                    //}
 
                     //Send confirm email to accused
 
@@ -184,13 +190,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         { "DMCAAccusationId", createdCounterNotice.DmcaAccusationId },
                         { "DMCAcounternoticeId", createdCounterNotice.Id },
-                        { "AccountId", createdCounterNotice.AccountId },
-                        { "AccountEmail", createdCounterNotice.AccountEmail },
-                        { "AccountPhone", createdCounterNotice.AccountPhone },
-                        { "StatementPerjury", createdCounterNotice.StatementPerjury },
-                        { "Jurisdiction", createdCounterNotice.Jurisdiction },
-                        { "Signature", createdCounterNotice.Signature },
-                        { "FiledDate", createdCounterNotice.FiledDate.ToString("yyyy-MM-dd") },
                         { "CounterNoticeAttachFileKeys", JArray.FromObject(createCounterNoticeAttachFile) },
                         { "CreatedAt", createdCounterNotice.CreatedAt }
                     };

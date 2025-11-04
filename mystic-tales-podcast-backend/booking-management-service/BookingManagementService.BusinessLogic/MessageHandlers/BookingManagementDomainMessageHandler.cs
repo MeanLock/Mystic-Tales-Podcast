@@ -1,15 +1,19 @@
 ﻿using BookingManagementService.BusinessLogic.Attributes;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AcceptBookingDealing;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateProducingRequest;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingDealing;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateTrackListenSlot;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ValidateBookingCancellation;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -77,38 +81,81 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 {
                     var requestData = command.RequestData.ToObject<CancelBookingManualParameterDTO>();
                     await _bookingService.ManualCancelBookingAsync(requestData, command);
-                    
+
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "cancel-booking-manual.failed"
             );
         }
-        [MessageHandler("create-booking-negotiation", SAGA_TOPIC)]
-        public async Task HandleCreateBookingNegotiationAsync(string key, string messageJson)
+        //[MessageHandler("create-booking-negotiation", SAGA_TOPIC)]
+        //public async Task HandleCreateBookingNegotiationAsync(string key, string messageJson)
+        //{
+        //    await ExecuteSagaCommandMessageAsync(
+        //        messageJson,
+        //        async (command) =>
+        //        {
+        //            var requestData = command.RequestData.ToObject<CreateBookingNegotiationParameterDTO>();
+        //            await _bookingService.CreateBookingNegotiationAsync(requestData, command);
+        //        },
+        //        responseTopic: SAGA_TOPIC,
+        //        failedEmitMessage: "create-booking-negotiation.failed"
+        //    );
+        //}
+        //[MessageHandler("agree-booking-negotiation", SAGA_TOPIC)]
+        //public async Task HandleAgreeBookingNegotiationAsync(string key, string messageJson)
+        //{
+        //    await ExecuteSagaCommandMessageAsync(
+        //        messageJson,
+        //        async (command) =>
+        //        {
+        //            var requestData = command.RequestData.ToObject<AgreeBookingNegotiationParameterDTO>();
+        //            await _bookingService.AgreeBookingNegotiationAsync(requestData, command);
+        //        },
+        //        responseTopic: SAGA_TOPIC,
+        //        failedEmitMessage: "agree-booking-negotiation.failed"
+        //    );
+        //}
+        [MessageHandler("process-booking-dealing", SAGA_TOPIC)]
+        public async Task HandleBookingDealingFlowAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
                 messageJson,
                 async (command) =>
                 {
-                    var requestData = command.RequestData.ToObject<CreateBookingNegotiationParameterDTO>();
-                    await _bookingService.CreateBookingNegotiationAsync(requestData, command);
+                    var parameter = command.RequestData.ToObject<ProcessBookingDealingParameterDTO>();
+                    await _bookingService.ProcessBookingDealingAsync(parameter, command);
                 },
                 responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "create-booking-negotiation.failed"
+                failedEmitMessage: "process-booking-dealing.failed"
             );
         }
-        [MessageHandler("agree-booking-negotiation", SAGA_TOPIC)]
-        public async Task HandleAgreeBookingNegotiationAsync(string key, string messageJson)
+        [MessageHandler("accept-booking-dealing", SAGA_TOPIC)]
+        public async Task HandleAcceptBookingDealingFlowAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
                 messageJson,
                 async (command) =>
                 {
-                    var requestData = command.RequestData.ToObject<AgreeBookingNegotiationParameterDTO>();
-                    await _bookingService.AgreeBookingNegotiationAsync(requestData, command);
+                    var parameter = command.RequestData.ToObject<AcceptBookingDealingParameterDTO>();
+                    await _bookingService.AcceptBookingDealingAsync(parameter, command);
                 },
                 responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "agree-booking-negotiation.failed"
+                failedEmitMessage: "accept-booking-dealing.failed"
+            );
+        }
+        [MessageHandler("cancel-booking-producing-request", SAGA_TOPIC)]
+        public async Task HandleCancelBookingProducingRequestAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var requestData = command.RequestData.ToObject<CancelBookingProducingRequestParameterDTO>();
+                    await _bookingProducingRequestService.CancelProducingRequestAsync(requestData, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "cancel-booking-producing-request.failed"
             );
         }
         [MessageHandler("create-producing-request", SAGA_TOPIC)]
@@ -120,7 +167,7 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 {
                     var requestData = command.RequestData.ToObject<CreateProducingRequestParameterDTO>();
                     await _bookingProducingRequestService.CreateProducingRequestAsync(requestData, command);
-                    
+
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-producing-request.failed"
@@ -135,7 +182,7 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 {
                     var requestData = command.RequestData.ToObject<SubmitBookingTrackParameterDTO>();
                     await _bookingProducingRequestService.SubmitBookingTrack(requestData, command);
-                    
+
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "submit-booking-track.failed"
@@ -195,6 +242,20 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "terminate-booking-of-podcaster.failed"
+            );
+        }
+        [MessageHandler("validate-booking-cancellation", SAGA_TOPIC)]
+        public async Task HandleValidateBookingProducingRequestCancellationAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var requestData = command.RequestData.ToObject<ValidateBookingCancellationParameterDTO>();
+                    await _bookingProducingRequestService.ValidateProducingRequestCancellationAsync(requestData, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "validate-booking-cancellation.failed"
             );
         }
     }

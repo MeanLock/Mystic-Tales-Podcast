@@ -12,6 +12,7 @@ using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.BusinessSetting.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
+using BookingManagementService.Infrastructure.Models.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using Microsoft.AspNetCore.Authorization;
@@ -100,12 +101,49 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
 
+            // Validate all audio files first
+            foreach (var requirementFile in request.BookingRequirementFiles)
+            {
+                var isValidRequirementFile = _fileValidationConfig.IsValidFile("BookingRequirement.requirementDocumentFileKey", requirementFile.FileName, requirementFile.Length, requirementFile.ContentType);
+                if (!isValidRequirementFile)
+                {
+                    return BadRequest($"Invalid requirement document file '{requirementFile.FileName}'. Please ensure all requirement document files have correct type and size.");
+                }
+            }
+
+            var requirementSubmission = JArray.FromObject(request.BookingCreateInfo.BookingRequirementInfo);
+            var requirementDocumentSubmission = new List<JObject>();
+
+            // Process all audio files and prepare track submission items
+            foreach (var requirementFile in request.BookingRequirementFiles)
+            {
+                string newRequirementFileName = $"{Guid.NewGuid()}_{requirementFile.FileName}";
+                Console.WriteLine($"Generated new requirement file name: {newRequirementFileName}");
+
+                using (var memoryStream = requirementFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(memoryStream, _filePathConfig.BOOKING_TEMP_FILE_PATH, newRequirementFileName);
+                }
+
+                var requirementDocumentFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newRequirementFileName);
+
+                var matchingRequirement = requirementSubmission
+                    .FirstOrDefault(re => re["Order"] != null && re["Order"].ToString() == requirementFile.FileName);
+
+                if (matchingRequirement != null)
+                {
+                    matchingRequirement["RequirementDocumentFileKey"] = requirementDocumentFileKey;
+                    requirementDocumentSubmission.Add((JObject)matchingRequirement);
+                }
+            }
+
             var requestData = new JObject
             {
-                { "Title", request.BookingInfo.Title },
-                { "Description", request.BookingInfo.Description },
+                { "Title", request.BookingCreateInfo.Title },
+                { "Description", request.BookingCreateInfo.Description },
                 { "AccountId", accountId },
-                { "PodcastBuddyId", request.BookingInfo.PodcastBuddyId }
+                { "PodcastBuddyId", request.BookingCreateInfo.PodcastBuddyId },
+                { "BookingRequirementInfoList", JArray.FromObject(requirementDocumentSubmission) },
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -124,84 +162,146 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             });
         }
 
-        // NEW: Booking Negotiation Multipart Endpoint
-        [HttpPost("{BookingId}/book-negotiations")]
-        [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> CreateBookingNegotiation(
-            [FromRoute] int BookingId,
-            [FromForm] BookingNegotiationCreateRequestDTO bookingNegotiationRequestDTO)
+        [HttpGet("podcast-booking-tone")]
+        public async Task<IActionResult> GetPodcastBookingTones()
         {
-            try
+            var result = await _bookingService.GetAllPodcastBookingTonesAsync();
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No podcast booking tones found.");
+            //}
+            return Ok(new
             {
-                var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-                var accountId = account.Id;
+                PodcastBookingToneList = result
+            });
+        }
 
-                var isValid = await _bookingService.ValidateBookingAccountOrPodcasterAsync(BookingId, accountId);
-                if(!isValid)
-                {
-                    throw new UnauthorizedAccessException("You are not authorized to create booking negotiate for this booking.");
-                }
-                // Parse the JSON BookingNegotiationInfo
-                var negotiationRequestInfo = JsonConvert.DeserializeObject<BookingNegotiationInfoDTO>(bookingNegotiationRequestDTO.BookingNegotiationInfo);
-                if (negotiationRequestInfo == null)
-                {
-                    return BadRequest("Invalid BookingNegotiationInfo format.");
-                }
+        [HttpGet("{BookingId}/requirement")]
+        public async Task<IActionResult> GetAllBookingRequirementByBookingId([FromRoute] int BookingId)
+        {
+            var result = await _bookingService.GetAllBookingRequirementByBookingIdAsync(BookingId);
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No podcast booking tones found.");
+            //}
+            return Ok(new
+            {
+                BookingRequirementList = result
+            });
+        }
+        // NEW: Booking Negotiation Multipart Endpoint
+        //[HttpPost("{BookingId}/book-negotiations")]
+        //[Authorize(Policy = "Customer.BasicAccess")]
+        //public async Task<IActionResult> CreateBookingNegotiation(
+        //    [FromRoute] int BookingId,
+        //    [FromForm] BookingNegotiationCreateRequestDTO bookingNegotiationRequestDTO)
+        //{
+        //    try
+        //    {
+        //        var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+        //        var accountId = account.Id;
 
-                string demoAudioFileKey = null;
-                if (bookingNegotiationRequestDTO.DemoAudioFile != null)
-                {
-                    var isValidAudioFile = _fileValidationConfig.IsValidFile(
-                        "BookingNegotiation.demoAudioFileKey", 
-                        bookingNegotiationRequestDTO.DemoAudioFile.FileName, 
-                        bookingNegotiationRequestDTO.DemoAudioFile.Length, 
-                        bookingNegotiationRequestDTO.DemoAudioFile.ContentType);
-                    if (!isValidAudioFile)
-                    {
-                        return BadRequest("Invalid audio file. Please ensure the file type and size are correct.");
-                    }
-                    string newDemoAudioFileName = $"{Guid.NewGuid()}_{bookingNegotiationRequestDTO.DemoAudioFile.FileName}";
-                    using (var memoryStream = bookingNegotiationRequestDTO.DemoAudioFile.OpenReadStream())
-                    {                        
-                        await _fileIOHelper.UploadBinaryFileWithStreamAsync(
-                            memoryStream,
-                            _filePathConfig.BOOKING_TEMP_FILE_PATH,
-                            newDemoAudioFileName);                    }
-                    demoAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newDemoAudioFileName);
-                }
-                JObject requestData = JObject.FromObject(negotiationRequestInfo);
-                requestData["AccountId"] = accountId;
-                requestData["BookingId"] = BookingId;
-                requestData["DemoAudioFileKey"] = demoAudioFileKey;
+        //        var isValid = await _bookingService.ValidateBookingAccountOrPodcasterAsync(BookingId, accountId);
+        //        if(!isValid)
+        //        {
+        //            throw new UnauthorizedAccessException("You are not authorized to create booking negotiate for this booking.");
+        //        }
+        //        // Parse the JSON BookingNegotiationInfo
+        //        var negotiationRequestInfo = JsonConvert.DeserializeObject<BookingNegotiationInfoDTO>(bookingNegotiationRequestDTO.BookingNegotiationInfo);
+        //        if (negotiationRequestInfo == null)
+        //        {
+        //            return BadRequest("Invalid BookingNegotiationInfo format.");
+        //        }
 
-                var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                    topic: SAGA_TOPIC, 
-                    requestData: requestData, 
-                    sagaInstanceId: null, 
-                    messageName: "booking-negotiation-flow");
-                var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-                if (!result)
-                {
-                    return StatusCode(500, "Failed to initiate booking negotiation process.");
-                }
-                return Ok(new
-                {
-                    SagaInstanceId = startSagaTriggerMessage.SagaInstanceId,
-                }
-                );
-            }
-            catch (JsonException)
+        //        string demoAudioFileKey = null;
+        //        if (bookingNegotiationRequestDTO.DemoAudioFile != null)
+        //        {
+        //            var isValidAudioFile = _fileValidationConfig.IsValidFile(
+        //                "BookingNegotiation.demoAudioFileKey", 
+        //                bookingNegotiationRequestDTO.DemoAudioFile.FileName, 
+        //                bookingNegotiationRequestDTO.DemoAudioFile.Length, 
+        //                bookingNegotiationRequestDTO.DemoAudioFile.ContentType);
+        //            if (!isValidAudioFile)
+        //            {
+        //                return BadRequest("Invalid audio file. Please ensure the file type and size are correct.");
+        //            }
+        //            string newDemoAudioFileName = $"{Guid.NewGuid()}_{bookingNegotiationRequestDTO.DemoAudioFile.FileName}";
+        //            using (var memoryStream = bookingNegotiationRequestDTO.DemoAudioFile.OpenReadStream())
+        //            {                        
+        //                await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+        //                    memoryStream,
+        //                    _filePathConfig.BOOKING_TEMP_FILE_PATH,
+        //                    newDemoAudioFileName);                    }
+        //            demoAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newDemoAudioFileName);
+        //        }
+        //        JObject requestData = JObject.FromObject(negotiationRequestInfo);
+        //        requestData["AccountId"] = accountId;
+        //        requestData["BookingId"] = BookingId;
+        //        requestData["DemoAudioFileKey"] = demoAudioFileKey;
+
+        //        var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+        //            topic: SAGA_TOPIC, 
+        //            requestData: requestData, 
+        //            sagaInstanceId: null, 
+        //            messageName: "booking-negotiation-flow");
+        //        var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+        //        if (!result)
+        //        {
+        //            return StatusCode(500, "Failed to initiate booking negotiation process.");
+        //        }
+        //        return Ok(new
+        //        {
+        //            SagaInstanceId = startSagaTriggerMessage.SagaInstanceId,
+        //        }
+        //        );
+        //    }
+        //    catch (JsonException)
+        //    {
+        //        return BadRequest("Invalid JSON format in BookingNegotiationInfo parameter.");
+        //    }
+        //    catch (UnauthorizedAccessException ex)
+        //    {
+        //        return Unauthorized(ex.Message);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, $"An error occurred while creating the booking negotiation: {ex.Message}");
+        //    }
+        //}
+        [HttpPost("{BookingId}/dealing")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> BookingDealing(
+            [FromRoute] int BookingId, [FromBody] BookingDealingRequestDTO request)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            //var isValid = await _bookingService.ValidateBookingPodcasterAsync(BookingId, accountId);
+            //if (!isValid)
+            //{
+            //    throw new UnauthorizedAccessException("You are not authorized to create booking dealing for this booking.");
+            //}
+            var requestData = new JObject
             {
-                return BadRequest("Invalid JSON format in BookingNegotiationInfo parameter.");
-            }
-            catch (UnauthorizedAccessException ex)
+                { "AccountId", accountId },
+                { "BookingId", BookingId },
+                { "BookingRequirementList", JArray.FromObject(request.BookingRequirementInfoList) },
+                { "Price", request.Price },
+                { "Deadline", request.Deadline }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC, 
+                requestData: requestData, 
+                sagaInstanceId: null, 
+                messageName: "booking-dealing-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
             {
-                return Unauthorized(ex.Message);
+                return StatusCode(500, "Failed to initiate booking dealing process.");
             }
-            catch (Exception ex)
+            return Ok(new
             {
-                return StatusCode(500, $"An error occurred while creating the booking negotiation: {ex.Message}");
-            }
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
         }
         [HttpGet("podcaster")]
         [Authorize(Policy = "Customer.PodcasterAccess")]

@@ -17,7 +17,10 @@ namespace TransactionService.Common.AppConfigurations.FilePath
         public string BOOKING_TEMP_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
-        
+        public string ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_FILE_PATH { get; set; }
+        public string ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_TEMP_FILE_PATH { get; set; }
+
+
     }
     public class FilePathConfig : IFilePathConfig
     {
@@ -33,7 +36,9 @@ namespace TransactionService.Common.AppConfigurations.FilePath
         public string BOOKING_TEMP_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
-        
+        public string ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_FILE_PATH { get; set; }
+        public string ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_TEMP_FILE_PATH { get; set; }
+
         public FilePathConfig(IConfiguration configuration)
         {
 
@@ -50,6 +55,8 @@ namespace TransactionService.Common.AppConfigurations.FilePath
             BOOKING_TEMP_FILE_PATH = filePaths.BOOKING_TEMP_FILE_PATH;
             DMCA_ACCUSATION_FILE_PATH = filePaths.DMCA_ACCUSATION_FILE_PATH;
             DMCA_ACCUSATION_TEMP_FILE_PATH = filePaths.DMCA_ACCUSATION_TEMP_FILE_PATH;
+            ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_FILE_PATH = filePaths.ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_FILE_PATH;
+            ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_TEMP_FILE_PATH = filePaths.ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_TEMP_FILE_PATH;
         }
 
     }

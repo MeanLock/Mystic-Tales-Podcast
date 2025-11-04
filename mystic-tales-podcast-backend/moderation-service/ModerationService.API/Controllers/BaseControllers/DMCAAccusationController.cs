@@ -4,6 +4,7 @@ using ModerationService.API.Filters.ExceptionFilters;
 using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.CounterNotice;
 using ModerationService.BusinessLogic.DTOs.DMCANotice;
+using ModerationService.BusinessLogic.DTOs.DMCAReport;
 using ModerationService.BusinessLogic.DTOs.LawsuitProof;
 using ModerationService.BusinessLogic.Enums.DMCA;
 using ModerationService.BusinessLogic.Enums.Kafka;
@@ -85,7 +86,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             });
         }
         [HttpPost("shows/{PodcastShowId}")]
-        [Authorize(Policy = "Customer.NoViolationAccess")]
+        [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> CreateDMCAAccusationForShow(
             [FromRoute] Guid PodcastShowId,
             [FromBody] DMCANoticeCreateRequestDTO request)
@@ -130,13 +131,10 @@ namespace ModerationService.API.Controllers.BaseControllers
 
             var requestData = new JObject
             {
-                { "AccountId", request.DMCANoticeCreateInfo.AccountId },
-                { "AccountEmail", request.DMCANoticeCreateInfo.AccountEmail },
-                { "AccountPhone", request.DMCANoticeCreateInfo.AccountPhone },
+                { "AccuserEmail", request.AccuserEmail },
+                { "AccuserPhone", request.AccuserPhone },
+                { "AccuserFullName", request.AccuserFullName },
                 { "PodcastShowId", PodcastShowId },
-                { "GoodFaithStatement", request.DMCANoticeCreateInfo.GoodFaithStatement },
-                { "WorkClaimed", request.DMCANoticeCreateInfo.WorkClaimed },
-                { "Signature", request.DMCANoticeCreateInfo.Signature },
                 { "DMCANoticeAttachFileKeys", JArray.FromObject(attachFileList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -155,7 +153,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             });
         }
         [HttpPost("episodes/{PodcastEpisodeId}")]
-        [Authorize(Policy = "Customer.NoViolationAccess")]
+        [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> CreateDMCAAccusationForEpisode(
             [FromRoute] Guid PodcastEpisodeId,
             [FromBody] DMCANoticeCreateRequestDTO request)
@@ -200,13 +198,10 @@ namespace ModerationService.API.Controllers.BaseControllers
 
             var requestData = new JObject
             {
-                { "AccountId", request.DMCANoticeCreateInfo.AccountId },
-                { "AccountEmail", request.DMCANoticeCreateInfo.AccountEmail },
-                { "AccountPhone", request.DMCANoticeCreateInfo.AccountPhone },
+                { "AccuserEmail", request.AccuserEmail },
+                { "AccuserPhone", request.AccuserPhone },
+                { "AccuserFullName", request.AccuserFullName },
                 { "PodcastEpisodeId", PodcastEpisodeId },
-                { "GoodFaithStatement", request.DMCANoticeCreateInfo.GoodFaithStatement },
-                { "WorkClaimed", request.DMCANoticeCreateInfo.WorkClaimed },
-                { "Signature", request.DMCANoticeCreateInfo.Signature },
                 { "DMCANoticeAttachFileKeys", JArray.FromObject(attachFileList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -240,7 +235,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             });
         }
         [HttpPost("{DMCAAccusationId}/counter-notice")]
-        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> CreateCounterNotice(
             [FromRoute] int DMCAAccusationId,
             [FromBody] CounterNoticeCreateRequestDTO request)
@@ -311,7 +306,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             });
         }
         [HttpPost("{DMCAAccusationId}/lawsuit")]
-        [Authorize(Policy = "Customer.BasicAccess")]
+        [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> SubmitLawsuitProof(
             [FromRoute] int DMCAAccusationId,
             [FromBody] LawsuitProofSubmitRequestDTO request)
@@ -406,8 +401,8 @@ namespace ModerationService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
-        [HttpPut("{DMCAAccusationId}")]
-        [Authorize(Policy = "BasicAccess")]
+        [HttpPut("staff/{DMCAAccusationId}")]
+        [Authorize(Policy = "Staff.BasicAccess")]
         public async Task<IActionResult> UpdateDMCAAccusationById(
             [FromRoute] int DMCAAccusationId,
             [FromQuery] DMCAAccusationQueryEnum request)
@@ -429,6 +424,90 @@ namespace ModerationService.API.Controllers.BaseControllers
             if (!result)
             {
                 return StatusCode(500, "Failed to initiate dmca accusation update.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpPost("{DMCAAccusationId}/create-report")]
+        [Authorize(Policy = "Staff.BasicAccess")]
+        public async Task<IActionResult> CreateReportForDMCAAccusation(
+            [FromRoute] int DMCAAccusationId,
+            [FromBody] DMCAAccusationConclusionReportCreateRequestDTO request)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var loginAccountId = account.Id;
+            var requestData = new JObject
+            {
+                { "AccountId", loginAccountId },
+                { "DMCAAccusationId", DMCAAccusationId },
+                { "DmcaAccusationConclusionReportTypeId", request.DmcaAccusationConclusionReportTypeId },
+                { "Description", request.Description },
+                { "InvalidReason", request.InvalidReason }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "dmca-accusation-report-creation-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate dmca accusation report creation.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpPut("{DMCAAccusationConclusionReportId}/{IsValid}")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> ValidateDMCAAccusationConclusionReport(
+            [FromRoute] Guid DMCAAccusationConclusionReportId,
+            [FromRoute] bool IsValid)
+        {
+            var requestData = new JObject
+            {
+                { "DMCAAccusationConclusionReportId", DMCAAccusationConclusionReportId },
+                { "IsValid", IsValid }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "dmca-accusation-report-validation-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate dmca accusation report validation.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpPut("{DMCAAccusationConclusionReportId}/cancel")]
+        [Authorize(Policy = "Staff.BasicAccess")]
+        public async Task<IActionResult> CancelDMCAAccusationConclusionReport(
+            [FromRoute] Guid DMCAAccusationConclusionReportId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var loginAccountId = account.Id;
+            var requestData = new JObject
+            {
+                { "AccountId", loginAccountId },
+                { "DMCAAccusationConclusionReportId", DMCAAccusationConclusionReportId }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "dmca-accusation-report-cancellation-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate dmca accusation report cancellation.");
             }
             return Ok(new
             {
