@@ -12,6 +12,7 @@ namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Updat
         public int AccountId { get; set; }
         public required string Name { get; set; }
         public required string Description { get; set; }
+        public decimal? PricePerBookingWord { get; set; }
         public string BuddyAudioFileKey { get; set; }
     }
 }

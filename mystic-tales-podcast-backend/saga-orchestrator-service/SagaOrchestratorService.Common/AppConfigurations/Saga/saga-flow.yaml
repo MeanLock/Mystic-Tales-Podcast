@@ -317,16 +317,19 @@ flows:
           - AccountId
           - Name
           - Description
+          - PricePerBookingWord
           - BuddyAudioFileKey
         next-request-data:
           - AccountId
           - Name
           - Description
+          - PricePerBookingWord
           - BuddyAudioFileKey
         response-data:
           - AccountId
           - Name
           - Description
+          - PricePerBookingWord
           - BuddyAudioFileKey
         onSuccess:
           emit: "update-podcaster-profile.success"
@@ -4882,8 +4885,8 @@ flows:
           nextFlows: []
 
   terminate-podcaster-flow:
-    topic: "content-management-domain"
-    handle-service: "PodcastService"
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
     description: "Handles the termination of podcast creator accounts."
     save-files: ""
     steps:

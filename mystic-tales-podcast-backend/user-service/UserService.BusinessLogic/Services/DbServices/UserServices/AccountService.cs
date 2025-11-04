@@ -315,6 +315,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             return violationLevel;
         }
 
+        public bool IsViolationLevelMax(int violationLevel, JArray accountViolationLevelConfigs)
+        {
+            int maxViolationLevel = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationLevel"));
+            return violationLevel >= maxViolationLevel;
+        }
+
         /////////////////////////////////////////////////////////////
 
 
@@ -691,6 +697,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             RatingCount = item.PodcasterProfile.RatingCount,
                             TotalFollow = item.PodcasterProfile.TotalFollow,
                             ListenCount = item.PodcasterProfile.ListenCount,
+                            PricePerBookingWord = item.PodcasterProfile.PricePerBookingWord,
                             CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
                             OwnedBookingStorageSize = item.PodcasterProfile.OwnedBookingStorageSize,
@@ -764,6 +771,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             RatingCount = item.PodcasterProfile.RatingCount,
                             TotalFollow = item.PodcasterProfile.TotalFollow,
                             ListenCount = item.PodcasterProfile.ListenCount,
+                            PricePerBookingWord = item.PodcasterProfile.PricePerBookingWord,
                             CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
                             IsVerified = item.PodcasterProfile.IsVerified,
@@ -852,6 +860,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         RatingCount = podcaster.PodcasterProfile.RatingCount,
                         TotalFollow = podcaster.PodcasterProfile.TotalFollow,
                         ListenCount = podcaster.PodcasterProfile.ListenCount,
+                        PricePerBookingWord = podcaster.PodcasterProfile.PricePerBookingWord,
                         CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
                         BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
                         OwnedBookingStorageSize = podcaster.PodcasterProfile.OwnedBookingStorageSize,
@@ -928,6 +937,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         RatingCount = podcaster.PodcasterProfile.RatingCount,
                         TotalFollow = podcaster.PodcasterProfile.TotalFollow,
                         ListenCount = podcaster.PodcasterProfile.ListenCount,
+                        PricePerBookingWord = podcaster.PodcasterProfile.PricePerBookingWord,
                         CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
                         BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
                         IsVerified = podcaster.PodcasterProfile.IsVerified,
@@ -1216,6 +1226,11 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     podcasterProfile.Name = updatePodcasterProfileParameterDTO.Name;
                     podcasterProfile.Description = updatePodcasterProfileParameterDTO.Description;
 
+                    if (updatePodcasterProfileParameterDTO.PricePerBookingWord != null)
+                    {
+                        podcasterProfile.PricePerBookingWord = updatePodcasterProfileParameterDTO.PricePerBookingWord;
+                    }
+
                     var folderPath = _filePathConfig.ACCOUNT_FILE_PATH + "\\" + podcasterProfile.AccountId;
                     if (updatePodcasterProfileParameterDTO.BuddyAudioFileKey != null && updatePodcasterProfileParameterDTO.BuddyAudioFileKey != "")
                     {
@@ -1402,7 +1417,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     await SendChangeAccountStatusMessage(account.Id);
                     // [CHỈNH SỬA SAU] CHẠY CÁC FLOW XOÁ TRONG booking, chanel/show/episode (AccountFavoritedPodcastChannel/AccountFollowedPodcastShow/AccountSavedPodcastEpisode), podcast subscription, Report review session, publish review session, DMCA Accusation, AccountFollowedPodcaster
-
+                    JObject podcasterTerminateRequestData = JObject.FromObject(new
+                    {
+                        PodcasterId = account.Id
+                    });
+                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", podcasterTerminateRequestData, null, "terminate-podcaster-flow");
+                    await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
                 }
                 catch (Exception ex)
                 {
@@ -1531,7 +1551,15 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     await SendChangeAccountStatusMessage(account.Id);
                     // [CHỈNH SỬA SAU] NẾU ACCOUNT VIOLATION LEVEL == MAX VIOLATION LEVEL THÌ CHẠY CÁC FLOW XOÁ TRONG booking, chanel/show/episode (AccountFavoritedPodcastChannel/AccountFollowedPodcastShow/AccountSavedPodcastEpisode), podcast subscription, Report review session, publish review session, DMCA Accusation, AccountFollowedPodcaster
-
+                    if (IsViolationLevelMax(account.ViolationLevel, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray) == true)
+                    {
+                        JObject podcasterTerminateRequestData = JObject.FromObject(new
+                        {
+                            PodcasterId = account.Id
+                        });
+                        var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", podcasterTerminateRequestData, null, "terminate-podcaster-flow");
+                        await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+                    }
                 }
                 catch (Exception ex)
                 {
