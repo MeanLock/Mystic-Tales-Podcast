@@ -11,6 +11,7 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         public int TokenListenRequestExpirationMinutes { get; set; }
         public int TokenEncryptionKeyRequestExpirationMinutes { get; set; }
         public int SessionExpirationMinutes { get; set; }
+        public int SessionAdditionalUpdateBufferExpirationMinutes { get; set; }
     }
     public class PodcastListenSessionConfig : IPodcastListenSessionConfig
     {
@@ -18,6 +19,7 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         public int TokenListenRequestExpirationMinutes { get; set; }
         public int TokenEncryptionKeyRequestExpirationMinutes { get; set; }
         public int SessionExpirationMinutes { get; set; }
+        public int SessionAdditionalUpdateBufferExpirationMinutes { get; set; }
 
         public PodcastListenSessionConfig(IConfiguration configuration)
         {
@@ -26,6 +28,7 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
             TokenListenRequestExpirationMinutes = podcastListenSessionConfig.TokenListenRequestExpirationMinutes;
             TokenEncryptionKeyRequestExpirationMinutes = podcastListenSessionConfig.TokenEncryptionKeyRequestExpirationMinutes;
             SessionExpirationMinutes = podcastListenSessionConfig.SessionExpirationMinutes;
+            SessionAdditionalUpdateBufferExpirationMinutes = podcastListenSessionConfig.SessionAdditionalUpdateBufferExpirationMinutes;
         }
     }
 }

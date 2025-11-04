@@ -5,7 +5,22 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Cre
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateEpisode;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteBackgroundSoundTrack;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelEpisodesChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelEpisodesListenSessionChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelEpisodesListenSessionUnpublishChannelForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelShowsChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeEpisodeDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeLicenses;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeListenSessionDmcaRemoveEpisodeForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeListenSessionEpisodeDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeListenSessionUnpublishEpisodeForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeletePodcasterEpisodesListenSessionTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowEpisodesListenSessionDmcaRemoveShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowEpisodesListenSessionShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowEpisodesListenSessionUnpublishShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowEpisodesShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowShowShowDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusEpisodeTotalSaved;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusShowTotalFollow;
@@ -14,14 +29,36 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Pro
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishEpisode;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishShow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelDismissedEpisodesDmcaChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelDismissedEpisodesDmcaUnpublishChannelForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelDismissedShowsDmcaChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelDismissedShowsDmcaUnpublishChannelForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedEpisodeDmcaEpisodeDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedEpisodeDmcaTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedEpisodeDmcaUnpublishEpisodeForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowDmcaShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowDmcaTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowDmcaUnpublishShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowEpisodesDmcaShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowEpisodesDmcaUnpublishShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveEpisodeDmcaRemoveEpisodeForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveShowDmcaDmcaRemoveShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveShowEpisodesDmcaRemoveShowForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitEpisodeAudioFile;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitShowTrailerAudioFile;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractEpisodeTotalSaved;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractShowTotalFollow;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishChannelUnpublishChannelForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishEpisodeUnpublishEpisodeForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishPodcasterChannelsTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishPodcasterEpisodesTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishPodcasterShowsTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishShowUnpublishShowForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateBackgroundSoundTrack;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateEpisode;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateEpisodeListenSessionDuration;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateShow;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UploadEpisodeLicenses;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendPodcastServiceEmail;
@@ -73,299 +110,6 @@ namespace PodcastService.BusinessLogic.MessageHandlers
         }
 
         #region Sample coding format must be followed
-        // [MessageHandler("send-user-service-email", SAGA_TOPIC)]
-        // public async Task HandleSendPodcastServiceEmailAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var sendPodcastServiceEmailParameterDTO = command.RequestData.ToObject<SendPodcastServiceEmailParameterDTO>();
-        //             var mailInfo = sendPodcastServiceEmailParameterDTO.SendPodcastServiceEmailMailInfo;
-        //             Console.WriteLine("Preparing to send email of type: " + mailInfo.MailTypeName);
-        //             object mailModel = mailInfo.MailTypeName switch
-        //             {
-        //                 "CustomerRegistrationVerification" => mailInfo.MailObject.ToObject<CustomerRegistrationVerificationMailViewModel>(),
-        //                 "CustomerPasswordReset" => mailInfo.MailObject.ToObject<CustomerPasswordResetMailViewModel>(),
-        //                 "PodcasterRequestConfirmation" => mailInfo.MailObject.ToObject<PodcasterRequestConfirmationMailViewModel>(),
-        //                 "PodcasterRequestResult" => mailInfo.MailObject.ToObject<PodcasterRequestResultMailViewModel>(),
-        //                 _ => mailInfo.MailObject.ToObject<object>()
-        //             };
-        //             Console.WriteLine("Sending email to: " + mailInfo.MailObject["VerifyCode"]);
-        //             var mailProperty = _mailPropertiesConfig.GetMailPropertyByTypeName(mailInfo.MailTypeName);
-        //             await _accountService.SendPodcastServiceEmail(mailProperty, mailInfo.ToEmail, mailModel);
-        //             // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
-        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //                 topic: SAGA_TOPIC,
-        //                 requestData: command.RequestData,
-        //                 responseData: command.RequestData,
-        //                 sagaInstanceId: command.SagaInstanceId,
-        //                 flowName: command.FlowName,
-        //                 messageName: "send-user-service-email.success"
-        //             );
-        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "send-user-service-email.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("create-account", SAGA_TOPIC)]
-        // public async Task HandleCreateAccountAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var createAccountParameterDTO = command.RequestData.ToObject<CreateAccountParameterDTO>();
-        //             await _accountService.RegisterAccount(createAccountParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "create-account.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("verify-account", SAGA_TOPIC)]
-        // public async Task HandleVerifyAccountAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var verifyAccountParameterDTO = command.RequestData.ToObject<VerifyAccountParameterDTO>();
-        //             await _authService.AccountVerification(verifyAccountParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "verify-account.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("login-account-manual", SAGA_TOPIC)]
-        // public async Task HandleManualLoginAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var manualLoginRequestDTO = command.RequestData.ToObject<LoginAccountManualParameterDTO>();
-        //             await _authService.LoginManual(manualLoginRequestDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "login-account-manual.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("login-account-google", SAGA_TOPIC)]
-        // public async Task HandleGoogleLoginAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var googleLoginRequestDTO = command.RequestData.ToObject<LoginAccountGoogleParameterDTO>();
-        //             await _authService.LoginGoogleAuthorizationCodeFlow(googleLoginRequestDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "login-account-google.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("send-reset-password-link", SAGA_TOPIC)]
-        // public async Task HandleSendResetPasswordLinkAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var forgotPasswordParameterDTO = command.RequestData.ToObject<SendResetPasswordLinkParameterDTO>();
-
-        //             await _authService.ForgotPassword(forgotPasswordParameterDTO, command);
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "send-reset-password-link.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("reset-account-password", SAGA_TOPIC)]
-        // public async Task HandleResetAccountPasswordAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var resetPasswordRequestDTO = command.RequestData.ToObject<NewResetPasswordParameterDTO>();
-        //             await _authService.ResetPassword(resetPasswordRequestDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "reset-account-password.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("change-account-status", SAGA_TOPIC)]
-        // public async Task HandleChangeAccountStatusAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var changeAccountStatusParameterDTO = command.RequestData.ToObject<ChangeAccountStatusParameterDTO>();
-        //             await _accountService.ChangeAccountStatus(changeAccountStatusParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "change-account-status.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("create-podcaster-profile", SAGA_TOPIC)]
-        // public async Task HandleCreatePodcasterProfileAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var createPodcasterProfileParameterDTO = command.RequestData.ToObject<CreatePodcasterProfileParameterDTO>();
-        //             await _accountService.CreatePodcasterProfile(createPodcasterProfileParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "create-podcaster-profile.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("update-podcaster-profile", SAGA_TOPIC)]
-        // public async Task HandleUpdatePodcasterProfileAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var updatePodcasterProfileParameterDTO = command.RequestData.ToObject<UpdatePodcasterProfileParameterDTO>();
-        //             await _accountService.UpdatePodcasterProfile(updatePodcasterProfileParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "update-podcaster-profile.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("update-user", SAGA_TOPIC)]
-        // public async Task HandleUpdateUserAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var updateUserParameterDTO = command.RequestData.ToObject<UpdateUserParameterDTO>();
-        //             await _accountService.UpdateUser(updateUserParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "update-user.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("deactivate-account", SAGA_TOPIC)]
-        // public async Task HandleDeactivateAccountAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var deactivateAccountParameterDTO = command.RequestData.ToObject<DeactivateAccountParameterDTO>();
-        //             await _accountService.DeactivateAccount(deactivateAccountParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "deactivate-account.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("activate-account", SAGA_TOPIC)]
-        // public async Task HandleActivateAccountAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var activateAccountParameterDTO = command.RequestData.ToObject<ActivateAccountParameterDTO>();
-        //             await _accountService.ActivateAccount(activateAccountParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "activate-account.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("add-account-violation-point", SAGA_TOPIC)]
-        // public async Task HandleAddAccountViolationPointAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var addAccountViolationPointParameterDTO = command.RequestData.ToObject<AddAccountViolationPointParameterDTO>();
-        //             await _accountService.AddAccountViolationPoint(addAccountViolationPointParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "add-account-violation-point.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("verify-podcaster", SAGA_TOPIC)]
-        // public async Task HandleVerifyPodcasterAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var verifyPodcasterParameterDTO = command.RequestData.ToObject<VerifyPodcasterParameterDTO>();
-        //             await _accountService.VerifyPodcaster(verifyPodcasterParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "verify-podcaster.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("create-podcaster-followed", SAGA_TOPIC)]
-        // public async Task HandleCreatePodcasterFollowedAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var createPodcasterFollowedParameterDTO = command.RequestData.ToObject<CreatePodcasterFollowedParameterDTO>();
-        //             await _accountService.CreatePodcasterFollowed(createPodcasterFollowedParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "create-podcaster-followed.failed"    // From YAML onFailure.emit
-        //     );
-        // }
-
-        // [MessageHandler("delete-podcaster-followed", SAGA_TOPIC)]
-        // public async Task HandleDeletePodcasterFollowedAsync(string key, string messageJson)
-        // {
-        //     await ExecuteSagaCommandMessageAsync(
-        //         messageJson: messageJson,
-        //         stepHandler: async (command) =>
-        //         {
-        //             var deletePodcasterFollowedParameterDTO = command.RequestData.ToObject<DeletePodcasterFollowedParameterDTO>();
-        //             await _accountService.DeletePodcasterFollowed(deletePodcasterFollowedParameterDTO, command);
-
-        //         },
-        //         responseTopic: SAGA_TOPIC,
-        //         failedEmitMessage: "delete-podcaster-followed.failed"    // From YAML onFailure.emit
-        //     );
-        // }
         #endregion
 
 
@@ -773,6 +517,561 @@ namespace PodcastService.BusinessLogic.MessageHandlers
             );
         }
 
+        [MessageHandler("delete-episode-listen-session-dmca-remove-episode-force", SAGA_TOPIC)]
+        public async Task HandleDeleteEpisodeListenSessionDmcaRemoveEpisodeForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteEpisodeListenSessionDmcaRemoveEpisodeForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteEpisodeListenSessionDmcaRemoveEpisodeForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-episode-listen-session-dmca-remove-episode-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-episode-dmca-remove-episode-force", SAGA_TOPIC)]
+        public async Task HandleRemoveEpisodeDmcaRemoveEpisodeForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveEpisodeDmcaRemoveEpisodeForceParameterDTO>();
+                    await _podcastEpisodeService.RemoveEpisodeDmcaRemoveEpisodeForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-episode-dmca-remove-episode-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-dismissed-episode-dmca-unpublish-episode-force", SAGA_TOPIC)]
+        public async Task HandleRemoveDismissedEpisodeDmcaUnpublishEpisodeForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveDismissedEpisodeDmcaUnpublishEpisodeForceParameterDTO>();
+                    await _podcastEpisodeService.RemoveDismissedEpisodeDmcaUnpublishEpisodeForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-dismissed-episode-dmca-unpublish-episode-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-episode-listen-session-unpublish-episode-force", SAGA_TOPIC)]
+        public async Task HandleDeleteEpisodeListenSessionUnpublishEpisodeForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteEpisodeListenSessionUnpublishEpisodeForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteEpisodeListenSessionUnpublishEpisodeForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-episode-listen-session-unpublish-episode-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("unpublish-episode-unpublish-episode-force", SAGA_TOPIC)]
+        public async Task HandleUnpublishEpisodeUnpublishEpisodeForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<UnpublishEpisodeUnpublishEpisodeForceParameterDTO>();
+                    await _podcastEpisodeService.UnpublishEpisodeUnpublishEpisodeForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "unpublish-episode-unpublish-episode-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-show-episodes-listen-session-dmca-remove-show-force", SAGA_TOPIC)]
+        public async Task HandleDeleteShowEpisodesListenSessionDmcaRemoveShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteShowEpisodesListenSessionDmcaRemoveShowForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteShowEpisodesListenSessionDmcaRemoveShowForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-episodes-listen-session-dmca-remove-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-show-episodes-dmca-remove-show-force", SAGA_TOPIC)]
+        public async Task HandleRemoveShowEpisodesDmcaRemoveShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveShowEpisodesDmcaRemoveShowForceParameterDTO>();
+                    await _podcastEpisodeService.RemoveShowEpisodesDmcaRemoveShowForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-show-episodes-dmca-remove-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-show-dmca-dmca-remove-show-force", SAGA_TOPIC)]
+        public async Task HandleRemoveShowDmcaDmcaRemoveShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveShowDmcaDmcaRemoveShowForceParameterDTO>();
+                    await _podcastShowService.RemoveShowDmcaRemoveShowForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-show-dmca-dmca-remove-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-dismissed-show-dmca-unpublish-show-force", SAGA_TOPIC)]
+        public async Task HandleRemoveDismissedShowDmcaUnpublishShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveDismissedShowDmcaUnpublishShowForceParameterDTO>();
+                    await _podcastShowService.RemoveDismissedShowDmcaUnpublishShowForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-dismissed-show-dmca-unpublish-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-dismissed-show-episodes-dmca-unpublish-show-force", SAGA_TOPIC)]
+        public async Task HandleRemoveDismissedShowEpisodesDmcaUnpublishShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveDismissedShowEpisodesDmcaUnpublishShowForceParameterDTO>();
+                    await _podcastEpisodeService.RemoveDismissedShowEpisodesDmcaUnpublishShowForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-dismissed-show-episodes-dmca-unpublish-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-show-episodes-listen-session-unpublish-show-force", SAGA_TOPIC)]
+        public async Task HandleDeleteShowEpisodesListenSessionUnpublishShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteShowEpisodesListenSessionUnpublishShowForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteShowEpisodesListenSessionUnpublishShowForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-episodes-listen-session-unpublish-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("unpublish-show-unpublish-show-force", SAGA_TOPIC)]
+        public async Task HandleUnpublishShowUnpublishShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<UnpublishShowUnpublishShowForceParameterDTO>();
+                    await _podcastShowService.UnpublishShowUnpublishShowForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "unpublish-show-unpublish-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-channel-dismissed-shows-dmca-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleRemoveChannelDismissedShowsDmcaUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveChannelDismissedShowsDmcaUnpublishChannelForceParameterDTO>();
+                    await _podcastShowService.RemoveChannelDismissedShowsDmcaUnpublishChannelForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-channel-dismissed-shows-dmca-unpublish-channel-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-channel-dismissed-episodes-dmca-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleRemoveChannelDismissedEpisodesDmcaUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveChannelDismissedEpisodesDmcaUnpublishChannelForceParameterDTO>();
+                    await _podcastEpisodeService.RemoveChannelDismissedEpisodesDmcaUnpublishChannelForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-channel-dismissed-episodes-dmca-unpublish-channel-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-channel-episodes-listen-session-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleDeleteChannelEpisodesListenSessionUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteChannelEpisodesListenSessionUnpublishChannelForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteChannelEpisodesListenSessionUnpublishChannelForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-channel-episodes-listen-session-unpublish-channel-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("unpublish-channel-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleUnpublishChannelUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<UnpublishChannelUnpublishChannelForceParameterDTO>();
+                    await _podcastChannelService.UnpublishChannelUnpublishChannelForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "unpublish-channel-unpublish-channel-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-episode-listen-session-episode-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteEpisodeListenSessionEpisodeDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteEpisodeListenSessionEpisodeDeletionForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteEpisodeListenSessionEpisodeDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-episode-listen-session-episode-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-dismissed-episode-dmca-episode-deletion-force", SAGA_TOPIC)]
+        public async Task HandleRemoveDismissedEpisodeDmcaEpisodeDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveDismissedEpisodeDmcaEpisodeDeletionForceParameterDTO>();
+                    await _podcastEpisodeService.RemoveDismissedEpisodeDmcaEpisodeDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-dismissed-episode-dmca-episode-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-episode-episode-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteEpisodeEpisodeDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteEpisodeEpisodeDeletionForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteEpisodeEpisodeDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-episode-episode-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-dismissed-show-dmca-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleRemoveDismissedShowDmcaShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    // var parameterDTO = command.RequestData.ToObject<DismissShowDmcaShowDeletionForceParameterDTO>();
+                    var parameterDTO = command.RequestData.ToObject<RemoveDismissedShowDmcaShowDeletionForceParameterDTO>();
+                    await _podcastShowService.RemoveDismissedShowDmcaShowDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-dismissed-show-dmca-show-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-show-episodes-listen-session-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteShowEpisodesListenSessionShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteShowEpisodesListenSessionShowDeletionForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteShowEpisodesListenSessionShowDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-episodes-listen-session-show-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-dismissed-show-episodes-dmca-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleRemoveDismissedShowEpisodesDmcaShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveDismissedShowEpisodesDmcaShowDeletionForceParameterDTO>();
+                    await _podcastEpisodeService.RemoveDismissedShowEpisodesDmcaShowDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-dismissed-show-episodes-dmca-show-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-show-episodes-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteShowEpisodesShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteShowEpisodesShowDeletionForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteShowEpisodesShowDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-episodes-show-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-show-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteShowShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteShowShowShowDeletionForceParameterDTO>();
+                    await _podcastShowService.DeleteShowShowShowDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-show-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-channel-dismissed-shows-dmca-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleRemoveChannelDismissedShowsDmcaChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveChannelDismissedShowsDmcaChannelDeletionForceParameterDTO>();
+                    await _podcastShowService.RemoveChannelDismissedShowsDmcaChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-channel-dismissed-shows-dmca-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-channel-episodes-listen-session-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteChannelEpisodesListenSessionChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteChannelEpisodesListenSessionChannelDeletionForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteChannelEpisodesListenSessionChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-channel-episodes-listen-session-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-channel-dismissed-episodes-dmca-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleRemoveChannelDismissedEpisodesDmcaChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveChannelDismissedEpisodesDmcaChannelDeletionForceParameterDTO>();
+                    await _podcastEpisodeService.RemoveChannelDismissedEpisodesDmcaChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-channel-dismissed-episodes-dmca-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-channel-episodes-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteChannelEpisodesChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteChannelEpisodesChannelDeletionForceParameterDTO>();
+                    await _podcastEpisodeService.DeleteChannelEpisodesChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-channel-episodes-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-channel-shows-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteChannelShowsChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteChannelShowsChannelDeletionForceParameterDTO>();
+                    await _podcastShowService.DeleteChannelShowsChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-channel-shows-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-channel-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteChannelChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteChannelChannelDeletionForceParameterDTO>();
+                    await _podcastChannelService.DeleteChannelChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-channel-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("unpublish-podcaster-channels-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleUnpublishPodcasterChannelsTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<UnpublishPodcasterChannelsTerminatePodcasterForceParameterDTO>();
+                    await _podcastChannelService.UnpublishPodcasterChannelsTerminatePodcasterForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "unpublish-podcaster-channels-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("unpublish-podcaster-shows-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleUnpublishPodcasterShowsTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<UnpublishPodcasterShowsTerminatePodcasterForceParameterDTO>();
+                    await _podcastShowService.UnpublishPodcasterShowsTerminatePodcasterForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "unpublish-podcaster-shows-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-dismissed-show-dmca-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleRemoveDismissedShowDmcaTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveDismissedShowDmcaTerminatePodcasterForceParameterDTO>();
+                    await _podcastShowService.RemoveDismissedShowDmcaTerminatePodcasterForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-dismissed-show-dmca-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("unpublish-podcaster-episodes-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleUnpublishPodcasterEpisodesTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<UnpublishPodcasterEpisodesTerminatePodcasterForceParameterDTO>();
+                    await _podcastEpisodeService.UnpublishPodcasterEpisodesTerminatePodcasterForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "unpublish-podcaster-episodes-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("remove-dismissed-episode-dmca-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleRemoveDismissedEpisodeDmcaTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<RemoveDismissedEpisodeDmcaTerminatePodcasterForceParameterDTO>();
+                    await _podcastEpisodeService.RemoveDismissedEpisodeDmcaTerminatePodcasterForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-dismissed-episode-dmca-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-podcaster-episodes-listen-session-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleDeletePodcasterEpisodesListenSessionTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeletePodcasterEpisodesListenSessionTerminatePodcasterForceParameterDTO>();
+                    await _podcastEpisodeService.DeletePodcasterEpisodesListenSessionTerminatePodcasterForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-podcaster-episodes-listen-session-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("update-episode-listen-session-duration", SAGA_TOPIC)]
+        public async Task HandleUpdateEpisodeListenSessionDurationAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<UpdateEpisodeListenSessionDurationParameterDTO>();
+                    await _podcastEpisodeService.UpdateEpisodeListenSessionDuration(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "update-episode-listen-session-duration.failed"    // From YAML onFailure.emit
+            );
+        } 
     }
 }
 

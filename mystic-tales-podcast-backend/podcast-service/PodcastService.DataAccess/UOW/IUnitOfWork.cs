@@ -10,6 +10,8 @@ public interface IUnitOfWork
     IPodcastEpisodeHashtagRepository PodcastEpisodeHashtagRepository { get; }
     IPodcastEpisodeIllegalContentTypeMarkingRepository PodcastEpisodeIllegalContentTypeMarkingRepository { get; }
     IPodcastEpisodePublishDuplicateDetectionRepository PodcastEpisodePublishDuplicateDetectionRepository { get; }
+    IPodcastEpisodeListenSessionRepository PodcastEpisodeListenSessionRepository { get; }
+    IPodcastShowReviewRepository PodcastShowReviewRepository { get; }
 
     int Complete();
 }

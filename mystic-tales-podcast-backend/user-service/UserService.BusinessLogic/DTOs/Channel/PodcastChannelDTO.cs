@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UserService.BusinessLogic.DTOs.Show;
 
 namespace UserService.BusinessLogic.DTOs.Channel
 {
@@ -31,6 +32,7 @@ namespace UserService.BusinessLogic.DTOs.Channel
 
         public DateTime UpdatedAt { get; set; }
         public List<PodcastChannelStatusTrackingDTO> PodcastChannelStatusTrackings { get; set; } = new List<PodcastChannelStatusTrackingDTO>();
+        public List<PodcastShowDTO>? PodcastShows { get; set; } = new List<PodcastShowDTO>();
 
     }
 

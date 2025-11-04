@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using UserService.API.Filters.ExceptionFilters;
+using UserService.BusinessLogic.DTOs.Channel;
+using UserService.BusinessLogic.DTOs.Episode;
+using UserService.BusinessLogic.DTOs.Show;
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 
@@ -73,6 +76,43 @@ namespace UserService.API.Controllers.QueryControllers
             return Ok(new
             {
                 accounts = result.Results["accounts"][0]["Role"],
+            });
+        }
+
+        [HttpPost("test-query")]
+        public async Task<IActionResult> TestQuery()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                        {
+                            new BatchQueryItem
+                            {
+                                Key = "podcastShow",
+                                QueryType = "findall",
+                                EntityType = "PodcastShow",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        PodcasterId = 17
+                                    },
+                                    include = "PodcastEpisodes"
+                                }),
+                            }
+                        }
+            };
+
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+
+            var podcastShow = result.Results["podcastShow"].ToObject<List<PodcastShowDTO>>();
+
+            List<Guid> podcastEpisodeIds = podcastShow.SelectMany(ps => ps.PodcastEpisodes).Select(pe => pe.Id).ToList();
+            return Ok(new
+            {
+                result = podcastEpisodeIds,
+                podcastShow = podcastShow,
             });
         }
     }

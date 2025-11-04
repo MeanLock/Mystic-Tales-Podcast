@@ -1661,7 +1661,7 @@ flows:
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-channel-show-dmca-unpublish-channel-force"
+            - name: "dismiss-channel-shows-dmca-unpublish-channel-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
@@ -1671,7 +1671,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-channel-show-dmca-unpublish-channel-force"
+      - name: "dismiss-channel-shows-dmca-unpublish-channel-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses all show DMCA accusations of the channel (only changes DMCA status)."
@@ -1679,29 +1679,31 @@ flows:
           - PodcastChannelId
         next-request-data:
           - PodcastChannelId
+          - DmcaDismissedShowIds
         response-data:
           - PodcastChannelId
           - DmcaDismissedShowIds
         onSuccess:
-          emit: "dismiss-channel-show-dmca-unpublish-channel-force.success"
+          emit: "dismiss-channel-shows-dmca-unpublish-channel-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "remove-channel-dismissed-show-dmca-unpublish-channel-force"
+            - name: "remove-channel-dismissed-shows-dmca-unpublish-channel-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-channel-show-dmca-unpublish-channel-force.failed"
+          emit: "dismiss-channel-shows-dmca-unpublish-channel-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "remove-channel-dismissed-show-dmca-unpublish-channel-force"
+      - name: "remove-channel-dismissed-shows-dmca-unpublish-channel-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes dismissed show DMCAs (changes status to remove + runs add violation point flow if applicable)."
         parameters:
+          - PodcastChannelId
           - DmcaDismissedShowIds
         next-request-data:
           - PodcastChannelId
@@ -1710,25 +1712,26 @@ flows:
           - PodcastChannelId
           - DmcaDismissedShowIds
         onSuccess:
-          emit: "remove-channel-dismissed-show-dmca-unpublish-channel-force.success"
+          emit: "remove-channel-dismissed-shows-dmca-unpublish-channel-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-channel-show-review-unpublish-channel-force"
+            - name: "delete-channel-shows-review-unpublish-channel-force"
               topic: "public-review-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "remove-channel-dismissed-show-dmca-unpublish-channel-force.failed"
+          emit: "remove-channel-dismissed-shows-dmca-unpublish-channel-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-channel-show-review-unpublish-channel-force"
+      - name: "delete-channel-shows-review-unpublish-channel-force"
         topic: "public-review-management-domain"
         handle-service: "PodcastService"
         description: "Deletes all show reviews of dismissed shows."
         parameters:
+          - PodcastChannelId
           - DmcaDismissedShowIds
         next-request-data:
           - PodcastChannelId
@@ -1737,25 +1740,26 @@ flows:
           - PodcastChannelId
           - DmcaDismissedShowIds
         onSuccess:
-          emit: "delete-channel-show-review-unpublish-channel-force.success"
+          emit: "delete-channel-shows-review-unpublish-channel-force.success"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-followed-channel-show-unpublish-channel-force"
+            - name: "delete-account-followed-channel-shows-unpublish-channel-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "delete-channel-show-review-unpublish-channel-force.failed"
+          emit: "delete-channel-shows-review-unpublish-channel-force.failed"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-followed-channel-show-unpublish-channel-force"
+      - name: "delete-account-followed-channel-shows-unpublish-channel-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes dismissed shows from users' followed lists."
         parameters:
+          - PodcastChannelId
           - DmcaDismissedShowIds
         next-request-data:
           - PodcastChannelId
@@ -1764,21 +1768,21 @@ flows:
           - PodcastChannelId
           - DmcaDismissedShowIds
         onSuccess:
-          emit: "delete-account-followed-channel-show-unpublish-channel-force.success"
+          emit: "delete-account-followed-channel-shows-unpublish-channel-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-channel-show-report-no-effect-unpublish-channel-force"
+            - name: "resolve-channel-shows-report-no-effect-unpublish-channel-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-followed-channel-show-unpublish-channel-force.failed"
+          emit: "delete-account-followed-channel-shows-unpublish-channel-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-channel-show-report-no-effect-unpublish-channel-force"
+      - name: "resolve-channel-shows-report-no-effect-unpublish-channel-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all dismissed show report review sessions with no effect (includes resolving child reports)."
@@ -1791,21 +1795,21 @@ flows:
           - PodcastChannelId
           - DmcaDismissedShowIds
         onSuccess:
-          emit: "resolve-channel-show-report-no-effect-unpublish-channel-force.success"
+          emit: "resolve-channel-shows-report-no-effect-unpublish-channel-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-channel-episode-dmca-unpublish-channel-force"
+            - name: "dismiss-channel-episodes-dmca-unpublish-channel-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "resolve-channel-show-report-no-effect-unpublish-channel-force.failed"
+          emit: "resolve-channel-shows-report-no-effect-unpublish-channel-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-channel-episode-dmca-unpublish-channel-force"
+      - name: "dismiss-channel-episodes-dmca-unpublish-channel-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses all episode DMCA accusations of the channel (only changes DMCA status)."
@@ -1813,79 +1817,85 @@ flows:
           - PodcastChannelId
         next-request-data:
           - PodcastChannelId
+          - DmcaDismissedShowIds
+          - DmcaDismissedEpisodeIds
         response-data:
           - PodcastChannelId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "dismiss-channel-episode-dmca-unpublish-channel-force.success"
+          emit: "dismiss-channel-episodes-dmca-unpublish-channel-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "remove-channel-dismissed-episode-dmca-unpublish-channel-force"
+            - name: "remove-channel-dismissed-episodes-dmca-unpublish-channel-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-channel-episode-dmca-unpublish-channel-force.failed"
+          emit: "dismiss-channel-episodes-dmca-unpublish-channel-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "remove-channel-dismissed-episode-dmca-unpublish-channel-force"
+      - name: "remove-channel-dismissed-episodes-dmca-unpublish-channel-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes dismissed episode DMCAs (changes status to remove + runs add violation point flow if applicable)."
         parameters:
+          - PodcastChannelId
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastChannelId
+          - DmcaDismissedShowIds
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastChannelId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "remove-channel-dismissed-episode-dmca-unpublish-channel-force.success"
+          emit: "remove-channel-dismissed-episodes-dmca-unpublish-channel-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-saved-channel-episode-unpublish-channel-force"
+            - name: "delete-account-saved-channel-episodes-unpublish-channel-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "remove-channel-dismissed-episode-dmca-unpublish-channel-force.failed"
+          emit: "remove-channel-dismissed-episodes-dmca-unpublish-channel-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-saved-channel-episode-unpublish-channel-force"
+      - name: "delete-account-saved-channel-episodes-unpublish-channel-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes dismissed episodes from users' saved lists."
         parameters:
+          - PodcastChannelId
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastChannelId
+          - DmcaDismissedShowIds
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastChannelId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "delete-account-saved-channel-episode-unpublish-channel-force.success"
+          emit: "delete-account-saved-channel-episodes-unpublish-channel-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-channel-episode-report-no-effect-unpublish-channel-force"
+            - name: "resolve-channel-episodes-report-no-effect-unpublish-channel-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-saved-channel-episode-unpublish-channel-force.failed"
+          emit: "delete-account-saved-channel-episodes-unpublish-channel-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-channel-episode-report-no-effect-unpublish-channel-force"
+      - name: "resolve-channel-episodes-report-no-effect-unpublish-channel-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all dismissed episode report review sessions with no effect (includes resolving child reports)."
@@ -1893,40 +1903,43 @@ flows:
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastChannelId
+          - DmcaDismissedShowIds
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastChannelId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "resolve-channel-episode-report-no-effect-unpublish-channel-force.success"
+          emit: "resolve-channel-episodes-report-no-effect-unpublish-channel-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-channel-episode-listen-history-unpublish-channel-force"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+            - name: "delete-channel-episodes-listen-session-unpublish-channel-force"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-channel-episode-report-no-effect-unpublish-channel-force.failed"
+          emit: "resolve-channel-episodes-report-no-effect-unpublish-channel-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-channel-episode-listen-history-unpublish-channel-force"
-        topic: "user-management-domain"
-        handle-service: "UserService"
-        description: "Removes dismissed episodes from users' listen history."
+      - name: "delete-channel-episodes-listen-session-unpublish-channel-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Removes dismissed episodes from users' listen session."
         parameters:
+          - PodcastChannelId
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastChannelId
+          - DmcaDismissedShowIds
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastChannelId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "delete-channel-episode-listen-history-unpublish-channel-force.success"
-          topic: "user-management-domain"
+          emit: "delete-channel-episodes-listen-session-unpublish-channel-force.success"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
             - name: "unpublish-channel-unpublish-channel-force"
@@ -1934,8 +1947,8 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-channel-episode-listen-history-unpublish-channel-force.failed"
-          topic: "user-management-domain"
+          emit: "delete-channel-episodes-listen-session-unpublish-channel-force.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -1947,6 +1960,8 @@ flows:
           - PodcastChannelId
         next-request-data:
           - PodcastChannelId
+          - DmcaDismissedShowIds
+          - DmcaDismissedEpisodeIds
         response-data:
           - PodcastChannelId
         onSuccess:
@@ -2008,7 +2023,7 @@ flows:
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-followed-channel-show-channel-deletion-force"
+            - name: "delete-account-followed-channel-shows-channel-deletion-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
@@ -2018,7 +2033,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-followed-channel-show-channel-deletion-force"
+      - name: "delete-account-followed-channel-shows-channel-deletion-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes all shows of the channel from users' followed lists."
@@ -2029,21 +2044,21 @@ flows:
         response-data:
           - PodcastChannelId
         onSuccess:
-          emit: "delete-account-followed-channel-show-channel-deletion-force.success"
+          emit: "delete-account-followed-channel-shows-channel-deletion-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-channel-show-report-no-effect-channel-deletion-force"
+            - name: "resolve-channel-shows-report-no-effect-channel-deletion-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-followed-channel-show-channel-deletion-force.failed"
+          emit: "delete-account-followed-channel-shows-channel-deletion-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-channel-show-report-no-effect-channel-deletion-force"
+      - name: "resolve-channel-shows-report-no-effect-channel-deletion-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all channel show report review sessions with no effect (includes resolving child reports)."
@@ -2054,21 +2069,21 @@ flows:
         response-data:
           - PodcastChannelId
         onSuccess:
-          emit: "resolve-channel-show-report-no-effect-channel-deletion-force.success"
+          emit: "resolve-channel-shows-report-no-effect-channel-deletion-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-channel-show-review-channel-deletion-force"
+            - name: "delete-channel-shows-review-channel-deletion-force"
               topic: "public-review-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-channel-show-report-no-effect-channel-deletion-force.failed"
+          emit: "resolve-channel-shows-report-no-effect-channel-deletion-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-channel-show-review-channel-deletion-force"
+      - name: "delete-channel-shows-review-channel-deletion-force"
         topic: "public-review-management-domain"
         handle-service: "PodcastService"
         description: "Deletes all show reviews of the channel."
@@ -2079,21 +2094,21 @@ flows:
         response-data:
           - PodcastChannelId
         onSuccess:
-          emit: "delete-channel-show-review-channel-deletion-force.success"
+          emit: "delete-channel-shows-review-channel-deletion-force.success"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-channel-show-dmca-channel-deletion-force"
+            - name: "dismiss-channel-shows-dmca-channel-deletion-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-channel-show-review-channel-deletion-force.failed"
+          emit: "delete-channel-shows-review-channel-deletion-force.failed"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-channel-show-dmca-channel-deletion-force"
+      - name: "dismiss-channel-shows-dmca-channel-deletion-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses all show DMCA accusations of the channel (only changes DMCA status)."
@@ -2106,25 +2121,26 @@ flows:
           - PodcastChannelId
           - DmcaDismissedShowIds
         onSuccess:
-          emit: "dismiss-channel-show-dmca-channel-deletion-force.success"
+          emit: "dismiss-channel-shows-dmca-channel-deletion-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "remove-channel-dismissed-show-dmca-channel-deletion-force"
+            - name: "remove-channel-dismissed-shows-dmca-channel-deletion-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-channel-show-dmca-channel-deletion-force.failed"
+          emit: "dismiss-channel-shows-dmca-channel-deletion-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "remove-channel-dismissed-show-dmca-channel-deletion-force"
+      - name: "remove-channel-dismissed-shows-dmca-channel-deletion-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes dismissed show DMCAs (changes status to remove + runs add violation point flow if applicable)."
         parameters:
+          - PodcastChannelId
           - DmcaDismissedShowIds
         next-request-data:
           - PodcastChannelId
@@ -2133,21 +2149,21 @@ flows:
           - PodcastChannelId
           - DmcaDismissedShowIds
         onSuccess:
-          emit: "remove-channel-dismissed-show-dmca-channel-deletion-force.success"
+          emit: "remove-channel-dismissed-shows-dmca-channel-deletion-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-saved-channel-episode-channel-deletion-force"
+            - name: "delete-account-saved-channel-episodes-channel-deletion-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "remove-channel-dismissed-show-dmca-channel-deletion-force.failed"
+          emit: "remove-channel-dismissed-shows-dmca-channel-deletion-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-saved-channel-episode-channel-deletion-force"
+      - name: "delete-account-saved-channel-episodes-channel-deletion-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes all episodes of all shows of the channel from users' saved lists."
@@ -2159,21 +2175,21 @@ flows:
         response-data:
           - PodcastChannelId
         onSuccess:
-          emit: "delete-account-saved-channel-episode-channel-deletion-force.success"
+          emit: "delete-account-saved-channel-episodes-channel-deletion-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-channel-episode-report-no-effect-channel-deletion-force"
+            - name: "resolve-channel-episodes-report-no-effect-channel-deletion-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-saved-channel-episode-channel-deletion-force.failed"
+          emit: "delete-account-saved-channel-episodes-channel-deletion-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-channel-episode-report-no-effect-channel-deletion-force"
+      - name: "resolve-channel-episodes-report-no-effect-channel-deletion-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all channel episode report review sessions with no effect (includes resolving child reports)."
@@ -2185,23 +2201,23 @@ flows:
         response-data:
           - PodcastChannelId
         onSuccess:
-          emit: "resolve-channel-episode-report-no-effect-channel-deletion-force.success"
+          emit: "resolve-channel-episodes-report-no-effect-channel-deletion-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-channel-episode-listen-history-channel-deletion-force"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+            - name: "delete-channel-episodes-listen-session-channel-deletion-force"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-channel-episode-report-no-effect-channel-deletion-force.failed"
+          emit: "resolve-channel-episodes-report-no-effect-channel-deletion-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-channel-episode-listen-history-channel-deletion-force"
-        topic: "user-management-domain"
-        handle-service: "UserService"
+      - name: "delete-channel-episodes-listen-session-channel-deletion-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
         description: "Removes all channel episodes from users' listen history."
         parameters:
           - PodcastChannelId
@@ -2211,21 +2227,21 @@ flows:
         response-data:
           - PodcastChannelId
         onSuccess:
-          emit: "delete-channel-episode-listen-history-channel-deletion-force.success"
-          topic: "user-management-domain"
+          emit: "delete-channel-episodes-listen-session-channel-deletion-force.success"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "discard-channel-episode-publish-review-channel-deletion-force"
+            - name: "discard-channel-episodes-publish-review-channel-deletion-force"
               topic: "content-moderation-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-channel-episode-listen-history-channel-deletion-force.failed"
-          topic: "user-management-domain"
+          emit: "delete-channel-episodes-listen-session-channel-deletion-force.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "discard-channel-episode-publish-review-channel-deletion-force"
+      - name: "discard-channel-episodes-publish-review-channel-deletion-force"
         topic: "content-moderation-domain"
         handle-service: "PodcastService"
         description: "Discards all channel episode publish review sessions with statuses other than 2, 3, 4."
@@ -2237,21 +2253,21 @@ flows:
         response-data:
           - PodcastChannelId
         onSuccess:
-          emit: "discard-channel-episode-publish-review-channel-deletion-force.success"
+          emit: "discard-channel-episodes-publish-review-channel-deletion-force.success"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-channel-episode-dmca-channel-deletion-force"
+            - name: "dismiss-channel-episodes-dmca-channel-deletion-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "discard-channel-episode-publish-review-channel-deletion-force.failed"
+          emit: "discard-channel-episodes-publish-review-channel-deletion-force.failed"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-channel-episode-dmca-channel-deletion-force"
+      - name: "dismiss-channel-episodes-dmca-channel-deletion-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses all episode DMCA accusations of the channel (only changes DMCA status)."
@@ -2265,25 +2281,26 @@ flows:
           - PodcastChannelId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "dismiss-channel-episode-dmca-channel-deletion-force.success"
+          emit: "dismiss-channel-episodes-dmca-channel-deletion-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "remove-channel-dismissed-episode-dmca-channel-deletion-force"
+            - name: "remove-channel-dismissed-episodes-dmca-channel-deletion-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-channel-episode-dmca-channel-deletion-force.failed"
+          emit: "dismiss-channel-episodes-dmca-channel-deletion-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "remove-channel-dismissed-episode-dmca-channel-deletion-force"
+      - name: "remove-channel-dismissed-episodes-dmca-channel-deletion-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes dismissed episode DMCAs (changes status to remove + runs add violation point flow if applicable)."
         parameters:
+          - PodcastChannelId
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastChannelId
@@ -2293,7 +2310,7 @@ flows:
           - PodcastChannelId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "remove-channel-dismissed-episode-dmca-channel-deletion-force.success"
+          emit: "remove-channel-dismissed-episodes-dmca-channel-deletion-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -2302,7 +2319,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "remove-channel-dismissed-episode-dmca-channel-deletion-force.failed"
+          emit: "remove-channel-dismissed-episodes-dmca-channel-deletion-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -2628,10 +2645,10 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
-          - DmcaDismissedShowIds
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
-          - DmcaDismissedShowIds
+          - DmcaDismissedShowId
         onSuccess:
           emit: "dismiss-show-dmca-show-deletion-force.success"
           topic: "dmca-management-domain"
@@ -2652,19 +2669,20 @@ flows:
         handle-service: "PodcastService"
         description: "Removes dismissed show DMCAs (changes status to remove + runs add violation point flow if applicable)."
         parameters:
-          - DmcaDismissedShowIds
+          - PodcastShowId
+          - DmcaDismissedShowId
         next-request-data:
           - PodcastShowId
-          - DmcaDismissedShowIds
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
-          - DmcaDismissedShowIds
+          - DmcaDismissedShowId
         onSuccess:
           emit: "remove-dismissed-show-dmca-show-deletion-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-saved-show-episode-show-deletion-force"
+            - name: "delete-account-saved-show-episodes-show-deletion-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
@@ -2674,7 +2692,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-saved-show-episode-show-deletion-force"
+      - name: "delete-account-saved-show-episodes-show-deletion-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes all episodes of the show from users' saved lists."
@@ -2682,25 +2700,25 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
-          - DmcaDismissedShowIds
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "delete-account-saved-show-episode-show-deletion-force.success"
+          emit: "delete-account-saved-show-episodes-show-deletion-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-show-episode-report-no-effect-show-deletion-force"
+            - name: "resolve-show-episodes-report-no-effect-show-deletion-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-saved-show-episode-show-deletion-force.failed"
+          emit: "delete-account-saved-show-episodes-show-deletion-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-show-episode-report-no-effect-show-deletion-force"
+      - name: "resolve-show-episodes-report-no-effect-show-deletion-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all show episode report review sessions with no effect (includes resolving child reports)."
@@ -2708,49 +2726,51 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "resolve-show-episode-report-no-effect-show-deletion-force.success"
+          emit: "resolve-show-episodes-report-no-effect-show-deletion-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-show-episode-listen-history-show-deletion-force"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+            - name: "delete-show-episodes-listen-session-show-deletion-force"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-show-episode-report-no-effect-show-deletion-force.failed"
+          emit: "resolve-show-episodes-report-no-effect-show-deletion-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-show-episode-listen-history-show-deletion-force"
-        topic: "user-management-domain"
-        handle-service: "UserService"
+      - name: "delete-show-episodes-listen-session-show-deletion-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
         description: "Removes all show episodes from users' listen history."
         parameters:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "delete-show-episode-listen-history-show-deletion-force.success"
-          topic: "user-management-domain"
+          emit: "delete-show-episodes-listen-session-show-deletion-force.success"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "discard-show-episode-publish-review-show-deletion-force"
+            - name: "discard-show-episodes-publish-review-show-deletion-force"
               topic: "content-moderation-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-show-episode-listen-history-show-deletion-force.failed"
-          topic: "user-management-domain"
+          emit: "delete-show-episodes-listen-session-show-deletion-force.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "discard-show-episode-publish-review-show-deletion-force"
+      - name: "discard-show-episodes-publish-review-show-deletion-force"
         topic: "content-moderation-domain"
         handle-service: "PodcastService"
         description: "Discards all show episode publish review sessions with statuses other than 2, 3, 4."
@@ -2758,24 +2778,25 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "discard-show-episode-publish-review-show-deletion-force.success"
+          emit: "discard-show-episodes-publish-review-show-deletion-force.success"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-show-episode-dmca-show-deletion-force"
+            - name: "dismiss-show-episodes-dmca-show-deletion-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "discard-show-episode-publish-review-show-deletion-force.failed"
+          emit: "discard-show-episodes-publish-review-show-deletion-force.failed"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-show-episode-dmca-show-deletion-force"
+      - name: "dismiss-show-episodes-dmca-show-deletion-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses all episode DMCA accusations of the show (only changes DMCA status)."
@@ -2783,38 +2804,42 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
+          - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "dismiss-show-episode-dmca-show-deletion-force.success"
+          emit: "dismiss-show-episodes-dmca-show-deletion-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "remove-dismissed-show-episode-dmca-show-deletion-force"
+            - name: "remove-dismissed-show-episodes-dmca-show-deletion-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-show-episode-dmca-show-deletion-force.failed"
+          emit: "dismiss-show-episodes-dmca-show-deletion-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "remove-dismissed-show-episode-dmca-show-deletion-force"
+      - name: "remove-dismissed-show-episodes-dmca-show-deletion-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes dismissed episode DMCAs (changes status to remove + runs add violation point flow if applicable)."
         parameters:
+          - PodcastShowId
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "remove-dismissed-show-episode-dmca-show-deletion-force.success"
+          emit: "remove-dismissed-show-episodes-dmca-show-deletion-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -2823,7 +2848,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "remove-dismissed-show-episode-dmca-show-deletion-force.failed"
+          emit: "remove-dismissed-show-episodes-dmca-show-deletion-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -2836,6 +2861,7 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
@@ -2862,6 +2888,7 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
@@ -2986,8 +3013,10 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         onSuccess:
           emit: "dismiss-show-dmca-unpublish-show-force.success"
           topic: "dmca-management-domain"
@@ -3009,10 +3038,13 @@ flows:
         description: "Removes dismissed show DMCA (changes status to remove + runs add violation point flow if applicable)."
         parameters:
           - PodcastShowId
+          - DmcaDismissedShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         onSuccess:
           emit: "remove-dismissed-show-dmca-unpublish-show-force.success"
           topic: "content-management-domain"
@@ -3036,6 +3068,7 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
         onSuccess:
@@ -3061,6 +3094,7 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
         onSuccess:
@@ -3086,6 +3120,7 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
         response-data:
           - PodcastShowId
         onSuccess:
@@ -3093,7 +3128,7 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-show-episode-dmca-unpublish-show-force"
+            - name: "dismiss-show-episodes-dmca-unpublish-show-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
@@ -3103,7 +3138,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-show-episode-dmca-unpublish-show-force"
+      - name: "dismiss-show-episodes-dmca-unpublish-show-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses all episode DMCA accusations of the show (only changes DMCA status)."
@@ -3111,79 +3146,85 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
+          - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "dismiss-show-episode-dmca-unpublish-show-force.success"
+          emit: "dismiss-show-episodes-dmca-unpublish-show-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "remove-dismissed-show-episode-dmca-unpublish-show-force"
+            - name: "remove-dismissed-show-episodes-dmca-unpublish-show-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-show-episode-dmca-unpublish-show-force.failed"
+          emit: "dismiss-show-episodes-dmca-unpublish-show-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "remove-dismissed-show-episode-dmca-unpublish-show-force"
+      - name: "remove-dismissed-show-episodes-dmca-unpublish-show-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes dismissed episode DMCAs (changes status to remove + runs add violation point flow if applicable)."
         parameters:
+          - PodcastShowId
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "remove-dismissed-show-episode-dmca-unpublish-show-force.success"
+          emit: "remove-dismissed-show-episodes-dmca-unpublish-show-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-saved-show-episode-unpublish-show-force"
+            - name: "delete-account-saved-show-episodes-unpublish-show-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "remove-dismissed-show-episode-dmca-unpublish-show-force.failed"
+          emit: "remove-dismissed-show-episodes-dmca-unpublish-show-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-saved-show-episode-unpublish-show-force"
+      - name: "delete-account-saved-show-episodes-unpublish-show-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes dismissed episodes from users' saved lists."
         parameters:
+          - PodcastShowId
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "delete-account-saved-show-episode-unpublish-show-force.success"
+          emit: "delete-account-saved-show-episodes-unpublish-show-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-show-episode-report-no-effect-unpublish-show-force"
+            - name: "resolve-show-episodes-report-no-effect-unpublish-show-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-saved-show-episode-unpublish-show-force.failed"
+          emit: "delete-account-saved-show-episodes-unpublish-show-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-show-episode-report-no-effect-unpublish-show-force"
+      - name: "resolve-show-episodes-report-no-effect-unpublish-show-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all dismissed episode report review sessions with no effect (includes resolving child reports)."
@@ -3191,40 +3232,43 @@ flows:
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "resolve-show-episode-report-no-effect-unpublish-show-force.success"
+          emit: "resolve-show-episodes-report-no-effect-unpublish-show-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-show-episode-listen-history-unpublish-show-force"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+            - name: "delete-show-episodes-listen-session-unpublish-show-force"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-show-episode-report-no-effect-unpublish-show-force.failed"
+          emit: "resolve-show-episodes-report-no-effect-unpublish-show-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-show-episode-listen-history-unpublish-show-force"
-        topic: "user-management-domain"
-        handle-service: "UserService"
+      - name: "delete-show-episodes-listen-session-unpublish-show-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
         description: "Removes dismissed episodes from users' listen history."
         parameters:
+          - PodcastShowId
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "delete-show-episode-listen-history-unpublish-show-force.success"
-          topic: "user-management-domain"
+          emit: "delete-show-episodes-listen-session-unpublish-show-force.success"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
             - name: "unpublish-show-unpublish-show-force"
@@ -3232,8 +3276,8 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-show-episode-listen-history-unpublish-show-force.failed"
-          topic: "user-management-domain"
+          emit: "delete-show-episodes-listen-session-unpublish-show-force.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -3245,6 +3289,8 @@ flows:
           - PodcastShowId
         next-request-data:
           - PodcastShowId
+          - DmcaDismissedShowId
+          - DmcaDismissedEpisodeIds
         response-data:
           - PodcastShowId
         onSuccess:
@@ -3358,13 +3404,13 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  remove-show-flow:
+  dmca-remove-show-flow:
     topic: "content-management-domain"
     handle-service: "PodcastService"
     description: "Handles the removal of podcast shows (post-DMCA action)."
     save-files: ""
     steps:
-      - name: "cancel-show-subscription-remove-show-force"
+      - name: "cancel-show-subscription-dmca-remove-show-force"
         topic: "subscription-management-domain"
         handle-service: "SubscriptionService"
         description: "Cancels and refunds all active subscriptions of the show."
@@ -3375,21 +3421,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "cancel-show-subscription-remove-show-force.success"
+          emit: "cancel-show-subscription-dmca-remove-show-force.success"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-other-show-dmca-remove-show-force"
+            - name: "dismiss-other-show-dmca-dmca-remove-show-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "cancel-show-subscription-remove-show-force.failed"
+          emit: "cancel-show-subscription-dmca-remove-show-force.failed"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-other-show-dmca-remove-show-force"
+      - name: "dismiss-other-show-dmca-dmca-remove-show-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses other show DMCA accusations (only changes DMCA status)."
@@ -3400,21 +3446,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "dismiss-other-show-dmca-remove-show-force.success"
+          emit: "dismiss-other-show-dmca-dmca-remove-show-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-followed-show-remove-show-force"
+            - name: "delete-account-followed-show-dmca-remove-show-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-other-show-dmca-remove-show-force.failed"
+          emit: "dismiss-other-show-dmca-dmca-remove-show-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-followed-show-remove-show-force"
+      - name: "delete-account-followed-show-dmca-remove-show-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes the show from users' followed lists."
@@ -3425,21 +3471,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "delete-account-followed-show-remove-show-force.success"
+          emit: "delete-account-followed-show-dmca-remove-show-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-show-report-no-effect-remove-show-force"
+            - name: "resolve-show-report-no-effect-dmca-remove-show-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-followed-show-remove-show-force.failed"
+          emit: "delete-account-followed-show-dmca-remove-show-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-show-report-no-effect-remove-show-force"
+      - name: "resolve-show-report-no-effect-dmca-remove-show-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all show report review sessions with no effect (includes resolving child reports)."
@@ -3450,21 +3496,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "resolve-show-report-no-effect-remove-show-force.success"
+          emit: "resolve-show-report-no-effect-dmca-remove-show-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-show-review-remove-show-force"
+            - name: "delete-show-review-dmca-remove-show-force"
               topic: "public-review-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-show-report-no-effect-remove-show-force.failed"
+          emit: "resolve-show-report-no-effect-dmca-remove-show-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-show-review-remove-show-force"
+      - name: "delete-show-review-dmca-remove-show-force"
         topic: "public-review-management-domain"
         handle-service: "PodcastService"
         description: "Deletes all reviews of the show."
@@ -3475,21 +3521,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "delete-show-review-remove-show-force.success"
+          emit: "delete-show-review-dmca-remove-show-force.success"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-show-episode-dmca-remove-show-force"
+            - name: "dismiss-show-episodes-dmca-dmca-remove-show-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-show-review-remove-show-force.failed"
+          emit: "delete-show-review-dmca-remove-show-force.failed"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-show-episode-dmca-remove-show-force"
+      - name: "dismiss-show-episodes-dmca-dmca-remove-show-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses all episode DMCA accusations of the show (only changes DMCA status)."
@@ -3500,21 +3546,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "dismiss-show-episode-dmca-remove-show-force.success"
+          emit: "dismiss-show-episodes-dmca-dmca-remove-show-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-saved-show-episode-remove-show-force"
+            - name: "delete-account-saved-show-episodes-dmca-remove-show-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-show-episode-dmca-remove-show-force.failed"
+          emit: "dismiss-show-episodes-dmca-dmca-remove-show-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-saved-show-episode-remove-show-force"
+      - name: "delete-account-saved-show-episodes-dmca-remove-show-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes all episodes of the show from users' saved lists."
@@ -3525,21 +3571,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "delete-account-saved-show-episode-remove-show-force.success"
+          emit: "delete-account-saved-show-episodes-dmca-remove-show-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "discard-show-episode-publish-review-remove-show-force"
+            - name: "discard-show-episodes-publish-review-dmca-remove-show-force"
               topic: "content-moderation-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-saved-show-episode-remove-show-force.failed"
+          emit: "delete-account-saved-show-episodes-dmca-remove-show-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "discard-show-episode-publish-review-remove-show-force"
+      - name: "discard-show-episodes-publish-review-dmca-remove-show-force"
         topic: "content-moderation-domain"
         handle-service: "PodcastService"
         description: "Discards all show episode publish review sessions with statuses other than 2, 3, 4."
@@ -3550,21 +3596,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "discard-show-episode-publish-review-remove-show-force.success"
+          emit: "discard-show-episodes-publish-review-dmca-remove-show-force.success"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-show-episode-report-no-effect-remove-show-force"
+            - name: "resolve-show-episodes-report-no-effect-dmca-remove-show-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "discard-show-episode-publish-review-remove-show-force.failed"
+          emit: "discard-show-episodes-publish-review-dmca-remove-show-force.failed"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-show-episode-report-no-effect-remove-show-force"
+      - name: "resolve-show-episodes-report-no-effect-dmca-remove-show-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all show episode report review sessions with no effect (includes resolving child reports)."
@@ -3575,23 +3621,23 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "resolve-show-episode-report-no-effect-remove-show-force.success"
+          emit: "resolve-show-episodes-report-no-effect-dmca-remove-show-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-show-episode-listen-history-remove-show-force"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+            - name: "delete-show-episodes-listen-session-dmca-remove-show-force"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-show-episode-report-no-effect-remove-show-force.failed"
+          emit: "resolve-show-episodes-report-no-effect-dmca-remove-show-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-show-episode-listen-history-remove-show-force"
-        topic: "user-management-domain"
-        handle-service: "UserService"
+      - name: "delete-show-episodes-listen-session-dmca-remove-show-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
         description: "Removes all show episodes from users' listen history."
         parameters:
           - PodcastShowId
@@ -3600,21 +3646,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "delete-show-episode-listen-history-remove-show-force.success"
-          topic: "user-management-domain"
+          emit: "delete-show-episodes-listen-session-dmca-remove-show-force.success"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "remove-show-episodes-remove-show-force"
+            - name: "remove-show-episodes-dmca-remove-show-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-show-episode-listen-history-remove-show-force.failed"
-          topic: "user-management-domain"
+          emit: "delete-show-episodes-listen-session-dmca-remove-show-force.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "remove-show-episodes-remove-show-force"
+      - name: "remove-show-episodes-dmca-remove-show-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes all episodes of the show."
@@ -3625,21 +3671,21 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "remove-show-episodes-remove-show-force.success"
+          emit: "remove-show-episodes-dmca-remove-show-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "remove-show-dmca-remove-show-force"
+            - name: "remove-show-dmca-dmca-remove-show-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "remove-show-episodes-remove-show-force.failed"
+          emit: "remove-show-episodes-dmca-remove-show-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "remove-show-dmca-remove-show-force"
+      - name: "remove-show-dmca-dmca-remove-show-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes show DMCA (changes status to remove + runs add violation point flow if applicable)."
@@ -3650,13 +3696,13 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "remove-show-dmca-remove-show-force.success"
+          emit: "remove-show-dmca-dmca-remove-show-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "remove-show-dmca-remove-show-force.failed"
+          emit: "remove-show-dmca-dmca-remove-show-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -3775,13 +3821,13 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  remove-episode-flow:
+  dmca-remove-episode-flow:
     topic: "content-management-domain"
     handle-service: "PodcastService"
     description: "Handles the removal of podcast episodes (post-DMCA action)."
     save-files: ""
     steps:
-      - name: "dismiss-other-episode-dmca-remove-episode-force"
+      - name: "dismiss-other-episode-dmca-dmca-remove-episode-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses other episode DMCA accusations (only changes DMCA status)."
@@ -3792,21 +3838,21 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "dismiss-other-episode-dmca-remove-episode-force.success"
+          emit: "dismiss-other-episode-dmca-dmca-remove-episode-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-saved-episode-remove-episode-force"
+            - name: "delete-account-saved-episode-dmca-remove-episode-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-other-episode-dmca-remove-episode-force.failed"
+          emit: "dismiss-other-episode-dmca-dmca-remove-episode-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-saved-episode-remove-episode-force"
+      - name: "delete-account-saved-episode-dmca-remove-episode-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes the episode from users' saved lists."
@@ -3817,21 +3863,21 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "delete-account-saved-episode-remove-episode-force.success"
+          emit: "delete-account-saved-episode-dmca-remove-episode-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "discard-episode-publish-review-remove-episode-force"
+            - name: "discard-episode-publish-review-dmca-remove-episode-force"
               topic: "content-moderation-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-saved-episode-remove-episode-force.failed"
+          emit: "delete-account-saved-episode-dmca-remove-episode-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "discard-episode-publish-review-remove-episode-force"
+      - name: "discard-episode-publish-review-dmca-remove-episode-force"
         topic: "content-moderation-domain"
         handle-service: "PodcastService"
         description: "Discards episode publish review sessions with statuses other than 2, 3, 4."
@@ -3842,21 +3888,21 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "discard-episode-publish-review-remove-episode-force.success"
+          emit: "discard-episode-publish-review-dmca-remove-episode-force.success"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-episode-report-no-effect-remove-episode-force"
+            - name: "resolve-episode-report-no-effect-dmca-remove-episode-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "discard-episode-publish-review-remove-episode-force.failed"
+          emit: "discard-episode-publish-review-dmca-remove-episode-force.failed"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-episode-report-no-effect-remove-episode-force"
+      - name: "resolve-episode-report-no-effect-dmca-remove-episode-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all episode report review sessions with no effect (includes resolving child reports)."
@@ -3867,23 +3913,23 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "resolve-episode-report-no-effect-remove-episode-force.success"
+          emit: "resolve-episode-report-no-effect-dmca-remove-episode-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-episode-listen-history-remove-episode-force"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+            - name: "delete-episode-listen-session-dmca-remove-episode-force"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-episode-report-no-effect-remove-episode-force.failed"
+          emit: "resolve-episode-report-no-effect-dmca-remove-episode-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-episode-listen-history-remove-episode-force"
-        topic: "user-management-domain"
-        handle-service: "UserService"
+      - name: "delete-episode-listen-session-dmca-remove-episode-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
         description: "Removes the episode from users' listen history."
         parameters:
           - PodcastEpisodeId
@@ -3892,21 +3938,21 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "delete-episode-listen-history-remove-episode-force.success"
-          topic: "user-management-domain"
+          emit: "delete-episode-listen-session-dmca-remove-episode-force.success"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "remove-episode-remove-episode-force"
+            - name: "remove-episode-dmca-remove-episode-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-episode-listen-history-remove-episode-force.failed"
-          topic: "user-management-domain"
+          emit: "delete-episode-listen-session-dmca-remove-episode-force.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "remove-episode-remove-episode-force"
+      - name: "remove-episode-dmca-remove-episode-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes the episode."
@@ -3917,13 +3963,13 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "remove-episode-remove-episode-force.success"
+          emit: "remove-episode-dmca-remove-episode-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "remove-episode-remove-episode-force.failed"
+          emit: "remove-episode-dmca-remove-episode-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -4212,8 +4258,10 @@ flows:
           - PodcastEpisodeId
         next-request-data:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         response-data:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         onSuccess:
           emit: "dismiss-episode-dmca-unpublish-episode-force.success"
           topic: "dmca-management-domain"
@@ -4235,10 +4283,13 @@ flows:
         description: "Removes dismissed episode DMCA (changes status to remove + runs add violation point flow if applicable)."
         parameters:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         next-request-data:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         response-data:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         onSuccess:
           emit: "remove-dismissed-episode-dmca-unpublish-episode-force.success"
           topic: "content-management-domain"
@@ -4262,6 +4313,7 @@ flows:
           - PodcastEpisodeId
         next-request-data:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         response-data:
           - PodcastEpisodeId
         onSuccess:
@@ -4269,9 +4321,9 @@ flows:
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-episode-listen-history-unpublish-episode-force"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+            - name: "delete-episode-listen-session-unpublish-episode-force"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
           emit: "delete-account-saved-episode-unpublish-episode-force.failed"
@@ -4279,19 +4331,20 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-episode-listen-history-unpublish-episode-force"
-        topic: "user-management-domain"
-        handle-service: "UserService"
-        description: "Removes the episode from users' listen history."
+      - name: "delete-episode-listen-session-unpublish-episode-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Removes the episode from users' listen session."
         parameters:
           - PodcastEpisodeId
         next-request-data:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "delete-episode-listen-history-unpublish-episode-force.success"
-          topic: "user-management-domain"
+          emit: "delete-episode-listen-session-unpublish-episode-force.success"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
             - name: "unpublish-episode-unpublish-episode-force"
@@ -4299,8 +4352,8 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-episode-listen-history-unpublish-episode-force.failed"
-          topic: "user-management-domain"
+          emit: "delete-episode-listen-session-unpublish-episode-force.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -4312,6 +4365,7 @@ flows:
           - PodcastEpisodeId
         next-request-data:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         response-data:
           - PodcastEpisodeId
         onSuccess:
@@ -4551,9 +4605,9 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-episode-listen-history-episode-deletion-force"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+            - name: "delete-episode-listen-session-episode-deletion-force"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
           emit: "resolve-episode-report-no-effect-episode-deletion-force.failed"
@@ -4561,10 +4615,10 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-episode-listen-history-episode-deletion-force"
-        topic: "user-management-domain"
-        handle-service: "UserService"
-        description: "Removes the episode from users' listen history."
+      - name: "delete-episode-listen-session-episode-deletion-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Removes the episode from users' listen session."
         parameters:
           - PodcastEpisodeId
         next-request-data:
@@ -4572,8 +4626,8 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "delete-episode-listen-history-episode-deletion-force.success"
-          topic: "user-management-domain"
+          emit: "delete-episode-listen-session-episode-deletion-force.success"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
             - name: "discard-episode-publish-review-episode-deletion-force"
@@ -4581,8 +4635,8 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-episode-listen-history-episode-deletion-force.failed"
-          topic: "user-management-domain"
+          emit: "delete-episode-listen-session-episode-deletion-force.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -4619,6 +4673,7 @@ flows:
           - PodcastEpisodeId
         next-request-data:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         response-data:
           - PodcastEpisodeId
           - DmcaDismissedEpisodeId
@@ -4642,6 +4697,7 @@ flows:
         handle-service: "PodcastService"
         description: "Removes dismissed episode DMCA (changes status to remove + runs add violation point flow if applicable)."
         parameters:
+          - PodcastEpisodeId
           - DmcaDismissedEpisodeId
         next-request-data:
           - PodcastEpisodeId
@@ -4672,6 +4728,7 @@ flows:
           - PodcastEpisodeId
         next-request-data:
           - PodcastEpisodeId
+          - DmcaDismissedEpisodeId
         response-data:
           - PodcastEpisodeId
         onSuccess:
@@ -4830,7 +4887,7 @@ flows:
     description: "Handles the termination of podcast creator accounts."
     save-files: ""
     steps:
-      - name: "cancel-podcaster-booking-terminate-podcaster-force"
+      - name: "cancel-podcaster-bookings-terminate-podcaster-force"
         topic: "booking-management-domain"
         handle-service: "BookingManagementService"
         description: "Cancels and refunds all bookings associated with the podcaster (statuses other than 3, 4, 8, 9, 10) with 100% refund."
@@ -4841,7 +4898,7 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "cancel-podcaster-booking-terminate-podcaster-force.success"
+          emit: "cancel-podcaster-bookings-terminate-podcaster-force.success"
           topic: "booking-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -4850,7 +4907,7 @@ flows:
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "cancel-podcaster-booking-terminate-podcaster-force.failed"
+          emit: "cancel-podcaster-bookings-terminate-podcaster-force.failed"
           topic: "booking-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -4945,7 +5002,7 @@ flows:
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "cancel-podcaster-channel-subscription-terminate-podcaster-force"
+            - name: "cancel-podcaster-channels-subscription-terminate-podcaster-force"
               topic: "subscription-management-domain"
               handle-service: "SubscriptionService"
           nextFlows: []
@@ -4955,7 +5012,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "cancel-podcaster-channel-subscription-terminate-podcaster-force"
+      - name: "cancel-podcaster-channels-subscription-terminate-podcaster-force"
         topic: "subscription-management-domain"
         handle-service: "SubscriptionService"
         description: "Cancels and refunds all active channel/show subscriptions of the podcaster."
@@ -4966,21 +5023,21 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "cancel-podcaster-channel-subscription-terminate-podcaster-force.success"
+          emit: "cancel-podcaster-channels-subscription-terminate-podcaster-force.success"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-favorited-podcaster-channel-terminate-podcaster-force"
+            - name: "delete-account-favorited-podcaster-channels-terminate-podcaster-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "cancel-podcaster-channel-subscription-terminate-podcaster-force.failed"
+          emit: "cancel-podcaster-channels-subscription-terminate-podcaster-force.failed"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-favorited-podcaster-channel-terminate-podcaster-force"
+      - name: "delete-account-favorited-podcaster-channels-terminate-podcaster-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes all podcaster channels from users' favorited lists."
@@ -4991,7 +5048,7 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "delete-account-favorited-podcaster-channel-terminate-podcaster-force.success"
+          emit: "delete-account-favorited-podcaster-channels-terminate-podcaster-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -5000,7 +5057,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-favorited-podcaster-channel-terminate-podcaster-force.failed"
+          emit: "delete-account-favorited-podcaster-channels-terminate-podcaster-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -5020,7 +5077,7 @@ flows:
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-podcaster-show-review-terminate-podcaster-force"
+            - name: "delete-podcaster-shows-review-terminate-podcaster-force"
               topic: "public-review-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -5030,7 +5087,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-podcaster-show-review-terminate-podcaster-force"
+      - name: "delete-podcaster-shows-review-terminate-podcaster-force"
         topic: "public-review-management-domain"
         handle-service: "PodcastService"
         description: "Deletes all show reviews of the podcaster."
@@ -5041,21 +5098,21 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "delete-podcaster-show-review-terminate-podcaster-force.success"
+          emit: "delete-podcaster-shows-review-terminate-podcaster-force.success"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-podcaster-show-dmca-terminate-podcaster-force"
+            - name: "dismiss-podcaster-shows-dmca-terminate-podcaster-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-podcaster-show-review-terminate-podcaster-force.failed"
+          emit: "delete-podcaster-shows-review-terminate-podcaster-force.failed"
           topic: "public-review-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-podcaster-show-dmca-terminate-podcaster-force"
+      - name: "dismiss-podcaster-shows-dmca-terminate-podcaster-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses all show DMCA accusations of the podcaster (only changes DMCA status)."
@@ -5068,7 +5125,7 @@ flows:
           - PodcasterId
           - DmcaDismissedShowIds
         onSuccess:
-          emit: "dismiss-podcaster-show-dmca-terminate-podcaster-force.success"
+          emit: "dismiss-podcaster-shows-dmca-terminate-podcaster-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -5077,7 +5134,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-podcaster-show-dmca-terminate-podcaster-force.failed"
+          emit: "dismiss-podcaster-shows-dmca-terminate-podcaster-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -5087,6 +5144,7 @@ flows:
         handle-service: "PodcastService"
         description: "Removes dismissed show DMCAs (changes status to remove + runs add violation point flow if applicable)."
         parameters:
+          - PodcasterId
           - DmcaDismissedShowIds
         next-request-data:
           - PodcasterId
@@ -5099,7 +5157,7 @@ flows:
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-followed-podcaster-show-terminate-podcaster-force"
+            - name: "delete-account-followed-podcaster-shows-terminate-podcaster-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
@@ -5109,7 +5167,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-followed-podcaster-show-terminate-podcaster-force"
+      - name: "delete-account-followed-podcaster-shows-terminate-podcaster-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes all podcaster shows from users' followed lists."
@@ -5121,21 +5179,21 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "delete-account-followed-podcaster-show-terminate-podcaster-force.success"
+          emit: "delete-account-followed-podcaster-shows-terminate-podcaster-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-podcaster-show-report-no-effect-terminate-podcaster-force"
+            - name: "resolve-podcaster-shows-report-no-effect-terminate-podcaster-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-followed-podcaster-show-terminate-podcaster-force.failed"
+          emit: "delete-account-followed-podcaster-shows-terminate-podcaster-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-podcaster-show-report-no-effect-terminate-podcaster-force"
+      - name: "resolve-podcaster-shows-report-no-effect-terminate-podcaster-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all podcaster show report review sessions with no effect (includes resolving child reports)."
@@ -5147,7 +5205,7 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "resolve-podcaster-show-report-no-effect-terminate-podcaster-force.success"
+          emit: "resolve-podcaster-shows-report-no-effect-terminate-podcaster-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -5156,7 +5214,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-podcaster-show-report-no-effect-terminate-podcaster-force.failed"
+          emit: "resolve-podcaster-shows-report-no-effect-terminate-podcaster-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -5177,7 +5235,7 @@ flows:
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "dismiss-podcaster-episode-dmca-terminate-podcaster-force"
+            - name: "dismiss-podcaster-episodes-dmca-terminate-podcaster-force"
               topic: "dmca-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
@@ -5187,7 +5245,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "dismiss-podcaster-episode-dmca-terminate-podcaster-force"
+      - name: "dismiss-podcaster-episodes-dmca-terminate-podcaster-force"
         topic: "dmca-management-domain"
         handle-service: "ModerationService"
         description: "Dismisses all episode DMCA accusations of the podcaster (only changes DMCA status)."
@@ -5201,7 +5259,7 @@ flows:
           - PodcasterId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "dismiss-podcaster-episode-dmca-terminate-podcaster-force.success"
+          emit: "dismiss-podcaster-episodes-dmca-terminate-podcaster-force.success"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -5210,7 +5268,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "dismiss-podcaster-episode-dmca-terminate-podcaster-force.failed"
+          emit: "dismiss-podcaster-episodes-dmca-terminate-podcaster-force.failed"
           topic: "dmca-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -5220,10 +5278,11 @@ flows:
         handle-service: "PodcastService"
         description: "Removes dismissed episode DMCAs (changes status to remove + runs add violation point flow if applicable)."
         parameters:
+          - PodcasterId
           - DmcaDismissedEpisodeIds
         next-request-data:
           - PodcasterId
-          - DmcaDismissedShowIds
+          - DmcaDismissedShow Ids
           - DmcaDismissedEpisodeIds
         response-data:
           - PodcasterId
@@ -5233,7 +5292,7 @@ flows:
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-account-saved-podcaster-episode-terminate-podcaster-force"
+            - name: "delete-account-saved-podcaster-episodes-terminate-podcaster-force"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
@@ -5243,7 +5302,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-account-saved-podcaster-episode-terminate-podcaster-force"
+      - name: "delete-account-saved-podcaster-episodes-terminate-podcaster-force"
         topic: "user-management-domain"
         handle-service: "UserService"
         description: "Removes all podcaster episodes from users' saved lists."
@@ -5256,21 +5315,21 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "delete-account-saved-podcaster-episode-terminate-podcaster-force.success"
+          emit: "delete-account-saved-podcaster-episodes-terminate-podcaster-force.success"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "resolve-podcaster-episode-report-no-effect-terminate-podcaster-force"
+            - name: "resolve-podcaster-episodes-report-no-effect-terminate-podcaster-force"
               topic: "report-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:
-          emit: "delete-account-saved-podcaster-episode-terminate-podcaster-force.failed"
+          emit: "delete-account-saved-podcaster-episodes-terminate-podcaster-force.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "resolve-podcaster-episode-report-no-effect-terminate-podcaster-force"
+      - name: "resolve-podcaster-episodes-report-no-effect-terminate-podcaster-force"
         topic: "report-management-domain"
         handle-service: "ModerationService"
         description: "Resolves all podcaster episode report review sessions with no effect (includes resolving child reports)."
@@ -5283,24 +5342,24 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "resolve-podcaster-episode-report-no-effect-terminate-podcaster-force.success"
+          emit: "resolve-podcaster-episodes-report-no-effect-terminate-podcaster-force.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-podcaster-episode-listen-history-terminate-podcaster-force"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+            - name: "delete-podcaster-episodes-listen-session-terminate-podcaster-force"
+              topic: "content-management-domain"
+              handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-podcaster-episode-report-no-effect-terminate-podcaster-force.failed"
+          emit: "resolve-podcaster-episodes-report-no-effect-terminate-podcaster-force.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-podcaster-episode-listen-history-terminate-podcaster-force"
-        topic: "user-management-domain"
-        handle-service: "UserService"
-        description: "Removes all podcaster episodes from users' listen history."
+      - name: "delete-podcaster-episodes-listen-session-terminate-podcaster-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Removes all podcaster episodes from users' listen session."
         parameters:
           - PodcasterId
         next-request-data:
@@ -5310,21 +5369,21 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "delete-podcaster-episode-listen-history-terminate-podcaster-force.success"
-          topic: "user-management-domain"
+          emit: "delete-podcaster-episodes-listen-session-terminate-podcaster-force.success"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "discard-podcaster-episode-publish-review-terminate-podcaster-force"
+            - name: "discard-podcaster-episodes-publish-review-terminate-podcaster-force"
               topic: "content-moderation-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-podcaster-episode-listen-history-terminate-podcaster-force.failed"
-          topic: "user-management-domain"
+          emit: "delete-podcaster-episodes-listen-session-terminate-podcaster-force.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "discard-podcaster-episode-publish-review-terminate-podcaster-force"
+      - name: "discard-podcaster-episodes-publish-review-terminate-podcaster-force"
         topic: "content-moderation-domain"
         handle-service: "PodcastService"
         description: "Discards all podcaster episode publish review sessions with statuses other than 2, 3, 4."
@@ -5337,14 +5396,49 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "discard-podcaster-episode-publish-review-terminate-podcaster-force.success"
+          emit: "discard-podcaster-episodes-publish-review-terminate-podcaster-force.success"
           topic: "content-moderation-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "discard-podcaster-episode-publish-review-terminate-podcaster-force.failed"
+          emit: "discard-podcaster-episodes-publish-review-terminate-podcaster-force.failed"
           topic: "content-moderation-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  episode-listen-session-duration-update-flow:
+    topic: "content-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật thời lượng nghe của phiên nghe"
+    save-file: ""
+    steps:
+      - name: "update-episode-listen-session-duration"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Cập nhật thời lượng nghe của phiên nghe"
+        parameters:
+          - PodcastEpisodeListenSessionId
+          - ListenerId
+          - LastListenDurationSeconds
+        next-request-data:
+          - PodcastEpisodeListenSessionId
+          - ListenerId
+          - LastListenDurationSeconds
+        response-data:
+          - PodcastEpisodeListenSessionId
+          - ListenerId
+          - LastListenDurationSeconds
+        onSuccess:
+          emit: "update-episode-listen-session-duration.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-episode-listen-session-duration.failed"
+          topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []

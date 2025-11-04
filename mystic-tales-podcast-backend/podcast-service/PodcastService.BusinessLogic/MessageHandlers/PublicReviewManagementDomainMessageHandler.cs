@@ -3,11 +3,14 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using PodcastService.BusinessLogic.Attributes;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.CreateShowReview;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteChannelShowsReviewChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteChannelShowsReviewUnpublishChannelForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeletePodcasterShowsReviewTerminatePodcasterForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteShowReview;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteShowReviewDMCARemoveShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteShowReviewShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteShowReviewUnpublishShowForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.UpdateShowReview;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.CreatePodcastBuddyReview;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeletePodcastBuddyReview;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdatePodcastBuddyReview;
 using PodcastService.BusinessLogic.Enums.Kafka;
 using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -123,7 +126,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "update-show-review.failed"    // From YAML onFailure.emit
             );
         }
-        
+
         [MessageHandler("delete-show-review", SAGA_TOPIC)]
         public async Task HandleDeleteShowReviewAsync(string key, string messageJson)
         {
@@ -137,6 +140,97 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "delete-show-review.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-show-review-dmca-remove-show-force", SAGA_TOPIC)]
+        public async Task HandleDeleteShowReviewDMCARemoveShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var deleteShowReviewDMCARemoveShowForceParameterDTO = command.RequestData.ToObject<DeleteShowReviewDMCARemoveShowForceParameterDTO>();
+                    await _podcastShowService.DeleteShowReviewDMCARemoveShowForce(deleteShowReviewDMCARemoveShowForceParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-review-dmca-remove-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-show-review-unpublish-show-force", SAGA_TOPIC)]
+        public async Task HandleDeleteShowReviewUnpublishShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var show = command.RequestData.ToObject<DeleteShowReviewUnpublishShowForceParameterDTO>();
+                    await _podcastShowService.DeletePodcastShowReviewUnpublishShowForce(show, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-review-unpublish-show-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-channel-shows-review-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleDeleteChannelShowsReviewUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteChannelShowsReviewUnpublishChannelForceParameterDTO>();
+                    await _podcastShowService.DeleteChannelShowsReviewUnpublishChannelForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-channel-shows-review-unpublish-channel-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-show-review-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteShowReviewShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var show = command.RequestData.ToObject<DeleteShowReviewShowDeletionForceParameterDTO>();
+                    await _podcastShowService.DeletePodcastShowReviewShowDeletionForce(show, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-show-review-show-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-channel-shows-review-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDeleteChannelShowsReviewChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeleteChannelShowsReviewChannelDeletionForceParameterDTO>();
+                    await _podcastShowService.DeleteChannelShowsReviewChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-channel-shows-review-channel-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("delete-podcaster-shows-review-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleDeletePodcasterShowsReviewTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<DeletePodcasterShowsReviewTerminatePodcasterForceParameterDTO>();
+                    await _podcastShowService.DeletePodcasterShowsReviewTerminatePodcasterForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "delete-podcaster-shows-review-terminate-podcaster-force.failed"    // From YAML onFailure.emit
             );
         }
     }

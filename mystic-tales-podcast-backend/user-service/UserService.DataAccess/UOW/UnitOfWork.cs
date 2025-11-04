@@ -17,6 +17,7 @@ public class UnitOfWork : IUnitOfWork
     public IAccountFavoritedPodcastChannelRepository AccountFavoritedPodcastChannelRepository { get; }
     public IAccountFollowedPodcastShowRepository AccountFollowedPodcastShowRepository { get; }
     public IAccountSavedPodcastEpisodeRepository AccountSavedPodcastEpisodeRepository { get; }
+    public IPodcastBuddyReviewRepository PodcastBuddyReviewRepository { get; }
     // public ISurveyTakenResultRepository SurveyTakenResultRepository { get; }
     // public ISurveyStatusTrackingRepository SurveyStatusTrackingRepository { get; }
     // public IFilterTagRepository FilterTagRepository { get; }
@@ -39,7 +40,8 @@ public class UnitOfWork : IUnitOfWork
         IAccountFollowedPodcasterRepository accountFollowedPodcasterRepository,
         IAccountFavoritedPodcastChannelRepository accountFavoritedPodcastChannelRepository,
         IAccountFollowedPodcastShowRepository accountFollowedPodcastShowRepository,
-        IAccountSavedPodcastEpisodeRepository accountSavedPodcastEpisodeRepository
+        IAccountSavedPodcastEpisodeRepository accountSavedPodcastEpisodeRepository,
+        IPodcastBuddyReviewRepository podcastBuddyReviewRepository
         // ISurveyTakenResultRepository surveyTakenResultRepository,
         // ISurveyStatusTrackingRepository surveyStatusTrackingRepository,
         // IFilterTagRepository filterTagRepository,
@@ -65,6 +67,7 @@ public class UnitOfWork : IUnitOfWork
         this.AccountFavoritedPodcastChannelRepository = accountFavoritedPodcastChannelRepository;
         this.AccountFollowedPodcastShowRepository = accountFollowedPodcastShowRepository;
         this.AccountSavedPodcastEpisodeRepository = accountSavedPodcastEpisodeRepository;
+        this.PodcastBuddyReviewRepository = podcastBuddyReviewRepository;
         // this.SurveyTakenResultRepository = surveyTakenResultRepository;
         // this.SurveyStatusTrackingRepository = surveyStatusTrackingRepository;
         // this.FilterTagRepository = filterTagRepository;

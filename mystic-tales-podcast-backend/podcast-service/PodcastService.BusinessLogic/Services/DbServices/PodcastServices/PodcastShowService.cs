@@ -34,10 +34,6 @@ using PodcastService.BusinessLogic.DTOs.Show.ListItems;
 using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
 using PodcastService.BusinessLogic.DTOs.Show;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateChannel;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishChannel;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateShow;
 using PodcastService.BusinessLogic.DTOs.Show.Details;
 using PodcastService.BusinessLogic.DTOs.Episode.ListItems;
@@ -50,8 +46,22 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Sub
 using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.CreateShowReview;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.UpdateShowReview;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteShowReview;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusEpisodeTotalSaved;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractEpisodeTotalSaved;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteShowReviewDMCARemoveShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveShowDmcaDmcaRemoveShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowDmcaUnpublishShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteShowReviewUnpublishShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishShowUnpublishShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteShowReviewShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowDmcaShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowShowShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteChannelShowsReviewUnpublishChannelForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeleteChannelShowsReviewChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelDismissedShowsDmcaUnpublishChannelForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelDismissedShowsDmcaChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelShowsChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishPodcasterShowsTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeletePodcasterShowsReviewTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowDmcaTerminatePodcasterForce;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -1774,7 +1784,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(updateShowParameterDTO.PodcastShowId, includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
                     .Include(ps => ps.PodcastChannel)
-                    
+
                     );
                     if (existingPodcastShow == null)
                     {
@@ -1787,7 +1797,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     else if (existingPodcastShow.PodcasterId != updateShowParameterDTO.PodcasterId)
                     {
                         throw new Exception("Podcast show with id " + updateShowParameterDTO.PodcastShowId + " does not belong to podcaster with id " + updateShowParameterDTO.PodcasterId);
-                    }else if (existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                    }
+                    else if (existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
                     {
                         throw new Exception("Podcast show with id " + updateShowParameterDTO.PodcastShowId + " has been removed");
                     }
@@ -1795,7 +1806,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     if (existingPodcastShow.PodcastChannel != null && existingPodcastShow.PodcastChannel.DeletedAt != null)
                     {
                         throw new Exception("Podcast channel with id " + updateShowParameterDTO.PodcastShowId + " does not exist");
-                    }else if (existingPodcastShow.PodcastChannelId != null && existingPodcastShow.PodcasterId != updateShowParameterDTO.PodcasterId)
+                    }
+                    else if (existingPodcastShow.PodcastChannelId != null && existingPodcastShow.PodcasterId != updateShowParameterDTO.PodcasterId)
                     {
                         throw new Exception("Podcast channel with id " + existingPodcastShow.PodcastChannelId + " does not belong to podcaster with id " + existingPodcastShow.PodcasterId);
                     }
@@ -2478,5 +2490,1032 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
             }
         }
+
+        public async Task DeleteShowReviewDMCARemoveShowForce(DeleteShowReviewDMCARemoveShowForceParameterDTO deleteShowReviewDMCARemoveShowForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingReviews = await _podcastShowReviewGenericRepository.FindAll(
+                        predicate: psr => psr.PodcastShowId == deleteShowReviewDMCARemoveShowForceParameterDTO.PodcastShowId,
+                        includeFunc: null
+                    ).ToListAsync();
+
+                    foreach (var review in existingReviews)
+                    {
+                        await _podcastShowReviewGenericRepository.DeleteAsync(review.Id);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteShowReviewDMCARemoveShowForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = deleteShowReviewDMCARemoveShowForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-review-dmca-remove-show-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete show review DMCA remove show force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-review-dmca-remove-show-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeletePodcastShowReviewUnpublishShowForce(DeleteShowReviewUnpublishShowForceParameterDTO deleteShowReviewUnpublishShowForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingReviews = await _podcastShowReviewGenericRepository.FindAll(
+                        predicate: psr => psr.PodcastShowId == deleteShowReviewUnpublishShowForceParameterDTO.PodcastShowId,
+                        includeFunc: null
+                    ).ToListAsync();
+
+                    foreach (var review in existingReviews)
+                    {
+                        await _podcastShowReviewGenericRepository.DeleteAsync(review.Id);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteShowReviewUnpublishShowForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = deleteShowReviewUnpublishShowForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-review-unpublish-show-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete show review unpublish show force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-review-unpublish-show-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeletePodcastShowReviewShowDeletionForce(DeleteShowReviewShowDeletionForceParameterDTO deleteShowReviewShowDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    await _unitOfWork.PodcastShowReviewRepository.DeleteByPodcastShowIdAsync(deleteShowReviewShowDeletionForceParameterDTO.PodcastShowId);
+
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteShowReviewShowDeletionForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = deleteShowReviewShowDeletionForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-review-show-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete show review show deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-review-show-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteChannelShowsReviewUnpublishChannelForce(DeleteChannelShowsReviewUnpublishChannelForceParameterDTO deleteChannelShowsReviewUnpublishChannelForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    foreach (var showId in deleteChannelShowsReviewUnpublishChannelForceParameterDTO.DmcaDismissedShowIds)
+                    {
+                        await _unitOfWork.PodcastShowReviewRepository.DeleteByPodcastShowIdAsync(showId);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = deleteChannelShowsReviewUnpublishChannelForceParameterDTO.PodcastChannelId;
+                    messageNextRequestData["DmcaDismissedShowIds"] = JArray.FromObject(deleteChannelShowsReviewUnpublishChannelForceParameterDTO.DmcaDismissedShowIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = deleteChannelShowsReviewUnpublishChannelForceParameterDTO.PodcastChannelId,
+                        DmcaDismissedShowIds = deleteChannelShowsReviewUnpublishChannelForceParameterDTO.DmcaDismissedShowIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-channel-shows-review-unpublish-channel-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete channel show review unpublish channel force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-channel-shows-review-unpublish-channel-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteChannelShowsReviewChannelDeletionForce(DeleteChannelShowsReviewChannelDeletionForceParameterDTO deleteChannelShowsReviewChannelDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // delete review của tất cả các show trong channel
+                    var shows = await _podcastShowGenericRepository.FindAll(
+                        predicate: ps => ps.PodcastChannelId == deleteChannelShowsReviewChannelDeletionForceParameterDTO.PodcastChannelId,
+                        includeFunc: null
+                    ).ToListAsync();
+
+                    foreach (var show in shows)
+                    {
+                        await _unitOfWork.PodcastShowReviewRepository.DeleteByPodcastShowIdAsync(show.Id);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = deleteChannelShowsReviewChannelDeletionForceParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = deleteChannelShowsReviewChannelDeletionForceParameterDTO.PodcastChannelId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-channel-shows-review-channel-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete channel shows review channel deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-channel-shows-review-channel-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeletePodcasterShowsReviewTerminatePodcasterForce(DeletePodcasterShowsReviewTerminatePodcasterForceParameterDTO deletePodcasterShowsReviewTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // delete review của tất cả các show của podcaster
+                    var shows = await _podcastShowGenericRepository.FindAll(
+                        predicate: ps => ps.PodcasterId == deletePodcasterShowsReviewTerminatePodcasterForceParameterDTO.PodcasterId,
+                        includeFunc: null
+                    ).ToListAsync();
+
+                    foreach (var show in shows)
+                    {
+                        await _unitOfWork.PodcastShowReviewRepository.DeleteByPodcastShowIdAsync(show.Id);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = deletePodcasterShowsReviewTerminatePodcasterForceParameterDTO.PodcasterId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcasterId = deletePodcasterShowsReviewTerminatePodcasterForceParameterDTO.PodcasterId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-podcaster-shows-review-terminate-podcaster-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.PublicReviewManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete podcaster shows review terminate podcaster force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-podcaster-shows-review-terminate-podcaster-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+        public async Task RemoveShowDmcaRemoveShowForce(RemoveShowDmcaDmcaRemoveShowForceParameterDTO removeShowDmcaRemoveShowForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // xóa show
+                    var show = await _podcastShowGenericRepository.FindByIdAsync(
+                        removeShowDmcaRemoveShowForceParameterDTO.PodcastShowId,
+                        includeFunc: ps => ps
+                            .Include(s => s.PodcastShowStatusTrackings)
+                    );
+
+                    // foreach (var episode in showEpisodes)
+                    // {
+                    //     var currentStatusTracking = episode.PodcastEpisodeStatusTrackings
+                    //         .OrderByDescending(pet => pet.CreatedAt)
+                    //         .FirstOrDefault();
+
+                    //     if (currentStatusTracking.PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Removed)
+                    //     {
+                    //         // Remove khác với delete
+                    //         var newStatusTracking = new PodcastEpisodeStatusTracking
+                    //         {
+                    //             PodcastEpisodeId = episode.Id,
+                    //             PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.Removed,
+                    //         };
+
+                    //         await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                    //     }
+                    // }
+
+                    if (show != null)
+                    {
+                        var currentStatusTracking = show.PodcastShowStatusTrackings
+                            .OrderByDescending(pst => pst.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed)
+                        {
+                            // Remove khác với delete
+                            var newStatusTracking = new PodcastShowStatusTracking
+                            {
+                                PodcastShowId = show.Id,
+                                PodcastShowStatusId = (int)PodcastShowStatusEnum.Removed,
+                            };
+
+                            await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = removeShowDmcaRemoveShowForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = removeShowDmcaRemoveShowForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-show-dmca-dmca-remove-show-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Remove show dmca remove show force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-show-dmca-dmca-remove-show-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task RemoveDismissedShowDmcaUnpublishShowForce(RemoveDismissedShowDmcaUnpublishShowForceParameterDTO removeDismissedShowDmcaUnpublishShowForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // unpublish show
+                    var show = await _podcastShowGenericRepository.FindByIdAsync(
+                        id: removeDismissedShowDmcaUnpublishShowForceParameterDTO.DmcaDismissedShowId,
+                        includeFunc: pe => pe.Include(pe => pe.PodcastShowStatusTrackings)
+                    );
+
+                    if (show != null)
+                    {
+                        var currentStatusTracking = show.PodcastShowStatusTrackings
+                                                .OrderByDescending(pet => pet.CreatedAt)
+                                                .FirstOrDefault();
+
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed)
+                        {
+                            // Unpublish khác với delete
+                            var newStatusTracking = new PodcastShowStatusTracking
+                            {
+                                PodcastShowId = show.Id,
+                                PodcastShowStatusId = (int)PodcastShowStatusEnum.Removed,
+                            };
+
+                            await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        }
+                    }
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = removeDismissedShowDmcaUnpublishShowForceParameterDTO.PodcastShowId;
+                    messageNextRequestData["DmcaDismissedShowId"] = removeDismissedShowDmcaUnpublishShowForceParameterDTO.DmcaDismissedShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = removeDismissedShowDmcaUnpublishShowForceParameterDTO.PodcastShowId,
+                        DmcaDismissedShowId = removeDismissedShowDmcaUnpublishShowForceParameterDTO.DmcaDismissedShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-dismissed-show-dmca-unpublish-show-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Remove dismissed show dmca unpublish show force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-dismissed-show-dmca-unpublish-show-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task RemoveDismissedShowDmcaShowDeletionForce(RemoveDismissedShowDmcaShowDeletionForceParameterDTO removeDismissedShowDmcaShowDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // xóa show
+                    var show = await _podcastShowGenericRepository.FindByIdAsync(
+                        id: removeDismissedShowDmcaShowDeletionForceParameterDTO.DmcaDismissedShowId,
+                        includeFunc: pe => pe.Include(pe => pe.PodcastShowStatusTrackings)
+                    );
+
+                    if (show != null)
+                    {
+                        var currentStatusTracking = show.PodcastShowStatusTrackings
+                                                .OrderByDescending(pet => pet.CreatedAt)
+                                                .FirstOrDefault();
+
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed)
+                        {
+                            // Unpublish khác với delete
+                            var newStatusTracking = new PodcastShowStatusTracking
+                            {
+                                PodcastShowId = show.Id,
+                                PodcastShowStatusId = (int)PodcastShowStatusEnum.Removed,
+                            };
+
+                            await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = removeDismissedShowDmcaShowDeletionForceParameterDTO.PodcastShowId;
+                    messageNextRequestData["DmcaDismissedShowId"] = removeDismissedShowDmcaShowDeletionForceParameterDTO.DmcaDismissedShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = removeDismissedShowDmcaShowDeletionForceParameterDTO.PodcastShowId,
+                        DmcaDismissedShowId = removeDismissedShowDmcaShowDeletionForceParameterDTO.DmcaDismissedShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-dismissed-show-dmca-show-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Remove dismissed show dmca show deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-dismissed-show-dmca-show-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task RemoveDismissedShowDmcaTerminatePodcasterForce(RemoveDismissedShowDmcaTerminatePodcasterForceParameterDTO removeDismissedShowDmcaTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // unpublish tất cả các show của podcaster
+                    var shows = await _podcastShowGenericRepository.FindAll(
+                       predicate: ps => removeDismissedShowDmcaTerminatePodcasterForceParameterDTO.DmcaDismissedShowIds.Contains(ps.Id),
+                       includeFunc: ps => ps.Include(ps => ps.PodcastShowStatusTrackings)
+                   ).ToListAsync();
+
+                    foreach (var show in shows)
+                    {
+                        var currentStatusTracking = show.PodcastShowStatusTrackings
+                            .OrderByDescending(pst => pst.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed)
+                        {
+                            // Unpublish khác với delete
+                            var newStatusTracking = new PodcastShowStatusTracking
+                            {
+                                PodcastShowId = show.Id,
+                                PodcastShowStatusId = (int)PodcastShowStatusEnum.Removed,
+                            };
+
+                            await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = removeDismissedShowDmcaTerminatePodcasterForceParameterDTO.PodcasterId;
+                    messageNextRequestData["DmcaDismissedShowIds"] = JArray.FromObject(removeDismissedShowDmcaTerminatePodcasterForceParameterDTO.DmcaDismissedShowIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcasterId = removeDismissedShowDmcaTerminatePodcasterForceParameterDTO.PodcasterId,
+                        DmcaDismissedShowIds = removeDismissedShowDmcaTerminatePodcasterForceParameterDTO.DmcaDismissedShowIds,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-dismissed-show-dmca-terminate-podcaster-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Remove dismissed show dmca terminate podcaster force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-dismissed-show-dmca-terminate-podcaster-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task UnpublishShowUnpublishShowForce(UnpublishShowUnpublishShowForceParameterDTO unpublishShowUnpublishShowForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // unpublish episode
+                    var show = await _podcastShowGenericRepository.FindByIdAsync(
+                        id: unpublishShowUnpublishShowForceParameterDTO.PodcastShowId,
+                        includeFunc: pe => pe.Include(pe => pe.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastEpisodes)
+                            .ThenInclude(e => e.PodcastEpisodeStatusTrackings)
+                    );
+
+                    if (show != null)
+                    {
+                        var currentStatusTracking = show.PodcastShowStatusTrackings
+                                                .OrderByDescending(pet => pet.CreatedAt)
+                                                .FirstOrDefault();
+
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Published && currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.TakenDown)
+                        {
+                            // nếu có ít nhất 1 episode ở trạng thái published thì chuyển thành ready to release, ngược lại là draft
+                            bool hasPublishedEpisode = false;
+                            foreach (var episode in show.PodcastEpisodes)
+                            {
+                                var episodeCurrentStatusTracking = episode.PodcastEpisodeStatusTrackings
+                                    .OrderByDescending(pet => pet.CreatedAt)
+                                    .FirstOrDefault();
+
+                                if (episodeCurrentStatusTracking.PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published)
+                                {
+                                    hasPublishedEpisode = true;
+                                    break;
+                                }
+                            }
+                            var newStatusTracking = new PodcastShowStatusTracking
+                            {
+                                PodcastShowId = show.Id,
+                                PodcastShowStatusId = hasPublishedEpisode ? (int)PodcastShowStatusEnum.ReadyToRelease : (int)PodcastShowStatusEnum.Draft,
+                            };
+
+                            await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        }
+                    }
+
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = unpublishShowUnpublishShowForceParameterDTO.PodcastShowId;
+                    messageNextRequestData["DmcaDismissedEpisodeIds"] = command.RequestData["DmcaDismissedEpisodeIds"];
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = unpublishShowUnpublishShowForceParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "unpublish-show-unpublish-show-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Unpublish show unpublish show force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "unpublish-show-unpublish-show-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task UnpublishPodcasterShowsTerminatePodcasterForce(UnpublishPodcasterShowsTerminatePodcasterForceParameterDTO unpublishPodcasterShowsTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var shows = await _podcastShowGenericRepository.FindAll(
+                        predicate: ps => ps.PodcasterId == unpublishPodcasterShowsTerminatePodcasterForceParameterDTO.PodcasterId,
+                        includeFunc: ps => ps.Include(ps => ps.PodcastShowStatusTrackings)
+                    ).ToListAsync();
+
+                    foreach (var show in shows)
+                    {
+                        var currentStatusTracking = show.PodcastShowStatusTrackings
+                            .OrderByDescending(pst => pst.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Draft)
+                        {
+                            var newStatusTracking = new PodcastShowStatusTracking
+                            {
+                                PodcastShowId = show.Id,
+                                PodcastShowStatusId = (int)PodcastShowStatusEnum.Draft,
+                            };
+
+                            await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcasterId"] = unpublishPodcasterShowsTerminatePodcasterForceParameterDTO.PodcasterId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcasterId = unpublishPodcasterShowsTerminatePodcasterForceParameterDTO.PodcasterId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "unpublish-podcaster-shows-terminate-podcaster-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Unpublish podcaster shows terminate podcaster force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "unpublish-podcaster-shows-terminate-podcaster-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task RemoveChannelDismissedShowsDmcaUnpublishChannelForce(RemoveChannelDismissedShowsDmcaUnpublishChannelForceParameterDTO removeChannelDismissedShowsDmcaUnpublishChannelForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var shows = await _podcastShowGenericRepository.FindAll(
+                        predicate: ps => removeChannelDismissedShowsDmcaUnpublishChannelForceParameterDTO.DmcaDismissedShowIds.Contains(ps.Id),
+                        includeFunc: ps => ps.Include(ps => ps.PodcastShowStatusTrackings)
+                    ).ToListAsync();
+
+                    foreach (var show in shows)
+                    {
+                        var currentStatusTracking = show.PodcastShowStatusTrackings
+                            .OrderByDescending(pst => pst.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed)
+                        {
+                            // Unpublish khác với delete
+                            var newStatusTracking = new PodcastShowStatusTracking
+                            {
+                                PodcastShowId = show.Id,
+                                PodcastShowStatusId = (int)PodcastShowStatusEnum.Removed,
+                            };
+
+                            await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = removeChannelDismissedShowsDmcaUnpublishChannelForceParameterDTO.PodcastChannelId;
+                    messageNextRequestData["DmcaDismissedShowIds"] = JArray.FromObject(removeChannelDismissedShowsDmcaUnpublishChannelForceParameterDTO.DmcaDismissedShowIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = removeChannelDismissedShowsDmcaUnpublishChannelForceParameterDTO.PodcastChannelId,
+                        DmcaDismissedShowIds = removeChannelDismissedShowsDmcaUnpublishChannelForceParameterDTO.DmcaDismissedShowIds
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-channel-dismissed-shows-dmca-unpublish-channel-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Remove channel dismissed show dmca unpublish channel force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-channel-dismissed-shows-dmca-unpublish-channel-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task RemoveChannelDismissedShowsDmcaChannelDeletionForce(RemoveChannelDismissedShowsDmcaChannelDeletionForceParameterDTO removeChannelDismissedShowsDmcaChannelDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var shows = await _podcastShowGenericRepository.FindAll(
+                        predicate: ps => removeChannelDismissedShowsDmcaChannelDeletionForceParameterDTO.DmcaDismissedShowIds.Contains(ps.Id),
+                        includeFunc: ps => ps.Include(ps => ps.PodcastShowStatusTrackings)
+                    ).ToListAsync();
+
+                    foreach (var show in shows)
+                    {
+                        var currentStatusTracking = show.PodcastShowStatusTrackings
+                            .OrderByDescending(pst => pst.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed)
+                        {
+                            // Unpublish khác với delete
+                            var newStatusTracking = new PodcastShowStatusTracking
+                            {
+                                PodcastShowId = show.Id,
+                                PodcastShowStatusId = (int)PodcastShowStatusEnum.Removed,
+                            };
+
+                            await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = removeChannelDismissedShowsDmcaChannelDeletionForceParameterDTO.PodcastChannelId;
+                    messageNextRequestData["DmcaDismissedShowIds"] = JArray.FromObject(removeChannelDismissedShowsDmcaChannelDeletionForceParameterDTO.DmcaDismissedShowIds);
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = removeChannelDismissedShowsDmcaChannelDeletionForceParameterDTO.PodcastChannelId,
+                        DmcaDismissedShowIds = removeChannelDismissedShowsDmcaChannelDeletionForceParameterDTO.DmcaDismissedShowIds
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-channel-dismissed-shows-dmca-channel-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Remove channel dismissed show dmca channel deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "remove-channel-dismissed-shows-dmca-channel-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteShowShowShowDeletionForce(DeleteShowShowShowDeletionForceParameterDTO deleteShowShowShowDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var show = await _podcastShowGenericRepository.FindByIdAsync(
+                        id: deleteShowShowShowDeletionForceParameterDTO.PodcastShowId,
+                        includeFunc: ps => ps.Include(ps => ps.PodcastShowStatusTrackings)
+                    );
+
+                    if (show != null)
+                    {
+                        show.DeletedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastShowGenericRepository.UpdateAsync(show.Id, show);
+                    }
+
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = deleteShowShowShowDeletionForceParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = deleteShowShowShowDeletionForceParameterDTO.PodcastShowId,
+                    }
+                    );
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-show-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete show show deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-show-show-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task DeleteChannelShowsChannelDeletionForce(DeleteChannelShowsChannelDeletionForceParameterDTO deleteChannelShowsChannelDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var shows = await _podcastShowGenericRepository.FindAll(
+                        predicate: ps => ps.PodcastChannelId == deleteChannelShowsChannelDeletionForceParameterDTO.PodcastChannelId
+                                    && ps.DeletedAt == null,
+                        includeFunc: ps => ps.Include(ps => ps.PodcastShowStatusTrackings)
+                    ).ToListAsync();
+
+                    foreach (var show in shows)
+                    {
+                        show.DeletedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastShowGenericRepository.UpdateAsync(show.Id, show);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastChannelId"] = deleteChannelShowsChannelDeletionForceParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = deleteChannelShowsChannelDeletionForceParameterDTO.PodcastChannelId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-channel-shows-channel-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Delete channel shows channel deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "delete-channel-shows-channel-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
     }
 }
