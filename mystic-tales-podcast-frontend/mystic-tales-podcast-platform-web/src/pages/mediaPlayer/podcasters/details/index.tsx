@@ -543,14 +543,14 @@ const PodcasterDetailsPage = () => {
             <p className="text-sm text-gray-400 mt-2 line-clamp-4 w-2/3">
               {PodcasterDetails.PodcasterProfile.Description}
             </p>
-            <div className="w-full  flex items-center justify-end gap-10 mt-5">
+            <div className="w-full  flex items-center justify-start gap-5 mt-5">
               {!isFollowed && (
-                <div className="px-5 h-[30px] bg-mystic-green text-black cursor-pointer transition-all hover:-translate-y-1 ease-in-out duration-500 flex items-center justify-center rounded-xs font-bold">
-                  <p>Follow</p>
+                <div className="px-5 h-[30px] border-mystic-green border-2 bg-transparent cursor-pointer transition-all hover:-translate-y-1 ease-in-out duration-500 flex items-center justify-center rounded-full font-semibold">
+                  <p className="text-mystic-green">Follow</p>
                 </div>
               )}
               {isBookingAvailable && (
-                <div className="px-5 h-[30px] bg-mystic-green text-black cursor-pointer transition-all hover:-translate-y-1 ease-in-out duration-500 flex items-center justify-center rounded-xs font-bold">
+                <div className="px-5 h-[30px] bg-mystic-green text-black cursor-pointer transition-all hover:-translate-y-1 ease-in-out duration-500 flex items-center justify-center rounded-full font-bold">
                   <p>Book This Podcaster</p>
                 </div>
               )}
@@ -561,7 +561,7 @@ const PodcasterDetailsPage = () => {
 
       {/* Podcasters Channels */}
       <div className="w-full mt-20 flex flex-col gap-5 px-8">
-        <p className="text-3xl font-bold text-white">
+        <p className="text-4xl font-bold text-white">
           My <span className="text-mystic-green">Channels</span>
         </p>
         <div className="w-full">
@@ -581,9 +581,14 @@ const PodcasterDetailsPage = () => {
               {channels.map((channel) => (
                 <CarouselItem
                   key={channel.Id}
-                  className="basis-1/2 md:basis-1/3 lg:basis-1/5"
+                  className="basis-1/2 md:basis-1/3 lg:basis-1/4"
                 >
-                  <div className="p-1">
+                  <div
+                    onClick={() =>
+                      navigate(`/media-player/channels/${channel.Id}`)
+                    }
+                    className="p-5"
+                  >
                     <ChannelCard channel={channel} />
                   </div>
                 </CarouselItem>

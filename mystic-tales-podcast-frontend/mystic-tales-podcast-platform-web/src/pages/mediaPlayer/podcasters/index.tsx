@@ -606,7 +606,7 @@ const PodcastersPage = () => {
                   key={podcaster.Id}
                   className="basis-1/1 md:basis-1/2 lg:basis-1/3"
                 >
-                  <div className="p-1">
+                  <div className="p-0">
                     <PodcasterCard podcaster={podcaster} />
                   </div>
                 </CarouselItem>

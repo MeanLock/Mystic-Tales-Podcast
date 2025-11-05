@@ -37,6 +37,8 @@ import TopUpPage from "./pages/mediaPlayer/management/transaction/top-up/index.t
 import WithDrawPage from "./pages/mediaPlayer/management/transaction/withdraw/index.tsx";
 import ManagementSubscriptionsPage from "./pages/mediaPlayer/management/transaction/subscriptions/index.tsx";
 import ProfilePage from "./pages/mediaPlayer/management/profile/index.tsx";
+import ChannelDetailsPage from "./pages/mediaPlayer/channels/details/index.tsx";
+import ShowDetailsPage from "./pages/mediaPlayer/shows/details/index.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -144,7 +146,8 @@ createRoot(document.getElementById("root")!).render(
               <Route path="search" element={<SearchPage />} />
               <Route path="podcasters" element={<PodcastersPage />} />
               <Route path="podcasters/:id" element={<PodcasterDetailsPage />} />
-
+              <Route path="channels/:id" element={<ChannelDetailsPage />} />
+              <Route path="shows/:id" element={<ShowDetailsPage />} />
               {/* Library */}
               <Route path="library/recent" element={<RecentPage />} />
               <Route path="library/saved" element={<SavedPage />} />

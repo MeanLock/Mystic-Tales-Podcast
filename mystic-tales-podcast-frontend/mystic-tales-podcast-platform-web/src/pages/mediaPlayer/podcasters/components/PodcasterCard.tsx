@@ -12,9 +12,9 @@ const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
   return (
     <div
       onClick={() => navigate(`/media-player/podcasters/${podcaster.Id}`)}
-      className="p-1"
+      className=""
     >
-      <div className="relative w-full flex flex-col shadow-2xl items-center justify-center gap-5 p-5 rounded-md transition-all duration-300 hover:scale-105 ease-out cursor-pointer">
+      <div className="relative w-full flex flex-col items-center justify-center gap-5 p-5 rounded-md transition-all duration-700 hover:scale-105 ease-in-out cursor-pointer">
         {/* image */}
         <img
           src={podcaster.ImageUrl}
@@ -39,9 +39,9 @@ const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
         </div>
 
         {/* top */}
-        <div className="absolute rounded-bl-md top-0 right-0 w-12 h-16 flex items-center justify-center bg-mystic-green text-black font-bold shadow-2xl">
+        {/* <div className="absolute rounded-bl-md top-0 right-0 w-12 h-16 flex items-center justify-center bg-mystic-green text-black font-bold shadow-2xl">
           <p>#{podcaster.Top}</p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
