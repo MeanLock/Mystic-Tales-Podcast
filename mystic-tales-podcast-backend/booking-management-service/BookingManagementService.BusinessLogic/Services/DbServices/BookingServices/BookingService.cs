@@ -208,7 +208,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         }
         public async Task CreateBookingAsync(CreateBookingParameterDTO parameter, SagaCommandMessage command)
         {
-            bool test = false;
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 var processedFiles = new List<string>();
@@ -283,7 +282,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     });
 
-                    test = true;
                     await transaction.CommitAsync();
                     
                     var newResponseData = new JObject
@@ -309,10 +307,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
                 catch (Exception ex)
                 {
-                    if (test)
-                    {
-                        return;
-                    }
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while creating booking for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
