@@ -283,8 +283,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     });
 
-                    await transaction.CommitAsync();
                     test = true;
+                    await transaction.CommitAsync();
+                    
                     var newResponseData = new JObject
                     {
                         { "BookingId", newBooking.Id },
