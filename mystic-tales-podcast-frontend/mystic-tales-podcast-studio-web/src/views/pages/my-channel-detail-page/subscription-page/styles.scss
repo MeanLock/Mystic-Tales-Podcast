@@ -13,7 +13,10 @@
     --color-text-light: #e0e0e0;
     --color-text-muted: #999999;
 }
+.bg-none{
+    background-color: transparent !important;
 
+}
 /* Channel Subscription Block */
 .channel-subscription {
     padding: 2.7rem 2.5rem 0;
@@ -27,6 +30,11 @@
         text-align: left;
         font-family: 'inter', sans-serif !important;
 
+    }
+    &__btn {
+       background-color: var(--color-primary);
+         color: var(--color-bg-darker);
+         font-weight: bold;
     }
 
     &__container {

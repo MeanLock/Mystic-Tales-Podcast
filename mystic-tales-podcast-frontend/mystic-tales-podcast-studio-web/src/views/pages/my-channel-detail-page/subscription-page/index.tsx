@@ -9,6 +9,8 @@ import { AgGridReact } from "ag-grid-react"
 import { AllCommunityModule, ColDef, ModuleRegistry } from "ag-grid-community"
 import { Eye } from "phosphor-react"
 import { formatDate } from "@/core/utils/date.util"
+import Modal_Button from "@/views/components/common/modal/ModalButton"
+import SubscriptionModal from "./SubscriptionModal"
 export const mockdata = {
     PodcastSubscriptionList: [
         {
@@ -170,7 +172,7 @@ interface GridState {
     rowData: any[];
 }
 
-const state_creator = (table: any[]) => {
+const state_creator = (table: any[], onSaveSubscription: (data: any) => void) => {
     const state = {
         columnDefs: [
 
@@ -266,7 +268,7 @@ const state_creator = (table: any[]) => {
                                 color: 'var(--white-75)',
                                 lineHeight: '1.2'
                             }}>
-                                 Price: {annuallyPlan.Price.toLocaleString("vi-VN")} VND
+                                Price: {annuallyPlan.Price.toLocaleString("vi-VN")} VND
                             </div>
                             <div style={{
                                 fontSize: '0.7rem',
@@ -296,7 +298,7 @@ const state_creator = (table: any[]) => {
             },
             {
                 headerName: "Updated At",
-                cellStyle: { display: 'flex', alignItems: 'center', fontSize:'0.8rem' },
+                cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.8rem' },
 
                 valueGetter: (params: { data: any }) => formatDate(params.data.UpdatedAt),
             },
@@ -349,9 +351,23 @@ const state_creator = (table: any[]) => {
                 cellClass: 'd-flex justify-content-center py-0',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 cellRenderer: (params: { data: any }) => {
+                    const Modal_props = {
+                        updateForm: <SubscriptionModal
+                            subscription={params.data}
+                            onSave={onSaveSubscription}
+                        />,
+                        button: <Eye size={27} color='var(--white-75)' />,
+                    }
                     return (
                         <IconButton >
-                            <Eye size={27} color='var(--white-75)' />
+                            <Modal_Button
+                                className="bg-none"
+                                disabled={false}
+                                content={Modal_props.button}
+                                size="md"
+                            >
+                                {Modal_props.updateForm}
+                            </Modal_Button>
                         </IconButton>
 
                     )
@@ -373,12 +389,20 @@ const ChannelSubscription: FC<ChannelSubscriptionProps> = () => {
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
+    // TODO: Get actual channel ID from props or context
+    const podcastChannelId = "3fa85f64-5717-4562-b3fc-2c963f66afa6";
+
+    const handleSaveSubscription = (data: any) => {
+        console.log('Subscription saved:', data);
+        // TODO: Call API to save subscription
+        // Refresh data after save
+    };
 
     useEffect(() => {
         const active = mockdata.PodcastSubscriptionList.filter((sub) => sub.IsActive)
         setActiveSubscriptions(active)
         setIsLoading(false);
-        setState(state_creator(mockdata.PodcastSubscriptionList));
+        setState(state_creator(mockdata.PodcastSubscriptionList, handleSaveSubscription));
 
     }, [])
 
@@ -397,20 +421,19 @@ const ChannelSubscription: FC<ChannelSubscriptionProps> = () => {
         return (
             <div className="pt-30">
                 <EmptyComponent item="Subscription" subtitle="Try adjusting your search terms or filters" />
-                <Button
+                <Modal_Button
+                    className=" channel-subscription__btn h-1/2 text-black font-bold rounded-lg normal-case hover:bg-green-400"
+                    content="Add Subscription"
                     variant="contained"
+                    size="md"
                     startIcon={<Add />}
-                    sx={{
-                        backgroundColor: 'var(--primary-green)',
-                        color: '#000',
-                        fontWeight: 'bold',
-                        borderRadius: '8px',
-                        textTransform: 'none',
-                        '&:hover': { backgroundColor: '#8bc34a' }
-                    }}
                 >
-                    Add Subscription
-                </Button>
+                    <SubscriptionModal
+                        podcastChannelId={podcastChannelId}
+                        onSave={handleSaveSubscription}
+                    />
+                </Modal_Button>
+
             </div>
         )
     }
@@ -433,9 +456,25 @@ const ChannelSubscription: FC<ChannelSubscriptionProps> = () => {
     return (
         <div>
             <div className="channel-subscription">
-                <Typography variant="h4" className="channel-subscription__title" >
-                    Channel Subscriptions
-                </Typography>
+                <div className="flex justify-between  ">
+                    <Typography variant="h4" className="channel-subscription__title " >
+                        Channel Subscriptions
+                    </Typography>
+                    <Modal_Button
+                        className=" channel-subscription__btn h-1/2 text-black font-bold rounded-lg normal-case hover:bg-green-400"
+                        content="Add Subscription"
+                        variant="contained"
+                        size="md"
+                        startIcon={<Add />}
+                    >
+                        <SubscriptionModal
+                            podcastChannelId={podcastChannelId}
+                            onSave={handleSaveSubscription}
+                        />
+                    </Modal_Button>
+
+
+                </div>
                 <div className="channel-subscription__container">
                     {/* Left Section - Subscription Details */}
                     <div className="channel-subscription__left">
@@ -505,6 +544,7 @@ const ChannelSubscription: FC<ChannelSubscriptionProps> = () => {
                 </div>
 
             </div>
+
             <div
                 id="subscription-table"
                 style={{
@@ -523,6 +563,7 @@ const ChannelSubscription: FC<ChannelSubscriptionProps> = () => {
                         <CircularProgress />
                     </div>
                 ) : (
+
                     <AgGridReact
                         columnDefs={state?.columnDefs}
                         rowData={state?.rowData}

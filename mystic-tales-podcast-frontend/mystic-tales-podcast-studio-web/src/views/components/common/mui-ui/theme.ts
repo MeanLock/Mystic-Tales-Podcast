@@ -46,6 +46,13 @@ const theme = createTheme({
                 },
             },
         },
+           MuiFormLabel: {
+            styleOverrides: {
+                asterisk: {
+                    color: "#e05a5aff", // màu đỏ cho dấu *
+                },
+            },
+        },
         // Thêm các component khác nếu cần
     },
 });

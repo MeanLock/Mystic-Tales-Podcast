@@ -22,11 +22,6 @@ export const _podcasterNav: {
       icon: React.createElement(DashboardOutlinedIcon, { style: { fontSize: '24px' } }),
     },
     {
-      label: "Audio Tuning",
-      icon: React.createElement(Equalizer  , { size: 24 }),
-      path: "/audio-tuning",
-    },
-    {
       label: "My Channels",
       icon: React.createElement(ApplePodcastsLogo, { size: 24 }),
       path: "/channel",

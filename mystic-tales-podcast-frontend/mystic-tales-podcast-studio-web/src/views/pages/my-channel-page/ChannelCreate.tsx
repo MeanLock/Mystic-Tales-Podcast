@@ -19,6 +19,7 @@ import { Add } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
 import 'quill/dist/quill.snow.css';
 import './styles.scss';
+import logo from '../../../assets/logoMTP.jpg';
 export const mockPodcastCategories = [
     { Id: 1, Name: "True Crime " },
     { Id: 2, Name: "Horror " },
@@ -53,36 +54,7 @@ export const mockPodcastSubCategories = [
     { Id: 16, Name: "Mysterious Tribes", PodcastCategoryId: 3 },
 ];
 
-export const mockData = {
-    Channel: {
-        Id: 1,
-        Name: "Mystic Tales",
-        Description: "A podcast channel sharing mysterious stories and real-life paranormal events.",
-        MainImageFileKey: "main_mystic_tales.png",
-        TotalFavorite: 1520,
-        ListenCount: 34900,
-        PodcastCategory: {
-            Id: 1,
-            Name: "True Crime ",
-        },
-        PodcastSubCategory: {
-            Id: 1,
-            Name: "Serial Killers",
-            PodcastCategoryId: 1,
-        },
-        Hashtags: [
-            { Id: 1, Name: "#Mystery" },
-            { Id: 2, Name: "#HorrorStories" },
-            { Id: 3, Name: "#Paranormal" },
-        ],
-        CreatedAt: "2025-10-17T05:44:11.252Z",
-        UpdatedAt: "2025-10-17T05:44:11.252Z",
-        CurrentStatus: {
-            Id: 1,
-            Name: "Published",
-        },
-    }
-};
+
 
 // Mock available hashtags for autocomplete
 const availableHashtags = [
@@ -91,27 +63,36 @@ const availableHashtags = [
     '#SerialKiller', '#UnsolvedMystery', '#ColdCase', '#Detective'
 ];
 
-const ChannelOverview = () => {
-    const [channelDetail, setChannelDetail] = useState<any>(mockData.Channel);
-    const [selectedCategory, setSelectedCategory] = useState<number>(mockData.Channel.PodcastCategory.Id);
-    const [selectedSubCategory, setSelectedSubCategory] = useState<number>(mockData.Channel.PodcastSubCategory.Id);
-    const [selectedHashtags, setSelectedHashtags] = useState<string[]>(
-        mockData.Channel.Hashtags.map((tag: any) => tag.Name)
-    );
-    const [description, setDescription] = useState<string>(mockData.Channel.Description || '');
+interface ChannelCreateInfo {
+    Name: string;
+    Description: string;
+    PodcasterId: number;
+    PodcastCategoryId: number;
+    PodcastSubCategoryId: number;
+    HashtagIds: number[];
+}
 
-    const [hashtagInput, setHashtagInput] = useState<string>('');
-    const [previewImage, setPreviewImage] = useState<string>('https://i.pinimg.com/736x/e8/c4/d3/e8c4d39d44c8945d62cd6f35e45959df.jpg');
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [formData, setFormData] = useState({
-        name: mockData.Channel.Name,
-        status: mockData.Channel.CurrentStatus.Name,
-        createdAt: mockData.Channel.CreatedAt.split('T')[0],
-        updatedAt: mockData.Channel.UpdatedAt.split('T')[0],
-        totalFavorites: mockData.Channel.TotalFavorite,
-        listenCount: mockData.Channel.ListenCount,
-        description: description
+interface HashtagOption {
+    id: number;
+    name: string;
+}
+
+const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
+    const [channelData, setChannelData] = useState<ChannelCreateInfo>({
+        Name: '',
+        Description: '',
+        PodcasterId: 0, // This should be set from user context
+        PodcastCategoryId: 0,
+        PodcastSubCategoryId: 0,
+        HashtagIds: []
     });
+
+    const [selectedHashtags, setSelectedHashtags] = useState<HashtagOption[]>([]);
+    const [hashtagInput, setHashtagInput] = useState<string>('');
+    const [previewImage, setPreviewImage] = useState<string>('');
+    const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [loading, setLoading] = useState(false);
 
     // Quill editor for description
     const { quill, quillRef } = useQuill({
@@ -128,43 +109,18 @@ const ChannelOverview = () => {
         placeholder: 'Add description...'
     });
 
-    const fetchChannelDetail = async () => {
-        setChannelDetail(mockData.Channel)
-    }
-
-    useEffect(() => {
-        fetchChannelDetail()
-    }, []);
-
-    // Set initial description in Quill
+    // Set up Quill listener for description changes
     useEffect(() => {
         if (quill) {
-            const initialDescription = mockData.Channel.Description || '';
-            if (initialDescription) {
-                quill.setContents([
-                    { insert: initialDescription }
-                ]);
-            }
-
-            // Listen for text changes
             quill.on('text-change', () => {
-                const content = quill.getText(); // Get plain text
-                const htmlContent = quill.root.innerHTML; // Get HTML content
-
-                // Update description state
-                setDescription(content);
-                // Update formData with description
-                setFormData(prev => ({
+                const htmlContent = quill.root.innerHTML;
+                setChannelData(prev => ({
                     ...prev,
-                    description: htmlContent // Save HTML format or use 'content' for plain text
+                    Description: htmlContent
                 }));
-
-                // Optional: Auto-save to backend
-                // handleAutoSave(htmlContent);
             });
         }
     }, [quill]);
-
 
     // Get subcategories for selected category
     const getSubCategoriesForCategory = (categoryId: number) => {
@@ -172,30 +128,77 @@ const ChannelOverview = () => {
     };
 
     const handleCategoryChange = (categoryId: number) => {
-        setSelectedCategory(categoryId);
-        setSelectedSubCategory(0); // Reset subcategory
+        setChannelData(prev => ({
+            ...prev,
+            PodcastCategoryId: categoryId,
+            PodcastSubCategoryId: 0 // Reset subcategory
+        }));
     };
 
-    const handleSave = () => {
-        console.log('Saving channel data with description:', formData);
+    const handleSubCategoryChange = (subCategoryId: number) => {
+        setChannelData(prev => ({
+            ...prev,
+            PodcastSubCategoryId: subCategoryId
+        }));
     };
 
-    const handleRemove = () => {
-        console.log('Removing channel...');
-    };
+    const handleCreateChannel = async () => {
+        try {
+            setLoading(true);
 
-    const handleUnpublish = () => {
-        console.log('Unpublishing channel...');
+            // Validate required fields
+            if (!channelData.Name.trim()) {
+                alert('Please enter a channel name');
+                return;
+            }
+
+            if (!channelData.PodcastCategoryId) {
+                alert('Please select a category');
+                return;
+            }
+
+            if (!mainImageFile) {
+                alert('Please select a main image');
+                return;
+            }
+
+            // Prepare form data for API call
+            const formData = new FormData();
+
+            // Add ChannelCreateInfo as JSON
+            const channelCreateInfo = {
+                ...channelData,
+                HashtagIds: selectedHashtags.map(tag => tag.id)
+            };
+
+            formData.append('ChannelCreateInfo', JSON.stringify(channelCreateInfo));
+            formData.append('MainImageFile', mainImageFile);
+
+            // TODO: Call your API here
+            console.log('Creating channel with data:', channelCreateInfo);
+            console.log('Main image file:', mainImageFile);
+
+            // Example API call:
+            // await createChannelAPI(formData);
+
+            alert('Channel created successfully!');
+            onClose?.();
+
+        } catch (error) {
+            console.error('Error creating channel:', error);
+            alert('Failed to create channel');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            setMainImageFile(file);
             const reader = new FileReader();
             reader.onload = (e) => {
                 const imageUrl = e.target?.result as string;
-                // Here you would normally call an image cropping library
-                // For now, we'll just set the preview
                 setPreviewImage(imageUrl);
             };
             reader.readAsDataURL(file);
@@ -203,10 +206,22 @@ const ChannelOverview = () => {
     };
 
     const handleAddHashtag = () => {
-        if (hashtagInput.trim() && !selectedHashtags.includes(hashtagInput.trim())) {
-            // TODO: Call API to save tag first
-            setSelectedHashtags(prev => [...prev, hashtagInput.trim()]);
-            setHashtagInput('');
+        if (hashtagInput.trim()) {
+            // For create mode, we'll create new hashtags with temporary IDs
+            // In a real app, you might want to search existing hashtags first
+            const newHashtag: HashtagOption = {
+                id: Date.now(), // Temporary ID, will be replaced by backend
+                name: hashtagInput.trim()
+            };
+
+            const exists = selectedHashtags.some(tag =>
+                tag.name.toLowerCase() === newHashtag.name.toLowerCase()
+            );
+
+            if (!exists) {
+                setSelectedHashtags(prev => [...prev, newHashtag]);
+                setHashtagInput('');
+            }
         }
     };
 
@@ -217,57 +232,40 @@ const ChannelOverview = () => {
         }
     };
 
-    const handleRemoveHashtag = (tagToRemove: string) => {
-        setSelectedHashtags(prev => prev.filter(tag => tag !== tagToRemove));
+    const handleRemoveHashtag = (tagToRemove: HashtagOption) => {
+        setSelectedHashtags(prev => prev.filter(tag => tag.id !== tagToRemove.id));
     };
 
     return (
         <div className="channel-overview-page">
             <Typography variant="h4" className="channel-overview-page__title">
-                Channel Details
+                Create New Channel
             </Typography>
             <div className="channel-overview-page__actions">
-                <Button
-                    variant="contained"
-                    color="error"
-                    className="channel-overview-page__action-btn channel-overview-page__action-btn--remove"
-                    onClick={handleRemove}
-                >
-                    Remove
-                </Button>
-                <Button
-                    variant="outlined"
-                    className="channel-overview-page__action-btn channel-overview-page__action-btn--unpublish"
-                    onClick={handleUnpublish}
-                >
-                    Unpublish
-                </Button>
+
                 <Button
                     variant="contained"
                     className="channel-overview-page__action-btn channel-overview-page__action-btn--save"
-                    onClick={handleSave}
+                    onClick={handleCreateChannel}
+                    disabled={loading}
                 >
-                    Save
-                </Button>
-                <Button
-                    variant="text"
-                    className="channel-overview-page__action-btn channel-overview-page__action-btn--more"
-                >
-                    ⋮
+                    {loading ? 'Creating...' : 'Create'}
                 </Button>
             </div>
 
             <div className="channel-overview-page__content">
                 {/* Form Section */}
                 <div className="channel-overview-page__form">
-                    {/* Channel Name and Status Row */}
+                    {/* Channel Name Row */}
                     <div className="channel-overview-page__row">
                         <TextField
                             label="Name"
-                            value={formData.name}
+                            value={channelData.Name}
                             variant="standard"
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            onChange={(e) => setChannelData({ ...channelData, Name: e.target.value })}
                             className="channel-overview-page__input channel-overview-page__input--name"
+                            required
+                            fullWidth
                             sx={{
                                 '& .MuiOutlinedInput-root': {
                                     '& fieldset': { borderColor: '#999999 !important' },
@@ -275,20 +273,6 @@ const ChannelOverview = () => {
                                     '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
                                 },
                             }}
-                        />
-
-                        <TextField
-                            id="filled-read-only-input"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Status"
-                            value={formData.status}
-                            className="channel-overview-page__input channel-overview-page__input--status"
-
                         />
                     </div>
 
@@ -298,17 +282,20 @@ const ChannelOverview = () => {
                             select
                             label="Category"
                             variant="standard"
-                            value={selectedCategory}
+                            value={channelData.PodcastCategoryId}
                             onChange={(e) => handleCategoryChange(e.target.value as unknown as number)}
                             className="channel-overview-page__select"
+                            required
                         >
+                            <MenuItem value={0} disabled>
+                                Select Category
+                            </MenuItem>
                             {mockPodcastCategories.map((category) => (
                                 <MenuItem
                                     key={category.Id}
                                     value={category.Id}
                                     sx={{
                                         '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-
                                     }}
                                 >
                                     {category.Name}
@@ -319,79 +306,19 @@ const ChannelOverview = () => {
                             select
                             label="Subcategory"
                             variant="standard"
-                            value={selectedSubCategory}
-                            onChange={(e) => setSelectedSubCategory(e.target.value as unknown as number)}
+                            value={channelData.PodcastSubCategoryId}
+                            onChange={(e) => handleSubCategoryChange(e.target.value as unknown as number)}
                             className="channel-overview-page__select"
                         >
-                            {getSubCategoriesForCategory(selectedCategory).length > 0 ? (
-                                getSubCategoriesForCategory(selectedCategory).map((subCategory) => (
-                                    <MenuItem key={subCategory.Id} value={subCategory.Id}>
-                                        {subCategory.Name}
-                                    </MenuItem>
-                                ))
-                            ) : (
-                                <MenuItem value={0} disabled>
-                                    --
+                            <MenuItem value={0}>
+                                None
+                            </MenuItem>
+                            {getSubCategoriesForCategory(channelData.PodcastCategoryId).map((subCategory) => (
+                                <MenuItem key={subCategory.Id} value={subCategory.Id}>
+                                    {subCategory.Name}
                                 </MenuItem>
-                            )}
+                            ))}
                         </TextField>
-                    </div>
-
-                    {/* Dates and Numbers Row */}
-                    <div className="channel-overview-page__row">
-                        <TextField
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Created At"
-                            type="date"
-                            value={formData.createdAt}
-                            className="channel-overview-page__input-small"
-
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Updated At"
-                            type="date"
-                            value={formData.updatedAt}
-                            className="channel-overview-page__input-small"
-
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Total Favorite"
-                            value={formData.totalFavorites}
-                            className="channel-overview-page__input-small"
-
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Listen Count"
-                            value={formData.listenCount}
-                            className="channel-overview-page__input-small"
-
-                        />
                     </div>
 
                     {/* Hashtags */}
@@ -409,7 +336,7 @@ const ChannelOverview = () => {
                                         <InputAdornment position="end">
                                             <IconButton
                                                 onClick={handleAddHashtag}
-                                                disabled={!hashtagInput.trim() || selectedHashtags.includes(hashtagInput.trim())}
+                                                disabled={!hashtagInput.trim() || selectedHashtags.some(tag => tag.name.toLowerCase() === hashtagInput.trim().toLowerCase())}
                                                 size="small"
                                                 sx={{ color: 'var(--primary-green)' }}
                                             >
@@ -435,7 +362,7 @@ const ChannelOverview = () => {
                             {selectedHashtags.map((tag, index) => (
                                 <Chip
                                     key={index}
-                                    label={tag}
+                                    label={tag.name}
                                     onDelete={() => handleRemoveHashtag(tag)}
                                     size="small"
                                     sx={{
@@ -467,21 +394,29 @@ const ChannelOverview = () => {
                 </div>
 
                 {/* Preview Section */}
-                <div className="channel-overview-page__preview">
+                <div className="channel-overview-page__preview ">
                     <div className="channel-overview-page__main-image-container">
-                        <img
-                            src={previewImage}
-                            alt={formData.name}
-                            className="channel-overview-page__main-image-file"
-                        />
+                        {previewImage ? (
+                            <img
+                                src={previewImage}
+                                alt={channelData.Name || 'Channel artwork'}
+                                className="channel-overview-page__main-image-file"
+                            />
+                        ) : (
+                            <img
+                                src={logo}
+                                alt='Channel artwork'
+                                className="channel-overview-page__main-image-file"
+                            />
+                        )}
                         <Button
                             className="channel-overview-page__change-artwork-btn"
                             onClick={() => fileInputRef.current?.click()}
                         >
-                            Change Artwork
+                            {previewImage ? 'Change Artwork' : 'Select Artwork *'}
                         </Button>
                     </div>
-                    
+
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -490,31 +425,44 @@ const ChannelOverview = () => {
                         style={{ display: 'none' }}
                     />
 
-                    <Typography variant="h6" className="channel-overview-page__preview-title">
+                    <Typography variant="h6" className="channel-overview-page__preview-title text-center">
                         Preview
                     </Typography>
                     <Card className="channel-overview-page__preview-card">
                         <div className="channel-overview-page__preview-image-container">
                             <CardMedia
                                 component="img"
-                                image={previewImage}
-                                alt={formData.name}
+                                image={previewImage || logo}
+                                alt={channelData.Name || 'Channel artwork'}
                                 className="channel-overview-page__preview-bg-image"
                             />
                             <div className="channel-overview-page__preview-overlay">
                                 <div className="channel-overview-page__preview-content">
-                                    <img
-                                        src={previewImage}
-                                        alt={formData.name}
-                                        className="channel-overview-page__preview-avatar"
-                                    />
+                                    {previewImage ? (
+                                        <img
+                                            src={previewImage}
+                                            alt={channelData.Name || 'Channel artwork'}
+                                            className="channel-overview-page__preview-avatar"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={logo}
+                                            alt='Channel artwork'
+                                            className="channel-overview-page__preview-avatar"
+                                        />
+                                    )}
                                     <div className="channel-overview-page__preview-info">
                                         <Typography variant="h6" className="channel-overview-page__preview-name">
-                                            {formData.name}
+                                            {channelData.Name || 'Channel Name'}
                                         </Typography>
-                                        <Typography variant="body2" className="channel-overview-page__preview-subtitle">
-                                            SAMURICE
-                                        </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            className="channel-overview-page__preview-subtitle"
+                                            component="div"
+                                            dangerouslySetInnerHTML={{
+                                                __html: (channelData.Description || 'Description')
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -526,4 +474,4 @@ const ChannelOverview = () => {
     );
 };
 
-export default ChannelOverview;
+export default ChannelCreate;

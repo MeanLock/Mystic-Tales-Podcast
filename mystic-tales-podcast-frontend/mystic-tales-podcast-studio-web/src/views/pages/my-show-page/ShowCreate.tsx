@@ -21,7 +21,28 @@ import {
 import { Add } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
 import 'quill/dist/quill.snow.css';
-import './styles.scss';
+import logo from '../../../assets/logoMTP.jpg';
+
+/**
+ * ShowCreate Component - Create new podcast show
+ * 
+ * API Payload Structure:
+ * {
+ *   "Copyright": "string",
+ *   "Name": "string",
+ *   "HashtagIds": [0],
+ *   "PodcasterId": 0,
+ *   "PodcastShowSubscriptionTypeId": 0,
+ *   "PodcastSubCategoryId": 0,
+ *   "Language": "English",
+ *   "PodcastChannelId": "3fa85f64-5717-4562-b3fc-2c963f66afa6" | null,
+ *   "UploadFrequency": "string",
+ *   "Description": "string",
+ *   "PodcastCategoryId": 0
+ * }
+ * + MainImageFile: File
+ */
+
 export const Language = [
     { Id: 1, Name: "English" },
     { Id: 2, Name: "Vietnamese" },
@@ -46,7 +67,7 @@ export const mockSubscriptionTypes = [
     { Id: 2, Name: "Subscriber only" },
 ];
 export const UploadFrequencyList = [
-    {  Name: "Daily" },
+    { Name: "Daily" },
     { Name: "Weekly" },
     { Name: "Monthly" },
 ];
@@ -74,54 +95,7 @@ export const mockPodcastSubCategories = [
     { Id: 16, Name: "Mysterious Tribes", PodcastCategoryId: 3 },
 ];
 
-export const mockData = {
-    Show: {
-        Id: 1,
-        Name: "Mystic Tales",
-        Description: "A podcast channel sharing mysterious stories and real-life paranormal events.",
-        Language: "English",
-        Copyright: "© 2025 Mystic Tales",
-        ReleaseDate: "2025-10-20T07:29:44.480Z",
-        UploadFrequency: "Weekly",
-        RatingCount: 10,
-        AverageRating: 4.5,
-        MainImageFileKey: "main_mystic_tales.png",
-        TrailerAudioFileKey: null,
-        TotalFollow: 1520,
-        ListenCount: 34900,
-        PodcastShowSubscriptionType: {
-            Id: 2,
-            Name: "Subscriber only"
-        },
-        PodcastChannel: {
-            Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            Name: "Thần Tiên Podcast", 
-            MainImageFileKey: "main_mystic_tales.png"
-        },
-        // PodcastChannel: null, // Uncomment this for Single Show example
-        PodcastCategory: {
-            Id: 1,
-            Name: "True Crime ",
-        },
-        PodcastSubCategory: {
-            Id: 1,
-            Name: "Serial Killers",
-            PodcastCategoryId: 1,
-        },
-        Hashtags: [
-            { Id: 1, Name: "#Mystery" },
-            { Id: 2, Name: "#HorrorStories" },
-            { Id: 3, Name: "#Paranormal" },
-        ],
-        CreatedAt: "2025-10-17T05:44:11.252Z",
-        UpdatedAt: "2025-10-17T05:44:11.252Z",
-        TakenDownReason: "Content violation due to inappropriate material.",
-        CurrentStatus: {
-            Id: 1,
-            Name: "Published",
-        },
-    }
-};
+
 
 // Mock available hashtags for autocomplete
 const availableHashtags = [
@@ -130,32 +104,25 @@ const availableHashtags = [
     '#SerialKiller', '#UnsolvedMystery', '#ColdCase', '#Detective'
 ];
 
-const ShowInfo = () => {
-    const [showDetail, setShowDetail] = useState<any>(mockData.Show);
-    const [channel, setChannel] = useState<string | null>(mockData.Show.PodcastChannel?.Id || null);
-    const [selectedCategory, setSelectedCategory] = useState<number>(mockData.Show.PodcastCategory.Id);
-    const [selectedSubCategory, setSelectedSubCategory] = useState<number>(mockData.Show.PodcastSubCategory.Id);
-    const [selectedSubscriptionType, setSelectedSubscriptionType] = useState<number>(mockData.Show.PodcastShowSubscriptionType.Id);
-    const [uploadFrequency, setUploadFrequency] = useState<string>(mockData.Show.UploadFrequency || '');
-
-    const [selectedHashtags, setSelectedHashtags] = useState<string[]>(
-        mockData.Show.Hashtags.map((tag: any) => tag.Name)
-    );
-    const [description, setDescription] = useState<string>(mockData.Show.Description || '');
-
+const ShowCreate = () => {
+    const [channel, setChannel] = useState<string | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<number>(1);
+    const [selectedSubCategory, setSelectedSubCategory] = useState<number>(1);
+    const [selectedSubscriptionType, setSelectedSubscriptionType] = useState<number>(1);
+    const [uploadFrequency, setUploadFrequency] = useState<string>('');
+    const [selectedHashtags, setSelectedHashtags] = useState<number[]>([]);
+    const [description, setDescription] = useState<string>('');
     const [hashtagInput, setHashtagInput] = useState<string>('');
-    const [previewImage, setPreviewImage] = useState<string>('https://i.pinimg.com/736x/e8/c4/d3/e8c4d39d44c8945d62cd6f35e45959df.jpg');
+    const [previewImage, setPreviewImage] = useState<string>('');
+    const [mainImageFile, setMainImageFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
     const [formData, setFormData] = useState({
-        name: mockData.Show.Name,
-        status: mockData.Show.CurrentStatus.Name,
-        createdAt: mockData.Show.CreatedAt.split('T')[0],
-        updatedAt: mockData.Show.UpdatedAt.split('T')[0],
-        totalFollow: mockData.Show.TotalFollow,
-        language: mockData.Show.Language,
-        uploadFrequency: mockData.Show.UploadFrequency || '',
-        listenCount: mockData.Show.ListenCount,
-        description: description
+        name: '',
+        copyright: '',
+        language: 'English',
+        uploadFrequency: '',
+        description: ''
     });
 
     // Quill editor for description
@@ -173,39 +140,17 @@ const ShowInfo = () => {
         placeholder: 'Add description...'
     });
 
-    const fetchShowDetail = async () => {
-        setShowDetail(mockData.Show)
-    }
-
-    useEffect(() => {
-        fetchShowDetail()
-    }, []);
-
-    // Set initial description in Quill
+    // Set up Quill editor
     useEffect(() => {
         if (quill) {
-            const initialDescription = mockData.Show.Description || '';
-            if (initialDescription) {
-                quill.setContents([
-                    { insert: initialDescription }
-                ]);
-            }
-
             // Listen for text changes
             quill.on('text-change', () => {
-                const content = quill.getText(); // Get plain text
-                const htmlContent = quill.root.innerHTML; // Get HTML content
-
-                // Update description state
-                setDescription(content);
-                // Update formData with description
+                const htmlContent = quill.root.innerHTML;
+                setDescription(htmlContent);
                 setFormData(prev => ({
                     ...prev,
-                    description: htmlContent // Save HTML format or use 'content' for plain text
+                    description: htmlContent
                 }));
-
-                // Optional: Auto-save to backend
-                // handleAutoSave(htmlContent);
             });
         }
     }, [quill]);
@@ -224,7 +169,24 @@ const ShowInfo = () => {
         setSelectedSubscriptionType(typeId);
     };
     const handleSave = () => {
-        console.log('Saving channel data with description:', formData);
+        // Prepare API payload
+        const payload = {
+            Copyright: formData.copyright,
+            Name: formData.name,
+            HashtagIds: selectedHashtags,
+            PodcasterId: 0, // TODO: Get from user context
+            PodcastShowSubscriptionTypeId: selectedSubscriptionType,
+            PodcastSubCategoryId: selectedSubCategory,
+            Language: formData.language,
+            PodcastChannelId: channel,
+            UploadFrequency: uploadFrequency,
+            Description: formData.description,
+            PodcastCategoryId: selectedCategory
+        };
+
+        console.log('Creating show with data:', payload);
+        console.log('Main image file:', mainImageFile);
+        // TODO: Call API with payload and mainImageFile
     };
 
     const handleRemove = () => {
@@ -238,10 +200,10 @@ const ShowInfo = () => {
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            setMainImageFile(file);
             const reader = new FileReader();
             reader.onload = (e) => {
                 const imageUrl = e.target?.result as string;
-
                 setPreviewImage(imageUrl);
             };
             reader.readAsDataURL(file);
@@ -249,9 +211,10 @@ const ShowInfo = () => {
     };
 
     const handleAddHashtag = () => {
-        if (hashtagInput.trim() && !selectedHashtags.includes(hashtagInput.trim())) {
-            // TODO: Call API to save tag first
-            setSelectedHashtags(prev => [...prev, hashtagInput.trim()]);
+        const hashtagId = parseInt(hashtagInput.trim());
+        if (hashtagId && !isNaN(hashtagId) && !selectedHashtags.includes(hashtagId)) {
+            // TODO: Validate hashtag ID exists via API
+            setSelectedHashtags(prev => [...prev, hashtagId]);
             setHashtagInput('');
         }
     };
@@ -263,7 +226,7 @@ const ShowInfo = () => {
         }
     };
 
-    const handleRemoveHashtag = (tagToRemove: string) => {
+    const handleRemoveHashtag = (tagToRemove: number) => {
         setSelectedHashtags(prev => prev.filter(tag => tag !== tagToRemove));
     };
 
@@ -285,44 +248,16 @@ const ShowInfo = () => {
 
     return (
         <div className="show-info-page">
-            {showDetail.TakenDownReason && (
-                <div className="flex items-center gap-2 bg-red-100 border border-red-400  rounded px-3 py-2 mb-3" style={{ width: "fit-content" }}>
-                    <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
-                    </svg>
-                    <span className="text-xs text-red-700 font-medium">
-                        <strong>Taken Down Reason:</strong> {showDetail.TakenDownReason}
-                    </span>
-                </div>
-            )}
+            <Typography variant="h4" className="show-info-page__title">
+                Create New Show
+            </Typography>
             <div className="show-info-page__actions">
-                <Button
-                    variant="contained"
-                    color="error"
-                    className="show-info-page__action-btn show-info-page__action-btn--remove"
-                    onClick={handleRemove}
-                >
-                    Remove
-                </Button>
-                <Button
-                    variant="outlined"
-                    className="show-info-page__action-btn show-info-page__action-btn--unpublish"
-                    onClick={handleUnpublish}
-                >
-                    Unpublish
-                </Button>
                 <Button
                     variant="contained"
                     className="show-info-page__action-btn show-info-page__action-btn--save"
                     onClick={handleSave}
                 >
                     Save
-                </Button>
-                <Button
-                    variant="text"
-                    className="show-info-page__action-btn show-info-page__action-btn--more"
-                >
-                    ⋮
                 </Button>
             </div>
 
@@ -346,34 +281,20 @@ const ShowInfo = () => {
                                 },
                             }}
                         />
-
-                        <TextField
-                            id="filled-read-only-input"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Status"
-                            value={showDetail.CurrentStatus.Name}
-                            className="show-info-page__input show-info-page__input--status"
-
-                        />
                     </div>
                     <div className="show-info-page__row">
                         <TextField
                             select
                             label="Channel"
                             variant="standard"
-                            value={channel || ''}
-                            onChange={(e) => setChannel(e.target.value || null)}
+                            value={channel === null ? '' : channel}
+                            onChange={(e) => setChannel(e.target.value === '' ? null : e.target.value)}
                             className="show-info-page__select"
                         >
-                            {mockChannel.map((channelItem, index) => (
+                            {mockChannel.map((channelItem) => (
                                 <MenuItem
-                                    key={channelItem.Id || `single-${index}`}
-                                    value={channelItem.Id || ''}
+                                    key={channelItem.Id === null ? 'single-show' : channelItem.Id}
+                                    value={channelItem.Id === null ? '' : channelItem.Id}
                                     sx={{
                                         '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
                                         fontStyle: channelItem.Id === null ? 'italic' : 'normal',
@@ -498,108 +419,25 @@ const ShowInfo = () => {
                         </TextField>
                     </div>
 
-                    {/* Dates and Numbers Row */}
-                    <div className="show-info-page__row">
-                        {showDetail.ReleaseDate !== null && (
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Release Date"
-                                type="date"
-                                value={showDetail.ReleaseDate.split('T')[0]}
-                                className="show-info-page__input-small"
-
-                            />
-                        )}
-                        <TextField
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Created At"
-                            type="date"
-                            value={formData.createdAt}
-                            className="show-info-page__input-small"
-
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Updated At"
-                            type="date"
-                            value={formData.updatedAt}
-                            className="show-info-page__input-small"
-
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Total Followers"
-                            value={showDetail.TotalFollow}
-                            className="show-info-page__input-small"
-
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Listen Count"
-                            value={showDetail.ListenCount}
-                            className="show-info-page__input-small"
-
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Rating Average"
-                            value={`${showDetail.AverageRating} ⭐`}
-                            className="show-info-page__input-small"
-
-                        />
-
-                    </div>
-
+                    {/* Dates and Numbers Row - Remove for Create */}
+                    {/* These fields are not needed for create form */}
 
                     <div className="show-info-page__hashtags">
                         <div className="show-info-page__hashtag-input ">
                             <TextField
-                                label="Add hashtag"
+                                label="Add hashtag ID"
                                 value={hashtagInput}
                                 onChange={(e) => setHashtagInput(e.target.value)}
                                 onKeyPress={handleHashtagKeyPress}
                                 size="small"
+                                type="number"
                                 className="show-info-page__hashtag-field"
                                 InputProps={{
                                     endAdornment: (
                                         <InputAdornment position="end">
                                             <IconButton
                                                 onClick={handleAddHashtag}
-                                                disabled={!hashtagInput.trim() || selectedHashtags.includes(hashtagInput.trim())}
+                                                disabled={!hashtagInput.trim() || selectedHashtags.includes(parseInt(hashtagInput.trim()))}
                                                 size="small"
                                                 sx={{ color: 'var(--primary-green)' }}
                                             >
@@ -623,9 +461,9 @@ const ShowInfo = () => {
 
                             <TextField
                                 label="Copyright"
-                                value={formData.name}
+                                value={formData.copyright}
                                 variant="standard"
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                onChange={(e) => setFormData({ ...formData, copyright: e.target.value })}
                                 className="show-info-page__input show-info-page__input--name"
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
@@ -640,7 +478,7 @@ const ShowInfo = () => {
                             {selectedHashtags.map((tag, index) => (
                                 <Chip
                                     key={index}
-                                    label={tag}
+                                    label={`Hashtag #${tag}`}
                                     onDelete={() => handleRemoveHashtag(tag)}
                                     size="small"
                                     sx={{
@@ -674,16 +512,24 @@ const ShowInfo = () => {
                 {/* Preview Section */}
                 <div className="show-info-page__preview">
                     <div className="show-info-page__main-image-container">
-                        <img
-                            src={previewImage}
-                            alt={formData.name}
-                            className="show-info-page__main-image-file"
-                        />
+                        {previewImage ? (
+                            <img
+                                src={previewImage}
+                                alt={formData.name || 'Preview'}
+                                className="show-info-page__main-image-file"
+                            />
+                        ) : (
+                            <img
+                                src={logo}
+                                alt={formData.name || 'Preview'}
+                                className="show-info-page__main-image-file"
+                            />
+                        )}
                         <Button
                             className="show-info-page__change-artwork-btn"
                             onClick={() => fileInputRef.current?.click()}
                         >
-                            Change Artwork
+                            {previewImage ? 'Change Artwork' : 'Upload Artwork'}
                         </Button>
                     </div>
                     <input
@@ -693,41 +539,10 @@ const ShowInfo = () => {
                         accept="image/*"
                         style={{ display: 'none' }}
                     />
-
-                    <Typography variant="h6" className="show-info-page__preview-title">
-                        Preview
-                    </Typography>
-                    <Card className="show-info-page__preview-card">
-                        <div className="show-info-page__preview-image-container">
-                            <CardMedia
-                                component="img"
-                                image={previewImage}
-                                alt={formData.name}
-                                className="show-info-page__preview-bg-image"
-                            />
-                            <div className="show-info-page__preview-overlay">
-                                <div className="show-info-page__preview-content">
-                                    <img
-                                        src={previewImage}
-                                        alt={formData.name}
-                                        className="show-info-page__preview-avatar"
-                                    />
-                                    <div className="show-info-page__preview-info">
-                                        <Typography variant="h6" className="show-info-page__preview-name">
-                                            {formData.name}
-                                        </Typography>
-                                        <Typography variant="body2" className="show-info-page__preview-subtitle">
-                                            SAMURICE
-                                        </Typography>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
                 </div>
             </div>
         </div>
     );
 };
 
-export default ShowInfo;
+export default ShowCreate;

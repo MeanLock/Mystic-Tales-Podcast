@@ -10,6 +10,7 @@ import './styles.scss';
 import { ArrowBack } from '@mui/icons-material';
 import EpisodeInfo from './episode-info';
 import EpisodeAudio from './epsiode-audio';
+import AudioSequencer from './test';
 
 export const mockData = {
     Episode: {

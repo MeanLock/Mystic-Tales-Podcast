@@ -1,8 +1,10 @@
 import React, { FC, useEffect, useState } from 'react';
 import { Button, TextField, InputAdornment, Chip, Box, Typography, Card, CardMedia, CardContent, Badge, Menu, MenuItem, FormControlLabel, Checkbox, Accordion, AccordionSummary, AccordionDetails, Divider, InputBase } from '@mui/material';
-import { Search, Add, FilterList,PersonAdd, PlayArrow, ExpandMore } from '@mui/icons-material';
+import { Search, Add, FilterList, PersonAdd, PlayArrow, ExpandMore } from '@mui/icons-material';
 import './styles.scss';
 import { EmptyComponent } from '@/views/components/common/empty';
+import Modal_Button from '@/views/components/common/modal/ModalButton';
+import ShowCreate from './ShowCreate';
 
 
 // Mock categories with subcategories for filter
@@ -380,7 +382,7 @@ const MyShowPage: FC<MyShowPageProps> = () => {
                                 <Search />
                             </Box>
                             <InputBase
-                                placeholder="Search Channel By Name"
+                                placeholder="Search Show By Name"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="my-show-page__search-input"
@@ -510,14 +512,16 @@ const MyShowPage: FC<MyShowPageProps> = () => {
                             </Box>
                         </Menu>
                     </div>
-
-                    <Button
+                    <Modal_Button
                         className="my-show-page__new-show-btn"
+                        content="New Show"
                         variant="contained"
+                                                size='lg'
                         startIcon={<Add />}
                     >
-                        New Show
-                    </Button>
+                        <ShowCreate />
+                    </Modal_Button>
+
                 </div>
 
                 {/* Filter Tags */}
@@ -612,7 +616,7 @@ const MyShowPage: FC<MyShowPageProps> = () => {
                                                     </div>
                                                     <div className="my-show-page__show-stat-follow text-xs">
                                                         <PersonAdd />
-                                                        {show.TotalFollow.toLocaleString()} 
+                                                        {show.TotalFollow.toLocaleString()}
                                                     </div>
                                                 </div>
                                             </div>

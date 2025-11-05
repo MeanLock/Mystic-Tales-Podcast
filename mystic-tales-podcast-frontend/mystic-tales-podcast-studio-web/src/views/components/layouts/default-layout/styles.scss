@@ -366,6 +366,22 @@
         }
     }
 }
+.MuiBox-root {
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--secondary-grey);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--primary-green);
+    border-radius: 4px;
+  }
+
+
+}
 
 @media (max-width: 768px) {
     .default-layout {

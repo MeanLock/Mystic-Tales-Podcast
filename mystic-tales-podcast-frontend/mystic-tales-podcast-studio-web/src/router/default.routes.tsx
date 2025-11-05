@@ -1,7 +1,6 @@
 import { lazy } from "react";
 
 const Dashboard = lazy(() => import("../views/pages/dashboard"));
-const AudioTuning = lazy(() => import("../views/pages/audio-tuning-page"));
 const MyChannels = lazy(() => import("../views/pages/my-channel-page"));
 const MyShows = lazy(() => import("../views/pages/my-show-page"));
 const Profile = lazy(() => import("../views/pages/profile-page"));
@@ -16,12 +15,10 @@ const ShowEpisode = lazy(() => import("../views/pages/my-show-detail-page/episod
 
 const EpisodeDetail = lazy(() => import("../views/pages/my-show-detail-page/episode-detail-page"));
 
-
 const hls = lazy(() => import("../views/pages/hls"));
 
 const routes = [
   { path: '/dashboard', exact: true, name: 'Dashboard', element: Dashboard },
-  { path: '/audio-tuning', exact: true, name: 'Audio Tuning', element: AudioTuning },
   { path: '/earn', exact: true, name: 'Earn', element: () => <div>Earn Page</div> },
   { path: '/copyright', exact: true, name: 'Copyright', element: () => <div>Copyright Page</div> },
   { path: '/channel', exact: true, name: 'My Channels', element: MyChannels },

@@ -3,6 +3,8 @@ import { Button, TextField, InputAdornment, Chip, Box, Typography, Card, CardMed
 import { Search, Add, FilterList, Favorite, PlayArrow, ExpandMore } from '@mui/icons-material';
 import './styles.scss';
 import { EmptyComponent } from '@/views/components/common/empty';
+import Modal_Button from '@/views/components/common/modal/ModalButton';
+import ChannelCreate from './ChannelCreate';
 
 
 // Mock categories with subcategories for filter
@@ -469,15 +471,16 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
                             </Box>
                         </Menu>
                     </div>
-
-                    <Button
+                    <Modal_Button
                         className="my-channel-page__new-channel-btn"
+                        content="New Channel"
+                        color="primary"
                         variant="contained"
+                        size='lg'
                         startIcon={<Add />}
-
                     >
-                        New Channel
-                    </Button>
+                        <ChannelCreate />
+                    </Modal_Button>
                 </div>
 
                 {/* Filter Tags */}

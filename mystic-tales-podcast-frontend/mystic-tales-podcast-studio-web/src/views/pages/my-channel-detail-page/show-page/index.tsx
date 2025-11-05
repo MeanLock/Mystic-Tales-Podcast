@@ -6,10 +6,12 @@ import { Button, CircularProgress, Grid, IconButton, Rating, Typography } from "
 import { formatDate } from "@/core/utils/date.util"
 import { Eye } from 'phosphor-react';
 import { Add } from '@mui/icons-material';
+import { useNavigate } from "react-router-dom"
 
 export const mockChannelShowList: any = {
     ChannelShowList: [
         {
+            Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
             Name: "Tech Talk Weekly",
             Description: "Bản tin công nghệ cập nhật mỗi tuần Bản tin công nghệ cập nhật mỗi tuầnBản tin công nghệ cập nhật mỗi tuần Bản tin công nghệ cập nhật mỗi tuần Bản tin công nghệ cập nhật mỗi tuần",
             ReleaseDate: "2025-10-01T08:00:00.000Z",
@@ -40,6 +42,7 @@ export const mockChannelShowList: any = {
             }
         },
         {
+            Id: "4fa85f64-5717-4562-b3fc-2c963f66afb7",
             Name: "Chuyện đời thường",
             Description: "Những câu chuyện giản dị và sâu sắc",
             ReleaseDate: "2025-09-15T07:30:00.000Z",
@@ -69,53 +72,7 @@ export const mockChannelShowList: any = {
                 Name: "Published "
             }
         },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Draft"
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Taken Down"
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Removed"
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Published "
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Published "
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Published "
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Published "
-            }
-        }, {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Published "
-            }
-        },
+       
     ]
 };
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -123,6 +80,7 @@ ModuleRegistry.registerModules([AllCommunityModule])
 interface ChannelShowViewProps { }
 interface ChannelShowViewContextProps {
     handleDataChange: () => void
+    navigate?: (path: string) => void
 }
 interface GridState {
     columnDefs: ColDef[];
@@ -130,7 +88,7 @@ interface GridState {
 }
 export const ChannelShowViewContext = createContext<ChannelShowViewContextProps | null>(null)
 
-const state_creator = (table: any[]) => {
+const state_creator = (table: any[], navigate?: (path: string) => void) => {
     const state = {
         columnDefs: [
 
@@ -302,12 +260,26 @@ const state_creator = (table: any[]) => {
                 cellClass: 'd-flex justify-content-center py-0',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 cellRenderer: (params: { data: any }) => {
-                    return (
-                        <IconButton >
-                            <Eye size={27} color='var(--white-75)' />
-                        </IconButton>
+                    const data = params.data || {};
+                    const showId = data?.Id;
+                    const disabled = !showId; // episodeId required; showId optional depending on your routing
 
-                    )
+                    const handleClick = () => {
+                        if (!showId) return;
+                        window.location.replace(`/show/${showId}/overview`);
+
+                    };
+
+                    return (
+                        <IconButton
+                            onClick={handleClick}
+                            disabled={disabled}
+                            aria-label={disabled ? 'No episode' : 'Open episode'}
+                            sx={{ color: disabled ? 'rgba(255,255,255,0.25)' : 'var(--white-75)' }}
+                        >
+                            <Eye size={27} />
+                        </IconButton>
+                    );
                 },
                 flex: 0.5,
                 filter: false,
@@ -326,6 +298,7 @@ const state_creator = (table: any[]) => {
 const ChannelShowView: FC<ChannelShowViewProps> = () => {
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const navigate = useNavigate();
     const gridRef = useRef<any>(null);
     useEffect(() => {
         if (
@@ -355,7 +328,7 @@ const ChannelShowView: FC<ChannelShowViewProps> = () => {
     // }
     const handleDataChange = async () => {
         setIsLoading(false);
-        setState(state_creator(mockChannelShowList.ChannelShowList));
+        setState(state_creator(mockChannelShowList.ChannelShowList, navigate));
 
     }
     useEffect(() => {
