@@ -1916,7 +1916,7 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-channel-episodes-listen-session-unpublish-channel-force"
+            - name: "remove-channel-episodes-listen-session-content-unpublish-channel-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -1926,7 +1926,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-channel-episodes-listen-session-unpublish-channel-force"
+      - name: "remove-channel-episodes-listen-session-content-unpublish-channel-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes dismissed episodes from users' listen session."
@@ -1941,7 +1941,7 @@ flows:
           - PodcastChannelId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "delete-channel-episodes-listen-session-unpublish-channel-force.success"
+          emit: "remove-channel-episodes-listen-session-content-unpublish-channel-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -1950,7 +1950,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-channel-episodes-listen-session-unpublish-channel-force.failed"
+          emit: "remove-channel-episodes-listen-session-content-unpublish-channel-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -2208,7 +2208,7 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-channel-episodes-listen-session-channel-deletion-force"
+            - name: "remove-channel-episodes-listen-session-content-channel-deletion-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -2218,7 +2218,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-channel-episodes-listen-session-channel-deletion-force"
+      - name: "remove-channel-episodes-listen-session-content-channel-deletion-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes all channel episodes from users' listen history."
@@ -2230,7 +2230,7 @@ flows:
         response-data:
           - PodcastChannelId
         onSuccess:
-          emit: "delete-channel-episodes-listen-session-channel-deletion-force.success"
+          emit: "remove-channel-episodes-listen-session-content-channel-deletion-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -2239,7 +2239,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-channel-episodes-listen-session-channel-deletion-force.failed"
+          emit: "remove-channel-episodes-listen-session-content-channel-deletion-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -2737,7 +2737,7 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-show-episodes-listen-session-show-deletion-force"
+            - name: "remove-show-episodes-listen-session-content-show-deletion-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -2747,7 +2747,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-show-episodes-listen-session-show-deletion-force"
+      - name: "remove-show-episodes-listen-session-content-show-deletion-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes all show episodes from users' listen history."
@@ -2759,7 +2759,7 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "delete-show-episodes-listen-session-show-deletion-force.success"
+          emit: "remove-show-episodes-listen-session-content-show-deletion-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -2768,7 +2768,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-show-episodes-listen-session-show-deletion-force.failed"
+          emit: "remove-show-episodes-listen-session-content-show-deletion-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -3245,7 +3245,7 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-show-episodes-listen-session-unpublish-show-force"
+            - name: "remove-show-episodes-listen-session-content-unpublish-show-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -3255,7 +3255,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-show-episodes-listen-session-unpublish-show-force"
+      - name: "remove-show-episodes-listen-session-content-unpublish-show-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes dismissed episodes from users' listen history."
@@ -3270,7 +3270,7 @@ flows:
           - PodcastShowId
           - DmcaDismissedEpisodeIds
         onSuccess:
-          emit: "delete-show-episodes-listen-session-unpublish-show-force.success"
+          emit: "remove-show-episodes-listen-session-content-unpublish-show-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -3279,7 +3279,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-show-episodes-listen-session-unpublish-show-force.failed"
+          emit: "remove-show-episodes-listen-session-content-unpublish-show-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -3628,7 +3628,7 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-show-episodes-listen-session-dmca-remove-show-force"
+            - name: "remove-show-episodes-listen-session-content-dmca-remove-show-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -3638,7 +3638,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-show-episodes-listen-session-dmca-remove-show-force"
+      - name: "remove-show-episodes-listen-session-content-dmca-remove-show-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes all show episodes from users' listen history."
@@ -3649,7 +3649,7 @@ flows:
         response-data:
           - PodcastShowId
         onSuccess:
-          emit: "delete-show-episodes-listen-session-dmca-remove-show-force.success"
+          emit: "remove-show-episodes-listen-session-content-dmca-remove-show-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -3658,7 +3658,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-show-episodes-listen-session-dmca-remove-show-force.failed"
+          emit: "remove-show-episodes-listen-session-content-dmca-remove-show-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -3920,7 +3920,7 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-episode-listen-session-dmca-remove-episode-force"
+            - name: "remove-episode-listen-session-content-dmca-remove-episode-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -3930,7 +3930,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-episode-listen-session-dmca-remove-episode-force"
+      - name: "remove-episode-listen-session-content-dmca-remove-episode-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes the episode from users' listen history."
@@ -3941,7 +3941,7 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "delete-episode-listen-session-dmca-remove-episode-force.success"
+          emit: "remove-episode-listen-session-content-dmca-remove-episode-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -3950,7 +3950,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-episode-listen-session-dmca-remove-episode-force.failed"
+          emit: "remove-episode-listen-session-content-dmca-remove-episode-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -4324,7 +4324,7 @@ flows:
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-episode-listen-session-unpublish-episode-force"
+            - name: "remove-episode-listen-session-content-unpublish-episode-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -4334,7 +4334,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-episode-listen-session-unpublish-episode-force"
+      - name: "remove-episode-listen-session-content-unpublish-episode-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes the episode from users' listen session."
@@ -4346,7 +4346,7 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "delete-episode-listen-session-unpublish-episode-force.success"
+          emit: "remove-episode-listen-session-content-unpublish-episode-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -4355,7 +4355,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-episode-listen-session-unpublish-episode-force.failed"
+          emit: "remove-episode-listen-session-content-unpublish-episode-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -4608,7 +4608,7 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-episode-listen-session-episode-deletion-force"
+            - name: "remove-episode-listen-session-content-episode-deletion-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -4618,7 +4618,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-episode-listen-session-episode-deletion-force"
+      - name: "remove-episode-listen-session-content-episode-deletion-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes the episode from users' listen session."
@@ -4629,7 +4629,7 @@ flows:
         response-data:
           - PodcastEpisodeId
         onSuccess:
-          emit: "delete-episode-listen-session-episode-deletion-force.success"
+          emit: "remove-episode-listen-session-content-episode-deletion-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -4638,7 +4638,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-episode-listen-session-episode-deletion-force.failed"
+          emit: "remove-episode-listen-session-content-episode-deletion-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -4753,7 +4753,7 @@ flows:
     description: "Xử lý khiếu nại bản quyền"
     save-file: ""
     steps:
-      - name: "takedown-content"
+      - name: "takedown-content-dmca"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Chuyển status của episode hoặc show thành taken down"
@@ -4769,15 +4769,14 @@ flows:
           - PodcastEpisodeId
           - PodcastShowId
           - TakenDownReason
-          - UpdatedAt
         onSuccess:
-          emit: "takedown-content.success"
+          emit: "takedown-content-dmca.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "takedown-content.failed"
+          emit: "takedown-content-dmca.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -4789,7 +4788,7 @@ flows:
     description: "Khôi phục nội dung"
     save-file: ""
     steps:
-      - name: "restore-content"
+      - name: "restore-content-dmca"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Khôi phục status của episode hoặc show thành published"
@@ -4804,13 +4803,13 @@ flows:
           - PodcastShowId
           - UpdatedAt
         onSuccess:
-          emit: "restore-content.success"
+          emit: "restore-content-dmca.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "restore-content.failed"
+          emit: "restore-content-dmca.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -5349,7 +5348,7 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
-            - name: "delete-podcaster-episodes-listen-session-terminate-podcaster-force"
+            - name: "remove-podcaster-episodes-listen-session-content-terminate-podcaster-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
@@ -5359,7 +5358,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "delete-podcaster-episodes-listen-session-terminate-podcaster-force"
+      - name: "remove-podcaster-episodes-listen-session-content-terminate-podcaster-force"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Removes all podcaster episodes from users' listen session."
@@ -5372,7 +5371,7 @@ flows:
         response-data:
           - PodcasterId
         onSuccess:
-          emit: "delete-podcaster-episodes-listen-session-terminate-podcaster-force.success"
+          emit: "remove-podcaster-episodes-listen-session-content-terminate-podcaster-force.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
@@ -5381,7 +5380,7 @@ flows:
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "delete-podcaster-episodes-listen-session-terminate-podcaster-force.failed"
+          emit: "remove-podcaster-episodes-listen-session-content-terminate-podcaster-force.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []

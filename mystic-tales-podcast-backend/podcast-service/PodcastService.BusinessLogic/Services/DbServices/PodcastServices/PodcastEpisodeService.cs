@@ -59,35 +59,37 @@ using PodcastService.Infrastructure.Models.Audio.Tuning;
 using Microsoft.AspNetCore.Http;
 using PodcastService.BusinessLogic.DTOs.AudioTuning;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.DiscardEpisodePublishReviewDmcaRemoveEpisodeForce;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeListenSessionDmcaRemoveEpisodeForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveEpisodeDmcaRemoveEpisodeForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedEpisodeDmcaUnpublishEpisodeForce;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeListenSessionUnpublishEpisodeForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishEpisodeUnpublishEpisodeForce;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowEpisodesListenSessionDmcaRemoveShowForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.DiscardShowEpisodesPublishReviewDmcaRemoveShowForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveShowEpisodesDmcaRemoveShowForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowEpisodesDmcaUnpublishShowForce;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowEpisodesListenSessionUnpublishShowForce;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeListenSessionEpisodeDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.DiscardEpisodePublishReviewEpisodeDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedEpisodeDmcaEpisodeDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeEpisodeDeletionForce;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowEpisodesListenSessionShowDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.DiscardShowEpisodesPublishReviewShowDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowEpisodesDmcaShowDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowEpisodesShowDeletionForce;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelEpisodesListenSessionUnpublishChannelForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelDismissedEpisodesDmcaUnpublishChannelForce;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelEpisodesListenSessionChannelDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.DiscardChannelEpisodesPublishReviewChannelDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelDismissedEpisodesDmcaChannelDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelEpisodesChannelDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishPodcasterEpisodesTerminatePodcasterForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedEpisodeDmcaTerminatePodcasterForce;
-using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeletePodcasterEpisodesListenSessionTerminatePodcasterForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.DiscardPodcasterEpisodesPublishReviewTerminatePodcasterForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateEpisodeListenSessionDuration;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveEpisodeListenSessionContentDmcaRemoveEpisodeForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveEpisodeListenSessionContentUnpublishEpisodeForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveShowEpisodesListenSessionContentDmcaRemoveShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveShowEpisodesListenSessionContentUnpublishShowForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelEpisodesListenSessionContentUnpublishChannelForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveEpisodeListenSessionContentEpisodeDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveShowEpisodesListenSessionContentShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveChannelEpisodesListenSessionContentChannelDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemovePodcasterEpisodesListenSessionContentTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.TakedownContentDmca;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RestoreContentDmca;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -134,6 +136,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         private readonly IGenericRepository<PodcastEpisodeIllegalContentTypeMarking> _podcastEpisodeIllegalContentTypeMarkingGenericRepository;
         private readonly IGenericRepository<PodcastEpisodePublishReviewSessionStatusTracking> _podcastEpisodePublishReviewSessionStatusTrackingGenericRepository;
         private readonly IGenericRepository<PodcastEpisodeListenSession> _podcastEpisodeListenSessionGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodeListenSessionHlsEnckeyRequestToken> _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
@@ -185,6 +188,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             IGenericRepository<PodcastEpisodeIllegalContentTypeMarking> podcastEpisodeIllegalContentTypeMarkingGenericRepository,
             IGenericRepository<PodcastEpisodePublishReviewSessionStatusTracking> podcastEpisodePublishReviewSessionStatusTrackingGenericRepository,
             IGenericRepository<PodcastEpisodeListenSession> podcastEpisodeListenSessionGenericRepository,
+            IGenericRepository<PodcastEpisodeListenSessionHlsEnckeyRequestToken> podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -234,6 +238,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _podcastEpisodeIllegalContentTypeMarkingGenericRepository = podcastEpisodeIllegalContentTypeMarkingGenericRepository;
             _podcastEpisodePublishReviewSessionStatusTrackingGenericRepository = podcastEpisodePublishReviewSessionStatusTrackingGenericRepository;
             _podcastEpisodeListenSessionGenericRepository = podcastEpisodeListenSessionGenericRepository;
+            _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository = podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -2820,6 +2825,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .Include(pe => pe.PodcastShow)
                         .ThenInclude(ps => ps.PodcastShowStatusTrackings)
                         .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastCategory)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastSubCategory)
+                        .Include(pe => pe.PodcastShow)
                         .ThenInclude(ps => ps.PodcastChannel)
                         .ThenInclude(pe => pe.PodcastChannelStatusTrackings)
                     );
@@ -2929,12 +2938,24 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             return conditions;
         }
 
-        public string GenerateEpisodeListenToken(Guid sessionId, bool isUsed)
+        // public string GenerateEpisodeListenToken(Guid sessionId, bool isUsed)
+        // {
+        //     var claims = new Dictionary<string, object>
+        //     {
+        //         { "SessionId", sessionId },
+        //         { "IsUsed", isUsed }
+        //     };
+
+        //     var token = _jwtHelper.GenerateJWT_OneSecretKey(claims, _podcastListenSessionConfig.TokenEncryptionKeyRequestExpirationMinutes, _podcastListenSessionConfig.TokenSecretKey);
+
+        //     return token;
+        // }
+        public string GenerateEpisodeListenHlsEnckeyRequestToken(Guid sessionId)
         {
             var claims = new Dictionary<string, object>
             {
                 { "SessionId", sessionId },
-                { "IsUsed", isUsed }
+                { "jti", Guid.NewGuid().ToString() }
             };
 
             var token = _jwtHelper.GenerateJWT_OneSecretKey(claims, _podcastListenSessionConfig.TokenEncryptionKeyRequestExpirationMinutes, _podcastListenSessionConfig.TokenSecretKey);
@@ -3016,6 +3037,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     //              + nếu bao gồm tất cả các điều kiện cần thì cho nghe
                     //              + nếu không bao gồm tất cả các điều kiện cần thì từ chối nghe
                     // + tạo mới session với IsCompleted = false và ExpiredAt = now + PodcastListenSessionConfig.SessionExpirationMinutes
+                    // + đánh isCompleted = true ở tất cả các session cũ chưa completed của episode này và account này
                     // + tạo token mới với (SessionId, IsUsed = false, ExpiredAt = now + PodcastListenSessionConfig.TokenEncryptionKeyRequestExpirationMinutes)
                     // + update token vào session
                     // + gọi hàm cập nhật listenCount ở các đối tượng liên quan
@@ -3055,10 +3077,16 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         HashSet<PodcastSubscriptionBenefitEnum> listenPermissionConditions = await GetEpisodeListenPermissionConditionsAsync(validEpisode, account);
                         if (listenPermissionConditions.Count == 0)
                         {
-                            sessionToken = GenerateEpisodeListenToken(existingSession.Id, false);
-                            existingSession.Token = sessionToken;
-                            await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
-
+                            // sessionToken = GenerateEpisodeListenToken(existingSession.Id, false);
+                            // existingSession.Token = sessionToken;
+                            // await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
+                            sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(existingSession.Id);
+                            await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+                            {
+                                PodcastEpisodeListenSessionId = existingSession.Id,
+                                Token = sessionToken,
+                                IsUsed = false,
+                            });
                         }
                         else
                         {
@@ -3127,9 +3155,16 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                     }
                                     else
                                     {
-                                        sessionToken = GenerateEpisodeListenToken(existingSession.Id, false);
-                                        existingSession.Token = sessionToken;
-                                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
+                                        // sessionToken = GenerateEpisodeListenToken(existingSession.Id, false);
+                                        // existingSession.Token = sessionToken;
+                                        // await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
+                                        sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(existingSession.Id);
+                                        await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+                                        {
+                                            PodcastEpisodeListenSessionId = existingSession.Id,
+                                            Token = sessionToken,
+                                            IsUsed = false,
+                                        });
                                     }
                                 }
 
@@ -3143,9 +3178,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         transactionCompleted = true;
                         return new EpisodeListenResponseDTO
                         {
-                            Token = existingSession.Token,
+                            // Token = existingSession.Token,
+                            Token = sessionToken,
                             PlaylistFileKey = playlistFileKey,
-                            // LastListenDurationSeconds = 0,
                             PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
                             {
                                 Id = existingSession.Id,
@@ -3209,13 +3244,23 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             {
                                 Id = Guid.NewGuid(),
                                 AccountId = listenerAccountId,
-                                PodcastEpisodeId = podcastEpisodeId,
+                                PodcastEpisodeId = validEpisode.Id,
+                                PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
+                                PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
+                                IsContentRemoved = false,
                                 ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
                             };
 
-                            sessionToken = GenerateEpisodeListenToken(newSession.Id, false);
-                            newSession.Token = sessionToken;
+                            // sessionToken = GenerateEpisodeListenToken(newSession.Id, false);
+                            // newSession.Token = sessionToken;
                             await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
+                            sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
+                            await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+                            {
+                                PodcastEpisodeListenSessionId = newSession.Id,
+                                Token = sessionToken,
+                                IsUsed = false,
+                            });
 
 
                         }
@@ -3298,13 +3343,23 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                         {
                                             Id = Guid.NewGuid(),
                                             AccountId = listenerAccountId,
-                                            PodcastEpisodeId = podcastEpisodeId,
-                                            ExpiredAt = DateTime.UtcNow.AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
+                                            PodcastEpisodeId = validEpisode.Id,
+                                            PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
+                                            PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
+                                            IsContentRemoved = false,
+                                            ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
                                         };
 
-                                        sessionToken = GenerateEpisodeListenToken(newSession.Id, false);
-                                        newSession.Token = sessionToken;
+                                        // sessionToken = GenerateEpisodeListenToken(newSession.Id, false);
+                                        // newSession.Token = sessionToken;
                                         await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
+                                        sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
+                                        await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+                                        {
+                                            PodcastEpisodeListenSessionId = newSession.Id,
+                                            Token = sessionToken,
+                                            IsUsed = false,
+                                        });
                                     }
                                 }
                             }
@@ -3317,7 +3372,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                         return new EpisodeListenResponseDTO
                         {
-                            Token = newSession.Token,
+                            // Token = newSession.Token,
+                            Token = sessionToken,
                             PlaylistFileKey = playlistFileKey,
                             // LastListenDurationSeconds = 0,
                             PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
@@ -3369,9 +3425,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     var isValidToken = _jwtHelper.DecodeToken_OneSecretKey(token, _podcastListenSessionConfig.TokenSecretKey);
 
                     var sessionId = isValidToken.FindFirst("SessionId")?.Value;
-                    var isUsedClaim = isValidToken.FindFirst("IsUsed")?.Value;
 
-                    if (bool.Parse(isUsedClaim) == true)
+                    var existingPodcastEpisodeListenSessionHlsEnckeyRequestToken = await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.FindAll(
+                        predicate: pelsert => pelsert.Token == token && pelsert.PodcastEpisodeListenSessionId.ToString() == sessionId,
+                        includeFunc: null
+                    ).FirstOrDefaultAsync();
+
+                    if (existingPodcastEpisodeListenSessionHlsEnckeyRequestToken == null)
+                    {
+                        throw new Exception("Invalid token");
+                    }
+                    if (existingPodcastEpisodeListenSessionHlsEnckeyRequestToken.IsUsed == true)
                     {
                         throw new Exception("Token has been used");
                     }
@@ -3384,19 +3448,25 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         throw new Exception("Session does not exist");
                     }
-                    else if (session.Token != token)
-                    {
-                        throw new Exception("Token does not match the session");
-                    }
+                    // else if (session.Token != token)
+                    // {
+                    //     throw new Exception("Token does not match the session");
+                    // }
                     else if (session.IsCompleted == true)
                     {
                         throw new Exception("Session has been completed");
                     }
 
                     // đánh dấu token đã được sử dụng
-                    var newSessionToken = GenerateEpisodeListenToken(session.Id, true);
-                    session.Token = newSessionToken;
-                    await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                    // var newSessionToken = GenerateEpisodeListenToken(session.Id, true);
+                    // session.Token = newSessionToken;
+                    // await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                    var existingTokenRecord = await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.FindAll(
+                        predicate: pelsert => pelsert.Token == token && pelsert.PodcastEpisodeListenSessionId == session.Id,
+                        includeFunc: null
+                    ).FirstOrDefaultAsync();
+                    existingTokenRecord.IsUsed = true;
+                    await _unitOfWork.PodcastEpisodeListenSessionHlsEnckeyRequestTokenRepository.IsUsedUpdateByTokenAndSessionIdAsync(token, session.Id, true);
 
                     var episode = await _podcastEpisodeGenericRepository.FindAll(
                         predicate: pe => pe.Id == episodeId && pe.DeletedAt == null && pe.AudioEncryptionKeyId == keyId,
@@ -3828,7 +3898,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task DeleteEpisodeListenSessionDmcaRemoveEpisodeForce(DeleteEpisodeListenSessionDmcaRemoveEpisodeForceParameterDTO deleteEpisodeListenSessionDmcaRemoveEpisodeForceParameterDTO, SagaCommandMessage command)
+        public async Task RemoveEpisodeListenSessionContentDmcaRemoveEpisodeForce(RemoveEpisodeListenSessionContentDmcaRemoveEpisodeForceParameterDTO removeEpisodeListenSessionContentDmcaRemoveEpisodeForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -3836,22 +3906,25 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     // xóa tất cả listen session của episode
                     var sessions = await _podcastEpisodeListenSessionGenericRepository.FindAll(
-                        predicate: pes => pes.PodcastEpisodeId == deleteEpisodeListenSessionDmcaRemoveEpisodeForceParameterDTO.PodcastEpisodeId,
+                        predicate: pes => pes.PodcastEpisodeId == removeEpisodeListenSessionContentDmcaRemoveEpisodeForceParameterDTO.PodcastEpisodeId,
                         includeFunc: null
                     ).ToListAsync();
 
                     foreach (var session in sessions)
                     {
-                        await _podcastEpisodeListenSessionGenericRepository.DeleteAsync(session.Id);
+                        // await _podcastEpisodeListenSessionGenericRepository.DeleteAsync(session.Id);
+                        session.IsContentRemoved = true;
+                        session.IsCompleted = true;
+                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(session.Id, session);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastEpisodeId"] = deleteEpisodeListenSessionDmcaRemoveEpisodeForceParameterDTO.PodcastEpisodeId;
+                    messageNextRequestData["PodcastEpisodeId"] = removeEpisodeListenSessionContentDmcaRemoveEpisodeForceParameterDTO.PodcastEpisodeId;
                     var messageResponseData = JObject.FromObject(new
                     {
-                        PodcastEpisodeId = deleteEpisodeListenSessionDmcaRemoveEpisodeForceParameterDTO.PodcastEpisodeId,
+                        PodcastEpisodeId = removeEpisodeListenSessionContentDmcaRemoveEpisodeForceParameterDTO.PodcastEpisodeId,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -3859,7 +3932,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-episode-listen-session-dmca-remove-episode-force.success"
+                        messageName: "remove-episode-listen-session-content-dmca-remove-episode-force.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
@@ -3876,7 +3949,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-episode-listen-session-dmca-remove-episode-force.failed"
+                        messageName: "remove-episode-listen-session-content-dmca-remove-episode-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
@@ -4569,7 +4642,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task DeleteEpisodeListenSessionUnpublishEpisodeForce(DeleteEpisodeListenSessionUnpublishEpisodeForceParameterDTO deleteEpisodeListenSessionUnpublishEpisodeForceParameterDTO, SagaCommandMessage command)
+        public async Task RemoveEpisodeListenSessionContentUnpublishEpisodeForce(RemoveEpisodeListenSessionContentUnpublishEpisodeForceParameterDTO removeEpisodeListenSessionContentUnpublishEpisodeForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -4577,22 +4650,25 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     // xóa tất cả listen session của episode
                     var sessions = await _podcastEpisodeListenSessionGenericRepository.FindAll(
-                        predicate: pes => pes.PodcastEpisodeId == deleteEpisodeListenSessionUnpublishEpisodeForceParameterDTO.PodcastEpisodeId,
+                        predicate: pes => pes.PodcastEpisodeId == removeEpisodeListenSessionContentUnpublishEpisodeForceParameterDTO.PodcastEpisodeId,
                         includeFunc: null
                     ).ToListAsync();
 
                     foreach (var session in sessions)
                     {
-                        await _podcastEpisodeListenSessionGenericRepository.DeleteAsync(session.Id);
+                        // await _podcastEpisodeListenSessionGenericRepository.DeleteAsync(session.Id);
+                        session.IsContentRemoved = true;
+                        session.IsCompleted = true;
+                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(session.Id, session);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastEpisodeId"] = deleteEpisodeListenSessionUnpublishEpisodeForceParameterDTO.PodcastEpisodeId;
+                    messageNextRequestData["PodcastEpisodeId"] = removeEpisodeListenSessionContentUnpublishEpisodeForceParameterDTO.PodcastEpisodeId;
                     var messageResponseData = JObject.FromObject(new
                     {
-                        PodcastEpisodeId = deleteEpisodeListenSessionUnpublishEpisodeForceParameterDTO.PodcastEpisodeId,
+                        PodcastEpisodeId = removeEpisodeListenSessionContentUnpublishEpisodeForceParameterDTO.PodcastEpisodeId,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -4600,7 +4676,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-episode-listen-session-unpublish-episode-force.success"
+                        messageName: "remove-episode-listen-session-content-unpublish-episode-force.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
@@ -4617,7 +4693,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-episode-listen-session-unpublish-episode-force.failed"
+                        messageName: "remove-episode-listen-session-content-unpublish-episode-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
@@ -4625,40 +4701,31 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task DeleteShowEpisodesListenSessionDmcaRemoveShowForce(DeleteShowEpisodesListenSessionDmcaRemoveShowForceParameterDTO deleteShowEpisodesListenSessionDmcaRemoveShowForceParameterDTO, SagaCommandMessage command)
+        public async Task RemoveShowEpisodesListenSessionContentDmcaRemoveShowForce(RemoveShowEpisodesListenSessionContentDmcaRemoveShowForceParameterDTO removeShowEpisodesListenSessionContentDmcaRemoveShowForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
                     // xóa tất cả listen session của tất cả episode trong show
-                    // var sessions = await _podcastEpisodeListenSessionGenericRepository.FindAll(
-                    //     predicate: pes => pes.PodcastEpisode.PodcastShowId == deleteShowEpisodesListenSessionDmcaRemoveShowForceParameterDTO.PodcastShowId,
-                    //     includeFunc: null
-                    // ).ToListAsync();
-
-                    // foreach (var session in sessions)
-                    // {
-                    //     await _podcastEpisodeListenSessionGenericRepository.DeleteAsync(session.Id);
-                    // }
 
                     var episodeIds = await _podcastEpisodeGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastShowId == deleteShowEpisodesListenSessionDmcaRemoveShowForceParameterDTO.PodcastShowId,
+                        predicate: pe => pe.PodcastShowId == removeShowEpisodesListenSessionContentDmcaRemoveShowForceParameterDTO.PodcastShowId,
                         includeFunc: null
                     ).Select(pe => pe.Id).ToListAsync();
 
                     foreach (var episodeId in episodeIds)
                     {
-                        await _unitOfWork.PodcastEpisodeListenSessionRepository.DeleteByPodcastEpisodeIdAsync(episodeId);
+                        await _unitOfWork.PodcastEpisodeListenSessionRepository.RemoveContentByPodcastEpisodeIdAsync(episodeId);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastShowId"] = deleteShowEpisodesListenSessionDmcaRemoveShowForceParameterDTO.PodcastShowId;
+                    messageNextRequestData["PodcastShowId"] = removeShowEpisodesListenSessionContentDmcaRemoveShowForceParameterDTO.PodcastShowId;
                     var messageResponseData = JObject.FromObject(new
                     {
-                        PodcastShowId = deleteShowEpisodesListenSessionDmcaRemoveShowForceParameterDTO.PodcastShowId,
+                        PodcastShowId = removeShowEpisodesListenSessionContentDmcaRemoveShowForceParameterDTO.PodcastShowId,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -4666,7 +4733,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-show-episodes-listen-session-dmca-remove-show-force.success"
+                        messageName: "remove-show-episodes-listen-session-content-dmca-remove-show-force.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
@@ -4683,7 +4750,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-show-episodes-listen-session-dmca-remove-show-force.failed"
+                        messageName: "remove-show-episodes-listen-session-content-dmca-remove-show-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
@@ -4691,27 +4758,27 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task DeleteShowEpisodesListenSessionUnpublishShowForce(DeleteShowEpisodesListenSessionUnpublishShowForceParameterDTO deleteShowEpisodesListenSessionUnpublishShowForceParameterDTO, SagaCommandMessage command)
+        public async Task RemoveShowEpisodesListenSessionContentUnpublishShowForce(RemoveShowEpisodesListenSessionContentUnpublishShowForceParameterDTO removeShowEpisodesListenSessionContentUnpublishShowForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
 
-                    foreach (var episodeId in deleteShowEpisodesListenSessionUnpublishShowForceParameterDTO.DmcaDismissedEpisodeIds)
+                    foreach (var episodeId in removeShowEpisodesListenSessionContentUnpublishShowForceParameterDTO.DmcaDismissedEpisodeIds)
                     {
-                        await _unitOfWork.PodcastEpisodeListenSessionRepository.DeleteByPodcastEpisodeIdAsync(episodeId);
+                        await _unitOfWork.PodcastEpisodeListenSessionRepository.RemoveContentByPodcastEpisodeIdAsync(episodeId);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastShowId"] = deleteShowEpisodesListenSessionUnpublishShowForceParameterDTO.PodcastShowId;
-                    messageNextRequestData["DmcaDismissedEpisodeIds"] = JArray.FromObject(deleteShowEpisodesListenSessionUnpublishShowForceParameterDTO.DmcaDismissedEpisodeIds);
+                    messageNextRequestData["PodcastShowId"] = removeShowEpisodesListenSessionContentUnpublishShowForceParameterDTO.PodcastShowId;
+                    messageNextRequestData["DmcaDismissedEpisodeIds"] = JArray.FromObject(removeShowEpisodesListenSessionContentUnpublishShowForceParameterDTO.DmcaDismissedEpisodeIds);
                     var messageResponseData = JObject.FromObject(new
                     {
-                        PodcastShowId = deleteShowEpisodesListenSessionUnpublishShowForceParameterDTO.PodcastShowId,
-                        DmcaDismissedEpisodeIds = deleteShowEpisodesListenSessionUnpublishShowForceParameterDTO.DmcaDismissedEpisodeIds
+                        PodcastShowId = removeShowEpisodesListenSessionContentUnpublishShowForceParameterDTO.PodcastShowId,
+                        DmcaDismissedEpisodeIds = removeShowEpisodesListenSessionContentUnpublishShowForceParameterDTO.DmcaDismissedEpisodeIds
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -4719,7 +4786,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-show-episodes-listen-session-unpublish-show-force.success"
+                        messageName: "remove-show-episodes-listen-session-content-unpublish-show-force.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
@@ -4736,7 +4803,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-show-episodes-listen-session-unpublish-show-force.failed"
+                        messageName: "remove-show-episodes-listen-session-content-unpublish-show-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
@@ -4744,7 +4811,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task DeleteShowEpisodesListenSessionShowDeletionForce(DeleteShowEpisodesListenSessionShowDeletionForceParameterDTO deleteShowEpisodesListenSessionShowDeletionForceParameterDTO, SagaCommandMessage command)
+        public async Task RemoveShowEpisodesListenSessionContentShowDeletionForce(RemoveShowEpisodesListenSessionContentShowDeletionForceParameterDTO removeShowEpisodesListenSessionContentShowDeletionForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -4761,22 +4828,22 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     //     await _podcastEpisodeListenSessionGenericRepository.DeleteAsync(session.Id);
                     // }
                     var episodeIds = await _podcastEpisodeGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastShowId == deleteShowEpisodesListenSessionShowDeletionForceParameterDTO.PodcastShowId,
+                        predicate: pe => pe.PodcastShowId == removeShowEpisodesListenSessionContentShowDeletionForceParameterDTO.PodcastShowId,
                         includeFunc: null
                     ).Select(pe => pe.Id).ToListAsync();
 
                     foreach (var episodeId in episodeIds)
                     {
-                        await _unitOfWork.PodcastEpisodeListenSessionRepository.DeleteByPodcastEpisodeIdAsync(episodeId);
+                        await _unitOfWork.PodcastEpisodeListenSessionRepository.RemoveContentByPodcastEpisodeIdAsync(episodeId);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastShowId"] = deleteShowEpisodesListenSessionShowDeletionForceParameterDTO.PodcastShowId;
+                    messageNextRequestData["PodcastShowId"] = removeShowEpisodesListenSessionContentShowDeletionForceParameterDTO.PodcastShowId;
                     var messageResponseData = JObject.FromObject(new
                     {
-                        PodcastShowId = deleteShowEpisodesListenSessionShowDeletionForceParameterDTO.PodcastShowId,
+                        PodcastShowId = removeShowEpisodesListenSessionContentShowDeletionForceParameterDTO.PodcastShowId,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -4784,7 +4851,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-show-episodes-listen-session-show-deletion-force.success"
+                        messageName: "remove-show-episodes-listen-session-content-show-deletion-force.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
@@ -4801,7 +4868,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-show-episodes-listen-session-show-deletion-force.failed"
+                        messageName: "remove-show-episodes-listen-session-content-show-deletion-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
@@ -4809,27 +4876,27 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task DeleteChannelEpisodesListenSessionUnpublishChannelForce(DeleteChannelEpisodesListenSessionUnpublishChannelForceParameterDTO deleteChannelEpisodesListenSessionUnpublishChannelForceParameterDTO, SagaCommandMessage command)
+        public async Task RemoveChannelEpisodesListenSessionContentUnpublishChannelForce(RemoveChannelEpisodesListenSessionContentUnpublishChannelForceParameterDTO removeChannelEpisodesListenSessionContentUnpublishChannelForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
 
-                    foreach (var episodeId in deleteChannelEpisodesListenSessionUnpublishChannelForceParameterDTO.DmcaDismissedEpisodeIds)
+                    foreach (var episodeId in removeChannelEpisodesListenSessionContentUnpublishChannelForceParameterDTO.DmcaDismissedEpisodeIds)
                     {
-                        await _unitOfWork.PodcastEpisodeListenSessionRepository.DeleteByPodcastEpisodeIdAsync(episodeId);
+                        await _unitOfWork.PodcastEpisodeListenSessionRepository.RemoveContentByPodcastEpisodeIdAsync(episodeId);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastChannelId"] = deleteChannelEpisodesListenSessionUnpublishChannelForceParameterDTO.PodcastChannelId;
-                    messageNextRequestData["DmcaDismissedEpisodeIds"] = JArray.FromObject(deleteChannelEpisodesListenSessionUnpublishChannelForceParameterDTO.DmcaDismissedEpisodeIds);
+                    messageNextRequestData["PodcastChannelId"] = removeChannelEpisodesListenSessionContentUnpublishChannelForceParameterDTO.PodcastChannelId;
+                    messageNextRequestData["DmcaDismissedEpisodeIds"] = JArray.FromObject(removeChannelEpisodesListenSessionContentUnpublishChannelForceParameterDTO.DmcaDismissedEpisodeIds);
                     var messageResponseData = JObject.FromObject(new
                     {
-                        PodcastChannelId = deleteChannelEpisodesListenSessionUnpublishChannelForceParameterDTO.PodcastChannelId,
-                        DmcaDismissedEpisodeIds = deleteChannelEpisodesListenSessionUnpublishChannelForceParameterDTO.DmcaDismissedEpisodeIds
+                        PodcastChannelId = removeChannelEpisodesListenSessionContentUnpublishChannelForceParameterDTO.PodcastChannelId,
+                        DmcaDismissedEpisodeIds = removeChannelEpisodesListenSessionContentUnpublishChannelForceParameterDTO.DmcaDismissedEpisodeIds
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -4837,7 +4904,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-channel-episodes-listen-session-unpublish-channel-force.success"
+                        messageName: "remove-channel-episodes-listen-session-content-unpublish-channel-force.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
@@ -4854,7 +4921,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-channel-episodes-listen-session-unpublish-channel-force.failed"
+                        messageName: "remove-channel-episodes-listen-session-content-unpublish-channel-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
@@ -4862,7 +4929,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task DeleteChannelEpisodesListenSessionChannelDeletionForce(DeleteChannelEpisodesListenSessionChannelDeletionForceParameterDTO deleteChannelEpisodesListenSessionChannelDeletionForceParameterDTO, SagaCommandMessage command)
+        public async Task RemoveChannelEpisodesListenSessionContentChannelDeletionForce(RemoveChannelEpisodesListenSessionContentChannelDeletionForceParameterDTO removeChannelEpisodesListenSessionContentChannelDeletionForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -4880,22 +4947,22 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     // }
 
                     var episodeIds = await _podcastEpisodeGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastShow.PodcastChannelId == deleteChannelEpisodesListenSessionChannelDeletionForceParameterDTO.PodcastChannelId,
+                        predicate: pe => pe.PodcastShow.PodcastChannelId == removeChannelEpisodesListenSessionContentChannelDeletionForceParameterDTO.PodcastChannelId,
                         includeFunc: null
                     ).Select(pe => pe.Id).ToListAsync();
 
                     foreach (var episodeId in episodeIds)
                     {
-                        await _unitOfWork.PodcastEpisodeListenSessionRepository.DeleteByPodcastEpisodeIdAsync(episodeId);
+                        await _unitOfWork.PodcastEpisodeListenSessionRepository.RemoveContentByPodcastEpisodeIdAsync(episodeId);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastChannelId"] = deleteChannelEpisodesListenSessionChannelDeletionForceParameterDTO.PodcastChannelId;
+                    messageNextRequestData["PodcastChannelId"] = removeChannelEpisodesListenSessionContentChannelDeletionForceParameterDTO.PodcastChannelId;
                     var messageResponseData = JObject.FromObject(new
                     {
-                        PodcastChannelId = deleteChannelEpisodesListenSessionChannelDeletionForceParameterDTO.PodcastChannelId,
+                        PodcastChannelId = removeChannelEpisodesListenSessionContentChannelDeletionForceParameterDTO.PodcastChannelId,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -4903,7 +4970,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-channel-episodes-listen-session-channel-deletion-force.success"
+                        messageName: "remove-channel-episodes-listen-session-content-channel-deletion-force.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
@@ -4920,7 +4987,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-channel-episodes-listen-session-channel-deletion-force.failed"
+                        messageName: "remove-channel-episodes-listen-session-content-channel-deletion-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
@@ -4928,7 +4995,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task DeletePodcasterEpisodesListenSessionTerminatePodcasterForce(DeletePodcasterEpisodesListenSessionTerminatePodcasterForceParameterDTO deletePodcasterEpisodesListenSessionTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
+        public async Task RemovePodcasterEpisodesListenSessionContentTerminatePodcasterForce(RemovePodcasterEpisodesListenSessionContentTerminatePodcasterForceParameterDTO removePodcasterEpisodesListenSessionContentTerminatePodcasterForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -4936,22 +5003,22 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
 
                     var episodeIds = await _podcastEpisodeGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastShow.PodcasterId == deletePodcasterEpisodesListenSessionTerminatePodcasterForceParameterDTO.PodcasterId,
+                        predicate: pe => pe.PodcastShow.PodcasterId == removePodcasterEpisodesListenSessionContentTerminatePodcasterForceParameterDTO.PodcasterId,
                         includeFunc: null
                     ).Select(pe => pe.Id).ToListAsync();
 
                     foreach (var episodeId in episodeIds)
                     {
-                        await _unitOfWork.PodcastEpisodeListenSessionRepository.DeleteByPodcastEpisodeIdAsync(episodeId);
+                        await _unitOfWork.PodcastEpisodeListenSessionRepository.RemoveContentByPodcastEpisodeIdAsync(episodeId);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcasterId"] = deletePodcasterEpisodesListenSessionTerminatePodcasterForceParameterDTO.PodcasterId;
+                    messageNextRequestData["PodcasterId"] = removePodcasterEpisodesListenSessionContentTerminatePodcasterForceParameterDTO.PodcasterId;
                     var messageResponseData = JObject.FromObject(new
                     {
-                        PodcasterId = deletePodcasterEpisodesListenSessionTerminatePodcasterForceParameterDTO.PodcasterId,
+                        PodcasterId = removePodcasterEpisodesListenSessionContentTerminatePodcasterForceParameterDTO.PodcasterId,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -4959,7 +5026,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-podcaster-episodes-listen-session-terminate-podcaster-force.success"
+                        messageName: "remove-podcaster-episodes-listen-session-content-terminate-podcaster-force.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
@@ -4976,7 +5043,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-podcaster-episodes-listen-session-terminate-podcaster-force.failed"
+                        messageName: "remove-podcaster-episodes-listen-session-content-terminate-podcaster-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
@@ -4984,7 +5051,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task DeleteEpisodeListenSessionEpisodeDeletionForce(DeleteEpisodeListenSessionEpisodeDeletionForceParameterDTO deleteEpisodeListenSessionEpisodeDeletionForceParameterDTO, SagaCommandMessage command)
+        public async Task RemoveEpisodeListenSessionContentEpisodeDeletionForce(RemoveEpisodeListenSessionContentEpisodeDeletionForceParameterDTO removeEpisodeListenSessionContentEpisodeDeletionForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -4992,22 +5059,25 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     // xóa tất cả listen session của episode
                     var sessions = await _podcastEpisodeListenSessionGenericRepository.FindAll(
-                        predicate: pes => pes.PodcastEpisodeId == deleteEpisodeListenSessionEpisodeDeletionForceParameterDTO.PodcastEpisodeId,
+                        predicate: pes => pes.PodcastEpisodeId == removeEpisodeListenSessionContentEpisodeDeletionForceParameterDTO.PodcastEpisodeId,
                         includeFunc: null
                     ).ToListAsync();
 
                     foreach (var session in sessions)
                     {
-                        await _podcastEpisodeListenSessionGenericRepository.DeleteAsync(session.Id);
+                        // await _podcastEpisodeListenSessionGenericRepository.DeleteAsync(session.Id);
+                        session.IsContentRemoved = true;
+                        session.IsCompleted = true;
+                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(session.Id, session);
                     }
 
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["PodcastEpisodeId"] = deleteEpisodeListenSessionEpisodeDeletionForceParameterDTO.PodcastEpisodeId;
+                    messageNextRequestData["PodcastEpisodeId"] = removeEpisodeListenSessionContentEpisodeDeletionForceParameterDTO.PodcastEpisodeId;
                     var messageResponseData = JObject.FromObject(new
                     {
-                        PodcastEpisodeId = deleteEpisodeListenSessionEpisodeDeletionForceParameterDTO.PodcastEpisodeId,
+                        PodcastEpisodeId = removeEpisodeListenSessionContentEpisodeDeletionForceParameterDTO.PodcastEpisodeId,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -5015,7 +5085,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseData: messageResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-episode-listen-session-episode-deletion-force.success"
+                        messageName: "remove-episode-listen-session-content-episode-deletion-force.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
@@ -5032,7 +5102,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }),
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
-                        messageName: "delete-episode-listen-session-episode-deletion-force.failed"
+                        messageName: "remove-episode-listen-session-content-episode-deletion-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
@@ -5301,7 +5371,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             try
             {
                 var listenSessionHistoryQuery = _podcastEpisodeListenSessionGenericRepository.FindAll(
-                    predicate: pes => pes.AccountId == listenerId,
+                    predicate: pes => pes.AccountId == listenerId && pes.IsContentRemoved == false,
                     includeFunc: pe => pe
                         .Include(pes => pes.PodcastEpisode)
                             .ThenInclude(pe => pe.PodcastShow)
@@ -5378,7 +5448,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     )
                         .OrderByDescending(pes => pes.CreatedAt)
                         .FirstOrDefaultAsync();
-                    if (latestListenSession == null || latestListenSession.IsCompleted || latestListenSession.ExpiredAt <= _dateHelper.GetNowByAppTimeZone())
+                    if (latestListenSession == null || latestListenSession.IsCompleted == true || latestListenSession.ExpiredAt <= _dateHelper.GetNowByAppTimeZone())
                     {
                         return null!;
                     }
@@ -5404,13 +5474,20 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                         _hlsConfig.PlaylistFileName
                                     );
                         // tạo jwt mới
-                        var token = GenerateEpisodeListenToken(latestListenSession.Id, false);
-                        // update lại session hiện tại
-                        Console.WriteLine("Session id: " + latestListenSession.Id);
-                        Console.WriteLine("Old token for latest listen session: " + latestListenSession.Token);
-                        latestListenSession.Token = token;
+                        // var token = GenerateEpisodeListenToken(latestListenSession.Id, false);
+                        // // update lại session hiện tại
+                        // Console.WriteLine("Session id: " + latestListenSession.Id);
+                        // Console.WriteLine("Old token for latest listen session: " + latestListenSession.Token);
+                        // latestListenSession.Token = token;
+                        var newSessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(latestListenSession.Id);
+                        await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+                        {
+                            PodcastEpisodeListenSessionId = latestListenSession.Id,
+                            Token = newSessionToken,
+                            IsUsed = false,
+                        });
 
-                        Console.WriteLine("Generated new token for latest listen session: " + token);
+                        Console.WriteLine("Generated new token for latest listen session: " + newSessionToken);
                         await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(latestListenSession.Id, latestListenSession);
 
                         var podcaster = await _accountCachingService.GetAccountStatusCacheById(episode.PodcastShow.PodcasterId);
@@ -5419,7 +5496,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         responseDTO = new EpisodeListenResponseDTO
                         {
                             PlaylistFileKey = playlistFileKey,
-                            Token = latestListenSession.Token,
+                            // Token = latestListenSession.Token,
+                            Token = newSessionToken,
                             // LastListenDurationSeconds = latestListenSession.LastListenDurationSeconds,
                             PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
                             {
@@ -5592,7 +5670,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     //      + chưa: chỉ cập nhật LastListenDurationSeconds
                     // 4. commit transaction và gửi message saga thành công
 
-                    
+
 
                     var listenSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(
                         id: updateEpisodeListenSessionDurationDTO.PodcastEpisodeListenSessionId,
@@ -5675,6 +5753,223 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "update-episode-listen-session-duration.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+        
+        public async Task TakedownContentDmcaEpisode(TakedownContentDmcaParameterDTO takedownContentDmcaParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingPodcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(takedownContentDmcaParameterDTO.PodcastEpisodeId,
+                        includeFunc: q => q
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastChannel)
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                    );
+                    if (existingPodcastEpisode == null)
+                    {
+                        throw new Exception("Podcast episode with id " + takedownContentDmcaParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast episode with id " + takedownContentDmcaParameterDTO.PodcastEpisodeId + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Published)
+                    {
+                        throw new Exception("Podcast episode with id " + takedownContentDmcaParameterDTO.PodcastEpisodeId + " is not in Published status");
+                    }
+
+
+                    if (existingPodcastEpisode.PodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been removed");
+                    }
+
+                    if (existingPodcastEpisode.PodcastShow.PodcastChannel != null)
+                    {
+                        if (existingPodcastEpisode.PodcastShow.PodcastChannel.DeletedAt != null)
+                        {
+                            throw new Exception("Podcast channel with id " + existingPodcastEpisode.PodcastShow.PodcastChannelId + " has been deleted");
+                        }
+                    }
+
+                    var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(existingPodcastEpisode.PodcastShow.PodcasterId);
+                    if (existingPodcaster == null || existingPodcaster.Id != existingPodcastEpisode.PodcastShow.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + existingPodcastEpisode.PodcastShow.PodcasterId + " does not exist");
+                    }
+
+                    // Change episode status to TakenDown
+                    var newStatusTracking = new PodcastEpisodeStatusTracking
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.TakenDown
+                    };
+                    await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                    existingPodcastEpisode.TakenDownReason = takedownContentDmcaParameterDTO.TakenDownReason;
+                    await _podcastEpisodeGenericRepository.UpdateAsync(existingPodcastEpisode.Id, existingPodcastEpisode);
+
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = takedownContentDmcaParameterDTO.PodcastEpisodeId;
+                    messageNextRequestData["TakenDownReason"] = takedownContentDmcaParameterDTO.TakenDownReason;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastEpisodeId = takedownContentDmcaParameterDTO.PodcastEpisodeId,
+                        TakenDownReason = takedownContentDmcaParameterDTO.TakenDownReason,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "takedown-content-dmca.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Takedown content DMCA episode failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "takedown-content-dmca.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task RestoreContentDmcaEpisode(RestoreContentDmcaParameterDTO restoreContentDmcaParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingPodcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(restoreContentDmcaParameterDTO.PodcastEpisodeId,
+                        includeFunc: q => q
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastChannel)
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                    );
+                    if (existingPodcastEpisode == null)
+                    {
+                        throw new Exception("Podcast episode with id " + restoreContentDmcaParameterDTO.PodcastEpisodeId + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast episode with id " + restoreContentDmcaParameterDTO.PodcastEpisodeId + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.TakenDown)
+                    {
+                        throw new Exception("Podcast episode with id " + restoreContentDmcaParameterDTO.PodcastEpisodeId + " is not in TakenDown status");
+                    }
+
+                    if (existingPodcastEpisode.PodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " does not exist");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been deleted");
+                    }
+                    else if (existingPodcastEpisode.PodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                    {
+                        throw new Exception("Podcast show with id " + existingPodcastEpisode.PodcastShow.Id + " has been removed");
+                    }
+
+                    if (existingPodcastEpisode.PodcastShow.PodcastChannel != null)
+                    {
+                        if (existingPodcastEpisode.PodcastShow.PodcastChannel.DeletedAt != null)
+                        {
+                            throw new Exception("Podcast channel with id " + existingPodcastEpisode.PodcastShow.PodcastChannelId + " has been deleted");
+                        }
+                    }
+
+                    var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(existingPodcastEpisode.PodcastShow.PodcasterId);
+                    if (existingPodcaster == null || existingPodcaster.Id != existingPodcastEpisode.PodcastShow.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + existingPodcastEpisode.PodcastShow.PodcasterId + " does not exist");
+                    }
+
+                    // Change episode status to Published
+                    var newStatusTracking = new PodcastEpisodeStatusTracking
+                    {
+                        PodcastEpisodeId = existingPodcastEpisode.Id,
+                        PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.Published
+                    };
+                    await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                    existingPodcastEpisode.TakenDownReason = null;
+                    await _podcastEpisodeGenericRepository.UpdateAsync(existingPodcastEpisode.Id, existingPodcastEpisode);
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastEpisodeId"] = restoreContentDmcaParameterDTO.PodcastEpisodeId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastEpisodeId = restoreContentDmcaParameterDTO.PodcastEpisodeId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "restore-content-dmca.success"
+                    );
+
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Restore content DMCA episode failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "restore-content-dmca.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");

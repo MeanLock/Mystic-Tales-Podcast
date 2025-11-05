@@ -39,6 +39,24 @@ namespace PodcastService.DataAccess.Repositories
 
         }
 
+        public async Task<bool> RemoveContentByPodcastEpisodeIdAsync(Guid episodeId)
+        {
+            try
+            {
+                var entities = _appDbContext.PodcastEpisodeListenSessions
+                .Where(pels => pels.PodcastEpisodeId == episodeId);
+
+                await entities.ForEachAsync(e => e.IsContentRemoved = true);
+                await entities.ForEachAsync(e => e.IsCompleted = true);
+
+                var rowsAffected = await _appDbContext.SaveChangesAsync();
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                throw new HttpRequestException("Remove content from PodcastEpisodeListenSession by EpisodeId failed, error: " + ex.Message);
+            }
+        }
 
     }
 }

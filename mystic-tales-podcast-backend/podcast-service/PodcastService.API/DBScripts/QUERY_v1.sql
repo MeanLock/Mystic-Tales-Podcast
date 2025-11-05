@@ -19,6 +19,8 @@ select * from PodcastEpisodePublishDuplicateDetection
 select * from PodcastEpisodeIllegalContentTypeMarking
 select * from PodcastBackgroundSoundTrack
 
+select * from PodcastEpisodeListenSession  where id = '402B7A6E-F61F-41EC-95CF-FFB83760DFD9'
+select * from PodcastEpisodeListenSession order by createdAt DESC
 
 delete from PodcastEpisodeIllegalContentTypeMarking
 delete from PodcastEpisodePublishDuplicateDetection

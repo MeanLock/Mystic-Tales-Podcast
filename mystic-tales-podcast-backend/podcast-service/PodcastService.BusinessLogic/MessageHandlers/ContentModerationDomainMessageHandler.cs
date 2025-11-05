@@ -176,7 +176,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                     await _podcastEpisodeService.DiscardEpisodePublishReviewEpisodeDeletionForce(episode, command);
                 },
                 responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "delete-episode-listen-session-episode-deletion-force.failed"    // From YAML onFailure.emit
+                failedEmitMessage: "remove-episode-listen-session-content-episode-deletion-force.failed"    // From YAML onFailure.emit
             );
         }
 
@@ -192,7 +192,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                     await _podcastEpisodeService.DiscardShowEpisodesPublishReviewShowDeletionForce(episode, command);
                 },
                 responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "delete-show-episodes-listen-session-show-deletion-force.failed"    // From YAML onFailure.emit
+                failedEmitMessage: "remove-show-episodes-listen-session-content-show-deletion-force.failed"    // From YAML onFailure.emit
             );
         }
 
@@ -208,7 +208,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                     await _podcastEpisodeService.DiscardChannelEpisodesPublishReviewChannelDeletionForce(episode, command);
                 },
                 responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "delete-channel-episodes-listen-session-channel-deletion-force.failed"    // From YAML onFailure.emit
+                failedEmitMessage: "remove-channel-episodes-listen-session-content-channel-deletion-force.failed"    // From YAML onFailure.emit
             );
         }
 
@@ -223,7 +223,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                     await _podcastEpisodeService.DiscardPodcasterEpisodesPublishReviewTerminatePodcasterForce(episode, command);
                 },
                 responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "delete-podcaster-episodes-listen-session-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+                failedEmitMessage: "remove-podcaster-episodes-listen-session-content-terminate-podcaster-force.failed"    // From YAML onFailure.emit
             );
         }
     }

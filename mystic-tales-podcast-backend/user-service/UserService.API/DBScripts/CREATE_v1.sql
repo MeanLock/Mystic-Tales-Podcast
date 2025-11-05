@@ -548,10 +548,30 @@ CREATE TABLE PodcastEpisodeListenSession (
     podcastEpisodeId UNIQUEIDENTIFIER NOT NULL,
     lastListenDurationSeconds INT NOT NULL DEFAULT 0,
     isCompleted BIT NOT NULL DEFAULT 0,
-    token NVARCHAR(MAX) NOT NULL,
+    isContentRemoved BIT NOT NULL DEFAULT 0,
+    podcastCategoryId INT NULL,
+    podcastSubCategoryId INT NULL;
     expiredAt DATETIME NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (podcastEpisodeId) REFERENCES PodcastEpisode(id)
+    FOREIGN KEY (podcastCategoryId) REFERENCES PodcastCategory(id),
+    FOREIGN KEY (podcastSubCategoryId) REFERENCES PodcastSubCategory(id)
+);
+
+-- PodcastEpisodeListenSessionHlsEnckeyRequestToken table
+CREATE TABLE PodcastEpisodeListenSessionHlsEnckeyRequestToken (
+    podcastEpisodeListenSessionId UNIQUEIDENTIFIER NOT NULL,
+    token NVARCHAR(500) NOT NULL, -- Changed from NVARCHAR(MAX) to allow use as primary key
+    isUsed BIT NOT NULL DEFAULT 0,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    -- Composite primary key
+    CONSTRAINT PK_PodcastEpisodeListenSessionHlsEnckeyRequestToken 
+        PRIMARY KEY (podcastEpisodeListenSessionId, token),
+    -- Foreign key to PodcastEpisodeListenSession
+    CONSTRAINT FK_PodcastEpisodeListenSessionHlsEnckeyRequestToken_Session
+        FOREIGN KEY (podcastEpisodeListenSessionId) 
+        REFERENCES PodcastEpisodeListenSession(id)
+        ON DELETE CASCADE -- Automatically delete tokens when session is deleted
 );
 
 -- PodcastEpisodeLicense table

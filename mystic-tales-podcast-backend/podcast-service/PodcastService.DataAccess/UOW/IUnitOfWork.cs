@@ -12,6 +12,7 @@ public interface IUnitOfWork
     IPodcastEpisodePublishDuplicateDetectionRepository PodcastEpisodePublishDuplicateDetectionRepository { get; }
     IPodcastEpisodeListenSessionRepository PodcastEpisodeListenSessionRepository { get; }
     IPodcastShowReviewRepository PodcastShowReviewRepository { get; }
+    IPodcastEpisodeListenSessionHlsEnckeyRequestTokenRepository PodcastEpisodeListenSessionHlsEnckeyRequestTokenRepository { get; }
 
     int Complete();
 }

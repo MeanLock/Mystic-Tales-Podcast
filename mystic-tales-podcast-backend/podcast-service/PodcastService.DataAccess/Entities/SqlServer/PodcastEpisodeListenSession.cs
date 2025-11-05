@@ -15,11 +15,21 @@ public partial class PodcastEpisodeListenSession
 
     public bool IsCompleted { get; set; }
 
-    public string Token { get; set; } = null!;
-
     public DateTime ExpiredAt { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
+    public bool IsContentRemoved { get; set; }
+
+    public int? PodcastCategoryId { get; set; }
+
+    public int? PodcastSubCategoryId { get; set; }
+
+    public virtual PodcastCategory? PodcastCategory { get; set; }
+
     public virtual PodcastEpisode PodcastEpisode { get; set; } = null!;
+
+    public virtual ICollection<PodcastEpisodeListenSessionHlsEnckeyRequestToken> PodcastEpisodeListenSessionHlsEnckeyRequestTokens { get; set; } = new List<PodcastEpisodeListenSessionHlsEnckeyRequestToken>();
+
+    public virtual PodcastSubCategory? PodcastSubCategory { get; set; }
 }

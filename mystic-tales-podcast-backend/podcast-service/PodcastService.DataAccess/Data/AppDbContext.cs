@@ -38,6 +38,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<PodcastEpisodeListenSession> PodcastEpisodeListenSessions { get; set; }
 
+    public virtual DbSet<PodcastEpisodeListenSessionHlsEnckeyRequestToken> PodcastEpisodeListenSessionHlsEnckeyRequestTokens { get; set; }
+
     public virtual DbSet<PodcastEpisodePublishDuplicateDetection> PodcastEpisodePublishDuplicateDetections { get; set; }
 
     public virtual DbSet<PodcastEpisodePublishReviewSession> PodcastEpisodePublishReviewSessions { get; set; }
@@ -415,14 +417,45 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("expiredAt");
             entity.Property(e => e.IsCompleted).HasColumnName("isCompleted");
+            entity.Property(e => e.IsContentRemoved).HasColumnName("isContentRemoved");
             entity.Property(e => e.LastListenDurationSeconds).HasColumnName("lastListenDurationSeconds");
+            entity.Property(e => e.PodcastCategoryId).HasColumnName("podcastCategoryId");
             entity.Property(e => e.PodcastEpisodeId).HasColumnName("podcastEpisodeId");
-            entity.Property(e => e.Token).HasColumnName("token");
+            entity.Property(e => e.PodcastSubCategoryId).HasColumnName("podcastSubCategoryId");
+
+            entity.HasOne(d => d.PodcastCategory).WithMany(p => p.PodcastEpisodeListenSessions)
+                .HasForeignKey(d => d.PodcastCategoryId)
+                .HasConstraintName("FK_PodcastEpisodeListenSession_PodcastCategory");
 
             entity.HasOne(d => d.PodcastEpisode).WithMany(p => p.PodcastEpisodeListenSessions)
                 .HasForeignKey(d => d.PodcastEpisodeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__PodcastEp__podca__345EC57D");
+
+            entity.HasOne(d => d.PodcastSubCategory).WithMany(p => p.PodcastEpisodeListenSessions)
+                .HasForeignKey(d => d.PodcastSubCategoryId)
+                .HasConstraintName("FK_PodcastEpisodeListenSession_PodcastSubCategory");
+        });
+
+        modelBuilder.Entity<PodcastEpisodeListenSessionHlsEnckeyRequestToken>(entity =>
+        {
+            entity.HasKey(e => new { e.PodcastEpisodeListenSessionId, e.Token });
+
+            entity.ToTable("PodcastEpisodeListenSessionHlsEnckeyRequestToken");
+
+            entity.Property(e => e.PodcastEpisodeListenSessionId).HasColumnName("podcastEpisodeListenSessionId");
+            entity.Property(e => e.Token)
+                .HasMaxLength(500)
+                .HasColumnName("token");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.IsUsed).HasColumnName("isUsed");
+
+            entity.HasOne(d => d.PodcastEpisodeListenSession).WithMany(p => p.PodcastEpisodeListenSessionHlsEnckeyRequestTokens)
+                .HasForeignKey(d => d.PodcastEpisodeListenSessionId)
+                .HasConstraintName("FK_PodcastEpisodeListenSessionHlsEnckeyRequestToken_Session");
         });
 
         modelBuilder.Entity<PodcastEpisodePublishDuplicateDetection>(entity =>

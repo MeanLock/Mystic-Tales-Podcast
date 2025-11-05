@@ -25,6 +25,7 @@ namespace PodcastService.DataAccess.Registrations
             services.AddScoped<IPodcastEpisodePublishDuplicateDetectionRepository, PodcastEpisodePublishDuplicateDetectionRepository>();
             services.AddScoped<IPodcastEpisodeListenSessionRepository, PodcastEpisodeListenSessionRepository>();
             services.AddScoped<IPodcastShowReviewRepository, PodcastShowReviewRepository>();
+            services.AddScoped<IPodcastEpisodeListenSessionHlsEnckeyRequestTokenRepository, PodcastEpisodeListenSessionHlsEnckeyRequestTokenRepository>();
 
             return services;
         }

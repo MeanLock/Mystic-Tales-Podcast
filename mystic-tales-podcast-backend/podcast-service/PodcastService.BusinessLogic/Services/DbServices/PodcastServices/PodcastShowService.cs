@@ -62,6 +62,8 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Del
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishPodcasterShowsTerminatePodcasterForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomain.DeletePodcasterShowsReviewTerminatePodcasterForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowDmcaTerminatePodcasterForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.TakedownContentDmca;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RestoreContentDmca;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -326,639 +328,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
 
         /////////////////////////////////////////////////////////////
-
-        #region Sample coding format must be followed
-
-
-        // public async Task<List<ChannelListItemResponseDTO>> GetChannelByPodcasterIdAsync(int podcasterId)
-        // {
-        //     // tuân thủ cách viết ở trên
-        //     try
-        //     {
-        //         var query = _podcastChannelGenericRepository.FindAll(
-        //             predicate: c => c.DeletedAt == null && c.PodcasterId == podcasterId,
-        //             includeFunc: q => q
-        //                 .Include(pc => pc.PodcastCategory)
-        //                 .Include(pc => pc.PodcastSubCategory)
-        //                 .Include(pc => pc.PodcastChannelStatusTrackings)
-        //                 .ThenInclude(pct => pct.PodcastChannelStatus)
-        //                 .Include(pc => pc.PodcastChannelHashtags)
-        //                 .ThenInclude(pch => pch.Hashtag)
-        //                 .Include(pc => pc.PodcastShows)
-        //                 .ThenInclude(ps => ps.PodcastShowStatusTrackings)
-        //         );
-
-        //         var channels = await query.ToListAsync();
-
-        //         var channelList = (await Task.WhenAll(channels.Select(async pc =>
-        //         {
-        //             var podcaster = await _accountCachingService.GetAccountStatusCacheById(pc.PodcasterId);
-        //             if (podcaster == null || podcaster.Id != pc.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
-        //             {
-        //                 throw new Exception("Podcaster with id " + pc.PodcasterId + " does not exist");
-        //             }
-        //             return new ChannelListItemResponseDTO
-        //             {
-        //                 Id = pc.Id,
-        //                 Name = pc.Name,
-        //                 Description = pc.Description,
-        //                 MainImageFileKey = pc.MainImageFileKey,
-        //                 BackgroundImageFileKey = pc.BackgroundImageFileKey,
-        //                 PodcastCategory = new PodcastCategoryDTO
-        //                 {
-        //                     Id = pc.PodcastCategory.Id,
-        //                     Name = pc.PodcastCategory.Name
-        //                 },
-        //                 PodcastSubCategory = new PodcastSubCategoryDTO
-        //                 {
-        //                     Id = pc.PodcastSubCategory.Id,
-        //                     Name = pc.PodcastSubCategory.Name,
-        //                     PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
-        //                 },
-        //                 CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
-        //                 {
-        //                     Id = pct.PodcastChannelStatus.Id,
-        //                     Name = pct.PodcastChannelStatus.Name
-        //                 }).FirstOrDefault()!,
-        //                 Hashtags = pc.PodcastChannelHashtags.Select(pch => new HashtagDTO
-        //                 {
-        //                     Id = pch.Hashtag.Id,
-        //                     Name = pch.Hashtag.Name
-        //                 }).ToList(),
-        //                 TotalFavorite = pc.TotalFavorite,
-        //                 ListenCount = pc.ListenCount,
-        //                 ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.DeletedAt == null) : 0,
-        //                 Podcaster = new AccountSnippetResponseDTO
-        //                 {
-        //                     Id = podcaster.Id,
-        //                     FullName = podcaster.FullName,
-        //                     Email = podcaster.Email,
-        //                     MainImageFileKey = podcaster.MainImageFileKey
-        //                 },
-        //                 CreatedAt = pc.CreatedAt,
-        //                 UpdatedAt = pc.UpdatedAt
-        //             };
-        //         }))
-
-        //         ).ToList();
-        //         return channelList;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         throw new HttpRequestException("Get channels failed, error: " + ex.Message);
-        //     }
-        // }
-
-        // public async Task<ChannelDetailResponseDTO> GetChannelByIdAsync(Guid channelId, int? role)
-        // {
-        //     try
-        //     {
-        //         var query = _podcastChannelGenericRepository.FindAll(
-        //             predicate: c => c.DeletedAt == null && c.Id == channelId,
-        //             includeFunc: q => q
-        //                 .Include(pc => pc.PodcastCategory)
-        //                 .Include(pc => pc.PodcastSubCategory)
-        //                 .Include(pc => pc.PodcastChannelStatusTrackings)
-        //                 .ThenInclude(pct => pct.PodcastChannelStatus)
-        //                 .Include(pc => pc.PodcastChannelHashtags)
-        //                 .ThenInclude(pch => pch.Hashtag)
-        //                 .Include(pc => pc.PodcastShows)
-        //                 .ThenInclude(ps => ps.PodcastShowStatusTrackings)
-        //         );
-
-        //         if (role == null || role == 1)
-        //         {
-        //             query = query.Where(pc => pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published);
-        //         }
-
-        //         var channel = await query.FirstOrDefaultAsync();
-
-        //         if (channel == null)
-        //         {
-        //             throw new Exception("Channel with id " + channelId + " does not exist");
-        //         }
-
-        //         var podcastSubscriptionBatchRequest = new BatchQueryRequest
-        //         {
-        //             Queries = new List<BatchQueryItem>
-        //             {
-        //                 new BatchQueryItem
-        //                 {
-        //                     Key = "podcastSubscriptionList",
-        //                     QueryType = "findall",
-        //                     EntityType = "PodcastSubscription",
-        //                     Parameters = JObject.FromObject(new
-        //                     {
-        //                         where = (role == null || role == 1) ? new
-        //                         {
-        //                             IsActive = (bool?)true,
-        //                             DeletedAt = (DateTime?)null,
-        //                             PodcastChannelId = channel.Id,
-        //                         } : new {
-        //                             IsActive = (bool?)null,
-        //                             DeletedAt = (DateTime?)null,
-        //                             PodcastChannelId = channel.Id,
-        //                         },
-        //                         include = "PodcastSubscriptionBenefitMappings.PodcastSubscriptionBenefit , PodcastSubscriptionCycleTypePrices.SubscriptionCycleType"
-        //                     }),
-        //                 }
-        //             }
-        //         };
-
-        //         var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", podcastSubscriptionBatchRequest);
-
-
-        //         var showByChannelIdQuery = _podcastShowGenericRepository.FindAll(
-        //             predicate: ps => ps.DeletedAt == null && ps.PodcastChannelId == channel.Id,
-        //             includeFunc: q => q
-        //                 .Include(ps => ps.PodcastShowStatusTrackings)
-        //                 .ThenInclude(pst => pst.PodcastShowStatus)
-        //                 .Include(ps => ps.PodcastCategory)
-        //                 .Include(ps => ps.PodcastSubCategory)
-        //                 .Include(ps => ps.PodcastShowHashtags)
-        //                 .ThenInclude(psh => psh.Hashtag)
-        //                 .Include(ps => ps.PodcastShowSubscriptionType)
-        //         );
-
-        //         if (role == null || role == 1)
-        //         {
-        //             showByChannelIdQuery = showByChannelIdQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnums.Published && ps.IsReleased == true);
-        //         }
-        //         var showList = await showByChannelIdQuery.ToListAsync();
-
-        //         var podcaster = await _accountCachingService.GetAccountStatusCacheById(channel.PodcasterId);
-        //         if (podcaster == null || podcaster.Id != channel.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
-        //         {
-        //             throw new Exception("Podcaster with id " + channel.PodcasterId + " does not exist");
-        //         }
-
-        //         var channelDetail = new ChannelDetailResponseDTO
-        //         {
-        //             Id = channel.Id,
-        //             Name = channel.Name,
-        //             Description = channel.Description,
-        //             MainImageFileKey = channel.MainImageFileKey,
-        //             BackgroundImageFileKey = channel.BackgroundImageFileKey,
-        //             PodcastCategory = new PodcastCategoryDTO
-        //             {
-        //                 Id = channel.PodcastCategory.Id,
-        //                 Name = channel.PodcastCategory.Name
-        //             },
-        //             PodcastSubCategory = new PodcastSubCategoryDTO
-        //             {
-        //                 Id = channel.PodcastSubCategory.Id,
-        //                 Name = channel.PodcastSubCategory.Name,
-        //                 PodcastCategoryId = channel.PodcastSubCategory.PodcastCategoryId
-        //             },
-        //             CurrentStatus = channel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
-        //             {
-        //                 Id = pct.PodcastChannelStatus.Id,
-        //                 Name = pct.PodcastChannelStatus.Name
-        //             }).FirstOrDefault()!,
-        //             Hashtags = channel.PodcastChannelHashtags.Select(pch => new HashtagDTO
-        //             {
-        //                 Id = pch.Hashtag.Id,
-        //                 Name = pch.Hashtag.Name
-        //             }).ToList(),
-        //             TotalFavorite = channel.TotalFavorite,
-        //             ListenCount = channel.ListenCount,
-        //             ShowCount = showList.Count,
-        //             Podcaster = new AccountSnippetResponseDTO
-        //             {
-        //                 Id = podcaster.Id,
-        //                 FullName = podcaster.FullName,
-        //                 Email = podcaster.Email,
-        //                 MainImageFileKey = podcaster.MainImageFileKey
-        //             },
-        //             CreatedAt = channel.CreatedAt,
-        //             UpdatedAt = channel.UpdatedAt,
-        //             ShowList = showList.Select(ps => new ShowListItemResponseDTO
-        //             {
-        //                 Id = ps.Id,
-        //                 Name = ps.Name,
-        //                 Description = ps.Description,
-        //                 MainImageFileKey = ps.MainImageFileKey,
-        //                 TrailerAudioFileKey = ps.TrailerAudioFileKey,
-        //                 TotalFollow = ps.TotalFollow,
-        //                 ListenCount = ps.ListenCount,
-        //                 AverageRating = ps.AverageRating,
-        //                 RatingCount = ps.RatingCount,
-        //                 Copyright = ps.Copyright,
-        //                 IsReleased = ps.IsReleased,
-        //                 Language = ps.Language,
-        //                 UploadFrequency = ps.UploadFrequency,
-        //                 ReleaseDate = ps.ReleaseDate,
-        //                 TakenDownReason = role == null || role == 1 ? null : ps.TakenDownReason,
-        //                 PodcastCategory = new PodcastCategoryDTO
-        //                 {
-        //                     Id = ps.PodcastCategory.Id,
-        //                     Name = ps.PodcastCategory.Name
-        //                 },
-        //                 PodcastSubCategory = new PodcastSubCategoryDTO
-        //                 {
-        //                     Id = ps.PodcastSubCategory.Id,
-        //                     Name = ps.PodcastSubCategory.Name,
-        //                     PodcastCategoryId = ps.PodcastSubCategory.PodcastCategoryId
-        //                 },
-        //                 PodcastChannel = new PodcastChannelSnippetResponseDTO
-        //                 {
-        //                     Id = channel.Id,
-        //                     Name = channel.Name,
-        //                     MainImageFileKey = channel.MainImageFileKey
-        //                 },
-        //                 Podcaster = new AccountSnippetResponseDTO
-        //                 {
-        //                     Id = podcaster.Id,
-        //                     Email = podcaster.Email,
-        //                     FullName = podcaster.FullName,
-        //                     MainImageFileKey = podcaster.MainImageFileKey
-        //                 },
-        //                 PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
-        //                 {
-        //                     Id = ps.PodcastShowSubscriptionType.Id,
-        //                     Name = ps.PodcastShowSubscriptionType.Name
-        //                 } : null,
-        //                 Hashtags = ps.PodcastShowHashtags.Select(psh => new HashtagDTO
-        //                 {
-        //                     Id = psh.Hashtag.Id,
-        //                     Name = psh.Hashtag.Name
-        //                 }).ToList(),
-        //                 CreatedAt = ps.CreatedAt,
-        //                 UpdatedAt = ps.UpdatedAt,
-        //                 CurrentStatus = ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).Select(pst => new PodcastShowStatusDTO
-        //                 {
-        //                     Id = pst.PodcastShowStatus.Id,
-        //                     Name = pst.PodcastShowStatus.Name
-        //                 }).FirstOrDefault()!,
-        //             }).ToList(),
-        //             PodcastSubscriptionList = ((JArray)result.Results["podcastSubscriptionList"]).Select(ps =>
-        //             {
-        //                 var psObj = ps.ToObject<PodcastSubscriptionListItemResponseDTO>();
-        //                 return new PodcastSubscriptionListItemResponseDTO
-        //                 {
-        //                     Id = psObj.Id,
-        //                     Name = psObj.Name,
-        //                     Description = psObj.Description,
-        //                     CurrentVersion = psObj.CurrentVersion,
-        //                     PodcastShowId = psObj.PodcastShowId,
-        //                     IsActive = psObj.IsActive,
-        //                     CreatedAt = psObj.CreatedAt,
-        //                     UpdatedAt = psObj.UpdatedAt,
-        //                     PodcastChannelId = psObj.PodcastChannelId,
-        //                     PodcastSubscriptionCycleTypePriceList = ((JArray)ps["PodcastSubscriptionCycleTypePrices"]).ToObject<List<PodcastSubscriptionCycleTypePriceListItemResponseDTO>>().Select(psctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
-        //                     {
-        //                         PodcastSubscriptionId = psctp.PodcastSubscriptionId,
-        //                         Price = psctp.Price,
-        //                         Version = psctp.Version,
-        //                         CreatedAt = psctp.CreatedAt,
-        //                         UpdatedAt = psctp.UpdatedAt,
-        //                         SubscriptionCycleType = psctp.SubscriptionCycleType != null ? new SubscriptionCycleTypeDTO
-        //                         {
-        //                             Id = psctp.SubscriptionCycleType.Id,
-        //                             Name = psctp.SubscriptionCycleType.Name,
-        //                         } : null
-        //                     }).ToList(),
-        //                     DeletedAt = psObj.DeletedAt,
-        //                     PodcastSubscriptionBenefitMappingList = ((JArray)ps["PodcastSubscriptionBenefitMappings"]).ToObject<List<PodcastSubscriptionBenefitMappingListItemResponseDTO>>().Select(psbm => new PodcastSubscriptionBenefitMappingListItemResponseDTO
-        //                     {
-        //                         PodcastSubscriptionId = psbm.PodcastSubscriptionId,
-        //                         Version = psbm.Version,
-        //                         CreatedAt = psbm.CreatedAt,
-        //                         UpdatedAt = psbm.UpdatedAt,
-        //                         PodcastSubscriptionBenefit = psbm.PodcastSubscriptionBenefit != null ? new PodcastSubscriptionBenefitDTO
-        //                         {
-        //                             Id = psbm.PodcastSubscriptionBenefit.Id,
-        //                             Name = psbm.PodcastSubscriptionBenefit.Name
-        //                         } : null
-        //                     }).ToList()
-        //                 };
-        //             }).ToList()
-
-        //         };
-        //         return channelDetail;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         throw new HttpRequestException("Get channel by id failed, error: " + ex.Message);
-        //     }
-        // }
-
-
-        // public async Task UpdatePodcastChannel(UpdateChannelParameterDTO updateChannelParameterDTO, SagaCommandMessage command)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(updateChannelParameterDTO.PodcastChannelId);
-        //             if (podcastChannel == null)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + updateChannelParameterDTO.PodcastChannelId + " does not exist");
-        //             }
-        //             else if (podcastChannel.DeletedAt != null)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + updateChannelParameterDTO.PodcastChannelId + " has been deleted");
-        //             }
-        //             else if (podcastChannel.PodcasterId != updateChannelParameterDTO.PodcasterId)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + updateChannelParameterDTO.PodcastChannelId + " does not belong to podcaster with id " + updateChannelParameterDTO.PodcasterId);
-        //             }
-
-        //             podcastChannel.Name = updateChannelParameterDTO.Name;
-        //             podcastChannel.Description = updateChannelParameterDTO.Description;
-        //             podcastChannel.PodcastCategoryId = updateChannelParameterDTO.PodcastCategoryId;
-        //             podcastChannel.PodcastSubCategoryId = updateChannelParameterDTO.PodcastSubCategoryId;
-
-        //             var folderPath = _filePathConfig.PODCAST_CHANNEL_FILE_PATH + "\\" + podcastChannel.Id;
-        //             if (updateChannelParameterDTO.MainImageFileKey != null && updateChannelParameterDTO.MainImageFileKey != "")
-        //             {
-        //                 if (!string.IsNullOrEmpty(podcastChannel?.MainImageFileKey))
-        //                 {
-        //                     await _fileIOHelper.DeleteFileAsync(podcastChannel.MainImageFileKey);
-        //                 }
-        //                 var MainImageFileKey = FilePathHelper.CombinePaths(folderPath, $"main_image{FilePathHelper.GetExtension(updateChannelParameterDTO.MainImageFileKey)}");
-        //                 await _fileIOHelper.CopyFileToFileAsync(updateChannelParameterDTO.MainImageFileKey, MainImageFileKey);
-        //                 await _fileIOHelper.DeleteFileAsync(updateChannelParameterDTO.MainImageFileKey);
-        //                 podcastChannel.MainImageFileKey = MainImageFileKey;
-
-        //             }
-        //             if (updateChannelParameterDTO.BackgroundImageFileKey != null && updateChannelParameterDTO.BackgroundImageFileKey != "")
-        //             {
-        //                 if (!string.IsNullOrEmpty(podcastChannel?.BackgroundImageFileKey))
-        //                 {
-        //                     await _fileIOHelper.DeleteFileAsync(podcastChannel.BackgroundImageFileKey);
-        //                 }
-        //                 var BackgroundImageFileKey = FilePathHelper.CombinePaths(folderPath, $"background_image{FilePathHelper.GetExtension(updateChannelParameterDTO.BackgroundImageFileKey)}");
-        //                 await _fileIOHelper.CopyFileToFileAsync(updateChannelParameterDTO.BackgroundImageFileKey, BackgroundImageFileKey);
-        //                 await _fileIOHelper.DeleteFileAsync(updateChannelParameterDTO.BackgroundImageFileKey);
-        //                 podcastChannel.BackgroundImageFileKey = BackgroundImageFileKey;
-        //             }
-
-        //             await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
-
-        //             // Update hashtags
-        //             await _unitOfWork.PodcastChannelHashtagRepository.DeleteByPodcastChannelIdAsync(podcastChannel.Id);
-
-        //             foreach (var hashtagId in updateChannelParameterDTO.HashtagIds)
-        //             {
-        //                 var existingHashtag = await _hashtagGenericRepository.FindByIdAsync(hashtagId);
-        //                 if (existingHashtag == null)
-        //                 {
-        //                     throw new Exception("Hashtag with id " + hashtagId + " does not exist");
-        //                 }
-        //                 var podcastChannelHashtag = new PodcastChannelHashtag
-        //                 {
-        //                     PodcastChannelId = podcastChannel.Id,
-        //                     HashtagId = hashtagId
-        //                 };
-        //                 await _podcastChannelHashtagGenericRepository.CreateAsync(podcastChannelHashtag);
-        //             }
-        //             await transaction.CommitAsync();
-        //             var messageNextRequestData = command.RequestData;
-        //             messageNextRequestData["Name"] = podcastChannel.Name;
-        //             messageNextRequestData["Description"] = podcastChannel.Description;
-        //             messageNextRequestData["MainImageFileKey"] = podcastChannel.MainImageFileKey;
-        //             messageNextRequestData["BackgroundImageFileKey"] = podcastChannel.BackgroundImageFileKey;
-        //             messageNextRequestData["PodcastCategoryId"] = podcastChannel.PodcastCategoryId;
-        //             messageNextRequestData["PodcastSubCategoryId"] = podcastChannel.PodcastSubCategoryId;
-        //             messageNextRequestData["HashtagIds"] = JArray.FromObject(updateChannelParameterDTO.HashtagIds);
-        //             messageNextRequestData["PodcasterId"] = podcastChannel.PodcasterId;
-        //             messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
-
-        //             var messageResponseData = JObject.FromObject(new
-        //             {
-        //                 PodcastChannelId = podcastChannel.Id,
-        //                 Name = podcastChannel.Name,
-        //                 Description = podcastChannel.Description,
-        //                 MainImageFileKey = podcastChannel.MainImageFileKey,
-        //                 BackgroundImageFileKey = podcastChannel.BackgroundImageFileKey,
-        //                 PodcastCategoryId = podcastChannel.PodcastCategoryId,
-        //                 PodcastSubCategoryId = podcastChannel.PodcastSubCategoryId,
-        //                 HashtagIds = updateChannelParameterDTO.HashtagIds,
-        //                 PodcasterId = podcastChannel.PodcasterId,
-        //             });
-        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //                 topic: KafkaTopicEnum.ContentManagementDomain,
-        //                 requestData: messageNextRequestData,
-        //                 responseData: messageResponseData,
-        //                 sagaInstanceId: command.SagaInstanceId,
-        //                 flowName: command.FlowName,
-        //                 messageName: "update-channel.success"
-        //             );
-        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-
-        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //                 topic: KafkaTopicEnum.ContentManagementDomain,
-        //                 requestData: command.RequestData,
-        //                 responseData: JObject.FromObject(new
-        //                 {
-        //                     ErrorMessage = $"Update podcast channel failed, error: {ex.Message}"
-        //                 }),
-        //                 sagaInstanceId: command.SagaInstanceId,
-        //                 flowName: command.FlowName,
-        //                 messageName: "update-channel.failed"
-        //             );
-        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         }
-        //     }
-        // }
-
-        // public async Task PublishPodcastChannel(PublishChannelParameterDTO publishChannelParameterDTO, SagaCommandMessage command)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(publishChannelParameterDTO.PodcastChannelId);
-        //             if (podcastChannel == null)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + publishChannelParameterDTO.PodcastChannelId + " does not exist");
-        //             }
-        //             else if (podcastChannel.DeletedAt != null)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + publishChannelParameterDTO.PodcastChannelId + " has been deleted");
-        //             }
-        //             else if (podcastChannel.PodcasterId != publishChannelParameterDTO.PodcasterId)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + publishChannelParameterDTO.PodcastChannelId + " does not belong to podcaster with id " + publishChannelParameterDTO.PodcasterId);
-        //             }
-
-        //             var newPodcastChannelStatusTracking = new PodcastChannelStatusTracking
-        //             {
-        //                 PodcastChannelId = podcastChannel.Id,
-        //                 PodcastChannelStatusId = (int)PodcastChannelStatusEnum.Published, // setting to "Published" status
-        //             };
-        //             await _podcastChannelStatusTrackingGenericRepository.CreateAsync(newPodcastChannelStatusTracking);
-
-        //             await transaction.CommitAsync();
-
-        //             var messageNextRequestData = command.RequestData;
-        //             messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
-        //             var messageResponseData = JObject.FromObject(new
-        //             {
-        //                 PodcastChannelId = podcastChannel.Id,
-        //             });
-        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //                 topic: KafkaTopicEnum.ContentManagementDomain,
-        //                 requestData: messageNextRequestData,
-        //                 responseData: messageResponseData,
-        //                 sagaInstanceId: command.SagaInstanceId,
-        //                 flowName: command.FlowName,
-        //                 messageName: "publish-channel.success"
-        //             );
-        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-
-        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //                 topic: KafkaTopicEnum.ContentManagementDomain,
-        //                 requestData: command.RequestData,
-        //                 responseData: JObject.FromObject(new
-        //                 {
-        //                     ErrorMessage = $"Publish podcast channel failed, error: {ex.Message}"
-        //                 }),
-        //                 sagaInstanceId: command.SagaInstanceId,
-        //                 flowName: command.FlowName,
-        //                 messageName: "publish-channel.failed"
-        //             );
-        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         }
-        //     }
-
-        // }
-
-        // public async Task PlusPodcastChannelTotalFavorite(PlusChannelTotalFavoriteParameterDTO plusChannelTotalFavoriteParameterDTO, SagaCommandMessage command)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(plusChannelTotalFavoriteParameterDTO.PodcastChannelId);
-        //             if (podcastChannel == null)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + plusChannelTotalFavoriteParameterDTO.PodcastChannelId + " does not exist");
-        //             }
-        //             else if (podcastChannel.DeletedAt != null)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + plusChannelTotalFavoriteParameterDTO.PodcastChannelId + " has been deleted");
-        //             }
-
-        //             podcastChannel.TotalFavorite += 1;
-        //             await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
-
-        //             await transaction.CommitAsync();
-
-        //             var messageNextRequestData = command.RequestData;
-        //             messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
-        //             messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
-        //             var messageResponseData = JObject.FromObject(new
-        //             {
-        //                 PodcastChannelId = podcastChannel.Id,
-        //                 AccountId = command.RequestData["AccountId"],
-        //             });
-        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //                 topic: KafkaTopicEnum.ContentManagementDomain,
-        //                 requestData: messageNextRequestData,
-        //                 responseData: messageResponseData,
-        //                 sagaInstanceId: command.SagaInstanceId,
-        //                 flowName: command.FlowName,
-        //                 messageName: "plus-channel-total-favorite.success"
-        //             );
-        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //                 topic: KafkaTopicEnum.ContentManagementDomain,
-        //                 requestData: command.RequestData,
-        //                 responseData: JObject.FromObject(new
-        //                 {
-        //                     ErrorMessage = $"Plus podcast channel total favorite failed, error: {ex.Message}"
-        //                 }),
-        //                 sagaInstanceId: command.SagaInstanceId,
-        //                 flowName: command.FlowName,
-        //                 messageName: "plus-channel-total-favorite.failed"
-        //             );
-        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         }
-        //     }
-        // }
-
-        // public async Task SubtractPodcastChannelTotalFavorite(SubtractChannelTotalFavoriteParameterDTO subtractChannelTotalFavoriteParameterDTO, SagaCommandMessage command)
-        // {
-        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //     {
-        //         try
-        //         {
-        //             var podcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(subtractChannelTotalFavoriteParameterDTO.PodcastChannelId);
-        //             if (podcastChannel == null)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + subtractChannelTotalFavoriteParameterDTO.PodcastChannelId + " does not exist");
-        //             }
-        //             else if (podcastChannel.DeletedAt != null)
-        //             {
-        //                 throw new Exception("Podcast channel with id " + subtractChannelTotalFavoriteParameterDTO.PodcastChannelId + " has been deleted");
-        //             }
-
-        //             podcastChannel.TotalFavorite = Math.Max(0, podcastChannel.TotalFavorite - 1);
-        //             await _podcastChannelGenericRepository.UpdateAsync(podcastChannel.Id, podcastChannel);
-
-        //             await transaction.CommitAsync();
-
-        //             var messageNextRequestData = command.RequestData;
-        //             messageNextRequestData["PodcastChannelId"] = podcastChannel.Id;
-        //             messageNextRequestData["AccountId"] = command.RequestData["AccountId"];
-        //             var messageResponseData = JObject.FromObject(new
-        //             {
-        //                 PodcastChannelId = podcastChannel.Id,
-        //                 AccountId = command.RequestData["AccountId"],
-        //             });
-        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //                 topic: KafkaTopicEnum.ContentManagementDomain,
-        //                 requestData: messageNextRequestData,
-        //                 responseData: messageResponseData,
-        //                 sagaInstanceId: command.SagaInstanceId,
-        //                 flowName: command.FlowName,
-        //                 messageName: "subtract-channel-total-favorite.success"
-        //             );
-        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             await transaction.RollbackAsync();
-        //             var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //                 topic: KafkaTopicEnum.ContentManagementDomain,
-        //                 requestData: command.RequestData,
-        //                 responseData: JObject.FromObject(new
-        //                 {
-        //                     ErrorMessage = $"Subtract podcast channel total favorite failed, error: {ex.Message}"
-        //                 }),
-        //                 sagaInstanceId: command.SagaInstanceId,
-        //                 flowName: command.FlowName,
-        //                 messageName: "subtract-channel-total-favorite.failed"
-        //             );
-        //             await _messagingService.SendSagaMessageAsync(sagaEventMessage);
-        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
-        //         }
-        //     }
-        // }
-
-        #endregion
-
         public async Task<List<ShowListItemResponseDTO>> GetShows(int? roleId)
         {
             try
@@ -3510,6 +2879,164 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "delete-channel-shows-channel-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task TakedownContentDmcaShow(TakedownContentDmcaParameterDTO takedownContentDmcaParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(takedownContentDmcaParameterDTO.PodcastShowId, includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                    .Include(ps => ps.PodcastChannel)
+
+                    );
+                    if (existingPodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + takedownContentDmcaParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    else if (existingPodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + takedownContentDmcaParameterDTO.PodcastShowId + " has been deleted");
+                    }
+                    else if (existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Published)
+                    {
+                        throw new Exception("Podcast show with id " + takedownContentDmcaParameterDTO.PodcastShowId + " is not in Published status");
+                    }
+
+                    if (existingPodcastShow.PodcastChannel != null && existingPodcastShow.PodcastChannel.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast channel with id " + existingPodcastShow.PodcastChannelId + " does not exist");
+                    }
+
+                    // Change show status to TakenDown
+                    var newStatusTracking = new PodcastShowStatusTracking
+                    {
+                        PodcastShowId = existingPodcastShow.Id,
+                        PodcastShowStatusId = (int)PodcastShowStatusEnum.TakenDown,
+                    };
+
+                    await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                    existingPodcastShow.TakenDownReason = takedownContentDmcaParameterDTO.TakenDownReason;
+                    await _podcastShowGenericRepository.UpdateAsync(existingPodcastShow.Id, existingPodcastShow);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = takedownContentDmcaParameterDTO.PodcastShowId;
+                    messageNextRequestData["TakenDownReason"] = takedownContentDmcaParameterDTO.TakenDownReason;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = takedownContentDmcaParameterDTO.PodcastShowId,
+                        TakenDownReason = takedownContentDmcaParameterDTO.TakenDownReason,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "takedown-content-dmca.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Takedown content dmca show failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "takedown-content-dmca.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task RestoreContentDmcaShow(RestoreContentDmcaParameterDTO restoreContentDmcaParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(restoreContentDmcaParameterDTO.PodcastShowId, includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                    .Include(ps => ps.PodcastChannel)
+
+                    );
+                    if (existingPodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + restoreContentDmcaParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    else if (existingPodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + restoreContentDmcaParameterDTO.PodcastShowId + " has been deleted");
+                    }
+                    else if (existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.TakenDown)
+                    {
+                        throw new Exception("Podcast show with id " + restoreContentDmcaParameterDTO.PodcastShowId + " is not in TakenDown status");
+                    }
+
+                    if (existingPodcastShow.PodcastChannel != null && existingPodcastShow.PodcastChannel.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast channel with id " + existingPodcastShow.PodcastChannelId + " does not exist");
+                    }
+
+                    // Change show status to Published
+                    var newStatusTracking = new PodcastShowStatusTracking
+                    {
+                        PodcastShowId = existingPodcastShow.Id,
+                        PodcastShowStatusId = (int)PodcastShowStatusEnum.Published,
+                    };
+
+                    await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                    existingPodcastShow.TakenDownReason = string.Empty;
+                    await _podcastShowGenericRepository.UpdateAsync(existingPodcastShow.Id, existingPodcastShow);
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = restoreContentDmcaParameterDTO.PodcastShowId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = restoreContentDmcaParameterDTO.PodcastShowId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "restore-content-dmca.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Restore content dmca show failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "restore-content-dmca.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
