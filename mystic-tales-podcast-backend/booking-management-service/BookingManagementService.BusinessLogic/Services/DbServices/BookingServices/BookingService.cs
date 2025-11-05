@@ -1578,11 +1578,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
                     }
 
-                    bookingPodcastTrack.RemainingPreviewListenSlot -= 1;
+                    bookingPodcastTrack.RemainingPreviewListenSlot = bookingPodcastTrack.RemainingPreviewListenSlot - 1;
                     await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
+
+                    await transaction.CommitAsync();
 
                     var playlistFileKey = FilePathHelper.CombinePaths(
                                         _filePathConfig.BOOKING_FILE_PATH,
+                                        booking.Id.ToString(),
                                         currentBookingProducingRequest.Id.ToString(),
                                         bookingPodcastTrack.Id.ToString(),
                                         "playlist",
