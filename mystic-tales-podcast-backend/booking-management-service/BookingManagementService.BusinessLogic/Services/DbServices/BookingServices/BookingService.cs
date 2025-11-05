@@ -209,142 +209,126 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         public async Task CreateBookingAsync(CreateBookingParameterDTO parameter, SagaCommandMessage command)
         {
             bool test = false;
-            using var transaction = await _appDbContext.Database.BeginTransactionAsync();
-            var processedFiles = new List<string>();
-            try
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
-                var messageName = command.MessageName;
-                var sagaId = command.SagaInstanceId;
-                var flowName = command.FlowName;
-                var responseData = command.LastStepResponseData;
-
-                var newBooking = new Booking
+                var processedFiles = new List<string>();
+                try
                 {
-                    Title = parameter.Title,
-                    Description = parameter.Description,
-                    AccountId = parameter.AccountId,
-                    PodcastBuddyId = parameter.PodcastBuddyId,
-                    CreatedAt = _dateHelper.GetNowByAppTimeZone(),
-                    UpdatedAt = _dateHelper.GetNowByAppTimeZone()
-                };
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
 
-                var createdBooking = await _bookingGenericRepository.CreateAsync(newBooking);
-                
-                // Add null check for createdBooking
-                if (createdBooking == null)
-                {
-                    throw new InvalidOperationException("Failed to create booking - returned null");
-                }
-
-                var createdRequirementDocumentList = new List<BookingRequirement>();
-
-                Console.WriteLine("________________________________________________________");
-                Console.WriteLine(parameter.BookingRequirementInfoList.Count());
-                // Process each track
-                foreach (var requirementDocumentInfo in parameter.BookingRequirementInfoList)
-                {
-                    var newBookingRequirement = new BookingRequirement()
+                    var newBooking = new Booking
                     {
-                        BookingId = createdBooking.Id,
-                        Name = requirementDocumentInfo.Name,
-                        Description = requirementDocumentInfo.Description,
-                        Order = requirementDocumentInfo.Order,
-                        PodcastBookingToneId = requirementDocumentInfo.PodcastBookingToneId,
-                        RequirementDocumentFileKey = ""
+                        Title = parameter.Title,
+                        Description = parameter.Description,
+                        AccountId = parameter.AccountId,
+                        PodcastBuddyId = parameter.PodcastBuddyId,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                        UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
 
-                    var createdBookingRequirement = await _bookingRequirementGenericRepository.CreateAsync(newBookingRequirement);
-            
-                    // Add null check for createdBookingRequirement
-                    if (createdBookingRequirement == null)
+                    var createdBooking = await _bookingGenericRepository.CreateAsync(newBooking);
+
+                    if (createdBooking == null)
                     {
-                        throw new InvalidOperationException("Failed to create booking requirement - returned null");
+                        throw new InvalidOperationException("Failed to create booking - returned null");
                     }
 
-                    var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + createdBooking.Id;
-                    if (requirementDocumentInfo.RequirementDocumentFileKey != null && requirementDocumentInfo.RequirementDocumentFileKey != "")
+                    var createdRequirementDocumentList = new List<BookingRequirement>();
+
+                    Console.WriteLine("________________________________________________________");
+                    Console.WriteLine(parameter.BookingRequirementInfoList.Count());
+                    // Process each track
+                    foreach (var requirementDocumentInfo in parameter.BookingRequirementInfoList)
                     {
-                        var requirementDocumentFileKey = FilePathHelper.CombinePaths(folderPath, $"{createdBookingRequirement.Id}_requirement_document");
-                        await _fileIOHelper.CopyFileToFileAsync(requirementDocumentInfo.RequirementDocumentFileKey, requirementDocumentFileKey);
-                        processedFiles.Add(requirementDocumentFileKey);
-                        await _fileIOHelper.DeleteFileAsync(requirementDocumentInfo.RequirementDocumentFileKey);
-                        createdBookingRequirement.RequirementDocumentFileKey = requirementDocumentFileKey;
-                        await _bookingRequirementGenericRepository.UpdateAsync(createdBookingRequirement.Id, createdBookingRequirement);
+
+                        var newBookingRequirement = new BookingRequirement()
+                        {
+                            BookingId = createdBooking.Id,
+                            Name = requirementDocumentInfo.Name,
+                            Description = requirementDocumentInfo.Description,
+                            Order = requirementDocumentInfo.Order,
+                            PodcastBookingToneId = requirementDocumentInfo.PodcastBookingToneId,
+                            RequirementDocumentFileKey = ""
+                        };
+
+                        var createdBookingRequirement = await _bookingRequirementGenericRepository.CreateAsync(newBookingRequirement);
+
+                        if (createdBookingRequirement == null)
+                        {
+                            throw new InvalidOperationException("Failed to create booking requirement - returned null");
+                        }
+
+                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + createdBooking.Id;
+                        if (requirementDocumentInfo.RequirementDocumentFileKey != null && requirementDocumentInfo.RequirementDocumentFileKey != "")
+                        {
+                            var requirementDocumentFileKey = FilePathHelper.CombinePaths(folderPath, $"{createdBookingRequirement.Id}_requirement_document");
+                            await _fileIOHelper.CopyFileToFileAsync(requirementDocumentInfo.RequirementDocumentFileKey, requirementDocumentFileKey);
+                            processedFiles.Add(requirementDocumentFileKey);
+                            await _fileIOHelper.DeleteFileAsync(requirementDocumentInfo.RequirementDocumentFileKey);
+                            createdBookingRequirement.RequirementDocumentFileKey = requirementDocumentFileKey;
+                            await _bookingRequirementGenericRepository.UpdateAsync(createdBookingRequirement.Id, createdBookingRequirement);
+                        }
+
+                        createdRequirementDocumentList.Add(createdBookingRequirement);
                     }
 
-                    createdRequirementDocumentList.Add(createdBookingRequirement);
+                    await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking
+                    {
+                        Id = Guid.NewGuid(),
+                        BookingId = newBooking.Id,
+                        BookingStatusId = (int)BookingStatusEnum.QuotationRequest,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                    });
+
+                    await transaction.CommitAsync();
+                    test = true;
+                    var newResponseData = new JObject
+                    {
+                        { "BookingId", newBooking.Id },
+                        { "Title", newBooking.Title },
+                        { "Description", newBooking.Description },
+                        { "AccountId", newBooking.AccountId },
+                        { "PodcastBuddyId", newBooking.PodcastBuddyId },
+                        { "CreatedBookingRequirementDocumentList", JArray.FromObject(createdRequirementDocumentList) },
+                        { "CreatedAt", newBooking.CreatedAt }
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Booking created successfully for SagaId: {SagaId}", command.SagaInstanceId);
                 }
-
-                await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking
+                catch (Exception ex)
                 {
-                    Id = Guid.NewGuid(),
-                    BookingId = createdBooking.Id, // This is now safe after null check
-                    BookingStatusId = (int)BookingStatusEnum.QuotationRequest,
-                    CreatedAt = _dateHelper.GetNowByAppTimeZone(),
-                });
-
-                await transaction.CommitAsync();
-                test = true;
-
-                var newResponseData = new JObject
-                {
-                    { "BookingId", createdBooking.Id }, // This is now safe after null check
-                    { "Title", createdBooking.Title },
-                    { "Description", createdBooking.Description },
-                    { "AccountId", createdBooking.AccountId },
-                    { "PodcastBuddyId", createdBooking.PodcastBuddyId },
-                    { "CreatedBookingRequirementDocumentList", JArray.FromObject(createdRequirementDocumentList) },
-                    { "CreatedAt", createdBooking.CreatedAt }
-                };
-                var newMessageName = messageName + ".success";
-                var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                    topic: KafkaTopicEnum.BookingManagementDomain,
-                    requestData: command.RequestData,
-                    responseData: newResponseData,
-                    sagaInstanceId: sagaId,
-                    flowName: flowName,
-                    messageName: newMessageName);
-                await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
-                _logger.LogInformation("Booking created successfully for SagaId: {SagaId}", command.SagaInstanceId);
-            }
-            catch (Exception ex)
-            {
-                if (test)
-                {
-                    return;
-                }
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error occurred while creating booking for SagaId: {SagaId}", command.SagaInstanceId);
-                
-                // Clean up processed files on error
-                foreach (var processedFile in processedFiles)
-                {
-                    try
+                    if (test)
                     {
-                        await _fileIOHelper.DeleteFileAsync(processedFile);
+                        return;
                     }
-                    catch (Exception deleteEx)
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while creating booking for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject
                     {
-                        _logger.LogWarning(deleteEx, "Failed to clean up processed file: {FilePath}", processedFile);
-                    }
+                        { "ErrorMessage", "Create booking failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogError("Booking created failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
-                
-                var newResponseData = new JObject
-                {
-                    { "ErrorMessage", "Create booking failed, error: " + ex.Message }
-                };
-                var newMessageName = command.MessageName + ".failed";
-                var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                    topic: KafkaTopicEnum.BookingManagementDomain,
-                    requestData: command.RequestData,
-                    responseData: newResponseData,
-                    sagaInstanceId: command.SagaInstanceId,
-                    flowName: command.FlowName,
-                    messageName: newMessageName);
-                await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
-                _logger.LogError("Booking created failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
-                
-                throw; // Re-throw the exception after cleanup
             }
         }
         public Task<List<BookingListItemResponseDTO>> GetBookingsByPodcasterIdAsync(int podcastBuddyId)
