@@ -138,13 +138,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         }
         public async Task<BookingDetailResponseDTO?> GetBookingByIdAsync(int bookingId)
         {
-            var booking = await _bookingGenericRepository.FindByIdWithPaths(
+            var booking = await _bookingGenericRepository.FindByIdAsync(
                 bookingId,
-                "BookingRequirements.PodcastBookingTones.PodcastBookingToneCategories",
-                "BookingProducingRequests",
-                "BookingStatusTrackings.BookingStatus"
-            );
-
+                includeFunc: function => function
+                .Include(b => b.BookingRequirements)
+                .ThenInclude(br => br.PodcastBookingTone)
+                .ThenInclude(bt => bt.PodcastBookingToneCategory)
+                .Include(b => b.BookingProducingRequests)
+                .Include(b => b.BookingStatusTrackings));
             if (booking == null)
                 return null;
 
