@@ -2,7 +2,7 @@ namespace PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain
 {
     public class RestoreContentDmcaParameterDTO
     {
-        public required Guid PodcastEpisodeId { get; set; }
-        public required Guid PodcastShowId { get; set; }
+        public Guid? PodcastEpisodeId { get; set; }
+        public Guid? PodcastShowId { get; set; }
     }
 }
