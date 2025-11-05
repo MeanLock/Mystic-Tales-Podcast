@@ -212,6 +212,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 var processedFiles = new List<string>();
+                var isTransactionCommit = false;
                 try
                 {
                     var messageName = command.MessageName;
@@ -284,7 +285,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     });
 
                     await transaction.CommitAsync();
-                    
+                    isTransactionCommit = true;
+
                     var newResponseData = new JObject
                     {
                         { "BookingId", newBooking.Id },
@@ -292,7 +294,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         { "Description", newBooking.Description },
                         { "AccountId", newBooking.AccountId },
                         { "PodcastBuddyId", newBooking.PodcastBuddyId },
-                        { "CreatedBookingRequirementDocumentList", JArray.FromObject(createdRequirementDocumentList) },
+                        // { "CreatedBookingRequirementDocumentList", JArray.FromObject(createdRequirementDocumentList) },
                         { "CreatedAt", newBooking.CreatedAt }
                     };
                     var newMessageName = messageName + ".success";
@@ -308,7 +310,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    if (isTransactionCommit == false)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     _logger.LogError(ex, "Error occurred while creating booking for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                     {
