@@ -30,6 +30,7 @@ using BookingManagementService.DataAccess.Data;
 using BookingManagementService.DataAccess.Entities;
 using BookingManagementService.DataAccess.Entities.SqlServer;
 using BookingManagementService.DataAccess.Repositories.interfaces;
+using BookingManagementService.Infrastructure.Configurations.Audio.Hls.interfaces;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using Microsoft.EntityFrameworkCore;
@@ -49,12 +50,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IGenericRepository<BookingChatRoom> _bookingChatRoomGenericRepository;
         private readonly IGenericRepository<BookingChatMember> _bookingChatMemberGenericRepository;
         private readonly IGenericRepository<PodcastBookingTone> _podcastBookingToneGenericRepository;
+        private readonly IGenericRepository<BookingPodcastTrack> _bookingPodcastTrackGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly AccountCachingService _accountCachingService;
         private readonly ILogger<BookingService> _logger;
+        private readonly IHlsConfig _hlsConfig;
 
         private readonly AppDbContext _appDbContext;
         private readonly IFilePathConfig _filePathConfig;
@@ -68,11 +71,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             IGenericRepository<BookingChatRoom> bookingChatRoomGenericRepository,
             IGenericRepository<BookingChatMember> bookingChatMemberGenericRepository,
             IGenericRepository<PodcastBookingTone> podcastBookingToneGenericRepository,
+            IGenericRepository<BookingPodcastTrack> bookingPodcastTrackGenericRepository,
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
             AccountCachingService accountCachingService,
             ILogger<BookingService> logger,
+            IHlsConfig hlsConfig,
             AppDbContext appDbContext,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
@@ -86,12 +91,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _bookingChatRoomGenericRepository = bookingChatRoomGenericRepository;
             _bookingChatMemberGenericRepository = bookingChatMemberGenericRepository;
             _podcastBookingToneGenericRepository = podcastBookingToneGenericRepository;
+            _bookingPodcastTrackGenericRepository = bookingPodcastTrackGenericRepository;
 
             _httpServiceQueryClient = httpServiceQueryClient;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
             _accountCachingService = accountCachingService;
             _logger = logger;
+            _hlsConfig = hlsConfig;
             _appDbContext = appDbContext;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
@@ -1508,7 +1515,68 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 try
                 {
                     // xử lí logic validate + từ lượt nghe + trả BookingTrackListenResponseDTO + gì gì đó 
-                    return null;
+                    var booking = await _bookingGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(b => b.BookingStatusTrackings)
+                        .Include(b => b.BookingProducingRequests))
+                        .Where(b => b.Id == bookingId)
+                        .FirstOrDefaultAsync();
+
+                    if(booking == null)
+                    {
+                        throw new Exception("Booking with id " + bookingId + " does not exist");
+                    }
+                    if (booking.AccountId != accountId)
+                    {
+                        throw new Exception("You are not authorized to listen to tracks of this booking");
+                    }
+                    var currentBookingStatusId = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault()
+                        .BookingStatusId;
+                    if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
+                    {
+                        throw new Exception("Booking with id " + bookingId + " is not in Track Previewing status");
+                    }
+
+                    var currentBookingProducingRequest = booking.BookingProducingRequests
+                        .OrderByDescending(bpr => bpr.CreatedAt)
+                        .FirstOrDefault();
+
+                    var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindAll(
+                        predicate: bpt => bpt.BookingId == bookingId && bpt.Id == podcastTrackId
+                    ).FirstOrDefaultAsync();
+
+                    if (bookingPodcastTrack == null)
+                    {
+                        throw new Exception("Podcast track with id " + podcastTrackId + " does not exist");
+                    }
+
+                    if (currentBookingProducingRequest.Id.Equals(bookingPodcastTrack.BookingProducingRequestId) == false)
+                    {
+                        throw new Exception("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
+                    }
+
+                    if(bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                    {
+                        throw new Exception("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
+                    }
+
+                    bookingPodcastTrack.RemainingPreviewListenSlot -= 1;
+                    await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
+
+                    var playlistFileKey = FilePathHelper.CombinePaths(
+                                        _filePathConfig.BOOKING_FILE_PATH,
+                                        currentBookingProducingRequest.Id.ToString(),
+                                        bookingPodcastTrack.Id.ToString(),
+                                        "playlist",
+                                        _hlsConfig.PlaylistFileName
+                                    );
+                    var result = new BookingTrackListenResponseDTO
+                    {
+                        PlaylistFileKey = playlistFileKey
+                    };
+                    return result;
                 }
                 catch (Exception ex)
                 {
@@ -1547,12 +1615,55 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     //     throw new Exception("Podcast episode with id " + episodeId + " is not in Published status");
                     // }
 
+                    var booking = await _bookingGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(b => b.BookingStatusTrackings)
+                        .Include(b => b.BookingProducingRequests))
+                        .Where(b => b.Id == bookingId)
+                        .FirstOrDefaultAsync();
+
+                    if (booking == null)
+                    {
+                        throw new Exception("Booking with id " + bookingId + " does not exist");
+                    }
+                    var currentBookingStatusId = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault()
+                        .BookingStatusId;
+                    if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
+                    {
+                        throw new Exception("Booking with id " + bookingId + " is not in Track Previewing status");
+                    }
+
+                    var currentBookingProducingRequest = booking.BookingProducingRequests
+                        .OrderByDescending(bpr => bpr.CreatedAt)
+                        .FirstOrDefault();
+
+                    var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindAll(
+                        predicate: bpt => bpt.Id == podcastTrackId && bpt.AudioEncryptionKeyId == keyId
+                    ).FirstOrDefaultAsync();
+
+                    if (bookingPodcastTrack == null)
+                    {
+                        throw new Exception("Podcast track with id " + podcastTrackId + " does not exist, or keyId does not match");
+                    }
+
+                    if (currentBookingProducingRequest.Id.Equals(bookingPodcastTrack.BookingProducingRequestId) == false)
+                    {
+                        throw new Exception("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
+                    }
+
+                    if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                    {
+                        throw new Exception("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
+                    }
+
                     await transaction.CommitAsync();
 
                     // trả về EncryptionKey file bytes
-                    // return await _fileIOHelper.GetFileBytesAsync(episode.AudioEncryptionKeyFileKey);
+                    return await _fileIOHelper.GetFileBytesAsync(bookingPodcastTrack.AudioEncryptionKeyFileKey);
 
-                    return Array.Empty<byte>(); // xoá cái này
+                    //return Array.Empty<byte>(); // xoá cái này
 
                 }
                 catch (Exception ex)

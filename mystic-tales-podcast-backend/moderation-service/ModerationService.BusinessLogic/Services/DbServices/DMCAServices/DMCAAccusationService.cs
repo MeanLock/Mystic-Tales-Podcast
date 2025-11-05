@@ -571,6 +571,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             }
 
                             //Send TakeDownFlow
+                            //var takeDownFlowMessage = new JObject
+                            //{
+                            //    { "PodcastShowId", dmcaAccusation.PodcastShowId },
+                            //    { "TakeDownReason", "dasd" }
+                            //};
 
                             //Send Confirm email to Accuser
 
