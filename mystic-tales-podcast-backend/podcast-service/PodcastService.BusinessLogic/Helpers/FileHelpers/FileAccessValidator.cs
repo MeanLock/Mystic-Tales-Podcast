@@ -140,18 +140,18 @@ namespace PodcastService.BusinessLogic.Helpers.FileHelpers
             ),
 
             // ============ STRICT PRIVATE (Never direct download) ============
-            [FileCategoryEnum.HlsPlaylist] = (
+            [FileCategoryEnum.PodcastEpisodeHlsPlaylist] = (
                 $@"^main_files/PodcastEpisodes/{GUID_PATTERN}/playlist/playlist{M3U8_EXT}",
                 FileAccessLevelEnum.StrictPrivate,
                 "HLS playlist (use playback session)"
             ),
-            [FileCategoryEnum.HlsSegment] = (
+            [FileCategoryEnum.PodcastEpisodeHlsSegment] = (
                 // $@"^main_files/PodcastEpisodes/{GUID_PATTERN}/playlist/seg_\d+{TS_EXT}",
                 $@"^main_files/PodcastEpisodes/{GUID_PATTERN}/playlist/seg_[0-9a-fA-F]{{8}}_\d+{TS_EXT}",
                 FileAccessLevelEnum.StrictPrivate,
                 "HLS segment (use playback session)"
             ),
-            [FileCategoryEnum.EncryptionKey] = (
+            [FileCategoryEnum.PodcastEpisodeEncryptionKey] = (
                 $@"^main_files/PodcastEpisodes/{GUID_PATTERN}/playlist/enc{KEY_EXT}",
                 FileAccessLevelEnum.StrictPrivate,
                 "Encryption key (use key endpoint)"

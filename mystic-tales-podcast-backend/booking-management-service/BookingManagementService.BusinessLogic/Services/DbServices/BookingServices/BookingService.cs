@@ -522,9 +522,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             newBookingStatusId = (int)BookingStatusEnum.QuotationCancelled;
                         }
-                        else if(booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Producing)
+                        else if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Producing)
                         {
-                            if(booking.BookingProducingRequests.Count() == 1 && booking.BookingProducingRequests.Select(b => b.Deadline).FirstOrDefault() <= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()))
+                            if (booking.BookingProducingRequests.Count() == 1 && booking.BookingProducingRequests.Select(b => b.Deadline).FirstOrDefault() <= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()))
                                 newBookingStatusId = (int)BookingStatusEnum.CancelledManually;
                         }
                         else
@@ -1500,5 +1500,70 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 : null;
             return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
+
+        public async Task<BookingTrackListenResponseDTO> GetTrackListenAsync(int bookingId, Guid podcastTrackId, int accountId)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // xử lí logic validate + từ lượt nghe + trả BookingTrackListenResponseDTO + gì gì đó 
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new HttpRequestException("An error occurred while processing your request, error: " + ex.Message);
+                }
+            }
+        }
+
+        public async Task<byte[]> GetBookingTrackHlsEncryptionKeyFileAsync(int bookingId, Guid podcastTrackId, Guid keyId)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // validate
+                    // var episode = await _podcastEpisodeGenericRepository.FindAll(
+                    //     predicate: pe => pe.Id == episodeId && pe.DeletedAt == null && pe.AudioEncryptionKeyId == keyId,
+                    //     includeFunc: pe => pe.Include(p => p.PodcastEpisodeStatusTrackings)
+                    // ).FirstOrDefaultAsync();
+
+                    // if (episode == null)
+                    // {
+                    //     throw new Exception("Podcast episode with id " + episodeId + " does not exist, or keyId does not match");
+                    // }
+                    // else if (episode.DeletedAt != null)
+                    // {
+                    //     throw new Exception("Podcast episode with id " + episodeId + " has been deleted");
+                    // }
+                    // else if (episode.PodcastEpisodeStatusTrackings
+                    //     .OrderByDescending(pet => pet.CreatedAt)
+                    //     .FirstOrDefault()
+                    //     .PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Published)
+                    // {
+                    //     throw new Exception("Podcast episode with id " + episodeId + " is not in Published status");
+                    // }
+
+                    await transaction.CommitAsync();
+
+                    // trả về EncryptionKey file bytes
+                    // return await _fileIOHelper.GetFileBytesAsync(episode.AudioEncryptionKeyFileKey);
+
+                    return Array.Empty<byte>(); // xoá cái này
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new HttpRequestException("An error occurred while processing your request, error: " + ex.Message);
+                }
+            }
+
+        }
+
     }
 }

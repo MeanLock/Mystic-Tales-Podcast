@@ -41,8 +41,11 @@ namespace BookingManagementService.BusinessLogic.Enums.App
         BookingTrackAudio,
 
         // Strict private (never direct download)
-        HlsPlaylist,
-        HlsSegment,
-        EncryptionKey
+        PodcastEpisodeHlsPlaylist,
+        PodcastEpisodeHlsSegment,
+        PodcastEpisodeEncryptionKey,
+        BookingPodcastTrackPlaylist,
+        BookingPodcastTrackSegment,
+        BookingPodcastTrackEncryptionKey
     }
 }

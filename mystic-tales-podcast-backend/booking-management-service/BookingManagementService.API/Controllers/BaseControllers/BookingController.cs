@@ -3,6 +3,7 @@ using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
+using BookingManagementService.BusinessLogic.Enums.App;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Helpers.AuthHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
@@ -14,6 +15,7 @@ using BookingManagementService.Common.AppConfigurations.BusinessSetting.interfac
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.Infrastructure.Models.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Models.Kafka;
+using BookingManagementService.Infrastructure.Services.Audio.Hls;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,17 +42,19 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
         private const string SAGA_TOPIC = KafkaTopicEnum.BookingManagementDomain;
+        private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
 
         public BookingController(
-            GenericQueryService genericQueryService, 
-            HttpServiceQueryClient httpServiceQueryClient, 
+            GenericQueryService genericQueryService,
+            HttpServiceQueryClient httpServiceQueryClient,
             BookingService bookingService,
             JwtHelper jwtHelper,
             FileIOHelper fileIOHelper,
             KafkaProducerService kafkaProducerService,
             IMessagingService messagingService,
             IFileValidationConfig fileValidationConfig,
-            IFilePathConfig filePathConfig)
+            IFilePathConfig filePathConfig,
+            FFMpegCoreHlsService ffMpegCoreHlsService)
         {
             _genericQueryService = genericQueryService;
             _httpServiceQueryClient = httpServiceQueryClient;
@@ -61,6 +65,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             _messagingService = messagingService;
             _fileValidationConfig = fileValidationConfig;
             _filePathConfig = filePathConfig;
+            _ffMpegCoreHlsService = ffMpegCoreHlsService;
         }
 
         [HttpGet]
@@ -151,12 +156,12 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "booking-creation-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-            if(!result)
+            if (!result)
             {
                 return StatusCode(500, "Failed to initiate booking creation process.");
             }
@@ -293,9 +298,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "Deadline", request.Deadline }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "booking-dealing-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
@@ -361,16 +366,17 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "booking-reject-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
                 return StatusCode(500, "Failed to initiate booking creation process.");
             }
-            return Ok(new {
+            return Ok(new
+            {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             }
             );
@@ -397,9 +403,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "booking-manual-cancellation-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
@@ -410,6 +416,86 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
+        }
+
+        // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen
+        [HttpPut("{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> MarkBookingPodcastTrackAsListened(int BookingId, Guid BookingPodcastTrackId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var trackListenResponse = await _bookingService.GetTrackListenAsync(BookingId, BookingPodcastTrackId, account.Id);
+
+            return Ok(new
+            {
+                ListenSession = trackListenResponse
+            });
+        }
+
+        // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/hls-encryption-key/{KeyId}
+        [HttpGet("{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/hls-encryption-key/{KeyId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetBookingPodcastTrackHlsEncryptionKeyFileUrl(int BookingId, Guid BookingPodcastTrackId, Guid KeyId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var encryptionKeyBytes = await _bookingService.GetBookingTrackHlsEncryptionKeyFileAsync(BookingId, BookingPodcastTrackId, KeyId);
+
+            Response.Headers.CacheControl = "no-store";
+            return File(encryptionKeyBytes, "application/octet-stream", enableRangeProcessing: false);
+        }
+
+        // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/hls-playlist/get-file-data/{**FileKey}
+        [HttpGet("{BookingId}/booking-podcast-tracks/hls-playlist/get-file-data/{**FileKey}")]
+        public async Task<IActionResult> GetHlsPlaylistFileUrl(int BookingId,string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS playlist
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.BookingPodcastTrackPlaylist)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be an HLS playlist file",
+                    actualCategory = category.ToString()
+                });
+            }
+
+            // Generate presigned URL (2 minutes expiration)
+            var fileData = await _fileIOHelper.GetFileBytesAsync(FileKey);
+            var segmentRootPath = FilePathHelper.GetFolderPathFromFilePath(FileKey);
+            string fileString = _ffMpegCoreHlsService.GetPlaylistContentAsync(fileData, segmentRootPath);
+            Response.Headers.CacheControl = "no-store";
+
+            return Content(fileString, "application/vnd.apple.mpegurl");
+        }
+
+        // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/hls-segment/get-file-data/{**FileKey}
+        [HttpGet("{BookingId}/booking-podcast-tracks/hls-segment/get-file-data/{**FileKey}")]
+        public async Task<IActionResult> GetHlsSegmentFileUrl(int BookingId, string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // Validate file key phải là HLS segment
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.BookingPodcastTrackSegment)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be an HLS segment file",
+                    actualCategory = category.ToString()
+                });
+            }
+
+            // Generate presigned URL (2 minutes expiration)
+            var fileData = await _fileIOHelper.GetFileBytesAsync(FileKey);
+            if (fileData == null)
+                return NotFound("Unable to read segment");
+
+            return File(fileData, "video/MP2T");
         }
     }
 }

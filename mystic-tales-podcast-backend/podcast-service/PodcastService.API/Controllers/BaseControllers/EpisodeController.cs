@@ -434,7 +434,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             // Validate file key phải là HLS playlist
             var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
 
-            if (category != FileCategoryEnum.HlsPlaylist)
+            if (category != FileCategoryEnum.PodcastEpisodeHlsPlaylist)
             {
                 return StatusCode(403, new
                 {
@@ -462,7 +462,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             // Validate file key phải là HLS segment
             var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
 
-            if (category != FileCategoryEnum.HlsSegment)
+            if (category != FileCategoryEnum.PodcastEpisodeHlsSegment)
             {
                 return StatusCode(403, new
                 {

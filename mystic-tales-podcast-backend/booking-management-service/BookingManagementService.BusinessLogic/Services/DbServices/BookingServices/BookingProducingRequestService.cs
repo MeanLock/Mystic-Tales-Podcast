@@ -19,7 +19,9 @@ using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.DataAccess.Data;
 using BookingManagementService.DataAccess.Entities.SqlServer;
 using BookingManagementService.DataAccess.Repositories.interfaces;
+using BookingManagementService.Infrastructure.Models.Audio.Hls;
 using BookingManagementService.Infrastructure.Models.Kafka;
+using BookingManagementService.Infrastructure.Services.Audio.Hls;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using HotChocolate.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +48,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
         private readonly DateHelper _dateHelper;
+
+        private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
         public BookingProducingRequestService(
             IGenericRepository<BookingProducingRequest> bookingProducingRequestGenericRepository,
             IGenericRepository<BookingProducingRequestPodcastTrackToEdit> bookingProducingRequestPodcastTrackToEditGenericRepository,
@@ -59,7 +63,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             AppDbContext appDbContext,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
-            DateHelper dateHelper
+            DateHelper dateHelper,
+            FFMpegCoreHlsService ffMpegCoreHlsService
             )
         {
             _bookingProducingRequestGenericRepository = bookingProducingRequestGenericRepository;
@@ -75,6 +80,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
             _dateHelper = dateHelper;
+            _ffMpegCoreHlsService = ffMpegCoreHlsService;
         }
         public async Task<BookingProducingRequestDetailResponseDTO?> GetProducingRequestByIdAsync(Guid id)
         {
@@ -144,7 +150,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         "BookingStatusTrackings"
                     );
 
-                    if(booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
+                    if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
                     {
                         await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                         {
@@ -153,7 +159,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             BookingStatusId = (int)BookingStatusEnum.ProducingRequested,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         });
-                    } else
+                    }
+                    else
                     {
                         throw new Exception("Current booking status is not valid for creating producing request");
                     }
@@ -186,7 +193,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         await transaction.RollbackAsync();
                         _logger.LogError("Something Went Wrong");
                     }
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while creating booking producing request for SagaId: {SagaId}", command.SagaInstanceId);
@@ -286,7 +294,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
-        
+
         public async Task SubmitBookingTrack(SubmitBookingTrackParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -300,7 +308,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var responseData = command.LastStepResponseData;
 
                     var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdAsync(parameter.BookingProducingRequestId);
-                    if(bookingProducingRequest.FinishedAt != null)
+                    if (bookingProducingRequest.FinishedAt != null)
                     {
                         throw new Exception("This producing request has been finished already");
                     }
@@ -328,7 +336,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             _logger.LogInformation("Track to duplicate: BookingTrackId = {BookingTrackId}, BookingRequirementId = {BookingRequirementId}, AudioFileKey = {AudioFileKey}", test.Id, test.BookingRequirementId, test.AudioFileKey);
                         }
                     }
-                    
+
                     var createdTracks = new List<BookingPodcastTrack>();
 
                     // Process each track
@@ -355,6 +363,43 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             processedFiles.Add(TrackAudioFileKey);
                             await _fileIOHelper.DeleteFileAsync(trackInfo.AudioFileKey);
                             newBookingPodcastTrack.AudioFileKey = TrackAudioFileKey;
+
+                            //hls file processing start
+                            var stream = await _fileIOHelper.GetFileStreamAsync(newBookingPodcastTrack.AudioFileKey);
+                            if (stream == null)
+                            {
+                                throw new Exception("Could not retrieve uploaded file from storage");
+                            }
+
+                            HlsProcessingResult hlsResult = await _ffMpegCoreHlsService.ProcessAudioToHlsAsync(stream);
+                            if (hlsResult.Success == false)
+                            {
+                                throw new Exception("HLS processing failed: " + hlsResult.ErrorMessage);
+                            }
+
+                            var playlistFolderKey = FilePathHelper.CombinePaths(
+                                        folderPath,
+                                        "playlist"
+                                    );
+                            foreach (var segment in hlsResult.GeneratedFiles)
+                            {
+                                var segmentData = segment.FileContent;
+                                await _fileIOHelper.UploadBinaryFileAsync(segmentData, playlistFolderKey, segment.FileName);
+                            }
+
+                            await _fileIOHelper.UploadBinaryFileAsync(
+                                hlsResult.EncryptionKeyFile.FileContent,
+                                playlistFolderKey,
+                                hlsResult.EncryptionKeyFile.FileName
+                            );
+
+                            newBookingPodcastTrack.AudioEncryptionKeyId = hlsResult.EncryptionKeyId;
+                            newBookingPodcastTrack.AudioEncryptionKeyFileKey = FilePathHelper.CombinePaths(
+                                playlistFolderKey,
+                                hlsResult.EncryptionKeyFile.FileName
+                            );
+                            // hls file processing end
+
                             await _bookingPodcastTrackGenericRepository.UpdateAsync(newBookingPodcastTrack.Id, newBookingPodcastTrack);
                         }
 
@@ -380,6 +425,31 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"audio{FilePathHelper.GetExtension(track.AudioFileKey)}");
                             await _fileIOHelper.CopyFileToFileAsync(track.AudioFileKey, TrackAudioFileKey);
                             newBookingPodcastTrack.AudioFileKey = TrackAudioFileKey;
+                            newBookingPodcastTrack.AudioEncryptionKeyId = track.AudioEncryptionKeyId;
+                            newBookingPodcastTrack.AudioEncryptionKeyFileKey = FilePathHelper.CombinePaths(
+                                folderPath,
+                                "playlist",
+                                FilePathHelper.GetFileName(track.AudioEncryptionKeyFileKey)
+                            );
+
+                            // copy hls playlist folder to new track(copy folder playlist của track cũ sang track mới)
+                            await _fileIOHelper.CopyFolderToFolderAsync(
+                                sourceFolderPath: FilePathHelper.CombinePaths(
+                                    _filePathConfig.BOOKING_FILE_PATH,
+                                    bookingProducingRequest.BookingId.ToString(),
+                                    track.BookingProducingRequestId.ToString(),
+                                    track.Id.ToString(),
+                                    "playlist"
+                                ),
+                                destinationFolderPath: FilePathHelper.CombinePaths(
+                                    _filePathConfig.BOOKING_FILE_PATH,
+                                    bookingProducingRequest.BookingId.ToString(),
+                                    bookingProducingRequest.Id.ToString(),
+                                    bookingPodcastTrack.Id.ToString(),
+                                    "playlist"
+                                )
+                            );
+
                             await _bookingPodcastTrackGenericRepository.UpdateAsync(newBookingPodcastTrack.Id, newBookingPodcastTrack);
                         }
                     }
@@ -506,7 +576,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.ProducingRequested)
                     {
-                        if(isAccepted == true)
+                        if (isAccepted == true)
                         {
                             await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                             {
@@ -515,7 +585,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 BookingStatusId = (int)BookingStatusEnum.Producing,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             });
-                        } else
+                        }
+                        else
                         {
                             await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                             {
@@ -542,15 +613,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     };
                     var newMessageName = messageName + ".success";
                     var SagaCommandMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.BookingManagementDomain, 
-                        requestData: command.RequestData, 
-                        responseData: newResponseData, 
-                        sagaInstanceId: sagaId, 
-                        flowName: flowName, 
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
                         messageName: newMessageName);
                     var result = await _messagingService.SendSagaMessageAsync(SagaCommandMessage, sagaId.ToString());
                     _logger.LogInformation("Booking producing request agreement successfully for SagaId: {SagaId}", command.SagaInstanceId);
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
                     var newResponseData = new JObject
@@ -587,14 +659,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         throw new Exception("Booking podcast track not found");
                     }
-                    if(bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                    if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
                     {
                         throw new Exception("No remaining preview listen slot");
                     }
                     bookingPodcastTrack.RemainingPreviewListenSlot -= 1;
                     await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                     await transaction.CommitAsync();
-                    
+
                     var newMessageName = messageName + ".success";
                     var newResponseData = new JObject
                     {
@@ -660,9 +732,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("Account is not assigned staff of this booking");
                     }
                     var currentStatusId = booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId;
-                    if(currentStatusId == (int)BookingStatusEnum.CustomerCancelledRequest)
+                    if (currentStatusId == (int)BookingStatusEnum.CustomerCancelledRequest)
                     {
-                        if(parameter.CustomerBookingCancelDepositRefundRate == null)
+                        if (parameter.CustomerBookingCancelDepositRefundRate == null)
                         {
                             throw new Exception("Customer booking cancel deposit refund rate is required");
                         }
@@ -718,14 +790,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
                     }
-                    if(currentStatusId == (int)BookingStatusEnum.PodcastBuddyCancelledRequest)
+                    if (currentStatusId == (int)BookingStatusEnum.PodcastBuddyCancelledRequest)
                     {
-                        if(parameter.PodcastBuddyBookingCancelDepositRefundRate == null)
+                        if (parameter.PodcastBuddyBookingCancelDepositRefundRate == null)
                         {
                             throw new Exception("Podcast buddy booking cancel deposit refund rate is required");
                         }
                         booking.CustomerBookingCancelDepositRefundRate = 100 - (double)parameter.PodcastBuddyBookingCancelDepositRefundRate;
-                        booking.PodcastBuddyBookingCancelDepositRefundRate =  (double)parameter.PodcastBuddyBookingCancelDepositRefundRate;
+                        booking.PodcastBuddyBookingCancelDepositRefundRate = (double)parameter.PodcastBuddyBookingCancelDepositRefundRate;
                         booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 

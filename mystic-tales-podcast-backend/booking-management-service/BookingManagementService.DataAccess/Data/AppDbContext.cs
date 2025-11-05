@@ -162,6 +162,12 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
                 .HasColumnName("id");
+            entity.Property(e => e.AudioEncryptionKeyFileKey)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnName("audioEncryptionKeyFileKey");
+            entity.Property(e => e.AudioEncryptionKeyId)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnName("audioEncryptionKeyId");
             entity.Property(e => e.AudioFileKey).HasColumnName("audioFileKey");
             entity.Property(e => e.AudioFileSize).HasColumnName("audioFileSize");
             entity.Property(e => e.AudioLength).HasColumnName("audioLength");

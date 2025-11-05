@@ -21,6 +21,10 @@ public partial class BookingPodcastTrack
 
     public Guid BookingRequirementId { get; set; }
 
+    public Guid? AudioEncryptionKeyId { get; set; }
+
+    public string? AudioEncryptionKeyFileKey { get; set; }
+
     public virtual Booking Booking { get; set; } = null!;
 
     public virtual BookingProducingRequest BookingProducingRequest { get; set; } = null!;
