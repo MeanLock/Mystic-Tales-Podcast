@@ -225,6 +225,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     var createdRequirementDocumentList = new List<BookingRequirement>();
 
+                    Console.WriteLine("________________________________________________________");
+                    Console.WriteLine(parameter.BookingRequirementInfoList.Count());
                     // Process each track
                     foreach (var requirementDocumentInfo in parameter.BookingRequirementInfoList)
                     {

@@ -9,7 +9,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking
 {
     public class BookingCreateRequestDTO
     {
-        public BookingCreateInfoDTO BookingCreateInfo { get; set; } = new BookingCreateInfoDTO();
+        public string BookingCreateInfo { get; set; }
         public List<IFormFile> BookingRequirementFiles { get; set; } = new List<IFormFile>();
     }
     public class BookingCreateInfoDTO
@@ -17,6 +17,6 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int PodcastBuddyId { get; set; }
-        public List<BookingRequirementCreateRequestDTO> BookingRequirementInfo { get; set; }
+        public List<BookingRequirementCreateRequestDTO> BookingRequirementInfo { get; set; } = new List<BookingRequirementCreateRequestDTO>();
     }
 }

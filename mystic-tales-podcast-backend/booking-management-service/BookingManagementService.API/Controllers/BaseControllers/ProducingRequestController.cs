@@ -1,4 +1,5 @@
 ﻿using BookingManagementService.API.Filters.ExceptionFilters;
+using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
@@ -15,6 +16,7 @@ using BookingManagementService.Infrastructure.Services.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
@@ -133,12 +135,13 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 return Unauthorized("Account information not found.");
             }
 
-            var accountId = account.Id;
-            var isValid = await _bookingProducingRequestService.ValidateProducingRequestPodcasterAsync(BookingProducingRequestId, accountId);
-            if (!isValid)
-            {
-                return Forbid("You are not authorized to submit tracks for this booking producing request.");
-            }
+            var bookingRequirementIdList = JsonConvert.DeserializeObject<List<Guid>>(request.BookingRequirementInfo); 
+            //var accountId = account.Id;
+            //var isValid = await _bookingProducingRequestService.ValidateProducingRequestPodcasterAsync(BookingProducingRequestId, accountId);
+            //if (!isValid)
+            //{
+            //    return Forbid("You are not authorized to submit tracks for this booking producing request.");
+            //}
 
             // Validate all audio files first
             foreach (var audioFile in request.AudioFiles)
@@ -151,7 +154,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
 
             var trackSubmissions = new List<JObject>();
-            var requirementSubmission = request.BookingRequirementIdList;
+            var requirementSubmission = bookingRequirementIdList;
 
             // Process all audio files and prepare track submission items
             foreach (var audioFile in request.AudioFiles)
@@ -183,8 +186,14 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
                 var trackAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newTrackAudioFileName);
 
+                Console.WriteLine($"Uploaded audio file name: {System.IO.Path.GetFileNameWithoutExtension(audioFile.FileName)}");
+                foreach(var id in requirementSubmission)
+                {
+                    Console.WriteLine($"Requirement ID: {id}");
+                }
+
                 var matchingRequirement = requirementSubmission
-                    .FirstOrDefault(re => re != null && re.ToString() == audioFile.FileName);
+                    .FirstOrDefault(re => re != null && re.ToString().Equals(System.IO.Path.GetFileNameWithoutExtension(audioFile.FileName), StringComparison.OrdinalIgnoreCase));
 
                 // Add to track submissions list
                 trackSubmissions.Add(new JObject

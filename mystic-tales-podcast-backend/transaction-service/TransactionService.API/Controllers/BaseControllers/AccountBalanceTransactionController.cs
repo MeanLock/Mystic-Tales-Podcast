@@ -157,8 +157,7 @@ namespace TransactionService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "AccountId", accountId },
-                { "Amount", request.Amount },
-                { "TransactionTypeId", (int)TransactionTypeEnum.AccountBalanceWithdrawal }
+                { "Amount", request.Amount }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC, 

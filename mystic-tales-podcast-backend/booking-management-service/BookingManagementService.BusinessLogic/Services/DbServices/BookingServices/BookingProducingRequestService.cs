@@ -300,6 +300,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var responseData = command.LastStepResponseData;
 
                     var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdAsync(parameter.BookingProducingRequestId);
+                    if(bookingProducingRequest.FinishedAt != null)
+                    {
+                        throw new Exception("This producing request has been finished already");
+                    }
                     var config = await GetActiveSystemConfigProfile();
                     var remainingPreviewListenSlot = config.BookingConfig.PodcastTrackPreviewListenSlot;
 
@@ -310,14 +314,19 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                      pr.Id != bookingProducingRequest.Id)
                         .ToListAsync();
 
+                    Console.WriteLine("Existing Producing Requests Count: " + existingProducingRequest.Count);
                     var needToDuplicateTrack = new List<BookingPodcastTrack>();
-                    if (existingProducingRequest != null)
+                    if (existingProducingRequest != null && existingProducingRequest.Count > 1)
                     {
                         var previousProducingRequest = existingProducingRequest.OrderByDescending(pr => pr.CreatedAt).FirstOrDefault();
                         needToDuplicateTrack = previousProducingRequest.BookingPodcastTracks
                             .Where(existingTrack => parameter.Tracks
                                 .All(newTrack => newTrack.Id != existingTrack.BookingRequirementId))
                             .ToList();
+                        foreach (var test in needToDuplicateTrack)
+                        {
+                            _logger.LogInformation("Track to duplicate: BookingTrackId = {BookingTrackId}, BookingRequirementId = {BookingRequirementId}, AudioFileKey = {AudioFileKey}", test.Id, test.BookingRequirementId, test.AudioFileKey);
+                        }
                     }
                     
                     var createdTracks = new List<BookingPodcastTrack>();
@@ -338,7 +347,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.CreateAsync(newBookingPodcastTrack);
 
-                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + bookingProducingRequest.BookingId + "\\" + bookingPodcastTrack.Id;
+                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + bookingProducingRequest.BookingId + "\\" + bookingProducingRequest.Id + "\\" + bookingPodcastTrack.Id;
                         if (trackInfo.AudioFileKey != null && trackInfo.AudioFileKey != "")
                         {
                             var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"audio{FilePathHelper.GetExtension(trackInfo.AudioFileKey)}");
@@ -365,7 +374,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         };
                         var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.CreateAsync(newBookingPodcastTrack);
 
-                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + bookingProducingRequest.BookingId + "\\" + bookingPodcastTrack.Id;
+                        var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + bookingProducingRequest.BookingId + "\\" + bookingProducingRequest.Id + "\\" + bookingPodcastTrack.Id;
                         if (track.AudioFileKey != null && track.AudioFileKey != "")
                         {
                             var TrackAudioFileKey = FilePathHelper.CombinePaths(folderPath, $"audio{FilePathHelper.GetExtension(track.AudioFileKey)}");

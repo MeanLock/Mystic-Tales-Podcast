@@ -96,10 +96,14 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
         [HttpPost]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> CreateBooking([FromBody] BookingCreateRequestDTO request)
+        public async Task<IActionResult> CreateBooking([FromForm] BookingCreateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
+
+            var bookingCreateInfo = JsonConvert.DeserializeObject<BookingCreateInfoDTO>(request.BookingCreateInfo);
+
+            Console.WriteLine(JsonConvert.SerializeObject(request));
 
             // Validate all audio files first
             foreach (var requirementFile in request.BookingRequirementFiles)
@@ -111,7 +115,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 }
             }
 
-            var requirementSubmission = JArray.FromObject(request.BookingCreateInfo.BookingRequirementInfo);
+            var requirementSubmission = JArray.FromObject(bookingCreateInfo.BookingRequirementInfo);
             var requirementDocumentSubmission = new List<JObject>();
 
             // Process all audio files and prepare track submission items
@@ -128,7 +132,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 var requirementDocumentFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newRequirementFileName);
 
                 var matchingRequirement = requirementSubmission
-                    .FirstOrDefault(re => re["Order"] != null && re["Order"].ToString() == requirementFile.FileName);
+                    .FirstOrDefault(re => re["Order"] != null && re["Order"].ToString().Equals(System.IO.Path.GetFileNameWithoutExtension(requirementFile.FileName), StringComparison.OrdinalIgnoreCase));
 
                 if (matchingRequirement != null)
                 {
@@ -139,10 +143,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
             var requestData = new JObject
             {
-                { "Title", request.BookingCreateInfo.Title },
-                { "Description", request.BookingCreateInfo.Description },
+                { "Title", bookingCreateInfo.Title },
+                { "Description", bookingCreateInfo.Description },
                 { "AccountId", accountId },
-                { "PodcastBuddyId", request.BookingCreateInfo.PodcastBuddyId },
+                { "PodcastBuddyId", bookingCreateInfo.PodcastBuddyId },
                 { "BookingRequirementInfoList", JArray.FromObject(requirementDocumentSubmission) },
             };
 
@@ -284,7 +288,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 { "AccountId", accountId },
                 { "BookingId", BookingId },
-                { "BookingRequirementList", JArray.FromObject(request.BookingRequirementInfoList) },
+                { "BookingRequirementInfoList", JArray.FromObject(request.BookingRequirementInfoList) },
                 { "Price", request.Price },
                 { "Deadline", request.Deadline }
             };

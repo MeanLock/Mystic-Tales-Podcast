@@ -5869,7 +5869,7 @@ flows:
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "process--booking-dealing.failed"
+          emit: "process-booking-dealing.failed"
           topic: "booking-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -6836,7 +6836,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: 
-            - name: "booking-negotiation-agree-flow"
+            - name: "accept-booking-dealing-flow"
               topic: "booking-management-domain"
               handle-service: "SagaOrchestratorService"
         onFailure:
