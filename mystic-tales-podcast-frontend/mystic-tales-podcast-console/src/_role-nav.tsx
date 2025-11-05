@@ -14,7 +14,9 @@ import {
   ArrowCircleRight,
   Queue,
   Playlist,
-  Warning
+  Warning,
+  Money,
+  MusicNote
 } from "phosphor-react";
 import { FcFactoryBreakdown } from "react-icons/fc";
 
@@ -197,6 +199,20 @@ const get_roleNav = (role_id: number, account_id: number) => {
             icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
           },
         ],
+      },
+       {
+        component: CNavItem,
+        name: 'Background Sound',
+        to: '/background-sound/table',
+        icon: <MusicNote size={30} weight="duotone"  />,
+
+      },
+      {
+        component: CNavItem,
+        name: 'Transactions',
+        to: '/transactions/table',
+        icon: <Money size={30} weight="duotone"  />,
+
       },
       {
         component: CNavItem,

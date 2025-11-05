@@ -8,6 +8,8 @@ const Staff_View = React.lazy(() => import('./views/role-views/admin/staff-view/
 const DMCA_Accusation_View = React.lazy(() => import('./views/role-views/admin/dmca-accusation-view/index'))
 const DMCA_Accusation_Detail_View = React.lazy(() => import('./views/role-views/admin/dmca-accusation-detail-view/index'))
 const SystemConfigView = React.lazy(() => import('./views/role-views/admin/system-config-view/index'))
+const Transaction_View = React.lazy(() => import('./views/role-views/admin/transaction-view/index'))
+const Background_Sound_View = React.lazy(() => import('./views/role-views/admin/background-sound-view/index'))
 
 const Admin_Episode_Publish_Review_View = React.lazy(() => import('./views/role-views/admin/episode-view/episode-publish-review-view/index'))
 const Admin_Episode_Report_View = React.lazy(() => import('./views/role-views/admin/episode-view/episode-report-view/index'))
@@ -18,6 +20,8 @@ const Admin_Show_Report_Review_View = React.lazy(() => import('./views/role-view
 
 const Admin_Buddy_Report_View = React.lazy(() => import('./views/role-views/admin/buddy-view/buddy-report-view/index'))
 const Admin_Buddy_Report_Review_View = React.lazy(() => import('./views/role-views/admin/buddy-view/buddy-report-review-view/index'))
+
+
 //staff
 const Podcaster_Staff_View = React.lazy(() => import('./views/role-views/staff/podcaster-view/index'))
 const Staff_Show_Report_Review_View = React.lazy(() => import('./views/role-views/staff/show-report-review-view/index'))
@@ -34,7 +38,6 @@ const Data_Market_View = React.lazy(() => import('./views/role-views/manager/dat
 const Data_Market_Detail_View = React.lazy(() => import('./views/role-views/manager/data-market-detail-view/index'))
 const Filter_Survey_View = React.lazy(() => import('./views/role-views/manager/filter-survey-view/index'))
 const Filter_Survey_Detail_View = React.lazy(() => import('./views/role-views/manager/filter-survey-detail-view/index'))
-const Transaction_View = React.lazy(() => import('./views/role-views/manager/transaction-view/index'))
 
 
 
@@ -51,7 +54,8 @@ const routes = [
   { path: '/dmca-accusation/table', name: 'DMCA Accusation', element: DMCA_Accusation_View, role_id: [1] },
   { path: '/dmca-accusation/detail/:id', name: 'Detail', element: DMCA_Accusation_Detail_View, role_id: [1], parent: '/dmca-accusation/table' },
   { path: '/system-configuration', name: 'System Configuration', element: SystemConfigView, role_id: [1] },
-
+  { path: '/transactions/table', name: 'Transactions', element: Transaction_View, role_id: [1] },
+  { path: '/background-sound/table', name: 'Background Sound', element: Background_Sound_View, role_id: [1] },
   { path: '/episode/publish-review-sessions', name: 'Episode', element: Admin_Episode_Publish_Review_View, role_id: [1] },
   { path: '/episode/report', name: 'Episode', element: Admin_Episode_Report_View, role_id: [1] },
   { path: '/episode/report-review-sessions', name: 'Episode', element: Admin_Episode_Report_Review_View, role_id: [1] },
@@ -76,7 +80,6 @@ const routes = [
   { path: '/data-market/detail/:id', name: 'Chi Tiết', element: Data_Market_Detail_View, role_id: [2], parent: '/data-market' },
   { path: '/filter-survey/table', name: 'Khảo Sát Đầu Vào', element: Filter_Survey_View, role_id: [2] },
   { path: '/filter-survey/detail/:id', name: 'Chi Tiết', element: Filter_Survey_Detail_View, role_id: [2], parent: '/filter-survey/table' },
-  { path: '/transactions/table', name: 'Giao Dịch', element: Transaction_View, role_id: [2] },
 
 
 ]

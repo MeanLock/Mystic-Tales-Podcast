@@ -18,7 +18,7 @@ import { JwtUtil } from '../../../../core/utils/jwt.util'
 import { get_roleNav } from '../../../../_role-nav'
 import { setUi, UiState } from '../../../../redux/ui/ui.slice'
 import { cilMenu } from '@coreui/icons'
-import logo from '../../../../assets/brand/logo.png'
+import logo from '../../../../assets/brand/logoMTP2.png'
 const AppSidebar = () => {
 
   // const unfoldable = useSelector((state : State) => state.sidebarUnfoldable)
