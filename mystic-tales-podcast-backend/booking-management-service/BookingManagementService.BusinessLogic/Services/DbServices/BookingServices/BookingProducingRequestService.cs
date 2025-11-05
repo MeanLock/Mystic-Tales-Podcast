@@ -324,7 +324,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     Console.WriteLine("Existing Producing Requests Count: " + existingProducingRequest.Count);
                     var needToDuplicateTrack = new List<BookingPodcastTrack>();
-                    if (existingProducingRequest != null && existingProducingRequest.Count > 1)
+                    if (existingProducingRequest != null && existingProducingRequest.Count >= 1)
                     {
                         var previousProducingRequest = existingProducingRequest.OrderByDescending(pr => pr.CreatedAt).FirstOrDefault();
                         needToDuplicateTrack = previousProducingRequest.BookingPodcastTracks
