@@ -118,7 +118,7 @@ export default function PlayerCore() {
           }
         );
         console.log("listen response:", listenResp);
-        const listenRes = listenResp.data;
+        const listenRes = listenResp.data.ListenSession;
         const fileKey = listenRes.PlaylistFileKey;
         const token = listenRes.Token ?? null;
         lastListenTokenRef.current = token;
