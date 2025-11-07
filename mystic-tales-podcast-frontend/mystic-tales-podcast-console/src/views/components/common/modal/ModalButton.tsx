@@ -20,6 +20,7 @@ interface ModalButtonProps {
   size?: "sm" | "lg" | "xl";
   title?: React.ReactNode;
   children?: React.ReactNode;
+   className?: string; 
 }
 
 const Modal_Button = (props: ModalButtonProps) => {
@@ -37,7 +38,7 @@ const Modal_Button = (props: ModalButtonProps) => {
 
   return (
     <>
-      <CButton className="w-100 h-100 px-0 py-0" style={{ border: 'none' }} color={props.color} onClick={() => setVisible(!visible)} disabled={props.disabled}>
+      <CButton   className={props.className} style={{ border: 'none' }} color={props.color} onClick={() => setVisible(!visible)} disabled={props.disabled}>
         {props.content}
       </CButton>
       <CModal size={props.size ? props.size : 'xl'} className='custom-modal' backdrop="static" visible={visible} onClose={handleClose}

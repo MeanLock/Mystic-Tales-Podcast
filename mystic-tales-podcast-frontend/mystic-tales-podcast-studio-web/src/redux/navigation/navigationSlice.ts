@@ -58,6 +58,23 @@ const navigationSlice = createSlice({
       };
       state.navItems = action.payload.navItems;
     },
+
+     setShowContext: (state, action: PayloadAction<{
+      show: {
+        id: string;
+        name: string;
+        avatar?: string;
+      };
+      navItems: Array<{ label: string; icon: JSX.Element; path: string; }>;
+    }>) => {
+      state.contextType = 'show';
+      state.currentContext = {
+        ...action.payload.show,
+        type: 'Show'
+      };
+      state.navItems = action.payload.navItems;
+    },
+
     clearContext: (state) => {
       state.currentContext = null;
       state.navItems = [];
@@ -65,5 +82,5 @@ const navigationSlice = createSlice({
   }
 });
 
-export const { setUserContext, setChannelContext, clearContext } = navigationSlice.actions;
+export const { setUserContext, setChannelContext, setShowContext, clearContext } = navigationSlice.actions;
 export default navigationSlice.reducer;

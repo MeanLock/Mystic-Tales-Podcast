@@ -22,7 +22,7 @@ const Page500 = React.lazy(() => import('./views/pages/page500/Page500'))
 
 
 
-const router = createHashRouter([
+const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,

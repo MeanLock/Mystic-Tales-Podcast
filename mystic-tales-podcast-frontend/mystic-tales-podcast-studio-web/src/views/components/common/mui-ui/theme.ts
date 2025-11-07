@@ -23,6 +23,15 @@ const theme = createTheme({
                 },
             },
         },
+         MuiIconButton: {
+            styleOverrides: {
+                root: {
+                    "&:focus, &:focus-visible": {
+                        outline: "none",
+                    },
+                },
+            },
+        },
         MuiInputBase: {
             styleOverrides: {
                 root: {
@@ -34,6 +43,13 @@ const theme = createTheme({
             styleOverrides: {
                 root: {
                     fontFamily: "'Poppins', sans-serif",
+                },
+            },
+        },
+           MuiFormLabel: {
+            styleOverrides: {
+                asterisk: {
+                    color: "#e05a5aff", // màu đỏ cho dấu *
                 },
             },
         },

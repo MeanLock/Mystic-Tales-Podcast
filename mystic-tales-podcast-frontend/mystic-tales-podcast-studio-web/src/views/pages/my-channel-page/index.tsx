@@ -2,6 +2,9 @@ import React, { FC, useEffect, useState } from 'react';
 import { Button, TextField, InputAdornment, Chip, Box, Typography, Card, CardMedia, CardContent, Badge, Menu, MenuItem, FormControlLabel, Checkbox, Accordion, AccordionSummary, AccordionDetails, Divider, InputBase } from '@mui/material';
 import { Search, Add, FilterList, Favorite, PlayArrow, ExpandMore } from '@mui/icons-material';
 import './styles.scss';
+import { EmptyComponent } from '@/views/components/common/empty';
+import Modal_Button from '@/views/components/common/modal/ModalButton';
+import ChannelCreate from './ChannelCreate';
 
 
 // Mock categories with subcategories for filter
@@ -245,7 +248,7 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
     const [selectedFilters, setSelectedFilters] = useState<SelectedFilter[]>([])
     const [sortBy, setSortBy] = useState('Release Date')
     const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null)
-    
+
     const fetchChannelList = async () => {
         setChannelList(mockData.ChannelList)
     }
@@ -468,15 +471,16 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
                             </Box>
                         </Menu>
                     </div>
-
-                    <Button
+                    <Modal_Button
                         className="my-channel-page__new-channel-btn"
+                        content="New Channel"
+                        color="primary"
                         variant="contained"
+                        size='lg'
                         startIcon={<Add />}
-
                     >
-                        New Channel
-                    </Button>
+                        <ChannelCreate />
+                    </Modal_Button>
                 </div>
 
                 {/* Filter Tags */}
@@ -494,9 +498,10 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
                             size="small"
                             sx={{
                                 backgroundColor: filter.subcategoryName ? '#444' : '#2a2a2a',
-                                color: '#9ccc65',
-                                border: '1px solid #9ccc65',
-                                '& .MuiChip-deleteIcon': { color: '#9ccc65' },
+                                color: 'var(--primary-green)',
+                                border: '1px solid var(--primary-green)',
+                                boxShadow: '1px 1px 5px rgba(12, 254, 4, 0.18)',
+                                '& .MuiChip-deleteIcon': { color: 'var(--primary-green)' },
                                 '& .MuiChip-label': {
                                     fontSize: '0.8rem',
                                     maxWidth: '200px',
@@ -534,7 +539,7 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
                             key={channel.Id}
                             className="my-channel-page__channel-card"
                             onClick={() => {
-                                window.open(`/my-channel/${channel.Id}/overview`);
+                                window.open(`/channel/${channel.Id}/overview`);
                             }}
                         >
                             <div className="my-channel-page__channel-image-container relative">
@@ -579,14 +584,8 @@ const MyChannelPage: FC<MyChannelPageProps> = () => {
                     ))}
                 </div>
             ) : (
-                <div className="my-channel-page__empty-state">
-                    <Search className="my-channel-page__empty-state-icon" />
-                    <Typography variant="h5" className="my-channel-page__empty-state-title">
-                        No channel found
-                    </Typography>
-                    <Typography className="my-channel-page__empty-state-description">
-                        Try adjusting your search terms or filters
-                    </Typography>
+                <div >
+                    <EmptyComponent item="channel" subtitle="Try adjusting your search terms or filters" />
                     <Button
                         variant="contained"
                         startIcon={<Add />}

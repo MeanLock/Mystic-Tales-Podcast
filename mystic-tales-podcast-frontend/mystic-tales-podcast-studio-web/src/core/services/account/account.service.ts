@@ -6,15 +6,15 @@ import { callGraphQLMutation, callGraphQLQuery } from "../../api/graphql/main/ap
 import { callAxiosRestApi } from "../../api/rest-api/main/api-call";
 
 
-export const login = async (instance: AxiosInstance, data : {
+export const login = async (instance: AxiosInstance, data: {
     username: string,
     password: string,
 } | any) => {
 
     const bodyData = {
         login: {
-            Email : data.username,
-            Password : data.password,
+            Email: data.username,
+            Password: data.password,
         }
     }
 
@@ -27,4 +27,54 @@ export const login = async (instance: AxiosInstance, data : {
 
     console.log("Rest API Response:", response);
     return response;
+}
+
+export const AudioTuning = async (instance: AxiosInstance, payload: AudioTuningRequest) => {
+  let data: any;
+
+  const { AudioFile, GeneralTuningProfileRequestInfo } = payload;
+
+  if (AudioFile instanceof File) {
+    const form = new FormData();
+    form.append('GeneralTuningProfileRequestInfo', JSON.stringify(GeneralTuningProfileRequestInfo));
+    form.append('AudioFile', AudioFile);
+    data = form;
+   } 
+  console.log("Audio Tuning Request Data:", data);
+
+  const response = await callAxiosRestApi({
+    instance,
+    method: 'post',
+    url: '/api/podcast-service/api/episodes/3b16bc12-715c-472b-a73e-f53b3ed686bf/audio-tuning/general',
+    data,
+    config: {
+        responseType: 'blob'
+    }
+  }, 'Audio Tuning');
+
+  return response;
+};
+export interface AudioTuningRequest {
+  GeneralTuningProfileRequestInfo: {
+    EqualizerProfile: {
+      ExpandEqualizer: { Mood: string };
+      BaseEqualizer: {
+        HighMid: number;
+        Mid: number;
+        Air: number;
+        LowMid: number;
+        Treble: number;
+        Low: number;
+        Presence: number;
+        SubBass: number;
+        Bass: number;
+      };
+    };
+    BackgroundMergeProfile: {
+        BackgroundSoundTrackFileKey: string ;
+        VolumeGainDb: number;
+    }
+    AITuningProfile: null
+  };
+  AudioFile?:  File;
 }

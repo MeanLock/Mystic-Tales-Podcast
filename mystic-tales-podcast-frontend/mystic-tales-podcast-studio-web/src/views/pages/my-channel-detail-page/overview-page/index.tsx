@@ -265,6 +265,7 @@ const ChannelOverview = () => {
                         <TextField
                             label="Name"
                             value={formData.name}
+                            variant="standard"
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             className="channel-overview-page__input channel-overview-page__input--name"
                             sx={{
@@ -277,125 +278,119 @@ const ChannelOverview = () => {
                         />
 
                         <TextField
+                            id="filled-read-only-input"
+                            variant="filled"
+                            slotProps={{
+                                input: {
+                                    readOnly: true,
+                                },
+                            }}
                             label="Status"
                             value={formData.status}
-                            disabled
                             className="channel-overview-page__input channel-overview-page__input--status"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    backgroundColor: '#77898e9d',
-                                }
-                            }}
+
                         />
                     </div>
 
                     {/* Category and Subcategory Row */}
                     <div className="channel-overview-page__row">
-                        <FormControl className="channel-overview-page__select">
-                            <InputLabel >
-                                Category
-                            </InputLabel>
-                            <Select
-                                value={selectedCategory}
-                                onChange={(e) => handleCategoryChange(e.target.value as number)}
-                                sx={{
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#999999' },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#999999' },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#999999' },
-                                    '& .MuiSvgIcon-root': { color: 'white' }
-                                }}
-                            >
-                                {mockPodcastCategories.map((category) => (
-                                    <MenuItem 
-                                    key={category.Id} 
-                                    value={category.Id} 
-                                     sx={{
-                                    '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
+                        <TextField
+                            select
+                            label="Category"
+                            variant="standard"
+                            value={selectedCategory}
+                            onChange={(e) => handleCategoryChange(e.target.value as unknown as number)}
+                            className="channel-overview-page__select"
+                        >
+                            {mockPodcastCategories.map((category) => (
+                                <MenuItem
+                                    key={category.Id}
+                                    value={category.Id}
+                                    sx={{
+                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
 
-                                }}
-                                    >
-                                        {category.Name}
+                                    }}
+                                >
+                                    {category.Name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                        <TextField
+                            select
+                            label="Subcategory"
+                            variant="standard"
+                            value={selectedSubCategory}
+                            onChange={(e) => setSelectedSubCategory(e.target.value as unknown as number)}
+                            className="channel-overview-page__select"
+                        >
+                            {getSubCategoriesForCategory(selectedCategory).length > 0 ? (
+                                getSubCategoriesForCategory(selectedCategory).map((subCategory) => (
+                                    <MenuItem key={subCategory.Id} value={subCategory.Id}>
+                                        {subCategory.Name}
                                     </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-
-                        <FormControl className="channel-overview-page__select">
-                            <InputLabel sx={{ color: '#888', '&.Mui-focused': { color: 'var(--primary-green)' } }}>
-                                Sub Category
-                            </InputLabel>
-                            <Select
-                                value={selectedSubCategory}
-                                onChange={(e) => setSelectedSubCategory(e.target.value as number)}
-                                sx={{
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#999999' },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#999999' },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#999999' },
-                                    '& .MuiSvgIcon-root': { color: 'white' }
-                                }}
-                            >
-                                {getSubCategoriesForCategory(selectedCategory).length > 0 ? (
-                                    getSubCategoriesForCategory(selectedCategory).map((subCategory) => (
-                                        <MenuItem key={subCategory.Id} value={subCategory.Id}>
-                                            {subCategory.Name}
-                                        </MenuItem>
-                                    ))
-                                ) : (
-                                    <MenuItem value={0} disabled>
-                                        --
-                                    </MenuItem>
-                                )}
-                            </Select>
-                        </FormControl>
+                                ))
+                            ) : (
+                                <MenuItem value={0} disabled>
+                                    --
+                                </MenuItem>
+                            )}
+                        </TextField>
                     </div>
 
                     {/* Dates and Numbers Row */}
                     <div className="channel-overview-page__row">
                         <TextField
+                            variant="filled"
+                            slotProps={{
+                                input: {
+                                    readOnly: true,
+                                },
+                            }}
                             label="Created At"
                             type="date"
                             value={formData.createdAt}
-                            disabled
                             className="channel-overview-page__input-small"
-                            sx={{
-                                  '& .MuiOutlinedInput-root': {
-                                    backgroundColor: '#77898e9d',
-                                }
-                            }}
+
                         />
                         <TextField
+                            id="filled-helperText"
+                            variant="filled"
+                            slotProps={{
+                                input: {
+                                    readOnly: true,
+                                },
+                            }}
                             label="Updated At"
                             type="date"
                             value={formData.updatedAt}
-                            disabled
                             className="channel-overview-page__input-small"
-                            sx={{
-                               '& .MuiOutlinedInput-root': {
-                                    backgroundColor: '#77898e9d',
-                                }
-                            }}
+
                         />
                         <TextField
+                            id="filled-helperText"
+                            variant="filled"
+                            slotProps={{
+                                input: {
+                                    readOnly: true,
+                                },
+                            }}
                             label="Total Favorite"
                             value={formData.totalFavorites}
-                            disabled
                             className="channel-overview-page__input-small"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    backgroundColor: '#77898e9d',
-                                }
-                            }}
+
                         />
                         <TextField
+                            id="filled-helperText"
+                            variant="filled"
+                            slotProps={{
+                                input: {
+                                    readOnly: true,
+                                },
+                            }}
                             label="Listen Count"
                             value={formData.listenCount}
-                            disabled
                             className="channel-overview-page__input-small"
-                            sx={{
-                               '& .MuiOutlinedInput-root': {
-                                    backgroundColor: '#77898e9d',
-                                }
-                            }}
+
                         />
                     </div>
 
@@ -486,6 +481,7 @@ const ChannelOverview = () => {
                             Change Artwork
                         </Button>
                     </div>
+                    
                     <input
                         type="file"
                         ref={fileInputRef}

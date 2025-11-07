@@ -42,10 +42,12 @@
             flex-shrink: 0;
 
             &-logo {
-                height: 45px;
-                width: auto;
-                object-fit: contain;
-                max-width: 100%;
+                // height: 45px;
+                // width:45px;
+                // border-radius: 9999px;
+                // max-width: 100%;
+                // object-fit: cover;
+                margin-right: 8px;
             }
 
             &-text {
@@ -79,7 +81,7 @@
             &-container {
                 position: relative;
                 border-radius: 50px;
-                background-color: #161616;
+                background-color: #282828;
                 width: 100%;
                 max-width: 600px;
 
@@ -363,6 +365,22 @@
             color: #FF9800;
         }
     }
+}
+.MuiBox-root {
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--secondary-grey);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--primary-green);
+    border-radius: 4px;
+  }
+
+
 }
 
 @media (max-width: 768px) {

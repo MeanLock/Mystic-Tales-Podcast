@@ -13,7 +13,7 @@
 }
 
 .app-layout {
-  background-color: app_vars.$background-color-primary;
+  background-color: var(--primary-grey);
 }
 
 .logo {

@@ -6,11 +6,12 @@
 
     &__title {
         color: white !important;
-        font-weight: bold !important;
-        font-size: 2.5rem !important;
+        font-weight: 700;
+        font-size: 32px;
         margin-bottom: 2rem;
         text-align: left;
-
+        letter-spacing: 1px;
+        font-family: 'inter', sans-serif !important;
     }
 
     &__actions {
@@ -92,30 +93,50 @@
     }
 
     &__input {
-        .MuiInputBase-input {
-            color: white;
-            font-family: 'inter', sans-serif !important;
-
-        }
-
-        .MuiInputLabel-root {
-            color: var(--primary-green);
-        }
 
         &--name {
             flex: 2;
             min-width: 300px;
+
+            .MuiInputLabel-root {
+                color: var(--third-grey);
+            }
+
+            .MuiInputBase-root {
+                color: white;
+                font-family: 'inter', sans-serif !important;
+
+                &::before {
+                    border-bottom: 1px solid var(--third-grey);
+                }
+
+                &:hover:not(.Mui-disabled):before {
+                    border-bottom: 1.5px solid var(--primary-green);
+                }
+
+                &::after {
+                    border-bottom: 1.5px solid var(--primary-green);
+                }
+
+            }
         }
 
         &--status {
             flex: 1;
             min-width: 120px;
-            color: white;
 
-            .css-1h10i36-MuiInputBase-input-MuiOutlinedInput-input.Mui-disabled {
-                -webkit-text-fill-color: rgba(222, 222, 222, 0.75);
+            .MuiInputLabel-root {
+                color: var(--third-grey);
+                font-size: 0.9rem;
             }
 
+            .MuiInputBase-root {
+                color: var(--white-75);
+
+                &::after {
+                    border-bottom: none;
+                }
+            }
 
         }
     }
@@ -124,36 +145,51 @@
         flex: 1;
         min-width: 200px;
 
-        .MuiSelect-select {
-            color: white;
+        .MuiInputLabel-root {
+            color: var(--third-grey);
+
         }
 
-        .MuiInputLabel-root {
-            color: var(--primary-green);
-            padding-bottom: 50px;
+        .MuiInputBase-root {
+            color: white;
+            font-family: 'inter', sans-serif !important;
 
-            &.Mui-focused {
+            &::before {
+                border-bottom: 1px solid var(--third-grey);
+            }
+
+            &:hover:not(.Mui-disabled):before {
+                border-bottom: 1.5px solid var(--primary-green);
+            }
+
+            &::after {
+                border-bottom: 1.5px solid var(--primary-green);
+            }
+
+            .MuiSvgIcon-root {
                 color: var(--primary-green);
             }
+
         }
+
     }
 
     &__input-small {
         flex: 1;
         min-width: 120px;
 
-        .MuiInputBase-input {
-            color: white;
-            font-family: 'inter', sans-serif !important;
-
-        }
-
         .MuiInputLabel-root {
-            color: var(--primary-green);
+            color: var(--third-grey);
+            font-size: 0.875rem;
         }
 
-        .css-1h10i36-MuiInputBase-input-MuiOutlinedInput-input.Mui-disabled {
-            -webkit-text-fill-color: rgba(222, 222, 222, 0.75);
+        .MuiInputBase-root {
+            color: var(--white-75);
+            font-size: 0.9rem;
+
+            &::after {
+                border-bottom: none;
+            }
         }
 
     }
