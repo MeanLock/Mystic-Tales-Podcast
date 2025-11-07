@@ -236,63 +236,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             return violationLevel;
         }
 
-        public async Task<AccountStatusCache> QueryAccountStatusCacheById(int accountId)
-        {
-            var batchRequest = new BatchQueryRequest
-            {
-                Queries = new List<BatchQueryItem>
-                {
-                    new BatchQueryItem
-                    {
-                        Key = "account",
-                        QueryType = "findbyid",
-                        EntityType = "Account",
-                        Parameters = JObject.FromObject(new
-                        {
-                            id = accountId,
-                            include = "PodcasterProfile"
-                        }),
-                        Fields = new[] {
-                            "Id",
-                            "Email",
-                            "Password",
-                            "RoleId",
-                            "FullName",
-                            "Dob",
-                            "Gender",
-                            "Address",
-                            "Phone",
-                            "Balance",
-                            "MainImageFileKey",
-                            "IsVerified",
-                            "GoogleId",
-                            "VerifyCode",
-                            "PodcastListenSlot",
-                            "ViolationPoint",
-                            "ViolationLevel",
-                            "LastViolationPointChanged",
-                            "LastViolationLevelChanged",
-                            "LastPodcastListenSlotChanged",
-                            "DeactivatedAt",
-                            "CreatedAt",
-                            "UpdatedAt",
-                            "PodcasterProfile",
-                        }
-                    }
-                }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
-            if (result.Results["account"] == null) return null;
-
-
-            var accountStatusCache = (result.Results["account"] as JObject).ToObject<AccountStatusCache>();
-            var podcasterProfile = result.Results["account"]["PodcasterProfile"] as JObject;
-            accountStatusCache.HasVerifiedPodcasterProfile = accountStatusCache.RoleId == 1 && podcasterProfile != null && podcasterProfile["IsVerified"]?.ToObject<bool>() == true ? true : false;
-            Console.WriteLine($"Queried Account: Id={accountStatusCache.Id}, RoleId={accountStatusCache.RoleId}, IsVerified={accountStatusCache.IsVerified}, DeactivatedAt={accountStatusCache.DeactivatedAt}, HasVerifiedPodcasterProfile={accountStatusCache.HasVerifiedPodcasterProfile}");
-            return accountStatusCache;
-        }
-
-
         /////////////////////////////////////////////////////////////
 
         #region Sample coding format must be followed

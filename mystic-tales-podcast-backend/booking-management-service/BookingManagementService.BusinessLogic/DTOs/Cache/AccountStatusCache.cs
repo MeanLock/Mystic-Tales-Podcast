@@ -16,7 +16,9 @@ namespace BookingManagementService.BusinessLogic.DTOs.Cache
         public string? PodcasterProfileName { get; set; }
         public bool? PodcasterProfileIsVerified { get; set; }
         public bool HasVerifiedPodcasterProfile { get; set; }
-
+        
+        [JsonConverter(typeof(NullableDateTimeJsonConverter))]
+        public required DateTime? PodcasterProfileVerifiedAt { get; set; }
 
         [JsonConverter(typeof(NullableDateTimeJsonConverter))]
         public DateTime? LastViolationPointChanged { get; set; }

@@ -998,6 +998,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         ViolationPoint = account.ViolationPoint,
                         PodcasterProfileName = account.PodcasterProfile != null ? account.PodcasterProfile.Name : null,
                         PodcasterProfileIsVerified = account.PodcasterProfile != null ? account.PodcasterProfile.IsVerified : null,
+                        PodcasterProfileVerifiedAt = account.PodcasterProfile != null ? account.PodcasterProfile.VerifiedAt : null,
                         HasVerifiedPodcasterProfile = account.RoleId == 1 && account.PodcasterProfile != null && account.PodcasterProfile.IsVerified == true ? true : false
                     },
                     // set cache expiry to 1 hour (khi hết hạn key-value này sẽ bị xoá khỏi redis)
