@@ -104,6 +104,8 @@ CREATE TABLE BookingPodcastTrack (
     audioFileKey NVARCHAR(MAX) NOT NULL,
     audioFileSize FLOAT NOT NULL,
     audioLength INT NOT NULL,
+    audioEncryptionKeyId UNIQUEIDENTIFIER NULL DEFAULT NULL,
+    audioEncryptionKeyFileKey NVARCHAR(MAX) NULL DEFAULT NULL,
     remainingPreviewListenSlot INT NOT NULL,
     bookingRequirementId UNIQUEIDENTIFIER NOT NULL,
     FOREIGN KEY (bookingId) REFERENCES Booking(id),

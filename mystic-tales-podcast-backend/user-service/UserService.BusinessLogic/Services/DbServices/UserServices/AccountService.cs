@@ -1641,6 +1641,14 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     }
 
                     podcasterProfile.IsVerified = verifyPodcasterParameterDTO.IsVerified;
+                    if (podcasterProfile.IsVerified == true)
+                    {
+                        podcasterProfile.VerifiedAt = _dateHelper.GetNowByAppTimeZone();
+                    }
+                    else
+                    {
+                        podcasterProfile.VerifiedAt = null;
+                    }
                     await _podcasterProfileGenericRepository.UpdateAsync(podcasterProfile.AccountId, podcasterProfile);
                     await transaction.CommitAsync();
 

@@ -35,5 +35,7 @@ public partial class PodcasterProfile
 
     public decimal? PricePerBookingWord { get; set; }
 
+    public DateTime? VerifiedAt { get; set; }
+
     public virtual Account Account { get; set; } = null!;
 }

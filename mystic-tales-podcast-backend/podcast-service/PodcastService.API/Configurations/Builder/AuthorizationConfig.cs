@@ -25,6 +25,7 @@ namespace PodcastService.API.Configurations.Builder
             builder.Services.AddScoped<IAuthorizationHandler, AccountNoViolationAccessHandler>();
             builder.Services.AddScoped<IAuthorizationHandler, AccountPodcasterAccessHandler>();
             builder.Services.AddScoped<IAuthorizationHandler, AccountOptionalAccessHandler>();
+            builder.Services.AddScoped<IAuthorizationHandler, AdminStaffBasicAccessOrCustomerPodcasterAccessHandler>();
         }
 
         public static void AddDefaultAuthorization(this WebApplicationBuilder builder)
@@ -91,7 +92,10 @@ namespace PodcastService.API.Configurations.Builder
                     policy.Requirements.Add(new AccountNoViolationAccessRequirement());
                     policy.Requirements.Add(new AccountPodcasterAccessRequirement());
                 });
-
+                options.AddPolicy("AdminOrStaff.BasicAccess.Customer.PodcasterAccess", policy =>
+                {
+                    policy.Requirements.Add(new AdminStaffBasicAccessOrCustomerPodcasterAccessRequirement());
+                });
 
 
             });

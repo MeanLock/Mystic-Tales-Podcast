@@ -214,6 +214,33 @@ namespace PodcastService.API.Controllers.BaseControllers
             });
         }
 
+        // /api/podcast-service/api/episodes/podcast-episode-license-types
+        [HttpGet("podcast-episode-license-types")]
+        public async Task<IActionResult> GetPodcastEpisodeLicenseTypes()
+        {
+            var licenseTypes = await _podcastEpisodeService.GetPodcastEpisodeLicenseTypesAsync();
+
+            return Ok(new
+            {
+                PodcastEpisodeLicenseTypeList = licenseTypes
+            });
+        }
+
+        // /api/podcast-service/api/episodes/{PodcastEpisodeId}/licenses
+        [HttpGet("{PodcastEpisodeId}/licenses")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess.Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetEpisodeLicensesById(Guid PodcastEpisodeId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var episodeLicenses = await _podcastEpisodeService.GetEpisodeLicensesByIdAsync(PodcastEpisodeId, account);
+
+            return Ok(new
+            {
+                PodcastEpisodeLicenseList = episodeLicenses
+            });
+        }
+
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/licenses
         [HttpPost("{PodcastEpisodeId}/licenses")]
         [Authorize(Policy = "Customer.PodcasterAccess")]

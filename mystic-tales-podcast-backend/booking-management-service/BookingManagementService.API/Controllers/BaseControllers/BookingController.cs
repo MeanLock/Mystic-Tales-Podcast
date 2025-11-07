@@ -419,7 +419,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen
-        [HttpPut("{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen")]
+        [HttpGet("{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> MarkBookingPodcastTrackAsListened(int BookingId, Guid BookingPodcastTrackId)
         {

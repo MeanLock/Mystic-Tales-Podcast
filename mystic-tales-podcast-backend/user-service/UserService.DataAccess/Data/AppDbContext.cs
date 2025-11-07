@@ -342,6 +342,10 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("updatedAt");
             entity.Property(e => e.UsedBookingStorageSize).HasColumnName("usedBookingStorageSize");
+            entity.Property(e => e.VerifiedAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime")
+                .HasColumnName("verifiedAt");
 
             entity.HasOne(d => d.Account).WithOne(p => p.PodcasterProfile)
                 .HasForeignKey<PodcasterProfile>(d => d.AccountId)

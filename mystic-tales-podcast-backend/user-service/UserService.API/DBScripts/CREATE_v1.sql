@@ -63,6 +63,7 @@ CREATE TABLE PodcasterProfile (
     usedBookingStorageSize FLOAT NOT NULL,
     isVerified BIT NULL DEFAULT NULL,
     pricePerBookingWord DECIMAL(18,2) NULL DEFAULT NULL,
+    verifiedAt DATETIME NULL DEFAULT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (accountId) REFERENCES Account(id)
@@ -339,6 +340,8 @@ CREATE TABLE BookingPodcastTrack (
     audioFileKey NVARCHAR(MAX) NOT NULL,
     audioFileSize FLOAT NOT NULL,
     audioLength INT NOT NULL,
+    audioEncryptionKeyId UNIQUEIDENTIFIER NULL DEFAULT NULL,
+    audioEncryptionKeyFileKey NVARCHAR(MAX) NULL DEFAULT NULL,
     remainingPreviewListenSlot INT NOT NULL,
     bookingRequirementId UNIQUEIDENTIFIER NOT NULL,
     FOREIGN KEY (bookingId) REFERENCES Booking(id),

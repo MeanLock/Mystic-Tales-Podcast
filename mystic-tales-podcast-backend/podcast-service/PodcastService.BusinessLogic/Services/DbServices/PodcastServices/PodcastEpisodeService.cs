@@ -797,7 +797,81 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
 
         /////////////////////////////////////////////////////////////
+        public async Task<List<PodcastEpisodeLicenseTypeDTO>> GetPodcastEpisodeLicenseTypesAsync()
+        {
+            try
+            {
+                var episodeLicenseTypes = await _podcastEpisodeLicenseTypeGenericRepository.FindAll().ToListAsync();
+                var episodeLicenseTypeList = episodeLicenseTypes.Select(pelt => new PodcastEpisodeLicenseTypeDTO
+                {
+                    Id = pelt.Id,
+                    Name = pelt.Name,
+                }).ToList();
 
+                return episodeLicenseTypeList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get podcast episode license types failed, error: " + ex.Message);
+            }
+        }
+        public async Task<List<PodcastEpisodeLicenseListItemResponseDTO>> GetEpisodeLicensesByIdAsync(Guid episodeId, AccountStatusCache requestingAccount)
+        {
+            try
+            {
+                var existingEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(
+                    id: episodeId,
+                    includeFunc: q => q
+                        .Include(pe => pe.PodcastShow)
+                );
+                if (existingEpisode == null)
+                {
+                    throw new Exception("Podcast episode with id " + episodeId + " does not exist");
+                }else if (existingEpisode.DeletedAt != null)
+                {
+                    throw new Exception("Podcast episode with id " + episodeId + " has been deleted");
+                }
+
+                if (existingEpisode.PodcastShow == null)
+                {
+                    throw new Exception("Podcast show with id " + existingEpisode.PodcastShowId + " does not exist");
+                }
+                else if (existingEpisode.PodcastShow.DeletedAt != null)
+                {
+                    throw new Exception("Podcast show with id " + existingEpisode.PodcastShowId + " has been deleted");
+                }else if (requestingAccount.RoleId == (int) RoleEnum.Customer && existingEpisode.PodcastShow.PodcasterId != requestingAccount.Id)
+                {
+                    throw new Exception("Podcast show with id " + existingEpisode.PodcastShowId + " does not belong to podcaster with id " + requestingAccount.Id);
+                }
+
+                var episodeLicenses = await _podcastEpisodeLicenseGenericRepository.FindAll(
+                    predicate: pel => pel.PodcastEpisodeId == episodeId,
+                    includeFunc: q => q
+                        .Include(pel => pel.PodcastEpisodeLicenseType)
+                ).ToListAsync();
+
+                var episodeLicenseList = episodeLicenses.Select(pel => new PodcastEpisodeLicenseListItemResponseDTO
+                {
+                    Id = pel.Id,
+                    PodcastEpisodeId = pel.PodcastEpisodeId,
+                    PodcastEpisodeLicenseType = new PodcastEpisodeLicenseTypeDTO
+                    {
+                        Id = pel.PodcastEpisodeLicenseType.Id,
+                        Name = pel.PodcastEpisodeLicenseType.Name,
+                    },
+                    LicenseDocumentFileKey = pel.LicenseDocumentFileKey,
+                    CreatedAt = pel.CreatedAt
+                }).ToList();
+
+                return episodeLicenseList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get episode licenses by id failed, error: " + ex.Message);
+            }
+        }
 
         public async Task<EpisodeDetailResponseDTO> GetEpisodeByIdAsync(Guid episodeId, int? role)
         {

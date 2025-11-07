@@ -209,7 +209,7 @@ namespace SystemConfigurationService.Infrastructure.Services.AWS.S3
                 {
                     fileKey = await GetFullFileKeyAsync(folderPath + "/" + fileNameWithoutExt);
                 }
-                
+
                 while (!string.IsNullOrEmpty(fileKey))
                 {
                     var deleteRequest = new DeleteObjectRequest
@@ -356,6 +356,88 @@ namespace SystemConfigurationService.Infrastructure.Services.AWS.S3
             {
                 _logger.LogError($"Unknown error copying file: {e.Message}");
                 throw new HttpRequestException("Error copying file: " + e.Message.ToString());
+            }
+        }
+
+        public async Task CopyFolderToFolderAsync(string sourceFolderPath, string destinationFolderPath)
+        {
+            try
+            {
+                // Ensure folder paths end with '/' for S3 prefix matching
+                string sourcePrefix = sourceFolderPath.TrimEnd('/') + "/";
+                string destPrefix = destinationFolderPath.TrimEnd('/') + "/";
+
+                _logger.LogInformation($"Starting S3 folder copy from '{sourcePrefix}' to '{destPrefix}'");
+
+                var objectsToCopy = new List<string>();
+                string? continuationToken = null;
+
+                // List all objects with source prefix (handle pagination)
+                do
+                {
+                    var listRequest = new ListObjectsV2Request
+                    {
+                        BucketName = _bucketName,
+                        Prefix = sourcePrefix,
+                        ContinuationToken = continuationToken
+                    };
+
+                    var listResponse = await _s3Client.ListObjectsV2Async(listRequest);
+
+                    // Add all object keys to the list
+                    foreach (var s3Object in listResponse.S3Objects)
+                    {
+                        objectsToCopy.Add(s3Object.Key);
+                    }
+
+                    continuationToken = listResponse.IsTruncated ? listResponse.NextContinuationToken : null;
+
+                } while (continuationToken != null);
+
+                if (objectsToCopy.Count == 0)
+                {
+                    _logger.LogWarning($"No objects found with prefix '{sourcePrefix}'");
+                    return;
+                }
+
+                _logger.LogInformation($"Found {objectsToCopy.Count} objects to copy");
+
+                // Copy each object
+                foreach (var sourceKey in objectsToCopy)
+                {
+                    try
+                    {
+                        // Replace source prefix with destination prefix
+                        string relativePath = sourceKey.Substring(sourcePrefix.Length);
+                        string destKey = destPrefix + relativePath;
+
+                        // Copy object in S3
+                        var copyRequest = new CopyObjectRequest
+                        {
+                            SourceBucket = _bucketName,
+                            SourceKey = sourceKey,
+                            DestinationBucket = _bucketName,
+                            DestinationKey = destKey,
+                            MetadataDirective = S3MetadataDirective.COPY // Preserve metadata
+                        };
+
+                        await _s3Client.CopyObjectAsync(copyRequest);
+
+                        _logger.LogDebug($"Copied S3 object: {sourceKey} -> {destKey}");
+                    }
+                    catch (AmazonS3Exception s3Ex)
+                    {
+                        _logger.LogError(s3Ex, $"Failed to copy S3 object: {sourceKey}");
+                        // Continue with next object instead of throwing
+                    }
+                }
+
+                _logger.LogInformation($"Successfully copied {objectsToCopy.Count} objects from '{sourcePrefix}' to '{destPrefix}'");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error copying folder from {sourceFolderPath} to {destinationFolderPath}");
+                throw new Exception($"Error copying S3 folder: {ex.Message}");
             }
         }
 

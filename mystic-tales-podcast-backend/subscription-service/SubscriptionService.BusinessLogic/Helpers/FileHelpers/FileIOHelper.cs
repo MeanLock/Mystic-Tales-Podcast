@@ -111,6 +111,24 @@ namespace SubscriptionService.BusinessLogic.Helpers.FileHelpers
             await _localBinaryFileHelper.CopyFileToFileAsync(sourceLocalPath, destLocalPath);
         }
 
+        public async Task CopyFolderToFolderAsync(string sourceFolderPath, string destinationFolderPath)
+        {
+            if (_appConfig.FILE_STORAGE_SRC == "awsS3")
+            {
+                var normalizedSourcePath = FilePathHelper.NormalizeFolderPath(sourceFolderPath);
+                var normalizedDestPath = FilePathHelper.NormalizeFolderPath(destinationFolderPath);
+
+                await _awsS3BinaryFileService.CopyFolderToFolderAsync(normalizedSourcePath, normalizedDestPath);
+                return;
+            }
+
+            // For local storage
+            var sourceLocalPath = FilePathHelper.NormalizeFolderPath(sourceFolderPath);
+            var destLocalPath = FilePathHelper.NormalizeFolderPath(destinationFolderPath);
+            Console.WriteLine($"Copying folder from {sourceLocalPath} to {destLocalPath}");
+            await _localBinaryFileHelper.CopyFolderToFolderAsync(sourceLocalPath, destLocalPath);
+        }
+
 
         public async Task DeleteFolderAsync(string folderPath)
         {
