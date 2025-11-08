@@ -1,7 +1,17 @@
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BookingFromAPI } from "@/core/types/booking";
 import { useState } from "react";
-
+import "./styles.css";
+import BookingCard from "./components/BookingCard";
 const mockBookingsData: BookingFromAPI[] = [
   {
     Id: 1,
@@ -191,34 +201,100 @@ const mockBookingsData: BookingFromAPI[] = [
   },
 ];
 
+const ITEMS_PER_PAGE = 4;
+
 const BookingsPage = () => {
-  // STATES
-  const [bookings, setBookings] = useState<BookingFromAPI[]>([]);
-  const [numberOfShowing, setNumberOfShowing] = useState(5);
-  const [currentBooking, setCurrentBooking] = useState<BookingFromAPI | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  // HOOKS
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // FUNCTIONS
+  const totalPages = Math.ceil(mockBookingsData.length / ITEMS_PER_PAGE);
+
+  // Tính toán index bắt đầu và kết thúc
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+
+  // Dữ liệu hiển thị theo trang
+  const currentBookings = mockBookingsData.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* Title */}
-      <p className="text-5xl m-8 font-bold font-poppins text-white">
-        Your Bookings
-      </p>
+    <div className="w-full h-full flex flex-col  text-white overflow-hidden rounded-3xl">
+      {/* HEADER */}
+      <div className="h-24 flex items-center px-8 text-4xl font-bold rounded-t-3xl">
+        Bookings
+      </div>
 
-      {/* Contents here */}
-      <div className="w-full flex-1 bg-blue-200 relative">
-        {/* Action Bar */}
-        <div className="w-full absolute top-0 z-50 h-24 px-5 bg-red-200/50 flex items-center text-white font-bold text-lg">
-          Actions Bar
+      {/* ACTION BAR */}
+      <div className="h-16 bg-white text-black flex items-center px-6 font-bold text-lg shadow-[5px_5px_10px_#0000005c]">
+        Action Bar
+      </div>
+
+      {/* MAIN CONTENT */}
+      <div className="flex-1 flex flex-col min-h-0 ">
+        {/* TABLE HEADER */}
+        <div className="grid grid-cols-12 items-center px-6 py-3 font-semibold  text-[#d9d9d9] sticky top-0 z-10">
+          <div className="col-span-1 pl-3">Id</div>
+          <div className="col-span-3">Title</div>
+          <div className="col-span-2">Podcaster Name</div>
+          <div className="col-span-1">Price (VND)</div>
+          <div className="col-span-2 text-center">Deadline</div>
+          <div className="col-span-2 text-center">Status</div>
+          <div className="col-span-1 text-center"></div>
         </div>
 
-        {/* Booking Cards */}
-        <div className="w-full pt-24 h-full bg-green-200 flex flex-col items-center px-3 gap-5">
-          <Skeleton className="w-full h-20" />
+        {/* TABLE BODY */}
+        <div
+          id="scrollbar-hide"
+          className="flex-1 overflow-y-auto px-3 py-4 space-y-7 min-h-0"
+        >
+          {currentBookings.map((b) => (
+            <BookingCard key={b.Id} booking={b} />
+          ))}
+        </div>
+
+        {/* PAGINATION */}
+        <div className="h-20 flex items-center justify-center rounded-b-3xl text-white">
+          <Pagination>
+            <PaginationContent>
+              {/* PREV */}
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="pagination-link"
+                />
+              </PaginationItem>
+
+              {/* NUMBERS */}
+              {Array.from({ length: totalPages }).map((_, index) => (
+                <PaginationItem key={index}>
+                  <PaginationLink
+                    href="#"
+                    isActive={currentPage === index + 1}
+                    onClick={() => handlePageChange(index + 1)}
+                    className={`pagination-link ${
+                      currentPage === index + 1 ? "bg-white/20 font-bold" : ""
+                    }`}
+                  >
+                    {index + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+
+              {/* NEXT */}
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="pagination-link"
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       </div>
     </div>

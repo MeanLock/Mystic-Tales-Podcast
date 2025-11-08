@@ -494,6 +494,22 @@ const PodcasterDetailsPage = () => {
     setShows(MockPodcasterShows);
   }, []);
 
+  const handleCreateBooking = () => {
+    // store a small podcaster object as a JSON string in localStorage
+    const payload = {
+      Id: PodcasterDetails.Id,
+      FullName: PodcasterDetails.FullName,
+      ImageUrl: PodcasterDetails.ImageUrl,
+    };
+    try {
+      localStorage.setItem("selectedPodcaster", JSON.stringify(payload));
+      navigate("/media-player/management/bookings/create");
+    } catch (e) {
+      // storage may be full or unavailable in some privacy modes
+      console.error("Failed to save selected podcaster to localStorage", e);
+    }
+  };
+
   return (
     <div className="w-full flex flex-col">
       <div className="w-full flex items-center px-5 py-2">
@@ -550,7 +566,10 @@ const PodcasterDetailsPage = () => {
                 </div>
               )}
               {isBookingAvailable && (
-                <div className="px-5 h-[30px] bg-mystic-green text-black cursor-pointer transition-all hover:-translate-y-1 ease-in-out duration-500 flex items-center justify-center rounded-full font-bold">
+                <div
+                  onClick={() => handleCreateBooking()}
+                  className="px-5 h-[30px] bg-mystic-green text-black cursor-pointer transition-all hover:-translate-y-1 ease-in-out duration-500 flex items-center justify-center rounded-full font-bold"
+                >
                   <p>Book This Podcaster</p>
                 </div>
               )}

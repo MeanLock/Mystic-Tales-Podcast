@@ -11,7 +11,7 @@ export type BookingFromAPI = {
   BookingAutoCancelReason: string | null;
   CreatedAt: string; //ISO String
   UpdatedAt: string; //ISO String
-  CurrentStatus: BookingStatusType
+  CurrentStatus: BookingStatusType;
 };
 
 export type BookingStatusType =
@@ -27,3 +27,95 @@ export type BookingStatusType =
   | { Id: 10; Name: "Podcast Buddy Cancel Request" }
   | { Id: 11; Name: "Cancelled Automatically" }
   | { Id: 12; Name: "Cancelled Manually" };
+
+export type BookingDetails = {
+  Id: number;
+  Title: string;
+  Description: string;
+  AccountId: number;
+  PodcasterId: number;
+  Price: number;
+  Deadline: string;
+  DemoAudioFileKey: string;
+  BookingManualCancelledReason: string | null;
+  BookingAutoCancelReason: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
+  BookingRequirementFileList: {
+    Id: string;
+    BookingId: number;
+    Name: string;
+    Description: string;
+    RequirementDocumentFileKey: string;
+    Order: number;
+    WordCount: number;
+    PodcastBookingTone: {
+      Id: string;
+      Name: string;
+      Description: string;
+      PodcastBookingToneCategory: PodcastBookingToneCategoryType;
+      CreatedAt: string;
+      UpdatedAt: string;
+    };
+  }[];
+  BookingProducingRequestList: {
+    Id: string;
+    BookingId: number;
+    Note: string | null;
+    Deadline: string;
+    IsAccepted: boolean;
+    FinishedAt: string | null;
+    RejectReason: string | null;
+    CreatedAt: string;
+  }[];
+  CurrentStatus: {
+    Id: number;
+    Name: string;
+  };
+};
+
+export type PodcastBookingToneCategoryType = {
+  Id: number;
+  Name: string;
+};
+
+export type PodcastBookingToneType = {
+  Id: string;
+  Name: string;
+  Description: string;
+  PodcastBookingToneCategory: PodcastBookingToneCategoryType;
+};
+
+export type PodcastBuddyFromAPI = {
+  PodcastBuddyProfile: {
+    AccountId: number;
+    Name: string;
+    Description: string;
+    MainImageFileKey: string;
+    AverageRating: number;
+    RatingCount: number;
+    TotalFollow: number;
+    ListenCount: number;
+    PricePerBookingWord: number;
+    BuddyAudioFileKey: string;
+    IsVerified: boolean;
+    PodcastBuddyBookingTone: PodcastBookingToneType[];
+  };
+};
+
+export type PodcastBuddyUI = {
+  PodcastBuddyProfile: {
+    AccountId: number;
+    Name: string;
+    Description: string;
+    ImageUrl: string;
+    AverageRating: number;
+    RatingCount: number;
+    TotalFollow: number;
+    ListenCount: number;
+    PricePerBookingWord: number;
+    BuddyAudioFileKey: string;
+    IsVerified: boolean;
+    PodcastBuddyBookingTone: PodcastBookingToneType[];
+  };
+};

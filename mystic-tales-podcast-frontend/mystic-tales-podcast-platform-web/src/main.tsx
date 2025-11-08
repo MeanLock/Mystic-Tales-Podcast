@@ -39,6 +39,7 @@ import ManagementSubscriptionsPage from "./pages/mediaPlayer/management/transact
 import ProfilePage from "./pages/mediaPlayer/management/profile/index.tsx";
 import ChannelDetailsPage from "./pages/mediaPlayer/channels/details/index.tsx";
 import ShowDetailsPage from "./pages/mediaPlayer/shows/details/index.tsx";
+import CreateBookingPage from "./pages/mediaPlayer/management/booking/create/index.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -166,6 +167,10 @@ createRoot(document.getElementById("root")!).render(
 
               {/* Management */}
               <Route path="management/bookings" element={<BookingsPage />} />
+              <Route
+                path="management/bookings/create"
+                element={<CreateBookingPage />}
+              />
               <Route path="management/profile" element={<ProfilePage />} />
               <Route
                 path="management/bookings/:id"
