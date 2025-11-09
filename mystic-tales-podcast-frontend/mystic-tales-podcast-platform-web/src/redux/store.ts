@@ -20,6 +20,7 @@ import {
 // Gộp reducers trước khi persist
 const rootReducer = combineReducers({
   [appApi.reducerPath]: appApi.reducer,
+
   auth: authReducer,
   player: mediaPlayerReducer,
   // ...reducers khác

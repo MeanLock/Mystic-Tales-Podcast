@@ -266,7 +266,7 @@ export const podcastBookingTones: PodcastBookingToneType[] = [
 
   // --- GIỌNG ĐẶC BIỆT / TRUNG TÍNH ---
   {
-    Id: "41",
+    Id: "D897BF05-A002-4F05-8BFB-009FBF90A360",
     Name: "Giọng kể truyện cổ tích",
     Description: "Nhấn nhá nhẹ, êm, hợp podcast cho trẻ em",
     PodcastBookingToneCategory: podcastBookingToneCategories[2],

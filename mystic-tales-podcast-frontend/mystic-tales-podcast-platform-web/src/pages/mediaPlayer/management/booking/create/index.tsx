@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import PodcastBuddySelectComponent from "./components/PodcastBuddySelect";
 import Loading from "@/components/loading";
 import BookingForm from "./components/BookingForm";
+import { useCreateMutation } from "@/core/services/booking/booking.service";
 
 export type BookingRequirementInfo = {
   Name: string;
@@ -62,12 +63,14 @@ const CreateBookingPage = () => {
     useState<number>(1);
 
   // UI management states
-  const [isFormValid, setIsFormValid] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  // submission state is provided by the RTK hook (createBooking)
   // Loading & Error States
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Loading & Error States
   const [notFoundPodcasterError, setNotFoundPodcasterError] =
     useState<boolean>(false);
+
+  const [createBooking] = useCreateMutation();
 
   // HOOKS
   useEffect(() => {
@@ -156,8 +159,11 @@ const CreateBookingPage = () => {
   };
 
   const handleSubmit = async () => {
-    // mark submitting
-    setIsSubmitting(true);
+    // basic validation
+    if (!selectedBuddy) {
+      alert("Please select a podcast buddy before submitting.");
+      return;
+    }
 
     console.log(
       "Parent bookingRequirements before submit:",
@@ -207,41 +213,57 @@ const CreateBookingPage = () => {
         Title: bookingTitle,
         DeadlineDayCount: bookingDeadlineDayCount,
         Description: bookingDescription,
-        PodcastBuddyId: selectedBuddy?.PodcastBuddyProfile.AccountId,
+        // selectedBuddy?.PodcastBuddyProfile.AccountId
+        PodcastBuddyId: 2,
         BookingRequirementInfo: transformedRequirements,
       },
       BookingRequirementFiles: bookingFiles,
     };
 
-    // Create FormData if backend expects multipart; attach JSON + files
-    const formData = new FormData();
-    formData.append(
-      "BookingCreateInfo",
-      JSON.stringify(payload.BookingCreateInfo)
-    );
-    bookingFiles.forEach((f) =>
-      formData.append("BookingRequirementFiles", f, f.name)
-    );
+    try {
+      // Ensure PodcastBuddyId is a number
+      const safePayload = {
+        ...payload,
+        BookingCreateInfo: {
+          ...payload.BookingCreateInfo,
+          PodcastBuddyId: 2,
+        },
+      };
+      const formData = new FormData();
+      formData.append(
+        "BookingCreateInfo",
+        JSON.stringify(safePayload.BookingCreateInfo)
+      );
 
-    console.log(
-      "Transformed BookingRequirementInfos:",
-      transformedRequirements
-    );
-    console.log(
-      "Booking files to send:",
-      bookingFiles.map((f) => f.name)
-    );
-    console.log("Payload (BookingCreateInfo) to send:", payload);
+      // Append each file individually so the server receives actual File objects
+      for (let i = 0; i < safePayload.BookingRequirementFiles.length; i++) {
+        const file = safePayload.BookingRequirementFiles[i];
+        // field name expected: BookingRequirementFiles (multiple entries)
+        formData.append("BookingRequirementFiles", file);
+      }
 
-    // Note: Not sending network request here; caller can submit `formData` or `payload` as needed.
+      // Debug: optionally log entries (browser console will not show file content)
+      // for (const pair of formData.entries()) console.log(pair[0], pair[1]);
 
-    setIsSubmitting(false);
+      // Use RTK Query hook to create booking (this wraps kickoffThenWait)
+      await createBooking({ createBookingFormData: formData }).unwrap();
+      // navigate to bookings list on success
+      // window.location.href = "/media-player/management/bookings";
+    } catch (err: any) {
+      console.error("Create booking failed:", err);
+      alert("Create booking failed: " + (err?.message || JSON.stringify(err)));
+    }
   };
   return (
     <div className="w-full h-full flex flex-col overflow-y-auto scrollbar-hide">
       <p className="text-5xl m-8 font-poppins text-white font-bold">
         Create Booking
       </p>
+      {notFoundPodcasterError && (
+        <div className="m-4 p-4 bg-yellow-200 text-yellow-900 rounded">
+          Selected podcaster not found. Please choose another podcaster.
+        </div>
+      )}
       {isLoading ? (
         <div className="w-full h-[400px] bg-white/20 flex items-center justify-center">
           <Loading />
