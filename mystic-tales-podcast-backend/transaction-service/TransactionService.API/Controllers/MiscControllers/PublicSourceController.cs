@@ -51,7 +51,7 @@ namespace TransactionService.API.Controllers.MiscControllers
             // Additional ownership checks...
 
             var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
-            return Ok(new { fileUrl = url });
+            return Ok(new { FileUrl = url });
         }
     }
 }

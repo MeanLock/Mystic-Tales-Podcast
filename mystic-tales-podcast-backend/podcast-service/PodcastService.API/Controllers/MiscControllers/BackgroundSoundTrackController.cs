@@ -60,7 +60,7 @@ namespace PodcastService.API.Controllers.MiscControllers
 
 
             var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
-            return Ok(new { fileUrl = url });
+            return Ok(new { FileUrl = url });
         }
 
         // /api/podcast-service/api/misc/background-sound-tracks

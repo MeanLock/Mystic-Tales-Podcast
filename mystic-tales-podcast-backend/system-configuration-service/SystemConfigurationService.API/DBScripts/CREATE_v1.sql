@@ -27,7 +27,13 @@ CREATE TABLE PodcastSubscriptionConfig (
 -- PodcastSuggestionConfig table
 CREATE TABLE PodcastSuggestionConfig (
     configProfileId INT PRIMARY KEY,
-    behaviorLookbackDayCount INT NOT NULL,
+    minShortRangeUserBehaviorLookbackDayCount INT NOT NULL,
+    minMediumRangeUserBehaviorLookbackDayCount INT NOT NULL,
+    minLongRangeUserBehaviorLookbackDayCount INT NOT NULL,
+    minShortRangeContentBehaviorLookbackDayCount INT NOT NULL,
+    minMediumRangeContentBehaviorLookbackDayCount INT NOT NULL,
+    minLongRangeContentBehaviorLookbackDayCount INT NOT NULL,
+    minExtraLongRangeContentBehaviorLookbackDayCount INT NOT NULL,
     minChannelQuery INT NOT NULL,
     minShowQuery INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),

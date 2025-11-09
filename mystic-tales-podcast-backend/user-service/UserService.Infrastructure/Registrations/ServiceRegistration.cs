@@ -22,6 +22,7 @@ using UserService.Infrastructure.Services.Kafka;
 using UserService.Infrastructure.Services.Audio.AcoustID;
 using UserService.Infrastructure.Services.Audio.Hls;
 using UserService.Infrastructure.Services.Audio.Tuning;
+using UserService.Infrastructure.Services.Consul.DistributedLock;
 
 namespace UserService.Infrastructure.Registrations
 {
@@ -178,6 +179,10 @@ namespace UserService.Infrastructure.Registrations
                     config.Address = new Uri(consulServiceHost);
                 });
             });
+
+            // Register Consul Distributed Lock Service
+            services.AddSingleton<ConsulDistributedLockService>();
+            services.AddSingleton<ConsulSessionManager>();
 
             return services;
         }

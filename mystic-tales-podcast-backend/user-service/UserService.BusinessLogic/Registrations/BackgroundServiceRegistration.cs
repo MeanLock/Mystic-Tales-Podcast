@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using UserService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
 using UserService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
+using UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetricUpdateJobs;
 using UserService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
 
 namespace UserService.BusinessLogic.Registrations
@@ -15,6 +16,8 @@ namespace UserService.BusinessLogic.Registrations
 
             // services.AddHostedService<MinuteBaseRequestCancellationService>();
             // services.AddHostedService<HourBaseRequestCancellationService>();
+
+            services.AddHostedService<PodcasterQueryMetricUpdateJob>();
             
             services.Configure<HostOptions>(options =>
             {

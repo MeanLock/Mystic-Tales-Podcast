@@ -7,7 +7,7 @@ public partial class PodcastSuggestionConfig
 {
     public int ConfigProfileId { get; set; }
 
-    public int BehaviorLookbackDayCount { get; set; }
+    public int MinMediumRangeUserBehaviorLookbackDayCount { get; set; }
 
     public int MinChannelQuery { get; set; }
 
@@ -16,6 +16,16 @@ public partial class PodcastSuggestionConfig
     public DateTime CreatedAt { get; set; }
 
     public DateTime UpdatedAt { get; set; }
+
+    public int? MinShortRangeUserBehaviorLookbackDayCount { get; set; }
+
+    public int? MinLongRangeUserBehaviorLookbackDayCount { get; set; }
+
+    public int? MinShortRangeContentBehaviorLookbackDayCount { get; set; }
+
+    public int? MinMediumRangeContentBehaviorLookbackDayCount { get; set; }
+
+    public int? MinLongRangeContentBehaviorLookbackDayCount { get; set; }
 
     public virtual SystemConfigProfile ConfigProfile { get; set; } = null!;
 }

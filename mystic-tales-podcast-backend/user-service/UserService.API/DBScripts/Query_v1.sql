@@ -39,3 +39,7 @@ ALTER TABLE AccountPodcastListenHistory
 ADD 
     lastListenDurationSeconds INT NOT NULL DEFAULT 0,
     isCompleted BIT NOT NULL DEFAULT 0;
+
+
+ALTER TABLE PodcasterProfile
+ADD verifiedAt DATETIME NULL DEFAULT NULL;

@@ -7,10 +7,6 @@ namespace SystemConfigurationService.DataAccess.Data;
 
 public partial class AppDbContext : DbContext
 {
-    public AppDbContext()
-    {
-    }
-
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
@@ -31,10 +27,6 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<ReviewSessionConfig> ReviewSessionConfigs { get; set; }
 
     public virtual DbSet<SystemConfigProfile> SystemConfigProfiles { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost,1434;Database=MTP_SystemConfigurationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -171,12 +163,17 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ConfigProfileId)
                 .ValueGeneratedNever()
                 .HasColumnName("configProfileId");
-            entity.Property(e => e.BehaviorLookbackDayCount).HasColumnName("behaviorLookbackDayCount");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
             entity.Property(e => e.MinChannelQuery).HasColumnName("minChannelQuery");
+            entity.Property(e => e.MinLongRangeContentBehaviorLookbackDayCount).HasColumnName("minLongRangeContentBehaviorLookbackDayCount");
+            entity.Property(e => e.MinLongRangeUserBehaviorLookbackDayCount).HasColumnName("minLongRangeUserBehaviorLookbackDayCount");
+            entity.Property(e => e.MinMediumRangeContentBehaviorLookbackDayCount).HasColumnName("minMediumRangeContentBehaviorLookbackDayCount");
+            entity.Property(e => e.MinMediumRangeUserBehaviorLookbackDayCount).HasColumnName("minMediumRangeUserBehaviorLookbackDayCount");
+            entity.Property(e => e.MinShortRangeContentBehaviorLookbackDayCount).HasColumnName("minShortRangeContentBehaviorLookbackDayCount");
+            entity.Property(e => e.MinShortRangeUserBehaviorLookbackDayCount).HasColumnName("minShortRangeUserBehaviorLookbackDayCount");
             entity.Property(e => e.MinShowQuery).HasColumnName("minShowQuery");
             entity.Property(e => e.UpdatedAt)
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
