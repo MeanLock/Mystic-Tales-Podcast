@@ -14,6 +14,8 @@ export type BookingRequirementInfo = {
   Description: string;
   Order: number;
   PodcastBookingToneId: string;
+  ContentType: "link" | "file" | "script";
+  ContentValue?: string;
 };
 
 type BookingFilterOptions = {
@@ -56,6 +58,8 @@ const CreateBookingPage = () => {
   const [bookingRequirements, setBookingRequirements] = useState<
     BookingRequirementInfo[]
   >([]);
+  const [bookingDeadlineDayCount, setBookingDeadlineDayCount] =
+    useState<number>(1);
 
   // UI management states
   const [isFormValid, setIsFormValid] = useState<boolean>(false);
@@ -151,6 +155,88 @@ const CreateBookingPage = () => {
     }, 2000);
   };
 
+  const handleSubmit = async () => {
+    // mark submitting
+    setIsSubmitting(true);
+
+    console.log(
+      "Parent bookingRequirements before submit:",
+      bookingRequirements
+    );
+
+    // Transform requirements according to ContentType rules described in comments
+    const transformedRequirements = bookingRequirements.map((item) => {
+      // shallow clone to avoid mutating state
+      const copy: any = { ...item };
+
+      const ct = copy.ContentType;
+      const cv = copy.ContentValue;
+
+      if (ct === "file") {
+        // For files we remove the helper fields; actual files are sent in BookingRequirementFiles
+        delete copy.ContentType;
+        delete copy.ContentValue;
+      } else if (ct === "link") {
+        // Append link marker to description, then remove helper fields
+        const desc = copy.Description || "";
+        const linkPart = cv ? `$-[link]$-${cv}$-[link]$-` : "";
+        copy.Description = `${desc}${desc && linkPart ? "\n" : ""}${linkPart}`;
+        delete copy.ContentType;
+        delete copy.ContentValue;
+      } else if (ct === "script") {
+        // Append script marker to description, then remove helper fields
+        const desc = copy.Description || "";
+        const scriptPart = cv ? `$-[script]$-${cv}$-[script]$-` : "";
+        copy.Description = `${desc}${
+          desc && scriptPart ? "\n" : ""
+        }${scriptPart}`;
+        delete copy.ContentType;
+        delete copy.ContentValue;
+      } else {
+        // If no content type, ensure helper fields are not present
+        delete copy.ContentType;
+        delete copy.ContentValue;
+      }
+
+      return copy as BookingRequirementInfo;
+    });
+
+    // Build payload
+    const payload = {
+      BookingCreateInfo: {
+        Title: bookingTitle,
+        DeadlineDayCount: bookingDeadlineDayCount,
+        Description: bookingDescription,
+        PodcastBuddyId: selectedBuddy?.PodcastBuddyProfile.AccountId,
+        BookingRequirementInfo: transformedRequirements,
+      },
+      BookingRequirementFiles: bookingFiles,
+    };
+
+    // Create FormData if backend expects multipart; attach JSON + files
+    const formData = new FormData();
+    formData.append(
+      "BookingCreateInfo",
+      JSON.stringify(payload.BookingCreateInfo)
+    );
+    bookingFiles.forEach((f) =>
+      formData.append("BookingRequirementFiles", f, f.name)
+    );
+
+    console.log(
+      "Transformed BookingRequirementInfos:",
+      transformedRequirements
+    );
+    console.log(
+      "Booking files to send:",
+      bookingFiles.map((f) => f.name)
+    );
+    console.log("Payload (BookingCreateInfo) to send:", payload);
+
+    // Note: Not sending network request here; caller can submit `formData` or `payload` as needed.
+
+    setIsSubmitting(false);
+  };
   return (
     <div className="w-full h-full flex flex-col overflow-y-auto scrollbar-hide">
       <p className="text-5xl m-8 font-poppins text-white font-bold">
@@ -173,7 +259,42 @@ const CreateBookingPage = () => {
           onSelectBookingToneCategory={setSelectedBookingToneCategory}
         />
       )}
-      {selectedBuddy && <BookingForm />}
+      {selectedBuddy && (
+        <BookingForm
+          Title={bookingTitle}
+          BookingDeadlineDayCount={bookingDeadlineDayCount}
+          onDeadlineDayCountChange={setBookingDeadlineDayCount}
+          Description={bookingDescription}
+          BookingRequirementFiles={bookingFiles}
+          BookingRequirementInfos={bookingRequirements}
+          onCreateNewRequirementInfo={(newReq: BookingRequirementInfo) => {
+            console.log("onCreateNewRequirementInfo received:", newReq);
+            setBookingRequirements((prev) => [...prev, newReq]);
+          }}
+          onDescriptionChange={setBookingDescription}
+          onTitleChange={setBookingTitle}
+          // receive a single-updated requirement and merge into parent list
+          onUpdateRequirementInfo={(updatedReq: BookingRequirementInfo) => {
+            console.log("onUpdateRequirementInfo received:", updatedReq);
+            setBookingRequirements((prev) =>
+              prev.map((r) => (r.Order === updatedReq.Order ? updatedReq : r))
+            );
+          }}
+          // parent will append/replace the uploaded file; if null, do nothing for now
+          onUploadNewFile={(file: File | null) => {
+            if (!file) return;
+            setBookingFiles((prev) => [
+              // remove any file with same order prefix (e.g. "1.")
+              ...prev.filter(
+                (f) => !f.name.startsWith(`${file.name.split(".")[0]}.`)
+              ),
+              file,
+            ]);
+          }}
+          selectedBuddy={selectedBuddy}
+          onSubmit={handleSubmit}
+        />
+      )}
     </div>
   );
 };
