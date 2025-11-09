@@ -537,6 +537,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     {
                         var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
                         .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
+
                         foreach (var session in podcastEpisodeReportReviewSessions)
                         {
                             session.IsResolved = true;

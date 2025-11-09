@@ -39,6 +39,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IGenericRepository<BookingPodcastTrack> _bookingPodcastTrackGenericRepository;
         private readonly IGenericRepository<Booking> _bookingGenericRepository;
         private readonly IGenericRepository<BookingStatusTracking> _bookingStatusTrackingGenericRepository;
+        private readonly IGenericRepository<BookingRequirement> _bookingRequirementGenericRepository;
+
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
 
         private readonly IMessagingService _messagingService;
@@ -57,6 +59,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             IGenericRepository<BookingPodcastTrack> bookingPodcastTrackGenericRepository,
             IGenericRepository<Booking> bookingGenericRepository,
             IGenericRepository<BookingStatusTracking> bookingStatusTrackingGenericRepository,
+            IGenericRepository<BookingRequirement> bookingRequirementGenericRepository,
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
@@ -74,6 +77,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _bookingPodcastTrackGenericRepository = bookingPodcastTrackGenericRepository;
             _bookingGenericRepository = bookingGenericRepository;
             _bookingStatusTrackingGenericRepository = bookingStatusTrackingGenericRepository;
+            _bookingRequirementGenericRepository = bookingRequirementGenericRepository;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
             _logger = logger;
@@ -95,6 +99,34 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 if (bookingProducingRequest == null)
                     return null;
 
+                // Fix: Use ToListAsync first, then fetch requirement names in a separate async loop
+                var editRequirements = await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll()
+                    .Where(bp => bp.BookingProducingRequestId.Equals(bookingProducingRequest.Id))
+                    .Include(bp => bp.BookingPodcastTrack)
+                    .ToListAsync();
+
+                var editRequirementList = new List<BookingEditRequirementListItemResponseDTO>();
+                foreach (var bp in editRequirements)
+                {
+                    var requirement = await _bookingRequirementGenericRepository.FindByIdAsync(bp.BookingPodcastTrack.BookingRequirementId);
+                    editRequirementList.Add(new BookingEditRequirementListItemResponseDTO
+                    {
+                        Id = bp.Id,
+                        Name = requirement?.Name ?? string.Empty,
+                        BookingPodcastTrack = new BookingPodcastTrackListItemResponseDTO
+                        {
+                            Id = bp.BookingPodcastTrack.Id,
+                            BookingId = bp.BookingPodcastTrack.BookingId,
+                            BookingProducingRequestId = bp.BookingPodcastTrack.BookingProducingRequestId,
+                            BookingRequirementId = bp.BookingPodcastTrack.BookingRequirementId,
+                            AudioFileKey = bp.BookingPodcastTrack.AudioFileKey,
+                            AudioFileSize = bp.BookingPodcastTrack.AudioFileSize,
+                            AudioLength = bp.BookingPodcastTrack.AudioLength,
+                            RemainingPreviewListenSlot = bp.BookingPodcastTrack.RemainingPreviewListenSlot
+                        }
+                    });
+                }
+
                 return new BookingProducingRequestDetailResponseDTO
                 {
                     Id = bookingProducingRequest.Id,
@@ -113,21 +145,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         AudioFileKey = nego.AudioFileKey,
                         AudioFileSize = nego.AudioFileSize,
                         AudioLength = nego.AudioLength,
-                        AudioEncryptionKeyId = nego.AudioEncryptionKeyId,
-                        AudioEncryptionKeyFileKey = nego.AudioEncryptionKeyFileKey,
                         RemainingPreviewListenSlot = nego.RemainingPreviewListenSlot
                     }).ToList() ?? new List<BookingPodcastTrackListItemResponseDTO>(),
-                    EditRequirementList = (await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll(
-                        includeFunc: function => function
-                        .Include(bpr => bpr.BookingPodcastTrack)
-                        .ThenInclude(bpt => bpt.BookingRequirement))
-                        .Where(bp => bp.BookingProducingRequestId.Equals(bookingProducingRequest.Id))
-                        .Select(bp => new BookingEditRequirementListItemResponseDTO
-                        {
-                            Id = bp.Id,
-                            Name = bp.BookingPodcastTrack.BookingRequirement.Name,
-                        }).ToListAsync()
-                    )
+                    EditRequirementList = editRequirementList
                 };
 
             }

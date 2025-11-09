@@ -15,8 +15,6 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking.ListItems
         public string AudioFileKey { get; set; }
         public double AudioFileSize { get; set; }
         public int AudioLength { get; set; }
-        public Guid? AudioEncryptionKeyId { get; set; }
-        public string? AudioEncryptionKeyFileKey { get; set; }
         public int RemainingPreviewListenSlot { get; set; }
     }
 }
