@@ -5459,17 +5459,20 @@ flows:
           - Title
           - Description
           - AccountId
+          - DeadlineDayCount
           - PodcastBuddyId
         next-request-data:
           - Title
           - Description
           - AccountId
+          - DeadlineDayCount
           - PodcastBuddyId
         response-data:
           - BookingId
           - Title
           - Description
           - AccountId
+          - DeadlineDayCount
           - PodcastBuddyId
           - CreatedAt
         onSuccess:
@@ -5540,18 +5543,18 @@ flows:
         parameters:
           - BookingId
           - Note
-          - Deadline
+          - DeadlineDayCount
           - BookingPodcastTrackIds # List of PodcastTrackIds
         next-request-data:
           - BookingId
           - Note
-          - Deadline
+          - DeadlineDayCount
           - BookingPodcastTrackIds
         response-data:
           - BookingProducingRequestId
           - BookingId
           - Note
-          - Deadline
+          - DeadlineDayCount
           - BookingPodcastTrackIds
           - CreatedAt
         onSuccess:
@@ -5847,19 +5850,19 @@ flows:
           - AccountId
           - BookingRequirementList
           - Price
-          - Deadline
+          - DeadlineDayCount
         next-request-data:
           - BookingId
           - AccountId
           - BookingRequirementList
           - Price
-          - Deadline
+          - DeadlineDayCount
         response-data:
           - BookingId
           - AccountId
           - BookingRequirementList
           - Price
-          - Deadline
+          - DeadlineDayCount
           - UpdatedAt
         onSuccess:
           emit: "process-booking-dealing.success"

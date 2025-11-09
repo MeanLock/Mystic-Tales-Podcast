@@ -10,10 +10,13 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking.ListItems
     {
         public Guid Id { get; set; }
         public int BookingId { get; set; }
+        public Guid BookingRequirementId { get; set; }
         public Guid BookingProducingRequestId { get; set; }
         public string AudioFileKey { get; set; }
         public double AudioFileSize { get; set; }
         public int AudioLength { get; set; }
+        public Guid? AudioEncryptionKeyId { get; set; }
+        public string? AudioEncryptionKeyFileKey { get; set; }
         public int RemainingPreviewListenSlot { get; set; }
     }
 }

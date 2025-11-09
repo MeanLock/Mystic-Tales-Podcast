@@ -17,6 +17,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int PodcastBuddyId { get; set; }
+        public int DeadlineDayCount { get; set; }
         public List<BookingRequirementCreateRequestDTO> BookingRequirementInfo { get; set; } = new List<BookingRequirementCreateRequestDTO>();
     }
 }

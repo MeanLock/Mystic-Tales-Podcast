@@ -1,4 +1,4 @@
-@model ModerationService.BusinessLogic.Models.Mail.AccuserConfirmationMailViewModel
+@model ModerationService.BusinessLogic.Models.Mail.DMCACounterNoticeInvalidToAccusedMailViewModel
 
 <!DOCTYPE html>
 <html lang="en">
@@ -188,35 +188,40 @@
         </div>
         
         <div class="content">
-            <div class="greeting">Hello <span class="user-name">@Model.text</span>!</div>
+            <div class="greeting">Hello <span class="user-name">@Model.PodcasterFullName</span>!</div>
             
             <div class="welcome-message">
-                <strong>Welcome to Mystic Tales Podcast!</strong><br/>
-                Thank you for registering an account. We are excited to welcome you to our community of mysterious podcast enthusiasts.
+                <strong>DMCA Counter Notice Invalid To Accused Mail</strong><br />
+            @*     We are sadly to inform you that your DMCA Notice is invalid.
             </div>
             
             <p class="message">
-                To complete your registration and activate your account <strong>@Model.text</strong>, please use the verification code below:
-            </p>
+                Our staff has reject your dmca notice with this reason: <strong>@Model.InvalidReason</strong>, this was validated at @Model.CompletedAt.ToString("f").
+            </p>  *@
             
-            <div class="verification-section">
+            @* <div class="verification-section">
                 <div class="verification-title">Account Verification Code</div>
                 <p style="color: #d0d0d0; margin-bottom: 20px;">
                     Enter this code on the verification page to complete your registration
                 </p>
                 <div class="verify-code">@Model.text</div>
-            </div>
+            </div> *@
             
-            <div class="info-box">
+            @* <div class="info-box">
                 <strong>Important Note:</strong><br/>
                 • This verification code is valid for 15 minutes<br/>
                 • Do not share this code with anyone<br/>
                 • If you did not make this request, please ignore this email
-            </div>
+            </div> *@
             
-            <p class="message">
-                After successful verification, you will be able to access all Mystic Tales Podcast features and explore thousands of fascinating podcasts!
+            @* <p class="message">
+                The target content of your dmca notice will be remain on our platform. If you believe this is a mistake, you may consider submitting a new DMCA notice with accurate information.
             </p>
+
+            <div class="info-box">
+                <strong>Important Note:</strong><br />
+                • Repeat invalid attempt will lead to punishment from our platform according to our rule so please provide accurate information<br />
+            </div> *@
         </div>
         
         <div class="footer">

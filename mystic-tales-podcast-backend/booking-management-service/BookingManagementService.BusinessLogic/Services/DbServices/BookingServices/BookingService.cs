@@ -14,6 +14,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
+using BookingManagementService.BusinessLogic.DTOs.Snippet;
 using BookingManagementService.BusinessLogic.DTOs.SystemConfiguration;
 using BookingManagementService.BusinessLogic.Enums.Account;
 using BookingManagementService.BusinessLogic.Enums.Booking;
@@ -51,6 +52,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IGenericRepository<BookingChatMember> _bookingChatMemberGenericRepository;
         private readonly IGenericRepository<PodcastBookingTone> _podcastBookingToneGenericRepository;
         private readonly IGenericRepository<BookingPodcastTrack> _bookingPodcastTrackGenericRepository;
+        private readonly IGenericRepository<PodcastBuddyBookingTone> _podcastBuddyBookingToneGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly IMessagingService _messagingService;
@@ -72,6 +74,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             IGenericRepository<BookingChatMember> bookingChatMemberGenericRepository,
             IGenericRepository<PodcastBookingTone> podcastBookingToneGenericRepository,
             IGenericRepository<BookingPodcastTrack> bookingPodcastTrackGenericRepository,
+            IGenericRepository<PodcastBuddyBookingTone> podcastBuddyBookingToneGenericRepository,
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
@@ -92,6 +95,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _bookingChatMemberGenericRepository = bookingChatMemberGenericRepository;
             _podcastBookingToneGenericRepository = podcastBookingToneGenericRepository;
             _bookingPodcastTrackGenericRepository = bookingPodcastTrackGenericRepository;
+            _podcastBuddyBookingToneGenericRepository = podcastBuddyBookingToneGenericRepository;
 
             _httpServiceQueryClient = httpServiceQueryClient;
             _messagingService = messagingService;
@@ -106,24 +110,120 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         }
         public Task<List<BookingListItemResponseDTO>> GetAllBookingsAsync()
         {
-            var result = _bookingGenericRepository.FindAll(
-                includeFunc: function => function.
-                    Include(b => b.BookingStatusTrackings)
-                    .ThenInclude(bs => bs.BookingStatus))
-                .Select(booking => new BookingListItemResponseDTO
+            try
+            {
+                var result = _bookingGenericRepository.FindAll(
+                    includeFunc: function => function.
+                        Include(b => b.BookingStatusTrackings)
+                        .ThenInclude(bs => bs.BookingStatus))
+                    .Select(booking => new BookingListItemResponseDTO
+                    {
+                        Id = booking.Id,
+                        Title = booking.Title,
+                        Description = booking.Description,
+                        AccountId = booking.AccountId,
+                        PodcastBuddyId = booking.PodcastBuddyId,
+                        Price = booking.Price,
+                        Deadline = booking.Deadline,
+                        DemoAudioFileKey = booking.DemoAudioFileKey,
+                        BookingManualCancelledReason = booking.BookingManualCancelledReason,
+                        BookingAutoCancelledReason = booking.BookingAutoCancelReason,
+                        CreatedAt = booking.CreatedAt,
+                        UpdatedAt = booking.UpdatedAt,
+                        CurrentStatus = new BookingStatusResponseDTO
+                        {
+                            Id = booking.BookingStatusTrackings
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Id,
+                            Name = booking.BookingStatusTrackings
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Name
+                        }
+                    }).ToList();
+                return Task.FromResult(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving all bookings");
+                throw new HttpRequestException($"Retrieving all Bookings failed. Error: {ex.Message}");
+            }
+        }
+        public async Task<BookingDetailResponseDTO?> GetBookingByIdAsync(int bookingId)
+        {
+            try
+            {
+                var booking = await _bookingGenericRepository.FindByIdAsync(
+                    bookingId,
+                    includeFunc: function => function
+                    .Include(b => b.BookingRequirements)
+                        .ThenInclude(br => br.PodcastBookingTone)
+                        .ThenInclude(bt => bt.PodcastBookingToneCategory)
+                    .Include(b => b.BookingProducingRequests)
+                    .Include(b => b.BookingStatusTrackings)
+                        .ThenInclude(bst => bst.BookingStatus)); // Add this missing include
+                if (booking == null)
+                    return null;
+                var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
+                var podcastBuddy = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                return new BookingDetailResponseDTO
                 {
                     Id = booking.Id,
                     Title = booking.Title,
                     Description = booking.Description,
-                    AccountId = booking.AccountId,
-                    PodcastBuddyId = booking.PodcastBuddyId,
-                    Price = booking.Price,
-                    Deadline = booking.Deadline,
+                    Account = new AccountSnippetResponseDTO
+                    {
+                        Id = account.Id,
+                        FullName = account.FullName,
+                        Email = account.Email,
+                        MainImageFileKey = account.MainImageFileKey
+                    },
+                    PodcastBuddy = new PodcastBuddySnippetResponseDTO
+                    {
+                        Id = podcastBuddy.Id,
+                        FullName = podcastBuddy.FullName,
+                        Email = podcastBuddy.Email,
+                        MainImageFileKey = podcastBuddy.MainImageFileKey
+                    },
+                    Price = booking.Price ?? 0,
+                    Deadline = booking.Deadline ?? default,
                     DemoAudioFileKey = booking.DemoAudioFileKey,
                     BookingManualCancelledReason = booking.BookingManualCancelledReason,
                     BookingAutoCancelledReason = booking.BookingAutoCancelReason,
                     CreatedAt = booking.CreatedAt,
                     UpdatedAt = booking.UpdatedAt,
+                    BookingRequirementFileList = booking.BookingRequirements?.Select(re => new BookingRequirementListItemResponseDTO
+                    {
+                        Id = re.Id,
+                        BookingId = re.BookingId,
+                        Name = re.Name,
+                        Description = re.Description,
+                        RequirementDocumentFileKey = re.RequirementDocumentFileKey,
+                        Order = re.Order,
+                        WordCount = re.WordCount,
+                        PodcastBookingTone = new PodcastBookingToneDetailResponseDTO()
+                        {
+                            Id = re.PodcastBookingTone.Id,
+                            Name = re.PodcastBookingTone.Name,
+                            Description = re.PodcastBookingTone.Description,
+                            CreatedAt = re.PodcastBookingTone.CreatedAt,
+                            DeletedAt = re.PodcastBookingTone.DeletedAt,
+                            PodcastBookingToneCategory = new PodcastBookingToneCategoryDetailResponseDTO()
+                            {
+                                Id = re.PodcastBookingTone.PodcastBookingToneCategory.Id,
+                                Name = re.PodcastBookingTone.PodcastBookingToneCategory.Name
+                            }
+                        }
+                    }).ToList() ?? new List<BookingRequirementListItemResponseDTO>(),
+                    BookingProducingRequestList = booking.BookingProducingRequests?.Select(prod => new BookingProducingRequestListItemResponseDTO
+                    {
+                        Id = prod.Id,
+                        BookingId = prod.BookingId,
+                        Note = prod.Note,
+                        Deadline = prod.Deadline,
+                        IsAccepted = prod.IsAccepted ?? false,
+                        FinishedAt = prod.FinishedAt ?? default,
+                        CreatedAt = prod.CreatedAt
+                    }).ToList() ?? new List<BookingProducingRequestListItemResponseDTO>(),
                     CurrentStatus = new BookingStatusResponseDTO
                     {
                         Id = booking.BookingStatusTrackings
@@ -133,79 +233,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             .OrderByDescending(bst => bst.CreatedAt)
                             .FirstOrDefault().BookingStatus.Name
                     }
-                }).ToList();
-            return Task.FromResult(result);
-        }
-        public async Task<BookingDetailResponseDTO?> GetBookingByIdAsync(int bookingId)
-        {
-            var booking = await _bookingGenericRepository.FindByIdAsync(
-                bookingId,
-                includeFunc: function => function
-                .Include(b => b.BookingRequirements)
-                .ThenInclude(br => br.PodcastBookingTone)
-                .ThenInclude(bt => bt.PodcastBookingToneCategory)
-                .Include(b => b.BookingProducingRequests)
-                .Include(b => b.BookingStatusTrackings));
-            if (booking == null)
-                return null;
+                };
 
-            return new BookingDetailResponseDTO
+            }
+            catch (Exception ex)
             {
-                Id = booking.Id,
-                Title = booking.Title,
-                Description = booking.Description,
-                AccountId = booking.AccountId,
-                PodcastBuddyId = booking.PodcastBuddyId,
-                Price = booking.Price ?? 0,
-                Deadline = booking.Deadline ?? default,
-                DemoAudioFileKey = booking.DemoAudioFileKey,
-                BookingManualCancelledReason = booking.BookingManualCancelledReason,
-                BookingAutoCancelledReason = booking.BookingAutoCancelReason,
-                CreatedAt = booking.CreatedAt,
-                UpdatedAt = booking.UpdatedAt,
-                BookingRequirementFileList = booking.BookingRequirements?.Select(re => new BookingRequirementListItemResponseDTO
-                {
-                    Id = re.Id,
-                    BookingId = re.BookingId,
-                    Name = re.Name,
-                    Description = re.Description,
-                    RequirementDocumentFileKey = re.RequirementDocumentFileKey,
-                    Order = re.Order,
-                    WordCount = re.WordCount,
-                    PodcastBookingTone = new PodcastBookingToneDetailResponseDTO()
-                    {
-                        Id = re.PodcastBookingTone.Id,
-                        Name = re.PodcastBookingTone.Name,
-                        Description = re.PodcastBookingTone.Description,
-                        CreatedAt = re.PodcastBookingTone.CreatedAt,
-                        DeletedAt = re.PodcastBookingTone.DeletedAt,
-                        PodcastBookingToneCategory = new PodcastBookingToneCategoryDetailResponseDTO()
-                        {
-                            Id = re.PodcastBookingTone.PodcastBookingToneCategory.Id,
-                            Name = re.PodcastBookingTone.PodcastBookingToneCategory.Name
-                        }
-                    }
-                }).ToList() ?? new List<BookingRequirementListItemResponseDTO>(),
-                BookingProducingRequestList = booking.BookingProducingRequests?.Select(prod => new BookingProducingRequestListItemResponseDTO
-                {
-                    Id = prod.Id,
-                    BookingId = prod.BookingId,
-                    Note = prod.Note,
-                    Deadline = prod.Deadline,
-                    IsAccepted = prod.IsAccepted ?? false,
-                    FinishedAt = prod.FinishedAt ?? default,
-                    CreatedAt = prod.CreatedAt
-                }).ToList() ?? new List<BookingProducingRequestListItemResponseDTO>(),
-                CurrentStatus = new BookingStatusResponseDTO
-                {
-                    Id = booking.BookingStatusTrackings
-                        .OrderByDescending(bst => bst.CreatedAt)
-                        .FirstOrDefault().BookingStatus.Id,
-                    Name = booking.BookingStatusTrackings
-                        .OrderByDescending(bst => bst.CreatedAt)
-                        .FirstOrDefault().BookingStatus.Name
-                }
-            };
+                _logger.LogError(ex, "Error occurred while retrieving booking with ID: {BookingId}", bookingId);
+                throw new HttpRequestException($"Retrieving Booking failed. Error: {ex.Message}");
+            }
         }
         public async Task CreateBookingAsync(CreateBookingParameterDTO parameter, SagaCommandMessage command)
         {
@@ -226,6 +261,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Description = parameter.Description,
                         AccountId = parameter.AccountId,
                         PodcastBuddyId = parameter.PodcastBuddyId,
+                        Deadline = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddDays(parameter.DeadlineDayCount)),
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
@@ -234,7 +270,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     if (createdBooking == null)
                     {
-                        throw new InvalidOperationException("Failed to create booking - returned null");
+                        throw new HttpRequestException("Failed to create booking - returned null");
                     }
 
                     var createdRequirementDocumentList = new List<BookingRequirement>();
@@ -244,7 +280,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     // Process each track
                     foreach (var requirementDocumentInfo in parameter.BookingRequirementInfoList)
                     {
-
+                        var result = await _podcastBuddyBookingToneGenericRepository.FindAll()
+                            .Where(pbbt => pbbt.PodcasterId == parameter.PodcastBuddyId
+                                && pbbt.PodcastBookingToneId == requirementDocumentInfo.PodcastBookingToneId)
+                            .FirstOrDefaultAsync();
+                        if (result == null)
+                        {
+                            throw new HttpRequestException($"PodcastBuddy with Id {parameter.PodcastBuddyId} does not have the PodcastBookingTone with Id {requirementDocumentInfo.PodcastBookingToneId}");
+                        }
                         var newBookingRequirement = new BookingRequirement()
                         {
                             BookingId = createdBooking.Id,
@@ -259,7 +302,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         if (createdBookingRequirement == null)
                         {
-                            throw new InvalidOperationException("Failed to create booking requirement - returned null");
+                            throw new HttpRequestException("Failed to create booking requirement - returned null");
                         }
 
                         var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + createdBooking.Id;
@@ -334,70 +377,90 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         }
         public Task<List<BookingListItemResponseDTO>> GetBookingsByPodcasterIdAsync(int podcastBuddyId)
         {
-            var result = _bookingGenericRepository.FindAll(
-                includeFunc: function => function.
-                    Include(b => b.BookingStatusTrackings)
-                    .ThenInclude(bs => bs.BookingStatus))
-                .Where(b => b.PodcastBuddyId == podcastBuddyId).Select(booking => new BookingListItemResponseDTO
-                {
-                    Id = booking.Id,
-                    Title = booking.Title,
-                    Description = booking.Description,
-                    AccountId = booking.AccountId,
-                    PodcastBuddyId = booking.PodcastBuddyId,
-                    Price = booking.Price,
-                    Deadline = booking.Deadline,
-                    DemoAudioFileKey = booking.DemoAudioFileKey,
-                    BookingManualCancelledReason = booking.BookingManualCancelledReason,
-                    BookingAutoCancelledReason = booking.BookingAutoCancelReason,
-                    CreatedAt = booking.CreatedAt,
-                    UpdatedAt = booking.UpdatedAt,
-                    CurrentStatus = new BookingStatusResponseDTO
+            try
+            {
+                var result = _bookingGenericRepository.FindAll(
+                    includeFunc: function => function.
+                        Include(b => b.BookingStatusTrackings)
+                        .ThenInclude(bs => bs.BookingStatus))
+                    .Where(b => b.PodcastBuddyId == podcastBuddyId).Select(booking => new BookingListItemResponseDTO
                     {
-                        Id = booking.BookingStatusTrackings
-                        .OrderByDescending(bst => bst.CreatedAt)
-                        .FirstOrDefault().BookingStatus.Id,
-                        Name = booking.BookingStatusTrackings
-                        .OrderByDescending(bst => bst.CreatedAt)
-                        .FirstOrDefault().BookingStatus.Name
-                    }
-                }).ToList();
-            return Task.FromResult(result);
+                        Id = booking.Id,
+                        Title = booking.Title,
+                        Description = booking.Description,
+                        AccountId = booking.AccountId,
+                        PodcastBuddyId = booking.PodcastBuddyId,
+                        Price = booking.Price,
+                        Deadline = booking.Deadline,
+                        DemoAudioFileKey = booking.DemoAudioFileKey,
+                        BookingManualCancelledReason = booking.BookingManualCancelledReason,
+                        BookingAutoCancelledReason = booking.BookingAutoCancelReason,
+                        CreatedAt = booking.CreatedAt,
+                        UpdatedAt = booking.UpdatedAt,
+                        CurrentStatus = new BookingStatusResponseDTO
+                        {
+                            Id = booking.BookingStatusTrackings
+                            .OrderByDescending(bst => bst.CreatedAt)
+                            .FirstOrDefault().BookingStatus.Id,
+                            Name = booking.BookingStatusTrackings
+                            .OrderByDescending(bst => bst.CreatedAt)
+                            .FirstOrDefault().BookingStatus.Name
+                        }
+                    }).ToList();
+                return Task.FromResult(result);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving bookings for PodcasterId: {PodcastBuddyId}", podcastBuddyId);
+                throw new HttpRequestException($"Retrieving Bookings for PodcasterId {podcastBuddyId} failed. Error: {ex.Message}");
+            }
         }
         public Task<List<BookingListItemResponseDTO>> GetBookingsByAccountIdAsync(int accountId)
         {
-            var result = _bookingGenericRepository.FindAll(
-                includeFunc: function => function.
-                    Include(b => b.BookingStatusTrackings)
-                    .ThenInclude(bs => bs.BookingStatus))
-                .Where(b => b.AccountId == accountId).Select(booking => new BookingListItemResponseDTO
-                {
-                    Id = booking.Id,
-                    Title = booking.Title,
-                    Description = booking.Description,
-                    AccountId = booking.AccountId,
-                    PodcastBuddyId = booking.PodcastBuddyId,
-                    Price = booking.Price,
-                    Deadline = booking.Deadline,
-                    DemoAudioFileKey = booking.DemoAudioFileKey,
-                    BookingManualCancelledReason = booking.BookingManualCancelledReason,
-                    BookingAutoCancelledReason = booking.BookingAutoCancelReason,
-                    CreatedAt = booking.CreatedAt,
-                    UpdatedAt = booking.UpdatedAt,
-                    CurrentStatus = new BookingStatusResponseDTO
+            try
+            {
+                var result = _bookingGenericRepository.FindAll(
+                    includeFunc: function => function.
+                        Include(b => b.BookingStatusTrackings)
+                        .ThenInclude(bs => bs.BookingStatus))
+                    .Where(b => b.AccountId == accountId).Select(booking => new BookingListItemResponseDTO
                     {
-                        Id = booking.BookingStatusTrackings
-                        .OrderByDescending(bst => bst.CreatedAt)
-                        .FirstOrDefault().BookingStatus.Id,
-                        Name = booking.BookingStatusTrackings
-                        .OrderByDescending(bst => bst.CreatedAt)
-                        .FirstOrDefault().BookingStatus.Name
-                    }
-                }).ToList();
-            return Task.FromResult(result);
+                        Id = booking.Id,
+                        Title = booking.Title,
+                        Description = booking.Description,
+                        AccountId = booking.AccountId,
+                        PodcastBuddyId = booking.PodcastBuddyId,
+                        Price = booking.Price,
+                        Deadline = booking.Deadline,
+                        DemoAudioFileKey = booking.DemoAudioFileKey,
+                        BookingManualCancelledReason = booking.BookingManualCancelledReason,
+                        BookingAutoCancelledReason = booking.BookingAutoCancelReason,
+                        CreatedAt = booking.CreatedAt,
+                        UpdatedAt = booking.UpdatedAt,
+                        CurrentStatus = new BookingStatusResponseDTO
+                        {
+                            Id = booking.BookingStatusTrackings
+                            .OrderByDescending(bst => bst.CreatedAt)
+                            .FirstOrDefault().BookingStatus.Id,
+                            Name = booking.BookingStatusTrackings
+                            .OrderByDescending(bst => bst.CreatedAt)
+                            .FirstOrDefault().BookingStatus.Name
+                        }
+                    }).ToList();
+                return Task.FromResult(result);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving bookings for AccountId: {AccountId}", accountId);
+                throw new HttpRequestException($"Retrieving Bookings for AccountId {accountId} failed. Error: {ex.Message}");
+            }
         }
         public async Task<List<PodcastBookingToneListItemResponseDTO>> GetAllPodcastBookingTonesAsync()
         {
+            try
+            {
             return await _podcastBookingToneGenericRepository.FindAll(
                 includeFunc: function => function
                 .Include(pbt => pbt.PodcastBookingToneCategory))
@@ -414,37 +477,52 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     CreatedAt = pbt.CreatedAt,
                     DeletedAt = pbt.DeletedAt,
                 }).ToListAsync();
+
+            } catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving bookings tone");
+                throw new HttpRequestException($"Retrieving Bookings tones failed. Error: {ex.Message}");
+            }
         }
         public async Task<List<BookingRequirementListItemResponseDTO>> GetAllBookingRequirementByBookingIdAsync(int bookingId)
         {
-            return await _bookingRequirementGenericRepository.FindAll(
-                includeFunc: function => function
-                .Include(br => br.PodcastBookingTone)
-                .ThenInclude(pbt => pbt.PodcastBookingToneCategory))
-                .Where(br => br.BookingId == bookingId)
-                .Select(br => new BookingRequirementListItemResponseDTO
-                {
-                    Id = br.Id,
-                    BookingId = bookingId,
-                    Name = br.Name,
-                    Description = br.Description,
-                    Order = br.Order,
-                    RequirementDocumentFileKey = br.RequirementDocumentFileKey,
-                    WordCount = br.WordCount,
-                    PodcastBookingTone = new PodcastBookingToneDetailResponseDTO
+            try
+            {
+                return await _bookingRequirementGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(br => br.PodcastBookingTone)
+                    .ThenInclude(pbt => pbt.PodcastBookingToneCategory))
+                    .Where(br => br.BookingId == bookingId)
+                    .Select(br => new BookingRequirementListItemResponseDTO
                     {
-                        Id = br.PodcastBookingTone.Id,
-                        Name = br.PodcastBookingTone.Name,
-                        Description = br.PodcastBookingTone.Description,
-                        PodcastBookingToneCategory = new PodcastBookingToneCategoryDetailResponseDTO
+                        Id = br.Id,
+                        BookingId = bookingId,
+                        Name = br.Name,
+                        Description = br.Description,
+                        Order = br.Order,
+                        RequirementDocumentFileKey = br.RequirementDocumentFileKey,
+                        WordCount = br.WordCount,
+                        PodcastBookingTone = new PodcastBookingToneDetailResponseDTO
                         {
-                            Id = br.PodcastBookingTone.PodcastBookingToneCategory.Id,
-                            Name = br.PodcastBookingTone.PodcastBookingToneCategory.Name
-                        },
-                        CreatedAt = br.PodcastBookingTone.CreatedAt,
-                        DeletedAt = br.PodcastBookingTone.DeletedAt
-                    }
-                }).ToListAsync();
+                            Id = br.PodcastBookingTone.Id,
+                            Name = br.PodcastBookingTone.Name,
+                            Description = br.PodcastBookingTone.Description,
+                            PodcastBookingToneCategory = new PodcastBookingToneCategoryDetailResponseDTO
+                            {
+                                Id = br.PodcastBookingTone.PodcastBookingToneCategory.Id,
+                                Name = br.PodcastBookingTone.PodcastBookingToneCategory.Name
+                            },
+                            CreatedAt = br.PodcastBookingTone.CreatedAt,
+                            DeletedAt = br.PodcastBookingTone.DeletedAt
+                        }
+                    }).ToListAsync();
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving booking requirements for BookingId: {BookingId}", bookingId);
+                throw new HttpRequestException($"Retrieving Booking requirements for BookingId {bookingId} failed. Error: {ex.Message}");
+            }
         }
         public async Task RejectBookingAsync(RejectBookingParameterDTO parameter, SagaCommandMessage command)
         {
@@ -637,7 +715,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     else
                     {
                         _logger.LogError("Booking not found or Price is null for SagaId: {SagaId}", command.SagaInstanceId);
-                        throw new Exception("Booking not found or invalid pricing information");
+                        throw new HttpRequestException("Booking not found or invalid pricing information");
                     }
                 }
                 catch (Exception ex)
@@ -957,10 +1035,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("The logged in account are not authorized to deal with this booking.");
                     }
 
-                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
                         bookingId,
-                        "BookingStatusTrackings"
-                    );
+                        includeFunc: function => function
+                        .Include(b => b.BookingStatusTrackings));
                     if (booking == null)
                     {
                         throw new Exception($"Booking with ID {bookingId} not found");
@@ -970,6 +1048,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("Cannot deal booking that is not in 'Quotation Request' status.");
                     }
 
+                    var podcaster = await GetPodcaster(booking.PodcastBuddyId);
+                    var totalWordCount = 0;
                     var newBookingStatusTracking = new BookingStatusTracking
                     {
                         Id = Guid.NewGuid(),
@@ -984,13 +1064,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         var bookingRequirement = await _bookingRequirementGenericRepository.FindByIdAsync(reqInfo.Id);
                         if (bookingRequirement != null)
                         {
+                            totalWordCount += reqInfo.WordCount;
                             bookingRequirement.WordCount = reqInfo.WordCount;
                             await _bookingRequirementGenericRepository.UpdateAsync(bookingRequirement.Id, bookingRequirement);
                         }
                     }
 
-                    booking.Price = parameter.Price;
-                    booking.Deadline = DateOnly.FromDateTime(parameter.Deadline.Value);
+                    booking.Price = totalWordCount * podcaster.PodcasterProfile.PricePerBookingWord;
+                    booking.Deadline = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddDays(parameter.DeadlineDayCount.Value));
                     booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
@@ -1072,7 +1153,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         BookingId = bookingId,
                         Note = string.Empty,
                         Deadline = booking.Deadline ?? default,
-                        IsAccepted = null,
+                        IsAccepted = true,
                         FinishedAt = null,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
@@ -1492,6 +1573,32 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
+        private async Task<PodcasterDTO> GetPodcaster(int accountId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcasterProfile",
+                            QueryType = "findbyid",
+                            EntityType = "Account",
+                            Parameters = JObject.FromObject(new
+                            {
+                                id = accountId,
+                                include = "PodcasterProfile"
+                            })         
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+
+            var realResult = result.Results?["podcasterProfile"] is JArray accountArray && accountArray.Count > 0
+                ? accountArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<PodcasterDTO>() : null;
+        }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
@@ -1523,7 +1630,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 : null;
             return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
-
         public async Task<BookingTrackListenResponseDTO> GetTrackListenAsync(int bookingId, Guid podcastTrackId, int accountId)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -1542,7 +1648,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         throw new Exception("Booking with id " + bookingId + " does not exist");
                     }
-                    if (booking.AccountId != accountId)
+                    if (booking.AccountId != accountId && booking.PodcastBuddyId != accountId)
                     {
                         throw new Exception("You are not authorized to listen to tracks of this booking");
                     }
@@ -1550,10 +1656,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .OrderByDescending(bst => bst.CreatedAt)
                         .FirstOrDefault()
                         .BookingStatusId;
-                    if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
-                    {
-                        throw new Exception("Booking with id " + bookingId + " is not in Track Previewing status");
-                    }
 
                     var currentBookingProducingRequest = booking.BookingProducingRequests
                         .OrderByDescending(bpr => bpr.CreatedAt)
@@ -1568,18 +1670,23 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("Podcast track with id " + podcastTrackId + " does not exist");
                     }
 
-                    if (currentBookingProducingRequest.Id.Equals(bookingPodcastTrack.BookingProducingRequestId) == false)
+                    if (accountId != booking.PodcastBuddyId)
                     {
-                        throw new Exception("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
+                        if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
+                        {
+                            throw new Exception("Booking with id " + bookingId + " is not in Track Previewing status");
+                        }
+                        if (currentBookingProducingRequest.Id.Equals(bookingPodcastTrack.BookingProducingRequestId) == false)
+                        {
+                            throw new Exception("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
+                        }
+                        if(bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                        {
+                            throw new Exception("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
+                        }
+                        bookingPodcastTrack.RemainingPreviewListenSlot = bookingPodcastTrack.RemainingPreviewListenSlot - 1;
+                        await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                     }
-
-                    if(bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
-                    {
-                        throw new Exception("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
-                    }
-
-                    bookingPodcastTrack.RemainingPreviewListenSlot = bookingPodcastTrack.RemainingPreviewListenSlot - 1;
-                    await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
 
                     await transaction.CommitAsync();
 
@@ -1605,8 +1712,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
-
-        public async Task<byte[]> GetBookingTrackHlsEncryptionKeyFileAsync(int bookingId, Guid podcastTrackId, Guid keyId)
+        public async Task<byte[]> GetBookingTrackHlsEncryptionKeyFileAsync(int bookingId, Guid podcastTrackId, Guid keyId, int accountId)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -1649,10 +1755,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .OrderByDescending(bst => bst.CreatedAt)
                         .FirstOrDefault()
                         .BookingStatusId;
-                    if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
-                    {
-                        throw new Exception("Booking with id " + bookingId + " is not in Track Previewing status");
-                    }
 
                     var currentBookingProducingRequest = booking.BookingProducingRequests
                         .OrderByDescending(bpr => bpr.CreatedAt)
@@ -1667,14 +1769,22 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("Podcast track with id " + podcastTrackId + " does not exist, or keyId does not match");
                     }
 
-                    if (currentBookingProducingRequest.Id.Equals(bookingPodcastTrack.BookingProducingRequestId) == false)
+                    if (accountId != booking.PodcastBuddyId)
                     {
-                        throw new Exception("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
-                    }
+                        if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
+                        {
+                            throw new Exception("Booking with id " + bookingId + " is not in Track Previewing status");
+                        }
 
-                    if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
-                    {
-                        throw new Exception("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
+                        if (currentBookingProducingRequest.Id.Equals(bookingPodcastTrack.BookingProducingRequestId) == false)
+                        {
+                            throw new Exception("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
+                        }
+
+                        if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                        {
+                            throw new Exception("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
+                        }
                     }
 
                     await transaction.CommitAsync();

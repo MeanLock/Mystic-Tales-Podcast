@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using ModerationService.BusinessLogic.DTOs.Account;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreateEpisodeReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReport;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReportNoEffectDMCARemoveEpisodeForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectDMCARemoveShowForce;
 using ModerationService.BusinessLogic.DTOs.Podcast;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport.Details;
@@ -23,6 +25,7 @@ using ModerationService.Infrastructure.Models.Kafka;
 using ModerationService.Infrastructure.Services.Kafka;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.Podcast;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectUnpublishShowForce;
 
 namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
 {
@@ -80,7 +83,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     Id = pbr.Id,
                     Content = pbr.Content,
                     AccountId = pbr.AccountId,
-                    PodcastEpisode = new PodcastEpisodeSnippetDTO()
+                    PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
                     {
                         Id = episode.Id,
                         Name = episode.Name,
@@ -213,13 +216,13 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 return new PodcastEpisodeReportReviewSessionListItemResponseDTO()
                 {
                     Id = pbrrs.Id,
-                    PodcastEpisode = new PodcastEpisodeSnippetDTO()
+                    PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
                     {
                         Id = episode.Id,
                         Name = episode.Name,
                         MainImageFileKey = episode.MainImageFileKey,
                     },
-                    AssignedStaff = new AssignedStaffSnippetDTO()
+                    AssignedStaff = new AssignedStaffSnippetResponseDTO()
                     {
                         Id = staff.Id,
                         FullName = staff.FullName,
@@ -255,7 +258,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     Id = pbr.Id,
                     Content = pbr.Content,
                     AccountId = pbr.AccountId,
-                    PodcastEpisode = new PodcastEpisodeSnippetDTO()
+                    PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
                     {
                         Id = episode.Id,
                         Name = episode.Name,
@@ -277,13 +280,13 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             return new PodcastEpisodeReportReviewSessionDetailResponseDTO()
             {
                 Id = pbrrs.Id,
-                PodcastEpisode = new PodcastEpisodeSnippetDTO()
+                PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
                 {
                     Id = episode.Id,
                     Name = episode.Name,
                     MainImageFileKey = episode.MainImageFileKey,
                 },
-                AssignedStaff = new AssignedStaffSnippetDTO()
+                AssignedStaff = new AssignedStaffSnippetResponseDTO()
                 {
                     Id = staff.Id,
                     FullName = staff.FullName,
@@ -314,7 +317,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     }
                     podcastEpisodeReportReviewSessions.IsResolved = parameter.IsResolved;
                     var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
-                        .Where(pbr => pbr.PodcastEpisodeId == podcastEpisodeReportReviewSessions.PodcastEpisodeId)
+                        .Where(pbr => pbr.PodcastEpisodeId == podcastEpisodeReportReviewSessions.PodcastEpisodeId
+                        && pbr.ResolvedAt == null)
                         .ToListAsync();
                     foreach (var EpisodeReport in podcastEpisodeReportList)
                     {
@@ -341,7 +345,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                 sagaInstanceId: null,
                                 messageName: "episode-remove-flow");
                             await _messagingService.SendSagaMessageAsync(resolveReportMessage, null);
-                        }   
+                        }
                     }
 
                     await transaction.CommitAsync();
@@ -381,6 +385,207 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Resolve podcast episode report review session failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolveEpisodeReportNoEffectDMCARemoveEpisodeForceAsync(ResolveEpisodeReportNoEffectDMCARemoveEpisodeForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                    .Where(errs => errs.PodcastEpisodeId == parameter.PodcastEpisodeId && errs.IsResolved == null).ToListAsync();
+                    foreach (var session in podcastEpisodeReportReviewSessions)
+                    {
+                        session.IsResolved = true;
+                        session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                        var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                        .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
+                        && pbr.ResolvedAt == null)
+                        .ToListAsync();
+                        foreach (var EpisodeReport in podcastEpisodeReportList)
+                        {
+                            EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Episode Report No Effect DMCA Remove Episode Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Episode Report No Effect DMCA Remove Episode Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Resolve Episode Report No Effect DMCA Remove Episode Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Episode Report No Effect DMCA Remove Episode Force failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolveShowEpisodesReportNoEffectDMCARemoveShowForceAsync(ResolveShowEpisodesReportNoEffectDMCARemoveShowForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var episodeList = await GetPodcastEpisodeByShowId(parameter.PodcastShowId);
+                    var episodeIds = episodeList.Select(e => e.Id).ToList();
+                    foreach (var episodeId in episodeIds)
+                    {
+                        var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                        .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
+                        foreach (var session in podcastEpisodeReportReviewSessions)
+                        {
+                            session.IsResolved = true;
+                            session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                            var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                            .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
+                            && pbr.ResolvedAt == null)
+                            .ToListAsync();
+                            foreach (var EpisodeReport in podcastEpisodeReportList)
+                            {
+                                EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Show Episodes Report No Effect DMCA Remove Show Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Show Episodes Report No Effect DMCA Remove Show Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Resolve Show Episodes Report No Effect DMCA Remove Show Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Show Episodes Report No Effect DMCA Remove Show Force failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolveShowEpisodesReportNoEffectUnpublishShowForceAsync(ResolveShowEpisodesReportNoEffectUnpublishShowForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var episodeIdList = parameter.DmcaDismissedEpisodeIds;
+                    foreach(var episodeId in episodeIdList)
+                    {
+                        var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                        .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
+                        foreach (var session in podcastEpisodeReportReviewSessions)
+                        {
+                            session.IsResolved = true;
+                            session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                            var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                            .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
+                            && pbr.ResolvedAt == null)
+                            .ToListAsync();
+                            foreach (var EpisodeReport in podcastEpisodeReportList)
+                            {
+                                EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Show Episodes Report No Effect Unpublish Show Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Show Episodes Report No Effect Unpublish Show Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Resolve Show Episodes Report No Effect Unpublish Show Forc failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Show Episodes Report No Effect Unpublish Show Forc failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }
@@ -509,6 +714,35 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 ? podcastEpisodeArray.First as JObject
                 : null;
             return realResult != null ? realResult.ToObject<PodcastEpisodeDTO>() : null;
+        }
+        public async Task<List<PodcastEpisodeDTO>?> GetPodcastEpisodeByShowId(Guid podcastShowId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastEpisode",
+                            QueryType = "findall",
+                            EntityType = "PodcastEpisode",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    PodcastShowId = podcastShowId
+                                },
+                                include = "PodcastEpisodeStatusTracking"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
+                ? podcastEpisodeArray
+                : null;
+            return realResult != null ? realResult.ToObject<List<PodcastEpisodeDTO>>() : null;
         }
         public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
         {

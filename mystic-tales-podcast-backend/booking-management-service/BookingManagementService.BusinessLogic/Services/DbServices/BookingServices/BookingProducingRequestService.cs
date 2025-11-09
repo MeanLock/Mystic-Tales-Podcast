@@ -6,6 +6,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateTrackListenSlot;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ValidateBookingCancellation;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.Detail;
+using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.SystemConfiguration;
 using BookingManagementService.BusinessLogic.Enums.Booking;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
@@ -84,34 +85,57 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         }
         public async Task<BookingProducingRequestDetailResponseDTO?> GetProducingRequestByIdAsync(Guid id)
         {
-            var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdWithPaths(
-                id,
-                "BookingPodcastTracks"
-                );
-
-            if (bookingProducingRequest == null)
-                return null;
-
-            return new BookingProducingRequestDetailResponseDTO
+            try
             {
-                Id = bookingProducingRequest.Id,
-                BookingId = bookingProducingRequest.BookingId,
-                Note = bookingProducingRequest.Note,
-                Deadline = bookingProducingRequest.Deadline,
-                IsAccepted = bookingProducingRequest.IsAccepted,
-                FinishedAt = bookingProducingRequest.FinishedAt,
-                CreatedAt = bookingProducingRequest.CreatedAt,
-                BookingPodcastTracks = bookingProducingRequest.BookingPodcastTracks?.Select(nego => new BookingPodcastTrackListItemResponseDTO
+                var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdAsync(
+                    id,
+                    includeFunc: include => include
+                        .Include(bpr => bpr.BookingPodcastTracks));
+
+                if (bookingProducingRequest == null)
+                    return null;
+
+                return new BookingProducingRequestDetailResponseDTO
                 {
-                    Id = nego.Id,
-                    BookingId = nego.BookingId,
-                    BookingProducingRequestId = nego.BookingProducingRequestId,
-                    AudioFileKey = nego.AudioFileKey,
-                    AudioFileSize = nego.AudioFileSize,
-                    AudioLength = nego.AudioLength,
-                    RemainingPreviewListenSlot = nego.RemainingPreviewListenSlot
-                }).ToList() ?? new List<BookingPodcastTrackListItemResponseDTO>()
-            };
+                    Id = bookingProducingRequest.Id,
+                    BookingId = bookingProducingRequest.BookingId,
+                    Note = bookingProducingRequest.Note,
+                    Deadline = bookingProducingRequest.Deadline,
+                    IsAccepted = bookingProducingRequest.IsAccepted,
+                    FinishedAt = bookingProducingRequest.FinishedAt,
+                    CreatedAt = bookingProducingRequest.CreatedAt,
+                    BookingPodcastTracks = bookingProducingRequest.BookingPodcastTracks?.Select(nego => new BookingPodcastTrackListItemResponseDTO
+                    {
+                        Id = nego.Id,
+                        BookingId = nego.BookingId,
+                        BookingProducingRequestId = nego.BookingProducingRequestId,
+                        BookingRequirementId = nego.BookingRequirementId,
+                        AudioFileKey = nego.AudioFileKey,
+                        AudioFileSize = nego.AudioFileSize,
+                        AudioLength = nego.AudioLength,
+                        AudioEncryptionKeyId = nego.AudioEncryptionKeyId,
+                        AudioEncryptionKeyFileKey = nego.AudioEncryptionKeyFileKey,
+                        RemainingPreviewListenSlot = nego.RemainingPreviewListenSlot
+                    }).ToList() ?? new List<BookingPodcastTrackListItemResponseDTO>(),
+                    EditRequirementList = (await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(bpr => bpr.BookingPodcastTrack)
+                        .ThenInclude(bpt => bpt.BookingRequirement))
+                        .Where(bp => bp.BookingProducingRequestId.Equals(bookingProducingRequest.Id))
+                        .Select(bp => new BookingEditRequirementListItemResponseDTO
+                        {
+                            Id = bp.Id,
+                            Name = bp.BookingPodcastTrack.BookingRequirement.Name,
+                        }).ToListAsync()
+                    )
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving booking producing request with ID: {ProducingRequestId}", id);
+                throw new HttpRequestException($"Retrieving Producing Request with Id: {id} failed. Error: {ex.Message}");
+            }
         }
         public async Task CreateProducingRequestAsync(CreateProducingRequestParameterDTO parameter, SagaCommandMessage command)
         {
@@ -732,20 +756,80 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("Account is not assigned staff of this booking");
                     }
                     var currentStatusId = booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId;
-                    if (currentStatusId == (int)BookingStatusEnum.CustomerCancelledRequest)
+                    if (parameter.IsAccepted)
                     {
-                        if (parameter.CustomerBookingCancelDepositRefundRate == null)
+                        if (currentStatusId == (int)BookingStatusEnum.CustomerCancelledRequest)
                         {
-                            throw new Exception("Customer booking cancel deposit refund rate is required");
-                        }
-                        booking.CustomerBookingCancelDepositRefundRate = (double)parameter.CustomerBookingCancelDepositRefundRate;
-                        booking.PodcastBuddyBookingCancelDepositRefundRate = 100 - (double)parameter.CustomerBookingCancelDepositRefundRate;
-                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                        await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+                            if (parameter.CustomerBookingCancelDepositRefundRate == null)
+                            {
+                                throw new Exception("Customer booking cancel deposit refund rate is required");
+                            }
+                            booking.CustomerBookingCancelDepositRefundRate = (double)parameter.CustomerBookingCancelDepositRefundRate;
+                            booking.PodcastBuddyBookingCancelDepositRefundRate = 100 - (double)parameter.CustomerBookingCancelDepositRefundRate;
+                            booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
-                        var refundAmount = (double)booking.Price * booking.CustomerBookingCancelDepositRefundRate;
-                        var refundMessageName = "booking-refund-flow";
-                        var newRefundRequestData = new JObject
+                            var refundAmount = (double)booking.Price * booking.CustomerBookingCancelDepositRefundRate;
+                            var refundMessageName = "booking-refund-flow";
+                            var newRefundRequestData = new JObject
+                            {
+                                { "BookingId", booking.Id },
+                                { "Profit", booking.Price * (decimal)profitRate },
+                                { "Amount", refundAmount },
+                                { "AccountId", parameter.AccountId },
+                                { "PodcasterId", booking.PodcastBuddyId },
+                                { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
+                            };
+                            var startSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: command.RequestData,
+                                sagaInstanceId: null,
+                                messageName: refundMessageName);
+                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage1, sagaId.ToString());
+                            _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
+
+
+                            var compensationOriginalAmount = booking.Price * (decimal)booking.PodcastBuddyBookingCancelDepositRefundRate;
+                            var compensationAmount = compensationOriginalAmount - compensationOriginalAmount * (decimal)profitRate;
+                            var compensationMessageName = "booking-deposit-compenstation-flow";
+                            var newCompensationRequestData = new JObject
+                            {
+                                { "BookingId", booking.Id },
+                                { "Amount", compensationAmount },
+                                { "AccountId", booking.AccountId },
+                                { "PodcasterId", booking.PodcastBuddyId },
+                                { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositCompensation }
+                            };
+                            var startSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: newCompensationRequestData,
+                                sagaInstanceId: null,
+                                messageName: compensationMessageName);
+                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage2, booking.Id.ToString());
+                            _logger.LogInformation("Booking deposit compensation message send successfully for BookingId: {BookingId}", booking.Id);
+
+                            var newBookingStatusTracking = new BookingStatusTracking()
+                            {
+                                BookingId = booking.Id,
+                                BookingStatusId = (int)BookingStatusEnum.CancelledManually,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+                        }
+                        if (currentStatusId == (int)BookingStatusEnum.PodcastBuddyCancelledRequest)
+                        {
+                            if (parameter.PodcastBuddyBookingCancelDepositRefundRate == null)
+                            {
+                                throw new Exception("Podcast buddy booking cancel deposit refund rate is required");
+                            }
+                            booking.CustomerBookingCancelDepositRefundRate = 100 - (double)parameter.PodcastBuddyBookingCancelDepositRefundRate;
+                            booking.PodcastBuddyBookingCancelDepositRefundRate = (double)parameter.PodcastBuddyBookingCancelDepositRefundRate;
+                            booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+
+                            var refundAmount = (double)booking.Price * booking.CustomerBookingCancelDepositRefundRate;
+                            var refundMessageName = "booking-refund-flow";
+                            var newRefundRequestData = new JObject
                                 {
                                     { "BookingId", booking.Id },
                                     { "Profit", booking.Price * (decimal)profitRate },
@@ -754,19 +838,19 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     { "PodcasterId", booking.PodcastBuddyId },
                                     { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
                                 };
-                        var startSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.PaymentProcessingDomain,
-                            requestData: command.RequestData,
-                            sagaInstanceId: null,
-                            messageName: refundMessageName);
-                        await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage1, sagaId.ToString());
-                        _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                            var startSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: command.RequestData,
+                                sagaInstanceId: null,
+                                messageName: refundMessageName);
+                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage1, sagaId.ToString());
+                            _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
 
 
-                        var compensationOriginalAmount = booking.Price * (decimal)booking.PodcastBuddyBookingCancelDepositRefundRate;
-                        var compensationAmount = compensationOriginalAmount - compensationOriginalAmount * (decimal)profitRate;
-                        var compensationMessageName = "booking-deposit-compenstation-flow";
-                        var newCompensationRequestData = new JObject
+                            var compensationOriginalAmount = booking.Price * (decimal)booking.PodcastBuddyBookingCancelDepositRefundRate;
+                            var compensationAmount = compensationOriginalAmount - compensationOriginalAmount * (decimal)profitRate;
+                            var compensationMessageName = "booking-deposit-compenstation-flow";
+                            var newCompensationRequestData = new JObject
                             {
                                 { "BookingId", booking.Id },
                                 { "Amount", compensationAmount },
@@ -774,76 +858,33 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 { "PodcasterId", booking.PodcastBuddyId },
                                 { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositCompensation }
                             };
-                        var startSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.PaymentProcessingDomain,
-                            requestData: newCompensationRequestData,
-                            sagaInstanceId: null,
-                            messageName: compensationMessageName);
-                        await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage2, booking.Id.ToString());
-                        _logger.LogInformation("Booking deposit compensation message send successfully for BookingId: {BookingId}", booking.Id);
+                            var startSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: newCompensationRequestData,
+                                sagaInstanceId: null,
+                                messageName: compensationMessageName);
+                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage2, booking.Id.ToString());
+                            _logger.LogInformation("Booking deposit compensation message send successfully for BookingId: {BookingId}", booking.Id);
 
-                        var newBookingStatusTracking = new BookingStatusTracking()
-                        {
-                            BookingId = booking.Id,
-                            BookingStatusId = (int)BookingStatusEnum.CancelledManually,
-                            CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                        };
-                        await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+                            var newBookingStatusTracking = new BookingStatusTracking()
+                            {
+                                BookingId = booking.Id,
+                                BookingStatusId = (int)BookingStatusEnum.CancelledManually,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+                            await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+                        }
                     }
-                    if (currentStatusId == (int)BookingStatusEnum.PodcastBuddyCancelledRequest)
+                    else
                     {
-                        if (parameter.PodcastBuddyBookingCancelDepositRefundRate == null)
-                        {
-                            throw new Exception("Podcast buddy booking cancel deposit refund rate is required");
-                        }
-                        booking.CustomerBookingCancelDepositRefundRate = 100 - (double)parameter.PodcastBuddyBookingCancelDepositRefundRate;
-                        booking.PodcastBuddyBookingCancelDepositRefundRate = (double)parameter.PodcastBuddyBookingCancelDepositRefundRate;
-                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                        await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
-
-                        var refundAmount = (double)booking.Price * booking.CustomerBookingCancelDepositRefundRate;
-                        var refundMessageName = "booking-refund-flow";
-                        var newRefundRequestData = new JObject
-                                {
-                                    { "BookingId", booking.Id },
-                                    { "Profit", booking.Price * (decimal)profitRate },
-                                    { "Amount", refundAmount },
-                                    { "AccountId", parameter.AccountId },
-                                    { "PodcasterId", booking.PodcastBuddyId },
-                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
-                                };
-                        var startSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.PaymentProcessingDomain,
-                            requestData: command.RequestData,
-                            sagaInstanceId: null,
-                            messageName: refundMessageName);
-                        await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage1, sagaId.ToString());
-                        _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
-
-
-                        var compensationOriginalAmount = booking.Price * (decimal)booking.PodcastBuddyBookingCancelDepositRefundRate;
-                        var compensationAmount = compensationOriginalAmount - compensationOriginalAmount * (decimal)profitRate;
-                        var compensationMessageName = "booking-deposit-compenstation-flow";
-                        var newCompensationRequestData = new JObject
-                            {
-                                { "BookingId", booking.Id },
-                                { "Amount", compensationAmount },
-                                { "AccountId", booking.AccountId },
-                                { "PodcasterId", booking.PodcastBuddyId },
-                                { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositCompensation }
-                            };
-                        var startSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.PaymentProcessingDomain,
-                            requestData: newCompensationRequestData,
-                            sagaInstanceId: null,
-                            messageName: compensationMessageName);
-                        await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage2, booking.Id.ToString());
-                        _logger.LogInformation("Booking deposit compensation message send successfully for BookingId: {BookingId}", booking.Id);
-
+                        var previousStatusTracking = booking.BookingStatusTrackings
+                            .OrderByDescending(bst => bst.CreatedAt)
+                            .Skip(1)
+                            .FirstOrDefault();
                         var newBookingStatusTracking = new BookingStatusTracking()
                         {
                             BookingId = booking.Id,
-                            BookingStatusId = (int)BookingStatusEnum.CancelledManually,
+                            BookingStatusId = previousStatusTracking.BookingStatusId,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);

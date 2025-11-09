@@ -88,7 +88,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         Id = pbr.Id,
                         Content = pbr.Content,
                         AccountId = pbr.AccountId,
-                        PodcastBuddy = new PodcastBuddySnippetDTO()
+                        PodcastBuddy = new PodcastBuddySnippetResponseDTO()
                         {
                             Id = podcaster.Id,
                             FullName = podcaster.FullName,
@@ -222,14 +222,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 return new PodcastBuddyReportReviewSessionListItemResponseDTO()
                 {
                     Id = pbrrs.Id,
-                    PodcastBuddy = new PodcastBuddySnippetDTO()
+                    PodcastBuddy = new PodcastBuddySnippetResponseDTO()
                     {
                         Id = podcaster.Id,
                         FullName = podcaster.FullName,
                         Email = podcaster.Email,
                         MainImageFileKey = podcaster.MainImageFileKey
                     },
-                    AssignedStaff = new AssignedStaffSnippetDTO()
+                    AssignedStaff = new AssignedStaffSnippetResponseDTO()
                     {
                         Id = staff.Id,
                         FullName = staff.FullName,
@@ -265,7 +265,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     Id = pbr.Id,
                     Content = pbr.Content,
                     AccountId = pbr.AccountId,
-                    PodcastBuddy = new PodcastBuddySnippetDTO()
+                    PodcastBuddy = new PodcastBuddySnippetResponseDTO()
                     {
                         Id = podcaster.Id,
                         FullName = podcaster.FullName,
@@ -288,14 +288,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             return new PodcastBuddyReportReviewSessionDetailResponseDTO()
             {
                 Id = pbrrs.Id,
-                PodcastBuddy = new PodcastBuddySnippetDTO()
+                PodcastBuddy = new PodcastBuddySnippetResponseDTO()
                 {
                     Id = podcaster.Id,
                     FullName = podcaster.FullName,
                     Email = podcaster.Email,
                     MainImageFileKey = podcaster.MainImageFileKey
                 },
-                AssignedStaff = new AssignedStaffSnippetDTO()
+                AssignedStaff = new AssignedStaffSnippetResponseDTO()
                 {
                     Id = staff.Id,
                     FullName = staff.FullName,

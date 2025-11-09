@@ -135,7 +135,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 return Unauthorized("Account information not found.");
             }
 
-            var bookingRequirementIdList = JsonConvert.DeserializeObject<List<Guid>>(request.BookingRequirementInfo); 
+            //var bookingRequirementIdList = JsonConvert.DeserializeObject<List<Guid>>(request.BookingRequirementInfo); 
             //var accountId = account.Id;
             //var isValid = await _bookingProducingRequestService.ValidateProducingRequestPodcasterAsync(BookingProducingRequestId, accountId);
             //if (!isValid)
@@ -154,7 +154,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
 
             var trackSubmissions = new List<JObject>();
-            var requirementSubmission = bookingRequirementIdList;
+            //var requirementSubmission = bookingRequirementIdList;
 
             // Process all audio files and prepare track submission items
             foreach (var audioFile in request.AudioFiles)
@@ -187,18 +187,18 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 var trackAudioFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newTrackAudioFileName);
 
                 Console.WriteLine($"Uploaded audio file name: {System.IO.Path.GetFileNameWithoutExtension(audioFile.FileName)}");
-                foreach(var id in requirementSubmission)
-                {
-                    Console.WriteLine($"Requirement ID: {id}");
-                }
+                //foreach(var id in requirementSubmission)
+                //{
+                //    Console.WriteLine($"Requirement ID: {id}");
+                //}
 
-                var matchingRequirement = requirementSubmission
-                    .FirstOrDefault(re => re != null && re.ToString().Equals(System.IO.Path.GetFileNameWithoutExtension(audioFile.FileName), StringComparison.OrdinalIgnoreCase));
+                //var matchingRequirement = requirementSubmission
+                //    .FirstOrDefault(re => re != null && re.ToString().Equals(System.IO.Path.GetFileNameWithoutExtension(audioFile.FileName), StringComparison.OrdinalIgnoreCase));
 
                 // Add to track submissions list
                 trackSubmissions.Add(new JObject
                 {
-                    { "Id", matchingRequirement },
+                    { "Id", System.IO.Path.GetFileNameWithoutExtension(audioFile.FileName) },
                     { "AudioFileKey", trackAudioFileKey },
                     { "AudioFileSize", audioFile.Length },
                     { "AudioLength", (int)(audioMetadata?.Duration ?? 0) }
@@ -325,7 +325,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 { "AccountId", accountId },
                 { "BookingId", BookingId },
-                { "BookingManualCancelledReason", request.BookingManualCancelledReason }
+                { "BookingManualCancelledReason", request.BookingCancelInfo.BookingManualCancelledReason }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,
@@ -347,7 +347,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         public async Task<IActionResult> ProcessCancelRequest(
             [FromRoute] int BookingId,
             [FromRoute] bool IsAccepted,
-            [FromBody] BookingCancelRequestProcessRequestDTO request)
+            [FromBody] BookingCancelValidationRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
@@ -357,8 +357,8 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "AccountId", accountId },
                 { "BookingId", BookingId },
                 { "IsAccepted", IsAccepted },
-                { "CustomerBookingCancelDepositRefundRate", request.CustomerBookingCancelDepositRefundRate },
-                { "PodcastBuddyBookingCancelDepositRefundRate", request.PodcastBuddyBookingCancelDepositRefundRate }
+                { "CustomerBookingCancelDepositRefundRate", request.BookingCancelValidationInfo.CustomerBookingCancelDepositRefundRate },
+                { "PodcastBuddyBookingCancelDepositRefundRate", request.BookingCancelValidationInfo.PodcastBuddyBookingCancelDepositRefundRate }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,

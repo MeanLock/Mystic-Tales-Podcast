@@ -8,8 +8,11 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking
 {
     public class BookingDealingRequestDTO
     {
+        public BookingDealingInfoDTO BookingDealingInfo { get; set; }
+    }
+    public class BookingDealingInfoDTO
+    {
         public List<BookingRequirementDealingRequestDTO> BookingRequirementInfoList { get; set; }
-        public decimal Price { get; set; }
-        public DateTime? Deadline { get; set; }
+        public int DeadlineDayCount { get; set; }
     }
 }

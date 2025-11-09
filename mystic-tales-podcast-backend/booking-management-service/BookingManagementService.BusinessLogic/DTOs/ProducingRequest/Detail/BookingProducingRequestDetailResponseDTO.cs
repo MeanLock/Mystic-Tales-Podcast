@@ -18,5 +18,6 @@ namespace BookingManagementService.BusinessLogic.DTOs.ProducingRequest.Detail
         public DateTime? FinishedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<BookingPodcastTrackListItemResponseDTO> BookingPodcastTracks { get; set; } = new List<BookingPodcastTrackListItemResponseDTO>();
+        public List<BookingEditRequirementListItemResponseDTO> EditRequirementList { get; set; } = new List<BookingEditRequirementListItemResponseDTO>();
     }
 }

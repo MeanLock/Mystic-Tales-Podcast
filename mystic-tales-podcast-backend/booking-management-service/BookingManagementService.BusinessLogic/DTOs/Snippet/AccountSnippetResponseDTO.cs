@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ModerationService.BusinessLogic.DTOs.Snippet
+namespace BookingManagementService.BusinessLogic.DTOs.Snippet
 {
-    public class AssignedStaffSnippetDTO
+    public class AccountSnippetResponseDTO
     {
         public int Id { get; set; }
         public string FullName { get; set; }

@@ -10,6 +10,5 @@ namespace BookingManagementService.BusinessLogic.DTOs.ProducingRequest
     public class BookingPodcastTrackCreateRequestDTO
     {
         public List<IFormFile> AudioFiles { get; set; } = new List<IFormFile>();
-        public string BookingRequirementInfo { get; set; }
     }
 }

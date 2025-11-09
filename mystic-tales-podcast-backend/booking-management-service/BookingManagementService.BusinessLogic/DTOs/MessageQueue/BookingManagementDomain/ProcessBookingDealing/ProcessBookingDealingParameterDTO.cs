@@ -11,8 +11,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
         public int BookingId { get; set; }
         public int AccountId { get; set; }
         public List<BookingRequirementDealingInfoObjectParameterDTO> BookingRequirementInfoList { get; set; }
-        public decimal Price { get; set; }
-        public DateTime? Deadline { get; set; }
+        public int? DeadlineDayCount { get; set; }
     }
     public class BookingRequirementDealingInfoObjectParameterDTO
     {

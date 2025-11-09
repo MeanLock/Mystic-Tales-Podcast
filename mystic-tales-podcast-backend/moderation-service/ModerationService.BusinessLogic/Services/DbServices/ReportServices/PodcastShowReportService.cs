@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using ModerationService.BusinessLogic.DTOs.Account;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreateShowReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastShowReport;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowReportNoEffectDMCARemoveShowForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowReportNoEffectUnpublishShowForce;
 using ModerationService.BusinessLogic.DTOs.Podcast;
 using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport.Details;
@@ -79,7 +81,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     Id = pbr.Id,
                     Content = pbr.Content,
                     AccountId = pbr.AccountId,
-                    PodcastShow = new PodcastShowSnippetDTO()
+                    PodcastShow = new PodcastShowSnippetResponseDTO()
                     {
                         Id = show.Id,
                         Name = show.Name,
@@ -212,13 +214,13 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 return new PodcastShowReportReviewSessionListItemResponseDTO()
                 {
                     Id = pbrrs.Id,
-                    PodcastShow = new PodcastShowSnippetDTO()
+                    PodcastShow = new PodcastShowSnippetResponseDTO()
                     {
                         Id = show.Id,
                         Name = show.Name,
                         MainImageFileKey = show.MainImageFileKey,
                     },
-                    AssignedStaff = new AssignedStaffSnippetDTO()
+                    AssignedStaff = new AssignedStaffSnippetResponseDTO()
                     {
                         Id = staff.Id,
                         FullName = staff.FullName,
@@ -254,7 +256,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     Id = pbr.Id,
                     Content = pbr.Content,
                     AccountId = pbr.AccountId,
-                    PodcastShow = new PodcastShowSnippetDTO()
+                    PodcastShow = new PodcastShowSnippetResponseDTO()
                     {
                         Id = show.Id,
                         Name = show.Name,
@@ -276,13 +278,13 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             return new PodcastShowReportReviewSessionDetailResponseDTO()
             {
                 Id = pbrrs.Id,
-                PodcastShow = new PodcastShowSnippetDTO()
+                PodcastShow = new PodcastShowSnippetResponseDTO()
                 {
                     Id = show.Id,
                     Name = show.Name,
                     MainImageFileKey = show.MainImageFileKey,
                 },
-                AssignedStaff = new AssignedStaffSnippetDTO()
+                AssignedStaff = new AssignedStaffSnippetResponseDTO()
                 {
                     Id = staff.Id,
                     FullName = staff.FullName,
@@ -314,7 +316,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
 
                     podcastShowReportReviewSessions.IsResolved = parameter.IsResolved;
                     var podcastShowReportList = await _podcastShowReportGenericRepository.FindAll()
-                        .Where(pbr => pbr.PodcastShowId == podcastShowReportReviewSessions.PodcastShowId)
+                        .Where(pbr => pbr.PodcastShowId == podcastShowReportReviewSessions.PodcastShowId
+                        && pbr.ResolvedAt == null)
                         .ToListAsync();
                     foreach (var ShowReport in podcastShowReportList)
                     {
@@ -381,6 +384,136 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Resolve podcast show report review session failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolveShowReportNoEffectDMCARemoveShowForceAsync(ResolveShowReportNoEffectDMCARemoveShowForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcastShowReportReviewSessions = await _podcastShowReportReviewSessionGenericRepository.FindAll()
+                        .Where(psrrs => psrrs.PodcastShowId == parameter.PodcastShowId)
+                        .ToListAsync();
+
+                    foreach(var session in podcastShowReportReviewSessions)
+                    {
+                        session.IsResolved = true;
+                        await _podcastShowReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                        var podcastShowReportList = await _podcastShowReportGenericRepository.FindAll()
+                        .Where(pbr => pbr.PodcastShowId == session.PodcastShowId
+                        && pbr.ResolvedAt == null)
+                        .ToListAsync();
+                        foreach (var ShowReport in podcastShowReportList)
+                        {
+                            ShowReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastShowReportGenericRepository.UpdateAsync(ShowReport.Id, ShowReport);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Show Report No Effect DMCA Remove Show Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Show Report No Effect DMCA Remove Show Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Resolve Show Report No Effect DMCA Remove Show Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Show Report No Effect DMCA Remove Show Force failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolveShowReportNoEffectUnpublishShowForceAsync(ResolveShowReportNoEffectUnpublishShowForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcastShowReportReviewSessions = await _podcastShowReportReviewSessionGenericRepository.FindAll()
+                        .Where(psrrs => psrrs.PodcastShowId == parameter.PodcastShowId)
+                        .ToListAsync();
+
+                    foreach (var session in podcastShowReportReviewSessions)
+                    {
+                        session.IsResolved = true;
+                        await _podcastShowReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                        var podcastShowReportList = await _podcastShowReportGenericRepository.FindAll()
+                        .Where(pbr => pbr.PodcastShowId == session.PodcastShowId
+                        && pbr.ResolvedAt == null)
+                        .ToListAsync();
+                        foreach (var ShowReport in podcastShowReportList)
+                        {
+                            ShowReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastShowReportGenericRepository.UpdateAsync(ShowReport.Id, ShowReport);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Show Report No Effect DMCA Remove Show Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Show Report No Effect Unpublish Show Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Resolve Show Report No Effect Unpublish Show Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Show Report No Effect Unpublish Show Force failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }

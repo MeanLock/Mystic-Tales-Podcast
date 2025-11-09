@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace ModerationService.BusinessLogic.Models.Mail
 {
-    public class AccuserConfirmationMailViewModel
+    public class DMCALawsuitProofValidToAccusedMailViewModel
     {
-        public string text { get; set; } = null!;
+        public string PodcasterEmail { get; set; } = null!;
+        public string PodcasterFullName { get; set; } = null!;
     }
 }

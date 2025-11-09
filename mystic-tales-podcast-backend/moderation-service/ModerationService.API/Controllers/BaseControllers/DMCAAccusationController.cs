@@ -349,13 +349,6 @@ namespace ModerationService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "DMCAAccusationId", DMCAAccusationId },
-                { "AccountId", request.CounterNoticeCreateInfo.AccountId },
-                { "AccountEmail", request.CounterNoticeCreateInfo.AccountEmail },
-                { "AccountPhone", request.CounterNoticeCreateInfo.AccountPhone },
-                { "StatementPerjury", request.CounterNoticeCreateInfo.StatementPerjury },
-                { "Jurisdiction", request.CounterNoticeCreateInfo.Juridisction },
-                { "Signature", request.CounterNoticeCreateInfo.Signature },
-                { "FiledDate", request.CounterNoticeCreateInfo.FiledDate },
                 { "CounterNoticeAttachFileKeys", JArray.FromObject(attachFileList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -420,12 +413,6 @@ namespace ModerationService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "DMCAAccusationId", DMCAAccusationId },
-                { "AccountId", request.LawsuitProofCreateInfo.AccountId },
-                { "GoodFaithStatement", request.LawsuitProofCreateInfo.GoodFaithStatement },
-                { "CourtName", request.LawsuitProofCreateInfo.CourtName },
-                { "CaseNumber", request.LawsuitProofCreateInfo.CaseNumber },
-                { "FilingDate", request.LawsuitProofCreateInfo.FilingDate },
-                { "Signature", request.LawsuitProofCreateInfo.Signature },
                 { "LawsuitProofAttachFileKeys", DMCAAccusationId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -510,9 +497,9 @@ namespace ModerationService.API.Controllers.BaseControllers
             {
                 { "AccountId", loginAccountId },
                 { "DMCAAccusationId", DMCAAccusationId },
-                { "DmcaAccusationConclusionReportTypeId", request.DmcaAccusationConclusionReportTypeId },
-                { "Description", request.Description },
-                { "InvalidReason", request.InvalidReason }
+                { "DmcaAccusationConclusionReportTypeId", request.dmcaAccusationConclusationReportInfo.DmcaAccusationConclusionReportTypeId },
+                { "Description", request.dmcaAccusationConclusationReportInfo.Description },
+                { "InvalidReason", request.dmcaAccusationConclusationReportInfo.InvalidReason }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,

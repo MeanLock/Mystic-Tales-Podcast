@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace ModerationService.BusinessLogic.DTOs.Snippet
 {
-    public class PodcastShowSnippetDTO
+    public class PodcastBuddySnippetResponseDTO
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
+        public int Id { get; set; }
+        public string FullName { get; set; }
+        public string Email { get; set; }
         public string MainImageFileKey { get; set; }
     }
 }

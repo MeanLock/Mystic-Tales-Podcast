@@ -14,8 +14,8 @@ namespace ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport.Details
     public class PodcastEpisodeReportReviewSessionDetailResponseDTO
     {
         public Guid Id { get; set; }
-        public PodcastEpisodeSnippetDTO PodcastEpisode { get; set; }
-        public AssignedStaffSnippetDTO AssignedStaff { get; set; }
+        public PodcastEpisodeSnippetResponseDTO PodcastEpisode { get; set; }
+        public AssignedStaffSnippetResponseDTO AssignedStaff { get; set; }
         public int ResolvedViolationPoint { get; set; }
         public bool IsResolved { get; set; }
         public DateTime CreatedAt { get; set; }

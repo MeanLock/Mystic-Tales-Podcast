@@ -3,6 +3,8 @@ using SubscriptionService.BusinessLogic.Attributes;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscriptionRegistration;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelShowSubscriptionDmcaRemoveShowForce;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelShowSubscriptionUnpublishShowForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreateAccountPodcastSubscriptionRegistration;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreateMemberSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreatePodcastSubscription;
@@ -171,6 +173,36 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-member-subscriptio.failed"
+            );
+        }
+        [MessageHandler("cancel-show-subscription-dmca-remove-show-force", SAGA_TOPIC)]
+        public async Task HandleCancelShowSubscriptionDmcaRemoveShowForceCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CancelShowSubscriptionDmcaRemoveShowForceParameterDTO>();
+                    await _podcastSubscriptionService.CancelShowSubscriptionDmcaRemoveShowForceAsync(parameter, command);
+                    _logger.LogInformation("Handled cancel-show-subscription-dmca-remove-show-force command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "cancel-show-subscription-dmca-remove-show-force.failed"
+            );
+        }
+        [MessageHandler("cancel-show-subscription-unpublish-show-force", SAGA_TOPIC)]
+        public async Task HandleCancelShowSubscriptionUnpublishShowForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CancelShowSubscriptionUnpublishShowForceParameterDTO>();
+                    await _podcastSubscriptionService.CancelShowSubscriptionUnpublishShowForceAsync(parameter, command);
+                    _logger.LogInformation("Handled cancel-show-subscription-unpublish-show-force command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "cancel-show-subscription-unpublish-show-force.failed"
             );
         }
     }

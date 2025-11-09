@@ -152,6 +152,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "Description", bookingCreateInfo.Description },
                 { "AccountId", accountId },
                 { "PodcastBuddyId", bookingCreateInfo.PodcastBuddyId },
+                { "DeadlineDayCount", bookingCreateInfo.DeadlineDayCount },
                 { "BookingRequirementInfoList", JArray.FromObject(requirementDocumentSubmission) },
             };
 
@@ -293,9 +294,8 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 { "AccountId", accountId },
                 { "BookingId", BookingId },
-                { "BookingRequirementInfoList", JArray.FromObject(request.BookingRequirementInfoList) },
-                { "Price", request.Price },
-                { "Deadline", request.Deadline }
+                { "BookingRequirementInfoList", JArray.FromObject(request.BookingDealingInfo.BookingRequirementInfoList) },
+                { "Deadline", request.BookingDealingInfo.DeadlineDayCount }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,
@@ -439,7 +439,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
-            var encryptionKeyBytes = await _bookingService.GetBookingTrackHlsEncryptionKeyFileAsync(BookingId, BookingPodcastTrackId, KeyId);
+            var encryptionKeyBytes = await _bookingService.GetBookingTrackHlsEncryptionKeyFileAsync(BookingId, BookingPodcastTrackId, KeyId, account.Id);
 
             Response.Headers.CacheControl = "no-store";
             return File(encryptionKeyBytes, "application/octet-stream", enableRangeProcessing: false);

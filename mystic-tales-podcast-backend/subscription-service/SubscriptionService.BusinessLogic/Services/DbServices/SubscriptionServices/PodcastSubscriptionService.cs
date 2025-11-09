@@ -5,6 +5,8 @@ using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscriptionRegistration;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelShowSubscriptionDmcaRemoveShowForce;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelShowSubscriptionUnpublishShowForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreateAccountPodcastSubscriptionRegistration;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeactivatePodcastSubscription;
@@ -686,6 +688,25 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         throw new Exception($"No Active Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
                     }
+
+                    if (podcastSubscription.PodcastShowId != null)
+                    {
+                        var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
+                        if (!showValidation.isValid)
+                        {
+                            throw new Exception(showValidation.errorMessage);
+                        }
+                    }
+
+                    if (podcastSubscription.PodcastChannelId != null)
+                    {
+                        var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
+                        if (!channelValidation.isValid)
+                        {
+                            throw new Exception(channelValidation.errorMessage);
+                        }
+                    }
+
                     var existRegistration = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                         .FirstOrDefaultAsync(psr => psr.AccountId == parameter.AccountId
                             && psr.PodcastSubscriptionId == parameter.PodcastSubscriptionId
@@ -791,13 +812,13 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         var registrationResult = await _podcastSubscriptionRegistrationGenericRepository.CreateAsync(newRegistration);
                         await transaction.CommitAsync();
                         var newResponseData = new JObject
-                    {
-                        { "PodcastSubscriptionRegistrationId", registrationResult.Id },
-                        { "AccountId", registrationResult.AccountId },
-                        { "PodcastSubscriptionId", registrationResult.PodcastSubscriptionId },
-                        { "SubscriptionCycleTypeId", registrationResult.SubscriptionCycleTypeId },
-                        { "CreatedAt", registrationResult.CreatedAt }
-                    };
+                        {
+                            { "PodcastSubscriptionRegistrationId", registrationResult.Id },
+                            { "AccountId", registrationResult.AccountId },
+                            { "PodcastSubscriptionId", registrationResult.PodcastSubscriptionId },
+                            { "SubscriptionCycleTypeId", registrationResult.SubscriptionCycleTypeId },
+                            { "CreatedAt", registrationResult.CreatedAt }
+                        };
                         var newMessageName = messageName + ".success";
                         var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                             topic: KafkaTopicEnum.SubscriptionManagementDomain,
@@ -1593,6 +1614,177 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 {
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while checking podcast subscription income");
+                }
+            }
+        }
+        public async Task CancelShowSubscriptionDmcaRemoveShowForceAsync(CancelShowSubscriptionDmcaRemoveShowForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                        .Include(ps => ps.PodcastSubscriptionRegistrations))
+                        .Where(ps => ps.PodcastShowId == parameter.PodcastShowId
+                        && ps.IsActive)
+                        .ToListAsync();
+
+                    foreach (var podcastSubscription in podcastSubscriptions)
+                    {
+                        var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                                .Where(sr => sr.PodcastSubscriptionId == podcastSubscription.Id && sr.CancelledAt == null)
+                                .ToListAsync();
+                        foreach (var registration in subscriptionRegistrations)
+                        {
+                            if (!registration.IsIncomeTaken)
+                            {
+                                var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Select(ptcp => ptcp.Price)
+                                    .FirstOrDefault();
+                                var tempRequestData = new JObject
+                                {
+                                    { "PodcastSubscriptionRegistrationId", registration.Id },
+                                    { "Profit", null },
+                                    { "AccountId", registration.AccountId },
+                                    { "Amount", amount },
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
+                                };
+                                var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                    requestData: tempRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "podcast-subscription-refund-flow");
+                                await _messagingService.SendSagaMessageAsync(refundMessage, null);
+                            }
+                            await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Cancel Show Subscription Dmca Remove Show Force for Saga Id: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Cancel Show Subscription Dmca Remove Show Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Cancel Show Subscription Dmca Remove Show Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Cancel Show Subscription Dmca Remove Show Force failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task CancelShowSubscriptionUnpublishShowForceAsync(CancelShowSubscriptionUnpublishShowForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                        .Include(ps => ps.PodcastSubscriptionRegistrations))
+                        .Where(ps => ps.PodcastShowId == parameter.PodcastShowId
+                        && ps.IsActive)
+                        .ToListAsync();
+
+                    foreach (var podcastSubscription in podcastSubscriptions)
+                    {
+                        var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                                .Where(sr => sr.PodcastSubscriptionId == podcastSubscription.Id && sr.CancelledAt == null)
+                                .ToListAsync();
+                        foreach (var registration in subscriptionRegistrations)
+                        {
+                            if (!registration.IsIncomeTaken)
+                            {
+                                var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                    .Select(ptcp => ptcp.Price)
+                                    .FirstOrDefault();
+                                var tempRequestData = new JObject
+                                {
+                                    { "PodcastSubscriptionRegistrationId", registration.Id },
+                                    { "Profit", null },
+                                    { "AccountId", registration.AccountId },
+                                    { "Amount", amount },
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
+                                };
+                                var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                    requestData: tempRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "podcast-subscription-refund-flow");
+                                await _messagingService.SendSagaMessageAsync(refundMessage, null);
+                            }
+                            await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Cancel Show Subscription Unpublish Show Force for Saga Id: {SagaId}", command.SagaInstanceId);
+
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Cancel Show Subscription Unpublish Show Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Cancel Show Subscription Unpublish Show Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Cancel Show Subscription Unpublish Show Force failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }

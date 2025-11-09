@@ -8,7 +8,10 @@ namespace BookingManagementService.BusinessLogic.DTOs.ProducingRequest
 {
     public class BookingCancelRequestRequestDTO
     {
-        public int AccountId { get; set; }
+        public BookingCancelInfoDTO BookingCancelInfo { get; set; }
+    }
+    public class BookingCancelInfoDTO
+    {
         public string BookingManualCancelledReason { get; set; }
     }
 }

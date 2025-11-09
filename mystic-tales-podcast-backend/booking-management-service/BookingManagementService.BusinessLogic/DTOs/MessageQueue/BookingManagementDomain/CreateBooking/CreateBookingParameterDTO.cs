@@ -12,6 +12,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
         public string Description { get; set; }
         public int AccountId { get; set; }
         public int PodcastBuddyId { get; set; }
+        public int DeadlineDayCount { get; set; }
         public List<BookingRequirementInfoObjectParameterDTO> BookingRequirementInfoList { get; set; }
     }
     public class BookingRequirementInfoObjectParameterDTO {         
