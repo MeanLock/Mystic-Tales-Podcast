@@ -2,12 +2,14 @@ import { baseApi, withAuthMode } from "../baseApi";
 import { tokenStore } from "@/src/features/auth/tokenStore";
 import { setCredentials } from "@/src/features/auth/authSlice";
 import { pollSagaResult } from "../sagaPolling";
-import type { User } from "@/src/types/user";
+import type { User, UserFromAPI, UserUI } from "@/src/types/user";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { JwtUtil } from "@/src/utils/token";
+import { fetchPublicFileUrl } from "../file/publicSource/getPublicSource.service";
 
 // Types
 type LoginRequest = {
-  LoginInfo: {
+  ManualLoginInfo: {
     Email: string;
     Password: string;
   };
@@ -16,7 +18,8 @@ type LoginRequest = {
 type LoginResponse = {
   accessToken: string;
   refreshToken: string;
-  user: User;
+  // user may be null if not available
+  user: User | null;
 };
 
 type SagaResponse = {
@@ -81,14 +84,40 @@ export const authApi = baseApi.injectEndpoints({
 
           const { AccessToken, RefreshToken } = sagaResult.data;
 
+          console.log("[authApi] sagaResult.data:", sagaResult.data);
+          console.log(
+            "[authApi] AccessToken type/len:",
+            typeof AccessToken,
+            AccessToken ? AccessToken.length : "<empty>"
+          );
+          console.log(
+            "[authApi] RefreshToken type/len:",
+            typeof RefreshToken,
+            RefreshToken ? "len=" + RefreshToken.length : "<missing>"
+          );
+
+          // Validate AccessToken exists (required). RefreshToken is optional.
+          if (typeof AccessToken !== "string") {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: "Invalid or missing AccessToken returned from saga",
+              } as FetchBaseQueryError,
+            };
+          }
+
           // Step 3: Save tokens to SecureStore
           await tokenStore.setAccess(AccessToken);
-          await tokenStore.setRefresh(RefreshToken);
+          if (typeof RefreshToken === "string") {
+            await tokenStore.setRefresh(RefreshToken);
+          }
 
-          // Step 4: Get user info with the new token
+          const userDecoded = JwtUtil.decodeToken(AccessToken);
+
+          // Step 4: Get user info with the new token — API now returns Account directly
           const meArgs = withAuthMode(
             {
-              url: "/api/user-service/api/auth/me",
+              url: "/api/user-service/api/accounts/me",
               method: "GET",
             },
             { authMode: "withToken", token: AccessToken }
@@ -100,47 +129,75 @@ export const authApi = baseApi.injectEndpoints({
             return { error: meResult.error as FetchBaseQueryError };
           }
 
-          const { SagaInstanceId: meSagaId } = meResult.data as SagaResponse;
+          // Expect payload like: { Account: { ... } }
+          const accountPayload = meResult.data as
+            | { Account?: UserFromAPI }
+            | any;
+          const userFromApi = accountPayload?.Account;
 
-          if (!meSagaId) {
-            return {
-              error: {
-                status: "CUSTOM_ERROR",
-                error: "No SagaInstanceId returned from /me endpoint",
-              } as FetchBaseQueryError,
+          // 5️⃣ Resolve avatar using fetchPublicFileUrl()
+          let finalUser: UserUI | null = null;
+
+          if (userFromApi) {
+            const { MainImageFileKey, ...rest } = userFromApi; // omit MainImageFileKey
+            console.log(
+              "[authApi] userFromApi.MainImageFileKey:",
+              MainImageFileKey
+            );
+
+            // If we have a key, try to resolve it. Log before/after for diagnostics.
+            let imageUrl = "/assets/images/user/unknown.jpg";
+            if (MainImageFileKey) {
+              console.log(
+                "[authApi] resolving avatar for key -> calling fetchPublicFileUrl"
+              );
+              imageUrl = await fetchPublicFileUrl(
+                MainImageFileKey,
+                api,
+                extraOptions
+              );
+              console.log("[authApi] fetchPublicFileUrl returned:", imageUrl);
+            } else {
+              console.log(
+                "[authApi] MainImageFileKey is falsy — using placeholder"
+              );
+              imageUrl =
+                "https://i.pinimg.com/736x/62/07/15/620715d7b709a2f7f137227885c66793.jpg";
+            }
+
+            finalUser = {
+              ...(rest as any),
+              ImageUrl: imageUrl, // replace MainImageFileKey with ImageUrl
+            } as UserUI;
+          } else if (userDecoded) {
+            const d = userDecoded as any;
+            finalUser = {
+              Id: d?.Id ?? d?.id ?? 0,
+              Email: d?.Email ?? "",
+              FullName: d?.FullName ?? "",
+              Dob: d?.Dob ?? "",
+              Gender: d?.Gender ?? "",
+              Address: d?.Address ?? "",
+              Phone: d?.Phone ?? "",
+              Balance: d?.Balance ?? 0,
+              ImageUrl: "", // no MainImageFileKey, just ImageUrl
+              PodcastListenSlot: d?.PodcastListenSlot ?? 0,
+              DeactivatedAt: d?.DeactivatedAt ?? "",
+              IsPodcaster: d?.IsPodcaster ?? false,
             };
           }
-
-          // Step 5: Poll saga orchestrator for user info
-          const userSagaResult = await pollSagaResult<User>({
-            sagaId: meSagaId,
-            baseQuery,
-            api,
-            extraOptions,
-            timeoutSeconds: 120,
-            intervalSeconds: 2,
-          });
-
-          if (userSagaResult.status !== "SUCCESS" || !userSagaResult.data) {
-            return {
-              error: {
-                status: "CUSTOM_ERROR",
-                error: userSagaResult.error || "Failed to fetch user info",
-              } as FetchBaseQueryError,
-            };
-          }
-
-          const user = userSagaResult.data;
 
           // Step 6: Update Redux state
-          api.dispatch(setCredentials({ user, accessToken: AccessToken }));
+          api.dispatch(
+            setCredentials({ user: finalUser, accessToken: AccessToken })
+          );
 
           // Step 7: Return combined data
           return {
             data: {
               accessToken: AccessToken,
               refreshToken: RefreshToken,
-              user,
+              user: finalUser,
             },
           };
         } catch (error) {

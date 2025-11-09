@@ -110,7 +110,14 @@ class PlayerEngine {
   private getSource(key: string) {
     const mod = audioMap[key];
     if (!mod) throw new Error(`Audio key not found: ${key}`);
-    return mod;
+
+    // If the map value is a string, treat it as a remote uri for Expo Audio
+    if (typeof mod === "string") {
+      return { uri: mod };
+    }
+
+    // Otherwise assume it's a local require(...) (number) or already valid source
+    return mod as any;
   }
 
   // async playCurrent(audio: NonNullable<CurrentAudioType>) {

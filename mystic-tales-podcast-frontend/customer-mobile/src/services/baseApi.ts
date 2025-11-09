@@ -9,7 +9,7 @@ import type { RootState } from "@/src/store/store";
 import { tokenStore } from "@/src/features/auth/tokenStore";
 import { setCredentials, logoutLocal } from "@/src/features/auth/authSlice";
 
-// Simple mutex implementation
+/* --------------------------- 🔒 Simple Mutex --------------------------- */
 class SimpleMutex {
   private locked = false;
   private queue: (() => void)[] = [];
@@ -37,56 +37,77 @@ class SimpleMutex {
   }
 }
 
-// Mutex to prevent multiple refresh attempts
 const mutex = new SimpleMutex();
 
-// Base query with auth handling
-const baseQuery = fetchBaseQuery({
-  baseUrl: "https://mystic-tale-podcast.com",
+/* --------------------------- ⚙️ Base Query Core --------------------------- */
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: "https://3e8548f2269f.ngrok-free.app",
   prepareHeaders: async (headers, { getState, endpoint }) => {
-    // Check for custom auth mode in meta
     const meta = (endpoint as any)?.__meta;
 
-    // Public mode - no auth
-    if (meta?.authMode === "public") {
-      return headers;
-    }
+    // 1️⃣ Public mode
+    if (meta?.authMode === "public") return headers;
 
-    // WithToken mode - use token from meta
+    // 2️⃣ WithToken mode
     if (meta?.authMode === "withToken" && meta?.token) {
       headers.set("authorization", `Bearer ${meta.token}`);
       return headers;
     }
 
-    // Auth mode (default) - use token from Redux or SecureStore
+    // 3️⃣ Auth mode (default)
     const state = getState() as RootState;
     let token = state.auth.accessToken;
-
-    // If no token in Redux, try to get from SecureStore
-    if (!token) {
-      token = await tokenStore.getAccess();
-    }
+    if (!token) token = await tokenStore.getAccess();
 
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
+      headers.set("ngrok-skip-browser-warning", "69420");
     }
 
     return headers;
   },
 });
 
-// Base query with auto token refresh
+/* --------------------------- 🧩 Base Query With Logging + Reauth --------------------------- */
 const baseQueryWithReauth: BaseQueryFn<
   string | FetchArgs,
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  // Wait if another request is refreshing token
+  // Wait if another request is refreshing
   await mutex.waitForUnlock();
 
-  let result = await baseQuery(args, api, extraOptions);
+  // For logging
+  const method = typeof args === "string" ? "GET" : args.method ?? "GET";
+  const url =
+    typeof args === "string"
+      ? args
+      : `${args.url?.startsWith("http") ? args.url : args.url ?? ""}`;
+  const body = typeof args === "string" ? undefined : args.body;
 
-  // If 401 and not already refreshing, try to refresh token
+  console.log("➡️ [RTKQ] Request:", {
+    url,
+    method,
+    body,
+  });
+
+  const start = Date.now();
+  let result = await rawBaseQuery(args, api, extraOptions);
+  const timeMs = Date.now() - start;
+
+  const status =
+    (result as any).meta?.response?.status ??
+    (result as any).error?.status ??
+    "unknown";
+
+  console.log("⬅️ [RTKQ] Response:", {
+    url,
+    status,
+    timeMs,
+    payload: result.data ?? result.error,
+  });
+
+  // 401 handling
   if (result.error && result.error.status === 401) {
     if (!mutex.isLocked()) {
       const release = await mutex.acquire();
@@ -94,8 +115,8 @@ const baseQueryWithReauth: BaseQueryFn<
         const refreshToken = await tokenStore.getRefresh();
 
         if (refreshToken) {
-          // Try to refresh token
-          const refreshResult = await baseQuery(
+          console.log("🔄 [RTKQ] Refreshing token...");
+          const refreshResult = await rawBaseQuery(
             {
               url: "/api/user-service/api/auth/refresh",
               method: "POST",
@@ -112,22 +133,28 @@ const baseQueryWithReauth: BaseQueryFn<
                 refreshToken: string;
               };
 
-            // Save new tokens
             await tokenStore.setAccess(accessToken);
             await tokenStore.setRefresh(newRefreshToken);
 
-            // Update Redux state
             api.dispatch(setCredentials({ user: null, accessToken }));
 
-            // Retry original request with new token
-            result = await baseQuery(args, api, extraOptions);
+            // Retry original request
+            result = await rawBaseQuery(args, api, extraOptions);
+
+            console.log("✅ [RTKQ] Retried after refresh:", {
+              url,
+              status:
+                (result as any).meta?.response?.status ??
+                (result as any).error?.status ??
+                "unknown",
+            });
           } else {
-            // Refresh failed - logout
+            console.log("❌ [RTKQ] Token refresh failed – logging out");
             api.dispatch(logoutLocal());
             await tokenStore.clearAll();
           }
         } else {
-          // No refresh token - logout
+          console.log("⚠️ [RTKQ] No refresh token – logging out");
           api.dispatch(logoutLocal());
           await tokenStore.clearAll();
         }
@@ -135,15 +162,16 @@ const baseQueryWithReauth: BaseQueryFn<
         release();
       }
     } else {
-      // Wait for refresh to complete and retry
+      console.log("⏳ [RTKQ] Waiting for token refresh to complete...");
       await mutex.waitForUnlock();
-      result = await baseQuery(args, api, extraOptions);
+      result = await rawBaseQuery(args, api, extraOptions);
     }
   }
 
   return result;
 };
 
+/* --------------------------- 🌐 RTK API --------------------------- */
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
@@ -151,12 +179,12 @@ export const baseApi = createApi({
   endpoints: () => ({}),
 });
 
-// Type helpers for creating endpoints with different auth modes
+/* --------------------------- 🧠 Helpers --------------------------- */
 export type PublicEndpoint = { authMode: "public" };
 export type AuthEndpoint = { authMode: "auth" };
 export type WithTokenEndpoint = { authMode: "withToken"; token: string };
+export { rawBaseQuery as baseQuery }; // 👈 Export baseQuery để dùng ở ngoài
 
-// Helper to add auth mode to endpoint
 export const withAuthMode = <T extends FetchArgs>(
   args: T,
   mode: PublicEndpoint | AuthEndpoint | WithTokenEndpoint

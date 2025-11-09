@@ -3,15 +3,16 @@ import { EpisodeWithImageUrl } from "../types/episode";
 export const mockEpisodes: EpisodeWithImageUrl[] = [
   {
     Id: "episode-1",
-    Name: "PIXELATED KISSESS - Joji",
+    Name: "Feora - Gerudo Valley - Legend of Zelda (Lofi)",
     Description: "I love this song",
     ExplicitContent: false,
     ReleaseDate: "2025-10-14T00:00:38.448Z",
     IsReleased: true,
-    ImageUrl: "https://i1.sndcdn.com/artworks-WJCe3p2futns-0-t500x500.jpg",
+    ImageUrl:
+      "https://i.pinimg.com/736x/28/c3/11/28c3119cb7d043a8081fd38f40735f21.jpg",
     AudioFileKey: "audio-1",
     AudioFileSize: 1,
-    AudioLength: 110,
+    AudioLength: 197,
     AudioFingerprint: "© 000001",
     PodcastEpisodeSubscriptionType: {
       Id: 1,
@@ -29,13 +30,13 @@ export const mockEpisodes: EpisodeWithImageUrl[] = [
   },
   {
     Id: "episode-2",
-    Name: "KayC - INTERSTELLAR (feat. Wxrdie & Machiot)",
+    Name: "Weak Link",
     Description: "I love this song",
     ExplicitContent: false,
     ReleaseDate: "2025-10-14T00:00:38.448Z",
     IsReleased: true,
     ImageUrl:
-      "https://i.pinimg.com/736x/ce/57/b3/ce57b33d2b06210e3d6ef67322fb9aea.jpg",
+      "https://i.pinimg.com/1200x/f7/e7/07/f7e70720c9aca60df73ee91086f9c201.jpg",
     AudioFileKey: "audio-2",
     AudioFileSize: 1,
     AudioLength: 198,
@@ -56,16 +57,16 @@ export const mockEpisodes: EpisodeWithImageUrl[] = [
   },
   {
     Id: "episode-3",
-    Name: "BAN MAI - LEFT HAND ft. DA/MD, CCMK (Official Audio)",
+    Name: "Lo-Fi CooKing x Chill x Relax x Lounge",
     Description: "I love this song",
     ExplicitContent: false,
     ReleaseDate: "2025-10-14T00:00:38.448Z",
     IsReleased: true,
     ImageUrl:
-      "https://i.pinimg.com/1200x/16/ee/dc/16eedc881990b76789dc2f8f19476b0a.jpg",
+      "https://i.pinimg.com/1200x/92/74/4f/92744f75d767d5fa9e2f175c1d8a61a1.jpg",
     AudioFileKey: "audio-3",
     AudioFileSize: 1,
-    AudioLength: 260,
+    AudioLength: 238,
     AudioFingerprint: "© 000003",
     PodcastEpisodeSubscriptionType: {
       Id: 1,

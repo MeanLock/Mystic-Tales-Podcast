@@ -8,6 +8,7 @@ import { logoutLocal } from "@/src/features/auth/authSlice";
 import { tokenStore } from "@/src/features/auth/tokenStore";
 
 import { useRouter } from "expo-router";
+import { stopAll } from "@/src/features/mediaPlayer/playerSlice";
 
 export default function Profile() {
   const authState = useSelector((state: RootState) => state.auth);
@@ -19,6 +20,7 @@ export default function Profile() {
       await tokenStore.clearAll();
       // Update Redux state
       dispatch(logoutLocal());
+      dispatch(stopAll());
       // Navigate to login screen
       router.replace("/(auth)/login");
     } catch (error) {
@@ -32,7 +34,7 @@ export default function Profile() {
       <Text className="text-xl font-bold mb-4">Profile Screen</Text>
       {authState.user && (
         <Text className="mb-4">
-          Welcome, {authState.user.Fullname || "User"}!
+          Welcome, {authState.user.FullName || "User"}!
         </Text>
       )}
 

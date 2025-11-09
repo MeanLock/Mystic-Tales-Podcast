@@ -21,9 +21,10 @@ import playerReducer, {
   updatePosition,
   onEnded,
 } from "../features/mediaPlayer/playerSlice";
-import { playerMiddleware } from "../features/mediaPlayer/playerMiddleware"; // ✅
+import { playerMiddleware } from "../features/mediaPlayer/playerMiddleware";
 import { playerEngine } from "../services/audio/playerEngine";
 
+// ✅ root reducer
 const rootReducer = combineReducers({
   auth: authReducer,
   downloads: downloadsReducer,
@@ -31,17 +32,40 @@ const rootReducer = combineReducers({
   [baseApi.reducerPath]: baseApi.reducer,
 });
 
+// ✅ persist config
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: [
-    // "player", // đang tắt persist player để test
-    "auth",
-  ],
+  whitelist: ["auth"],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
+// ✅ thêm logging middleware
+const rtkQueryLogger = () => (next: any) => (action: any) => {
+  if (action.type.endsWith("/pending")) {
+    console.log("➡️ [RTK Query] Request:", {
+      type: action.type,
+      endpoint: action.meta?.arg?.endpointName,
+      params: action.meta?.arg?.originalArgs,
+    });
+  } else if (action.type.endsWith("/fulfilled")) {
+    console.log("⬅️ [RTK Query] Response:", {
+      type: action.type,
+      endpoint: action.meta?.arg?.endpointName,
+      payload: action.payload,
+    });
+  } else if (action.type.endsWith("/rejected")) {
+    console.log("❌ [RTK Query] Error:", {
+      type: action.type,
+      endpoint: action.meta?.arg?.endpointName,
+      error: action.error,
+    });
+  }
+  return next(action);
+};
+
+// ✅ store
 export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
@@ -50,8 +74,9 @@ export const store = configureStore({
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     })
-      .concat(baseApi.middleware) // RTK Query middleware
-      .concat(playerMiddleware), // ✅ Thêm playerEngine middleware
+      .concat(baseApi.middleware)
+      .concat(rtkQueryLogger) // 👈 thêm dòng này
+      .concat(playerMiddleware),
   devTools: __DEV__,
 });
 

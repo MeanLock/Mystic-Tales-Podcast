@@ -66,17 +66,8 @@ function toCurrent(q: QueuedAudioType): NonNullable<CurrentAudioType> {
 
 /** ===== Initial ===== */
 const initialState: PlayerType = {
-  playerMode: { playStatus: "pause", nextMode: "normal" },
-  currentAudio: {
-    Id: mockEpisodes[0].Id,
-    Name: mockEpisodes[0].Name,
-    LatestPosition: 0,
-    AudioLength: mockEpisodes[0].AudioLength,
-    MainFileKey: mockEpisodes[0].AudioFileKey,
-    ImageUrl: mockEpisodes[0].ImageUrl,
-    PodcasterName: "Mystic Tales",
-    Show: { Id: mockEpisodes[0].PodcastShowId, Name: "Mystic Tales" },
-  },
+  playerMode: { playStatus: "stop", nextMode: "normal" },
+  currentAudio: null,
   queueAudios: [],
 };
 

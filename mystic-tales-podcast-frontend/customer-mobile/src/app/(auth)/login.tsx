@@ -130,48 +130,48 @@ export default function Login() {
       console.log("Logging in with:", email, password);
 
       // Mở ra khi có API
-      // const result = await login({
-      //   LoginInfo: {
-      //     Email: email,
-      //     Password: password,
-      //   },
-      // }).unwrap();
+      const result = await login({
+        ManualLoginInfo: {
+          Email: email,
+          Password: password,
+        },
+      }).unwrap();
 
       // Fake Logic, xóa sau khi có API
-      const accessToken = "abc-xyz-def-ghk";
-      const user: User = {
-        Id: 1,
-        Email: email, // Sử dụng email từ input
-        Role: {
-          Id: 1,
-          Name: "Customer",
-        },
-        Fullname: "Hoàng Minh Lộc",
-        Dob: "03/10/2004",
-        Gender: "Male",
-        Address: "S5.01B Vinhomes GrandPark",
-        Phone: "0896893636",
-        Balance: 100000,
-        MainImageFileKey:
-          "https://i.pinimg.com/736x/84/6c/b5/846cb5c8b99cb86fdd052c661d0af33f.jpg",
-        IsVerified: true,
-        GoogleId: null,
-        PodcastListenSlot: 10,
-        ViolationPoint: 0,
-        ViolationLevel: 0,
-        LastViolationPointChanged: "102031031",
-        LastViolationLevelChanged: "12312312312",
-        LastPodcastListenSlotChanged: "12313123123",
-        DeactivatedAt: null,
-        CreatedAt: "ădadwadawdaw",
-        UpdatedAt: "dădawwdawd",
-        IsBeingPunish: false,
-      };
+      // const accessToken = "abc-xyz-def-ghk";
+      // const user: User = {
+      //   Id: 1,
+      //   Email: email, // Sử dụng email từ input
+      //   Role: {
+      //     Id: 1,
+      //     Name: "Customer",
+      //   },
+      //   Fullname: "Hoàng Minh Lộc",
+      //   Dob: "03/10/2004",
+      //   Gender: "Male",
+      //   Address: "S5.01B Vinhomes GrandPark",
+      //   Phone: "0896893636",
+      //   Balance: 100000,
+      //   MainImageFileKey:
+      //     "https://i.pinimg.com/736x/84/6c/b5/846cb5c8b99cb86fdd052c661d0af33f.jpg",
+      //   IsVerified: true,
+      //   GoogleId: null,
+      //   PodcastListenSlot: 10,
+      //   ViolationPoint: 0,
+      //   ViolationLevel: 0,
+      //   LastViolationPointChanged: "102031031",
+      //   LastViolationLevelChanged: "12312312312",
+      //   LastPodcastListenSlotChanged: "12313123123",
+      //   DeactivatedAt: null,
+      //   CreatedAt: "ădadwadawdaw",
+      //   UpdatedAt: "dădawwdawd",
+      //   IsBeingPunish: false,
+      // };
 
       // Set credentials vào Redux store
-      dispatch(setCredentials({ user, accessToken }));
+      // dispatch(setCredentials({ user, accessToken }));
 
-      console.log("Login successful (fake):", { user, accessToken });
+      // console.log("Login successful (fake):", { user, accessToken });
 
       // Navigate to home after successful login
       router.replace("/(tabs)/home");

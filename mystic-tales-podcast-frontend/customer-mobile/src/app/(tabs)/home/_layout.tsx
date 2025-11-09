@@ -104,7 +104,7 @@ const Header = ({ scrollY }: { scrollY: Animated.Value }) => {
             <Pressable style={style.userBadge} onPress={goToProfile}>
               <Image
                 source={{
-                  uri: authState.user.MainImageFileKey,
+                  uri: authState.user.ImageUrl,
                 }}
                 style={style.userAvatar}
               />
