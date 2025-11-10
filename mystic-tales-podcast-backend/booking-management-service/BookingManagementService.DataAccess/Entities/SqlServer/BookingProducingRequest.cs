@@ -11,7 +11,7 @@ public partial class BookingProducingRequest
 
     public string Note { get; set; } = null!;
 
-    public DateOnly Deadline { get; set; }
+    public DateTime? Deadline { get; set; }
 
     public bool? IsAccepted { get; set; }
 
@@ -20,6 +20,8 @@ public partial class BookingProducingRequest
     public DateTime CreatedAt { get; set; }
 
     public string? RejectReason { get; set; }
+
+    public int? DeadlineDays { get; set; }
 
     public virtual Booking Booking { get; set; } = null!;
 

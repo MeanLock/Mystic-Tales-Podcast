@@ -35,6 +35,8 @@ public partial class Booking
 
     public double? PodcastBuddyBookingCancelDepositRefundRate { get; set; }
 
+    public int? DeadlineDays { get; set; }
+
     public virtual ICollection<BookingChatRoom> BookingChatRooms { get; set; } = new List<BookingChatRoom>();
 
     public virtual ICollection<BookingPodcastTrack> BookingPodcastTracks { get; set; } = new List<BookingPodcastTrack>();

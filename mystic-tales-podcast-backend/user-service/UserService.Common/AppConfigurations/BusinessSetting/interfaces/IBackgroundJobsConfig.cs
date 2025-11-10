@@ -15,5 +15,7 @@ namespace UserService.Common.AppConfigurations.BusinessSetting.interfaces
         public string ConsulLockKey { get; set; }
         public int ConsulLockTTLSeconds { get; set; }
         public int ConsulLockRenewalIntervalSeconds { get; set; }
+        public string? RedisKeyName { get; set; }
+        public int? RedisKeyTTLSeconds { get; set; }
     }
 }

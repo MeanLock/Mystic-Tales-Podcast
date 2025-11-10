@@ -61,6 +61,7 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnName("customerBookingCancelDepositRefundRate");
             entity.Property(e => e.Deadline).HasColumnName("deadline");
+            entity.Property(e => e.DeadlineDays).HasColumnName("deadlineDays");
             entity.Property(e => e.DemoAudioFileKey).HasColumnName("demoAudioFileKey");
             entity.Property(e => e.Description)
                 .HasDefaultValue("")
@@ -206,7 +207,10 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
-            entity.Property(e => e.Deadline).HasColumnName("deadline");
+            entity.Property(e => e.Deadline)
+                .HasColumnType("datetime")
+                .HasColumnName("deadline");
+            entity.Property(e => e.DeadlineDays).HasColumnName("deadlineDays");
             entity.Property(e => e.FinishedAt)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnType("datetime")
