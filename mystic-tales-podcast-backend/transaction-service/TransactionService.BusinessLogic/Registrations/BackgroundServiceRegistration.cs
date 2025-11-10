@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using TransactionService.BusinessLogic.Services.BackgroundServices;
 using TransactionService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
 using TransactionService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
 using TransactionService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
@@ -15,6 +16,8 @@ namespace TransactionService.BusinessLogic.Registrations
 
             // services.AddHostedService<MinuteBaseRequestCancellationService>();
             // services.AddHostedService<HourBaseRequestCancellationService>();
+
+            services.AddHostedService<SampleBackgroundJob>();
             
             services.Configure<HostOptions>(options =>
             {

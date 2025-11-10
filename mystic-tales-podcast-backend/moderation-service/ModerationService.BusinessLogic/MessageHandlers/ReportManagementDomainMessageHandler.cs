@@ -24,6 +24,7 @@ using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.R
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectDMCARemoveShowForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowReportNoEffectUnpublishShowForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectUnpublishShowForce;
+using ModerationService.Common.AppConfigurations.BusinessSetting.interfaces;
 
 namespace ModerationService.BusinessLogic.MessageHandlers
 {
@@ -33,7 +34,7 @@ namespace ModerationService.BusinessLogic.MessageHandlers
         private readonly PodcastBuddyReportService _podcastBuddyReportService;
         private readonly PodcastShowReportService _podcastShowReportService;
         private readonly PodcastEpisodeReportService _podcastEpisodeReportService;
-        private readonly MailPropertiesConfig _mailPropertiesConfig;
+        private readonly IMailPropertiesConfig _mailPropertiesConfig;
         private readonly MailOperationService _mailOperationService;
         private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.ReportManagementDomain;
@@ -44,7 +45,7 @@ namespace ModerationService.BusinessLogic.MessageHandlers
             PodcastBuddyReportService podcastBuddyReportService,
             PodcastShowReportService podcastShowReportService,
             PodcastEpisodeReportService podcastEpisodeReportService,
-            MailPropertiesConfig mailPropertiesConfig,
+            IMailPropertiesConfig mailPropertiesConfig,
             MailOperationService mailOperationService
             ) : base(messagingService, kafkaProducerService, logger)
         {

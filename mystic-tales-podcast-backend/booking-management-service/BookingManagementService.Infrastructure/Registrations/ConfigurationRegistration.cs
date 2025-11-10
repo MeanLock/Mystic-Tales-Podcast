@@ -56,6 +56,7 @@ namespace BookingManagementService.Infrastructure.Registrations
             // Consul
             services.AddSingleton<IConsulServiceConfig, ConsulServiceConfig>();
             services.AddSingleton<IConsulHealthCheckConfig, ConsulHealthCheckConfig>();
+            services.AddSingleton<IConsulDistributedLockConfig, ConsulDistributedLockConfig>();
 
             // Audio
             services.AddSingleton<IHlsConfig, HlsConfig>();

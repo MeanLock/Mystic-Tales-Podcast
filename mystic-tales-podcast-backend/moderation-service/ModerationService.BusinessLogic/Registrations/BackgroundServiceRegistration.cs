@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using ModerationService.BusinessLogic.Services.BackgroundServices;
 using ModerationService.BusinessLogic.Services.BackgroundServices.DMCAScheduleServices;
 using ModerationService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
 using ModerationService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
@@ -16,6 +17,8 @@ namespace ModerationService.BusinessLogic.Registrations
 
             // services.AddHostedService<MinuteBaseRequestCancellationService>();
             // services.AddHostedService<HourBaseRequestCancellationService>();
+
+            services.AddHostedService<SampleBackgroundJob>();
             
             services.AddHostedService<HourlyResponseTimeDMCAAccusationCheckingService>();
 

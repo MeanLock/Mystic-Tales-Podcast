@@ -21,6 +21,7 @@ using Net.payOS;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using BookingManagementService.Infrastructure.Services.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Services.Audio.Hls;
+using BookingManagementService.Infrastructure.Services.Consul.DistributedLock;
 
 namespace BookingManagementService.Infrastructure.Registrations
 {
@@ -177,6 +178,10 @@ namespace BookingManagementService.Infrastructure.Registrations
                     config.Address = new Uri(consulServiceHost);
                 });
             });
+            
+            // Register Consul Distributed Lock Service
+            services.AddSingleton<ConsulDistributedLockService>();
+            services.AddSingleton<ConsulSessionManager>();
 
             return services;
         }

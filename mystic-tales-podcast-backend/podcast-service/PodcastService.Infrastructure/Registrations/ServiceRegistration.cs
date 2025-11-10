@@ -23,6 +23,7 @@ using PodcastService.Infrastructure.Services.Audio.AcoustID;
 using PodcastService.Infrastructure.Services.Audio.Hls;
 using PodcastService.Infrastructure.Services.Audio.Tuning;
 using PodcastService.Infrastructure.Services.Audio.Transcription;
+using PodcastService.Infrastructure.Services.Consul.DistributedLock;
 
 namespace PodcastService.Infrastructure.Registrations
 {
@@ -179,6 +180,10 @@ namespace PodcastService.Infrastructure.Registrations
                     config.Address = new Uri(consulServiceHost);
                 });
             });
+
+            // Register Consul Distributed Lock Service
+            services.AddSingleton<ConsulDistributedLockService>();
+            services.AddSingleton<ConsulSessionManager>();
 
             return services;
         }

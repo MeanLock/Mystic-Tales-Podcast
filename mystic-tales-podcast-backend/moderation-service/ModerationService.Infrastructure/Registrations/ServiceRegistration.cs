@@ -20,6 +20,7 @@ using ModerationService.Infrastructure.Configurations.Payos;
 using Net.payOS;
 using ModerationService.Infrastructure.Services.Kafka;
 using ModerationService.Infrastructure.Services.Audio.AcoustID;
+using ModerationService.Infrastructure.Services.Consul.DistributedLock;
 
 namespace ModerationService.Infrastructure.Registrations
 {
@@ -176,6 +177,10 @@ namespace ModerationService.Infrastructure.Registrations
                     config.Address = new Uri(consulServiceHost);
                 });
             });
+
+            // Register Consul Distributed Lock Service
+            services.AddSingleton<ConsulDistributedLockService>();
+            services.AddSingleton<ConsulSessionManager>();
 
             return services;
         }

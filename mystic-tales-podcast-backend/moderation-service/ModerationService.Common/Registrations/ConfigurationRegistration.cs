@@ -42,6 +42,8 @@ namespace ModerationService.Common.Registrations
             services.AddSingleton<IAccountConfig, AccountConfig>();
             services.AddSingleton<IFileValidationConfig, FileValidationConfig>();
             services.AddSingleton<IMailPropertiesConfig, MailPropertiesConfig>();
+            services.AddSingleton<IDMCAAccusationConfig, DMCAAccusationConfig>();
+            services.AddSingleton<IBackgroundJobsConfig, BackgroundJobsConfig>();
 
             // SystemService
             services.AddSingleton<ISystemServiceConfig,SystemServiceConfig>();
