@@ -43,10 +43,10 @@ namespace BookingManagementService.Common.Registrations
             services.AddSingleton<IFileValidationConfig, FileValidationConfig>();
             services.AddSingleton<IMailPropertiesConfig, MailPropertiesConfig>();
             services.AddSingleton<IDMCAAccusationConfig, DMCAAccusationConfig>();
+            services.AddSingleton<IBackgroundJobsConfig, BackgroundJobsConfig>();
 
             // SystemService
-            services.AddSingleton<ISystemServiceConfig,SystemServiceConfig>();
- 
+            services.AddSingleton<ISystemServiceConfig, SystemServiceConfig>();
             return services;
         }
     }

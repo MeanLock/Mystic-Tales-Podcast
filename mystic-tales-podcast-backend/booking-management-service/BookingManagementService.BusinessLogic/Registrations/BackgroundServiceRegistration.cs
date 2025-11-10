@@ -4,6 +4,7 @@ using BookingManagementService.BusinessLogic.Services.BackgroundServices.MajorSc
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.BookingScheduleServices;
+using BookingManagementService.BusinessLogic.Services.BackgroundServices;
 
 namespace BookingManagementService.BusinessLogic.Registrations
 {
@@ -16,6 +17,9 @@ namespace BookingManagementService.BusinessLogic.Registrations
 
             // services.AddHostedService<MinuteBaseRequestCancellationService>();
             // services.AddHostedService<HourBaseRequestCancellationService>();
+
+            services.AddHostedService<SampleBackgroundJob>();
+
             services.AddHostedService<HourlyDeadlineBookingCheckingServices>();
 
             services.Configure<HostOptions>(options =>
