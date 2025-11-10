@@ -394,10 +394,11 @@ Step 2: Part A (80% - 9-10 shows)
     1. Get all shows in this subcategory
     2. Calculate personalScore for each show:
        
-       personalScore = 0.6 × userEngagement + 0.4 × showQuality
+       <!--Cũ personalScore = 0.6 × userEngagement + 0.4 × showQuality  -->
+      personalScore = showQuality / userEngagement 
        
        Where:
-       - userEngagement = episodes_listened_count / total_episodes
+       - userEngagement = episodes_listened_count / total_episodes (bỏ qua các show không có episode nào được được publish) (userEngagement min = 0,000000000001 để tránh trường hợp =0 và min phải thật nhỏ để tránh bị tình huống người dùng mới chỉ nghe 1 episode trong 1 show có total 1 tỉ tập đang publish)
        - showQuality = (totalFollow/10000) × 0.5 + (averageRating/5) × 0.5
        
        (Normalize to 0-1 range)
