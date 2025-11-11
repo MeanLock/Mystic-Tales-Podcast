@@ -33,9 +33,16 @@ export type BookingDetailsFromAPI = {
   Title: string;
   Description: string;
   AccountId: number;
-  PodcasterId: number;
+  Podcaster: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+    PricePerBookingWord: number;
+  };
   Price: number;
-  Deadline: string;
+  Deadline: string | null;
+  DeadlineDays: number;
   DemoAudioFileKey: string;
   BookingManualCancelledReason: string | null;
   BookingAutoCancelReason: string | null;
@@ -82,9 +89,16 @@ export type BookingDetailsUI = {
   Title: string;
   Description: string;
   AccountId: number;
-  PodcasterId: number;
-  Price: number;
-  Deadline: string;
+  Podcaster: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    ImageUrl: string;
+    PricePerBookingWord: number;
+  };
+  Price: number | null;
+  Deadline: string | null;
+  DeadlineDays: number;
   DemoAudioFileKey: string;
   BookingManualCancelledReason: string | null;
   BookingAutoCancelReason: string | null;

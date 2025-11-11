@@ -242,7 +242,9 @@ const MediaPlayerSidebar = () => {
       {/* Mystic Tales Logo */}
       <div
         className="
-        flex items-center justify-center gap-2 mb-2
+        items-center justify-center gap-2 mb-2
+        hidden
+        md:inline-flex
         md:justify-between
         w-full 
       "

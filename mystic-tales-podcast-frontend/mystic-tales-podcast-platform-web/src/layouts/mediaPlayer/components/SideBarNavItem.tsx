@@ -209,7 +209,10 @@ export const SidebarNavItems: React.FC<SidebarNavItemsProps> = ({
         );
       })}
 
-      <p onClick={() => navigate("/become-podcaster")} className="text-mystic-green hover:underline font-poppins italic cursor-pointer">
+      <p
+        onClick={() => navigate("/become-podcaster")}
+        className="text-mystic-green hidden md:inline-block hover:underline font-poppins italic cursor-pointer"
+      >
         Become Podcaster
       </p>
     </div>

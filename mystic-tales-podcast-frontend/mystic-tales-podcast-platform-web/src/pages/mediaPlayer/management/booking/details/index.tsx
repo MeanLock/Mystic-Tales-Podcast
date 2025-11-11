@@ -1,5 +1,5 @@
 import Loading from "@/components/loading";
-import { useGetBookingDetailQuery } from "@/core/services/booking/booking.service";
+
 import type { BookingDetailsUI } from "@/core/types/booking";
 import { skipToken } from "@reduxjs/toolkit/query";
 import { useEffect, useState } from "react";
@@ -9,15 +9,30 @@ import BookingStatusTrackingBar from "./components/BookingStatusTrackingBar";
 import { TimeUtil } from "@/core/utils/time";
 import { TbCoinFilled } from "react-icons/tb";
 import RequirementCard from "./components/RequirementCard";
+import RequirementCardWithWordCount from "./components/RequirementCardWithWordCounts";
+import {
+  useConfirmAndDepositMutation,
+  useGetBookingDetailQuery,
+} from "@/core/services/booking/booking.service";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 
 const mockBookingDetails1: BookingDetailsUI = {
   Id: 1,
   Title: "Đặt làm voice-over cho podcast về lucid dream",
   Description: `<div><div><em><strong>T&ocirc;i cần một <span style="color: #ff6600;">giọng đọc ấm &aacute;p</span> v&agrave; cuốn h&uacute;t để l&agrave;m voice-over cho tập podcast về lucid dream của m&igrave;nh.</strong></em></div></div>`,
   AccountId: 1,
-  PodcasterId: 1,
-  Price: 2000000,
-  Deadline: "2025-11-20T08:15:52.397Z",
+  Podcaster: {
+    Id: 1,
+    Email: "thinhngu@gmail.com",
+    FullName: "Bé Thịnh Pé Pỏng",
+    ImageUrl:
+      "https://i.pinimg.com/736x/4f/f1/d5/4ff1d52b884997affaa7bc5dc885cbde.jpg",
+    PricePerBookingWord: 10,
+  },
+  Price: null,
+  Deadline: null,
+  DeadlineDays: 3,
   DemoAudioFileKey: "",
   BookingManualCancelledReason: null,
   BookingAutoCancelReason: null,
@@ -81,8 +96,8 @@ const mockBookingDetails1: BookingDetailsUI = {
   ],
   BookingProducingRequestList: [],
   CurrentStatus: {
-    Id: 1,
-    Name: "Quotation Request",
+    Id: 2,
+    Name: "Quotation Dealing",
   },
   StatusTracking: [
     {
@@ -90,6 +105,12 @@ const mockBookingDetails1: BookingDetailsUI = {
       bookingId: 1,
       bookingStatusId: 1,
       createdAt: "2025-11-11T04:07:11.405Z",
+    },
+    {
+      id: "status-tracking-2",
+      bookingId: 1,
+      bookingStatusId: 2,
+      createdAt: "2025-11-12T04:07:11.405Z",
     },
   ],
 };
@@ -151,36 +172,71 @@ function encodeDescription(
   return encoded.trim();
 }
 
+const ViewModes = ["informations", "dealing", "producingRequest"];
+
 const BookingDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
+  const user = useSelector((state: RootState) => state.auth.user);
   // STATES
-  const [booking, setBooking] = useState<BookingDetailsUI | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<string>("informations");
+  const [isActionError, setIsActionError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // HOOKS
   const navigate = useNavigate();
-  useEffect(() => {
-    setIsLoading(true);
-    if (id) {
-      fetchBooking(id);
-    }
-  }, []);
 
   // FUNCTIONS
-  const fetchBooking = (id: string) => {
-    setTimeout(() => {
-      setBooking(mockBookingDetails1);
-      setIsLoading(false);
-    }, 2000);
+  const getTotalWordCount = (booking: any) => {
+    return booking.Booking.BookingRequirementFileList.reduce(
+      (count: any, requirement: any) => count + requirement.WordCount,
+      0
+    );
   };
 
   // MỞ LẠI LOGIC SAU
-  // const {
-  //   data: booking,
-  //   isLoading,
-  //   isError,
-  //   error,
-  // } = useGetBookingDetailQuery(id ? { id: Number(id) } : skipToken);
+  const {
+    data: booking,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetBookingDetailQuery(id ? { id: Number(id) } : skipToken);
+  const [confirmDeal] = useConfirmAndDepositMutation();
+
+  const handleConfirmDeal = async () => {
+    if (!booking) {
+      return;
+    } else {
+      if (!user) {
+        return;
+      } else {
+        if (!booking.Booking.Price) {
+          setIsActionError(true);
+          setErrorMessage("Booking Hasn't Been Set Price Yet, Please Wait!");
+          return;
+        } else {
+          if (user.Balance < booking.Booking.Price / 2) {
+            setIsActionError(true);
+            setErrorMessage("Your Account Balance Is Not Enough!");
+          } else {
+            try {
+              const response = await confirmDeal({
+                BookingId: booking.Booking.Id,
+                Amount: booking.Booking.Price / 2,
+              }).unwrap();
+
+              // after successful confirm, refetch booking details to get updated state
+              refetch && (await refetch());
+            } catch (err) {
+              // handle error (could set an action error)
+              setIsActionError(true);
+              setErrorMessage((err as any)?.message || "Confirm failed");
+            }
+          }
+        }
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -193,11 +249,11 @@ const BookingDetailsPage = () => {
     );
   }
 
-  // if (isError) {
-  //   <div>
-  //     <p>Somethings wrong happened, please try again later</p>
-  //   </div>;
-  // }
+  if (isError) {
+    <div>
+      <p>Somethings wrong happened, please try again later</p>
+    </div>;
+  }
 
   if (!booking) {
     return (
@@ -216,98 +272,224 @@ const BookingDetailsPage = () => {
           <p className="font-light font-poppins">Back</p>
         </div>
 
-        <div className="w-full p-5 rounded-sm bg-white/20 backdrop-blur-md">
-          <p className="text-3xl font-poppins font-bold text-white">
-            Booking Details: #{booking.Id}
-          </p>
-        </div>
+        <p className="text-3xl font-poppins font-bold text-white">
+          Booking Details: #{booking.Booking.Id}
+        </p>
 
-        <div className="w-ful; flex flex-col rounded-sm">
+        <div className="w-full flex flex-col">
           {/* Status Tracking */}
-          <div className="w-full px-5 flex items-center bg-transparent border-b-[2px] border-b-[#d9d9d9]">
+          <div className="w-full px-5 flex items-center bg-transparent  backdrop-blur-[1px] shadow-2xl border-b-[#d9d9d9]">
             <BookingStatusTrackingBar
-              currentStatus={booking.CurrentStatus}
-              statusTracking={booking.StatusTracking}
+              currentStatus={booking.Booking.CurrentStatus}
+              statusTracking={booking.Booking.StatusTracking}
             />
           </div>
-          <div className="w-full flex flex-col p-5 gap-5">
-            <p className="font-poppins font-bold text-white text-2xl">
-              Booking Informations
-            </p>
-            {/* Title */}
-            <div className="w-full flex flex-col gap-2">
-              <p className="font-poppins text-white font-light text-lg">
-                Title
-              </p>
-              <div className="rounded-sm text-white border-[2px] border-white p-2">
-                <p>{booking.Title}</p>
-              </div>
-            </div>
-            {/* Deadline & Price & Podcaster */}
-            <div className="w-full grid grid-cols-3">
-              {/* Deadline */}
-              <div className="flex flex-col gap-2">
-                <p className="font-poppins text-white font-light text-lg">
-                  Deadline
-                </p>
-                <div className="w-1/2 rounded-sm text-white border-[2px] border-white p-2">
-                  {booking.Deadline ? (
-                    <p>{TimeUtil.formatDate(booking.Deadline, "DD/MM/YYYY")}</p>
-                  ) : (
-                    <p>Not Yet</p>
-                  )}
-                </div>
-              </div>
-              {/* Price */}
-              <div className="flex flex-col gap-2">
-                <p className="font-poppins text-white font-light text-lg">
-                  Price
-                </p>
-                <div className="w-1/2 flex items-center gap-1 rounded-sm text-white border-[2px] border-white p-2">
-                  {booking.Price ? (
-                    <>
-                      <p>{booking.Price.toLocaleString()}</p>
-                      <TbCoinFilled />
-                    </>
-                  ) : (
-                    <p>Not Yet</p>
-                  )}
-                </div>
-              </div>
-              {/* Podcaster */}
-              <div className="flex flex-col gap-2">
-                <p className="font-poppins text-white font-light text-lg">
-                  Podcaster
-                </p>
-                <div className="w-1/2 flex items-center gap-1 rounded-sm text-white border-[2px] border-white p-2">
-                  {/* <img src="" />
-                  <p>{booking.Podcaster}</p> */}
-                </div>
-              </div>
-            </div>
 
-            {/* Description */}
-            <div className="w-full flex flex-col gap-2">
-              <p className="font-poppins text-white font-light text-lg">
-                Description
-              </p>
-              <div className="rounded-sm text-white border-[2px] border-white p-2">
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: renderDescriptionHTML(booking.Description),
-                  }}
-                />
-              </div>
+          <div className="w-full flex items-center gap-5 pt-5 pb-3">
+            <div
+              onClick={() => setViewMode("informations")}
+              className={`transition-all duration-500 ease-out hover:-translate-y-1 cursor-pointer rounded-full px-5 py-2 border-2 ${
+                viewMode === "informations"
+                  ? "border-mystic-green bg-mystic-green/20 "
+                  : "border-[#d9d9d9] bg-[#d9d9d9]/20"
+              }`}
+            >
+              <p className="font-bold text-white">Informations</p>
             </div>
-
-            {/* Requirements List */}
-            {booking.BookingRequirementFileList.map((requirement, index) => (
-              <RequirementCard
-                key={`${index}-${requirement.Id}`}
-                requirement={requirement}
-              />
-            ))}
+            {booking.Booking.CurrentStatus.Id === 2 && (
+              <div
+                onClick={() => setViewMode("dealing")}
+                className={`transition-all duration-500 ease-out hover:-translate-y-1 cursor-pointer rounded-full px-5 py-2 border-2 ${
+                  viewMode === "dealing"
+                    ? "border-mystic-green bg-mystic-green/20 "
+                    : "border-[#d9d9d9] bg-[#d9d9d9]/20"
+                }`}
+              >
+                <p className="font-bold text-white">Quotation Dealing</p>
+              </div>
+            )}
+            {booking.Booking.CurrentStatus.Id >= 5 && (
+              <div
+                onClick={() => setViewMode("producingRequest")}
+                className={`transition-all duration-500 ease-out hover:-translate-y-1 cursor-pointer rounded-full px-5 py-2 border-2 ${
+                  viewMode === "producingRequest"
+                    ? "border-mystic-green bg-mystic-green/20 "
+                    : "border-[#d9d9d9] bg-[#d9d9d9]/20"
+                }`}
+              >
+                <p className="font-bold text-white">Producing Requests</p>
+              </div>
+            )}
           </div>
+
+          {/* Informations Mode */}
+          {viewMode === "informations" && (
+            <div className="w-full flex flex-col p-5 gap-5">
+              <p className="font-poppins font-bold text-white text-2xl">
+                Booking Informations
+              </p>
+              {/* Title */}
+              <div className="w-full flex flex-col">
+                <p className="font-poppins text-white font-semibold text-lg">
+                  Title
+                </p>
+                <div className="py-3 text-white border-b-[1px] border-white">
+                  <p>{booking.Booking.Title}</p>
+                </div>
+              </div>
+              {/* Deadline & Price & Podcaster */}
+              <div className="w-full grid grid-cols-3">
+                {/* Deadline */}
+                <div className="flex flex-col">
+                  <p className="font-poppins font-semibold text-white text-lg">
+                    Deadline
+                  </p>
+                  <div className="w-1/2 py-2 text-white border-b-[1px] border-white">
+                    {booking.Booking.Deadline ? (
+                      <p>
+                        {TimeUtil.formatDate(
+                          booking.Booking.Deadline,
+                          "DD/MM/YYYY"
+                        )}
+                      </p>
+                    ) : (
+                      <p>Not Yet</p>
+                    )}
+                  </div>
+                </div>
+                {/* Price */}
+                <div className="flex flex-col">
+                  <p className="font-poppins text-white font-semibold text-lg">
+                    Price
+                  </p>
+                  <div className="w-1/2 flex items-center gap-1 py-2 text-white border-b-[1px]  border-white">
+                    {booking.Booking.Price ? (
+                      <>
+                        <p>{booking.Booking.Price.toLocaleString()}</p>
+                        <TbCoinFilled />
+                      </>
+                    ) : (
+                      <p>Not Yet</p>
+                    )}
+                  </div>
+                </div>
+                {/* Podcaster */}
+                <div className="flex flex-col">
+                  <p className="font-poppins text-white font-semibold text-lg">
+                    Podcaster
+                  </p>
+                  <div className="w-1/2 flex items-center gap-1 py-2 text-white border-b-[1px]  border-white">
+                    <img
+                      src={booking.Booking.Podcaster.ImageUrl}
+                      className="w-8 h-8 rounded-full aspect-square object-cover"
+                    />
+                    <p className="font-semibold">
+                      {booking.Booking.Podcaster.FullName}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="w-full flex flex-col">
+                <p className="font-poppins text-white font-semibold text-lg">
+                  Description
+                </p>
+                <div className="py-3 text-white border-b-[1px]  border-white">
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: renderDescriptionHTML(
+                        booking.Booking.Description
+                      ),
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Requirements List */}
+              {booking.Booking.BookingRequirementFileList.map(
+                (requirement: any, index: number) => (
+                  <RequirementCard
+                    key={`${index}-${requirement.Id}`}
+                    requirement={requirement}
+                  />
+                )
+              )}
+            </div>
+          )}
+
+          {viewMode === "dealing" && (
+            <div className="w-full flex flex-col p-5 gap-5">
+              <p className="font-poppins font-bold text-white text-2xl">
+                Podcaster Dealing
+              </p>
+
+              <div className="w-full flex flex-col gap-5">
+                {/* Info Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div className="bg-white/10 backdrop-blur-sm border border-slate-600/30 rounded-lg p-4">
+                    <p className="text-sm text-white font-bold font-poppins mb-1">
+                      Deadline Days
+                    </p>
+                    <p className="text-2xl font-bold text-white">
+                      <span className="text-mystic-green">
+                        {booking.Booking.DeadlineDays}{" "}
+                      </span>{" "}
+                      days
+                    </p>
+                  </div>
+
+                  <div className="bg-white/10  backdrop-blur-sm border border-slate-600/30 rounded-lg p-4">
+                    <p className="text-sm text-white font-bold font-poppins mb-1">
+                      Total Word Count
+                    </p>
+                    <p className="text-2xl font-bold text-white">
+                      <span className="text-mystic-green">
+                        {getTotalWordCount(booking).toLocaleString()}
+                      </span>{" "}
+                      words
+                    </p>
+                  </div>
+
+                  <div className="bg-white/10 backdrop-blur-sm border border-slate-600/30 rounded-lg p-4">
+                    <p className="text-sm text-white font-bold font-poppins mb-1">
+                      Total Price
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-2xl font-bold text-white">
+                        <span className="text-mystic-green">
+                          {(
+                            getTotalWordCount(booking) *
+                            booking.Booking.Podcaster.PricePerBookingWord
+                          ).toLocaleString()}
+                        </span>
+                      </p>
+                      <TbCoinFilled className="w-5 h-5 text-mystic-green" />
+                    </div>
+                  </div>
+                </div>
+                {booking.Booking.BookingRequirementFileList.map(
+                  (requirement: any, index: number) => (
+                    <RequirementCardWithWordCount
+                      key={index}
+                      requirement={requirement}
+                    />
+                  )
+                )}
+              </div>
+              <div className="w-full flex items-center gap-5 justify-end">
+                <div className="cursor-pointer px-5 font-bold py-2 bg-red-600 rounded-sm text-white font-poppins shadow-xl transition-all duration-500 ease-out hover:-translate-y-1">
+                  Cancel
+                </div>
+                <div
+                  onClick={() => handleConfirmDeal()}
+                  className="cursor-pointer px-5 font-bold py-2 bg-mystic-green rounded-sm text-white font-poppins shadow-xl transition-all duration-500 ease-out hover:-translate-y-1"
+                >
+                  Confirm
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

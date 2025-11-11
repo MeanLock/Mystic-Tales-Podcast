@@ -1,5 +1,9 @@
 import { appApi } from "@/core/api/appApi";
-import type { BookingDetailsFromAPI, BookingDetailsUI, BookingFromAPI } from "@/core/types/booking";
+import type {
+  BookingDetailsFromAPI,
+  BookingDetailsUI,
+  BookingFromAPI,
+} from "@/core/types/booking";
 
 export type CreateBookingPayload = {
   BookingCreateInfo: {
@@ -48,12 +52,39 @@ export const bookingApi = appApi.injectEndpoints({
         authMode: "required",
       }),
     }),
-    getBookingDetail: build.query<{ Booking: BookingDetailsUI }, { id: number }>({
+    getBookingDetail: build.query<
+      { Booking: BookingDetailsUI },
+      { id: number }
+    >({
       query: ({ id }) => ({
         url: `/api/booking-management-service/api/bookings/${id}`,
         method: "GET",
         authMode: "required",
       }),
+    }),
+    confirmAndDeposit: build.mutation<
+      { Message: string },
+      { BookingId: number; Amount: number }
+    >({
+      async queryFn({ BookingId, Amount }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/transaction-service/api/booking-transactions/${BookingId}/deposit`,
+                method: "POST",
+                body: { Amount },
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result.data as any };
+      },
     }),
   }),
 });
@@ -63,4 +94,5 @@ export const {
   useCreateMutation,
   useGetBookingsQuery,
   useGetBookingDetailQuery,
+  useConfirmAndDepositMutation
 } = bookingApi;
