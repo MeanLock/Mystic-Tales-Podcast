@@ -1,4 +1,5 @@
 import { appApi } from "@/core/api/appApi";
+import type { BookingDetailsFromAPI, BookingDetailsUI, BookingFromAPI } from "@/core/types/booking";
 
 export type CreateBookingPayload = {
   BookingCreateInfo: {
@@ -40,8 +41,26 @@ export const bookingApi = appApi.injectEndpoints({
         },
       }
     ),
+    getBookings: build.query<{ BookingList: BookingFromAPI[] }, void>({
+      query: () => ({
+        url: "/api/booking-management-service/api/bookings/me",
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
+    getBookingDetail: build.query<{ Booking: BookingDetailsUI }, { id: number }>({
+      query: ({ id }) => ({
+        url: `/api/booking-management-service/api/bookings/${id}`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
 // Hooks
-export const { useCreateMutation } = bookingApi;
+export const {
+  useCreateMutation,
+  useGetBookingsQuery,
+  useGetBookingDetailQuery,
+} = bookingApi;

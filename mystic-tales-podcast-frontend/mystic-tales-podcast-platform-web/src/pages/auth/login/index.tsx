@@ -46,18 +46,17 @@ import { Button } from "@/components/ui/button";
 import { BackgroundGradient } from "@/components/ui/shadcn-io/background-gradient";
 import { useNavigate } from "react-router-dom";
 import { loginInfoMap, mockUsers } from "@/core/mockData/user.mockdata";
-import { useDispatch } from "react-redux";
-import { setAuthToken, setUser } from "@/redux/slices/authSlice/authSlice";
+// no direct redux dispatch needed here; auth service handles storing token/user
 
 /** Zod schema: email hợp lệ, password tối thiểu 8 ký tự,
  *  có thể siết chặt thêm (chứa chữ hoa, số...) bằng refine/superRefine nếu muốn
  */
 const LoginSchema = z.object({
-  email: z
+  Email: z
     .string()
     .min(1, "Email is required")
     .email("Email format is invalid"),
-  password: z.string().min(6, "Password must be at least 8 characters"),
+  Password: z.string().min(1, "Password must be at least 8 characters"),
 });
 
 type LoginFormValues = z.infer<typeof LoginSchema>;
@@ -86,7 +85,6 @@ const LoginPage = () => {
 
   // HOOKS
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   // HELPERS
   const resetResponseError = () =>
@@ -99,56 +97,56 @@ const LoginPage = () => {
 
   // Fake logic here
   const userData = mockUsers;
-  const [isLoginLoading, setIsLoginLoading] = useState(false);
 
-  const fakeLoginSubmitLogic = async (values: LoginFormValues) => {
-    const account = loginInfoMap.filter(
-      (info) => info.email === values.email
-    )[0];
-    if (account) {
-      if (account.password === values.password) {
-        const accountInformation = userData.filter(
-          (u) => u.Id === account.id
-        )[0];
-        if (accountInformation && !accountInformation.DeactivatedAt) {
-          if (accountInformation.IsVerified === true) {
-            dispatch(
-              setAuthToken(
-                "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiRFhCIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoiZHhiYWNoMjAwNEBnbWFpbC5jb20iLCJpZCI6IjEiLCJyb2xlX2lkIjoiMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkN1c3RvbWVyIiwiYmFsYW5jZSI6IjAuMDAiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3NlcmlhbG51bWJlciI6IjhjZGJlMWU2LTEwNDMtNDFmYS05ZGZlLWExYzBlYzY5NzQyMSIsImV4cCI6Nzc2MjY4NzMyMywiaXNzIjoibG9jYWxob3N0IiwiYXVkIjoibG9jYWxob3N0In0.Wt4b5heKvHBgc33ekDruYfvrule-ViKGMbe7u43wDlGZjaJ52Q8EpA9PbrEksHs8t6Osxa5qWAYi8OpeTnMvIEE0cp9uN9flYkoE8FFCx_Id5SULGczFiC99MclYjLEz_bLUPV40NpWTrS89oo3gZ3XrOal23jBVFidKClz0E-tvAIciWEat82MDt36zDYd1NIeogHDzu7TBFRtI2yocgsMIYrSNpFT3TC0L-nuiVRZ0TgL1D4MtQs79deJ2nYEN4bIHocdSEuApc6z1UhftLxPBCi7fxi9LD2_r8Wpli2v1hxv3VnRrUUN--Yh7jOIaXvfgFHAZVru5XeiD4JxN9w"
-              )
-            );
-            dispatch(setUser(accountInformation));
+  // const fakeLoginSubmitLogic = async (values: LoginFormValues) => {
+  //   const account = loginInfoMap.filter(
+  //     (info) => info.email === values.email
+  //   )[0];
+  //   if (account) {
+  //     if (account.password === values.password) {
+  //       const accountInformation = userData.filter(
+  //         (u) => u.Id === account.id
+  //       )[0];
+  //       if (accountInformation && !accountInformation.DeactivatedAt) {
+  //         if (accountInformation.IsVerified === true) {
+  //           dispatch(
+  //             setAuthToken(
+  //               "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiRFhCIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoiZHhiYWNoMjAwNEBnbWFpbC5jb20iLCJpZCI6IjEiLCJyb2xlX2lkIjoiMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkN1c3RvbWVyIiwiYmFsYW5jZSI6IjAuMDAiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3NlcmlhbG51bWJlciI6IjhjZGJlMWU2LTEwNDMtNDFmYS05ZGZlLWExYzBlYzY5NzQyMSIsImV4cCI6Nzc2MjY4NzMyMywiaXNzIjoibG9jYWxob3N0IiwiYXVkIjoibG9jYWxob3N0In0.Wt4b5heKvHBgc33ekDruYfvrule-ViKGMbe7u43wDlGZjaJ52Q8EpA9PbrEksHs8t6Osxa5qWAYi8OpeTnMvIEE0cp9uN9flYkoE8FFCx_Id5SULGczFiC99MclYjLEz_bLUPV40NpWTrS89oo3gZ3XrOal23jBVFidKClz0E-tvAIciWEat82MDt36zDYd1NIeogHDzu7TBFRtI2yocgsMIYrSNpFT3TC0L-nuiVRZ0TgL1D4MtQs79deJ2nYEN4bIHocdSEuApc6z1UhftLxPBCi7fxi9LD2_r8Wpli2v1hxv3VnRrUUN--Yh7jOIaXvfgFHAZVru5XeiD4JxN9w"
+  //             )
+  //           );
+  //           dispatch(setUser(accountInformation));
 
-            navigate("/media-player/discovery");
-          } else {
-            setResponseError({
-              isError: true,
-              message:
-                "Your Account Hasn't Verified Yet, Please Verified To Sign In",
-              isUnVerified: true,
-            });
-          }
-        } else {
-          setResponseError({
-            isError: true,
-            message: "Your Account Has Been Deactivated!",
-          });
-        }
-      } else {
-        setResponseError({
-          isError: true,
-          message: "Incorrect Password!",
-        });
-      }
-    } else {
-      setResponseError({
-        isError: true,
-        message: "Seems like your account doesn't exists!",
-      });
-    }
-  };
+  //           navigate("/media-player/discovery");
+  //         } else {
+  //           setResponseError({
+  //             isError: true,
+  //             message:
+  //               "Your Account Hasn't Verified Yet, Please Verified To Sign In",
+  //             isUnVerified: true,
+  //           });
+  //         }
+  //       } else {
+  //         setResponseError({
+  //           isError: true,
+  //           message: "Your Account Has Been Deactivated!",
+  //         });
+  //       }
+  //     } else {
+  //       setResponseError({
+  //         isError: true,
+  //         message: "Incorrect Password!",
+  //       });
+  //     }
+  //   } else {
+  //     setResponseError({
+  //       isError: true,
+  //       message: "Seems like your account doesn't exists!",
+  //     });
+  //   }
+  // };
 
   // đóng modal + reset mã
+
   const closeVerifyModal = () => {
     setVerificationData({ isModalOpen: false, verificationCode: "" });
   };
@@ -189,11 +187,54 @@ const LoginPage = () => {
   // FUNCTIONS
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(LoginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { Email: "", Password: "" },
     mode: "onTouched", // validate sớm khi blur field
   });
 
-  const onSubmit = async (values: LoginFormValues) => {};
+  const onSubmit = async (values: LoginFormValues) => {
+    // reset errors
+    setServerError(null);
+    resetResponseError();
+
+    try {
+      const payload = {
+        ManualLoginInfo: { Email: values.Email, Password: values.Password },
+      };
+
+      const result = await login(payload).unwrap();
+
+      if (!result) {
+        setServerError("Empty response from server");
+        return;
+      }
+
+      if (result.isError) {
+        // show error dialog
+        setResponseError({
+          isError: true,
+          message: result.message || "Login failed",
+          isUnVerified: !!result.isUnVerified,
+        });
+        return;
+      }
+
+      // success path
+      if (result.isUnVerified) {
+        setResponseError({
+          isError: true,
+          message: result.message || "Account not verified",
+          isUnVerified: true,
+        });
+        return;
+      }
+
+      // login service already stores token and sets user in redux
+      // navigate to discovery/home
+      navigate("/media-player/discovery");
+    } catch (e: any) {
+      setServerError(e?.message || "Something went wrong. Please try again.");
+    }
+  };
 
   const handleOAuth2Login = async () => {};
 
@@ -215,14 +256,11 @@ const LoginPage = () => {
         <p className="text-sm opacity-80 mb-10">Sign in to to get scared!</p>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(fakeLoginSubmitLogic)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* Email */}
             <FormField
               control={form.control}
-              name="email"
+              name="Email"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
@@ -258,7 +296,7 @@ const LoginPage = () => {
             {/* Password */}
             <FormField
               control={form.control}
-              name="password"
+              name="Password"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
@@ -299,9 +337,9 @@ const LoginPage = () => {
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoginLoading || !form.formState.isValid}
+              disabled={isLoading || !form.formState.isValid}
             >
-              {isLoginLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
         </Form>

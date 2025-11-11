@@ -111,12 +111,14 @@ const BookingCard = ({ booking }: { booking: BookingFromAPI }) => {
       </div>
       <div className="col-span-1 overflow-ellipsis">
         <p className="font-bold line-clamp-1">
-          {booking.Price.toLocaleString("vn")}
+          {booking.Price ? booking.Price.toLocaleString("vn") : 0}
         </p>
       </div>
       <div className="col-span-2 text-center">
         <p className="font-light line-clamp-1">
-          {new Date(booking.Deadline).toLocaleDateString()}
+          {booking.Deadline
+            ? new Date(booking.Deadline).toLocaleDateString()
+            : "Not Yet"}
         </p>
       </div>
       <div className="col-span-2 text-center">

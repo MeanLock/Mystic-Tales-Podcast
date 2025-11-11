@@ -65,6 +65,7 @@ export async function pollSagaResult<T = unknown>(opts: {
     }
 
     const env = res.data as SagaEnvelope;
+    console.log("Saga Result Nè: ", env.ResultData);
     if (env.FlowStatus === "SUCCESS") {
       const parsed = tryParse<T>(env.ResultData);
       return parsed as T; // Assert non-null for successful saga

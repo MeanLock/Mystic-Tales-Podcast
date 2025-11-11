@@ -28,7 +28,7 @@ export type BookingStatusType =
   | { Id: 11; Name: "Cancelled Automatically" }
   | { Id: 12; Name: "Cancelled Manually" };
 
-export type BookingDetails = {
+export type BookingDetailsFromAPI = {
   Id: number;
   Title: string;
   Description: string;
@@ -46,7 +46,7 @@ export type BookingDetails = {
     BookingId: number;
     Name: string;
     Description: string;
-    RequirementDocumentFileKey: string;
+    RequirementDocumentFileKey: string | null;
     Order: number;
     WordCount: number;
     PodcastBookingTone: {
@@ -68,10 +68,62 @@ export type BookingDetails = {
     RejectReason: string | null;
     CreatedAt: string;
   }[];
-  CurrentStatus: {
-    Id: number;
+  CurrentStatus: BookingStatusType;
+  StatusTracking: {
+    id: string;
+    bookingId: number;
+    bookingStatusId: number;
+    createdAt: string;
+  }[];
+};
+
+export type BookingDetailsUI = {
+  Id: number;
+  Title: string;
+  Description: string;
+  AccountId: number;
+  PodcasterId: number;
+  Price: number;
+  Deadline: string;
+  DemoAudioFileKey: string;
+  BookingManualCancelledReason: string | null;
+  BookingAutoCancelReason: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
+  BookingRequirementFileList: {
+    Id: string;
+    BookingId: number;
     Name: string;
-  };
+    Description: string;
+    RequirementFile: string | null; //absolute url
+    Order: number;
+    WordCount: number;
+    PodcastBookingTone: {
+      Id: string;
+      Name: string;
+      Description: string;
+      PodcastBookingToneCategory: PodcastBookingToneCategoryType;
+      CreatedAt: string;
+      UpdatedAt: string;
+    };
+  }[];
+  BookingProducingRequestList: {
+    Id: string;
+    BookingId: number;
+    Note: string | null;
+    Deadline: string;
+    IsAccepted: boolean;
+    FinishedAt: string | null;
+    RejectReason: string | null;
+    CreatedAt: string;
+  }[];
+  CurrentStatus: BookingStatusType;
+  StatusTracking: {
+    id: string;
+    bookingId: number;
+    bookingStatusId: number;
+    createdAt: string;
+  }[];
 };
 
 export type PodcastBookingToneCategoryType = {

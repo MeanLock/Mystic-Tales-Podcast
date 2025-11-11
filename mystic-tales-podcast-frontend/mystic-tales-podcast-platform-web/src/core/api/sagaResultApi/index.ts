@@ -35,7 +35,7 @@ export const sagaResultApi = createApi({
       transformResponse: (res: SagaEnvelope) => {
         return {
           flowStatus: res.FlowStatus,
-          data: parseResultData<any>(res.ResultData),
+          data: res.ResultData,
           errorMessage: res.ErrorMessage,
         };
       },

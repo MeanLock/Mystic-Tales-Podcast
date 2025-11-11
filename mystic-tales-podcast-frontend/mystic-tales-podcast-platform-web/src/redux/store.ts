@@ -16,7 +16,7 @@ import {
   PURGE,
   REGISTER,
 } from "redux-persist";
-
+import { configureTokenGetter } from "@/core/api/appApi/token";
 // Gộp reducers trước khi persist
 const rootReducer = combineReducers({
   [appApi.reducerPath]: appApi.reducer,
@@ -45,6 +45,14 @@ export const store = configureStore({
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }).concat(appApi.middleware),
+});
+
+configureTokenGetter(() => {
+  return (
+    store.getState().auth.accessToken ??
+    localStorage.getItem("accessToken") ??
+    undefined
+  );
 });
 
 export const persistor = persistStore(store);

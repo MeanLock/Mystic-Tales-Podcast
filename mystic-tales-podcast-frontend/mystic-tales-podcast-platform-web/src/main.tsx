@@ -40,6 +40,7 @@ import ProfilePage from "./pages/mediaPlayer/management/profile/index.tsx";
 import ChannelDetailsPage from "./pages/mediaPlayer/channels/details/index.tsx";
 import ShowDetailsPage from "./pages/mediaPlayer/shows/details/index.tsx";
 import CreateBookingPage from "./pages/mediaPlayer/management/booking/create/index.tsx";
+import BecomePodcaster from "./pages/mediaPlayer/management/profile/becomePodcaster/index.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -125,6 +126,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/home" element={<HomePage />} />
               <Route path="/faqs" element={<FAQPage />} />
               <Route path="/about" element={<AboutPage />} />
+              <Route path="/become-podcaster" element={<BecomePodcaster />} />
             </Route>
 
             {/* 2️⃣ AUTH LAYOUT */}

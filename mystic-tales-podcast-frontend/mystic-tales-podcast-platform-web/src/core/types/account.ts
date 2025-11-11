@@ -22,32 +22,22 @@ export type AccountFromAPI = {
   DeactivatedAt: string | null; // Format ISO String
   CreatedAt: string; // Format ISO String
   UpdatedAt: string; // Format ISO String
-  IsPodcaster: boolean //Để check xem User có phải podcaster không, hay là User thường
+  IsPodcaster: boolean; //Để check xem User có phải podcaster không, hay là User thường
 };
 
 export type AccountUI = {
   Id: number;
   Email: string;
-  Role: AccountRole;
   FullName: string;
-  Dob: string; //Format "YYYY-MM-DD"
+  Dob: string;
   Gender: string;
   Address: string;
   Phone: string;
   Balance: number;
-  ImageUrl: string; //Đã lấy được ImageUrl
-  IsVerified: boolean;
-  GoogleId: string | null;
+  ImageUrl: string;
   PodcastListenSlot: number;
-  ViolationPoint: number;
-  ViolationLevel: number;
-  LastViolationPointChanged: string | null; // Format ISO String
-  LastViolationLevelChanged: string | null; // Format ISO String
-  LastPodcastListenSlotChanged: string | null;
-  DeactivatedAt: string | null; // Format ISO String
-  CreatedAt: string; // Format ISO String
-  UpdatedAt: string; // Format ISO String
-  IsPodcaster: boolean
+  DeactivatedAt: string;
+  IsPodcaster: boolean;
 };
 
 // Customer: {Id: 1, Name: "string"}
