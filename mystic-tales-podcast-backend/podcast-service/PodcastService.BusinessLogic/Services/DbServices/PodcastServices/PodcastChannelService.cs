@@ -41,6 +41,7 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Sub
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishChannelUnpublishChannelForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteChannelChannelDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishPodcasterChannelsTerminatePodcasterForce;
+using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -313,7 +314,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Podcaster = new AccountSnippetResponseDTO
                         {
                             Id = podcaster.Id,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
@@ -391,7 +392,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Podcaster = new AccountSnippetResponseDTO
                         {
                             Id = podcaster.Id,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
@@ -530,7 +531,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Podcaster = new AccountSnippetResponseDTO
                     {
                         Id = podcaster.Id,
-                        FullName = podcaster.FullName,
+                        FullName = podcaster.PodcasterProfileName,
                         Email = podcaster.Email,
                         MainImageFileKey = podcaster.MainImageFileKey
                     },
@@ -589,7 +590,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = podcaster.Id,
                             Email = podcaster.Email,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
                         PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
@@ -768,7 +769,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Podcaster = new AccountSnippetResponseDTO
                     {
                         Id = podcaster.Id,
-                        FullName = podcaster.FullName,
+                        FullName = podcaster.PodcasterProfileName,
                         Email = podcaster.Email,
                         MainImageFileKey = podcaster.MainImageFileKey
                     },
@@ -813,7 +814,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = podcaster.Id,
                             Email = podcaster.Email,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
                         PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
@@ -1351,6 +1352,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             };
 
                             await _podcastChannelStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                            channel.TotalFavorite = 0;
+                            channel.ListenCount = 0;
+                            await _podcastChannelGenericRepository.UpdateAsync(channel.Id, channel);
                         }
                     }
 
@@ -1420,6 +1425,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             };
 
                             await _podcastChannelStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                            channel.TotalFavorite = 0;
+                            channel.ListenCount = 0;
+                            await _podcastChannelGenericRepository.UpdateAsync(channel.Id, channel);
                         }
                     }
 

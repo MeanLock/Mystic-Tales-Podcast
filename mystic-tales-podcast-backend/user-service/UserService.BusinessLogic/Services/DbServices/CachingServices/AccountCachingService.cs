@@ -4,7 +4,7 @@ using UserService.BusinessLogic.DTOs.Cache;
 using UserService.BusinessLogic.Models.CrossService;
 using Newtonsoft.Json.Linq;
 
-namespace UserService.BusinessLogic.Services.DbServices.MiscServices
+namespace UserService.BusinessLogic.Services.DbServices.CachingServices
 {
     public class AccountCachingService
     {

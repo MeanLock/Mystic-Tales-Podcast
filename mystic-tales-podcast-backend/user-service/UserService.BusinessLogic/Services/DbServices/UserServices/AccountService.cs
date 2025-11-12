@@ -86,6 +86,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAcc
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedPodcasterShowsTerminatePodcasterForce;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForce;
 using UserService.BusinessLogic.DTOs.Account.ListItems;
+using UserService.BusinessLogic.Services.DbServices.CachingServices;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -4800,6 +4801,15 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 {
                     List<int> affectedAccountIds = await _unitOfWork.PodcastBuddyReviewRepository.DeleteByPodcasterIdAsync(deleteBuddyReviewTerminatePodcasterForceParameterDTO.PodcasterId);
 
+                    var podcaster = await _podcasterProfileGenericRepository.FindByIdAsync(deleteBuddyReviewTerminatePodcasterForceParameterDTO.PodcasterId);
+                    if (podcaster != null)
+                    {
+                        podcaster.AverageRating = 0;
+                        podcaster.RatingCount = 0;
+                        
+                        await _podcasterProfileGenericRepository.UpdateAsync(podcaster.AccountId, podcaster);
+                    }
+
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
@@ -4847,6 +4857,13 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 try
                 {
                     List<int> affectedAccountIds = await _unitOfWork.AccountFollowedPodcasterRepository.DeleteByPodcasterIdAsync(deleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO.PodcasterId);
+
+                    var podcaster = await _podcasterProfileGenericRepository.FindByIdAsync(deleteAccountFollowedPodcasterTerminatePodcasterForceParameterDTO.PodcasterId);
+                    if (podcaster != null)
+                    {
+                        podcaster.TotalFollow = 0;
+                        await _podcasterProfileGenericRepository.UpdateAsync(podcaster.AccountId, podcaster);
+                    }
 
                     await transaction.CommitAsync();
 

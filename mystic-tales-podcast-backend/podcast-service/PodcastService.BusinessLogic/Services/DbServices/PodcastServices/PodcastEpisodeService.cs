@@ -90,6 +90,7 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Rem
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemovePodcasterEpisodesListenSessionContentTerminatePodcasterForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.TakedownContentDmca;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RestoreContentDmca;
+using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -883,7 +884,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = podcaster.Id,
                         Email = podcaster.Email,
-                        FullName = podcaster.FullName,
+                        FullName = podcaster.PodcasterProfileName,
                         MainImageFileKey = podcaster.MainImageFileKey
                     },
                     PodcastEpisodeSubscriptionType = episode.PodcastEpisodeSubscriptionType != null ? new PodcastEpisodeSubscriptionTypeDTO
@@ -978,7 +979,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = podcaster.Id,
                         Email = podcaster.Email,
-                        FullName = podcaster.FullName,
+                        FullName = podcaster.PodcasterProfileName,
                         MainImageFileKey = podcaster.MainImageFileKey
                     },
                     PodcastEpisodeSubscriptionType = episode.PodcastEpisodeSubscriptionType != null ? new PodcastEpisodeSubscriptionTypeDTO
@@ -3214,7 +3215,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             {
                                 Id = podcaster.Id,
                                 Email = podcaster.Email,
-                                FullName = podcaster.FullName,
+                                FullName = podcaster.PodcasterProfileName,
                                 MainImageFileKey = podcaster.MainImageFileKey
                             }
                         };
@@ -3409,7 +3410,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             {
                                 Id = podcaster.Id,
                                 Email = podcaster.Email,
-                                FullName = podcaster.FullName,
+                                FullName = podcaster.PodcasterProfileName,
                                 MainImageFileKey = podcaster.MainImageFileKey
                             }
                         };
@@ -5156,6 +5157,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             };
 
                             await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                            episode.TotalSave = 0;
+                            episode.ListenCount = 0;
+                            await _podcastEpisodeGenericRepository.UpdateAsync(episode.Id, episode);
                         }
                     }
 
@@ -5226,6 +5231,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             };
 
                             await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                            episode.TotalSave = 0;
+                            episode.ListenCount = 0;
+                            await _podcastEpisodeGenericRepository.UpdateAsync(episode.Id, episode);
                         }
                     }
 
@@ -5426,7 +5435,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         item.Podcaster = new AccountSnippetResponseDTO
                         {
                             Id = podcaster.Id,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey,
                         };
@@ -5531,7 +5540,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             Podcaster = new AccountSnippetResponseDTO
                             {
                                 Id = podcaster.Id,
-                                FullName = podcaster.FullName,
+                                FullName = podcaster.PodcasterProfileName,
                                 Email = podcaster.Email,
                                 MainImageFileKey = podcaster.MainImageFileKey,
                             }

@@ -1,0 +1,1544 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using PodcastService.Common.AppConfigurations.App.interfaces;
+using PodcastService.Common.AppConfigurations.FilePath.interfaces;
+using PodcastService.DataAccess.Data;
+using PodcastService.DataAccess.UOW;
+using PodcastService.DataAccess.Repositories.interfaces;
+using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
+using PodcastService.Infrastructure.Services.Google.Email;
+using PodcastService.Infrastructure.Configurations.Google.interfaces;
+using PodcastService.BusinessLogic.Helpers.AuthHelpers;
+using PodcastService.BusinessLogic.Helpers.FileHelpers;
+using PodcastService.BusinessLogic.Helpers.DateHelpers;
+using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using PodcastService.BusinessLogic.Models.CrossService;
+using Newtonsoft.Json.Linq;
+using PodcastService.Infrastructure.Services.Kafka;
+using PodcastService.BusinessLogic.Enums.Kafka;
+using PodcastService.Infrastructure.Models.Kafka;
+using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
+using PodcastService.Infrastructure.Services.Redis;
+using PodcastService.DataAccess.Entities.SqlServer;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
+using PodcastService.BusinessLogic.Enums.Podcast;
+using PodcastService.BusinessLogic.DTOs.Channel.ListItems;
+using PodcastService.BusinessLogic.DTOs.Cache;
+using PodcastService.BusinessLogic.DTOs.Hashtag;
+using PodcastService.BusinessLogic.DTOs.Account;
+using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
+using PodcastService.BusinessLogic.DTOs.Show;
+using PodcastService.BusinessLogic.DTOs.Episode;
+using PodcastService.BusinessLogic.DTOs.Episode.Details;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateEpisode;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubtractEpisodeTotalSaved;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusEpisodeTotalSaved;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateEpisode;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UploadEpisodeLicenses;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeLicenses;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.SubmitEpisodeAudioFile;
+using PodcastService.Infrastructure.Services.Audio.Transcription;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.ProcessingEpisodeDraftAudio;
+using PodcastService.BusinessLogic.Services.AudioServices;
+using PodcastService.Infrastructure.Services.Audio.AcoustID;
+using PodcastService.Infrastructure.Models.Audio.AcoustID;
+using Newtonsoft.Json;
+using PodcastService.BusinessLogic.Enums.Account;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.RequestEpisodeAudioExamination;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.DiscardEpisodePublishReviewSession;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PublishEpisode;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.ProcessingEpisodePublishAudio;
+using PodcastService.Infrastructure.Models.Audio.Hls;
+using PodcastService.Infrastructure.Services.Audio.Hls;
+using PodcastService.BusinessLogic.DTOs.Episode.ListItems;
+using PodcastService.BusinessLogic.DTOs.Channel;
+using HotChocolate.Execution.Processing;
+using PodcastService.BusinessLogic.DTOs.ReviewSession.ListItems;
+using PodcastService.BusinessLogic.DTOs.ReviewSession.Details;
+using PodcastService.BusinessLogic.DTOs.ReviewSession;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.RequireEpisodePublishReviewSessionEdit;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.AcceptEpisodePublishReviewSession;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentModerationDomain.RejectEpisodePublishReviewSession;
+using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
+using PodcastService.BusinessLogic.DTOs.Feed;
+using PodcastService.BusinessLogic.DTOs.Cache.QueryMetric;
+using PodcastService.BusinessLogic.DTOs.Category.ListItems;
+using PodcastService.BusinessLogic.DTOs.Category;
+using PodcastService.BusinessLogic.DTOs.Show.ListItems;
+
+namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
+{
+    public class FeedService
+    {
+        // LOGGER
+        private readonly ILogger<FeedService> _logger;
+
+        // CONFIG
+        public readonly IAppConfig _appConfig;
+        private readonly IFilePathConfig _filePathConfig;
+        private readonly IPodcastPublishReviewSessionConfig _podcastPublishReviewSessionConfig;
+
+        // DB CONTEXT
+        private readonly AppDbContext _appDbContext;
+
+        // HELPERS
+        private readonly BcryptHelper _bcryptHelper;
+        private readonly JwtHelper _jwtHelper;
+        private readonly FileIOHelper _fileIOHelper;
+        private readonly DateHelper _dateHelper;
+
+        // UNIT OF WORK
+        private readonly IUnitOfWork _unitOfWork;
+
+        // REPOSITORIES
+        private readonly IGenericRepository<PodcastChannel> _podcastChannelGenericRepository;
+        private readonly IGenericRepository<PodcastChannelStatusTracking> _podcastChannelStatusTrackingGenericRepository;
+        private readonly IGenericRepository<PodcastChannelHashtag> _podcastChannelHashtagGenericRepository;
+        private readonly IGenericRepository<Hashtag> _hashtagGenericRepository;
+        private readonly IGenericRepository<PodcastShow> _podcastShowGenericRepository;
+        private readonly IGenericRepository<PodcastShowStatusTracking> _podcastShowStatusTrackingGenericRepository;
+        private readonly IGenericRepository<PodcastShowHashtag> _podcastShowHashtagGenericRepository;
+        private readonly IGenericRepository<PodcastEpisode> _podcastEpisodeGenericRepository;
+        private readonly IGenericRepository<PodcastShowReview> _podcastShowReviewGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodeStatusTracking> _podcastEpisodeStatusTrackingGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodeHashtag> _podcastEpisodeHashtagGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodeLicense> _podcastEpisodeLicenseGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodeLicenseType> _podcastEpisodeLicenseTypeGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodePublishReviewSession> _podcastEpisodePublishReviewSessionGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodePublishDuplicateDetection> _podcastEpisodePublishDuplicateDetectionGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodeIllegalContentTypeMarking> _podcastEpisodeIllegalContentTypeMarkingGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodePublishReviewSessionStatusTracking> _podcastEpisodePublishReviewSessionStatusTrackingGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodeListenSession> _podcastEpisodeListenSessionGenericRepository;
+        private readonly IGenericRepository<PodcastEpisodeListenSessionHlsEnckeyRequestToken> _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository;
+
+        private readonly HttpServiceQueryClient _httpServiceQueryClient;
+
+        // CACHING SERVICE
+        private readonly AccountCachingService _accountCachingService;
+
+        // GOOGLE SERVICE
+        private readonly FluentEmailService _fluentEmailService;
+
+        // KAFKA SERVICE
+        private readonly IMessagingService _messagingService;
+        private readonly KafkaProducerService _kafkaProducerService;
+
+        // REDIS SERVICE
+        private readonly RedisSharedCacheService _redisSharedCacheService;
+
+        // AUDIO SERVICE
+        private readonly AudioTranscriptionService _audioTranscriptionService;
+        private readonly AcoustIDAudioFingerprintGenerator _acoustIDAudioFingerprintGenerator;
+        private readonly AcoustIDAudioFingerprintComparator _acoustIDAudioFingerprintComparator;
+        private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
+
+
+        public FeedService(
+            ILogger<FeedService> logger,
+            AppDbContext appDbContext,
+            BcryptHelper bcryptHelper,
+            FluentEmailService fluentEmailService,
+            JwtHelper jwtHelper,
+            IUnitOfWork unitOfWork,
+
+            IGenericRepository<Hashtag> hashtagGenericRepository,
+            IGenericRepository<PodcastChannel> podcastChannelGenericRepository,
+            IGenericRepository<PodcastChannelStatusTracking> podcastChannelStatusTrackingGenericRepository,
+            IGenericRepository<PodcastChannelHashtag> podcastChannelHashtagGenericRepository,
+            IGenericRepository<PodcastShow> podcastShowGenericRepository,
+            IGenericRepository<PodcastShowStatusTracking> podcastShowStatusTrackingGenericRepository,
+            IGenericRepository<PodcastShowHashtag> podcastShowHashtagGenericRepository,
+            IGenericRepository<PodcastEpisode> podcastEpisodeGenericRepository,
+            IGenericRepository<PodcastShowReview> podcastShowReviewGenericRepository,
+            IGenericRepository<PodcastEpisodeStatusTracking> podcastEpisodeStatusTrackingGenericRepository,
+            IGenericRepository<PodcastEpisodeHashtag> podcastEpisodeHashtagGenericRepository,
+            IGenericRepository<PodcastEpisodeLicense> podcastEpisodeLicenseGenericRepository,
+            IGenericRepository<PodcastEpisodeLicenseType> podcastEpisodeLicenseTypeGenericRepository,
+            IGenericRepository<PodcastEpisodePublishReviewSession> podcastEpisodePublishReviewSessionGenericRepository,
+            IGenericRepository<PodcastEpisodePublishDuplicateDetection> podcastEpisodePublishDuplicateDetectionGenericRepository,
+            IGenericRepository<PodcastEpisodeIllegalContentTypeMarking> podcastEpisodeIllegalContentTypeMarkingGenericRepository,
+            IGenericRepository<PodcastEpisodePublishReviewSessionStatusTracking> podcastEpisodePublishReviewSessionStatus,
+
+
+            FileIOHelper fileIOHelper,
+            DateHelper dateHelper,
+
+            IFilePathConfig filePathConfig,
+            IAppConfig appConfig,
+            IPodcastPublishReviewSessionConfig podcastPublishReviewSessionConfig,
+
+            HttpServiceQueryClient httpServiceQueryClient,
+
+            AccountCachingService accountCachingService,
+
+            IMessagingService messagingService,
+            KafkaProducerService kafkaProducerService,
+
+            RedisSharedCacheService redisSharedCacheService,
+
+            AudioTranscriptionService audioTranscriptionService,
+            AcoustIDAudioFingerprintGenerator audioFingerprintService,
+            AcoustIDAudioFingerprintComparator audioFingerprintComparator,
+            FFMpegCoreHlsService ffMpegCoreHlsService
+            )
+        {
+            _logger = logger;
+
+            _appDbContext = appDbContext;
+            _unitOfWork = unitOfWork;
+
+            _hashtagGenericRepository = hashtagGenericRepository;
+
+            _fileIOHelper = fileIOHelper;
+            _jwtHelper = jwtHelper;
+            _bcryptHelper = bcryptHelper;
+            _dateHelper = dateHelper;
+
+            _fluentEmailService = fluentEmailService;
+
+            _filePathConfig = filePathConfig;
+            _podcastPublishReviewSessionConfig = podcastPublishReviewSessionConfig;
+            _appConfig = appConfig;
+
+            _httpServiceQueryClient = httpServiceQueryClient;
+
+            _accountCachingService = accountCachingService;
+
+            _messagingService = messagingService;
+            _kafkaProducerService = kafkaProducerService;
+
+            _redisSharedCacheService = redisSharedCacheService;
+
+            _audioTranscriptionService = audioTranscriptionService;
+            _acoustIDAudioFingerprintGenerator = audioFingerprintService;
+            _acoustIDAudioFingerprintComparator = audioFingerprintComparator;
+            _ffMpegCoreHlsService = ffMpegCoreHlsService;
+        }
+
+        // Discovery Podcast Feed
+        #region Main Entry Point
+
+        public async Task<DiscoveryPodcastFeedDTO> GetDiscoveryPodcastFeedContentsAsync(AccountStatusCache? account = null)
+        {
+            try
+            {
+                // Console.WriteLine($"[GetDiscoveryPodcastFeed] Starting - Account: {(account != null ? $"UserId={account.Id}" : "Anonymous")}");
+
+                // // STEP 1: Load all cache metrics in parallel
+                // var (userPrefs, systemPrefs, cacheMetrics) = await LoadAllCacheMetricsAsync(account?.Id);
+
+                // // STEP 2: Initialize deduplication trackers
+                // var dedupShowIds = new HashSet<Guid>();
+                // var dedupChannelIds = new HashSet<Guid>();
+                // var dedupPodcasterIds = new HashSet<int>();
+
+                // // STEP 3: Build sections in order (following deduplication priority)
+                // var continueListening = await BuildContinueListeningSection(account?.Id);
+
+                // var basedOnYourTaste = await BuildBasedOnYourTasteSection(
+                //     account?.Id, userPrefs, systemPrefs, dedupShowIds);
+
+                // var newReleases = await BuildNewReleasesSection(
+                //     userPrefs, systemPrefs, dedupShowIds);
+
+                // var hotThisWeek = await BuildHotThisWeekSection(
+                //     cacheMetrics, dedupShowIds, dedupChannelIds);
+
+                // var topSubCategory = await BuildTopSubCategorySection(
+                //     account?.Id, userPrefs, systemPrefs, cacheMetrics, dedupShowIds);
+
+                // var topPodcasters = await BuildTopPodcastersSection(
+                //     cacheMetrics, dedupPodcasterIds);
+
+                // var randomCategory = await BuildRandomCategorySection(
+                //     userPrefs, systemPrefs, cacheMetrics, dedupShowIds);
+
+                // var talentedRookies = await BuildTalentedRookiesSection(
+                //     cacheMetrics, dedupPodcasterIds);
+
+                // Console.WriteLine("[GetDiscoveryPodcastFeed] Completed successfully");
+
+                // return new DiscoveryPodcastFeedDTO
+                // {
+                //     ContinueListening = continueListening,
+                //     BasedOnYourTaste = basedOnYourTaste,
+                //     NewReleases = newReleases,
+                //     HotThisWeek = hotThisWeek,
+                //     TopSubCategory = topSubCategory,
+                //     TopPodcasters = topPodcasters,
+                //     RandomCategory = randomCategory,
+                //     TalentedRookies = talentedRookies
+                // };
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n[GetDiscoveryPodcastFeed] ERROR: {ex.Message}\n{ex.StackTrace}\n");
+                throw new HttpRequestException("Error while getting discovery podcast feed contents: " + ex.Message);
+            }
+        }
+
+        #endregion
+
+        // #region Cache Loading
+
+        // private async Task<(
+        //     UserPreferencesTemporal30dQueryMetric? userPrefs,
+        //     SystemPreferencesTemporal30dQueryMetric? systemPrefs,
+        //     CacheMetricsContainer cacheMetrics
+        // )> LoadAllCacheMetricsAsync(int? userId)
+        // {
+        //     Console.WriteLine("[LoadAllCacheMetrics] Loading all cache metrics in parallel...");
+
+        //     var tasks = new List<Task>();
+        //     UserPreferencesTemporal30dQueryMetric? userPrefs = null;
+        //     SystemPreferencesTemporal30dQueryMetric? systemPrefs = null;
+        //     PodcasterAllTimeMaxQueryMetric? podcasterAllTime = null;
+        //     PodcasterTemporal7dMaxQueryMetric? podcasterTemporal = null;
+        //     ShowAllTimeMaxQueryMetric? showAllTime = null;
+        //     ShowTemporal7dMaxQueryMetric? showTemporal = null;
+        //     ChannelAllTimeMaxQueryMetric? channelAllTime = null;
+        //     ChannelTemporal7dMaxQueryMetric? channelTemporal = null;
+
+        //     // User preferences (if logged in)
+        //     if (userId.HasValue)
+        //     {
+        //         tasks.Add(Task.Run(async () =>
+        //         {
+        //             var allUserPrefs = await _redisSharedCacheService
+        //                 .KeyGetAsync<List<UserPreferencesTemporal30dQueryMetric>>("query:metric:user_preferences:temporal_30d");
+
+        //             userPrefs = allUserPrefs?.FirstOrDefault(up => up.UserId == userId.Value);
+        //         }));
+        //     }
+
+        //     // System preferences
+        //     tasks.Add(Task.Run(async () =>
+        //     {
+        //         systemPrefs = await _redisSharedCacheService
+        //             .KeyGetAsync<SystemPreferencesTemporal30dQueryMetric>("query:metric:system_preferences:temporal_30d");
+        //     }));
+
+        //     // All-time metrics
+        //     tasks.Add(Task.Run(async () =>
+        //     {
+        //         podcasterAllTime = await _redisSharedCacheService
+        //             .KeyGetAsync<PodcasterAllTimeMaxQueryMetric>("query:metric:podcaster:all_time_max");
+        //     }));
+
+        //     tasks.Add(Task.Run(async () =>
+        //     {
+        //         showAllTime = await _redisSharedCacheService
+        //             .KeyGetAsync<ShowAllTimeMaxQueryMetric>("query:metric:show:all_time_max");
+        //     }));
+
+        //     tasks.Add(Task.Run(async () =>
+        //     {
+        //         channelAllTime = await _redisSharedCacheService
+        //             .KeyGetAsync<ChannelAllTimeMaxQueryMetric>("query:metric:channel:all_time_max");
+        //     }));
+
+        //     // Temporal 7d metrics
+        //     tasks.Add(Task.Run(async () =>
+        //     {
+        //         podcasterTemporal = await _redisSharedCacheService
+        //             .KeyGetAsync<PodcasterTemporal7dMaxQueryMetric>("query:metric:podcaster:temporal_7d_max");
+        //     }));
+
+        //     tasks.Add(Task.Run(async () =>
+        //     {
+        //         showTemporal = await _redisSharedCacheService
+        //             .KeyGetAsync<ShowTemporal7dMaxQueryMetric>("query:metric:show:temporal_7d_max");
+        //     }));
+
+        //     tasks.Add(Task.Run(async () =>
+        //     {
+        //         channelTemporal = await _redisSharedCacheService
+        //             .KeyGetAsync<ChannelTemporal7dMaxQueryMetric>("query:metric:channel:temporal_7d_max");
+        //     }));
+
+        //     await Task.WhenAll(tasks);
+
+        //     var cacheMetrics = new CacheMetricsContainer
+        //     {
+        //         PodcasterAllTime = podcasterAllTime,
+        //         PodcasterTemporal = podcasterTemporal,
+        //         ShowAllTime = showAllTime,
+        //         ShowTemporal = showTemporal,
+        //         ChannelAllTime = channelAllTime,
+        //         ChannelTemporal = channelTemporal
+        //     };
+
+        //     Console.WriteLine($"[LoadAllCacheMetrics] Loaded - UserPrefs: {userPrefs != null}, SystemPrefs: {systemPrefs != null}");
+        //     return (userPrefs, systemPrefs, cacheMetrics);
+        // }
+
+        // #endregion
+
+        // #region Section 1: Continue Listening
+
+        // private async Task<DiscoveryPodcastFeedDTO.ContinueListeningDiscoveryPodcastFeedSection?> BuildContinueListeningSection(int? userId)
+        // {
+        //     try
+        //     {
+        //         if (!userId.HasValue)
+        //         {
+        //             Console.WriteLine("[ContinueListening] Skipped - Anonymous user");
+        //             return null;
+        //         }
+
+        //         Console.WriteLine($"[ContinueListening] Building for userId={userId}");
+
+        //         var listenSessions = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+        //             predicate: ls =>
+        //                 ls.AccountId == userId.Value &&
+        //                 ls.IsCompleted == false &&
+        //                 ls.LastListenDurationSeconds < ls.PodcastEpisode.AudioLength &&
+        //                 ls.IsContentRemoved == false &&
+        //                 ls.PodcastEpisode.DeletedAt == null &&
+        //                 ls.PodcastEpisode.PodcastEpisodeStatusTrackings
+        //                     .OrderByDescending(pet => pet.CreatedAt)
+        //                     .FirstOrDefault().PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Removed,
+        //             includeFunc: q => q
+        //                 .Include(ls => ls.PodcastEpisode)
+        //                     .ThenInclude(pe => pe.PodcastShow)
+        //                 .OrderByDescending(ls => ls.CreatedAt)
+        //                 .Take(10)
+        //         ).ToListAsync();
+
+        //         if (!listenSessions.Any())
+        //         {
+        //             Console.WriteLine("[ContinueListening] No incomplete sessions found");
+        //             return null;
+        //         }
+
+        //         // Get unique podcaster IDs
+        //         var podcasterIds = listenSessions
+        //             .Select(ls => ls.PodcastEpisode.PodcastShow.PodcasterId)
+        //             .Distinct()
+        //             .ToList();
+
+        //         // Fetch all podcaster accounts using AccountCachingService
+        //         var podcasterAccounts = new Dictionary<int, AccountStatusCache>();
+        //         foreach (var podcasterId in podcasterIds)
+        //         {
+        //             var account = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
+        //             if (account != null)
+        //             {
+        //                 podcasterAccounts[podcasterId] = account;
+        //             }
+        //         }
+
+        //         var listItems = listenSessions.Select(ls =>
+        //         {
+        //             var podcasterId = ls.PodcastEpisode.PodcastShow.PodcasterId;
+        //             var podcasterAccount = podcasterAccounts.ContainsKey(podcasterId)
+        //                 ? podcasterAccounts[podcasterId]
+        //                 : null;
+
+        //             return new DiscoveryPodcastFeedDTO.ListenSessionDiscoveryPodcastFeedListItem
+        //             {
+        //                 Episode = new PodcastEpisodeSnippetResponseDTO
+        //                 {
+        //                     Id = ls.PodcastEpisode.Id,
+        //                     Name = ls.PodcastEpisode.Name,
+        //                     MainImageFileKey = ls.PodcastEpisode.MainImageFileKey
+        //                 },
+        //                 Podcaster = podcasterAccount != null ? new AccountSnippetResponseDTO
+        //                 {
+        //                     Id = podcasterAccount.Id,
+        //                     FullName = podcasterAccount.PodcasterProfileName ?? podcasterAccount.FullName,
+        //                     Email = podcasterAccount.Email,
+        //                     MainImageFileKey = podcasterAccount.MainImageFileKey
+        //                 } : null
+        //             };
+        //         }).ToList();
+
+        //         Console.WriteLine($"[ContinueListening] Built with {listItems.Count} items");
+
+        //         return new DiscoveryPodcastFeedDTO.ContinueListeningDiscoveryPodcastFeedSection
+        //         {
+        //             ListenSessionList = listItems
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[ContinueListening] ERROR: {ex.Message}");
+        //         return null;
+        //     }
+        // }
+
+        // #endregion
+
+        // #region Section 2: Based On Your Taste
+
+        // private async Task<DiscoveryPodcastFeedDTO.BasedOnYourTasteDiscoveryPodcastFeedSection?> BuildBasedOnYourTasteSection(
+        //     int? userId,
+        //     UserPreferencesTemporal30dQueryMetric? userPrefs,
+        //     SystemPreferencesTemporal30dQueryMetric? systemPrefs,
+        //     HashSet<Guid> dedupShowIds)
+        // {
+        //     try
+        //     {
+        //         Console.WriteLine("[BasedOnYourTaste] Building section...");
+
+        //         var targetShows = new List<PodcastShow>();
+
+        //         // Part A: From user top categories (75% = 9 shows)
+        //         if (userPrefs?.ListenedPodcastCategories != null && userPrefs.ListenedPodcastCategories.Any())
+        //         {
+        //             var topCategories = userPrefs.ListenedPodcastCategories.Take(4).ToList();
+        //             foreach (var category in topCategories)
+        //             {
+        //                 var shows = await _podcastShowGenericRepository.FindAll(
+        //                     predicate: ps =>
+        //                         ps.PodcastCategoryId == category.PodcastCategoryId &&
+        //                         ps.DeletedAt == null &&
+        //                         ps.PodcastShowStatusTrackings
+        //                             .OrderByDescending(pst => pst.CreatedAt)
+        //                             .FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed,
+        //                     includeFunc: null
+        //                 ).OrderBy(x => Guid.NewGuid())
+        //                  .Take(3)
+        //                  .ToListAsync();
+
+        //                 targetShows.AddRange(shows);
+        //             }
+        //         }
+
+        //         // Fallback Part C: System categories if not enough
+        //         if (targetShows.Count < 9 && systemPrefs?.ListenedPodcastCategories != null)
+        //         {
+        //             var needed = 9 - targetShows.Count;
+        //             var existingShowIds = targetShows.Select(s => s.Id).ToHashSet();
+
+        //             var systemCategories = systemPrefs.ListenedPodcastCategories.Take(4).ToList();
+        //             foreach (var category in systemCategories)
+        //             {
+        //                 if (needed <= 0) break;
+
+        //                 var shows = await _podcastShowGenericRepository.FindAll(
+        //                     predicate: ps =>
+        //                         ps.PodcastCategoryId == category.PodcastCategoryId &&
+        //                         !existingShowIds.Contains(ps.Id) &&
+        //                         ps.DeletedAt == null &&
+        //                         ps.PodcastShowStatusTrackings
+        //                             .OrderByDescending(pst => pst.CreatedAt)
+        //                             .FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed,
+        //                     includeFunc: null
+        //                 ).OrderBy(x => Guid.NewGuid())
+        //                  .Take(3)
+        //                  .ToListAsync();
+
+        //                 targetShows.AddRange(shows.Take(needed));
+        //                 needed -= shows.Count;
+        //                 existingShowIds.UnionWith(shows.Select(s => s.Id));
+        //             }
+        //         }
+
+        //         var partAShows = targetShows.Take(9).ToList();
+
+        //         // Part B: From user top podcasters (25% = 3 shows)
+        //         var partBShows = new List<PodcastShow>();
+        //         if (userPrefs?.ListenedPodcasters != null && userPrefs.ListenedPodcasters.Any())
+        //         {
+        //             var topPodcasters = userPrefs.ListenedPodcasters.Take(2).ToList();
+        //             var existingShowIds = partAShows.Select(s => s.Id).ToHashSet();
+
+        //             foreach (var podcaster in topPodcasters)
+        //             {
+        //                 var shows = await _podcastShowGenericRepository.FindAll(
+        //                     predicate: ps =>
+        //                         ps.PodcasterId == podcaster.PodcasterId &&
+        //                         !existingShowIds.Contains(ps.Id) &&
+        //                         ps.DeletedAt == null &&
+        //                         ps.PodcastShowStatusTrackings
+        //                             .OrderByDescending(pst => pst.CreatedAt)
+        //                             .FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed,
+        //                     includeFunc: null
+        //                 ).OrderBy(x => Guid.NewGuid())
+        //                  .Take(2)
+        //                  .ToListAsync();
+
+        //                 partBShows.AddRange(shows);
+        //                 existingShowIds.UnionWith(shows.Select(s => s.Id));
+        //             }
+        //         }
+
+        //         // Fallback Part D: System podcasters if not enough
+        //         if (partBShows.Count < 3 && systemPrefs?.ListenedPodcasters != null)
+        //         {
+        //             var needed = 3 - partBShows.Count;
+        //             var existingShowIds = partAShows.Concat(partBShows).Select(s => s.Id).ToHashSet();
+
+        //             var systemPodcasters = systemPrefs.ListenedPodcasters.Take(2).ToList();
+        //             foreach (var podcaster in systemPodcasters)
+        //             {
+        //                 if (needed <= 0) break;
+
+        //                 var shows = await _podcastShowGenericRepository.FindAll(
+        //                     predicate: ps =>
+        //                         ps.PodcasterId == podcaster.PodcasterId &&
+        //                         !existingShowIds.Contains(ps.Id) &&
+        //                         ps.DeletedAt == null &&
+        //                         ps.PodcastShowStatusTrackings
+        //                             .OrderByDescending(pst => pst.CreatedAt)
+        //                             .FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed,
+        //                     includeFunc: null
+        //                 ).OrderBy(x => Guid.NewGuid())
+        //                  .Take(2)
+        //                  .ToListAsync();
+
+        //                 partBShows.AddRange(shows.Take(needed));
+        //                 needed -= shows.Count;
+        //             }
+        //         }
+
+        //         var finalShows = partAShows.Concat(partBShows.Take(3)).Take(12).ToList();
+
+        //         // Update deduplication tracker
+        //         foreach (var show in finalShows)
+        //         {
+        //             dedupShowIds.Add(show.Id);
+        //         }
+
+        //         var showListItems = await MapToShowListItemsAsync(finalShows);
+
+        //         Console.WriteLine($"[BasedOnYourTaste] Built with {showListItems.Count} shows");
+
+        //         return new DiscoveryPodcastFeedDTO.BasedOnYourTasteDiscoveryPodcastFeedSection
+        //         {
+        //             ShowList = showListItems
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[BasedOnYourTaste] ERROR: {ex.Message}");
+        //         return null;
+        //     }
+        // }
+
+        // #endregion
+
+        // #region Section 3: New Releases
+
+        // private async Task<DiscoveryPodcastFeedDTO.NewReleasesDiscoveryPodcastFeedSection?> BuildNewReleasesSection(
+        //     UserPreferencesTemporal30dQueryMetric? userPrefs,
+        //     SystemPreferencesTemporal30dQueryMetric? systemPrefs,
+        //     HashSet<Guid> dedupShowIds)
+        // {
+        //     try
+        //     {
+        //         Console.WriteLine("[NewReleases] Building section...");
+
+        //         var now = _dateHelper.GetNowByAppTimeZone();
+        //         var twoDaysAgo = now.AddDays(-2);
+
+        //         var targetShows = new List<PodcastShow>();
+
+        //         // Part A: From user top podcasters (50% = 5 shows)
+        //         if (userPrefs?.ListenedPodcasters != null && userPrefs.ListenedPodcasters.Any())
+        //         {
+        //             var topPodcasters = userPrefs.ListenedPodcasters.Take(2).ToList();
+
+        //             foreach (var podcaster in topPodcasters)
+        //             {
+        //                 var shows = await _podcastShowGenericRepository.FindAll(
+        //                     predicate: ps =>
+        //                         ps.PodcasterId == podcaster.PodcasterId &&
+        //                         ps.PublishedAt >= twoDaysAgo &&
+        //                         !dedupShowIds.Contains(ps.Id) &&
+        //                         ps.DeletedAt == null &&
+        //                         ps.PodcastShowStatusTrackings
+        //                             .OrderByDescending(pst => pst.CreatedAt)
+        //                             .FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed,
+        //                     includeFunc: q => q.OrderByDescending(ps => ps.PublishedAt)
+        //                 ).Take(7).ToListAsync();
+
+        //                 targetShows.AddRange(shows);
+        //             }
+        //         }
+
+        //         var partAShows = targetShows
+        //             .OrderByDescending(s => s.PublishedAt)
+        //             .Take(5)
+        //             .ToList();
+
+        //         // Part B: System-wide new releases (50% = 5 shows)
+        //         var existingShowIds = partAShows.Select(s => s.Id).ToHashSet();
+        //         existingShowIds.UnionWith(dedupShowIds);
+
+        //         var partBShows = await _podcastShowGenericRepository.FindAll(
+        //             predicate: ps =>
+        //                 ps.PublishedAt >= twoDaysAgo &&
+        //                 !existingShowIds.Contains(ps.Id) &&
+        //                 ps.DeletedAt == null &&
+        //                 ps.PodcastShowStatusTrackings
+        //                     .OrderByDescending(pst => pst.CreatedAt)
+        //                     .FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed,
+        //             includeFunc: q => q.OrderByDescending(ps => ps.PublishedAt)
+        //         ).Take(10).ToListAsync();
+
+        //         var finalShows = partAShows
+        //             .Concat(partBShows.Take(5 + (5 - partAShows.Count)))
+        //             .Take(10)
+        //             .ToList();
+
+        //         // Update deduplication
+        //         foreach (var show in finalShows)
+        //         {
+        //             dedupShowIds.Add(show.Id);
+        //         }
+
+        //         var showListItems = await MapToShowListItemsAsync(finalShows);
+
+        //         Console.WriteLine($"[NewReleases] Built with {showListItems.Count} shows");
+
+        //         return new DiscoveryPodcastFeedDTO.NewReleasesDiscoveryPodcastFeedSection
+        //         {
+        //             ShowList = showListItems
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[NewReleases] ERROR: {ex.Message}");
+        //         return null;
+        //     }
+        // }
+
+        // #endregion
+
+        // #region Section 4: Hot This Week
+
+        // private async Task<DiscoveryPodcastFeedDTO.HotThisWeekDiscoveryPodcastFeedSection?> BuildHotThisWeekSection(
+        //     CacheMetricsContainer cacheMetrics,
+        //     HashSet<Guid> dedupShowIds,
+        //     HashSet<Guid> dedupChannelIds)
+        // {
+        //     try
+        //     {
+        //         Console.WriteLine("[HotThisWeek] Building section...");
+
+        //         // Fetch all shows and channels with necessary includes
+        //         var allShows = await _podcastShowGenericRepository.FindAll(
+        //             predicate: ps =>
+        //                 ps.DeletedAt == null &&
+        //                 !dedupShowIds.Contains(ps.Id) &&
+        //                 ps.PodcastShowStatusTrackings
+        //                     .OrderByDescending(pst => pst.CreatedAt)
+        //                     .FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed,
+        //             includeFunc: q => q
+        //                 .Include(ps => ps.PodcastShowStatusTrackings)
+        //                 .Include(ps => ps.PodcastChannel)
+        //         ).ToListAsync();
+
+        //         var allChannels = await _podcastChannelGenericRepository.FindAll(
+        //             predicate: pc =>
+        //                 pc.DeletedAt == null &&
+        //                 !dedupChannelIds.Contains(pc.Id),
+        //             includeFunc: q => q.Include(pc => pc.PodcastChannelStatusTrackings)
+        //         ).ToListAsync();
+
+        //         // Calculate hot scores (7d)
+        //         var showsWithHotScore = CalculateShowHotScores(allShows, cacheMetrics.ShowTemporal);
+        //         var channelsWithHotScore = CalculateChannelHotScores(allChannels, cacheMetrics.ChannelTemporal);
+
+        //         // Part A (80%): 8 hot shows + 4 hot channels
+        //         var partAShows = showsWithHotScore
+        //             .OrderByDescending(x => x.score)
+        //             .Take(8)
+        //             .Select(x => x.show)
+        //             .ToList();
+
+        //         var partAChannels = channelsWithHotScore
+        //             .OrderByDescending(x => x.score)
+        //             .Take(4)
+        //             .Select(x => x.channel)
+        //             .ToList();
+
+        //         // Calculate popular scores (all-time) for Part B
+        //         var showsWithPopularScore = CalculateShowPopularScores(allShows, cacheMetrics.ShowAllTime);
+        //         var channelsWithPopularScore = CalculateChannelPopularScores(allChannels, cacheMetrics.ChannelAllTime);
+
+        //         var partAShowIds = partAShows.Select(s => s.Id).ToHashSet();
+        //         var partAChannelIds = partAChannels.Select(c => c.Id).ToHashSet();
+
+        //         // Part B (20%): 2 popular shows + 1 popular channel
+        //         var partBShows = showsWithPopularScore
+        //             .Where(x => !partAShowIds.Contains(x.show.Id))
+        //             .OrderByDescending(x => x.score)
+        //             .Take(2)
+        //             .Select(x => x.show)
+        //             .ToList();
+
+        //         var partBChannels = channelsWithPopularScore
+        //             .Where(x => !partAChannelIds.Contains(x.channel.Id))
+        //             .OrderByDescending(x => x.score)
+        //             .Take(1)
+        //             .Select(x => x.channel)
+        //             .ToList();
+
+        //         var finalShows = partAShows.Concat(partBShows).ToList();
+        //         var finalChannels = partAChannels.Concat(partBChannels).ToList();
+
+        //         // Update deduplication
+        //         foreach (var show in finalShows) dedupShowIds.Add(show.Id);
+        //         foreach (var channel in finalChannels) dedupChannelIds.Add(channel.Id);
+
+        //         var showListItems = await MapToShowListItemsAsync(finalShows);
+        //         var channelListItems = await MapToChannelListItemsAsync(finalChannels);
+
+        //         Console.WriteLine($"[HotThisWeek] Built with {showListItems.Count} shows, {channelListItems.Count} channels");
+
+        //         return new DiscoveryPodcastFeedDTO.HotThisWeekDiscoveryPodcastFeedSection
+        //         {
+        //             ShowList = showListItems,
+        //             ChannelList = channelListItems
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[HotThisWeek] ERROR: {ex.Message}");
+        //         return null;
+        //     }
+        // }
+
+        // #endregion
+
+        // #region Section 5: Top SubCategory
+
+        // private async Task<DiscoveryPodcastFeedDTO.TopSubCategoryDiscoveryPodcastFeedSection?> BuildTopSubCategorySection(
+        //     int? userId,
+        //     UserPreferencesTemporal30dQueryMetric? userPrefs,
+        //     SystemPreferencesTemporal30dQueryMetric? systemPrefs,
+        //     CacheMetricsContainer cacheMetrics,
+        //     HashSet<Guid> dedupShowIds)
+        // {
+        //     try
+        //     {
+        //         Console.WriteLine("[TopSubCategory] Building section...");
+
+        //         // Determine top subcategory
+        //         int? targetSubCategoryId = null;
+        //         int? targetCategoryId = null;
+
+        //         if (userPrefs?.ListenedPodcastCategories != null && userPrefs.ListenedPodcastCategories.Any())
+        //         {
+        //             var topCategory = userPrefs.ListenedPodcastCategories.First();
+        //             targetCategoryId = topCategory.PodcastCategoryId;
+        //             if (topCategory.PodcastSubCategories != null && topCategory.PodcastSubCategories.Any())
+        //             {
+        //                 targetSubCategoryId = topCategory.PodcastSubCategories.First().PodcastSubCategoryId;
+        //             }
+        //         }
+
+        //         // Fallback to system
+        //         if (!targetSubCategoryId.HasValue && systemPrefs?.ListenedPodcastCategories != null && systemPrefs.ListenedPodcastCategories.Any())
+        //         {
+        //             var topCategory = systemPrefs.ListenedPodcastCategories.First();
+        //             targetCategoryId = topCategory.PodcastCategoryId;
+        //             if (topCategory.PodcastSubCategories != null && topCategory.PodcastSubCategories.Any())
+        //             {
+        //                 targetSubCategoryId = topCategory.PodcastSubCategories.First().PodcastSubCategoryId;
+        //             }
+        //         }
+
+        //         if (!targetSubCategoryId.HasValue)
+        //         {
+        //             Console.WriteLine("[TopSubCategory] No subcategory found");
+        //             return null;
+        //         }
+
+        //         // Fetch subcategory entity with category
+        //         var subCategory = await _appDbContext.PodcastSubCategories
+        //             .Include(psc => psc.PodcastCategory)
+        //             .FirstOrDefaultAsync(psc => psc.Id == targetSubCategoryId.Value);
+
+        //         if (subCategory == null)
+        //         {
+        //             Console.WriteLine("[TopSubCategory] Subcategory not found in DB");
+        //             return null;
+        //         }
+
+        //         // Part A (80%): 8 personal shows
+        //         var shows = await _podcastShowGenericRepository.FindAll(
+        //             predicate: ps =>
+        //                 ps.PodcastSubCategoryId == targetSubCategoryId.Value &&
+        //                 !dedupShowIds.Contains(ps.Id) &&
+        //                 ps.DeletedAt == null &&
+        //                 ps.PodcastShowStatusTrackings
+        //                     .OrderByDescending(pst => pst.CreatedAt)
+        //                     .FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed,
+        //             includeFunc: null
+        //         ).ToListAsync();
+
+        //         // Calculate personal show scores (if user logged in)
+        //         var showsWithPersonalScore = userId.HasValue
+        //             ? await CalculatePersonalShowScoresAsync(shows, userId.Value)
+        //             : shows.Select(s => (show: s, score: 0.0)).ToList();
+
+        //         var partAShows = showsWithPersonalScore
+        //             .Where(x => x.score > 0)
+        //             .OrderByDescending(x => x.score)
+        //             .Take(8)
+        //             .Select(x => x.show)
+        //             .ToList();
+
+        //         // Part B (20%): Popular shows to fill deficit
+        //         var needed = 8 - partAShows.Count;
+        //         var partBShows = new List<PodcastShow>();
+
+        //         if (needed > 0)
+        //         {
+        //             var existingIds = partAShows.Select(s => s.Id).ToHashSet();
+        //             var showsWithPopularScore = CalculateShowPopularScores(
+        //                 shows.Where(s => !existingIds.Contains(s.Id)).ToList(),
+        //                 cacheMetrics.ShowAllTime
+        //             );
+
+        //             partBShows = showsWithPopularScore
+        //                 .OrderByDescending(x => x.score)
+        //                 .Take(2 + needed)
+        //                 .Select(x => x.show)
+        //                 .ToList();
+        //         }
+
+        //         var finalShows = partAShows.Concat(partBShows.Take(2 + needed)).Take(10).ToList();
+
+        //         // Update deduplication
+        //         foreach (var show in finalShows) dedupShowIds.Add(show.Id);
+
+        //         var showListItems = await MapToShowListItemsAsync(finalShows);
+
+        //         var subCategoryDTO = new PodcastSubCategoryListItemResponseDTO
+        //         {
+        //             Id = subCategory.Id,
+        //             Name = subCategory.Name,
+        //             PodcastCategoryId = subCategory.PodcastCategoryId,
+        //             PodcastCategory = new PodcastCategoryDTO
+        //             {
+        //                 Id = subCategory.PodcastCategory.Id,
+        //                 Name = subCategory.PodcastCategory.Name,
+        //                 Description = subCategory.PodcastCategory.Description
+        //             }
+        //         };
+
+        //         Console.WriteLine($"[TopSubCategory] Built with {showListItems.Count} shows for subcategory {targetSubCategoryId}");
+
+        //         return new DiscoveryPodcastFeedDTO.TopSubCategoryDiscoveryPodcastFeedSection
+        //         {
+        //             PodcastSubCategory = subCategoryDTO,
+        //             ShowList = showListItems
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[TopSubCategory] ERROR: {ex.Message}");
+        //         return null;
+        //     }
+        // }
+
+        // #endregion
+
+        // #region Section 6: Top Podcasters
+
+        // private async Task<DiscoveryPodcastFeedDTO.TopPodcastersDiscoveryPodcastFeedSection?> BuildTopPodcastersSection(
+        //     CacheMetricsContainer cacheMetrics,
+        //     HashSet<int> dedupPodcasterIds)
+        // {
+        //     try
+        //     {
+        //         Console.WriteLine("[TopPodcasters] Building section...");
+
+        //         // Fetch all verified podcasters from UserService
+        //         var batchRequest = new BatchQueryRequest
+        //         {
+        //             Queries = new List<BatchQueryItem>
+        //             {
+        //                 new BatchQueryItem
+        //                 {
+        //                     Key = "verifiedPodcasters",
+        //                     QueryType = "findall",
+        //                     EntityType = "PodcasterProfile",
+        //                     Parameters = JObject.FromObject(new { IsVerified = true })
+        //                 }
+        //             }
+        //         };
+
+        //         var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+        //         var allPodcasters = result.Results["verifiedPodcasters"].ToObject<List<PodcasterProfileDTO>>();
+
+        //         // Filter out already used podcasters
+        //         allPodcasters = allPodcasters.Where(p => !dedupPodcasterIds.Contains(p.AccountId)).ToList();
+
+        //         // Calculate hot scores (7d)
+        //         var podcastersWithHotScore = CalculatePodcasterHotScores(allPodcasters, cacheMetrics.PodcasterTemporal);
+
+        //         // Part A (20%): 4 hot podcasters
+        //         var partAPodcasters = podcastersWithHotScore
+        //             .Where(x => x.score > 0)
+        //             .OrderByDescending(x => x.score)
+        //             .Take(4)
+        //             .Select(x => x.podcaster)
+        //             .ToList();
+
+        //         // Calculate popular scores (all-time)
+        //         var podcastersWithPopularScore = CalculatePodcasterPopularScores(allPodcasters, cacheMetrics.PodcasterAllTime);
+
+        //         var partAPodcasterIds = partAPodcasters.Select(p => p.AccountId).ToHashSet();
+
+        //         // Part B (80%): 8 popular podcasters
+        //         var partBPodcasters = podcastersWithPopularScore
+        //             .Where(x => !partAPodcasterIds.Contains(x.podcaster.AccountId))
+        //             .OrderByDescending(x => x.score)
+        //             .Take(8)
+        //             .Select(x => x.podcaster)
+        //             .ToList();
+
+        //         var finalPodcasters = partAPodcasters.Concat(partBPodcasters).Take(12).ToList();
+
+        //         // Update deduplication
+        //         foreach (var podcaster in finalPodcasters)
+        //         {
+        //             dedupPodcasterIds.Add(podcaster.AccountId);
+        //         }
+
+        //         // Fetch full account details using AccountCachingService
+        //         var podcasterListItems = new List<AccountSnippetResponseDTO>();
+        //         foreach (var podcaster in finalPodcasters)
+        //         {
+        //             var account = await _accountCachingService.GetAccountStatusCacheById(podcaster.AccountId);
+        //             if (account != null)
+        //             {
+        //                 podcasterListItems.Add(new AccountSnippetResponseDTO
+        //                 {
+        //                     Id = account.Id,
+        //                     FullName = account.PodcasterProfileName ?? account.FullName,
+        //                     Email = account.Email,
+        //                     MainImageFileKey = account.MainImageFileKey
+        //                 });
+        //             }
+        //         }
+
+        //         Console.WriteLine($"[TopPodcasters] Built with {podcasterListItems.Count} podcasters");
+
+        //         return new DiscoveryPodcastFeedDTO.TopPodcastersDiscoveryPodcastFeedSection
+        //         {
+        //             PodcasterList = podcasterListItems
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[TopPodcasters] ERROR: {ex.Message}");
+        //         return null;
+        //     }
+        // }
+
+        // #endregion
+
+        // #region Section 7: Random Category
+
+        // private async Task<DiscoveryPodcastFeedDTO.RandomCategoryDiscoveryPodcastFeedSection?> BuildRandomCategorySection(
+        //     UserPreferencesTemporal30dQueryMetric? userPrefs,
+        //     SystemPreferencesTemporal30dQueryMetric? systemPrefs,
+        //     CacheMetricsContainer cacheMetrics,
+        //     HashSet<Guid> dedupShowIds)
+        // {
+        //     try
+        //     {
+        //         Console.WriteLine("[RandomCategory] Building section...");
+
+        //         // Get top 2 categories to exclude
+        //         var excludeCategoryIds = new HashSet<int>();
+        //         if (userPrefs?.ListenedPodcastCategories != null && userPrefs.ListenedPodcastCategories.Any())
+        //         {
+        //             excludeCategoryIds = userPrefs.ListenedPodcastCategories
+        //                 .Take(2)
+        //                 .Select(c => c.PodcastCategoryId)
+        //                 .ToHashSet();
+        //         }
+
+        //         // Fetch all category IDs from database
+        //         var allCategoryIds = await _appDbContext.PodcastCategories
+        //             .Select(pc => pc.Id)
+        //             .ToListAsync();
+
+        //         var availableCategoryIds = allCategoryIds
+        //             .Where(id => !excludeCategoryIds.Contains(id))
+        //             .ToList();
+
+        //         if (!availableCategoryIds.Any())
+        //         {
+        //             Console.WriteLine("[RandomCategory] No available categories");
+        //             return null;
+        //         }
+
+        //         // Pick random category
+        //         var random = new Random();
+        //         var randomCategoryId = availableCategoryIds[random.Next(availableCategoryIds.Count)];
+
+        //         Console.WriteLine($"[RandomCategory] Selected category: {randomCategoryId}");
+
+        //         // Part A (30%): 3 hot shows
+        //         var shows = await _podcastShowGenericRepository.FindAll(
+        //             predicate: ps =>
+        //                 ps.PodcastCategoryId == randomCategoryId &&
+        //                 !dedupShowIds.Contains(ps.Id) &&
+        //                 ps.DeletedAt == null &&
+        //                 ps.PodcastShowStatusTrackings
+        //                     .OrderByDescending(pst => pst.CreatedAt)
+        //                     .FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed,
+        //             includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+        //         ).ToListAsync();
+
+        //         var showsWithHotScore = CalculateShowHotScores(shows, cacheMetrics.ShowTemporal);
+
+        //         var partAShows = showsWithHotScore
+        //             .Where(x => x.score > 0)
+        //             .OrderByDescending(x => x.score)
+        //             .Take(3)
+        //             .Select(x => x.show)
+        //             .ToList();
+
+        //         // Part B (70%): 9 popular shows
+        //         var existingIds = partAShows.Select(s => s.Id).ToHashSet();
+        //         var showsWithPopularScore = CalculateShowPopularScores(
+        //             shows.Where(s => !existingIds.Contains(s.Id)).ToList(),
+        //             cacheMetrics.ShowAllTime
+        //         );
+
+        //         var needed = 3 - partAShows.Count;
+        //         var partBShows = showsWithPopularScore
+        //             .OrderByDescending(x => x.score)
+        //             .Take(9 + needed)
+        //             .Select(x => x.show)
+        //             .ToList();
+
+        //         var finalShows = partAShows.Concat(partBShows).Take(12).ToList();
+
+        //         // Update deduplication
+        //         foreach (var show in finalShows) dedupShowIds.Add(show.Id);
+
+        //         var showListItems = await MapToShowListItemsAsync(finalShows);
+
+        //         Console.WriteLine($"[RandomCategory] Built with {showListItems.Count} shows");
+
+        //         return new DiscoveryPodcastFeedDTO.RandomCategoryDiscoveryPodcastFeedSection
+        //         {
+        //             ShowList = showListItems
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[RandomCategory] ERROR: {ex.Message}");
+        //         return null;
+        //     }
+        // }
+
+        // #endregion
+
+        // #region Section 8: Talented Rookies
+
+        // private async Task<DiscoveryPodcastFeedDTO.TalentedRookiesDiscoveryPodcastFeedSection?> BuildTalentedRookiesSection(
+        //     CacheMetricsContainer cacheMetrics,
+        //     HashSet<int> dedupPodcasterIds)
+        // {
+        //     try
+        //     {
+        //         Console.WriteLine("[TalentedRookies] Building section...");
+
+        //         var now = _dateHelper.GetNowByAppTimeZone();
+        //         var ninetyDaysAgo = now.AddDays(-90);
+
+        //         // Fetch all verified podcasters from UserService
+        //         var batchRequest = new BatchQueryRequest
+        //         {
+        //             Queries = new List<BatchQueryItem>
+        //             {
+        //                 new BatchQueryItem
+        //                 {
+        //                     Key = "rookiePodcasters",
+        //                     QueryType = "findall",
+        //                     EntityType = "PodcasterProfile",
+        //                     Parameters = JObject.FromObject(new { IsVerified = true })
+        //                 }
+        //             }
+        //         };
+
+        //         var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+        //         var allPodcasters = result.Results["rookiePodcasters"].ToObject<List<PodcasterProfileDTO>>();
+
+        //         // Filter rookies (verified ≤ 90 days and not already used)
+        //         var rookies = allPodcasters
+        //             .Where(p => p.VerifiedAt.HasValue && p.VerifiedAt.Value >= ninetyDaysAgo)
+        //             .Where(p => !dedupPodcasterIds.Contains(p.AccountId))
+        //             .ToList();
+
+        //         // Calculate rookie scores
+        //         var rookiesWithScore = CalculateRookieScores(rookies, cacheMetrics.PodcasterAllTime);
+
+        //         var finalRookies = rookiesWithScore
+        //             .OrderByDescending(x => x.score)
+        //             .Take(8)
+        //             .Select(x => x.podcaster)
+        //             .ToList();
+
+        //         // Update deduplication
+        //         foreach (var rookie in finalRookies)
+        //         {
+        //             dedupPodcasterIds.Add(rookie.AccountId);
+        //         }
+
+        //         // Fetch full account details using AccountCachingService
+        //         var rookieListItems = new List<AccountSnippetResponseDTO>();
+        //         foreach (var rookie in finalRookies)
+        //         {
+        //             var account = await _accountCachingService.GetAccountStatusCacheById(rookie.AccountId);
+        //             if (account != null)
+        //             {
+        //                 rookieListItems.Add(new AccountSnippetResponseDTO
+        //                 {
+        //                     Id = account.Id,
+        //                     FullName = account.PodcasterProfileName ?? account.FullName,
+        //                     Email = account.Email,
+        //                     MainImageFileKey = account.MainImageFileKey
+        //                 });
+        //             }
+        //         }
+
+        //         Console.WriteLine($"[TalentedRookies] Built with {rookieListItems.Count} rookies");
+
+        //         return new DiscoveryPodcastFeedDTO.TalentedRookiesDiscoveryPodcastFeedSection
+        //         {
+        //             PodcasterList = rookieListItems
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[TalentedRookies] ERROR: {ex.Message}");
+        //         return null;
+        //     }
+        // }
+
+        // #endregion
+
+        // #region Score Calculation Helpers
+
+        // // ... (Keep all score calculation methods from previous implementation)
+        // // CalculateShowHotScores, CalculateShowPopularScores, etc.
+
+        // #endregion
+
+        // #region Mapping Helpers
+
+        // private async Task<List<ShowListItemResponseDTO>> MapToShowListItemsAsync(List<PodcastShow> shows)
+        // {
+        //     var result = new List<ShowListItemResponseDTO>();
+
+        //     // Collect all unique IDs for batch fetching
+        //     var podcasterIds = shows.Select(s => s.PodcasterId).Distinct().ToList();
+        //     var channelIds = shows.Where(s => s.PodcastChannelId.HasValue).Select(s => s.PodcastChannelId.Value).Distinct().ToList();
+        //     var categoryIds = shows.Where(s => s.PodcastCategoryId.HasValue).Select(s => s.PodcastCategoryId.Value).Distinct().ToList();
+        //     var subCategoryIds = shows.Where(s => s.PodcastSubCategoryId.HasValue).Select(s => s.PodcastSubCategoryId.Value).Distinct().ToList();
+
+        //     // Batch fetch podcasters
+        //     var podcasterAccounts = new Dictionary<int, AccountStatusCache>();
+        //     foreach (var id in podcasterIds)
+        //     {
+        //         var account = await _accountCachingService.GetAccountStatusCacheById(id);
+        //         if (account != null) podcasterAccounts[id] = account;
+        //     }
+
+        //     // Fetch categories
+        //     var categories = await _appDbContext.PodcastCategories
+        //         .Where(pc => categoryIds.Contains(pc.Id))
+        //         .ToDictionaryAsync(pc => pc.Id, pc => pc);
+
+        //     // Fetch subcategories
+        //     var subCategories = await _appDbContext.PodcastSubCategories
+        //         .Where(psc => subCategoryIds.Contains(psc.Id))
+        //         .ToDictionaryAsync(psc => psc.Id, psc => psc);
+
+        //     // Fetch channels with includes
+        //     var channels = await _podcastChannelGenericRepository.FindAll(
+        //         predicate: pc => channelIds.Contains(pc.Id),
+        //         includeFunc: q => q.Include(pc => pc.PodcastChannelStatusTrackings)
+        //     ).ToDictionaryAsync(pc => pc.Id, pc => pc);
+
+        //     // Fetch hashtags for all shows
+        //     var showHashtags = await _appDbContext.PodcastShowHashtags
+        //         .Include(psh => psh.Hashtag)
+        //         .Where(psh => shows.Select(s => s.Id).Contains(psh.PodcastShowId))
+        //         .ToListAsync();
+
+        //     var hashtagsByShow = showHashtags
+        //         .GroupBy(psh => psh.PodcastShowId)
+        //         .ToDictionary(g => g.Key, g => g.Select(psh => psh.Hashtag).ToList());
+
+        //     // Fetch subscription types
+        //     var subscriptionTypes = await _appDbContext.PodcastShowSubscriptionTypes
+        //         .ToDictionaryAsync(psst => psst.Id, psst => psst);
+
+        //     // Map each show
+        //     foreach (var show in shows)
+        //     {
+        //         var podcasterAccount = podcasterAccounts.ContainsKey(show.PodcasterId)
+        //             ? podcasterAccounts[show.PodcasterId]
+        //             : null;
+
+        //         var currentStatus = show.PodcastShowStatusTrackings
+        //             .OrderByDescending(pst => pst.CreatedAt)
+        //             .FirstOrDefault();
+
+        //         var item = new ShowListItemResponseDTO
+        //         {
+        //             Id = show.Id,
+        //             Name = show.Name,
+        //             Description = show.Description,
+        //             Language = show.Language,
+        //             ReleaseDate = show.ReleaseDate,
+        //             IsReleased = show.IsReleased,
+        //             Copyright = show.Copyright,
+        //             UploadFrequency = show.UploadFrequency,
+        //             RatingCount = show.RatingCount,
+        //             AverageRating = show.AverageRating,
+        //             MainImageFileKey = show.MainImageFileKey,
+        //             TrailerAudioFileKey = show.TrailerAudioFileKey,
+        //             ListenCount = show.ListenCount,
+        //             TotalFollow = show.TotalFollow,
+        //             EpisodeCount = show.PodcastEpisodes.Count(pe =>
+        //                 {
+        //                     return pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null;
+        //                 }),
+        //             TakenDownReason = show.TakenDownReason,
+        //             CreatedAt = show.CreatedAt,
+        //             UpdatedAt = show.UpdatedAt,
+
+        //             Podcaster = podcasterAccount != null ? new AccountSnippetResponseDTO
+        //             {
+        //                 Id = podcasterAccount.Id,
+        //                 FullName = podcasterAccount.PodcasterProfileName ?? podcasterAccount.FullName,
+        //                 Email = podcasterAccount.Email,
+        //                 MainImageFileKey = podcasterAccount.MainImageFileKey
+        //             } : null,
+
+        //             PodcastCategory = show.PodcastCategoryId.HasValue && categories.ContainsKey(show.PodcastCategoryId.Value)
+        //                 ? new PodcastCategoryDTO
+        //                 {
+        //                     Id = categories[show.PodcastCategoryId.Value].Id,
+        //                     Name = categories[show.PodcastCategoryId.Value].Name,
+        //                 }
+        //                 : null,
+
+        //             PodcastSubCategory = show.PodcastSubCategoryId.HasValue && subCategories.ContainsKey(show.PodcastSubCategoryId.Value)
+        //                 ? new PodcastSubCategoryDTO
+        //                 {
+        //                     Id = subCategories[show.PodcastSubCategoryId.Value].Id,
+        //                     Name = subCategories[show.PodcastSubCategoryId.Value].Name,
+        //                     PodcastCategoryId = subCategories[show.PodcastSubCategoryId.Value].PodcastCategoryId
+        //                 }
+        //                 : null,
+
+        //             PodcastShowSubscriptionType = show.PodcastShowSubscriptionTypeId.HasValue && subscriptionTypes.ContainsKey(show.PodcastShowSubscriptionTypeId.Value)
+        //                 ? new PodcastShowSubscriptionTypeDTO
+        //                 {
+        //                     Id = subscriptionTypes[show.PodcastShowSubscriptionTypeId.Value].Id,
+        //                     Name = subscriptionTypes[show.PodcastShowSubscriptionTypeId.Value].Name
+        //                 }
+        //                 : null,
+
+        //             PodcastChannel = show.PodcastChannelId.HasValue && channels.ContainsKey(show.PodcastChannelId.Value)
+        //                 ? new PodcastChannelSnippetResponseDTO
+        //                 {
+        //                     Id = channels[show.PodcastChannelId.Value].Id,
+        //                     Name = channels[show.PodcastChannelId.Value].Name,
+        //                     MainImageFileKey = channels[show.PodcastChannelId.Value].MainImageFileKey
+        //                 }
+        //                 : null,
+
+        //             Hashtags = hashtagsByShow.ContainsKey(show.Id)
+        //                 ? hashtagsByShow[show.Id].Select(h => new HashtagDTO
+        //                 {
+        //                     Id = h.Id,
+        //                     Name = h.Name
+        //                 }).ToList()
+        //                 : null,
+
+        //             CurrentStatus = new PodcastShowStatusDTO
+        //             {
+        //                 Id = currentStatus.PodcastShowStatusId,
+        //                 Name = ((PodcastShowStatusEnum)currentStatus.PodcastShowStatusId).ToString()
+        //             }
+        //         };
+
+        //         result.Add(item);
+        //     }
+
+        //     return result;
+        // }
+
+        // private async Task<List<ChannelListItemResponseDTO>> MapToChannelListItemsAsync(List<PodcastChannel> channels)
+        // {
+        //     var result = new List<ChannelListItemResponseDTO>();
+
+        //     // Collect all unique podcaster IDs
+        //     var podcasterIds = channels.Select(c => c.PodcasterId).Distinct().ToList();
+        //     var categoryIds = channels.Where(c => c.PodcastCategoryId.HasValue).Select(c => c.PodcastCategoryId.Value).Distinct().ToList();
+        //     var subCategoryIds = channels.Where(c => c.PodcastSubCategoryId.HasValue).Select(c => c.PodcastSubCategoryId.Value).Distinct().ToList();
+
+        //     // Batch fetch podcasters
+        //     var podcasterAccounts = new Dictionary<int, AccountStatusCache>();
+        //     foreach (var id in podcasterIds)
+        //     {
+        //         var account = await _accountCachingService.GetAccountStatusCacheById(id);
+        //         if (account != null) podcasterAccounts[id] = account;
+        //     }
+
+        //     // Fetch categories
+        //     var categories = await _appDbContext.PodcastCategories
+        //         .Where(pc => categoryIds.Contains(pc.Id))
+        //         .ToDictionaryAsync(pc => pc.Id, pc => pc);
+
+        //     // Fetch subcategories
+        //     var subCategories = await _appDbContext.PodcastSubCategories
+        //         .Where(psc => subCategoryIds.Contains(psc.Id))
+        //         .ToDictionaryAsync(psc => psc.Id, psc => psc);
+
+        //     // Fetch hashtags for all channels
+        //     var channelHashtags = await _appDbContext.PodcastChannelHashtags
+        //         .Include(pch => pch.Hashtag)
+        //         .Where(pch => channels.Select(c => c.Id).Contains(pch.PodcastChannelId))
+        //         .ToListAsync();
+
+        //     var hashtagsByChannel = channelHashtags
+        //         .GroupBy(pch => pch.PodcastChannelId)
+        //         .ToDictionary(g => g.Key, g => g.Select(pch => pch.Hashtag).ToList());
+
+        //     // Map each channel
+        //     foreach (var channel in channels)
+        //     {
+        //         var podcasterAccount = podcasterAccounts.ContainsKey(channel.PodcasterId)
+        //             ? podcasterAccounts[channel.PodcasterId]
+        //             : null;
+
+        //         var currentStatus = channel.PodcastChannelStatusTrackings
+        //             .OrderByDescending(pst => pst.CreatedAt)
+        //             .FirstOrDefault();
+
+        //         var item = new ChannelListItemResponseDTO
+        //         {
+        //             Id = channel.Id,
+        //             Name = channel.Name,
+        //             Description = channel.Description,
+        //             BackgroundImageFileKey = channel.BackgroundImageFileKey,
+        //             MainImageFileKey = channel.MainImageFileKey,
+        //             TotalFavorite = channel.TotalFavorite,
+        //             ListenCount = channel.ListenCount,
+        //             ShowCount = channel.PodcastShows != null ? channel.PodcastShows.Count(ps =>
+        //                 {
+        //                     return ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Published && ps.DeletedAt == null;
+        //                 }) : 0,
+        //             CreatedAt = channel.CreatedAt,
+        //             UpdatedAt = channel.UpdatedAt,
+
+        //             Podcaster = podcasterAccount != null ? new AccountSnippetResponseDTO
+        //             {
+        //                 Id = podcasterAccount.Id,
+        //                 FullName = podcasterAccount.PodcasterProfileName ?? podcasterAccount.FullName,
+        //                 Email = podcasterAccount.Email,
+        //                 MainImageFileKey = podcasterAccount.MainImageFileKey
+        //             } : null,
+
+        //             PodcastCategory = channel.PodcastCategoryId.HasValue && categories.ContainsKey(channel.PodcastCategoryId.Value)
+        //                 ? new PodcastCategoryDTO
+        //                 {
+        //                     Id = categories[channel.PodcastCategoryId.Value].Id,
+        //                     Name = categories[channel.PodcastCategoryId.Value].Name,
+        //                 }
+        //                 : null,
+
+        //             PodcastSubCategory = channel.PodcastSubCategoryId.HasValue && subCategories.ContainsKey(channel.PodcastSubCategoryId.Value)
+        //                 ? new PodcastSubCategoryDTO
+        //                 {
+        //                     Id = subCategories[channel.PodcastSubCategoryId.Value].Id,
+        //                     Name = subCategories[channel.PodcastSubCategoryId.Value].Name,
+        //                     PodcastCategoryId = subCategories[channel.PodcastSubCategoryId.Value].PodcastCategoryId
+        //                 }
+        //                 : null,
+
+        //             Hashtags = hashtagsByChannel.ContainsKey(channel.Id)
+        //                 ? hashtagsByChannel[channel.Id].Select(h => new HashtagDTO
+        //                 {
+        //                     Id = h.Id,
+        //                     Name = h.Name
+        //                 }).ToList()
+        //                 : null,
+
+        //             CurrentStatus = new PodcastChannelStatusDTO
+        //             {
+        //                 Id = currentStatus.PodcastChannelStatusId,
+        //                 Name = ((PodcastChannelStatusEnum)currentStatus.PodcastChannelStatusId).ToString()
+        //             }
+        //         };
+
+        //         result.Add(item);
+        //     }
+
+        //     return result;
+        // }
+
+        // private async Task<List<(PodcastShow show, double score)>> CalculatePersonalShowScoresAsync(
+        //     List<PodcastShow> shows,
+        //     int userId)
+        // {
+        //     var result = new List<(PodcastShow show, double score)>();
+
+        //     foreach (var show in shows)
+        //     {
+        //         // Calculate user engagement
+        //         var totalEpisodes = await _podcastEpisodeGenericRepository.FindAll(
+        //             predicate: pe => pe.PodcastShowId == show.Id && pe.DeletedAt == null,
+        //             includeFunc: null
+        //         ).CountAsync();
+
+        //         var listenedEpisodes = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+        //             predicate: ls =>
+        //                 ls.AccountId == userId &&
+        //                 ls.PodcastEpisode.PodcastShowId == show.Id,
+        //             includeFunc: q => q.Select(ls => ls.PodcastEpisodeId).Distinct()
+        //         ).CountAsync();
+
+        //         var userEngagement = totalEpisodes > 0 ? (double)listenedEpisodes / totalEpisodes : 0;
+
+        //         // Calculate show quality
+        //         var normalizedTF = Math.Min(show.TotalFollow, 100000) / 100000.0;
+        //         var normalizedRating = show.AverageRating / 5.0;
+        //         var showQuality = 0.5 * normalizedTF + 0.5 * normalizedRating;
+
+        //         var personalScore = 0.6 * userEngagement + 0.4 * showQuality;
+
+        //         result.Add((show, personalScore));
+        //     }
+
+        //     return result;
+        // }
+
+        // #endregion
+
+        // #region Helper Classes
+
+        // private class CacheMetricsContainer
+        // {
+        //     public PodcasterAllTimeMaxQueryMetric? PodcasterAllTime { get; set; }
+        //     public PodcasterTemporal7dMaxQueryMetric? PodcasterTemporal { get; set; }
+        //     public ShowAllTimeMaxQueryMetric? ShowAllTime { get; set; }
+        //     public ShowTemporal7dMaxQueryMetric? ShowTemporal { get; set; }
+        //     public ChannelAllTimeMaxQueryMetric? ChannelAllTime { get; set; }
+        //     public ChannelTemporal7dMaxQueryMetric? ChannelTemporal { get; set; }
+        // }
+
+        // #endregion
+
+
+    }
+}

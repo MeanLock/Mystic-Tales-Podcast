@@ -5,6 +5,7 @@ namespace UserService.BusinessLogic.DTOs.Cache.QueryMetric
 {
     public class UserPreferencesTemporal30dQueryMetric
     {
+        public required int UserId { get; set; }
         public required List<UserListenedPodcastCategory> ListenedPodcastCategories { get; set; }
         public required List<UserListenedPodcaster> ListenedPodcasters { get; set; }
         public required DateTime LastUpdated { get; set; }
@@ -13,10 +14,10 @@ namespace UserService.BusinessLogic.DTOs.Cache.QueryMetric
     public class UserListenedPodcastCategory
     {
         public required int PodcastCategoryId { get; set; }
-        public required List<UserPodcastSubCategoryListenCount> PodcastSubCategoryIds { get; set; }
+        public required List<UserListenedPodcastSubCategory> PodcastSubCategories { get; set; }
         public required int ListenCount { get; set; }
     }
-    public class UserPodcastSubCategoryListenCount
+    public class UserListenedPodcastSubCategory
     {
         public required int PodcastSubCategoryId { get; set; }
         public required int ListenCount { get; set; }
