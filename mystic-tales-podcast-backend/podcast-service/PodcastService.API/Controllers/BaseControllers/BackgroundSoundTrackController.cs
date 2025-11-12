@@ -16,9 +16,9 @@ using PodcastService.Common.AppConfigurations.FilePath.interfaces;
 using PodcastService.DataAccess.Data;
 using PodcastService.Infrastructure.Services.Kafka;
 
-namespace PodcastService.API.Controllers.MiscControllers
+namespace PodcastService.API.Controllers.BaseControllers
 {
-    [Route("api/misc/background-sound-tracks")]
+    [Route("api/background-sound-tracks")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
     [Authorize(Policy = "OptionalAccess")]

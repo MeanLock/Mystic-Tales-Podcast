@@ -64,6 +64,7 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.PublicReviewManagementDomai
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RemoveDismissedShowDmcaTerminatePodcasterForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.TakedownContentDmca;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RestoreContentDmca;
+using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -352,7 +353,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = podcaster.Id,
                             Email = podcaster.Email,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
                         PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
@@ -609,7 +610,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = podcaster.Id,
                         Email = podcaster.Email,
-                        FullName = podcaster.FullName,
+                        FullName = podcaster.PodcasterProfileName,
                         MainImageFileKey = podcaster.MainImageFileKey
                     },
                     Hashtags = show.PodcastShowHashtags.Select(psh => new HashtagDTO
@@ -840,7 +841,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = podcaster.Id,
                         Email = podcaster.Email,
-                        FullName = podcaster.FullName,
+                        FullName = podcaster.PodcasterProfileName,
                         MainImageFileKey = podcaster.MainImageFileKey
                     },
                     Hashtags = show.PodcastShowHashtags.Select(psh => new HashtagDTO
@@ -2468,6 +2469,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             };
 
                             await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                            show.TotalFollow = 0;
+                            show.ListenCount = 0;
+                            await _podcastShowGenericRepository.UpdateAsync(show.Id, show);
                         }
                     }
 
@@ -2537,6 +2542,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             };
 
                             await _podcastShowStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                            show.TotalFollow = 0;
+                            show.ListenCount = 0;
+                            await _podcastShowGenericRepository.UpdateAsync(show.Id, show);
                         }
                     }
 

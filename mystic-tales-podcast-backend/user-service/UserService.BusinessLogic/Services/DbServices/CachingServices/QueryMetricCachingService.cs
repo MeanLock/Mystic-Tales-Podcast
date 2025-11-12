@@ -18,12 +18,12 @@ using UserService.Infrastructure.Configurations.Payos.interfaces;
 using UserService.BusinessLogic.Helpers.AuthHelpers;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 
-namespace UserService.BusinessLogic.Services.DbServices.MiscServices
+namespace UserService.BusinessLogic.Services.DbServices.CachingServices
 {
-    public class QueryMetricService
+    public class QueryMetricCachingService
     {
         // LOGGER
-        private readonly ILogger<QueryMetricService> _logger;
+        private readonly ILogger<QueryMetricCachingService> _logger;
 
         // CONFIG
         public readonly IAppConfig _appConfig;
@@ -42,17 +42,17 @@ namespace UserService.BusinessLogic.Services.DbServices.MiscServices
         private readonly IUnitOfWork _unitOfWork;
 
         // REPOSITORIES
-        
 
 
-        public QueryMetricService(
-            ILogger<QueryMetricService> logger,
+
+        public QueryMetricCachingService(
+            ILogger<QueryMetricCachingService> logger,
             AppDbContext appDbContext,
             BcryptHelper bcryptHelper,
             JwtHelper jwtHelper,
             IUnitOfWork unitOfWork,
 
-            
+
             FileIOHelper fileIOHelper,
             IFilePathConfig filePathConfig,
             IAppConfig appConfig,
@@ -71,11 +71,18 @@ namespace UserService.BusinessLogic.Services.DbServices.MiscServices
             _appConfig = appConfig;
             _payosConfig = payosConfig;
         }
-       
+
 
         /////////////////////////////////////////////////////////////
 
+        public async Task UpdatePodcasterAllTimeMaxQueryMetric()
+        {
 
+        }
+        public async Task UpdatePodcasterTemporal7dMaxQueryMetric()
+        {
+            
+        }
 
     }
 }

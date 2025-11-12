@@ -95,7 +95,7 @@ namespace SystemConfigurationService.BusinessLogic.Helpers.FileHelpers
                 "Booking chat message audio"
             ),
             [FileCategoryEnum.BookingRequirement] = (
-                $@"^main_files/Bookings/{INT_PATTERN}/{GUID_PATTERN}_requirement({DOCUMENT_EXT}|{IMAGE_EXT}|{ARCHIVE_EXT})",
+                $@"^main_files/Bookings/{INT_PATTERN}/{GUID_PATTERN}_requirement_document({DOCUMENT_EXT}|{IMAGE_EXT}|{ARCHIVE_EXT})",
                 FileAccessLevelEnum.RequiresAuth,
                 "Booking requirement attachment"
             ),

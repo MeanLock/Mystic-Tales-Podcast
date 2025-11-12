@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using PodcastService.API.Filters.ExceptionFilters;
+using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.Models.CrossService;
 using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 
@@ -73,6 +74,31 @@ namespace PodcastService.API.Controllers.QueryControllers
             return Ok(new
             {
                 accounts = result.Results["accounts"][0]["Role"],
+            });
+        }
+
+        [HttpGet("test-query")]
+        public async Task<IActionResult> TestQuery()
+        {
+                var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+        {
+            new BatchQueryItem
+            {
+                Key = "accountFollowedPodcasters",
+                QueryType = "findall",
+                EntityType = "AccountFollowedPodcaster",
+                Parameters = JObject.FromObject(new { })
+            }
+        }
+            };
+
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+            var allFollows = result.Results["accountFollowedPodcasters"].ToObject<List<AccountFollowedPodcasterDTO>>();
+            return Ok(new
+            {
+                result = allFollows
             });
         }
     }

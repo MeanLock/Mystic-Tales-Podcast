@@ -1,35 +1,37 @@
 using Cronos;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using UserService.BusinessLogic.Helpers.DateHelpers;
-using UserService.Common.AppConfigurations.App.interfaces;
-using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
-using UserService.Common.Configurations.Consul;
-using UserService.Common.Configurations.Consul.interfaces;
-using UserService.Infrastructure.Models.Consul.DistributedLock;
-using UserService.Infrastructure.Services.Consul.DistributedLock;
+using PodcastService.BusinessLogic.Helpers.DateHelpers;
+using PodcastService.Common.AppConfigurations.App.interfaces;
+using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
+using PodcastService.Common.Configurations.Consul;
+using PodcastService.Common.Configurations.Consul.interfaces;
+using PodcastService.Infrastructure.Models.Consul.DistributedLock;
+using PodcastService.Infrastructure.Services.Consul.DistributedLock;
 using Microsoft.Extensions.DependencyInjection;
+using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
+using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
 
-namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetricUpdateJobs
+namespace PodcastService.BusinessLogic.Services.BackgroundServices.SystemQueryMetricUpdateJobs
 {
-    public class PodcasterQueryMetricUpdateJob : BackgroundService
+    public class PodcasterAllTimeMaxQueryMetricUpdateJob : BackgroundService
     {
         private readonly ConsulDistributedLockService _lockService;
         private readonly IBackgroundJobsConfig _jobsConfig;
-        private readonly ILogger<PodcasterQueryMetricUpdateJob> _logger;
+        private readonly ILogger<PodcasterAllTimeMaxQueryMetricUpdateJob> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly IConsulDistributedLockConfig _consulDistributedLockConfig;
         private readonly IAppConfig _appConfig;
         private readonly DateHelper _dateHelper;
 
         // Job configuration
-        private BackgroundJob _jobConfig => _jobsConfig.PodcasterQueryMetricUpdateJob;
+        private BackgroundJob _jobConfig => _jobsConfig.PodcasterAllTimeMaxQueryMetricUpdateJob;
         private CronExpression? _cronExpression;
 
-        public PodcasterQueryMetricUpdateJob(
+        public PodcasterAllTimeMaxQueryMetricUpdateJob(
             ConsulDistributedLockService lockService,
             IBackgroundJobsConfig jobsConfig,
-            ILogger<PodcasterQueryMetricUpdateJob> logger,
+            ILogger<PodcasterAllTimeMaxQueryMetricUpdateJob> logger,
             IServiceProvider serviceProvider,
             IAppConfig appConfig,
             DateHelper dateHelper,
@@ -55,7 +57,7 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
 
                 _logger.LogInformation(
                     "Background job starting: {JobName}, Enabled={IsEnabled}, Cron={Cron}, LockKey={LockKey}",
-                    nameof(PodcasterQueryMetricUpdateJob),
+                    nameof(PodcasterAllTimeMaxQueryMetricUpdateJob),
                     _jobConfig.IsEnabled,
                     _jobConfig.CronExpression,
                     _jobConfig.ConsulLockKey);
@@ -76,13 +78,13 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
         {
             if (!_jobConfig.IsEnabled)
             {
-                _logger.LogInformation("Background job is disabled: {JobName}", nameof(PodcasterQueryMetricUpdateJob));
+                _logger.LogInformation("Background job is disabled: {JobName}", nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
                 return;
             }
 
             _logger.LogInformation(
                 "Background job started: {JobName}, Description={Description}",
-                nameof(PodcasterQueryMetricUpdateJob),
+                nameof(PodcasterAllTimeMaxQueryMetricUpdateJob),
                 _jobConfig.Description);
 
             await WaitForNextRoundTimeAsync(stoppingToken);
@@ -119,17 +121,17 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger.LogInformation("Background job cancelled: {JobName}", nameof(PodcasterQueryMetricUpdateJob));
+                    _logger.LogInformation("Background job cancelled: {JobName}", nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
                     break;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unexpected error in background job execution loop: {JobName}", nameof(PodcasterQueryMetricUpdateJob));
+                    _logger.LogError(ex, "Unexpected error in background job execution loop: {JobName}", nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
             }
 
-            _logger.LogInformation("Background job stopped: {JobName}", nameof(PodcasterQueryMetricUpdateJob));
+            _logger.LogInformation("Background job stopped: {JobName}", nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
         }
 
 
@@ -163,7 +165,7 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
                         : TimeSpan.FromMilliseconds(1000),
                     Metadata = new Dictionary<string, string>
                     {
-                        ["JobName"] = nameof(PodcasterQueryMetricUpdateJob),
+                        ["JobName"] = nameof(PodcasterAllTimeMaxQueryMetricUpdateJob),
                         ["ExecutionId"] = executionId,
                         ["InstanceId"] = Environment.MachineName,
                         ["ProcessId"] = Environment.ProcessId.ToString(),
@@ -239,15 +241,12 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
 
 
                 // Example: Use scoped services
-                // using (var scope = _serviceProvider.CreateScope())
-                // {
-                //     var metricService = scope.ServiceProvider.GetRequiredService<IMetricService>();
-                //     await metricService.UpdatePodcasterMetricsAsync(cancellationToken);
-                // }
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var metricService = scope.ServiceProvider.GetRequiredService<QueryMetricCachingService>();
+                    await metricService.UpdatePodcasterAllTimeMaxQueryMetric();
+                }
 
-                Console.WriteLine("\n ----Podcaster query metrics updated----");
-                // in thời điểm hiện tại
-                Console.WriteLine($"✅ Current time: {_dateHelper.GetNowByAppTimeZone()} \n");
 
 
                 _logger.LogDebug("Podcaster query metrics updated successfully: ExecutionId={ExecutionId}", executionId);
@@ -304,13 +303,13 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
         {
             _logger.LogInformation(
                 "Background job stopping: {JobName}",
-                nameof(PodcasterQueryMetricUpdateJob));
+                nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
 
             await base.StopAsync(cancellationToken);
 
             _logger.LogInformation(
                 "Background job stopped: {JobName}",
-                nameof(PodcasterQueryMetricUpdateJob));
+                nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
         }
 
     }

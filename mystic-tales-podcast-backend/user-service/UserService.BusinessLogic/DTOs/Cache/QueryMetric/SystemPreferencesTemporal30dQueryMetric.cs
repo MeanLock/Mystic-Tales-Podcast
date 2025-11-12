@@ -13,11 +13,11 @@ namespace UserService.BusinessLogic.DTOs.Cache.QueryMetric
     public class SystemListenedPodcastCategory
     {
         public required int PodcastCategoryId { get; set; }
-        public required List<SystemPodcastSubCategoryListenCount> PodcastSubCategoryIds { get; set; }
+        public required List<SystemListenedPodcastSubCategory> PodcastSubCategories { get; set; }
         public required int ListenCount { get; set; }
     }
     
-    public class SystemPodcastSubCategoryListenCount
+    public class SystemListenedPodcastSubCategory
     {
         public required int PodcastSubCategoryId { get; set; }
         public required int ListenCount { get; set; }

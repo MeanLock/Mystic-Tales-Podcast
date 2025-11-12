@@ -4,7 +4,7 @@ using PodcastService.BusinessLogic.DTOs.Cache;
 using PodcastService.BusinessLogic.Models.CrossService;
 using Newtonsoft.Json.Linq;
 
-namespace PodcastService.BusinessLogic.Services.DbServices.MiscServices
+namespace PodcastService.BusinessLogic.Services.DbServices.CachingServices
 {
     public class AccountCachingService
     {

@@ -1,14 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using PodcastService.API.Filters.ExceptionFilters;
-using PodcastService.BusinessLogic.DTOs.BackgroundSoundTrack;
-using PodcastService.BusinessLogic.Enums.App;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
-using PodcastService.BusinessLogic.Models.CrossService;
-using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
 using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
@@ -16,15 +9,15 @@ using PodcastService.Common.AppConfigurations.FilePath.interfaces;
 using PodcastService.DataAccess.Data;
 using PodcastService.Infrastructure.Services.Kafka;
 
-namespace PodcastService.API.Controllers.MiscControllers
+namespace PodcastService.API.Controllers.BaseControllers
 {
-    [Route("api/misc/category")]
+    [Route("api/categories")]
     [ApiController]
     [TypeFilter(typeof(HttpExceptionFilter))]
     [Authorize(Policy = "OptionalAccess")]
     public class CategoryController : ControllerBase
     {
-        private readonly ILogger<BackgroundSoundTrackController> _logger;
+        private readonly ILogger<CategoryController> _logger;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
         private readonly PodcastBackgroundSoundTrackService _backgroundSoundTrackService;
@@ -32,7 +25,7 @@ namespace PodcastService.API.Controllers.MiscControllers
         private readonly IFileValidationConfig _fileValidationConfig;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
-        public CategoryController(ILogger<BackgroundSoundTrackController> logger, KafkaProducerService kafkaProducerService, IMessagingService messagingService, PodcastBackgroundSoundTrackService backgroundSoundTrackService, PodcastCategoryService podcastCategoryService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper)
+        public CategoryController(ILogger<CategoryController> logger, KafkaProducerService kafkaProducerService, IMessagingService messagingService, PodcastBackgroundSoundTrackService backgroundSoundTrackService, PodcastCategoryService podcastCategoryService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper)
         {
             _logger = logger;
             _kafkaProducerService = kafkaProducerService;

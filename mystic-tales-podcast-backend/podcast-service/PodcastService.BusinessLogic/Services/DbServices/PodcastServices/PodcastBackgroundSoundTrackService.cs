@@ -62,6 +62,7 @@ using PodcastService.BusinessLogic.DTOs.BackgroundSoundTrack;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateBackgroundSoundTrack;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateBackgroundSoundTrack;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteBackgroundSoundTrack;
+using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {

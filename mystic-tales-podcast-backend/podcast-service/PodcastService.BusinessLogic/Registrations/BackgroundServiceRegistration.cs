@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using PodcastService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
 using PodcastService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
+using PodcastService.BusinessLogic.Services.BackgroundServices.SystemQueryMetricUpdateJobs;
 using PodcastService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
 
 namespace PodcastService.BusinessLogic.Registrations
@@ -15,6 +16,13 @@ namespace PodcastService.BusinessLogic.Registrations
 
             // services.AddHostedService<MinuteBaseRequestCancellationService>();
             // services.AddHostedService<HourBaseRequestCancellationService>();
+
+            services.AddHostedService<ShowAllTimeMaxQueryMetricUpdateJob>();
+            services.AddHostedService<ChannelAllTimeMaxQueryMetricUpdateJob>();
+            services.AddHostedService<ShowTemporal7dMaxQueryMetricUpdateJob>();
+            services.AddHostedService<ChannelTemporal7dMaxQueryMetricUpdateJob>();
+            services.AddHostedService<SystemPreferencesTemporal30dQueryMetricUpdateJob>();
+            services.AddHostedService<UserPreferencesTemporal30dQueryMetricUpdateJob>();
             
             services.Configure<HostOptions>(options =>
             {

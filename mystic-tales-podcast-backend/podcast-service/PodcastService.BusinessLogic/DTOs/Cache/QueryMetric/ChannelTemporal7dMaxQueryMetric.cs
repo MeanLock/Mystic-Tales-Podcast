@@ -1,0 +1,14 @@
+using Newtonsoft.Json;
+using PodcastService.BusinessLogic.Helpers.JsonHelpers;
+
+namespace PodcastService.BusinessLogic.DTOs.Cache.QueryMetric
+{
+    public class ChannelTemporal7dMaxQueryMetric
+    {
+        public required int MaxNewListenSession { get; set; }
+        public required int MaxNewFavorite { get; set; }
+        public required DateTime LastUpdated { get; set; }
+    }
+
+
+}

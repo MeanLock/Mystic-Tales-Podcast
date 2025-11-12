@@ -4,7 +4,8 @@ namespace UserService.Common.AppConfigurations.BusinessSetting.interfaces
 {
     public interface IBackgroundJobsConfig
     {
-        BackgroundJob PodcasterQueryMetricUpdateJob { get; }
+        BackgroundJob PodcasterAllTimeMaxQueryMetricUpdateJob { get; }
+        BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; }
     }
 
     public class BackgroundJob

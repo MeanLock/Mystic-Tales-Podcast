@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using UserService.API.Enums.Api;
 using UserService.API.Filters.ExceptionFilters;
+using UserService.BusinessLogic.DTOs.Cache;
 using UserService.BusinessLogic.Enums.App;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using UserService.Common.AppConfigurations.FilePath.interfaces;
 using UserService.DataAccess.Data;
 
 namespace UserService.API.Controllers.MiscControllers
@@ -18,10 +21,12 @@ namespace UserService.API.Controllers.MiscControllers
     {
         private readonly ILogger<PublicSourceController> _logger;
         private readonly FileIOHelper _fileIOHelper;
-        public PublicSourceController(ILogger<PublicSourceController> logger, FileIOHelper fileIOHelper)
+        private readonly IFilePathConfig _filePathConfig;
+        public PublicSourceController(ILogger<PublicSourceController> logger, FileIOHelper fileIOHelper, IFilePathConfig filePathConfig)
         {
             _logger = logger;
             _fileIOHelper = fileIOHelper;
+            _filePathConfig = filePathConfig;
         }
 
 
@@ -52,6 +57,22 @@ namespace UserService.API.Controllers.MiscControllers
 
             var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
             return Ok(new { FileUrl = url });
+        }
+
+        // /api/user-service/api/misc/public-source/podcaster-documents/{PodcasterDocumentFileType}/get-file-url
+        [HttpGet("podcaster-documents/{PodcasterDocumentFileType}/get-file-url")]
+        [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
+        public async Task<IActionResult> GetPodcasterDocumentTemplateFileUrl(PodcasterDocumentFileTypeEnum PodcasterDocumentFileType)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            if (PodcasterDocumentFileType == PodcasterDocumentFileTypeEnum.MainBuddyCommitmentDocumentTemplate)
+            {
+                var fileKey = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template.pdf";
+                var url = await _fileIOHelper.GeneratePresignedUrlAsync(fileKey, 120);
+                return Ok(new { FileUrl = url });
+            }
+            return BadRequest("Invalid PodcasterDocumentFileType.");
         }
     }
 }

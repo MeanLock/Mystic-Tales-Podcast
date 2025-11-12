@@ -14,5 +14,9 @@
         string BOOKING_TEMP_FILE_PATH { get; set; }
         string DMCA_ACCUSATION_FILE_PATH { get; set; }
         string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
+        string ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_FILE_PATH { get; set; }
+        string ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_TEMP_FILE_PATH { get; set; }
+        // SystemDocuments
+        string SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH { get; set; }
     }
 }

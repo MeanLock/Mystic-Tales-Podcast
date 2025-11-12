@@ -25,13 +25,13 @@ Limit: 10 episodes
 **Target:** 12 shows
 
 **Part A (75%) - Top Categories:**
-- Source: `query:metric:user_preferences:temporal_30d:{userId}.ListenedPodcastCategories`
+- Source: `query:metric:user_preferences:temporal_30d.ListenedPodcastCategories`
 - Target: 9 shows
 - Fetch: 3 shows (random) × up to 4 categories = 12
 - Logic: Lấy 2-4 categories user nghe nhiều nhất (30d), mỗi category random 3 shows → top 9
 
 **Part B (25%) - Top Podcasters:**
-- Source: `query:metric:user_preferences:temporal_30d:{userId}.ListenedPodcasters`
+- Source: `query:metric:user_preferences:temporal_30d.ListenedPodcasters`
 - Target: 3 shows
 - Fetch: 2 shows (random, không trùng Part A) × up to 2 podcasters = 4
 - Logic: Lấy top 2 podcasters user nghe nhiều nhất (30d), mỗi podcaster random 2 shows → top 3
@@ -48,7 +48,7 @@ Limit: 10 episodes
 - Fetch: 2 shows (random, không trùng A+B+C) × up to 2 podcasters = 4
 - Logic: Trám vào Part B nếu thiếu
 
-**Cache Key:** `query:metric:user_preferences:temporal_30d:{userId}` & `query:metric:system_preferences:temporal_30d`
+**Cache Key:** `query:metric:user_preferences:temporal_30d` & `query:metric:system_preferences:temporal_30d`
 **Refresh:** Every 2 hours (CronExpression: `0 0 */2 * * *`)
 **TTL:** 2 hours (7200s)
 
@@ -59,7 +59,7 @@ Limit: 10 episodes
 **Target:** 10 shows
 
 **Part A (50%) - From Interested Podcasters:**
-- Source: `query:metric:user_preferences:temporal_30d:{userId}.ListenedPodcasters`
+- Source: `query:metric:user_preferences:temporal_30d.ListenedPodcasters`
 - Target: 5 shows
 - Fetch: Top 7 shows × top 2 podcasters = 14 (published trong 2 days)
 - Logic: Lấy top 2 podcasters user nghe nhiều (30d) → shows mới (2d) → sort publishedAt DESC → top 5
@@ -70,7 +70,7 @@ Limit: 10 episodes
 - Fetch: 10 shows (không trùng Part A, published trong 2 days)
 - Logic: Shows mới (2d) → sort publishedAt DESC → top 10 (lấy 5 + trám Part A)
 
-**Cache Key:** `query:metric:user_preferences:temporal_30d:{userId}`
+**Cache Key:** `query:metric:user_preferences:temporal_30d`
 **Refresh:** Every 2 hours (phụ thuộc vào user preferences cache)
 **TTL:** 2 hours (7200s)
 
@@ -93,7 +93,7 @@ Limit: 10 episodes
 - Fetch: Top 2 popularShows + top 1 popularChannel
 - Cache: Uses `query:metric:show:all_time_max` & `query:metric:channel:all_time_max`
 - Formula: `popularScore = 0.4×(TF/MTF) + 0.4×(LC/MLC) + 0.2×(RT/MRT)` for shows
-           `popularScore = 0.6×(TLS/MTLS) + 0.4×(TF/MTF)` for channels
+           `popularScore = 0.6×(LC/MLC) + 0.4×(TF/MTF)` for channels
 - Logic: Sort popularScore DESC → top 2 shows + top 1 channel
 
 **Cache Keys:** 
@@ -109,8 +109,8 @@ Limit: 10 episodes
 **Target:** 10 shows
 
 **SubCategory Selection:**
-- Source: `query:metric:user_preferences:temporal_30d:{userId}.ListenedPodcastCategories[0].SubCategoryIds[0]`
-- Fallback: `query:metric:system_preferences:temporal_30d.ListenedPodcastCategories[0].SubCategoryIds[0]`
+- Source: `query:metric:user_preferences:temporal_30d.ListenedPodcastCategories[0].PodcastSubCategories[0]`
+- Fallback: `query:metric:system_preferences:temporal_30d.ListenedPodcastCategories[0].PodcastSubCategories[0]`
 
 **Part A (80%) - Personal:**
 - Target: 8 shows
@@ -128,7 +128,7 @@ Limit: 10 episodes
 - Formula: `popularScore = 0.4×(TF/MTF) + 0.4×(LC/MLC) + 0.2×(RT/MRT)`
 - Logic: Sort popularScore DESC → top 2 (+ trám Part A nếu thiếu)
 
-**Cache Keys:** `query:metric:user_preferences:temporal_30d:{userId}`, `query:metric:system_preferences:temporal_30d`, `query:metric:show:all_time_max`
+**Cache Keys:** `query:metric:user_preferences:temporal_30d`, `query:metric:system_preferences:temporal_30d`, `query:metric:show:all_time_max`
 **Refresh:** Every 2 hours (user/system preferences), Daily (all-time metrics)
 **TTL:** 2 hours (7200s) for preferences, 24 hours (86400s) for all-time
 
@@ -140,16 +140,16 @@ Limit: 10 episodes
 
 **Single Part (100%):**
 - Fetch: 8 rookies (verified trong 90 days, không trùng TopPodcasters)
-- Cache: Uses `query:metric:podcaster:temporal_7d_max` & `query:metric:podcaster:all_time_max`
-- Formula: `rookieScore = 0.4×(TLS/MTLS) + 0.4×(G/MG) + 0.2×(RT/MRT)`
-  - TLS = Total ListenSession (7d)
+- Cache: Uses `query:metric:podcaster:all_time_max`
+- Formula: `rookieScore = 0.4×(LC/MLC) + 0.4×(G/MG) + 0.2×(RT/MRT)`
+  - LC = ListenCount (all-time)
   - G = TotalFollow / PodcasterAgeDay
-  - RT = AverageRating × log(RatingCount + 1)
+  - RT = RatingTerm = AverageRating × log(RatingCount + 1)
 - Logic: Sort rookieScore DESC → top 8
 
-**Cache Keys:** `query:metric:podcaster:temporal_7d_max`, `query:metric:podcaster:all_time_max`
-**Refresh:** Every 12 hours for temporal, Daily for all-time
-**TTL:** 12 hours (43200s) for temporal, 24 hours (86400s) for all-time
+**Cache Keys:** `query:metric:podcaster:all_time_max`
+**Refresh:** Daily for all-time
+**TTL:** 24 hours (86400s) for all-time
 
 ---
 
@@ -159,7 +159,7 @@ Limit: 10 episodes
 
 **Category Selection:**
 - Logic: Random 1 category KHÔNG thuộc top 2 của user
-- Source: All categories EXCLUDE `query:metric:user_preferences:temporal_30d:{userId}.ListenedPodcastCategories[0,1]`
+- Source: All categories EXCLUDE `query:metric:user_preferences:temporal_30d.ListenedPodcastCategories[0,1]`
 
 **Part A (30%) - Hot:**
 - Target: 3 shows
@@ -176,7 +176,7 @@ Limit: 10 episodes
 - Formula: `popularScore = 0.4×(TF/MTF) + 0.4×(LC/MLC) + 0.2×(RT/MRT)`
 - Logic: Sort popularScore DESC → top 9 (+ trám Part A nếu thiếu)
 
-**Cache Keys:** `query:metric:user_preferences:temporal_30d:{userId}`, `query:metric:show:temporal_7d_max`, `query:metric:show:all_time_max`
+**Cache Keys:** `query:metric:user_preferences:temporal_30d`, `query:metric:show:temporal_7d_max`, `query:metric:show:all_time_max`
 **Refresh:** Query realtime (random mỗi lần), cache metrics refresh theo schedule (Every 2h for preferences, Every 12h for temporal, Daily for all-time)
 
 ---
@@ -246,7 +246,7 @@ Limit: 10 episodes
 - `query:metric:show:temporal_7d_max` - Every 12h (TTL: 12h)
 - `query:metric:channel:temporal_7d_max` - Every 12h (TTL: 12h)
 - `query:metric:system_preferences:temporal_30d` - Every 2h (TTL: 2h)
-- `query:metric:user_preferences:temporal_30d:{userId}` - Every 2h (TTL: 2h)
+- `query:metric:user_preferences:temporal_30d` - Every 2h (TTL: 2h)
 
 ---
 
@@ -268,11 +268,11 @@ Where (from query:metric:show:all_time_max):
 
 **Channels:**
 ```
-popularScore = 0.6×(TLS/MTLS) + 0.4×(TF/MTF)
+popularScore = 0.6×(LC/MLC) + 0.4×(TF/MTF)
 
 Where (from query:metric:channel:all_time_max):
-- TLS = TotalListenSession
-- MTLS = MaxTotalListenSession
+- LC = ListenCount
+- MLC = MaxListenCount
 - TF = TotalFavorite
 - MTF = MaxTotalFavorite
 ```
@@ -317,31 +317,29 @@ Where (from query:metric:channel:temporal_7d_max):
 
 **Podcasters:**
 ```
-hotScore = 0.5×(NLS/MNLS) + 0.3×(NF/MNF) + 0.15×(G/2MG) + 0.05×(Rating/5)
+hotScore = 0.5×(NLS/MNLS) + 0.3×(NF/MNF) + 0.15×(G/(2×MG)) + 0.05×(TotalAverageRating/5)
 
 Where (from query:metric:podcaster:temporal_7d_max):
 - NLS = NewListenSession (last 7 days)
 - MNLS = MaxNewListenSession
 - NF = NewFollow (last 7 days)
 - MNF = MaxNewFollow
-- G = Growth = NLS + NF
+- G = NLS + NF (calculated)
 - MG = MaxGrowth
+- TotalAverageRating = AverageRating from database
 ```
 
 ### Rookie Score:
 ```
-rookieScore = 0.4×(TLS/MTLS) + 0.4×(G/MG) + 0.2×(RT/MRT)
+rookieScore = 0.4×(LC/MLC) + 0.4×(G/MG) + 0.2×(RT/MRT)
 
-Where:
-- From query:metric:podcaster:temporal_7d_max:
-  - TLS = Total ListenSession (7d)
-  - MTLS = MaxTotalListenSession
-  - G = Growth = TotalFollow / PodcasterAgeDay
-  - MG = MaxGrowth
-  
-- From query:metric:podcaster:all_time_max:
-  - RT = RatingTerm = AverageRating × log(RatingCount + 1)
-  - MRT = MaxRatingTerm
+Where (all from query:metric:podcaster:all_time_max):
+- LC = ListenCount
+- MLC = MaxListenCount
+- G = TotalFollow / PodcasterAgeDay (calculated)
+- MG = MaxGrowth (need to calculate max of all G values)
+- RT = AverageRating × log(RatingCount + 1)
+- MRT = MaxRatingTerm
 
 Filter: Podcasters verified ≤ 90 days
 ```

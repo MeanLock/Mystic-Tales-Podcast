@@ -4,7 +4,15 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting.interfaces
 {
     public interface IBackgroundJobsConfig
     {
-        BackgroundJob PodcasterQueryMetricUpdateJob { get; }
+        BackgroundJob PodcasterAllTimeMaxQueryMetricUpdateJob { get; }
+        BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; }
+        BackgroundJob ShowAllTimeMaxQueryMetricUpdateJob { get; }
+        BackgroundJob ChannelAllTimeMaxQueryMetricUpdateJob { get; }
+        BackgroundJob ShowTemporal7dMaxQueryMetricUpdateJob { get; }
+        BackgroundJob ChannelTemporal7dMaxQueryMetricUpdateJob { get; }
+        BackgroundJob SystemPreferencesTemporal30dQueryMetricUpdateJob { get; }
+        BackgroundJob UserPreferencesTemporal30dQueryMetricUpdateJob { get; }
+
     }
 
     public class BackgroundJob
