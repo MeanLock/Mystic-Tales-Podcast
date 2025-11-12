@@ -10,5 +10,6 @@ namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Login
     {
         public string Email { get; set; }
         public string Password { get; set; }
+        public string DeviceFingerprint { get; set; }
     }
 }

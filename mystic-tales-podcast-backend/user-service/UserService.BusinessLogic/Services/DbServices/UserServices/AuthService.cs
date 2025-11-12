@@ -27,6 +27,9 @@ using UserService.BusinessLogic.Models.Mail;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.SendResetPasswordLink;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.NewResetPassword;
 using Microsoft.EntityFrameworkCore;
+using UserService.BusinessLogic.DTOs.Auth;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -172,6 +175,27 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             return startSagaTriggerMessage.SagaInstanceId;
         }
 
+        public static string SHA256Hash(string input)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(input);
+                byte[] hash = sha256.ComputeHash(bytes);
+
+                // Chuyển kết quả băm sang chuỗi dạng hex
+                StringBuilder builder = new StringBuilder();
+                foreach (byte b in hash)
+                    builder.Append(b.ToString("x2"));
+
+                return builder.ToString();
+            }
+        }
+        public string ComputeFingerprint(DeviceInfoDTO info)
+        {
+            var data = $"{info.DeviceId}|{info.Platform}|{info.OSName}";
+            return SHA256Hash(data);
+        }
+
         /////////////////////////////////////////////////////////////
         public async Task LoginManual(LoginAccountManualParameterDTO loginData, SagaCommandMessage command)
         {
@@ -213,6 +237,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     new Claim("role_id", account.Role.Id.ToString()),
                     new Claim(ClaimTypes.Role, account.Role.Name),
                     new Claim("balance", account.Balance.ToString()),
+                    new Claim("deviceFingerprint", ComputeFingerprint(loginRequest.)),
                     new Claim(ClaimTypes.SerialNumber, Guid.NewGuid().ToString()), // Mã định danh JWT
                 };
 
@@ -458,7 +483,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await transaction.CommitAsync();
 
                     var messageNextRequestData = command.RequestData;
-                    messageNextRequestData["Email"] =   account.Email;
+                    messageNextRequestData["Email"] = account.Email;
                     messageNextRequestData["IsVerified"] = account.IsVerified;
 
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(

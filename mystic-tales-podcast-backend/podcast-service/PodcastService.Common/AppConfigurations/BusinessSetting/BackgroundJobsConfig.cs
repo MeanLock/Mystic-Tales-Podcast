@@ -8,8 +8,8 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
 {
     public class BackgroundJobsConfigModel
     {
-        public BackgroundJob PodcasterAllTimeMaxQueryMetricUpdateJob { get; }
-        public BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; }
+        public BackgroundJob PodcasterAllTimeMaxQueryMetricUpdateJob { get; set; }
+        public BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ShowAllTimeMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ChannelAllTimeMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ShowTemporal7dMaxQueryMetricUpdateJob { get; set; }
@@ -19,14 +19,14 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
     }
     public class BackgroundJobsConfig : IBackgroundJobsConfig
     {
-        public BackgroundJob PodcasterAllTimeMaxQueryMetricUpdateJob { get; }
-        public BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; }
-        public BackgroundJob ShowAllTimeMaxQueryMetricUpdateJob { get; }
-        public BackgroundJob ChannelAllTimeMaxQueryMetricUpdateJob { get; }
-        public BackgroundJob ShowTemporal7dMaxQueryMetricUpdateJob { get; }
-        public BackgroundJob ChannelTemporal7dMaxQueryMetricUpdateJob { get; }
-        public BackgroundJob SystemPreferencesTemporal30dQueryMetricUpdateJob { get; }
-        public BackgroundJob UserPreferencesTemporal30dQueryMetricUpdateJob { get; }
+        public BackgroundJob PodcasterAllTimeMaxQueryMetricUpdateJob { get; set; }
+        public BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; set; }
+        public BackgroundJob ShowAllTimeMaxQueryMetricUpdateJob { get; set; }
+        public BackgroundJob ChannelAllTimeMaxQueryMetricUpdateJob { get; set; }
+        public BackgroundJob ShowTemporal7dMaxQueryMetricUpdateJob { get; set; }
+        public BackgroundJob ChannelTemporal7dMaxQueryMetricUpdateJob { get; set; }
+        public BackgroundJob SystemPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
+        public BackgroundJob UserPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
 
 
         public BackgroundJobsConfig(IConfiguration configuration)
@@ -40,6 +40,7 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
             ChannelTemporal7dMaxQueryMetricUpdateJob = backgroundJobsConfig?.ChannelTemporal7dMaxQueryMetricUpdateJob;
             SystemPreferencesTemporal30dQueryMetricUpdateJob = backgroundJobsConfig?.SystemPreferencesTemporal30dQueryMetricUpdateJob;
             UserPreferencesTemporal30dQueryMetricUpdateJob = backgroundJobsConfig?.UserPreferencesTemporal30dQueryMetricUpdateJob;
+
         }
     }
 }

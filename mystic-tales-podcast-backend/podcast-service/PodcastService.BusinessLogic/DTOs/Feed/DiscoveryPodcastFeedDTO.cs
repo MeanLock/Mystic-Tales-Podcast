@@ -29,6 +29,7 @@ public class DiscoveryPodcastFeedDTO
     {
         public PodcastEpisodeSnippetResponseDTO? Episode { get; set; }
         public AccountSnippetResponseDTO? Podcaster { get; set; }
+        public required PodcastEpisodeListenSessionSnippetResponseDTO? PodcastEpisodeListenSession { get; set; }
     }
 
     public class BasedOnYourTasteDiscoveryPodcastFeedSection

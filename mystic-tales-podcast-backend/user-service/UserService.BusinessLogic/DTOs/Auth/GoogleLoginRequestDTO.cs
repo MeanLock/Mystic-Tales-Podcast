@@ -3,6 +3,7 @@ namespace UserService.BusinessLogic.DTOs.Auth
     public class GoogleLoginRequestDTO
     {
         public required GoogleAuthDTO GoogleAuth { get; set; }
+        public DeviceInfoDTO DeviceInfo { get; set; }
     }
 
     public class GoogleAuthDTO

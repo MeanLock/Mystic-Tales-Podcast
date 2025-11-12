@@ -74,9 +74,9 @@ namespace ModerationService.API.Authorizations.Handlers
             var accountStatusCache = (result.Results["account"] as JObject).ToObject<AccountStatusCache>();
             var podcasterProfile = result.Results["account"]["PodcasterProfile"] as JObject;
             accountStatusCache.PodcasterProfileName = podcasterProfile?["Name"]?.ToObject<string>();
-            accountStatusCache.PodcasterProfileIsVerified = podcasterProfile?["IsVerified"]?.ToObject<bool>();
+            accountStatusCache.PodcasterProfileIsVerified = podcasterProfile?["IsVerified"]?.ToObject<bool?>();
             accountStatusCache.PodcasterProfileVerifiedAt = podcasterProfile?["VerifiedAt"]?.ToObject<DateTime?>();
-            accountStatusCache.HasVerifiedPodcasterProfile = accountStatusCache.RoleId == 1 && podcasterProfile != null && podcasterProfile["IsVerified"]?.ToObject<bool>() == true ? true : false;
+            accountStatusCache.HasVerifiedPodcasterProfile = accountStatusCache.RoleId == 1 && podcasterProfile != null && podcasterProfile["IsVerified"]?.ToObject<bool?>() == true ? true : false;
             Console.WriteLine($"Queried Account: Id={accountStatusCache.Id}, RoleId={accountStatusCache.RoleId}, IsVerified={accountStatusCache.IsVerified}, DeactivatedAt={accountStatusCache.DeactivatedAt}, HasVerifiedPodcasterProfile={accountStatusCache.HasVerifiedPodcasterProfile}");
             return accountStatusCache;
         }
