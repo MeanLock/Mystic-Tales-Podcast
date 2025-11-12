@@ -102,7 +102,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 BuddyReportTypeList = buddyReportTypeList
             });
         }
-        [HttpGet("buddy-report-reviews-sessions")]
+        [HttpGet("buddy-report-review-sessions")]
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetBuddyReportReviewSession()
         {
@@ -116,7 +116,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 BuddyReportReviewSessionList = buddyReportReviewSessionList
             });
         }
-        [HttpGet("buddy-report-reviews-sessions/{PodcastBuddyReportReviewSessionId}")]
+        [HttpGet("buddy-report-review-sessions/{PodcastBuddyReportReviewSessionId}")]
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetBuddyReportReviewSessionById(
             [FromRoute] Guid PodcastBuddyReportReviewSessionId)

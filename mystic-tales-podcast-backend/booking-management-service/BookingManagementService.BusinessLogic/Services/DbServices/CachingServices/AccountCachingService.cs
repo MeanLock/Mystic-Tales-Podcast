@@ -4,7 +4,7 @@ using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.Models.CrossService;
 using Newtonsoft.Json.Linq;
 
-namespace BookingManagementService.BusinessLogic.Services.DbServices.MiscServices
+namespace BookingManagementService.BusinessLogic.Services.DbServices.CachingServices
 {
     public class AccountCachingService
     {

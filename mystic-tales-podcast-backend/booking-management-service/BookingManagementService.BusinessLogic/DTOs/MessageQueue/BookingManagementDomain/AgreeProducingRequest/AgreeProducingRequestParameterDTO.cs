@@ -8,6 +8,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
 {
     public class AgreeProducingRequestParameterDTO
     {
+        public int AccountId { get; set; }
         public Guid BookingProducingRequestId { get; set; }
         public bool IsAccepted { get; set; }
     }

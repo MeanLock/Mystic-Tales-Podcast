@@ -4,6 +4,7 @@ using BookingManagementService.BusinessLogic.DTOs.Account;
 using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Booking.Details;
 using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
+using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AcceptBookingDealing;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
@@ -24,7 +25,7 @@ using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Models.CrossService;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
-using BookingManagementService.BusinessLogic.Services.DbServices.MiscServices;
+using BookingManagementService.BusinessLogic.Services.DbServices.CachingServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.DataAccess.Data;
@@ -108,21 +109,42 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _fileIOHelper = fileIOHelper;
             _dateHelper = dateHelper;
         }
-        public Task<List<BookingListItemResponseDTO>> GetAllBookingsAsync()
+        public async Task<List<BookingListItemResponseDTO>> GetAllBookingsAsync(int accountId, int roleId)
         {
             try
             {
-                var result = _bookingGenericRepository.FindAll(
-                    includeFunc: function => function.
-                        Include(b => b.BookingStatusTrackings)
+                var bookings = await _bookingGenericRepository.FindAll(
+                    includeFunc: function => function
+                        .Include(b => b.BookingStatusTrackings)
                         .ThenInclude(bs => bs.BookingStatus))
-                    .Select(booking => new BookingListItemResponseDTO
+                    .Where(b => roleId == (int)RoleEnum.Staff ? b.AssignedStaffId == accountId : true)
+                    .ToListAsync();
+
+                var result = new List<BookingListItemResponseDTO>();
+
+                foreach (var booking in bookings)
+                {
+                    var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    result.Add(new BookingListItemResponseDTO
                     {
                         Id = booking.Id,
                         Title = booking.Title,
                         Description = booking.Description,
-                        AccountId = booking.AccountId,
-                        PodcastBuddyId = booking.PodcastBuddyId,
+                        Account = new AccountSnippetResponseDTO
+                        {
+                            Id = account.Id,
+                            FullName = account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        },
+                        PodcastBuddy = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.FullName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
                         Price = booking.Price,
                         Deadline = booking.Deadline,
                         DemoAudioFileKey = booking.DemoAudioFileKey,
@@ -139,8 +161,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 .OrderByDescending(bst => bst.CreatedAt)
                                 .FirstOrDefault().BookingStatus.Name
                         }
-                    }).ToList();
-                return Task.FromResult(result);
+                    });
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -148,7 +172,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 throw new HttpRequestException($"Retrieving all Bookings failed. Error: {ex.Message}");
             }
         }
-        public async Task<BookingDetailResponseDTO?> GetBookingByIdAsync(int bookingId)
+        public async Task<BookingDetailResponseDTO?> GetBookingByIdAsync(int bookingId, int accountId, int roleId)
         {
             try
             {
@@ -160,11 +184,32 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .ThenInclude(bt => bt.PodcastBookingToneCategory)
                     .Include(b => b.BookingProducingRequests)
                     .Include(b => b.BookingStatusTrackings)
-                        .ThenInclude(bst => bst.BookingStatus)); // Add this missing include
+                        .ThenInclude(bst => bst.BookingStatus));
+                
                 if (booking == null)
                     return null;
+            
+                if (roleId == (int)RoleEnum.Customer && !(booking.AccountId == accountId || booking.PodcastBuddyId == accountId))
+                {
+                    throw new HttpRequestException("Account not authorize to view the detail of this booking");
+                }
+                if(roleId == (int)RoleEnum.Staff && booking.AssignedStaffId != accountId)
+                {
+                    throw new HttpRequestException("Account not authorize to view the detail of this booking");
+                }
+        
                 var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
-                var podcastBuddy = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                var podcastBuddy = await GetPodcaster(booking.PodcastBuddyId);
+        
+                if (podcastBuddy == null)
+                {
+                    throw new HttpRequestException("PodcastBuddy not found");
+                }
+        
+                var latestStatus = booking.BookingStatusTrackings?
+                    .OrderByDescending(bst => bst.CreatedAt)
+                    .FirstOrDefault();
+        
                 return new BookingDetailResponseDTO
                 {
                     Id = booking.Id,
@@ -182,10 +227,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Id = podcastBuddy.Id,
                         FullName = podcastBuddy.FullName,
                         Email = podcastBuddy.Email,
-                        MainImageFileKey = podcastBuddy.MainImageFileKey
+                        MainImageFileKey = podcastBuddy.MainImageFileKey,
+                        PriceBookingPerWord = podcastBuddy.PodcasterProfile?.PricePerBookingWord ?? 0
                     },
-                    Price = booking.Price ?? 0,
-                    Deadline = booking.Deadline ?? default,
+                    Price = booking.Price,
+                    Deadline = booking.Deadline,
+                    DeadlineDays = booking.DeadlineDays,
                     DemoAudioFileKey = booking.DemoAudioFileKey,
                     BookingManualCancelledReason = booking.BookingManualCancelledReason,
                     BookingAutoCancelledReason = booking.BookingAutoCancelReason,
@@ -204,7 +251,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             Id = re.PodcastBookingTone.Id,
                             Name = re.PodcastBookingTone.Name,
-                            Description = re.PodcastBookingTone.Description,
+                            Description = re.PodcastBookingTone.Description ?? string.Empty,
                             CreatedAt = re.PodcastBookingTone.CreatedAt,
                             DeletedAt = re.PodcastBookingTone.DeletedAt,
                             PodcastBookingToneCategory = new PodcastBookingToneCategoryDetailResponseDTO()
@@ -220,21 +267,24 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         BookingId = prod.BookingId,
                         Note = prod.Note,
                         Deadline = prod.Deadline,
-                        IsAccepted = prod.IsAccepted ?? false,
-                        FinishedAt = prod.FinishedAt ?? default,
+                        DeadlineDays = prod.DeadlineDays,
+                        IsAccepted = prod.IsAccepted,
+                        FinishedAt = prod.FinishedAt,
                         CreatedAt = prod.CreatedAt
                     }).ToList() ?? new List<BookingProducingRequestListItemResponseDTO>(),
                     CurrentStatus = new BookingStatusResponseDTO
                     {
-                        Id = booking.BookingStatusTrackings
-                            .OrderByDescending(bst => bst.CreatedAt)
-                            .FirstOrDefault().BookingStatus.Id,
-                        Name = booking.BookingStatusTrackings
-                            .OrderByDescending(bst => bst.CreatedAt)
-                            .FirstOrDefault().BookingStatus.Name
-                    }
+                        Id = latestStatus?.BookingStatus?.Id ?? 0,
+                        Name = latestStatus?.BookingStatus?.Name ?? "Unknown"
+                    },
+                    StatusTracking = booking.BookingStatusTrackings?.Select(bst => new BookingStatusTrackingListItemResponseDTO
+                    {
+                        Id = bst.Id,
+                        BookingId = bst.BookingId,
+                        BookingStatusId = bst.BookingStatusId,
+                        CreatedAt = bst.CreatedAt
+                    }).OrderByDescending(bst => bst.CreatedAt).ToList() ?? new List<BookingStatusTrackingListItemResponseDTO>()
                 };
-
             }
             catch (Exception ex)
             {
@@ -261,7 +311,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Description = parameter.Description,
                         AccountId = parameter.AccountId,
                         PodcastBuddyId = parameter.PodcastBuddyId,
-                        Deadline = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddDays(parameter.DeadlineDayCount)),
+                        Deadline = null,
+                        DeadlineDays = parameter.DeadlineDayCount,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
@@ -308,7 +359,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         var folderPath = _filePathConfig.BOOKING_FILE_PATH + "\\" + createdBooking.Id;
                         if (requirementDocumentInfo.RequirementDocumentFileKey != null && requirementDocumentInfo.RequirementDocumentFileKey != "")
                         {
-                            var requirementDocumentFileKey = FilePathHelper.CombinePaths(folderPath, $"{createdBookingRequirement.Id}_requirement_document");
+                            var requirementDocumentFileKey = FilePathHelper.CombinePaths(folderPath, $"{createdBookingRequirement.Id}_requirement_document{FilePathHelper.GetExtension(requirementDocumentInfo.RequirementDocumentFileKey)}");
                             await _fileIOHelper.CopyFileToFileAsync(requirementDocumentInfo.RequirementDocumentFileKey, requirementDocumentFileKey);
                             processedFiles.Add(requirementDocumentFileKey);
                             await _fileIOHelper.DeleteFileAsync(requirementDocumentInfo.RequirementDocumentFileKey);
@@ -337,6 +388,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         { "Description", newBooking.Description },
                         { "AccountId", newBooking.AccountId },
                         { "PodcastBuddyId", newBooking.PodcastBuddyId },
+                        { "DeadlineDays", newBooking.DeadlineDays },
                         // { "CreatedBookingRequirementDocumentList", JArray.FromObject(createdRequirementDocumentList) },
                         { "CreatedAt", newBooking.CreatedAt }
                     };
@@ -375,21 +427,42 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
-        public Task<List<BookingListItemResponseDTO>> GetBookingsByPodcasterIdAsync(int podcastBuddyId)
+        public async Task<List<BookingListItemResponseDTO>> GetBookingsByPodcasterIdAsync(int podcastBuddyId)
         {
             try
             {
-                var result = _bookingGenericRepository.FindAll(
-                    includeFunc: function => function.
-                        Include(b => b.BookingStatusTrackings)
+                var bookings = await _bookingGenericRepository.FindAll(
+                    includeFunc: function => function
+                        .Include(b => b.BookingStatusTrackings)
                         .ThenInclude(bs => bs.BookingStatus))
-                    .Where(b => b.PodcastBuddyId == podcastBuddyId).Select(booking => new BookingListItemResponseDTO
+                    .Where(b => b.PodcastBuddyId == podcastBuddyId)
+                    .ToListAsync();
+
+                var result = new List<BookingListItemResponseDTO>();
+
+                foreach (var booking in bookings)
+                {
+                    var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    result.Add(new BookingListItemResponseDTO
                     {
                         Id = booking.Id,
                         Title = booking.Title,
                         Description = booking.Description,
-                        AccountId = booking.AccountId,
-                        PodcastBuddyId = booking.PodcastBuddyId,
+                        Account = new AccountSnippetResponseDTO
+                        {
+                            Id = account.Id,
+                            FullName = account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        },
+                        PodcastBuddy = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.FullName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
                         Price = booking.Price,
                         Deadline = booking.Deadline,
                         DemoAudioFileKey = booking.DemoAudioFileKey,
@@ -400,14 +473,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         CurrentStatus = new BookingStatusResponseDTO
                         {
                             Id = booking.BookingStatusTrackings
-                            .OrderByDescending(bst => bst.CreatedAt)
-                            .FirstOrDefault().BookingStatus.Id,
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Id,
                             Name = booking.BookingStatusTrackings
-                            .OrderByDescending(bst => bst.CreatedAt)
-                            .FirstOrDefault().BookingStatus.Name
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Name
                         }
-                    }).ToList();
-                return Task.FromResult(result);
+                    });
+                }
+
+                return result;
 
             }
             catch (Exception ex)
@@ -416,23 +491,45 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 throw new HttpRequestException($"Retrieving Bookings for PodcasterId {podcastBuddyId} failed. Error: {ex.Message}");
             }
         }
-        public Task<List<BookingListItemResponseDTO>> GetBookingsByAccountIdAsync(int accountId)
+        public async Task<List<BookingListItemResponseDTO>> GetBookingsByAccountIdAsync(int accountId, bool isPodcaster)
         {
             try
             {
-                var result = _bookingGenericRepository.FindAll(
-                    includeFunc: function => function.
-                        Include(b => b.BookingStatusTrackings)
+                var bookings = await _bookingGenericRepository.FindAll(
+                    includeFunc: function => function
+                        .Include(b => b.BookingStatusTrackings)
                         .ThenInclude(bs => bs.BookingStatus))
-                    .Where(b => b.AccountId == accountId).Select(booking => new BookingListItemResponseDTO
+                    .Where(b => isPodcaster ? b.PodcastBuddyId == accountId : b.AccountId == accountId)
+                    .ToListAsync();
+
+                var result = new List<BookingListItemResponseDTO>();
+
+                foreach (var booking in bookings)
+                {
+                    var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    result.Add(new BookingListItemResponseDTO
                     {
                         Id = booking.Id,
                         Title = booking.Title,
                         Description = booking.Description,
-                        AccountId = booking.AccountId,
-                        PodcastBuddyId = booking.PodcastBuddyId,
+                        Account = new AccountSnippetResponseDTO
+                        {
+                            Id = account.Id,
+                            FullName = account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        },
+                        PodcastBuddy = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.FullName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
                         Price = booking.Price,
                         Deadline = booking.Deadline,
+                        DeadlineDays = booking.DeadlineDays,
                         DemoAudioFileKey = booking.DemoAudioFileKey,
                         BookingManualCancelledReason = booking.BookingManualCancelledReason,
                         BookingAutoCancelledReason = booking.BookingAutoCancelReason,
@@ -441,14 +538,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         CurrentStatus = new BookingStatusResponseDTO
                         {
                             Id = booking.BookingStatusTrackings
-                            .OrderByDescending(bst => bst.CreatedAt)
-                            .FirstOrDefault().BookingStatus.Id,
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Id,
                             Name = booking.BookingStatusTrackings
-                            .OrderByDescending(bst => bst.CreatedAt)
-                            .FirstOrDefault().BookingStatus.Name
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Name
                         }
-                    }).ToList();
-                return Task.FromResult(result);
+                    });
+                }
+
+                return result;
 
             }
             catch (Exception ex)
@@ -625,7 +724,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         }
                         else if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Producing)
                         {
-                            if (booking.BookingProducingRequests.Count() == 1 && booking.BookingProducingRequests.Select(b => b.Deadline).FirstOrDefault() <= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()))
+                            if (booking.BookingProducingRequests.Count() == 1 && booking.BookingProducingRequests.Select(b => b.Deadline).FirstOrDefault() <= _dateHelper.GetNowByAppTimeZone())
                                 newBookingStatusId = (int)BookingStatusEnum.CancelledManually;
                         }
                         else
@@ -1071,7 +1170,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     booking.Price = totalWordCount * podcaster.PodcasterProfile.PricePerBookingWord;
-                    booking.Deadline = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddDays(parameter.DeadlineDayCount.Value));
+                    booking.DeadlineDays = parameter.DeadlineDayCount;
                     booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
@@ -1143,6 +1242,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     };
                     await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
                     booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                    booking.Deadline = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddDays((double)booking.DeadlineDays.Value));
                     var staffList = await GetStaffList();
                     booking.AssignedStaffId = await GetRandomItemFromJArray(staffList);
                     await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
@@ -1152,7 +1252,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Id = Guid.NewGuid(),
                         BookingId = bookingId,
                         Note = string.Empty,
-                        Deadline = booking.Deadline ?? default,
+                        Deadline = _dateHelper.GetNowByAppTimeZone().AddDays((double)booking.DeadlineDays.Value),
                         IsAccepted = true,
                         FinishedAt = null,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -1581,23 +1681,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         new BatchQueryItem
                         {
-                            Key = "podcasterProfile",
+                            Key = "podcaster",
                             QueryType = "findbyid",
                             EntityType = "Account",
                             Parameters = JObject.FromObject(new
                             {
                                 id = accountId,
                                 include = "PodcasterProfile"
-                            })         
+                            })
                         }
                     }
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
 
-            var realResult = result.Results?["podcasterProfile"] is JArray accountArray && accountArray.Count > 0
-                ? accountArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcasterDTO>() : null;
+            if (result.Results["podcaster"] == null) return null;
+            return (result.Results["podcaster"] as JObject).ToObject<PodcasterDTO>();
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {

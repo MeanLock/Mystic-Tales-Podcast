@@ -16,8 +16,9 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking.Details
         public string Description { get; set; } = null!;
         public AccountSnippetResponseDTO Account { get; set; }
         public PodcastBuddySnippetResponseDTO PodcastBuddy { get; set; }
-        public decimal Price { get; set; }
-        public DateOnly Deadline { get; set; }
+        public decimal? Price { get; set; }
+        public DateOnly? Deadline { get; set; }
+        public int? DeadlineDays { get; set; }
         public string? DemoAudioFileKey { get; set; }
         public string? BookingManualCancelledReason { get; set; }
         public List<BookingRequirementListItemResponseDTO>? BookingRequirementFileList { get; set; } = new List<BookingRequirementListItemResponseDTO>();
@@ -26,5 +27,6 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking.Details
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public BookingStatusResponseDTO CurrentStatus { get; set; }
+        public List<BookingStatusTrackingListItemResponseDTO> StatusTracking { get; set; }
     }
 }

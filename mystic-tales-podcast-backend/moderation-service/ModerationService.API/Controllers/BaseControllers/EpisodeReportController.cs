@@ -88,7 +88,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 EpisodeReportTypeList = EpisodeReportTypeList
             });
         }
-        [HttpGet("episode-report-reviews-sessions")]
+        [HttpGet("episode-report-review-sessions")]
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetEpisodeReportReviewSession()
         {
@@ -102,7 +102,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 EpisodeReportReviewSessionList = EpisodeReportReviewSessionList
             });
         }
-        [HttpGet("episode-report-reviews-sessions/{PodcastEpisodeReportReviewSessionId}")]
+        [HttpGet("episode-report-review-sessions/{PodcastEpisodeReportReviewSessionId}")]
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetEpisodeReportReviewSessionById(
             [FromRoute] Guid PodcastEpisodeReportReviewSessionId)

@@ -92,14 +92,15 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
 
             var accountId = account.Id;
-            var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
-            if (!isValid)
-            {
-                return Forbid("You are not authorized to create booking producing request for this booking.");
-            }
+            //var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
+            //if (!isValid)
+            //{
+            //    return Forbid("You are not authorized to create booking producing request for this booking.");
+            //}
 
             var requestData = new JObject
             {
+                { "AccountId", accountId },
                 { "BookingId", BookingId },
                 { "Note", request.BookingProducingRequestInfo.Note },
                 { "Deadline", request.BookingProducingRequestInfo.Deadline.ToString() }, // Convert DateOnly to string
@@ -136,7 +137,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
 
             //var bookingRequirementIdList = JsonConvert.DeserializeObject<List<Guid>>(request.BookingRequirementInfo); 
-            //var accountId = account.Id;
+            var accountId = account.Id;
             //var isValid = await _bookingProducingRequestService.ValidateProducingRequestPodcasterAsync(BookingProducingRequestId, accountId);
             //if (!isValid)
             //{
@@ -208,6 +209,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             // Create a single saga message with all tracks
             var requestData = new JObject
             {
+                { "AccountId", accountId },
                 { "BookingProducingRequestId", BookingProducingRequestId },
                 { "Tracks", JArray.FromObject(trackSubmissions) }
             };
@@ -261,13 +263,14 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 return Unauthorized("Account information not found.");
             }
             var accountId = account.Id;
-            var isValid = await _bookingProducingRequestService.ValidateProducingRequestPodcasterAsync(BookingProducingRequestId, accountId);
-            if (!isValid)
-            {
-                return Forbid("You are not authorized to accept or reject this booking producing request.");
-            }
+            //var isValid = await _bookingProducingRequestService.ValidateProducingRequestPodcasterAsync(BookingProducingRequestId, accountId);
+            //if (!isValid)
+            //{
+            //    return Forbid("You are not authorized to accept or reject this booking producing request.");
+            //}
             var requestData = new JObject
             {
+                { "AccountId", accountId },
                 { "BookingProducingRequestId", BookingProducingRequestId },
                 { "IsAccepted", isAccepted }
             };

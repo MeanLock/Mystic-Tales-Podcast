@@ -91,7 +91,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 ShowReportTypeList = showReportTypeList
             });
         }
-        [HttpGet("show-report-reviews-sessions")]
+        [HttpGet("show-report-review-sessions")]
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetShowReportReviewSession()
         {
@@ -105,7 +105,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 ShowReportReviewSessionList = showReportReviewSessionList
             });
         }
-        [HttpGet("show-report-reviews-sessions/{PodcastShowReportReviewSessionId}")]
+        [HttpGet("show-report-review-sessions/{PodcastShowReportReviewSessionId}")]
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetShowReportReviewSessionById(
             [FromRoute] Guid PodcastShowReportReviewSessionId)

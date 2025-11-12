@@ -2,9 +2,13 @@
 using Microsoft.Extensions.Logging;
 using ModerationService.BusinessLogic.DTOs.Account;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreateEpisodeReport;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelEpisodesReportNoEffectUnpublishChannelForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReportNoEffectDMCARemoveEpisodeForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReportNoEffectEpisodeDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectDMCARemoveShowForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectShowDeletionForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectUnpublishShowForce;
 using ModerationService.BusinessLogic.DTOs.Podcast;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport.Details;
@@ -19,13 +23,13 @@ using ModerationService.BusinessLogic.Services.CrossServiceServices.QueryService
 using ModerationService.BusinessLogic.Services.DbServices.MiscServices;
 using ModerationService.BusinessLogic.Services.MessagingServices.interfaces;
 using ModerationService.DataAccess.Data;
+using ModerationService.DataAccess.Entities;
 using ModerationService.DataAccess.Entities.SqlServer;
 using ModerationService.DataAccess.Repositories.interfaces;
 using ModerationService.Infrastructure.Models.Kafka;
 using ModerationService.Infrastructure.Services.Kafka;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.Podcast;
-using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectUnpublishShowForce;
 
 namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
 {
@@ -70,35 +74,52 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         }
         public async Task<List<PodcastEpisodeReportListItemResponseDTO>> GetAllPodcastEpisodeReportAsync()
         {
-            var query = await _podcastEpisodeReportGenericRepository.FindAll(
-                predicate: null,
-                includeFunc: source => source
-                    .Include(r => r.PodcastEpisodeReportType)
-                ).ToListAsync();
-            var podcastEpisodeReport = (await Task.WhenAll(query.Select(async pbr =>
+            try
             {
-                var episode = await GetPodcastEpisode(pbr.PodcastEpisodeId);
-                return new PodcastEpisodeReportListItemResponseDTO()
+                var query = await _podcastEpisodeReportGenericRepository.FindAll(
+                    predicate: null,
+                    includeFunc: source => source
+                        .Include(r => r.PodcastEpisodeReportType)
+                    ).ToListAsync();
+                var podcastEpisodeReport = (await Task.WhenAll(query.Select(async pbr =>
                 {
-                    Id = pbr.Id,
-                    Content = pbr.Content,
-                    AccountId = pbr.AccountId,
-                    PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
+                    var episode = await GetPodcastEpisode(pbr.PodcastEpisodeId);
+                    var account = await _accountCachingService.GetAccountStatusCacheById(pbr.AccountId);
+                    return new PodcastEpisodeReportListItemResponseDTO()
                     {
-                        Id = episode.Id,
-                        Name = episode.Name,
-                        MainImageFileKey = episode.MainImageFileKey,
-                    },
-                    PodcastEpisodeReportType = new PodcastEpisodeReportTypeDTO()
-                    {
-                        Id = pbr.PodcastEpisodeReportType.Id,
-                        Name = pbr.PodcastEpisodeReportType.Name,
-                    },
-                    ResolvedAt = pbr.ResolvedAt,
-                    CreatedAt = pbr.CreatedAt,
-                };
-            }))).ToList();
-            return podcastEpisodeReport;
+                        Id = pbr.Id,
+                        Content = pbr.Content,
+                        Account = new AccountSnippetResponseDTO()
+                        {
+                            Id = account.Id,
+                            FullName = account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        },
+                        PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
+                        {
+                            Id = episode.Id,
+                            Name = episode.Name,
+                            MainImageFileKey = episode.MainImageFileKey,
+                        },
+                        PodcastEpisodeReportType = new PodcastEpisodeReportTypeDTO()
+                        {
+                            Id = pbr.PodcastEpisodeReportType.Id,
+                            Name = pbr.PodcastEpisodeReportType.Name,
+                        },
+                        ResolvedAt = pbr.ResolvedAt,
+                        CreatedAt = pbr.CreatedAt,
+                    };
+                }))).ToList();
+                return podcastEpisodeReport;
+
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving all podcast episode reports");
+                throw new HttpRequestException("Retrieve Episode Report failed. Error: " + ex.StackTrace);
+            }
         }
         public async Task CreatePodcastEpisodeReportAsync(CreateEpisodeReportParameterDTO parameter, SagaCommandMessage command)
         {
@@ -192,28 +213,122 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         }
         public async Task<List<PodcastEpisodeReportTypeDTO>> GetPodcastEpisodeReportTypeAsync()
         {
-            return await _podcastEpisodeReportTypeGenericRepository.FindAll()
-                .Select(brt => new PodcastEpisodeReportTypeDTO()
-                {
-                    Id = brt.Id,
-                    Name = brt.Name
-                })
-                .ToListAsync();
+            try
+            {
+                return await _podcastEpisodeReportTypeGenericRepository.FindAll()
+                    .Select(brt => new PodcastEpisodeReportTypeDTO()
+                    {
+                        Id = brt.Id,
+                        Name = brt.Name
+                    })
+                    .ToListAsync();
+
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving podcast episode report types");
+                throw new HttpRequestException("Retrieve Episode Report Types failed. Error: " + ex.StackTrace);
+            }
         }
         public async Task<List<PodcastEpisodeReportReviewSessionListItemResponseDTO>> GetEpisodeReportReviewSessionAsync(int? staffId, int roleId)
         {
-            var query = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll(
-                predicate: null
-                ).ToListAsync();
-            if (roleId == (int)RoleEnum.Staff)
+            try
             {
-                query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
+                var query = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll(
+                    predicate: null
+                    ).ToListAsync();
+                if (roleId == (int)RoleEnum.Staff)
+                {
+                    query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
+                }
+                var podcastEpisodeReportReviewSession = (await Task.WhenAll(query.Select(async pbrrs =>
+                {
+                    var episode = await GetPodcastEpisode(pbrrs.PodcastEpisodeId);
+                    var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
+                    return new PodcastEpisodeReportReviewSessionListItemResponseDTO()
+                    {
+                        Id = pbrrs.Id,
+                        PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
+                        {
+                            Id = episode.Id,
+                            Name = episode.Name,
+                            MainImageFileKey = episode.MainImageFileKey,
+                        },
+                        AssignedStaff = new AssignedStaffSnippetResponseDTO()
+                        {
+                            Id = staff.Id,
+                            FullName = staff.FullName,
+                            Email = staff.Email,
+                            MainImageFileKey = staff.MainImageFileKey
+                        },
+
+                        IsResolved = pbrrs.IsResolved,
+                        CreatedAt = pbrrs.CreatedAt,
+                        UpdatedAt = pbrrs.UpdatedAt,
+                    };
+                }))).ToList();
+                return podcastEpisodeReportReviewSession;
+
+
             }
-            var podcastEpisodeReportReviewSession = (await Task.WhenAll(query.Select(async pbrrs =>
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while retrieving podcast episode report review sessions");
+                throw new HttpRequestException("Retrieve Episode Report Review Sessions failed. Error: " + ex.StackTrace);
+            }
+        }
+        public async Task<PodcastEpisodeReportReviewSessionDetailResponseDTO> GetEpisodeReportReviewSessionByIdAsync(Guid id)
+        {
+            try
+            {
+                var pbrrs = await _podcastEpisodeReportReviewSessionGenericRepository.FindByIdAsync(id);
+                if (pbrrs == null)
+                    return null;
+
+                var query = await _podcastEpisodeReportGenericRepository.FindAll(
+                    predicate: null,
+                    includeFunc: source => source
+                        .Include(r => r.PodcastEpisodeReportType)
+                    )
+                    .Where(r => r.PodcastEpisodeId == pbrrs.PodcastEpisodeId && r.ResolvedAt == null)
+                    .ToListAsync();
+                var podcastEpisodeReport = (await Task.WhenAll(query.Select(async pbr =>
+                {
+                    var episode = await GetPodcastEpisode(pbr.PodcastEpisodeId);
+                    var account = await _accountCachingService.GetAccountStatusCacheById(pbr.AccountId);
+
+                    return new PodcastEpisodeReportListItemResponseDTO()
+                    {
+                        Id = pbr.Id,
+                        Content = pbr.Content,
+                        Account = new AccountSnippetResponseDTO()
+                        {
+                            Id = account.Id,
+                            FullName = account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        },
+                        PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
+                        {
+                            Id = episode.Id,
+                            Name = episode.Name,
+                            MainImageFileKey = episode.MainImageFileKey,
+                        },
+                        PodcastEpisodeReportType = new PodcastEpisodeReportTypeDTO()
+                        {
+                            Id = pbr.PodcastEpisodeReportType.Id,
+                            Name = pbr.PodcastEpisodeReportType.Name,
+                        },
+                        ResolvedAt = pbr.ResolvedAt,
+                        CreatedAt = pbr.CreatedAt,
+                    };
+                }))).ToList();
+
                 var episode = await GetPodcastEpisode(pbrrs.PodcastEpisodeId);
                 var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
-                return new PodcastEpisodeReportReviewSessionListItemResponseDTO()
+
+                return new PodcastEpisodeReportReviewSessionDetailResponseDTO()
                 {
                     Id = pbrrs.Id,
                     PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
@@ -229,75 +344,19 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         Email = staff.Email,
                         MainImageFileKey = staff.MainImageFileKey
                     },
-
                     IsResolved = pbrrs.IsResolved,
                     CreatedAt = pbrrs.CreatedAt,
                     UpdatedAt = pbrrs.UpdatedAt,
+                    EpisodeReportList = podcastEpisodeReport
                 };
-            }))).ToList();
-            return podcastEpisodeReportReviewSession;
-        }
-        public async Task<PodcastEpisodeReportReviewSessionDetailResponseDTO> GetEpisodeReportReviewSessionByIdAsync(Guid id)
-        {
-            var pbrrs = await _podcastEpisodeReportReviewSessionGenericRepository.FindByIdAsync(id);
-            if (pbrrs == null)
-                return null;
 
-            var query = await _podcastEpisodeReportGenericRepository.FindAll(
-                predicate: null,
-                includeFunc: source => source
-                    .Include(r => r.PodcastEpisodeReportType)
-                )
-                .Where(r => r.PodcastEpisodeId == pbrrs.PodcastEpisodeId && r.ResolvedAt == null)
-                .ToListAsync();
-            var podcastEpisodeReport = (await Task.WhenAll(query.Select(async pbr =>
+
+            }
+            catch (Exception ex)
             {
-                var episode = await GetPodcastEpisode(pbr.PodcastEpisodeId);
-                return new PodcastEpisodeReportListItemResponseDTO()
-                {
-                    Id = pbr.Id,
-                    Content = pbr.Content,
-                    AccountId = pbr.AccountId,
-                    PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
-                    {
-                        Id = episode.Id,
-                        Name = episode.Name,
-                        MainImageFileKey = episode.MainImageFileKey,
-                    },
-                    PodcastEpisodeReportType = new PodcastEpisodeReportTypeDTO()
-                    {
-                        Id = pbr.PodcastEpisodeReportType.Id,
-                        Name = pbr.PodcastEpisodeReportType.Name,
-                    },
-                    ResolvedAt = pbr.ResolvedAt,
-                    CreatedAt = pbr.CreatedAt,
-                };
-            }))).ToList();
-
-            var episode = await GetPodcastEpisode(pbrrs.PodcastEpisodeId);
-            var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
-
-            return new PodcastEpisodeReportReviewSessionDetailResponseDTO()
-            {
-                Id = pbrrs.Id,
-                PodcastEpisode = new PodcastEpisodeSnippetResponseDTO()
-                {
-                    Id = episode.Id,
-                    Name = episode.Name,
-                    MainImageFileKey = episode.MainImageFileKey,
-                },
-                AssignedStaff = new AssignedStaffSnippetResponseDTO()
-                {
-                    Id = staff.Id,
-                    FullName = staff.FullName,
-                    Email = staff.Email,
-                    MainImageFileKey = staff.MainImageFileKey
-                },
-                IsResolved = pbrrs.IsResolved ?? false,
-                CreatedAt = pbrrs.CreatedAt,
-                UpdatedAt = pbrrs.UpdatedAt,
-                EpisodeReportList = podcastEpisodeReport
-            };
+                _logger.LogError(ex, "Error occurred while retrieving podcast episode report review session by id");
+                throw new HttpRequestException("Retrieve Episode Report Review Session by Id failed. Error: " + ex.StackTrace);
+            }
         }
         public async Task ResolveEpisodeReportReviewSessionAsync(ResolveEpisodeReportParameterDTO parameter, SagaCommandMessage command)
         {
@@ -316,6 +375,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         throw new Exception("The logged in Account is not authorize to resolve this episode report review session");
                     }
                     podcastEpisodeReportReviewSessions.IsResolved = parameter.IsResolved;
+                    await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(podcastEpisodeReportReviewSessions.Id, podcastEpisodeReportReviewSessions);
                     var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
                         .Where(pbr => pbr.PodcastEpisodeId == podcastEpisodeReportReviewSessions.PodcastEpisodeId
                         && pbr.ResolvedAt == null)
@@ -533,10 +593,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var responseData = command.LastStepResponseData;
 
                     var episodeIdList = parameter.DmcaDismissedEpisodeIds;
-                    foreach(var episodeId in episodeIdList)
+                    foreach (var episodeId in episodeIdList)
                     {
                         var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
                         .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
+
                         foreach (var session in podcastEpisodeReportReviewSessions)
                         {
                             session.IsResolved = true;
@@ -586,6 +647,208 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Resolve Show Episodes Report No Effect Unpublish Show Forc failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolveChannelEpisodesReportNoEffectUnpublishChannelForceAsync(ResolveChannelEpisodesReportNoEffectUnpublishChannelForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var episodeIdList = parameter.DmcaDismissedEpisodeIds;
+                    foreach (var episodeId in episodeIdList)
+                    {
+                        var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                        .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
+
+                        foreach (var session in podcastEpisodeReportReviewSessions)
+                        {
+                            session.IsResolved = true;
+                            session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                            var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                            .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
+                            && pbr.ResolvedAt == null)
+                            .ToListAsync();
+                            foreach (var EpisodeReport in podcastEpisodeReportList)
+                            {
+                                EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Channel Episodes Report No Effect Unpublish Channel Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Channel Episodes Report No Effect Unpublish Channel Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject {
+                        { "ErrorMessage", "Resolve Channel Episodes Report No Effect Unpublish Channel Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Channel Episodes Report No Effect Unpublish Channel Force failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolveEpisodeReportNoEffectEpisodeDeletionForceAsync(ResolveEpisodeReportNoEffectEpisodeDeletionForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                    .Where(errs => errs.PodcastEpisodeId == parameter.PodcastEpisodeId && errs.IsResolved == null).ToListAsync();
+                    foreach (var session in podcastEpisodeReportReviewSessions)
+                    {
+                        session.IsResolved = true;
+                        session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                        var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                        .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
+                        && pbr.ResolvedAt == null)
+                        .ToListAsync();
+                        foreach (var EpisodeReport in podcastEpisodeReportList)
+                        {
+                            EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Episode Report No Effect Episode Deletion Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Episode Report No Effect Episode Deletion Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject {
+                        { "ErrorMessage", "Resolve Episode Report No Effect Episode Deletion Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Episode Report No Effect Episode Deletion Force failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolveShowEpisodesReportNoEffectShowDeletionForceAsync(ResolveShowEpisodesReportNoEffectShowDeletionForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var episodeList = await GetPodcastEpisodeByShowId(parameter.PodcastShowId);
+                    var episodeIds = episodeList.Select(e => e.Id).ToList();
+                    foreach (var episodeId in episodeIds)
+                    {
+                        var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                        .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
+                        foreach (var session in podcastEpisodeReportReviewSessions)
+                        {
+                            session.IsResolved = true;
+                            session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                            var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                            .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
+                            && pbr.ResolvedAt == null)
+                            .ToListAsync();
+                            foreach (var EpisodeReport in podcastEpisodeReportList)
+                            {
+                                EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Show Episodes Report No Effect Show Deletion Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Show Episodes Report No Effect Show Deletion Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject {
+                        { "ErrorMessage", "Resolve Show Episodes Report No Effect Show Deletion Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Show Episodes Report No Effect Show Deletion Force failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }
@@ -703,7 +966,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                 {
                                     Id = podcastEpisodeId
                                 },
-                                include = "PodcastEpisodeStatusTracking"
+                                include = "PodcastEpisodeStatusTrackings"
                             })
                         }
                     }
@@ -732,7 +995,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                 {
                                     PodcastShowId = podcastShowId
                                 },
-                                include = "PodcastEpisodeStatusTracking"
+                                include = "PodcastEpisodeStatusTrackings"
                             })
                         }
                     }
@@ -761,7 +1024,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                 {
                                     Id = podcastChannelId
                                 },
-                                include = "PodcastChannelStatusTracking"
+                                include = "PodcastChannelStatusTrackings"
                             })
                         }
                     }
@@ -790,7 +1053,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                 {
                                     Id = podcastShowId
                                 },
-                                include = "PodcastShowStatusTracking"
+                                include = "PodcastShowStatusTrackings"
                             })
                         }
                     }

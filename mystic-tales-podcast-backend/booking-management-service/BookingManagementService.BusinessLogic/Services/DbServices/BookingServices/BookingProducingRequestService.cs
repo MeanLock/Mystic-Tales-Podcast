@@ -39,8 +39,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IGenericRepository<BookingPodcastTrack> _bookingPodcastTrackGenericRepository;
         private readonly IGenericRepository<Booking> _bookingGenericRepository;
         private readonly IGenericRepository<BookingStatusTracking> _bookingStatusTrackingGenericRepository;
-        private readonly HttpServiceQueryClient _httpServiceQueryClient;
+        private readonly IGenericRepository<BookingRequirement> _bookingRequirementGenericRepository;
 
+        private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly ILogger<BookingService> _logger;
@@ -57,6 +58,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             IGenericRepository<BookingPodcastTrack> bookingPodcastTrackGenericRepository,
             IGenericRepository<Booking> bookingGenericRepository,
             IGenericRepository<BookingStatusTracking> bookingStatusTrackingGenericRepository,
+            IGenericRepository<BookingRequirement> bookingRequirementGenericRepository,
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
@@ -74,6 +76,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _bookingPodcastTrackGenericRepository = bookingPodcastTrackGenericRepository;
             _bookingGenericRepository = bookingGenericRepository;
             _bookingStatusTrackingGenericRepository = bookingStatusTrackingGenericRepository;
+            _bookingRequirementGenericRepository = bookingRequirementGenericRepository;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
             _logger = logger;
@@ -95,12 +98,41 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 if (bookingProducingRequest == null)
                     return null;
 
+                // Fix: Use ToListAsync first, then fetch requirement names in a separate async loop
+                var editRequirements = await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll()
+                    .Where(bp => bp.BookingProducingRequestId.Equals(bookingProducingRequest.Id))
+                    .Include(bp => bp.BookingPodcastTrack)
+                    .ToListAsync();
+
+                var editRequirementList = new List<BookingEditRequirementListItemResponseDTO>();
+                foreach (var bp in editRequirements)
+                {
+                    var requirement = await _bookingRequirementGenericRepository.FindByIdAsync(bp.BookingPodcastTrack.BookingRequirementId);
+                    editRequirementList.Add(new BookingEditRequirementListItemResponseDTO
+                    {
+                        Id = bp.Id,
+                        Name = requirement?.Name,
+                        BookingPodcastTrack = new BookingPodcastTrackListItemResponseDTO
+                        {
+                            Id = bp.BookingPodcastTrack.Id,
+                            BookingId = bp.BookingPodcastTrack.BookingId,
+                            BookingProducingRequestId = bp.BookingPodcastTrack.BookingProducingRequestId,
+                            BookingRequirementId = bp.BookingPodcastTrack.BookingRequirementId,
+                            AudioFileKey = bp.BookingPodcastTrack.AudioFileKey,
+                            AudioFileSize = bp.BookingPodcastTrack.AudioFileSize,
+                            AudioLength = bp.BookingPodcastTrack.AudioLength,
+                            RemainingPreviewListenSlot = bp.BookingPodcastTrack.RemainingPreviewListenSlot
+                        }
+                    });
+                }
+
                 return new BookingProducingRequestDetailResponseDTO
                 {
                     Id = bookingProducingRequest.Id,
                     BookingId = bookingProducingRequest.BookingId,
                     Note = bookingProducingRequest.Note,
                     Deadline = bookingProducingRequest.Deadline,
+                    DeadlineDays = bookingProducingRequest.DeadlineDays,
                     IsAccepted = bookingProducingRequest.IsAccepted,
                     FinishedAt = bookingProducingRequest.FinishedAt,
                     CreatedAt = bookingProducingRequest.CreatedAt,
@@ -113,21 +145,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         AudioFileKey = nego.AudioFileKey,
                         AudioFileSize = nego.AudioFileSize,
                         AudioLength = nego.AudioLength,
-                        AudioEncryptionKeyId = nego.AudioEncryptionKeyId,
-                        AudioEncryptionKeyFileKey = nego.AudioEncryptionKeyFileKey,
                         RemainingPreviewListenSlot = nego.RemainingPreviewListenSlot
                     }).ToList() ?? new List<BookingPodcastTrackListItemResponseDTO>(),
-                    EditRequirementList = (await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll(
-                        includeFunc: function => function
-                        .Include(bpr => bpr.BookingPodcastTrack)
-                        .ThenInclude(bpt => bpt.BookingRequirement))
-                        .Where(bp => bp.BookingProducingRequestId.Equals(bookingProducingRequest.Id))
-                        .Select(bp => new BookingEditRequirementListItemResponseDTO
-                        {
-                            Id = bp.Id,
-                            Name = bp.BookingPodcastTrack.BookingRequirement.Name,
-                        }).ToListAsync()
-                    )
+                    EditRequirementList = editRequirementList
                 };
 
             }
@@ -148,11 +168,18 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var isValid = await ValidateBookingAccountAsync(parameter.BookingId, parameter.AccountId);
+                    if (!isValid)
+                    {
+                        throw new HttpRequestException("The logged in account are not authorized to create booking producing request for this booking.");
+                    }
+
                     var newProducingRequest = new BookingProducingRequest
                     {
                         BookingId = parameter.BookingId,
                         Note = parameter.Note,
-                        Deadline = DateOnly.FromDateTime(parameter.Deadline),
+                        Deadline = null,
+                        DeadlineDays = parameter.DeadlineDayCount,
                         IsAccepted = null,
                         FinishedAt = null,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -197,7 +224,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             { "BookingProducingRequestId", producingRequest.Id },
                             { "BookingId" , producingRequest.BookingId},
                             { "Note", producingRequest.Note},
-                            { "Deadline", producingRequest.Deadline.ToString("dd-MM-yyyy") },
+                            { "DeadlineDays", producingRequest.DeadlineDays },
                             { "BookingPodcastTrackIds", JArray.FromObject(producingRequest.BookingProducingRequestPodcastTrackToEdits.Select(x => x.BookingPodcastTrackId).ToList()) },
                             { "CreatedAt", producingRequest.CreatedAt }
                         };
@@ -249,6 +276,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
+
+                    var isValid = await ValidateBookingAccountOrPodcasterAsync(parameter.BookingId, parameter.AccountId);
+                    if (!isValid)
+                    {
+                        throw new HttpRequestException("The logged in account are not authorized to request cancel producing request for this booking.");
+                    }
 
                     var booking = await _bookingGenericRepository.FindAll(
                         includeFunc: function => function
@@ -330,6 +363,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
+
+                    var isValid = await ValidateProducingRequestPodcasterAsync(parameter.BookingProducingRequestId, parameter.AccountId);
+                    if (!isValid)
+                    {
+                        throw new HttpRequestException("The logged in account are not authorized to submit tracks for this booking producing request.");
+                    }
 
                     var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdAsync(parameter.BookingProducingRequestId);
                     if (bookingProducingRequest.FinishedAt != null)
@@ -586,6 +625,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var isValid = await ValidateProducingRequestPodcasterAsync(parameter.BookingProducingRequestId, parameter.AccountId);
+                    if (!isValid)
+                    {
+                        throw new HttpRequestException("The logged in account are not authorized to accept or reject this booking producing request.");
+                    }
+
                     var bookingProducingRequestId = parameter.BookingProducingRequestId;
                     var isAccepted = parameter.IsAccepted;
 
@@ -596,7 +641,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     );
 
                     bookingProducingRequest.IsAccepted = parameter.IsAccepted;
+                    bookingProducingRequest.Deadline = _dateHelper.GetNowByAppTimeZone().AddDays((double)bookingProducingRequest.DeadlineDays);
                     bookingProducingRequest = await _bookingProducingRequestGenericRepository.UpdateAsync(bookingProducingRequest.Id, bookingProducingRequest);
+
+                    booking.Deadline = DateOnly.FromDateTime(bookingProducingRequest.Deadline.Value);
+                    await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                     if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.ProducingRequested)
                     {
@@ -923,6 +972,28 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     _logger.LogInformation("Booking cancellation validation failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
+        }
+        public async Task<bool> ValidateBookingAccountOrPodcasterAsync(int bookingId, int accountId)
+        {
+            return await ValidateBookingAccountAsync(bookingId, accountId) || await ValidateBookingPodcasterAsync(bookingId, accountId);
+        }
+        public async Task<bool> ValidateBookingAccountAsync(int bookingId, int accountId)
+        {
+            var booking = await _bookingGenericRepository.FindByIdAsync(bookingId);
+            if (booking == null)
+            {
+                return false;
+            }
+            return booking.AccountId == accountId;
+        }
+        public async Task<bool> ValidateBookingPodcasterAsync(int bookingId, int podcasterId)
+        {
+            var booking = await _bookingGenericRepository.FindByIdAsync(bookingId);
+            if (booking == null)
+            {
+                return false;
+            }
+            return booking.PodcastBuddyId == podcasterId;
         }
         public async Task<bool> ValidateProducingRequestPodcasterAsync(Guid BookingProducingRequestId, int accountId)
         {
