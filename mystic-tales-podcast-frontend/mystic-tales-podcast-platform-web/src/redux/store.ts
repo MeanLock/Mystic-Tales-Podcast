@@ -17,10 +17,10 @@ import {
   REGISTER,
 } from "redux-persist";
 import { configureTokenGetter } from "@/core/api/appApi/token";
+
 // Gộp reducers trước khi persist
 const rootReducer = combineReducers({
   [appApi.reducerPath]: appApi.reducer,
-
   auth: authReducer,
   player: mediaPlayerReducer,
   // ...reducers khác

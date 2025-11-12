@@ -1,4 +1,6 @@
 import { appApi } from "@/core/api/appApi";
+import type { AccountMeFromApi } from "@/core/types/account";
+import { setUser } from "@/redux/slices/authSlice/authSlice";
 
 export const accountApi = appApi.injectEndpoints({
   endpoints: (build) => ({
@@ -26,7 +28,34 @@ export const accountApi = appApi.injectEndpoints({
         return { data: result.data as any };
       },
     }),
+    updateAccountMe: build.query<{ Account: AccountMeFromApi }, void>({
+      async queryFn(_arg, api, _extraOptions, baseQuery) {
+        const result = await baseQuery({
+          url: "/api/user-service/api/accounts/me",
+          method: "GET",
+          authMode: "required",
+        });
+
+        if (result.error) {
+          return { error: result.error as any };
+        }
+
+        if (result.data) {
+          const rawData = result.data as { Account: AccountMeFromApi };
+          const accountInformations = rawData.Account;
+
+          // Update Redux state
+          api.dispatch(setUser(accountInformations));
+
+          // Return data for the query
+          return { data: rawData };
+        }
+
+        return { error: { kind: "NETWORK_ERROR", message: "No data" } as any };
+      },
+    }),
   }),
 });
 
-export const { usePodcasterApplyMutation } = accountApi;
+export const { usePodcasterApplyMutation, useUpdateAccountMeQuery } =
+  accountApi;

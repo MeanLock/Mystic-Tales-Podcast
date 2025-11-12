@@ -53,7 +53,7 @@ export const bookingApi = appApi.injectEndpoints({
       }),
     }),
     getBookingDetail: build.query<
-      { Booking: BookingDetailsUI },
+      { Booking: BookingDetailsFromAPI },
       { id: number }
     >({
       query: ({ id }) => ({

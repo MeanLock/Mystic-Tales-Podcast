@@ -1,8 +1,19 @@
 import { Outlet } from "react-router-dom";
 import MediaPlayerSidebar from "./components/MediaPlayerSidebar";
 import MediaPlayerControl from "./components/MediaPlayerControlBar";
+import { useUpdateAccountMeQuery } from "@/core/services/account/account.service";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 
 const MediaPlayerLayout = () => {
+  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+
+  // Chỉ polling khi user đã đăng nhập (có token)
+  useUpdateAccountMeQuery(undefined, {
+    pollingInterval: accessToken ? 30000 : 0, // 5 giây nếu có token, không poll nếu chưa login
+    skip: !accessToken, // Skip query hoàn toàn nếu chưa login
+  });
+
   return (
     <div className="relative w-full h-screen flex flex-col justify-between bg-[url(/background/mediaplayer2.jpg)] bg-cover object-cover gap-5 overflow-hidden">
       <div className="absolute inset-0 bg-black/40" />

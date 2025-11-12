@@ -1,10 +1,19 @@
 import { Outlet } from "react-router-dom";
 import NormalHeader from "./components/NormalHeader";
 import "./styles.css";
-import { BackgroundBeamsWithCollision } from "@/components/ui/shadcn-io/background-beams-with-collision";
-import { BubbleBackground } from "@/components/ui/shadcn-io/bubble-background";
+import { useUpdateAccountMeQuery } from "@/core/services/account/account.service";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 
 const NormalLayout = () => {
+  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+
+  // Chỉ polling khi user đã đăng nhập (có token)
+  useUpdateAccountMeQuery(undefined, {
+    pollingInterval: accessToken ? 30000 : 0, // 5 giây nếu có token, không poll nếu chưa login
+    skip: !accessToken, // Skip query hoàn toàn nếu chưa login
+  });
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black">
       {/* 🎥 Background Video */}

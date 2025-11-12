@@ -2,8 +2,18 @@ export type BookingFromAPI = {
   Id: number;
   Title: string;
   Description: string;
-  AccountId: number;
-  PodcasterId: number;
+  Account: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
+  PodcastBuddy: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
   Price: number;
   Deadline: string; //ISO String
   DemoAudioFileKey: string | null;
@@ -33,12 +43,12 @@ export type BookingDetailsFromAPI = {
   Title: string;
   Description: string;
   AccountId: number;
-  Podcaster: {
+  PodcastBuddy: {
     Id: number;
     FullName: string;
     Email: string;
     MainImageFileKey: string;
-    PricePerBookingWord: number;
+    PriceBookingPerWord: number;
   };
   Price: number;
   Deadline: string | null;
@@ -89,12 +99,12 @@ export type BookingDetailsUI = {
   Title: string;
   Description: string;
   AccountId: number;
-  Podcaster: {
+  PodcastBuddy: {
     Id: number;
     FullName: string;
     Email: string;
     ImageUrl: string;
-    PricePerBookingWord: number;
+    PriceBookingPerWord: number;
   };
   Price: number | null;
   Deadline: string | null;

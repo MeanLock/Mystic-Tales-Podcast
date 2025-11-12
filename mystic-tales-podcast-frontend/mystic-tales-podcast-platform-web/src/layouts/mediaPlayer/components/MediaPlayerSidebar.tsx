@@ -28,13 +28,19 @@ import { SidebarNavItems } from "./SideBarNavItem";
 import { GrCircleQuestion } from "react-icons/gr";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
   PopoverPortal,
 } from "@radix-ui/react-popover";
+import type { AccountMeUI } from "@/core/types/account";
+import {
+  resolveFiles,
+  type FileResolveConfig,
+} from "@/core/utils/fileResolver.util";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const navItems = [
   {
@@ -219,10 +225,46 @@ const navItems = [
     ],
   },
 ];
+const FileConfig: FileResolveConfig[] = [
+  {
+    path: "MainImageFileKey",
+    output: "ImageUrl",
+    type: "AccountPublic",
+  },
+];
 
 const MediaPlayerSidebar = () => {
   const user = useSelector((state: RootState) => state.auth.user);
+  const [userWithImageUrl, setUserWithImageUrl] = useState<AccountMeUI | null>(
+    null
+  );
+  const [isResolveLoading, setIsResolveLoading] = useState(false);
+
   const navigate = useNavigate();
+  useEffect(() => {
+    const resolveFile = async () => {
+      if (user) {
+        setIsResolveLoading(true);
+        try {
+          const { resolvedData: userWithAvatarRaw } = await resolveFiles(
+            user,
+            FileConfig
+          );
+          const userWithAvatar = userWithAvatarRaw as unknown as AccountMeUI;
+          setUserWithImageUrl(userWithAvatar);
+        } catch (error) {
+          console.error("Error resolving user avatar:", error);
+        } finally {
+          setIsResolveLoading(false);
+        }
+      } else {
+        setUserWithImageUrl(null);
+        setIsResolveLoading(false);
+      }
+    };
+
+    resolveFile();
+  }, [user]);
 
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [notifications, setNotifications] = useState<Array<any>>([]);
@@ -327,23 +369,29 @@ const MediaPlayerSidebar = () => {
       <SidebarNavItems navItems={navItems} isLoggedIn={!!user} />
 
       {/* User Informations */}
-      {user ? (
+      {userWithImageUrl ? (
         <div
           onClick={() => navigate("/media-player/management/profile")}
           className="w-full flex items-center justify-center md:justify-start md:gap-2 cursor-pointer hover:bg-white/20 py-2 px-2 rounded-lg"
         >
           <div className="flex items-center justify-center">
-            <img
-              src={user.ImageUrl || "/placeholder.svg"}
-              className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full object-cover"
-            />
+            {isResolveLoading ? (
+              <Skeleton className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full" />
+            ) : (
+              <img
+                src={userWithImageUrl.ImageUrl || "/placeholder.svg"}
+                className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full object-cover"
+              />
+            )}
           </div>
           <div className="hidden md:inline-block">
-            <p className="font-bold text-white text-[15px]">{user.FullName}</p>
+            <p className="font-bold text-white text-[15px]">
+              {userWithImageUrl.FullName}
+            </p>
             <div className="flex items-center gap-1">
               <TbCoinFilled color="#aae339" size={14} />
               <p className="text-sm font-semibold text-mystic-green">
-                {user.Balance.toLocaleString("vn")}
+                {userWithImageUrl.Balance.toLocaleString("vn")}
               </p>
             </div>
           </div>

@@ -7,7 +7,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGetBookingsQuery } from "@/core/services/booking/booking.service";
 import BookingCard from "./components/BookingCard";
 import "./styles.css";
@@ -16,6 +16,7 @@ const ITEMS_PER_PAGE = 4;
 
 const BookingsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
+
 
   // 🟢 Gọi API thật
   const { data: bookings, isLoading, error } = useGetBookingsQuery();

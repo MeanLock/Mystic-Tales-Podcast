@@ -1,4 +1,8 @@
-import type { BookingFromAPI, BookingStatusType } from "@/core/types/booking";
+import type {
+  BookingDetailsUI,
+  BookingFromAPI,
+  BookingStatusType,
+} from "@/core/types/booking";
 import { IoPlay } from "react-icons/io5";
 import { MdRemoveRedEye } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
@@ -107,7 +111,11 @@ const BookingCard = ({ booking }: { booking: BookingFromAPI }) => {
         <p className="font-light line-clamp-1">{booking.Title}</p>
       </div>
       <div className="col-span-2 overflow-ellipsis">
-        <p className="font-light line-clamp-1">Podcaster Name</p>
+        <p className="font-light line-clamp-1">
+          {booking.PodcastBuddy
+            ? booking.PodcastBuddy.FullName
+            : "Unknown Podcaster"}
+        </p>
       </div>
       <div className="col-span-1 overflow-ellipsis">
         <p className="font-bold line-clamp-1">

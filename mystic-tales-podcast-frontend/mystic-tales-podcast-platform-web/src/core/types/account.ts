@@ -25,7 +25,22 @@ export type AccountFromAPI = {
   IsPodcaster: boolean; //Để check xem User có phải podcaster không, hay là User thường
 };
 
-export type AccountUI = {
+export type AccountMeFromApi = {
+  Id: number;
+  Email: string;
+  FullName: string;
+  Dob: string;
+  Gender: string;
+  Address: string;
+  Phone: string;
+  Balance: number;
+  MainImageFileKey: string;
+  PodcastListenSlot: number;
+  DeactivatedAt: string;
+  IsPodcaster: boolean;
+};
+
+export type AccountMeUI = {
   Id: number;
   Email: string;
   FullName: string;
@@ -47,13 +62,8 @@ export type AccountRole = {
 };
 
 // Lấy /me từ API
-export type AccountMeFromApi = {
-  Account: AccountFromAPI;
-  CurrentAudio: CurrentAudioFromApi;
-};
+// export type AccountMeFromApi = {
+//   Account: AccountFromAPI;
+//   CurrentAudio: CurrentAudioFromApi;
+// };
 
-// Account Me đã được handle hết các file url, image url
-export type AccountMeUi = {
-  Account: AccountUI;
-  CurrentAudio: CurrentAudioUI;
-};

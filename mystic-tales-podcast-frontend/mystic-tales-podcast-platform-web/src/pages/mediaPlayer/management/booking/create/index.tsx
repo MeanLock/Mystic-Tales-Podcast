@@ -9,6 +9,7 @@ import PodcastBuddySelectComponent from "./components/PodcastBuddySelect";
 import Loading from "@/components/loading";
 import BookingForm from "./components/BookingForm";
 import { useCreateMutation } from "@/core/services/booking/booking.service";
+import { useNavigate } from "react-router-dom";
 
 export type BookingRequirementInfo = {
   Name: string;
@@ -77,6 +78,7 @@ const CreateBookingPage = () => {
     // Fetch podcaster data here
     fetch();
   }, []);
+  const navigate = useNavigate();
 
   // FUNCTIONS
   const fetch = async () => {
@@ -246,9 +248,15 @@ const CreateBookingPage = () => {
       // for (const pair of formData.entries()) console.log(pair[0], pair[1]);
 
       // Use RTK Query hook to create booking (this wraps kickoffThenWait)
-      await createBooking({ createBookingFormData: formData }).unwrap();
+      const result = await createBooking({
+        createBookingFormData: formData,
+      }).unwrap();
       // navigate to bookings list on success
       // window.location.href = "/media-player/management/bookings";
+      if (result.Message) {
+        alert(result.Message);
+        // navigate("media-player/management/bookings");
+      }
     } catch (err: any) {
       console.error("Create booking failed:", err);
       alert("Create booking failed: " + (err?.message || JSON.stringify(err)));

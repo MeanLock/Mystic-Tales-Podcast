@@ -1,10 +1,10 @@
 // src/redux/slices/authSlice.ts
-import type { AccountUI } from "@/core/types/account";
+import type { AccountMeFromApi } from "@/core/types/account";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface AuthState {
   accessToken?: string | null;
-  user?: AccountUI | null;
+  user?: AccountMeFromApi | null;
 }
 
 const initialState: AuthState = { accessToken: null, user: null };
@@ -16,7 +16,7 @@ const authSlice = createSlice({
     setAuthToken(state, action: PayloadAction<string>) {
       state.accessToken = action.payload;
     },
-    setUser(state, action: PayloadAction<AccountUI>) {
+    setUser(state, action: PayloadAction< AccountMeFromApi>) {
       state.user = action.payload;
     },
     clearAuth(state) {
