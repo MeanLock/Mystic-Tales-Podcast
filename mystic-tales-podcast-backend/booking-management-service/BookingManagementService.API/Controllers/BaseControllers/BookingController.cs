@@ -72,7 +72,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetAllBookings()
         {
-            var result = await _bookingService.GetAllBookingsAsync();
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var roleId = account.RoleId;
+            var result = await _bookingService.GetAllBookingsAsync(accountId, roleId);
 
             //if (result == null || !result.Any())
             //{
@@ -85,10 +88,13 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpGet("{BookingId}")]
-        [Authorize(Policy = "Customer.BasicAccess")]
+        [Authorize(Policy = "BasicAccess")]
         public async Task<IActionResult> GetBookingById(int BookingId)
         {
-            var result = await _bookingService.GetBookingByIdAsync(BookingId);
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var roleId = account.RoleId;
+            var result = await _bookingService.GetBookingByIdAsync(BookingId, accountId, roleId);
             //if (result == null)
             //{
             //    return NotFound($"Booking with ID {BookingId} not found.");
@@ -295,7 +301,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "AccountId", accountId },
                 { "BookingId", BookingId },
                 { "BookingRequirementInfoList", JArray.FromObject(request.BookingDealingInfo.BookingRequirementInfoList) },
-                { "Deadline", request.BookingDealingInfo.DeadlineDayCount }
+                { "DeadlineDayCount", request.BookingDealingInfo.DeadlineDayCount },
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,
@@ -335,8 +341,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
+            var isPodcaster = account.HasVerifiedPodcasterProfile;
 
-            var result = await _bookingService.GetBookingsByAccountIdAsync(accountId);
+            var result = await _bookingService.GetBookingsByAccountIdAsync(accountId, isPodcaster);
             //if (result == null || !result.Any())
             //{
             //    return NotFound("No bookings found for the current user.");

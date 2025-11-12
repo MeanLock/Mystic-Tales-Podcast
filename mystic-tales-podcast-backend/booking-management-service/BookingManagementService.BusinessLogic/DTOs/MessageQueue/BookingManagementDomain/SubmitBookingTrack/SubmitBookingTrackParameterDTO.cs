@@ -8,6 +8,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
 {
     public class SubmitBookingTrackParameterDTO
     {
+        public int AccountId { get; set; }
         public Guid BookingProducingRequestId { get; set; }
         public List<TracksParameterDTO> Tracks { get; set; }
     }

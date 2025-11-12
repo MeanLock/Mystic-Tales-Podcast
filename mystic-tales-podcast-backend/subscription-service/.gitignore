@@ -10,3 +10,5 @@ SubscriptionService.DataAccess/obj/
 SubscriptionService.Common/bin/
 SubscriptionService.Common/obj/
 
+
+.fake

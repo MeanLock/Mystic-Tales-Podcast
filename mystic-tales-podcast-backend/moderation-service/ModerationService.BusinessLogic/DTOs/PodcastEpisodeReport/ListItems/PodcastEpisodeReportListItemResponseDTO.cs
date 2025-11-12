@@ -13,7 +13,7 @@ namespace ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport.ListItems
     {
         public Guid Id { get; set; }
         public string? Content { get; set; }
-        public int AccountId { get; set; }
+        public AccountSnippetResponseDTO Account { get; set; }
         public PodcastEpisodeSnippetResponseDTO PodcastEpisode { get; set; }
         public PodcastEpisodeReportTypeDTO PodcastEpisodeReportType { get; set; }
         public DateTime? ResolvedAt { get; set; }

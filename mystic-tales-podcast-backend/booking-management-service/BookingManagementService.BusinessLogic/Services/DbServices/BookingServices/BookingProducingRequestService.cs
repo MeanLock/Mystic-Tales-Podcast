@@ -42,7 +42,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IGenericRepository<BookingRequirement> _bookingRequirementGenericRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
-
         private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly ILogger<BookingService> _logger;
@@ -112,7 +111,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     editRequirementList.Add(new BookingEditRequirementListItemResponseDTO
                     {
                         Id = bp.Id,
-                        Name = requirement?.Name ?? string.Empty,
+                        Name = requirement?.Name,
                         BookingPodcastTrack = new BookingPodcastTrackListItemResponseDTO
                         {
                             Id = bp.BookingPodcastTrack.Id,
@@ -133,6 +132,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     BookingId = bookingProducingRequest.BookingId,
                     Note = bookingProducingRequest.Note,
                     Deadline = bookingProducingRequest.Deadline,
+                    DeadlineDays = bookingProducingRequest.DeadlineDays,
                     IsAccepted = bookingProducingRequest.IsAccepted,
                     FinishedAt = bookingProducingRequest.FinishedAt,
                     CreatedAt = bookingProducingRequest.CreatedAt,
@@ -168,11 +168,18 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var isValid = await ValidateBookingAccountAsync(parameter.BookingId, parameter.AccountId);
+                    if (!isValid)
+                    {
+                        throw new HttpRequestException("The logged in account are not authorized to create booking producing request for this booking.");
+                    }
+
                     var newProducingRequest = new BookingProducingRequest
                     {
                         BookingId = parameter.BookingId,
                         Note = parameter.Note,
-                        Deadline = DateOnly.FromDateTime(parameter.Deadline),
+                        Deadline = null,
+                        DeadlineDays = parameter.DeadlineDayCount,
                         IsAccepted = null,
                         FinishedAt = null,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -217,7 +224,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             { "BookingProducingRequestId", producingRequest.Id },
                             { "BookingId" , producingRequest.BookingId},
                             { "Note", producingRequest.Note},
-                            { "Deadline", producingRequest.Deadline.ToString("dd-MM-yyyy") },
+                            { "DeadlineDays", producingRequest.DeadlineDays },
                             { "BookingPodcastTrackIds", JArray.FromObject(producingRequest.BookingProducingRequestPodcastTrackToEdits.Select(x => x.BookingPodcastTrackId).ToList()) },
                             { "CreatedAt", producingRequest.CreatedAt }
                         };
@@ -269,6 +276,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
+
+                    var isValid = await ValidateBookingAccountOrPodcasterAsync(parameter.BookingId, parameter.AccountId);
+                    if (!isValid)
+                    {
+                        throw new HttpRequestException("The logged in account are not authorized to request cancel producing request for this booking.");
+                    }
 
                     var booking = await _bookingGenericRepository.FindAll(
                         includeFunc: function => function
@@ -350,6 +363,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
+
+                    var isValid = await ValidateProducingRequestPodcasterAsync(parameter.BookingProducingRequestId, parameter.AccountId);
+                    if (!isValid)
+                    {
+                        throw new HttpRequestException("The logged in account are not authorized to submit tracks for this booking producing request.");
+                    }
 
                     var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdAsync(parameter.BookingProducingRequestId);
                     if (bookingProducingRequest.FinishedAt != null)
@@ -606,6 +625,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var isValid = await ValidateProducingRequestPodcasterAsync(parameter.BookingProducingRequestId, parameter.AccountId);
+                    if (!isValid)
+                    {
+                        throw new HttpRequestException("The logged in account are not authorized to accept or reject this booking producing request.");
+                    }
+
                     var bookingProducingRequestId = parameter.BookingProducingRequestId;
                     var isAccepted = parameter.IsAccepted;
 
@@ -616,7 +641,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     );
 
                     bookingProducingRequest.IsAccepted = parameter.IsAccepted;
+                    bookingProducingRequest.Deadline = _dateHelper.GetNowByAppTimeZone().AddDays((double)bookingProducingRequest.DeadlineDays);
                     bookingProducingRequest = await _bookingProducingRequestGenericRepository.UpdateAsync(bookingProducingRequest.Id, bookingProducingRequest);
+
+                    booking.Deadline = DateOnly.FromDateTime(bookingProducingRequest.Deadline.Value);
+                    await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                     if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.ProducingRequested)
                     {
@@ -943,6 +972,28 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     _logger.LogInformation("Booking cancellation validation failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
+        }
+        public async Task<bool> ValidateBookingAccountOrPodcasterAsync(int bookingId, int accountId)
+        {
+            return await ValidateBookingAccountAsync(bookingId, accountId) || await ValidateBookingPodcasterAsync(bookingId, accountId);
+        }
+        public async Task<bool> ValidateBookingAccountAsync(int bookingId, int accountId)
+        {
+            var booking = await _bookingGenericRepository.FindByIdAsync(bookingId);
+            if (booking == null)
+            {
+                return false;
+            }
+            return booking.AccountId == accountId;
+        }
+        public async Task<bool> ValidateBookingPodcasterAsync(int bookingId, int podcasterId)
+        {
+            var booking = await _bookingGenericRepository.FindByIdAsync(bookingId);
+            if (booking == null)
+            {
+                return false;
+            }
+            return booking.PodcastBuddyId == podcasterId;
         }
         public async Task<bool> ValidateProducingRequestPodcasterAsync(Guid BookingProducingRequestId, int accountId)
         {

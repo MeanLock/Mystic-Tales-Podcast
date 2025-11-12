@@ -75,36 +75,52 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         }
         public async Task<List<PodcastBuddyReportListItemResponseDTO>> GetAllPodcastBuddyReportAsync()
         {
-            var query = await _podcastBuddyReportGenericRepository.FindAll(
-                predicate: null,
-                includeFunc: source => source
-                    .Include(r => r.PodcastBuddyReportType)
-                ).ToListAsync();
-            var podcastBuddyReport = (await Task.WhenAll(query.Select(async pbr =>
-                {
-                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbr.PodcastBuddyId);
-                    return new PodcastBuddyReportListItemResponseDTO()
+            try
+            {
+                var query = await _podcastBuddyReportGenericRepository.FindAll(
+                    predicate: null,
+                    includeFunc: source => source
+                        .Include(r => r.PodcastBuddyReportType)
+                    ).ToListAsync();
+                var podcastBuddyReport = (await Task.WhenAll(query.Select(async pbr =>
                     {
-                        Id = pbr.Id,
-                        Content = pbr.Content,
-                        AccountId = pbr.AccountId,
-                        PodcastBuddy = new PodcastBuddySnippetResponseDTO()
+                        var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbr.PodcastBuddyId);
+                        var account = await _accountCachingService.GetAccountStatusCacheById(pbr.AccountId);
+                        return new PodcastBuddyReportListItemResponseDTO()
                         {
-                            Id = podcaster.Id,
-                            FullName = podcaster.FullName,
-                            Email = podcaster.Email,
-                            MainImageFileKey = podcaster.MainImageFileKey
-                        },
-                        PodcastBuddyReportType = new PodcastBuddyReportTypeDTO()
-                        {
-                            Id = pbr.PodcastBuddyReportType.Id,
-                            Name = pbr.PodcastBuddyReportType.Name,
-                        },
-                        ResolvedAt = pbr.ResolvedAt,
-                        CreatedAt = pbr.CreatedAt,
-                    };
-                }))).ToList();
-            return podcastBuddyReport;
+                            Id = pbr.Id,
+                            Content = pbr.Content,
+                            Account = new AccountSnippetResponseDTO()
+                            {
+                                Id = account.Id,
+                                FullName = account.FullName,
+                                Email = account.Email,
+                                MainImageFileKey = account.MainImageFileKey
+                            },
+                            PodcastBuddy = new PodcastBuddySnippetResponseDTO()
+                            {
+                                Id = podcaster.Id,
+                                FullName = podcaster.FullName,
+                                Email = podcaster.Email,
+                                MainImageFileKey = podcaster.MainImageFileKey
+                            },
+                            PodcastBuddyReportType = new PodcastBuddyReportTypeDTO()
+                            {
+                                Id = pbr.PodcastBuddyReportType.Id,
+                                Name = pbr.PodcastBuddyReportType.Name,
+                            },
+                            ResolvedAt = pbr.ResolvedAt,
+                            CreatedAt = pbr.CreatedAt,
+                        };
+                    }))).ToList();
+                return podcastBuddyReport;
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching podcast buddy reports");
+                throw new HttpRequestException("Retreive Buddy report failed. Error: " + ex.StackTrace);
+            }
         }
         public async Task CreatePodcastBuddyReportAsync(CreatePodcastBuddyReportParameterDTO parameter, SagaCommandMessage command)
         {
@@ -148,6 +164,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         {
                             AssignedStaff = randomStaff,
                             PodcastBuddyId = buddyReport.PodcastBuddyId,
+                            IsResolved = null,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
@@ -198,28 +215,120 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         }
         public async Task<List<PodcastBuddyReportTypeDTO>> GetPodcastBuddyReportTypeAsync()
         {
-            return await _podcastBuddyReportTypeGenericRepository.FindAll()
+            try
+            {
+                return await _podcastBuddyReportTypeGenericRepository.FindAll()
                 .Select(brt => new PodcastBuddyReportTypeDTO()
                 {
                     Id = brt.Id,
                     Name = brt.Name
                 })
                 .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching podcast buddy report type review sessions");
+                throw new HttpRequestException("Retreive Buddy report type failed. Error: " + ex.StackTrace);
+
+            }
         }
         public async Task<List<PodcastBuddyReportReviewSessionListItemResponseDTO>> GetBuddyReportReviewSessionAsync(int? staffId, int roleId)
         {
-            var query = await _podcastBuddyReportReviewSessionGenericRepository.FindAll(
-                predicate: null
-                ).ToListAsync();
-            if(roleId == (int)RoleEnum.Staff)
+            try
             {
-                query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
+                var query = await _podcastBuddyReportReviewSessionGenericRepository.FindAll(
+                    predicate: null
+                    ).ToListAsync();
+                if (roleId == (int)RoleEnum.Staff)
+                {
+                    query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
+                }
+                var podcastBuddyReportReviewSession = (await Task.WhenAll(query.Select(async pbrrs =>
+                {
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbrrs.PodcastBuddyId);
+                    var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
+                    return new PodcastBuddyReportReviewSessionListItemResponseDTO()
+                    {
+                        Id = pbrrs.Id,
+                        PodcastBuddy = new PodcastBuddySnippetResponseDTO()
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.FullName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        AssignedStaff = new AssignedStaffSnippetResponseDTO()
+                        {
+                            Id = staff.Id,
+                            FullName = staff.FullName,
+                            Email = staff.Email,
+                            MainImageFileKey = staff.MainImageFileKey
+                        },
+                        ResolvedViolationPoint = pbrrs.ResolvedViolationPoint,
+                        IsResolved = pbrrs.IsResolved,
+                        CreatedAt = pbrrs.CreatedAt,
+                        UpdatedAt = pbrrs.UpdatedAt,
+                    };
+                }))).ToList();
+                return podcastBuddyReportReviewSession;
             }
-            var podcastBuddyReportReviewSession = (await Task.WhenAll(query.Select(async pbrrs =>
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while fetching podcast buddy report review sessions");
+                throw new HttpRequestException("Retreive Buddy report failed. Error: " + ex.StackTrace);
+            }
+        }
+        public async Task<PodcastBuddyReportReviewSessionDetailResponseDTO> GetBuddyReportReviewSessionByIdAsync(Guid id)
+        {
+            try
+            {
+                var pbrrs = await _podcastBuddyReportReviewSessionGenericRepository.FindByIdAsync(id);
+                if (pbrrs == null)
+                    return null;
+
+                var query = await _podcastBuddyReportGenericRepository.FindAll(
+                    predicate: null,
+                    includeFunc: source => source
+                        .Include(r => r.PodcastBuddyReportType)
+                    )
+                    .Where(r => r.PodcastBuddyId == pbrrs.PodcastBuddyId && r.ResolvedAt == null)
+                    .ToListAsync();
+                var podcastBuddyReport = (await Task.WhenAll(query.Select(async pbr =>
+                {
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbr.PodcastBuddyId);
+                    var account = await _accountCachingService.GetAccountStatusCacheById(pbr.AccountId);
+                    return new PodcastBuddyReportListItemResponseDTO()
+                    {
+                        Id = pbr.Id,
+                        Content = pbr.Content,
+                        Account = new AccountSnippetResponseDTO()
+                        {
+                            Id = account.Id,
+                            FullName = account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        },
+                        PodcastBuddy = new PodcastBuddySnippetResponseDTO()
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.FullName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        PodcastBuddyReportType = new PodcastBuddyReportTypeDTO()
+                        {
+                            Id = pbr.PodcastBuddyReportType.Id,
+                            Name = pbr.PodcastBuddyReportType.Name,
+                        },
+                        ResolvedAt = pbr.ResolvedAt,
+                        CreatedAt = pbr.CreatedAt,
+                    };
+                }))).ToList();
+
                 var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbrrs.PodcastBuddyId);
                 var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
-                return new PodcastBuddyReportReviewSessionListItemResponseDTO()
+
+                return new PodcastBuddyReportReviewSessionDetailResponseDTO()
                 {
                     Id = pbrrs.Id,
                     PodcastBuddy = new PodcastBuddySnippetResponseDTO()
@@ -240,74 +349,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     IsResolved = pbrrs.IsResolved,
                     CreatedAt = pbrrs.CreatedAt,
                     UpdatedAt = pbrrs.UpdatedAt,
+                    BuddyReportList = podcastBuddyReport
                 };
-            }))).ToList();
-            return podcastBuddyReportReviewSession;
-        }
-        public async Task<PodcastBuddyReportReviewSessionDetailResponseDTO> GetBuddyReportReviewSessionByIdAsync(Guid id)
-        {
-            var pbrrs = await _podcastBuddyReportReviewSessionGenericRepository.FindByIdAsync(id);
-            if (pbrrs == null)
-                return null;
-
-            var query = await _podcastBuddyReportGenericRepository.FindAll(
-                predicate: null,
-                includeFunc: source => source
-                    .Include(r => r.PodcastBuddyReportType)
-                )
-                .Where(r => r.PodcastBuddyId == pbrrs.PodcastBuddyId && r.ResolvedAt == null)
-                .ToListAsync();
-            var podcastBuddyReport = (await Task.WhenAll(query.Select(async pbr =>
+            }
+            catch (Exception ex)
             {
-                var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbr.PodcastBuddyId);
-                return new PodcastBuddyReportListItemResponseDTO()
-                {
-                    Id = pbr.Id,
-                    Content = pbr.Content,
-                    AccountId = pbr.AccountId,
-                    PodcastBuddy = new PodcastBuddySnippetResponseDTO()
-                    {
-                        Id = podcaster.Id,
-                        FullName = podcaster.FullName,
-                        Email = podcaster.Email,
-                        MainImageFileKey = podcaster.MainImageFileKey
-                    },
-                    PodcastBuddyReportType = new PodcastBuddyReportTypeDTO()
-                    {
-                        Id = pbr.PodcastBuddyReportType.Id,
-                        Name = pbr.PodcastBuddyReportType.Name,
-                    },
-                    ResolvedAt = pbr.ResolvedAt,
-                    CreatedAt = pbr.CreatedAt,
-                };
-            }))).ToList();
-
-            var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbrrs.PodcastBuddyId);
-            var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
-
-            return new PodcastBuddyReportReviewSessionDetailResponseDTO()
-            {
-                Id = pbrrs.Id,
-                PodcastBuddy = new PodcastBuddySnippetResponseDTO()
-                {
-                    Id = podcaster.Id,
-                    FullName = podcaster.FullName,
-                    Email = podcaster.Email,
-                    MainImageFileKey = podcaster.MainImageFileKey
-                },
-                AssignedStaff = new AssignedStaffSnippetResponseDTO()
-                {
-                    Id = staff.Id,
-                    FullName = staff.FullName,
-                    Email = staff.Email,
-                    MainImageFileKey = staff.MainImageFileKey
-                },
-                ResolvedViolationPoint = pbrrs.ResolvedViolationPoint,
-                IsResolved = pbrrs.IsResolved ?? false,
-                CreatedAt = pbrrs.CreatedAt,
-                UpdatedAt = pbrrs.UpdatedAt,
-                BuddyReportList = podcastBuddyReport
-            };
+                _logger.LogError(ex, "Error occurred while fetching podcast buddy report review session by id");
+                throw new HttpRequestException("Retreive Buddy report review session failed. Error: " + ex.StackTrace);
+            }
         }
         public async Task ResolvePodcastBuddyReportReviewSessionAsync(ResolvePodcastBuddyReportParameterDTO parameter, SagaCommandMessage command)
         {
@@ -321,15 +370,16 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var responseData = command.LastStepResponseData;
 
                     var podcastBuddyReportReviewSessions = await _podcastBuddyReportReviewSessionGenericRepository.FindByIdAsync(parameter.PodcastBuddyReportReviewSessionId);
-                    if(podcastBuddyReportReviewSessions.AssignedStaff != parameter.AccountId)
+                    if (podcastBuddyReportReviewSessions.AssignedStaff != parameter.AccountId)
                     {
                         throw new Exception("The logged in Account is not authorize to resolve this buddy report review session");
                     }
                     podcastBuddyReportReviewSessions.IsResolved = parameter.IsResolved;
+                    await _podcastBuddyReportReviewSessionGenericRepository.UpdateAsync(podcastBuddyReportReviewSessions.Id, podcastBuddyReportReviewSessions);
                     var podcastBuddyReportList = await _podcastBuddyReportGenericRepository.FindAll()
                         .Where(pbr => pbr.PodcastBuddyId == podcastBuddyReportReviewSessions.PodcastBuddyId)
                         .ToListAsync();
-                    foreach(var buddyReport in podcastBuddyReportList)
+                    foreach (var buddyReport in podcastBuddyReportList)
                     {
                         buddyReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                         await _podcastBuddyReportGenericRepository.UpdateAsync(buddyReport.Id, buddyReport);
@@ -409,7 +459,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                         IsVerify = true,
                                         RoleId = (int)RoleEnum.Staff
                                     },
-                                }),                        
+                                }),
                         }
                     }
             };
@@ -453,7 +503,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         {
             //if (array == null || array.Count == 0)
             //    return null;
-            
+
             //var random = new Random();
             //var randomIndex = random.Next(array.Count);
             //return array[randomIndex];
@@ -486,12 +536,12 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             {
                 return (false, "Podcaster not found");
             }
-            
+
             if (podcaster.DeactivatedAt != null)
             {
                 return (false, $"Podcaster with Id: {podcaster.Id} has already been deactivated");
             }
-            
+
             if (!podcaster.HasVerifiedPodcasterProfile)
             {
                 return (false, $"Podcaster with Id: {podcaster.Id} profile has not been verify");
@@ -507,24 +557,24 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         //        var flowName = command.FlowName;
         //        var responseData = command.LastStepResponseData;
 
-                //await transaction.CommitAsync();
+        //await transaction.CommitAsync();
 
-                //var newResponseData = new JObject
-                //            {
-                //                { "AccountId", registrationResult.AccountId },
-                //                { "PodcastSubscriptionRegistrationId", registrationResult.Id },
-                //                { "CancelledAt", registrationResult.CancelledAt }
-                //            };
-                //var newMessageName = messageName + ".success";
-                //var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                //    topic: KafkaTopicEnum.PaymentProcessingDomain,
-                //    requestData: command.RequestData,
-                //    responseData: newResponseData,
-                //    sagaInstanceId: sagaId,
-                //    flowName: flowName,
-                //    messageName: newMessageName);
-                //await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
-                //_logger.LogInformation("Successfully cancel podcast subscription registration for SagaId: {SagaId}", sagaId);
+        //var newResponseData = new JObject
+        //            {
+        //                { "AccountId", registrationResult.AccountId },
+        //                { "PodcastSubscriptionRegistrationId", registrationResult.Id },
+        //                { "CancelledAt", registrationResult.CancelledAt }
+        //            };
+        //var newMessageName = messageName + ".success";
+        //var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //    topic: KafkaTopicEnum.PaymentProcessingDomain,
+        //    requestData: command.RequestData,
+        //    responseData: newResponseData,
+        //    sagaInstanceId: sagaId,
+        //    flowName: flowName,
+        //    messageName: newMessageName);
+        //await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+        //_logger.LogInformation("Successfully cancel podcast subscription registration for SagaId: {SagaId}", sagaId);
         //    }
         //    catch (Exception ex)
         //    {

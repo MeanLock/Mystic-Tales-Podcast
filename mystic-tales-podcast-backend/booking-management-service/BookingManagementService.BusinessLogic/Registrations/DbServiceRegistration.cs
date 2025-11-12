@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using BookingManagementService.BusinessLogic.Services.DbServices.MiscServices;
 using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices;
+using BookingManagementService.BusinessLogic.Services.DbServices.CachingServices;
 
 namespace BookingManagementService.BusinessLogic.Registrations
 {

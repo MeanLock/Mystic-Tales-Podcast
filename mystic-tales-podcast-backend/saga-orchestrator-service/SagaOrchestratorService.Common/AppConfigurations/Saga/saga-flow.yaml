@@ -1817,7 +1817,7 @@ flows:
         handle-service: "ModerationService"
         description: "Dismisses all episode DMCA accusations of the channel (only changes DMCA status)."
         parameters:
-          - PodcastChannelId
+          - DmcaDismissedShowIds
         next-request-data:
           - PodcastChannelId
           - DmcaDismissedShowIds
@@ -8555,13 +8555,13 @@ flows:
           - PodcastBuddyReportReviewSessionId
           - UpdatedAt
         onSuccess:
-          emit: "resolve-buddy-report.success"
+          emit: "resolve-podcast-buddy-report.success"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "resolve-buddy-report.failed"
+          emit: "resolve-podcast-buddy-report.failed"
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []

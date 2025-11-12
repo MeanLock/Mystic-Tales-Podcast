@@ -9,7 +9,7 @@ namespace ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.Details
         public PodcastBuddySnippetResponseDTO PodcastBuddy { get; set; }
         public AssignedStaffSnippetResponseDTO AssignedStaff { get; set; }
         public int ResolvedViolationPoint { get; set; }
-        public bool IsResolved { get; set; }
+        public bool? IsResolved { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public List<PodcastBuddyReportListItemResponseDTO> BuddyReportList { get; set; }

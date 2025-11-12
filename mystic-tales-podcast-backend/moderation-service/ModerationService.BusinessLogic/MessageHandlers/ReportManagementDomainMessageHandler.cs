@@ -25,6 +25,11 @@ using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.R
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowReportNoEffectUnpublishShowForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectUnpublishShowForce;
 using ModerationService.Common.AppConfigurations.BusinessSetting.interfaces;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelEpisodesReportNoEffectUnpublishChannelForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelShowsReportNoEffectUnpublishChannelForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReportNoEffectEpisodeDeletionForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowReportNoEffectShowDeletionForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectShowDeletionForce;
 
 namespace ModerationService.BusinessLogic.MessageHandlers
 {
@@ -275,6 +280,81 @@ namespace ModerationService.BusinessLogic.MessageHandlers
                },
                responseTopic: SAGA_TOPIC,
                failedEmitMessage: "resolve-show-episodes-report-no-effect-unpublish-show-force.failed"
+           );
+        }
+        [MessageHandler("resolve-channel-shows-report-no-effect-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleResolveChannelShowsReportNoEffectUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolveChannelShowsReportNoEffectUnpublishChannelForceParameterDTO>();
+                   await _podcastShowReportService.ResolveChannelShowsReportNoEffectUnpublishChannelForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-channel-shows-report-no-effect-unpublish-channel-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-channel-shows-report-no-effect-unpublish-channel-force.failed"
+           );
+        }
+        [MessageHandler("resolve-channel-episodes-report-no-effect-unpublish-channel-force", SAGA_TOPIC)]
+        public async Task HandleResolveChannelEpisodesReportNoEffectUnpublishChannelForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolveChannelEpisodesReportNoEffectUnpublishChannelForceParameterDTO>();
+                   await _podcastEpisodeReportService.ResolveChannelEpisodesReportNoEffectUnpublishChannelForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-channel-episodes-report-no-effect-unpublish-channel-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-channel-episodes-report-no-effect-unpublish-channel-force.failed"
+           );
+        }
+        [MessageHandler("resolve-episode-report-no-effect-episode-deletion-force", SAGA_TOPIC)]
+        public async Task HandleResolveEpisodeReportNoEffectEpisodeDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolveEpisodeReportNoEffectEpisodeDeletionForceParameterDTO>();
+                   await _podcastEpisodeReportService.ResolveEpisodeReportNoEffectEpisodeDeletionForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-episode-report-no-effect-episode-deletion-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-episode-report-no-effect-episode-deletion-force.failed"
+           );
+        }
+        [MessageHandler("resolve-show-report-no-effect-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleResolveShowReportNoEffectShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolveShowReportNoEffectShowDeletionForceParameterDTO>();
+                   await _podcastShowReportService.ResolveShowReportNoEffectShowDeletionForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-show-report-no-effect-show-deletion-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-show-report-no-effect-show-deletion-force.failed"
+           );
+        }
+        [MessageHandler("resolve-show-episodes-report-no-effect-show-deletion-force", SAGA_TOPIC)]
+        public async Task HandleResolveShowEpisodesReportNoEffectShowDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolveShowEpisodesReportNoEffectShowDeletionForceParameterDTO>();
+                   await _podcastEpisodeReportService.ResolveShowEpisodesReportNoEffectShowDeletionForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-show-episodes-report-no-effect-show-deletion-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-show-episodes-report-no-effect-show-deletion-force.failed"
            );
         }
     }

@@ -9,7 +9,7 @@ namespace ModerationService.BusinessLogic.Enums.Account
     public enum RoleEnum
     {
         Customer = 1,
-        Admin = 2,
-        Staff = 3
+        Staff = 2,
+        Admin = 3
     }
 }

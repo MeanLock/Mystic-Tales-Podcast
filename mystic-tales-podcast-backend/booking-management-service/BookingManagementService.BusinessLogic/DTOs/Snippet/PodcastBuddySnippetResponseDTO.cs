@@ -11,6 +11,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.Snippet
         public int Id { get; set; }
         public string FullName { get; set; }
         public string Email { get; set; }
-        public string MainImageFileKey { get; set; }
+        public string? MainImageFileKey { get; set; }
+        public decimal? PriceBookingPerWord { get; set; }
     }
 }

@@ -23,8 +23,6 @@ namespace BookingManagementService.API.Controllers.MiscControllers
             _logger = logger;
             _fileIOHelper = fileIOHelper;
         }
-
-
         // /api/user-service/get-file-url/{**FileKey}
         [HttpGet("get-file-url/{**FileKey}")]
         public async Task<IActionResult> GetFileUrl(string FileKey)

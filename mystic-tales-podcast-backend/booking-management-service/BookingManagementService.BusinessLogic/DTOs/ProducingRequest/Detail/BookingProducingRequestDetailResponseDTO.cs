@@ -13,7 +13,8 @@ namespace BookingManagementService.BusinessLogic.DTOs.ProducingRequest.Detail
         public Guid Id { get; set; }
         public int BookingId { get; set; }
         public string Note { get; set; } = string.Empty;
-        public DateOnly Deadline { get; set; }
+        public DateTime? Deadline { get; set; }
+        public int? DeadlineDays { get; set; }
         public bool? IsAccepted { get; set; }
         public DateTime? FinishedAt { get; set; }
         public DateTime CreatedAt { get; set; }
