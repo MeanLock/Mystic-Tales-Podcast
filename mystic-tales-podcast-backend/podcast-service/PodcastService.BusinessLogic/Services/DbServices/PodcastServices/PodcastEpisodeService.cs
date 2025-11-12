@@ -91,6 +91,8 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Rem
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.TakedownContentDmca;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RestoreContentDmca;
 using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
+using PodcastService.BusinessLogic.DTOs.Auth;
+using PodcastService.BusinessLogic.Enums.App;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -3016,7 +3018,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
         }
 
-        public async Task<EpisodeListenResponseDTO> GetEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId, string? token)
+        public async Task<EpisodeListenResponseDTO> GetEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId, string? token, DeviceInfoDTO deviceInfo)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -3217,7 +3219,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 Email = podcaster.Email,
                                 FullName = podcaster.PodcasterProfileName,
                                 MainImageFileKey = podcaster.MainImageFileKey
-                            }
+                            },
+                            AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+                                ? await _fileIOHelper.GeneratePresignedUrlAsync(
+                                    validEpisode.AudioFileKey
+                                )
+                                : null
                         };
                     }
                     else // token == null
@@ -3412,7 +3419,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 Email = podcaster.Email,
                                 FullName = podcaster.PodcasterProfileName,
                                 MainImageFileKey = podcaster.MainImageFileKey
-                            }
+                            },
+                            AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+                                ? await _fileIOHelper.GeneratePresignedUrlAsync(
+                                    validEpisode.AudioFileKey
+                                )
+                                : null
                         };
                     }
                 }
@@ -5452,7 +5464,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task<EpisodeListenResponseDTO> GetLatestPodcastEpisodeListenSessionAsync(int listenerId)
+        public async Task<EpisodeListenResponseDTO> GetLatestPodcastEpisodeListenSessionAsync(int listenerId, DeviceInfoDTO deviceInfo)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -5543,8 +5555,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 FullName = podcaster.PodcasterProfileName,
                                 Email = podcaster.Email,
                                 MainImageFileKey = podcaster.MainImageFileKey,
-                            }
-
+                            },
+                            AudioFileUrl =  deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+                                ? await _fileIOHelper.GeneratePresignedUrlAsync(
+                                    episode.AudioFileKey
+                                )
+                                : null
                         };
                     }
 

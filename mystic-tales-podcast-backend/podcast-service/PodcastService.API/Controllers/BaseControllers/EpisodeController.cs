@@ -5,9 +5,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PodcastService.API.Filters.ExceptionFilters;
 using PodcastService.BusinessLogic.DTOs.AudioTuning;
+using PodcastService.BusinessLogic.DTOs.Auth;
 using PodcastService.BusinessLogic.DTOs.Cache;
 using PodcastService.BusinessLogic.DTOs.Episode;
 using PodcastService.BusinessLogic.Enums.App;
+using PodcastService.BusinessLogic.Helpers.AuthHelpers;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
 using PodcastService.BusinessLogic.Models.CrossService;
 using PodcastService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -51,8 +53,9 @@ namespace PodcastService.API.Controllers.BaseControllers
         private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
         private readonly IMediaTypeConfig _mediaTypeConfig;
         private readonly AudioFormatDetectorHelper _formatDetector;
+        private readonly JwtHelper _jwtHelper;
 
-        public EpisodeController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService, PodcastEpisodeService podcastEpisodeService, AudioTranscriptionApiService audioTranscriptionApiService, AppDbContext appDbContext, IGenericRepository<PodcastEpisode> podcastEpisodeGenericRepository, FFMpegCoreHlsService ffMpegCoreHlsService, IMediaTypeConfig mediaTypeConfig)
+        public EpisodeController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, RedisInstanceCacheService redisInstanceCacheService, RedisSharedCacheService redisSharedCacheService, PodcastEpisodeService podcastEpisodeService, AudioTranscriptionApiService audioTranscriptionApiService, AppDbContext appDbContext, IGenericRepository<PodcastEpisode> podcastEpisodeGenericRepository, FFMpegCoreHlsService ffMpegCoreHlsService, IMediaTypeConfig mediaTypeConfig, JwtHelper jwtHelper)
         {
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
@@ -68,6 +71,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             _ffMpegCoreHlsService = ffMpegCoreHlsService;
             _mediaTypeConfig = mediaTypeConfig;
             _formatDetector = new AudioFormatDetectorHelper();
+            _jwtHelper = jwtHelper;
         }
 
         #region Sample coding format must be followed
@@ -428,9 +432,39 @@ namespace PodcastService.API.Controllers.BaseControllers
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId, [FromQuery] string? Token = null)
         {
+            string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
+            string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
+            if (string.IsNullOrEmpty(deviceTokenHeader))
+            {
+                return BadRequest(new
+                {
+                    // error = "Missing X-Device-Fingerprint header"
+                    error = "Missing X-DeviceInfo-Token header"
+                });
+            }
+            else if (string.IsNullOrEmpty(authorizedDeviceToken))
+            {
+                return Unauthorized(new
+                {
+                    // error = "Unauthorized: Missing device_fingerprint claim"
+                    error = "Unauthorized: Missing device_info_token claim"
+                });
+            }
+            else if (deviceTokenHeader != authorizedDeviceToken)
+            {
+                return Unauthorized(new
+                {
+                    // error = "Unauthorized: Device fingerprint mismatch"
+                    error = "Unauthorized: Device info token mismatch"
+                });
+            }
+            var deviceInfo = JwtHelper.ClaimsPrincipalToObject<DeviceInfoDTO>(_jwtHelper.DecodeToken_OneSecretKey(deviceTokenHeader));
+
+
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
-            var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, Token);
+
+            var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, Token, deviceInfo);
 
             return Ok(new
             {
@@ -580,9 +614,34 @@ namespace PodcastService.API.Controllers.BaseControllers
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetLatestPodcastEpisodeListenSession()
         {
+                        string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
+            string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
+            if (string.IsNullOrEmpty(deviceTokenHeader))
+            {
+                return BadRequest(new
+                {
+                    error = "Missing X-Device-Fingerprint header"
+                });
+            }
+            else if (string.IsNullOrEmpty(authorizedDeviceToken))
+            {
+                return Unauthorized(new
+                {
+                    error = "Unauthorized: Missing device_fingerprint claim"
+                });
+            }
+            else if (deviceTokenHeader != authorizedDeviceToken)
+            {
+                return Unauthorized(new
+                {
+                    error = "Unauthorized: Device fingerprint mismatch"
+                });
+            }
+            var deviceInfo = JwtHelper.ClaimsPrincipalToObject<DeviceInfoDTO>(_jwtHelper.DecodeToken_OneSecretKey(deviceTokenHeader));
+
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
-            var listenSession = await _podcastEpisodeService.GetLatestPodcastEpisodeListenSessionAsync(account.Id);
+            var listenSession = await _podcastEpisodeService.GetLatestPodcastEpisodeListenSessionAsync(account.Id, deviceInfo);
 
             return Ok(new
             {

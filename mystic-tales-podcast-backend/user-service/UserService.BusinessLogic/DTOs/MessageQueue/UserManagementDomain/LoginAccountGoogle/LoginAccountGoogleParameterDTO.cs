@@ -10,5 +10,6 @@ namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Login
     {
         public string AuthorizationCode { get; set; }
         public string RedirectUri { get; set; }
+        public string DeviceInfoToken { get; set; }
     }
 }

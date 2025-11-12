@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -5,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UserService.API.Filters.ExceptionFilters;
 using UserService.BusinessLogic.DTOs.Auth;
+using UserService.BusinessLogic.Helpers.AuthHelpers;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -12,6 +15,8 @@ using UserService.BusinessLogic.Services.DbServices.UserServices;
 using UserService.BusinessLogic.Services.MessagingServices.interfaces;
 using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
 using UserService.Common.AppConfigurations.FilePath.interfaces;
+using UserService.Common.AppConfigurations.Jwt;
+using UserService.Common.AppConfigurations.Jwt.interfaces;
 using UserService.Infrastructure.Services.Audio.AcoustID;
 using UserService.Infrastructure.Services.Kafka;
 
@@ -29,9 +34,13 @@ namespace UserService.API.Controllers.BaseControllers
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
         private readonly AccountService _accountService;
+        private readonly JwtHelper _jwtHelper;
+        private readonly IJwtConfig _jwtConfig;
 
 
-        public AuthController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, AccountService accountService)
+        public AuthController(KafkaProducerService kafkaProducerService, IMessagingService messagingService, IFileValidationConfig fileValidationConfig, IFilePathConfig filePathConfig, FileIOHelper fileIOHelper, AccountService accountService,
+            JwtHelper jwtHelper, IJwtConfig jwtConfig
+        )
         {
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
@@ -39,6 +48,43 @@ namespace UserService.API.Controllers.BaseControllers
             _fileValidationConfig = fileValidationConfig;
             _filePathConfig = filePathConfig;
             _accountService = accountService;
+            _jwtHelper = jwtHelper;
+            _jwtConfig = jwtConfig;
+        }
+
+        public static string SHA256Hash(string input)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(input);
+                byte[] hash = sha256.ComputeHash(bytes);
+
+                // Chuyển kết quả băm sang chuỗi dạng hex
+                StringBuilder builder = new StringBuilder();
+                foreach (byte b in hash)
+                    builder.Append(b.ToString("x2"));
+
+                return builder.ToString();
+            }
+        }
+        public string ComputeFingerprint(DeviceInfoDTO info)
+        {
+            var data = $"{info.DeviceId}|{info.Platform}|{info.OSName}";
+            return SHA256Hash(data);
+        }
+
+        public string GenerateDeviceInfoToken(DeviceInfoDTO info)
+        {
+            var claims = new Dictionary<string, object>
+            {
+                { "DeviceId", info.DeviceId.ToString() },
+                { "Platform", info.Platform },
+                { "OSName", info.OSName }
+            };
+
+            var token = _jwtHelper.GenerateJWT_OneSecretKey(claims, _jwtConfig.Exp);
+
+            return token;
         }
 
         [HttpGet("test")]
@@ -152,7 +198,16 @@ namespace UserService.API.Controllers.BaseControllers
         [HttpPost("login-manual")]
         public async Task<IActionResult> LoginManual([FromBody] ManualLoginRequestDTO manualLoginRequestDTO)
         {
-            var requestData = JObject.FromObject(manualLoginRequestDTO.ManualLoginInfo);
+
+            // var requestData = JObject.FromObject(manualLoginRequestDTO.ManualLoginInfo);
+            var requestData = JObject.FromObject(new
+            {
+                Email = manualLoginRequestDTO.ManualLoginInfo.Email,
+                Password = manualLoginRequestDTO.ManualLoginInfo.Password,
+                // DeviceFingerprint = ComputeFingerprint(manualLoginRequestDTO.DeviceInfo)
+                DeviceInfoToken = GenerateDeviceInfoToken(manualLoginRequestDTO.DeviceInfo)
+            });
+
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-manual-login-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
@@ -166,7 +221,14 @@ namespace UserService.API.Controllers.BaseControllers
         [HttpPost("login-google")]
         public async Task<IActionResult> LoginGoogle([FromBody] GoogleLoginRequestDTO googleLoginRequestDTO)
         {
-            var requestData = JObject.FromObject(googleLoginRequestDTO.GoogleAuth);
+            // var requestData = JObject.FromObject(googleLoginRequestDTO.GoogleAuth);
+            var requestData = JObject.FromObject(new
+            {
+                AuthorizationCode = googleLoginRequestDTO.GoogleAuth.AuthorizationCode,
+                RedirectUri = googleLoginRequestDTO.GoogleAuth.RedirectUri,
+                // DeviceFingerprint = ComputeFingerprint(googleLoginRequestDTO.DeviceInfo)
+                DeviceInfoToken = GenerateDeviceInfoToken(googleLoginRequestDTO.DeviceInfo)
+            });
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-google-login-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new

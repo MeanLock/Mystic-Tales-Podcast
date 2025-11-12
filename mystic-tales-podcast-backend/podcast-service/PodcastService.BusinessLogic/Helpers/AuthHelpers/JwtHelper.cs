@@ -16,7 +16,7 @@ namespace PodcastService.BusinessLogic.Helpers.AuthHelpers
     public class JwtHelper
     {
         private readonly IJwtConfig _jwtConfig;
-        private readonly DateHelper _dateHelper; 
+        private readonly DateHelper _dateHelper;
 
         private readonly string _secretKey;
         private readonly string _privateKey;
@@ -163,6 +163,41 @@ namespace PodcastService.BusinessLogic.Helpers.AuthHelpers
                 throw new ArgumentException("Payload must be a dictionary");
 
             return dict.Select(kv => new Claim(kv.Key, kv.Value?.ToString() ?? "")).ToArray();
+        }
+
+        public static T ClaimsPrincipalToObject<T>(ClaimsPrincipal user) where T : new()
+        {
+            if (user == null) return default;
+
+            var obj = new T();
+            var properties = typeof(T).GetProperties();
+
+            foreach (var prop in properties)
+            {
+                var claim = user.FindFirst(prop.Name);
+                if (claim != null)
+                {
+                    var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+
+                    object value;
+                    if (targetType == typeof(Guid))
+                    {
+                        value = Guid.Parse(claim.Value);
+                    }
+                    else if (targetType.IsEnum)
+                    {
+                        value = Enum.Parse(targetType, claim.Value);
+                    }
+                    else
+                    {
+                        value = Convert.ChangeType(claim.Value, targetType);
+                    }
+
+                    prop.SetValue(obj, value);
+                }
+            }
+
+            return obj;
         }
     }
 }

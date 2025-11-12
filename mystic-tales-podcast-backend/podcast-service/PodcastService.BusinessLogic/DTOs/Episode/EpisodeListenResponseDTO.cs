@@ -12,5 +12,6 @@ namespace PodcastService.BusinessLogic.DTOs.Episode
         public required PodcastEpisodeListenSessionSnippetResponseDTO PodcastEpisodeListenSession { get; set; } = null!;
         public required string PlaylistFileKey { get; set; } = null!;
         public required string Token { get; set; } = null!;
+        public required string? AudioFileUrl { get; set; }
     }
 }

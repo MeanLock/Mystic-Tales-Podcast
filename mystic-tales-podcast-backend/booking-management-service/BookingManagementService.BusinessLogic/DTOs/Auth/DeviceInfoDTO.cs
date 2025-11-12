@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace UserService.BusinessLogic.DTOs.Auth
+namespace BookingManagementService.BusinessLogic.DTOs.Auth
 {
     public class DeviceInfoDTO
     {

@@ -93,10 +93,12 @@ flows:
         parameters:
           - Email
           - Password
+          - DeviceInfoToken
         next-request-data:
           - Email
           - Password
           - AccessToken
+          - DeviceInfoToken
         response-data:
           - AccessToken
           - Message
@@ -126,9 +128,11 @@ flows:
         parameters:
           - AuthorizationCode
           - RedirectUri
+          - DeviceInfoToken
         next-request-data:
           - AuthorizationCode
           - RedirectUri
+          - DeviceInfoToken
         response-data:
           - AccessToken
           - Message

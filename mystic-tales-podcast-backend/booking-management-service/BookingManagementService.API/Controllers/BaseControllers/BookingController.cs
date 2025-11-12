@@ -1,4 +1,5 @@
 ﻿using BookingManagementService.API.Filters.ExceptionFilters;
+using BookingManagementService.BusinessLogic.DTOs.Auth;
 using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Cache;
@@ -430,8 +431,37 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> MarkBookingPodcastTrackAsListened(int BookingId, Guid BookingPodcastTrackId)
         {
+            string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
+            string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
+            if (string.IsNullOrEmpty(deviceTokenHeader))
+            {
+                return BadRequest(new
+                {
+                    // error = "Missing X-Device-Fingerprint header"
+                    error = "Missing X-DeviceInfo-Token header"
+                });
+            }
+            else if (string.IsNullOrEmpty(authorizedDeviceToken))
+            {
+                return Unauthorized(new
+                {
+                    // error = "Unauthorized: Missing device_fingerprint claim"
+                    error = "Unauthorized: Missing device_info_token claim"
+                });
+            }
+            else if (deviceTokenHeader != authorizedDeviceToken)
+            {
+                return Unauthorized(new
+                {
+                    // error = "Unauthorized: Device fingerprint mismatch"
+                    error = "Unauthorized: Device info token mismatch"
+                });
+            }
+            var deviceInfo = JwtHelper.ClaimsPrincipalToObject<DeviceInfoDTO>(_jwtHelper.DecodeToken_OneSecretKey(deviceTokenHeader));
+
+
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var trackListenResponse = await _bookingService.GetTrackListenAsync(BookingId, BookingPodcastTrackId, account.Id);
+            var trackListenResponse = await _bookingService.GetTrackListenAsync(BookingId, BookingPodcastTrackId, account.Id, deviceInfo);
 
             return Ok(new
             {
@@ -454,7 +484,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
         // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/hls-playlist/get-file-data/{**FileKey}
         [HttpGet("{BookingId}/booking-podcast-tracks/hls-playlist/get-file-data/{**FileKey}")]
-        public async Task<IActionResult> GetHlsPlaylistFileUrl(int BookingId,string FileKey)
+        public async Task<IActionResult> GetHlsPlaylistFileUrl(int BookingId, string FileKey)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 

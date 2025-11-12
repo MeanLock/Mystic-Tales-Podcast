@@ -1,6 +1,7 @@
 ﻿using Amazon.Runtime.Internal;
 using Amazon.Runtime.Internal.Util;
 using BookingManagementService.BusinessLogic.DTOs.Account;
+using BookingManagementService.BusinessLogic.DTOs.Auth;
 using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Booking.Details;
 using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
@@ -18,6 +19,7 @@ using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.Snippet;
 using BookingManagementService.BusinessLogic.DTOs.SystemConfiguration;
 using BookingManagementService.BusinessLogic.Enums.Account;
+using BookingManagementService.BusinessLogic.Enums.App;
 using BookingManagementService.BusinessLogic.Enums.Booking;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Enums.Transaction;
@@ -1728,7 +1730,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 : null;
             return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
-        public async Task<BookingTrackListenResponseDTO> GetTrackListenAsync(int bookingId, Guid podcastTrackId, int accountId)
+        public async Task<BookingTrackListenResponseDTO> GetTrackListenAsync(int bookingId, Guid podcastTrackId, int accountId, DeviceInfoDTO deviceInfo)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -1798,7 +1800,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     );
                     var result = new BookingTrackListenResponseDTO
                     {
-                        PlaylistFileKey = playlistFileKey
+                        PlaylistFileKey = playlistFileKey,
+                        AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+                                ? await _fileIOHelper.GeneratePresignedUrlAsync(
+                                    bookingPodcastTrack.AudioFileKey
+                                )
+                                : null
+
                     };
                     return result;
                 }

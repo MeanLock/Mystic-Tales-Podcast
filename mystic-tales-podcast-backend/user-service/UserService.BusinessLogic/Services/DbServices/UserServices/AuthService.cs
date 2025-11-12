@@ -237,7 +237,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     new Claim("role_id", account.Role.Id.ToString()),
                     new Claim(ClaimTypes.Role, account.Role.Name),
                     new Claim("balance", account.Balance.ToString()),
-                    new Claim("deviceFingerprint", ComputeFingerprint(loginRequest.)),
+                    new Claim("device_info_token", loginData.DeviceInfoToken ?? string.Empty),
                     new Claim(ClaimTypes.SerialNumber, Guid.NewGuid().ToString()), // Mã định danh JWT
                 };
 
@@ -409,6 +409,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         new Claim("role_id", account.RoleId.ToString()),
                         new Claim(ClaimTypes.Role, account.Role?.Name ?? "User"),
                         new Claim("balance", account.Balance.ToString()),
+                        new Claim("device_info_token", googleLoginData.DeviceInfoToken ?? string.Empty),
                         new Claim(ClaimTypes.SerialNumber, Guid.NewGuid().ToString()),
                     };
                     var token = _jwtHelper.GenerateJWT_TwoPublicPrivateKey(claims, _jwtConfig.Exp);
