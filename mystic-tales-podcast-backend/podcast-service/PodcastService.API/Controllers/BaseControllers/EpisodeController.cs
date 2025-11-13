@@ -8,6 +8,7 @@ using PodcastService.BusinessLogic.DTOs.AudioTuning;
 using PodcastService.BusinessLogic.DTOs.Auth;
 using PodcastService.BusinessLogic.DTOs.Cache;
 using PodcastService.BusinessLogic.DTOs.Episode;
+using PodcastService.BusinessLogic.Enums.Account;
 using PodcastService.BusinessLogic.Enums.App;
 using PodcastService.BusinessLogic.Helpers.AuthHelpers;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
@@ -538,6 +539,41 @@ namespace PodcastService.API.Controllers.BaseControllers
                 return NotFound("Unable to read segment");
 
             return File(fileData, "video/MP2T");
+        }
+
+        // /api/podcast-service/api/episodes/audio/get-file-url/{**FileKey}
+        [HttpGet("audio/get-file-url/{**FileKey}")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess.Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetEpisodeAudioFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.EpisodeRawAudio)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be an Episode License Document file",
+                    actualCategory = category.ToString()
+                });
+            }
+            
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            if (account.RoleId == (int)RoleEnum.Customer)
+            {
+                var isOwnedByPodcaster = await _podcastEpisodeService.IsAudioFileOwnedByPodcasterAsync(FileKey, account.Id);
+                if (!isOwnedByPodcaster)
+                {
+                    return StatusCode(403, new
+                    {
+                        error = "Access denied: You do not have permission to access this audio file"
+                    });
+                }
+            }
+
+            return Ok(new { FileUrl = url });
         }
 
         // /api/podcast-service/api/episodes/license-document/get-file-url/{**FileKey}

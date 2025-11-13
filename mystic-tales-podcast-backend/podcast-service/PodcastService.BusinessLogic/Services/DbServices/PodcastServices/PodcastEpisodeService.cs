@@ -3537,6 +3537,23 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         }
 
+        public async Task<bool> IsAudioFileOwnedByPodcasterAsync(string audioFileKey, int podcasterId)
+        {
+            var episode = await _podcastEpisodeGenericRepository.FindAll(
+                predicate: pe => pe.AudioFileKey == audioFileKey && pe.DeletedAt == null && pe.PodcastShow.DeletedAt == null && (
+                    pe.PodcastShow.PodcastChannel == null || pe.PodcastShow.PodcastChannel.DeletedAt == null
+                ) && pe.PodcastShow.PodcasterId == podcasterId,
+                includeFunc: pe => pe.Include(p => p.PodcastShow)
+            ).FirstOrDefaultAsync();
+
+            if (episode == null)
+            {
+                Console.WriteLine("Audio file with key " + audioFileKey + " does not exist or podcast show/channel has been deleted");
+                return false;
+            }
+            return true;
+        }
+
         public async Task DiscardPodcastEpisodePublishReviewDmcaRemoveEpisodeForce(DiscardEpisodePublishReviewDmcaRemoveEpisodeForceParameterDTO discardEpisodePublishReviewDmcaRemoveEpisodeForceParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
