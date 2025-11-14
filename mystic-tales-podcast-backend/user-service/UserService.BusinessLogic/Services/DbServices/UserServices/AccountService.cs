@@ -4919,24 +4919,44 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         public async Task UpdateAccountPodcastListenSlotRecovery()
         {
-            try
-            {
-                var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
-                // lấy danh sách tất cả các tài khoản đang không bị deactivated và đã verified và có podcastListenSlot khắc null và  < AccountConfig.podcastListenSlotThreshold 
-                // lấy systemconfig với field AccountConfig.podcastListenSlotRecoverySeconds , lặp qua từng account rồi so cột lastViolationPointChanged so với thời điểm hiện tại xem số giây có >= AccountConfig.podcastListenSlotRecoverySeconds không , nếu có thì trừ 1 
-                // var accounts = await _accountGenericRepository.FindAll(
-                //     predicate: a => a.DeactivatedAt == null 
-                //         && a.IsVerified == true 
-                //         && a.PodcastListenSlot != null 
-                //         && a.PodcastListenSlot < activeSystemConfigProfile
-                // );
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync()){
+                try
+                {
+                    var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
+                    // lấy danh sách tất cả các tài khoản đang không bị deactivated và đã verified và có podcastListenSlot khắc null và  < AccountConfig.podcastListenSlotThreshold 
+                    // lấy systemconfig với field AccountConfig.podcastListenSlotRecoverySeconds , lặp qua từng account rồi so cột lastViolationPointChanged so với thời điểm hiện tại xem số giây có >= AccountConfig.podcastListenSlotRecoverySeconds không , nếu có thì trừ 1 
+                    var accounts = await _accountGenericRepository.FindAll(
+                        predicate: a => a.DeactivatedAt == null
+                            && a.IsVerified == true
+                            && a.PodcastListenSlot != null
+                            && a.PodcastListenSlot < activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold,
+                        includeFunc: null
+                    ).ToListAsync();
+
+                    foreach (var account in accounts)
+                    {
+                        if (account.LastViolationPointChanged != null)
+                        {
+                            var secondsSinceLastChange = (_dateHelper.GetNowByAppTimeZone() - account.LastViolationPointChanged.Value).TotalSeconds;
+                            if (secondsSinceLastChange >= activeSystemConfigProfile.AccountConfig.PodcastListenSlotRecoverySeconds && account.PodcastListenSlot < activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold)
+                            {
+                                account.PodcastListenSlot += 1;
+                                
+                                account.LastViolationPointChanged = _dateHelper.GetNowByAppTimeZone();
+                                await _accountGenericRepository.UpdateAsync(account.Id, account);
+                            }
+                        }
+                    }
+                    await transaction.CommitAsync();
 
 
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("\n" + ex.StackTrace + "\n");
-                throw new Exception("UpdateAccountPodcastListenSlotRecovery failed, error: " + ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new Exception("UpdateAccountPodcastListenSlotRecovery failed, error: " + ex.Message);
+                }
             }
         }
     }

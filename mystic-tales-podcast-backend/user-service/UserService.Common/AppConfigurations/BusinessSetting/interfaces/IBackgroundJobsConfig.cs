@@ -7,6 +7,7 @@ namespace UserService.Common.AppConfigurations.BusinessSetting.interfaces
         // BackgroundJob PodcasterAllTimeMaxQueryMetricUpdateJob { get; }
         // BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; }
         BackgroundJob AccountPodcastListenSlotRecoveryJob { get; }
+        BackgroundJob AccountPodcastListenSlotRecoveryJob { get; }
     }
 
     public class BackgroundJob

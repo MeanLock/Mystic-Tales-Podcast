@@ -63,6 +63,7 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Cre
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UpdateBackgroundSoundTrack;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteBackgroundSoundTrack;
 using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
+using PodcastService.BusinessLogic.DTOs.SystemConfiguration;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -257,7 +258,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             return new string(digits);
         }
 
-        public async Task<JObject> GetActiveSystemConfigProfile()
+        public async Task<SystemConfigProfileDTO> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -283,7 +284,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
+            // return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
+
+            var config = (result.Results["activeSystemConfigProfile"].First as JObject).ToObject<SystemConfigProfileDTO>();
+            return config;
         }
 
         public async Task<List<string>> GetAllPodcastRestrictedTerms()

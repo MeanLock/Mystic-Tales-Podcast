@@ -30,6 +30,7 @@ using Microsoft.EntityFrameworkCore;
 using UserService.BusinessLogic.DTOs.Auth;
 using System.Security.Cryptography;
 using System.Text;
+using UserService.BusinessLogic.DTOs.SystemConfiguration;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -135,7 +136,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         }
 
-        public async Task<JObject> GetActiveSystemConfigProfile()
+        public async Task<SystemConfigProfileDTO> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -161,7 +162,9 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
+            // return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
+            var config = (result.Results["activeSystemConfigProfile"].First as JObject).ToObject<SystemConfigProfileDTO>();
+            return config;
         }
 
         public async Task<Guid> SendChangeAccountStatusMessage(int id)
@@ -347,7 +350,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             RoleId = 1,
                             IsVerified = true,
                             GoogleId = googlePayload.Subject,
-                            PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold")
+                            // PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold")
+                            PodcastListenSlot = activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold
                         };
                         newAccount = await _accountGenericRepository.CreateAsync(newAccount);
 
@@ -375,7 +379,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                                     RoleId = 4,
                                     IsVerified = true,
                                     GoogleId = googlePayload.Subject,
-                                    PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold")
+                                    // PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold")
+                                    PodcastListenSlot = activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold
                                 };
                                 newAccount = await _accountGenericRepository.CreateAsync(newAccount);
 
