@@ -393,6 +393,36 @@ export const authApi = appApi.injectEndpoints({
         return { data: result as any };
       },
     }),
+
+    updatePassword: build.mutation<
+      { Message: string },
+      { CurrentPassword: string; NewPassword: string }
+    >({
+      async queryFn({ CurrentPassword, NewPassword }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: "/api/user-service/api/auth/update-password",
+                method: "POST",
+                body: {
+                  PasswordUpdateInfo: {
+                    OldPassword: CurrentPassword,
+                    NewPassword: NewPassword,
+                  },
+                },
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as any };
+      },
+    }),
   }),
 });
 
@@ -402,5 +432,6 @@ export const {
   useSendForgotPasswordRequestMutation,
   useResetForgotPasswordMutation,
   useRegisterMutation,
-  useVerifyAccountMutation
+  useVerifyAccountMutation,
+  useUpdatePasswordMutation,
 } = authApi;

@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useUpdatePasswordMutation } from "@/core/services/auth/auth.service";
+import { useNavigate } from "react-router-dom";
 
 type UpdateInformationsForm = {
   AccountUpdateInfo: {
@@ -73,7 +75,9 @@ const ProfilePage = () => {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const dispatch = useDispatch();
-
+  const navigate = useNavigate();
+  const [resetPassword, { isLoading: isResettingPassword }] =
+    useUpdatePasswordMutation();
   const [
     updateAccountInformations,
     {
@@ -389,16 +393,16 @@ const ProfilePage = () => {
     }
 
     try {
-      // const result = await resetPassword({
-      //   OldPassword: oldPassword,
-      //   NewPassword: newPassword,
-      // }).unwrap();
+      const result = await resetPassword({
+        CurrentPassword: oldPassword,
+        NewPassword: newPassword,
+      }).unwrap();
 
-      // setResetPasswordSuccess(
-      //   result?.Message || "Password reset successfully!"
-      // );
+      setResetPasswordSuccess(
+        result?.Message || "Password reset successfully!"
+      );
 
-      // Clear form after success
+      // Show success message then logout and navigate
       setTimeout(() => {
         setIsResetPasswordOpen(false);
         setOldPassword("");
@@ -406,6 +410,12 @@ const ProfilePage = () => {
         setConfirmPassword("");
         setResetPasswordError("");
         setResetPasswordSuccess("");
+
+        // Clear auth and navigate to login
+        dispatch(clearAuth());
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("device_info_token");
+        navigate("/auth/login");
       }, 2000);
     } catch (error: any) {
       console.error("Failed to reset password:", error);
