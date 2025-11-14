@@ -10,7 +10,7 @@ namespace UserService.Common.AppConfigurations.BusinessSetting.interfaces
 
     public class BackgroundJob
     {
-        public string CronExpression { get; set; }
+        public string? CronExpression { get; set; }
         public string Description { get; set; }
         public bool IsEnabled { get; set; }
         public string ConsulLockKey { get; set; }

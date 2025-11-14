@@ -107,7 +107,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _redisSharedCacheService = redisSharedCacheService;
         }
 
-        #region Main Entry Point
+        #region Discovery Entry Point
 
         public async Task<DiscoveryPodcastFeedDTO> GetDiscoveryPodcastFeedContentsAsync(AccountStatusCache? account = null)
         {
@@ -124,27 +124,27 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 var dedupPodcasterIds = new HashSet<int>();
 
                 // STEP 3: Build sections in order (following deduplication priority)
-                var continueListening = await BuildContinueListeningSection(account?.Id);
+                var continueListening = await BuildDiscoveryContinueListeningSection(account?.Id);
 
-                var basedOnYourTaste = await BuildBasedOnYourTasteSection(
+                var basedOnYourTaste = await BuildDiscoveryBasedOnYourTasteSection(
                     account?.Id, userPrefs, systemPrefs, dedupShowIds);
 
-                var newReleases = await BuildNewReleasesSection(
+                var newReleases = await BuildDiscoveryNewReleasesSection(
                     userPrefs, systemPrefs, dedupShowIds);
 
-                var hotThisWeek = await BuildHotThisWeekSection(
+                var hotThisWeek = await BuildDiscoveryHotThisWeekSection(
                     cacheMetrics, dedupShowIds, dedupChannelIds);
 
-                var topSubCategory = await BuildTopSubCategorySection(
+                var topSubCategory = await BuildDiscoveryTopSubCategorySection(
                     account?.Id, userPrefs, systemPrefs, cacheMetrics, dedupShowIds);
 
-                var topPodcasters = await BuildTopPodcastersSection(
+                var topPodcasters = await BuildDiscoveryTopPodcastersSection(
                     cacheMetrics, dedupPodcasterIds);
 
-                var randomCategory = await BuildRandomCategorySection(
+                var randomCategory = await BuildDiscoveryRandomCategorySection(
                     userPrefs, systemPrefs, cacheMetrics, dedupShowIds);
 
-                var talentedRookies = await BuildTalentedRookiesSection(
+                var talentedRookies = await BuildDiscoveryTalentedRookiesSection(
                     cacheMetrics, dedupPodcasterIds);
 
                 Console.WriteLine("[GetDiscoveryPodcastFeed] Completed successfully");
@@ -272,9 +272,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         #endregion
 
-        #region Section 1: Continue Listening
+        #region Discovery Section 1: Continue Listening
 
-        private async Task<DiscoveryPodcastFeedDTO.ContinueListeningDiscoveryPodcastFeedSection?> BuildContinueListeningSection(int? userId)
+        private async Task<DiscoveryPodcastFeedDTO.ContinueListeningDiscoveryPodcastFeedSection?> BuildDiscoveryContinueListeningSection(int? userId)
         {
             try
             {
@@ -348,7 +348,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 foreach (var podcasterId in podcasterIds)
                 {
                     var account = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
-                    if (account != null  && account.DeactivatedAt == null)
+                    if (account != null && account.DeactivatedAt == null && account.HasVerifiedPodcasterProfile == true)
                     {
                         podcasterAccounts[podcasterId] = account;
                     }
@@ -400,9 +400,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         #endregion
 
-        #region Section 2: Based On Your Taste
+        #region Discovery Section 2: Based On Your Taste
 
-        private async Task<DiscoveryPodcastFeedDTO.BasedOnYourTasteDiscoveryPodcastFeedSection?> BuildBasedOnYourTasteSection(
+        private async Task<DiscoveryPodcastFeedDTO.BasedOnYourTasteDiscoveryPodcastFeedSection?> BuildDiscoveryBasedOnYourTasteSection(
     int? userId,
     UserPreferencesTemporal30dQueryMetric? userPrefs,
     SystemPreferencesTemporal30dQueryMetric? systemPrefs,
@@ -417,18 +417,25 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 // Part A: From user top categories (75% = 9 shows)
                 if (userPrefs?.ListenedPodcastCategories != null && userPrefs.ListenedPodcastCategories.Any())
                 {
-                    var topCategories = userPrefs.ListenedPodcastCategories.Take(4).ToList();
+                    // var topCategories = userPrefs.ListenedPodcastCategories.Take(4).ToList();
+                    // lấy top 4 categories theo listenCount của nó
+                    var topCategories = userPrefs.ListenedPodcastCategories
+                        .OrderByDescending(c => c.ListenCount)
+                        .Take(4)
+                        .ToList();
                     foreach (var category in topCategories)
                     {
                         if (partAShows.Count >= 9) break; // Đủ rồi thì dừng
 
                         // Query tất cả shows trong category
                         var shows = await _podcastShowGenericRepository.FindAll(
-                            predicate: ps =>
-                                ps.PodcastCategoryId == category.PodcastCategoryId &&
-                                ps.DeletedAt == null,
-                            includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
-                        ).ToListAsync();
+                                                    predicate: ps =>
+                                                        ps.PodcastCategoryId == category.PodcastCategoryId &&
+                                                        ps.DeletedAt == null,
+                                                    includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                                                    .Include(ps => ps.PodcastChannel)
+                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                                                ).ToListAsync();
 
                         // Filter by current Published status
                         var publishedShows = shows.Where(ps =>
@@ -436,7 +443,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             var currentStatus = ps.PodcastShowStatusTrackings
                                 .OrderByDescending(t => t.CreatedAt)
                                 .FirstOrDefault()?.PodcastShowStatusId;
-                            return currentStatus == (int)PodcastShowStatusEnum.Published;
+                            return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                            (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                                .OrderByDescending(t => t.CreatedAt)
+                                .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
                         }).ToList();
 
                         // FIX: Random và take đủ số lượng cần
@@ -454,7 +464,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 if (partAShows.Count < 9 && systemPrefs?.ListenedPodcastCategories != null)
                 {
                     var existingShowIds = partAShows.Select(s => s.Id).ToHashSet();
-                    var systemCategories = systemPrefs.ListenedPodcastCategories.Take(4).ToList();
+                    // var systemCategories = systemPrefs.ListenedPodcastCategories.Take(4).ToList();
+                    // lấy top 4 categories theo listenCount của nó
+                    var systemCategories = systemPrefs.ListenedPodcastCategories
+                        .OrderByDescending(c => c.ListenCount)
+                        .Take(4)
+                        .ToList();
 
                     foreach (var category in systemCategories)
                     {
@@ -466,6 +481,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 !existingShowIds.Contains(ps.Id) &&
                                 ps.DeletedAt == null,
                             includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                            .Include(ps => ps.PodcastChannel)
+                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                         ).ToListAsync();
 
                         var publishedShows = shows.Where(ps =>
@@ -473,7 +490,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             var currentStatus = ps.PodcastShowStatusTrackings
                                 .OrderByDescending(t => t.CreatedAt)
                                 .FirstOrDefault()?.PodcastShowStatusId;
-                            return currentStatus == (int)PodcastShowStatusEnum.Published;
+                            return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                            (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                                .OrderByDescending(t => t.CreatedAt)
+                                .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
                         }).ToList();
 
                         var needed = Math.Min(3, 9 - partAShows.Count);
@@ -492,7 +512,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 if (userPrefs?.ListenedPodcasters != null && userPrefs.ListenedPodcasters.Any())
                 {
                     var existingShowIds = partAShows.Select(s => s.Id).ToHashSet();
-                    var topPodcasters = userPrefs.ListenedPodcasters.Take(2).ToList();
+                    // var topPodcasters = userPrefs.ListenedPodcasters.Take(2).ToList();
+                    // lấy top 2 podcasters theo listenCount của nó
+                    var topPodcasters = userPrefs.ListenedPodcasters
+                        .OrderByDescending(p => p.ListenCount)
+                        .Take(2)
+                        .ToList();
 
                     foreach (var podcaster in topPodcasters)
                     {
@@ -504,6 +529,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 !existingShowIds.Contains(ps.Id) &&
                                 ps.DeletedAt == null,
                             includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                            .Include(ps => ps.PodcastChannel)
+                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                         ).ToListAsync();
 
                         var publishedShows = shows.Where(ps =>
@@ -511,7 +538,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             var currentStatus = ps.PodcastShowStatusTrackings
                                 .OrderByDescending(t => t.CreatedAt)
                                 .FirstOrDefault()?.PodcastShowStatusId;
-                            return currentStatus == (int)PodcastShowStatusEnum.Published;
+                            return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                            (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                                .OrderByDescending(t => t.CreatedAt)
+                                .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
                         }).ToList();
 
                         var needed = Math.Min(2, 3 - partBShows.Count);
@@ -529,7 +559,11 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 if (partBShows.Count < 3 && systemPrefs?.ListenedPodcasters != null)
                 {
                     var existingShowIds = partAShows.Concat(partBShows).Select(s => s.Id).ToHashSet();
-                    var systemPodcasters = systemPrefs.ListenedPodcasters.Take(2).ToList();
+                    // var systemPodcasters = systemPrefs.ListenedPodcasters.Take(2).ToList();
+                    var systemPodcasters = systemPrefs.ListenedPodcasters
+                        .OrderByDescending(p => p.ListenCount)
+                        .Take(2)
+                        .ToList();
 
                     foreach (var podcaster in systemPodcasters)
                     {
@@ -541,6 +575,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 !existingShowIds.Contains(ps.Id) &&
                                 ps.DeletedAt == null,
                             includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                            .Include(ps => ps.PodcastChannel)
+                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                         ).ToListAsync();
 
                         var publishedShows = shows.Where(ps =>
@@ -548,7 +584,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             var currentStatus = ps.PodcastShowStatusTrackings
                                 .OrderByDescending(t => t.CreatedAt)
                                 .FirstOrDefault()?.PodcastShowStatusId;
-                            return currentStatus == (int)PodcastShowStatusEnum.Published;
+                            return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                            (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                                .OrderByDescending(t => t.CreatedAt)
+                                .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
                         }).ToList();
 
                         var needed = Math.Min(2, 3 - partBShows.Count);
@@ -588,118 +627,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         #endregion
 
-        #region Section 3: New Releases
+        #region Discovery Section 3: New Releases
 
-        // private async Task<DiscoveryPodcastFeedDTO.NewReleasesDiscoveryPodcastFeedSection?> BuildNewReleasesSection(
-        //     UserPreferencesTemporal30dQueryMetric? userPrefs,
-        //     SystemPreferencesTemporal30dQueryMetric? systemPrefs,
-        //     HashSet<Guid> dedupShowIds)
-        // {
-        //     try
-        //     {
-        //         Console.WriteLine("[NewReleases] Building section...");
-
-        //         var now = _dateHelper.GetNowByAppTimeZone();
-        //         var twoDaysAgo = now.AddDays(-2);
-
-        //         var targetShows = new List<PodcastShow>();
-
-        //         // Part A: From user top podcasters (50% = 5 shows)
-        //         if (userPrefs?.ListenedPodcasters != null && userPrefs.ListenedPodcasters.Any())
-        //         {
-        //             var topPodcasters = userPrefs.ListenedPodcasters.Take(2).ToList();
-
-        //             foreach (var podcaster in topPodcasters)
-        //             {
-        //                 var shows = await _podcastShowGenericRepository.FindAll(
-        //                     predicate: ps =>
-        //                         ps.PodcasterId == podcaster.PodcasterId &&
-        //                         !dedupShowIds.Contains(ps.Id) &&
-        //                         ps.DeletedAt == null,
-        //                     includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
-        //                 ).ToListAsync();
-
-        //                 // Filter shows that became Published in last 2 days
-        //                 var recentlyPublishedShows = shows.Where(ps =>
-        //                 {
-        //                     var publishedTracking = ps.PodcastShowStatusTrackings
-        //                         .Where(t => t.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
-        //                         .OrderByDescending(t => t.CreatedAt)
-        //                         .FirstOrDefault();
-
-        //                     return publishedTracking != null && publishedTracking.CreatedAt >= twoDaysAgo;
-        //                 })
-        //                 .OrderByDescending(ps => ps.PodcastShowStatusTrackings
-        //                     .Where(t => t.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
-        //                     .Max(t => t.CreatedAt))
-        //                 .Take(7)
-        //                 .ToList();
-
-        //                 targetShows.AddRange(recentlyPublishedShows);
-        //             }
-        //         }
-
-        //         var partAShows = targetShows
-        //             .OrderByDescending(s => s.PodcastShowStatusTrackings
-        //                 .Where(t => t.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
-        //                 .Max(t => t.CreatedAt))
-        //             .Take(5)
-        //             .ToList();
-
-        //         // Part B: System-wide new releases (50% = 5 shows)
-        //         var existingShowIds = partAShows.Select(s => s.Id).ToHashSet();
-        //         existingShowIds.UnionWith(dedupShowIds);
-
-        //         var allShows = await _podcastShowGenericRepository.FindAll(
-        //             predicate: ps =>
-        //                 !existingShowIds.Contains(ps.Id) &&
-        //                 ps.DeletedAt == null,
-        //             includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
-        //         ).ToListAsync();
-
-        //         var partBShows = allShows.Where(ps =>
-        //         {
-        //             var publishedTracking = ps.PodcastShowStatusTrackings
-        //                 .Where(t => t.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
-        //                 .OrderByDescending(t => t.CreatedAt)
-        //                 .FirstOrDefault();
-
-        //             return publishedTracking != null && publishedTracking.CreatedAt >= twoDaysAgo;
-        //         })
-        //         .OrderByDescending(ps => ps.PodcastShowStatusTrackings
-        //             .Where(t => t.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
-        //             .Max(t => t.CreatedAt))
-        //         .Take(10)
-        //         .ToList();
-
-        //         var finalShows = partAShows
-        //             .Concat(partBShows.Take(5 + (5 - partAShows.Count)))
-        //             .Take(10)
-        //             .ToList();
-
-        //         // Update deduplication
-        //         foreach (var show in finalShows)
-        //         {
-        //             dedupShowIds.Add(show.Id);
-        //         }
-
-        //         var showListItems = await MapToShowListItemsAsync(finalShows);
-
-        //         Console.WriteLine($"[NewReleases] Built with {showListItems.Count} shows");
-
-        //         return new DiscoveryPodcastFeedDTO.NewReleasesDiscoveryPodcastFeedSection
-        //         {
-        //             ShowList = showListItems
-        //         };
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine($"[NewReleases] ERROR: {ex.Message}");
-        //         return null;
-        //     }
-        // }
-
-        private async Task<DiscoveryPodcastFeedDTO.NewReleasesDiscoveryPodcastFeedSection?> BuildNewReleasesSection(
+        private async Task<DiscoveryPodcastFeedDTO.NewReleasesDiscoveryPodcastFeedSection?> BuildDiscoveryNewReleasesSection(
     UserPreferencesTemporal30dQueryMetric? userPrefs,
     SystemPreferencesTemporal30dQueryMetric? systemPrefs,
     HashSet<Guid> dedupShowIds)
@@ -716,7 +646,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 // Part A: From user top podcasters (50% = 5 shows)
                 if (userPrefs?.ListenedPodcasters != null && userPrefs.ListenedPodcasters.Any())
                 {
-                    var topPodcasters = userPrefs.ListenedPodcasters.Take(2).ToList();
+                    var topPodcasters = userPrefs.ListenedPodcasters
+                        .OrderByDescending(p => p.ListenCount)
+                        .Take(2)
+                        .ToList();
 
                     foreach (var podcaster in topPodcasters)
                     {
@@ -728,6 +661,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 !dedupShowIds.Contains(ps.Id) &&
                                 ps.DeletedAt == null,
                             includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                            .Include(ps => ps.PodcastChannel)
+                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                         ).ToListAsync();
 
                         // Filter shows that became Published in last 2 days
@@ -738,7 +673,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 .OrderByDescending(t => t.CreatedAt)
                                 .FirstOrDefault();
 
-                            return publishedTracking != null && publishedTracking.CreatedAt >= twoDaysAgo;
+                            return publishedTracking != null && publishedTracking.CreatedAt >= twoDaysAgo &&
+                            (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                                .OrderByDescending(t => t.CreatedAt)
+                                .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
                         })
                         .OrderByDescending(ps => ps.PodcastShowStatusTrackings
                             .Where(t => t.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
@@ -760,6 +698,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         !existingShowIds.Contains(ps.Id) &&
                         ps.DeletedAt == null,
                     includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                    .Include(ps => ps.PodcastChannel)
+                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                 ).ToListAsync();
 
                 var partBShows = allShows.Where(ps =>
@@ -769,7 +709,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .OrderByDescending(t => t.CreatedAt)
                         .FirstOrDefault();
 
-                    return publishedTracking != null && publishedTracking.CreatedAt >= twoDaysAgo;
+                    return publishedTracking != null && publishedTracking.CreatedAt >= twoDaysAgo &&
+                    (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
                 })
                 .OrderByDescending(ps => ps.PodcastShowStatusTrackings
                     .Where(t => t.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
@@ -802,9 +745,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         }
         #endregion
 
-        #region Section 4: Hot This Week
+        #region Discovery Section 4: Hot This Week
 
-        private async Task<DiscoveryPodcastFeedDTO.HotThisWeekDiscoveryPodcastFeedSection?> BuildHotThisWeekSection(
+        private async Task<DiscoveryPodcastFeedDTO.HotThisWeekDiscoveryPodcastFeedSection?> BuildDiscoveryHotThisWeekSection(
             CacheMetricsContainer cacheMetrics,
             HashSet<Guid> dedupShowIds,
             HashSet<Guid> dedupChannelIds)
@@ -821,6 +764,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     includeFunc: q => q
                         .Include(ps => ps.PodcastShowStatusTrackings)
                         .Include(ps => ps.PodcastChannel)
+                            .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                 ).ToListAsync();
 
                 // Filter by current Published status
@@ -829,7 +773,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     var currentStatus = ps.PodcastShowStatusTrackings
                         .OrderByDescending(t => t.CreatedAt)
                         .FirstOrDefault()?.PodcastShowStatusId;
-                    return currentStatus == (int)PodcastShowStatusEnum.Published;
+                    return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                    (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
                 }).ToList();
 
                 // Fetch all channels
@@ -915,9 +862,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         #endregion
 
-        #region Section 5: Top SubCategory
+        #region Discovery Section 5: Top SubCategory
 
-        private async Task<DiscoveryPodcastFeedDTO.TopSubCategoryDiscoveryPodcastFeedSection?> BuildTopSubCategorySection(
+        private async Task<DiscoveryPodcastFeedDTO.TopSubCategoryDiscoveryPodcastFeedSection?> BuildDiscoveryTopSubCategorySection(
             int? userId,
             UserPreferencesTemporal30dQueryMetric? userPrefs,
             SystemPreferencesTemporal30dQueryMetric? systemPrefs,
@@ -934,7 +881,11 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 if (userPrefs?.ListenedPodcastCategories != null && userPrefs.ListenedPodcastCategories.Any())
                 {
-                    var topCategory = userPrefs.ListenedPodcastCategories.First();
+                    // var topCategory = userPrefs.ListenedPodcastCategories.First();
+                    // lấy top category theo listenCount của nó
+                    var topCategory = userPrefs.ListenedPodcastCategories
+                        .OrderByDescending(c => c.ListenCount)
+                        .First();
                     targetCategoryId = topCategory.PodcastCategoryId;
                     if (topCategory.PodcastSubCategories != null && topCategory.PodcastSubCategories.Any())
                     {
@@ -945,7 +896,11 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 // Fallback to system
                 if (!targetSubCategoryId.HasValue && systemPrefs?.ListenedPodcastCategories != null && systemPrefs.ListenedPodcastCategories.Any())
                 {
-                    var topCategory = systemPrefs.ListenedPodcastCategories.First();
+                    // var topCategory = systemPrefs.ListenedPodcastCategories.First();
+                    // lấy top category theo listenCount của nó
+                    var topCategory = systemPrefs.ListenedPodcastCategories
+                        .OrderByDescending(c => c.ListenCount)
+                        .First();
                     targetCategoryId = topCategory.PodcastCategoryId;
                     if (topCategory.PodcastSubCategories != null && topCategory.PodcastSubCategories.Any())
                     {
@@ -978,6 +933,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         !dedupShowIds.Contains(ps.Id) &&
                         ps.DeletedAt == null,
                     includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                        .Include(ps => ps.PodcastChannel)
+                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                 ).ToListAsync();
 
                 // Filter by current Published status
@@ -986,7 +943,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     var currentStatus = ps.PodcastShowStatusTrackings
                         .OrderByDescending(t => t.CreatedAt)
                         .FirstOrDefault()?.PodcastShowStatusId;
-                    return currentStatus == (int)PodcastShowStatusEnum.Published;
+                    return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                    (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
                 }).ToList();
 
                 // Part A (80%): 8 personal shows
@@ -1056,9 +1016,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         #endregion
 
-        #region Section 6: Top Podcasters
+        #region Discovery Section 6: Top Podcasters
 
-        private async Task<DiscoveryPodcastFeedDTO.TopPodcastersDiscoveryPodcastFeedSection?> BuildTopPodcastersSection(
+        private async Task<DiscoveryPodcastFeedDTO.TopPodcastersDiscoveryPodcastFeedSection?> BuildDiscoveryTopPodcastersSection(
             CacheMetricsContainer cacheMetrics,
             HashSet<int> dedupPodcasterIds)
         {
@@ -1152,9 +1112,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         #endregion
 
-        #region Section 7: Random Category
+        #region Discovery Section 7: Random Category
 
-        private async Task<DiscoveryPodcastFeedDTO.RandomCategoryDiscoveryPodcastFeedSection?> BuildRandomCategorySection(
+        private async Task<DiscoveryPodcastFeedDTO.RandomCategoryDiscoveryPodcastFeedSection?> BuildDiscoveryRandomCategorySection(
             UserPreferencesTemporal30dQueryMetric? userPrefs,
             SystemPreferencesTemporal30dQueryMetric? systemPrefs,
             CacheMetricsContainer cacheMetrics,
@@ -1169,6 +1129,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 if (userPrefs?.ListenedPodcastCategories != null && userPrefs.ListenedPodcastCategories.Any())
                 {
                     excludeCategoryIds = userPrefs.ListenedPodcastCategories
+                        .OrderByDescending(c => c.ListenCount)
                         .Take(2)
                         .Select(c => c.PodcastCategoryId)
                         .ToHashSet();
@@ -1194,6 +1155,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 // Pick random category
                 var random = new Random();
                 var randomCategoryId = availableCategoryIds[random.Next(availableCategoryIds.Count)];
+                var randomCategory = await _podcastCategoryGenericRepository.FindByIdAsync(randomCategoryId);
 
                 Console.WriteLine($"[RandomCategory] Selected category: {randomCategoryId}");
 
@@ -1204,6 +1166,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         !dedupShowIds.Contains(ps.Id) &&
                         ps.DeletedAt == null,
                     includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                        .Include(ps => ps.PodcastChannel)
+                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                 ).ToListAsync();
 
                 // Filter by current Published status
@@ -1212,7 +1176,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     var currentStatus = ps.PodcastShowStatusTrackings
                         .OrderByDescending(t => t.CreatedAt)
                         .FirstOrDefault()?.PodcastShowStatusId;
-                    return currentStatus == (int)PodcastShowStatusEnum.Published;
+                    return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                    (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
                 }).ToList();
 
                 // Part A (30%): 3 hot shows
@@ -1250,6 +1217,11 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 return new DiscoveryPodcastFeedDTO.RandomCategoryDiscoveryPodcastFeedSection
                 {
+                    PodcastCategory = new PodcastCategoryDTO
+                    {
+                        Id = randomCategory.Id,
+                        Name = randomCategory.Name
+                    },
                     ShowList = showListItems
                 };
             }
@@ -1262,9 +1234,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         #endregion
 
-        #region Section 8: Talented Rookies
+        #region Discovery Section 8: Talented Rookies
 
-        private async Task<DiscoveryPodcastFeedDTO.TalentedRookiesDiscoveryPodcastFeedSection?> BuildTalentedRookiesSection(
+        private async Task<DiscoveryPodcastFeedDTO.TalentedRookiesDiscoveryPodcastFeedSection?> BuildDiscoveryTalentedRookiesSection(
             CacheMetricsContainer cacheMetrics,
             HashSet<int> dedupPodcasterIds)
         {
@@ -1585,7 +1557,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             foreach (var podcaster in podcasters)
             {
                 var account = await _accountCachingService.GetAccountStatusCacheById(podcaster.AccountId);
-                if (account != null && account.DeactivatedAt == null)
+                if (account != null && account.DeactivatedAt == null && account.HasVerifiedPodcasterProfile == true)
                 {
                     validPodcasterIds.Add(podcaster.AccountId);
                 }
@@ -1808,7 +1780,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             foreach (var id in podcasterIds)
             {
                 var account = await _accountCachingService.GetAccountStatusCacheById(id);
-                if (account != null && account.DeactivatedAt == null) // FIX: Check DeactivatedAt
+                if (account != null && account.DeactivatedAt == null && account.HasVerifiedPodcasterProfile == true) // FIX: Check DeactivatedAt
                 {
                     podcasterAccounts[id] = account;
                 }
@@ -1971,7 +1943,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             foreach (var id in podcasterIds)
             {
                 var account = await _accountCachingService.GetAccountStatusCacheById(id);
-                if (account != null && account.DeactivatedAt == null) // FIX: Check DeactivatedAt
+                if (account != null && account.DeactivatedAt == null && account.HasVerifiedPodcasterProfile == true) // FIX: Check DeactivatedAt
                 {
                     podcasterAccounts[id] = account;
                 }
@@ -2004,6 +1976,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     channels.Select(c => c.Id).Contains(ps.PodcastChannelId.Value) &&
                     ps.DeletedAt == null,
                 includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                .Include(ps => ps.PodcastChannel)
+                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
             )
             .ToListAsync()
             .ContinueWith(task =>
@@ -2011,7 +1985,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 return task.Result
                     .Where(ps => ps.PodcastShowStatusTrackings
                         .OrderByDescending(t => t.CreatedAt)
-                        .FirstOrDefault()?.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
+                        .FirstOrDefault()?.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published &&
+                        (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published)))
                     .GroupBy(ps => ps.PodcastChannelId.Value)
                     .ToDictionary(g => g.Key, g => g.Count());
             });
@@ -2098,6 +2075,851 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             public ShowTemporal7dMaxQueryMetric? ShowTemporal { get; set; }
             public ChannelAllTimeMaxQueryMetric? ChannelAllTime { get; set; }
             public ChannelTemporal7dMaxQueryMetric? ChannelTemporal { get; set; }
+        }
+
+        #endregion
+
+        #region Trending Entry Point
+
+        public async Task<TrendingPodcastFeedDTO> GetTrendingPodcastFeedContentsAsync()
+        {
+            try
+            {
+                Console.WriteLine("[GetTrendingPodcastFeed] Starting - Anonymous access");
+
+                // STEP 1: Load cache metrics (NO user preferences needed)
+                var cacheMetrics = await LoadTrendingCacheMetricsAsync();
+                var systemPrefs = await LoadSystemPreferencesAsync();
+
+                // STEP 2: Build sections independently (NO deduplication between sections)
+                var popularPodcasters = await BuildTrendingPopularPodcastersSection(cacheMetrics);
+
+                var hotPodcasters = await BuildTrendingHotPodcastersSection(cacheMetrics);
+
+                var popularChannels = await BuildTrendingPopularChannelsSection(cacheMetrics);
+
+                var hotChannels = await BuildTrendingHotChannelsSection(cacheMetrics);
+
+                var popularShows = await BuildTrendingPopularShowsSection(cacheMetrics);
+
+                var hotShows = await BuildTrendingHotShowsSection(cacheMetrics);
+
+                var newEpisodes = await BuildTrendingNewEpisodesSection();
+
+                var popularEpisodes = await BuildTrendingPopularEpisodesSection();
+
+                // STEP 3: Build 6 dynamic category sections with stable random
+                var dynamicCategories = await BuildTrendingDynamicCategorySectionsAsync(systemPrefs, cacheMetrics);
+
+                Console.WriteLine("[GetTrendingPodcastFeed] Completed successfully");
+
+                return new TrendingPodcastFeedDTO
+                {
+                    PopularPodcasters = popularPodcasters,
+                    Category1 = dynamicCategories[0],
+                    HotPodcasters = hotPodcasters,
+                    Category2 = dynamicCategories[1],
+                    PopularChannels = popularChannels,
+                    Category3 = dynamicCategories[2],
+                    HotChannels = hotChannels,
+                    Category4 = dynamicCategories[3],
+                    PopularShows = popularShows,
+                    Category5 = dynamicCategories[4],
+                    HotShows = hotShows,
+                    Category6 = dynamicCategories[5],
+                    NewEpisodes = newEpisodes,
+                    PopularEpisodes = popularEpisodes
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n[GetTrendingPodcastFeed] ERROR: {ex.Message}\n{ex.StackTrace}\n");
+                throw new HttpRequestException("Error while getting trending podcast feed contents: " + ex.Message);
+            }
+        }
+
+        #endregion
+
+        #region Trending Cache Loading
+
+        private async Task<CacheMetricsContainer> LoadTrendingCacheMetricsAsync()
+        {
+            Console.WriteLine("[LoadTrendingCacheMetrics] Loading cache metrics...");
+
+            var tasks = new List<Task>();
+            PodcasterAllTimeMaxQueryMetric? podcasterAllTime = null;
+            PodcasterTemporal7dMaxQueryMetric? podcasterTemporal = null;
+            ShowAllTimeMaxQueryMetric? showAllTime = null;
+            ShowTemporal7dMaxQueryMetric? showTemporal = null;
+            ChannelAllTimeMaxQueryMetric? channelAllTime = null;
+            ChannelTemporal7dMaxQueryMetric? channelTemporal = null;
+
+            tasks.Add(Task.Run(async () =>
+            {
+                var cacheKey = _backgroundJobsConfig.PodcasterAllTimeMaxQueryMetricUpdateJob.RedisKeyName;
+                podcasterAllTime = await _redisSharedCacheService.KeyGetAsync<PodcasterAllTimeMaxQueryMetric>(cacheKey);
+            }));
+
+            tasks.Add(Task.Run(async () =>
+            {
+                var cacheKey = _backgroundJobsConfig.PodcasterTemporal7dMaxQueryMetricUpdateJob.RedisKeyName;
+                podcasterTemporal = await _redisSharedCacheService.KeyGetAsync<PodcasterTemporal7dMaxQueryMetric>(cacheKey);
+            }));
+
+            tasks.Add(Task.Run(async () =>
+            {
+                var cacheKey = _backgroundJobsConfig.ShowAllTimeMaxQueryMetricUpdateJob.RedisKeyName;
+                showAllTime = await _redisSharedCacheService.KeyGetAsync<ShowAllTimeMaxQueryMetric>(cacheKey);
+            }));
+
+            tasks.Add(Task.Run(async () =>
+            {
+                var cacheKey = _backgroundJobsConfig.ShowTemporal7dMaxQueryMetricUpdateJob.RedisKeyName;
+                showTemporal = await _redisSharedCacheService.KeyGetAsync<ShowTemporal7dMaxQueryMetric>(cacheKey);
+            }));
+
+            tasks.Add(Task.Run(async () =>
+            {
+                var cacheKey = _backgroundJobsConfig.ChannelAllTimeMaxQueryMetricUpdateJob.RedisKeyName;
+                channelAllTime = await _redisSharedCacheService.KeyGetAsync<ChannelAllTimeMaxQueryMetric>(cacheKey);
+            }));
+
+            tasks.Add(Task.Run(async () =>
+            {
+                var cacheKey = _backgroundJobsConfig.ChannelTemporal7dMaxQueryMetricUpdateJob.RedisKeyName;
+                channelTemporal = await _redisSharedCacheService.KeyGetAsync<ChannelTemporal7dMaxQueryMetric>(cacheKey);
+            }));
+
+            await Task.WhenAll(tasks);
+
+            return new CacheMetricsContainer
+            {
+                PodcasterAllTime = podcasterAllTime,
+                PodcasterTemporal = podcasterTemporal,
+                ShowAllTime = showAllTime,
+                ShowTemporal = showTemporal,
+                ChannelAllTime = channelAllTime,
+                ChannelTemporal = channelTemporal
+            };
+        }
+
+        private async Task<SystemPreferencesTemporal30dQueryMetric?> LoadSystemPreferencesAsync()
+        {
+            var cacheKey = _backgroundJobsConfig.SystemPreferencesTemporal30dQueryMetricUpdateJob.RedisKeyName;
+            return await _redisSharedCacheService.KeyGetAsync<SystemPreferencesTemporal30dQueryMetric>(cacheKey);
+        }
+
+        #endregion
+
+        #region Trending Section 1: Popular Podcasters
+
+        private async Task<TrendingPodcastFeedDTO.PopularPodcastersTrendingPodcastFeedSection?> BuildTrendingPopularPodcastersSection(
+            CacheMetricsContainer cacheMetrics)
+        {
+            try
+            {
+                Console.WriteLine("[TrendingPopularPodcasters] Building section...");
+
+                // Fetch all verified podcasters
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+            {
+                new BatchQueryItem
+                {
+                    Key = "verifiedPodcasters",
+                    QueryType = "findall",
+                    EntityType = "PodcasterProfile",
+                    Parameters = JObject.FromObject(new { IsVerified = true })
+                }
+            }
+                };
+
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                var allPodcasters = result.Results["verifiedPodcasters"].ToObject<List<PodcasterProfileDTO>>();
+
+                // Calculate popular scores
+                var podcastersWithScore = CalculatePodcasterPopularScores(allPodcasters, cacheMetrics.PodcasterAllTime);
+
+                var finalPodcasters = podcastersWithScore
+                    .OrderByDescending(x => x.score)
+                    .Take(10)
+                    .Select(x => x.podcaster)
+                    .ToList();
+
+                // Fetch full account details
+                var podcasterListItems = new List<AccountSnippetResponseDTO>();
+                foreach (var podcaster in finalPodcasters)
+                {
+                    var account = await _accountCachingService.GetAccountStatusCacheById(podcaster.AccountId);
+                    if (account != null && account.DeactivatedAt == null && account.HasVerifiedPodcasterProfile == true)
+                    {
+                        podcasterListItems.Add(new AccountSnippetResponseDTO
+                        {
+                            Id = account.Id,
+                            FullName = account.PodcasterProfileName ?? account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        });
+                    }
+                }
+
+                Console.WriteLine($"[TrendingPopularPodcasters] Built with {podcasterListItems.Count} podcasters");
+
+                return new TrendingPodcastFeedDTO.PopularPodcastersTrendingPodcastFeedSection
+                {
+                    PodcasterList = podcasterListItems
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TrendingPopularPodcasters] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Trending Section 2: Hot Podcasters
+
+        private async Task<TrendingPodcastFeedDTO.HotPodcastersTrendingPodcastFeedSection?> BuildTrendingHotPodcastersSection(
+            CacheMetricsContainer cacheMetrics)
+        {
+            try
+            {
+                Console.WriteLine("[TrendingHotPodcasters] Building section...");
+
+                // Fetch all verified podcasters
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+            {
+                new BatchQueryItem
+                {
+                    Key = "verifiedPodcasters",
+                    QueryType = "findall",
+                    EntityType = "PodcasterProfile",
+                    Parameters = JObject.FromObject(new { IsVerified = true })
+                }
+            }
+                };
+
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                var allPodcasters = result.Results["verifiedPodcasters"].ToObject<List<PodcasterProfileDTO>>();
+
+                // Calculate hot scores
+                var podcastersWithScore = await CalculatePodcasterHotScoresAsync(allPodcasters, cacheMetrics.PodcasterTemporal);
+
+                var finalPodcasters = podcastersWithScore
+                    .Where(x => x.score > 0)
+                    .OrderByDescending(x => x.score)
+                    .Take(8)
+                    .Select(x => x.podcaster)
+                    .ToList();
+
+                // Fetch full account details
+                var podcasterListItems = new List<AccountSnippetResponseDTO>();
+                foreach (var podcaster in finalPodcasters)
+                {
+                    var account = await _accountCachingService.GetAccountStatusCacheById(podcaster.AccountId);
+                    if (account != null && account.DeactivatedAt == null && account.HasVerifiedPodcasterProfile == true)
+                    {
+                        podcasterListItems.Add(new AccountSnippetResponseDTO
+                        {
+                            Id = account.Id,
+                            FullName = account.PodcasterProfileName ?? account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        });
+                    }
+                }
+
+                Console.WriteLine($"[TrendingHotPodcasters] Built with {podcasterListItems.Count} podcasters");
+
+                return new TrendingPodcastFeedDTO.HotPodcastersTrendingPodcastFeedSection
+                {
+                    PodcasterList = podcasterListItems
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TrendingHotPodcasters] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Trending Section 3: Popular Channels
+
+        private async Task<TrendingPodcastFeedDTO.PopularChannelsTrendingPodcastFeedSection?> BuildTrendingPopularChannelsSection(
+            CacheMetricsContainer cacheMetrics)
+        {
+            try
+            {
+                Console.WriteLine("[TrendingPopularChannels] Building section...");
+
+                // Fetch all channels
+                var allChannels = await _podcastChannelGenericRepository.FindAll(
+                    predicate: pc => pc.DeletedAt == null,
+                    includeFunc: q => q.Include(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // Filter by Published status
+                allChannels = allChannels.Where(pc =>
+                {
+                    var currentStatus = pc.PodcastChannelStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastChannelStatusId;
+                    return currentStatus == (int)PodcastChannelStatusEnum.Published;
+                }).ToList();
+
+                // Calculate popular scores
+                var channelsWithScore = CalculateChannelPopularScores(allChannels, cacheMetrics.ChannelAllTime);
+
+                var finalChannels = channelsWithScore
+                    .OrderByDescending(x => x.score)
+                    .Take(8)
+                    .Select(x => x.channel)
+                    .ToList();
+
+                var channelListItems = await MapToChannelListItemsAsync(finalChannels);
+
+                Console.WriteLine($"[TrendingPopularChannels] Built with {channelListItems.Count} channels");
+
+                return new TrendingPodcastFeedDTO.PopularChannelsTrendingPodcastFeedSection
+                {
+                    ChannelList = channelListItems
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TrendingPopularChannels] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Trending Section 4: Hot Channels
+
+        private async Task<TrendingPodcastFeedDTO.HotChannelsTrendingPodcastFeedSection?> BuildTrendingHotChannelsSection(
+            CacheMetricsContainer cacheMetrics)
+        {
+            try
+            {
+                Console.WriteLine("[TrendingHotChannels] Building section...");
+
+                // Fetch all channels
+                var allChannels = await _podcastChannelGenericRepository.FindAll(
+                    predicate: pc => pc.DeletedAt == null,
+                    includeFunc: q => q.Include(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // Filter by Published status
+                allChannels = allChannels.Where(pc =>
+                {
+                    var currentStatus = pc.PodcastChannelStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastChannelStatusId;
+                    return currentStatus == (int)PodcastChannelStatusEnum.Published;
+                }).ToList();
+
+                // Calculate hot scores
+                var channelsWithScore = await CalculateChannelHotScoresAsync(allChannels, cacheMetrics.ChannelTemporal);
+
+                var finalChannels = channelsWithScore
+                    .Where(x => x.score > 0)
+                    .OrderByDescending(x => x.score)
+                    .Take(8)
+                    .Select(x => x.channel)
+                    .ToList();
+
+                var channelListItems = await MapToChannelListItemsAsync(finalChannels);
+
+                Console.WriteLine($"[TrendingHotChannels] Built with {channelListItems.Count} channels");
+
+                return new TrendingPodcastFeedDTO.HotChannelsTrendingPodcastFeedSection
+                {
+                    ChannelList = channelListItems
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TrendingHotChannels] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Trending Section 5: Popular Shows
+
+        private async Task<TrendingPodcastFeedDTO.PopularShowsTrendingPodcastFeedSection?> BuildTrendingPopularShowsSection(
+            CacheMetricsContainer cacheMetrics)
+        {
+            try
+            {
+                Console.WriteLine("[TrendingPopularShows] Building section...");
+
+                // Fetch all shows
+                var allShows = await _podcastShowGenericRepository.FindAll(
+                    predicate: ps => ps.DeletedAt == null,
+                    includeFunc: q => q
+                        .Include(ps => ps.PodcastShowStatusTrackings)
+                        .Include(ps => ps.PodcastChannel)
+                            .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // Filter by Published status
+                allShows = allShows.Where(ps =>
+                {
+                    var currentStatus = ps.PodcastShowStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastShowStatusId;
+                    return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                        (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
+                }).ToList();
+
+                // Calculate popular scores
+                var showsWithScore = CalculateShowPopularScores(allShows, cacheMetrics.ShowAllTime);
+
+                var finalShows = showsWithScore
+                    .OrderByDescending(x => x.score)
+                    .Take(12)
+                    .Select(x => x.show)
+                    .ToList();
+
+                var showListItems = await MapToShowListItemsAsync(finalShows);
+
+                Console.WriteLine($"[TrendingPopularShows] Built with {showListItems.Count} shows");
+
+                return new TrendingPodcastFeedDTO.PopularShowsTrendingPodcastFeedSection
+                {
+                    ShowList = showListItems
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TrendingPopularShows] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Trending Section 6: Hot Shows
+
+        private async Task<TrendingPodcastFeedDTO.HotShowsTrendingPodcastFeedSection?> BuildTrendingHotShowsSection(
+            CacheMetricsContainer cacheMetrics)
+        {
+            try
+            {
+                Console.WriteLine("[TrendingHotShows] Building section...");
+
+                // Fetch all shows
+                var allShows = await _podcastShowGenericRepository.FindAll(
+                    predicate: ps => ps.DeletedAt == null,
+                    includeFunc: q => q
+                        .Include(ps => ps.PodcastShowStatusTrackings)
+                        .Include(ps => ps.PodcastChannel)
+                            .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // Filter by Published status
+                allShows = allShows.Where(ps =>
+                {
+                    var currentStatus = ps.PodcastShowStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastShowStatusId;
+                    return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                        (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
+                }).ToList();
+
+                // Calculate hot scores
+                var showsWithScore = await CalculateShowHotScoresAsync(allShows, cacheMetrics.ShowTemporal);
+
+                var finalShows = showsWithScore
+                    .Where(x => x.score > 0)
+                    .OrderByDescending(x => x.score)
+                    .Take(10)
+                    .Select(x => x.show)
+                    .ToList();
+
+                var showListItems = await MapToShowListItemsAsync(finalShows);
+
+                Console.WriteLine($"[TrendingHotShows] Built with {showListItems.Count} shows");
+
+                return new TrendingPodcastFeedDTO.HotShowsTrendingPodcastFeedSection
+                {
+                    ShowList = showListItems
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TrendingHotShows] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Trending Section 7: New Episodes
+
+        private async Task<TrendingPodcastFeedDTO.NewEpisodesTrendingPodcastFeedSection?> BuildTrendingNewEpisodesSection()
+        {
+            try
+            {
+                Console.WriteLine("[TrendingNewEpisodes] Building section...");
+
+                var now = _dateHelper.GetNowByAppTimeZone();
+                var twoDaysAgo = now.AddDays(-2);
+
+                // Query episodes published in last 2 days
+                var episodes = await _podcastEpisodeGenericRepository.FindAll(
+                    predicate: pe =>
+                        pe.DeletedAt == null &&
+                        pe.PodcastShow.DeletedAt == null,
+                    includeFunc: q => q
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastChannel)
+                                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // Filter by recent published tracking
+                var recentEpisodes = episodes.Where(pe =>
+                {
+                    var publishedTracking = pe.PodcastEpisodeStatusTrackings
+                        .Where(t => t.PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published)
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault();
+
+                    if (publishedTracking == null || publishedTracking.CreatedAt < twoDaysAgo)
+                        return false;
+
+                    var showStatus = pe.PodcastShow.PodcastShowStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastShowStatusId;
+
+                    var channelStatus = pe.PodcastShow.PodcastChannel == null ? (int?)null :
+                        pe.PodcastShow.PodcastChannel.PodcastChannelStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault()?.PodcastChannelStatusId;
+
+                    return showStatus == (int)PodcastShowStatusEnum.Published &&
+                           (channelStatus == null || channelStatus == (int)PodcastChannelStatusEnum.Published);
+                })
+                .OrderByDescending(pe => pe.PodcastEpisodeStatusTrackings
+                    .Where(t => t.PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published)
+                    .Max(t => t.CreatedAt))
+                .ToList();
+
+                // Fallback: extend to 7 days if less than 15
+                if (recentEpisodes.Count < 15)
+                {
+                    var sevenDaysAgo = now.AddDays(-7);
+                    var fallbackEpisodes = episodes.Where(pe =>
+                    {
+                        var publishedTracking = pe.PodcastEpisodeStatusTrackings
+                            .Where(t => t.PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published)
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (publishedTracking == null || publishedTracking.CreatedAt < sevenDaysAgo)
+                            return false;
+
+                        var showStatus = pe.PodcastShow.PodcastShowStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault()?.PodcastShowStatusId;
+
+                        var channelStatus = pe.PodcastShow.PodcastChannel == null ? (int?)null :
+                            pe.PodcastShow.PodcastChannel.PodcastChannelStatusTrackings
+                                .OrderByDescending(t => t.CreatedAt)
+                                .FirstOrDefault()?.PodcastChannelStatusId;
+
+                        return showStatus == (int)PodcastShowStatusEnum.Published &&
+                               (channelStatus == null || channelStatus == (int)PodcastChannelStatusEnum.Published);
+                    })
+                    .OrderByDescending(pe => pe.PodcastEpisodeStatusTrackings
+                        .Where(t => t.PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published)
+                        .Max(t => t.CreatedAt))
+                    .ToList();
+
+                    recentEpisodes = fallbackEpisodes.Take(15).ToList();
+                }
+
+                var finalEpisodes = recentEpisodes.Take(15).ToList();
+
+                var episodeListItems = finalEpisodes.Select(ep => new PodcastEpisodeSnippetResponseDTO
+                {
+                    Id = ep.Id,
+                    Name = ep.Name,
+                    MainImageFileKey = ep.MainImageFileKey
+                }).ToList();
+
+                Console.WriteLine($"[TrendingNewEpisodes] Built with {episodeListItems.Count} episodes");
+
+                return new TrendingPodcastFeedDTO.NewEpisodesTrendingPodcastFeedSection
+                {
+                    EpisodeList = episodeListItems
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TrendingNewEpisodes] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Trending Section 8: Popular Episodes
+
+        private async Task<TrendingPodcastFeedDTO.PopularEpisodesTrendingPodcastFeedSection?> BuildTrendingPopularEpisodesSection()
+        {
+            try
+            {
+                Console.WriteLine("[TrendingPopularEpisodes] Building section...");
+
+                // Part A: Top all-time (70% = 10 episodes)
+                var allEpisodes = await _podcastEpisodeGenericRepository.FindAll(
+                    predicate: pe =>
+                        pe.DeletedAt == null &&
+                        pe.PodcastShow.DeletedAt == null &&
+                        pe.ListenCount > 0,
+                    includeFunc: q => q
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastChannel)
+                                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // Filter by Published status
+                var publishedEpisodes = allEpisodes.Where(pe =>
+                {
+                    var episodeStatus = pe.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastEpisodeStatusId;
+
+                    var showStatus = pe.PodcastShow.PodcastShowStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastShowStatusId;
+
+                    var channelStatus = pe.PodcastShow.PodcastChannel == null ? (int?)null :
+                        pe.PodcastShow.PodcastChannel.PodcastChannelStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault()?.PodcastChannelStatusId;
+
+                    return episodeStatus == (int)PodcastEpisodeStatusEnum.Published &&
+                           showStatus == (int)PodcastShowStatusEnum.Published &&
+                           (channelStatus == null || channelStatus == (int)PodcastChannelStatusEnum.Published);
+                }).ToList();
+
+                var partAEpisodes = publishedEpisodes
+                    .OrderByDescending(pe => pe.ListenCount)
+                    .Take(10)
+                    .ToList();
+
+                // Part B: Diversity fallback (30% = 5 episodes from different shows)
+                var partAShowIds = partAEpisodes.Select(ep => ep.PodcastShowId).ToHashSet();
+
+                var partBEpisodes = publishedEpisodes
+                    .Where(pe => !partAShowIds.Contains(pe.PodcastShowId))
+                    .OrderByDescending(pe => pe.ListenCount)
+                    .Take(5)
+                    .ToList();
+
+                var finalEpisodes = partAEpisodes.Concat(partBEpisodes).Take(15).ToList();
+
+                var episodeListItems = finalEpisodes.Select(ep => new PodcastEpisodeSnippetResponseDTO
+                {
+                    Id = ep.Id,
+                    Name = ep.Name,
+                    MainImageFileKey = ep.MainImageFileKey
+                }).ToList();
+
+                Console.WriteLine($"[TrendingPopularEpisodes] Built with {episodeListItems.Count} episodes (A:{partAEpisodes.Count}, B:{partBEpisodes.Count})");
+
+                return new TrendingPodcastFeedDTO.PopularEpisodesTrendingPodcastFeedSection
+                {
+                    EpisodeList = episodeListItems
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TrendingPopularEpisodes] ERROR: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Trending Section 9-14: Dynamic Categories
+
+        private async Task<List<TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection?>> BuildTrendingDynamicCategorySectionsAsync(
+            SystemPreferencesTemporal30dQueryMetric? systemPrefs,
+            CacheMetricsContainer cacheMetrics)
+        {
+            try
+            {
+                Console.WriteLine("[TrendingDynamicCategories] Building 6 dynamic category sections...");
+
+                // Select 6 stable random categories
+                var selectedCategories = SelectStableRandomCategories(systemPrefs);
+
+                if (selectedCategories == null || selectedCategories.Count == 0)
+                {
+                    Console.WriteLine("[TrendingDynamicCategories] No categories available");
+                    return Enumerable.Range(0, 6).Select(_ => (TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection?)null).ToList();
+                }
+
+                var results = new List<TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection?>();
+
+                foreach (var category in selectedCategories)
+                {
+                    var section = await BuildSingleDynamicCategorySection(category, cacheMetrics);
+                    results.Add(section);
+                }
+
+                // FIX: Ensure we always return exactly 6 elements, fill with null if needed
+                while (results.Count < 6)
+                {
+                    results.Add(null);
+                }
+
+                Console.WriteLine($"[TrendingDynamicCategories] Built {results.Count} category sections (actual: {selectedCategories.Count})");
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TrendingDynamicCategories] ERROR: {ex.Message}");
+                return Enumerable.Range(0, 6).Select(_ => (TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection?)null).ToList();
+            }
+        }
+
+        private List<PodcastCategory> SelectStableRandomCategories(SystemPreferencesTemporal30dQueryMetric? systemPrefs)
+        {
+            if (systemPrefs?.ListenedPodcastCategories == null || !systemPrefs.ListenedPodcastCategories.Any())
+            {
+                Console.WriteLine("[SelectStableRandomCategories] No system preferences available");
+                return new List<PodcastCategory>();
+            }
+
+            // Get top 10 trending categories
+            var top10CategoryIds = systemPrefs.ListenedPodcastCategories
+                .OrderByDescending(c => c.ListenCount)
+                .Take(10)
+                .Select(c => c.PodcastCategoryId)
+                .ToList();
+
+            // Calculate stable seed based on 6-hour window
+            var now = _dateHelper.GetNowByAppTimeZone();
+            var seed = (int)Math.Floor(now.Hour / 6.0);
+
+            // Use seed to create stable random selection
+            var random = new Random(seed + now.Year * 10000 + now.DayOfYear * 100);
+
+            // Shuffle and take 6
+            var selectedIds = top10CategoryIds
+                .OrderBy(x => random.Next())
+                .Take(6)
+                .ToList();
+
+            // Fetch category entities
+            var categories = _podcastCategoryGenericRepository.FindAll(
+                predicate: pc => selectedIds.Contains(pc.Id)
+            ).ToList();
+
+            Console.WriteLine($"[SelectStableRandomCategories] Selected {categories.Count} categories (seed={seed})");
+            return categories;
+        }
+
+        private async Task<TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection?> BuildSingleDynamicCategorySection(
+            PodcastCategory category,
+            CacheMetricsContainer cacheMetrics)
+        {
+            try
+            {
+                Console.WriteLine($"[DynamicCategory-{category.Id}] Building section for '{category.Name}'...");
+
+                // Fetch all shows in category
+                var shows = await _podcastShowGenericRepository.FindAll(
+                    predicate: ps =>
+                        ps.PodcastCategoryId == category.Id &&
+                        ps.DeletedAt == null,
+                    includeFunc: q => q
+                        .Include(ps => ps.PodcastShowStatusTrackings)
+                        .Include(ps => ps.PodcastChannel)
+                            .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // Filter by Published status
+                shows = shows.Where(ps =>
+                {
+                    var currentStatus = ps.PodcastShowStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastShowStatusId;
+                    return currentStatus == (int)PodcastShowStatusEnum.Published &&
+                        (ps.PodcastChannel == null || (ps.PodcastChannel.DeletedAt == null && ps.PodcastChannel.PodcastChannelStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published));
+                }).ToList();
+
+                // Part A (40%): 4 hot shows
+                var showsWithHotScore = await CalculateShowHotScoresAsync(shows, cacheMetrics.ShowTemporal);
+
+                var partAShows = showsWithHotScore
+                    .Where(x => x.score > 0)
+                    .OrderByDescending(x => x.score)
+                    .Take(4)
+                    .Select(x => x.show)
+                    .ToList();
+
+                // Part B (60%): 6 popular shows
+                var existingIds = partAShows.Select(s => s.Id).ToHashSet();
+                var showsWithPopularScore = CalculateShowPopularScores(
+                    shows.Where(s => !existingIds.Contains(s.Id)).ToList(),
+                    cacheMetrics.ShowAllTime
+                );
+
+                var needed = 4 - partAShows.Count;
+                var partBShows = showsWithPopularScore
+                    .OrderByDescending(x => x.score)
+                    .Take(6 + needed)
+                    .Select(x => x.show)
+                    .ToList();
+
+                var finalShows = partAShows.Concat(partBShows).Take(10).ToList();
+
+                var showListItems = await MapToShowListItemsAsync(finalShows);
+
+                Console.WriteLine($"[DynamicCategory-{category.Id}] Built with {showListItems.Count} shows (A:{partAShows.Count}, B:{partBShows.Count})");
+
+                // Return proper DTO type
+                return new TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection
+                {
+                    PodcastCategory = new PodcastCategoryDTO
+                    {
+                        Id = category.Id,
+                        Name = category.Name
+                    },
+                    ShowList = showListItems
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DynamicCategory-{category.Id}] ERROR: {ex.Message}");
+                return null;
+            }
         }
 
         #endregion

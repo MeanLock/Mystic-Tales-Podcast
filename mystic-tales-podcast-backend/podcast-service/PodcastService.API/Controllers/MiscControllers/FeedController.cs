@@ -51,5 +51,17 @@ namespace PodcastService.API.Controllers.MiscControllers
         }
 
 
+        // /api/podcast-service/api/misc/feed/podcast-contents/trending
+        [HttpGet("podcast-contents/trending")]
+        public async Task<IActionResult> GetTrendingPodcastFeedContents()
+        {
+            // var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var feedContents = await _feedService.GetTrendingPodcastFeedContentsAsync();
+
+            return Ok(feedContents);
+        }
+
+
     }
 }

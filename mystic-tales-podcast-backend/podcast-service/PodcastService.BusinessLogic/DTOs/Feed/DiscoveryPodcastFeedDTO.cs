@@ -61,6 +61,7 @@ public class DiscoveryPodcastFeedDTO
 
     public class RandomCategoryDiscoveryPodcastFeedSection
     {
+        public required PodcastCategoryDTO PodcastCategory { get; set; }
         public List<ShowListItemResponseDTO>? ShowList { get; set; }
     }
 
