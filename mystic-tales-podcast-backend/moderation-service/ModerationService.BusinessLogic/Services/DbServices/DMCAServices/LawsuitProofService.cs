@@ -70,45 +70,49 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         }
         public async Task<LawsuitProof> CreateLawsuitProofAsync(LawsuitProof lawsuitProof)
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
+            //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //{
                 try
                 {
                     var result = await _lawsuitProofGenericRepository.CreateAsync(lawsuitProof);
-                    await transaction.CommitAsync();
+                    //await transaction.CommitAsync();
                     return result;
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    //await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error creating LawsuitProof");
                     throw;
                 }
-            }
+            //}
         }
         public async Task<LawsuitProofAttachFile> CreateLawsuitProofAttachFileAsync(LawsuitProofAttachFile lawsuitProofAttachFile)
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
+            //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //{
                 try
                 {
                     var result = await _lawsuitProofAttachFileGenericRepository.CreateAsync(lawsuitProofAttachFile);
-                    await transaction.CommitAsync();
+                    //await transaction.CommitAsync();
                     return result;
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    //await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error creating LawsuitProofAttachFile");
                     throw;
                 }
-            }
+            //}
         }
-        public async Task<LawsuitProofDetailResponseDTO> GetLawsuitProofByDMCAAccusationId(int dmcaAccusationId)
+        public async Task<LawsuitProofDetailResponseDTO?> GetLawsuitProofByDMCAAccusationId(int dmcaAccusationId)
         {
             var lawsuitProof = _lawsuitProofGenericRepository.FindAll()
                 .Where(lp => lp.DmcaAccusationId == dmcaAccusationId)
                 .FirstOrDefault();
+            if (lawsuitProof == null)
+            {
+                return null;
+            }
             var lawsuitProofAttachFile = await _lawsuitProofAttachFileGenericRepository.FindAll()
                 .Where(lpaf => lpaf.LawsuitProofId.Equals(lawsuitProof.Id))
                 .Select(lpaf => new LawsuitProofAttachFileListItemResponseDTO
@@ -118,6 +122,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     CreatedAt = lpaf.CreatedAt,
                 })
                 .ToListAsync();
+
             return new LawsuitProofDetailResponseDTO
             {
                 Id = lawsuitProof.Id,
@@ -133,22 +138,22 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         }
         public async Task<LawsuitProof> UpdateLawsuitProof(LawsuitProof lawsuitProof)
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
+            //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //{
                 try
                 {
                     var result = await _lawsuitProofGenericRepository.UpdateAsync(lawsuitProof.Id, lawsuitProof);
-                    await transaction.CommitAsync();
+                    //await transaction.CommitAsync();
                     _logger.LogInformation("Updated DMCA Lawsuit Proof with ID: {LawsuitProofId}", result.Id);
                     return result;
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    //await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error updating LawsuitProof");
-                    throw;
+                    return null;
                 }
-            }
+            //}
         }
         public async Task CreateLawsuitProofAsync(CreateLawsuitProofParameterDTO parameter, SagaCommandMessage command)
         {
@@ -174,13 +179,13 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var createLawsuitProofAttachFile = new List<string>();
 
                     // Process each file
-                    foreach (var attachFileKey in parameter.LawsuitProofFileKeys)
+                    foreach (var attachFileKey in parameter.LawsuitProofAttachFileKeys)
                     {
 
                         var newLawsuitProofAttachFile = new LawsuitProofAttachFile()
                         {
                             LawsuitProofId = createdLawsuitProof.Id,
-                            AttachFileKey = null,
+                            AttachFileKey = "",
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
 
@@ -219,7 +224,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         { "DMCAAccusationId", createdLawsuitProof.DmcaAccusationId },
                         { "LawsuitProofId", createdLawsuitProof.Id },
-                        { "LawsuitProofAttachFileKeys", JArray.FromObject(createLawsuitProofAttachFile) },
+                        //{ "LawsuitProofAttachFileKeys", JArray.FromObject(createLawsuitProofAttachFile) },
                         { "CreatedAt", createdLawsuitProof.CreatedAt }
                     };
                     var newMessageName = messageName + ".success";
@@ -250,7 +255,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         }
                     }
 
-                    foreach (var attachFile in parameter.LawsuitProofFileKeys)
+                    foreach (var attachFile in parameter.LawsuitProofAttachFileKeys)
                     {
                         if (attachFile != null && attachFile != "")
                         {

@@ -13,6 +13,6 @@ namespace ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain
         public string AccuserFullName { get; set; }
         public Guid? PodcastShowId { get; set; }
         public Guid? PodcastEpisodeId { get; set; }
-        public List<string> DMCANoticeFileKeys { get; set; } = new List<string>();
+        public List<string> DMCANoticeAttachFileKeys { get; set; } = new List<string>();
     }
 }

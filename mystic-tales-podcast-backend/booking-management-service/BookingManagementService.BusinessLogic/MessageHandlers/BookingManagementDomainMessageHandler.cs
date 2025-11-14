@@ -4,6 +4,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingProducingRequest;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelPodcasterBookingsTerminatePodcasterForce;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
@@ -17,6 +18,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
+using BookingManagementService.DataAccess.Entities.SqlServer;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using Microsoft.Extensions.Logging;
 
@@ -256,6 +258,20 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "validate-booking-cancellation.failed"
+            );
+        }
+        [MessageHandler("cancel-podcaster-bookings-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleCancelPodcasterBookingsTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CancelPodcasterBookingsTerminatePodcasterForceParameterDTO>();
+                    await _bookingService.CancelPodcasterBookingsTerminatePodcasterForceAsync(parameter, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "cancel-podcaster-bookings-terminate-podcaster-force.failed"
             );
         }
     }

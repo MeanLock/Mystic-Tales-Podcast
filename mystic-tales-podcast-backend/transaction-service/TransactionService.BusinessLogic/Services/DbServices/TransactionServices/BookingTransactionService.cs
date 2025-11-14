@@ -196,7 +196,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var responseData = command.LastStepResponseData;
 
                     var bookingTransaction = await _bookingTransactionGenericRepository.FindByIdAsync(parameter.BookingTransactionId);
-                    if (bookingTransaction != null)
+                    if (bookingTransaction == null)
                     {
                         throw new Exception($"No booking transaction found for Id: {parameter.BookingTransactionId}");
                     }

@@ -19,6 +19,7 @@ using ModerationService.Common.AppConfigurations.FilePath.interfaces;
 using ModerationService.DataAccess.Entities.SqlServer;
 using ModerationService.Infrastructure.Models.Audio.AcoustID;
 using ModerationService.Infrastructure.Services.Kafka;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace ModerationService.API.Controllers.BaseControllers
@@ -157,11 +158,12 @@ namespace ModerationService.API.Controllers.BaseControllers
         [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> CreateDMCAAccusationForShow(
             [FromRoute] Guid PodcastShowId,
-            [FromBody] DMCANoticeCreateRequestDTO request)
+            [FromForm] DMCANoticeCreateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var loginAccountId = account.Id;
 
+            var accuserInfo = JsonConvert.DeserializeObject<DMCANoticeCreateInfoDTO>(request.DMCANoticeCreateInfo);
             // Validate all attach files first
             foreach (var attachFile in request.DMCANoticeAttachFiles)
             {
@@ -199,9 +201,9 @@ namespace ModerationService.API.Controllers.BaseControllers
 
             var requestData = new JObject
             {
-                { "AccuserEmail", request.AccuserEmail },
-                { "AccuserPhone", request.AccuserPhone },
-                { "AccuserFullName", request.AccuserFullName },
+                { "AccuserEmail", accuserInfo.AccuserEmail },
+                { "AccuserPhone", accuserInfo.AccuserPhone },
+                { "AccuserFullName", accuserInfo.AccuserFullName },
                 { "PodcastShowId", PodcastShowId },
                 { "DMCANoticeAttachFileKeys", JArray.FromObject(attachFileList) }
             };
@@ -224,11 +226,12 @@ namespace ModerationService.API.Controllers.BaseControllers
         [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> CreateDMCAAccusationForEpisode(
             [FromRoute] Guid PodcastEpisodeId,
-            [FromBody] DMCANoticeCreateRequestDTO request)
+            [FromForm] DMCANoticeCreateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var loginAccountId = account.Id;
 
+            var accuserInfo = JsonConvert.DeserializeObject<DMCANoticeCreateInfoDTO>(request.DMCANoticeCreateInfo);
             // Validate all attach files first
             foreach (var attachFile in request.DMCANoticeAttachFiles)
             {
@@ -266,9 +269,9 @@ namespace ModerationService.API.Controllers.BaseControllers
 
             var requestData = new JObject
             {
-                { "AccuserEmail", request.AccuserEmail },
-                { "AccuserPhone", request.AccuserPhone },
-                { "AccuserFullName", request.AccuserFullName },
+                { "AccuserEmail", accuserInfo.AccuserEmail },
+                { "AccuserPhone", accuserInfo.AccuserPhone },
+                { "AccuserFullName", accuserInfo.AccuserFullName },
                 { "PodcastEpisodeId", PodcastEpisodeId },
                 { "DMCANoticeAttachFileKeys", JArray.FromObject(attachFileList) }
             };
@@ -288,7 +291,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("{DMCAAccusationId}")]
-        [Authorize(Policy = "Customer.BasicAccess")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess")]
         public async Task<IActionResult> GetDMCAAccusationById(
             [FromRoute] int DMCAAccusationId)
         {
@@ -306,7 +309,7 @@ namespace ModerationService.API.Controllers.BaseControllers
         [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> CreateCounterNotice(
             [FromRoute] int DMCAAccusationId,
-            [FromBody] CounterNoticeCreateRequestDTO request)
+            [FromForm] CounterNoticeCreateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var loginAccountId = account.Id;
@@ -370,7 +373,7 @@ namespace ModerationService.API.Controllers.BaseControllers
         [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> SubmitLawsuitProof(
             [FromRoute] int DMCAAccusationId,
-            [FromBody] LawsuitProofSubmitRequestDTO request)
+            [FromForm] LawsuitProofSubmitRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var loginAccountId = account.Id;
@@ -439,7 +442,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "DMCAAccusationId", DMCAAccusationId },
-                { "StaffAccountId", AccountId }
+                { "AccountId", AccountId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: "dmca-management-domain",

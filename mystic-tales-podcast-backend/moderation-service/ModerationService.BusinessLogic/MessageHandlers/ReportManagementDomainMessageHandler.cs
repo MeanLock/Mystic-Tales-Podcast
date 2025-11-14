@@ -30,6 +30,11 @@ using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.R
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReportNoEffectEpisodeDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowReportNoEffectShowDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectShowDeletionForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelShowsReportNoEffectChannelDeletionForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelEpisodesReportNoEffectChannelDeletionForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastBuddyReportNoEffectTerminatePodcasterForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcasterShowsReportNoEffectTerminatePodcasterForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcasterEpisodesReportNoEffectTerminatePodcasterForce;
 
 namespace ModerationService.BusinessLogic.MessageHandlers
 {
@@ -355,6 +360,81 @@ namespace ModerationService.BusinessLogic.MessageHandlers
                },
                responseTopic: SAGA_TOPIC,
                failedEmitMessage: "resolve-show-episodes-report-no-effect-show-deletion-force.failed"
+           );
+        }
+        [MessageHandler("resolve-channel-shows-report-no-effect-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleResolveChannelShowsReportNoEffectChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolveChannelShowsReportNoEffectChannelDeletionForceParameterDTO>();
+                   await _podcastShowReportService.ResolveChannelShowsReportNoEffectChannelDeletionForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-channel-shows-report-no-effect-channel-deletion-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-channel-shows-report-no-effect-channel-deletion-force.failed"
+           );
+        }
+        [MessageHandler("resolve-channel-episodes-report-no-effect-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleResolveChannelEpisodesReportNoEffectChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolveChannelEpisodesReportNoEffectChannelDeletionForceParameterDTO>();
+                   await _podcastEpisodeReportService.ResolveChannelEpisodesReportNoEffectChannelDeletionForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-channel-episodes-report-no-effect-channel-deletion-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-channel-episodes-report-no-effect-channel-deletion-force.failed"
+           );
+        }
+        [MessageHandler("resolve-podcast-buddy-report-no-effect-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleResolvePodcastBuddyReportNoEffectTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolvePodcastBuddyReportNoEffectTerminatePodcasterForceParameterDTO>();
+                   await _podcastBuddyReportService.ResolvePodcastBuddyReportNoEffectTerminatePodcasterForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-podcast-buddy-report-no-effect-terminate-podcaster-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-podcast-buddy-report-no-effect-terminate-podcaster-force.failed"
+           );
+        }
+        [MessageHandler("resolve-podcaster-shows-report-no-effect-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleResolvePodcasterShowsReportNoEffectTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolvePodcasterShowsReportNoEffectTerminatePodcasterForceParameterDTO>();
+                   await _podcastShowReportService.ResolvePodcasterShowsReportNoEffectTerminatePodcasterForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-podcaster-shows-report-no-effect-terminate-podcaster-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-podcaster-shows-report-no-effect-terminate-podcaster-force.failed"
+           );
+        }
+        [MessageHandler("resolve-podcaster-episodes-report-no-effect-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleResolvePodcasterEpisodesReportNoEffectTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<ResolvePodcasterEpisodesReportNoEffectTerminatePodcasterForceParameterDTO>();
+                   await _podcastEpisodeReportService.ResolvePodcasterEpisodesReportNoEffectTerminatePodcasterForceAsync(parameter, command);
+                   _logger.LogInformation("Handled resolve-podcaster-episodes-report-no-effect-terminate-podcaster-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "resolve-podcaster-episodes-report-no-effect-terminate-podcaster-force.failed"
            );
         }
     }

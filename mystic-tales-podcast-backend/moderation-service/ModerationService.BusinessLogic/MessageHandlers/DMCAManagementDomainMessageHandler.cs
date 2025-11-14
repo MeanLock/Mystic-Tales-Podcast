@@ -6,12 +6,16 @@ using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.Cre
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusation;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusationReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateLawsuitProof;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissChannelEpisodesDMCAChannelDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissChannelEpisodesDMCAUnpublishChannelForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissChannelShowsDMCACannelDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissChannelShowsDMCAUnpublishChannelForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissEpisodeDMCAEpisodeDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissEpisodeDMCAUnpublishEpisodeForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissOtherEpisodeDMCADMCARemoveEpisodeForced;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissOtherShowDMCADMCARemoveShowForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissPodcasterEpisodesDMCATerminatePodcasterForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissPodcasterShowsDMCATerminatePodcasterForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissShowDMCAShowDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissShowDMCAUnpublishShowForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.DismissShowEpisodesDMCADMCARemoveShowForce;
@@ -342,6 +346,66 @@ namespace ModerationService.BusinessLogic.MessageHandlers
                },
                responseTopic: SAGA_TOPIC,
                failedEmitMessage: "dismiss-show-episodes-dmca-show-deletion-force.failed"
+           );
+        }
+        [MessageHandler("dismiss-channel-shows-dmca-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDismissChannelShowsDMCAChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<DismissChannelShowsDMCAChannelDeletionForceParameterDTO>();
+                   await _dmcaAccusationService.DismissChannelShowsDMCAChannelDeletionForceAsync(parameter, command);
+                   _logger.LogInformation("Handled dismiss-channel-shows-dmca-channel-deletion-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "dismiss-channel-shows-dmca-channel-deletion-force.failed"
+           );
+        }
+        [MessageHandler("dismiss-channel-episodes-dmca-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleDismissChannelEpisodesDMCAChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<DismissChannelEpisodesDMCAChannelDeletionForceParameterDTO>();
+                   await _dmcaAccusationService.DismissChannelEpisodesDMCAChannelDeletionForceAsync(parameter, command);
+                   _logger.LogInformation("Handled dismiss-channel-episodes-dmca-channel-deletion-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "dismiss-channel-episodes-dmca-channel-deletion-force.failed"
+           );
+        }
+        [MessageHandler("dismiss-podcaster-shows-dmca-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleDismissPodcasterShowsDMCATerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<DismissPodcasterShowsDMCATerminatePodcasterForceParameterDTO>();
+                   await _dmcaAccusationService.DismissPodcasterShowsDMCATerminatePodcasterForceAsync(parameter, command);
+                   _logger.LogInformation("Handled dismiss-podcaster-shows-dmca-terminate-podcaster-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "dismiss-podcaster-shows-dmca-terminate-podcaster-force.failed"
+           );
+        }
+        [MessageHandler("dismiss-podcaster-episodes-dmca-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleDismissPodcasterEpisodesDMCATerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+               messageJson,
+               async (command) =>
+               {
+                   var parameter = command.RequestData.ToObject<DismissPodcasterEpisodesDMCATerminatePodcasterForceParameterDTO>();
+                   await _dmcaAccusationService.DismissPodcasterEpisodesDMCATerminatePodcasterForceAsync(parameter, command);
+                   _logger.LogInformation("Handled dismiss-podcaster-episodes-dmca-terminate-podcaster-force command for SagaId: {SagaId}", command.SagaInstanceId);
+               },
+               responseTopic: SAGA_TOPIC,
+               failedEmitMessage: "dismiss-podcaster-episodes-dmca-terminate-podcaster-force.failed"
            );
         }
     }

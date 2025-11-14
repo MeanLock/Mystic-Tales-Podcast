@@ -9,6 +9,6 @@ namespace ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain
     public class CreateLawsuitProofParameterDTO
     {
         public int DMCAAccusationId { get; set; }
-        public List<string> LawsuitProofFileKeys { get; set; } = new List<string>();
+        public List<string> LawsuitProofAttachFileKeys { get; set; } = new List<string>();
     }
 }

@@ -2,7 +2,9 @@
 using Microsoft.Extensions.Logging;
 using ModerationService.BusinessLogic.DTOs.Account;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreatePodcastBuddyReport;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelEpisodesReportNoEffectChannelDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastBuddyReport;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastBuddyReportNoEffectTerminatePodcasterForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastShowReport;
 using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport;
 using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.Details;
@@ -438,6 +440,68 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Resolve podcast buddy report review session failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolvePodcastBuddyReportNoEffectTerminatePodcasterForceAsync(ResolvePodcastBuddyReportNoEffectTerminatePodcasterForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcastBuddyReportReviewSessions = await _podcastBuddyReportReviewSessionGenericRepository.FindAll()
+                        .Where(pbrrs => pbrrs.PodcastBuddyId == parameter.PodcasterId && pbrrs.IsResolved == null)
+                        .ToListAsync();
+                    foreach (var reviewSession in podcastBuddyReportReviewSessions)
+                    {
+                        reviewSession.IsResolved = true;
+                        await _podcastBuddyReportReviewSessionGenericRepository.UpdateAsync(reviewSession.Id, reviewSession);
+                        var podcastBuddyReportList = await _podcastBuddyReportGenericRepository.FindAll()
+                            .Where(pbr => pbr.PodcastBuddyId == reviewSession.PodcastBuddyId)
+                            .ToListAsync();
+                        foreach (var buddyReport in podcastBuddyReportList)
+                        {
+                            buddyReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastBuddyReportGenericRepository.UpdateAsync(buddyReport.Id, buddyReport);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Podcast Buddy Report No Effect Terminate Podcaster Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Podcast Buddy Report No Effect Terminate Podcaster Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Resolve Podcast Buddy Report No Effect Terminate Podcaster Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Podcast Buddy Report No Effect Terminate Podcaster Force failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }

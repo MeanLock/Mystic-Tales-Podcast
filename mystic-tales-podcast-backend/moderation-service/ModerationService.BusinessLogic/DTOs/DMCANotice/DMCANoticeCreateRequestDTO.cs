@@ -10,6 +10,10 @@ namespace ModerationService.BusinessLogic.DTOs.DMCANotice
     public class DMCANoticeCreateRequestDTO
     {
         public List<IFormFile> DMCANoticeAttachFiles { get; set; } = new List<IFormFile>();
+        public string DMCANoticeCreateInfo { get; set; }
+    }
+    public class DMCANoticeCreateInfoDTO 
+    {
         public string AccuserEmail { get; set; }
         public string AccuserPhone { get; set; }
         public string AccuserFullName { get; set; }

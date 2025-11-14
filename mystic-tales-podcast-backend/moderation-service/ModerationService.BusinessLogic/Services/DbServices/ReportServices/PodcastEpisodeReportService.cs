@@ -2,10 +2,12 @@
 using Microsoft.Extensions.Logging;
 using ModerationService.BusinessLogic.DTOs.Account;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreateEpisodeReport;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelEpisodesReportNoEffectChannelDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelEpisodesReportNoEffectUnpublishChannelForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReportNoEffectDMCARemoveEpisodeForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveEpisodeReportNoEffectEpisodeDeletionForce;
+using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcasterEpisodesReportNoEffectTerminatePodcasterForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectDMCARemoveShowForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectShowDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectUnpublishShowForce;
@@ -849,6 +851,144 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Resolve Show Episodes Report No Effect Show Deletion Force failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolveChannelEpisodesReportNoEffectChannelDeletionForceAsync(ResolveChannelEpisodesReportNoEffectChannelDeletionForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var episodeIdList = parameter.DmcaDismissedEpisodeIds;
+                    foreach (var episodeId in episodeIdList)
+                    {
+                        var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                        .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
+
+                        foreach (var session in podcastEpisodeReportReviewSessions)
+                        {
+                            session.IsResolved = true;
+                            session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                            var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                            .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
+                            && pbr.ResolvedAt == null)
+                            .ToListAsync();
+                            foreach (var EpisodeReport in podcastEpisodeReportList)
+                            {
+                                EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Channel Episodes Report No Effect Channel Deletion Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Channel Episodes Report No Effect Channel Deletion Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject {
+                        { "ErrorMessage", "Resolve Channel Episodes Report No Effect Channel Deletion Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Channel Episodes Report No Effect Channel Deletion Force failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task ResolvePodcasterEpisodesReportNoEffectTerminatePodcasterForceAsync(ResolvePodcasterEpisodesReportNoEffectTerminatePodcasterForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var episodeIdList = parameter.DmcaDismissedEpisodeIds;
+                    foreach (var episodeId in episodeIdList)
+                    {
+                        var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                        .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
+
+                        foreach (var session in podcastEpisodeReportReviewSessions)
+                        {
+                            session.IsResolved = true;
+                            session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                            var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                            .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
+                            && pbr.ResolvedAt == null)
+                            .ToListAsync();
+                            foreach (var EpisodeReport in podcastEpisodeReportList)
+                            {
+                                EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Resolve Podcaster Episodes Report No Effect Terminate Podcaster Force for SagaId: {SagaId}", sagaId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Resolve Podcaster Episodes Report No Effect Terminate Podcaster Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject {
+                        { "ErrorMessage", "Resolve Podcaster Episodes Report No Effect Terminate Podcaster Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Resolve Podcaster Episodes Report No Effect Terminate Podcaster Force failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
             }
         }

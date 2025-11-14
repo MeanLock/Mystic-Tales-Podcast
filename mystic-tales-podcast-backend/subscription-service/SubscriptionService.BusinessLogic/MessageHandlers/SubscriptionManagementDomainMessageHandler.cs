@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using SubscriptionService.BusinessLogic.Attributes;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelChannelSubscriptionChannelDeletionForce;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelChannelSubscriptionUnpublishChannelForce;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcasterChannelsSubscriptionTerminatePodcasterForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscriptionRegistration;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelShowSubscriptionDmcaRemoveShowForce;
@@ -234,6 +237,36 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "cancel-show-subscription-show-deletion-force.failed"
+            );
+        }
+        [MessageHandler("cancel-channel-subscription-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleCancelChannelSubscriptionChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CancelChannelSubscriptionChannelDeletionForceParameterDTO>();
+                    await _podcastSubscriptionService.CancelChannelSubscriptionChannelDeletionForceAsync(parameter, command);
+                    _logger.LogInformation("Handled cancel-channel-subscription-channel-deletion-force command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "cancel-channel-subscription-channel-deletion-force.failed"
+            );
+        }
+        [MessageHandler("cancel-podcaster-channels-subscription-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleCancelPodcasterChannelsSubscriptionTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CancelPodcasterChannelsSubscriptionTerminatePodcasterForceParameterDTO>();
+                    await _podcastSubscriptionService.CancelPodcasterChannelsSubscriptionTerminatePodcasterForceAsync(parameter, command);
+                    _logger.LogInformation("Handled cancel-podcaster-channels-subscription-terminate-podcaster-force command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "cancel-podcaster-channels-subscription-terminate-podcaster-force.failed"
             );
         }
     }

@@ -58,78 +58,78 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         }
         public async Task<Dmcanotice> CreateDMCANoticeAsync(Dmcanotice dmcaNotice)
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
+            //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //{
                 try
                 {
                     var result = await _dmcaNoticeGenericRepository.CreateAsync(dmcaNotice);
-                    await transaction.CommitAsync();
+                    //await transaction.CommitAsync();
                     _logger.LogInformation("Created DMCA Notice with ID: {DmcaNoticeId}", result.Id);
                     return result;
                 } catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    //await transaction.RollbackAsync();
                     _logger.LogError($"Something went wrong. Error: {ex.StackTrace}");
                     return null;
                 }
-            }
+            //}
         }
         public async Task<Dmcanotice> UpdateDMCANoticeAsync(Dmcanotice dmcaNotice)
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
+            //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //{
                 try
                 {
                     var result = await _dmcaNoticeGenericRepository.UpdateAsync(dmcaNotice.Id, dmcaNotice);
-                    await transaction.CommitAsync();
+                    //await transaction.CommitAsync();
                     _logger.LogInformation("Updated DMCA Notice with ID: {DmcaNoticeId}", result.Id);
                     return result;
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    //await transaction.RollbackAsync();
                     _logger.LogError($"Something went wrong. Error: {ex.StackTrace}");
                     return null;
                 }
-            }
+            //}
         }
         public async Task<DmcanoticeAttachFile> CreateDMCANoticeAttachFile(DmcanoticeAttachFile dmcanoticeAttachFile)
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
+            //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //{
                 try
                 {
                     var result = await _dmcaNoticeAttachFileGenericRepository.CreateAsync(dmcanoticeAttachFile);
-                    await transaction.CommitAsync();
+                    //await transaction.CommitAsync();
                     _logger.LogInformation("Created DMCA Notice Attach File with ID: {DmcaNoticeAttachFileId}", result.Id);
                     return result;
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    //await transaction.RollbackAsync();
                     _logger.LogError($"Something went wrong. Error: {ex.StackTrace}");
                     return null;
                 }
-            }
+            //}
         }
         public async Task<DmcanoticeAttachFile> UpdateDMCANoticeAttachFile(DmcanoticeAttachFile dmcanoticeAttachFile)
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
+            //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //{
                 try
                 {
                     var result = await _dmcaNoticeAttachFileGenericRepository.UpdateAsync(dmcanoticeAttachFile.Id, dmcanoticeAttachFile);
-                    await transaction.CommitAsync();
+                    //await transaction.CommitAsync();
                     _logger.LogInformation("Updated DMCA Notice Attach File with ID: {DmcaNoticeAttachFileId}", result.Id);
                     return result;
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    //await transaction.RollbackAsync();
                     _logger.LogError($"Something went wrong. Error: {ex.StackTrace}");
                     return null;
                 }
-            }
+            //}
         }
         public async Task<DMCANoticeDetailResponseDTO> GetDMCANoticeByDMCAAccusationId(int dmcaAccusationId)
         {

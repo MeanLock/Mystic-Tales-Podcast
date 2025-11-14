@@ -9,6 +9,7 @@ using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AcceptBookingDealing;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelPodcasterBookingsTerminatePodcasterForce;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
@@ -263,7 +264,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             }
                         }
                     }).ToList() ?? new List<BookingRequirementListItemResponseDTO>(),
-                    BookingProducingRequestList = booking.BookingProducingRequests?.Select(prod => new BookingProducingRequestListItemResponseDTO
+                    BookingProducingRequestList = booking.BookingProducingRequests?.OrderBy(bp => bp.CreatedAt).Select(prod => new BookingProducingRequestListItemResponseDTO
                     {
                         Id = prod.Id,
                         BookingId = prod.BookingId,
@@ -1172,7 +1173,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     booking.Price = totalWordCount * podcaster.PodcasterProfile.PricePerBookingWord;
-                    booking.DeadlineDays = parameter.DeadlineDayCount;
+                    if(parameter.DeadlineDayCount != null)
+                    {
+                        booking.DeadlineDays = parameter.DeadlineDayCount;
+                    }
                     booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
@@ -1672,6 +1676,104 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogError("Booking terminate failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
+        public async Task CancelPodcasterBookingsTerminatePodcasterForceAsync(CancelPodcasterBookingsTerminatePodcasterForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var booking = _bookingGenericRepository.FindAll()
+                        .Include(b => b.BookingStatusTrackings)
+                        .Where(b => b.PodcastBuddyId == parameter.PodcasterId)
+                        .ToList();
+                    foreach (var b in booking)
+                    {
+                        var currentStatus = b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
+                        if (currentStatus != (int)BookingStatusEnum.QuotationRejected &&
+                           currentStatus != (int)BookingStatusEnum.QuotationCancelled &&
+                           currentStatus != (int)BookingStatusEnum.Completed &&
+                           currentStatus != (int)BookingStatusEnum.CancelledAutomatically &&
+                           currentStatus != (int)BookingStatusEnum.CancelledManually)
+                        {
+                            var newBookingStatusTracking = new BookingStatusTracking
+                            {
+                                Id = Guid.NewGuid(),
+                                BookingId = b.Id,
+                                BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                            };
+                            await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+                            b.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            b.BookingAutoCancelReason = "TerminatedByPodcaster (bị hủy bởi podcaster)";
+                            await _bookingGenericRepository.UpdateAsync(b.Id, b);
+                            if (currentStatus >= (int)BookingStatusEnum.Producing)
+                            {
+                                var systemConfig = await GetActiveSystemConfigProfile();
+                                var profitRate = systemConfig.BookingConfig.ProfitRate;
+                                var depositRate = systemConfig.BookingConfig.DepositRate;
+                                var Amount = b.Price * (decimal)depositRate;
+                                var newRequestData = new JObject
+                                {
+                                    { "BookingId", b.Id },
+                                    { "Amount", Amount },
+                                    { "AccountId", b.AccountId },
+                                    { "PodcasterId", b.PodcastBuddyId },
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
+                                };
+                                var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                    requestData: newRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "booking-refund-flow");
+                                await _messagingService.SendSagaMessageAsync(startSecondSagaTriggerMessage, b.Id.ToString());
+                                _logger.LogInformation("Booking refund message send successfully for BookingId: {BookingId}", b.Id);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = new JObject
+                    {
+                        { "PodcasterId", parameter.PodcasterId },
+                    };
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Cancel Podcaster Bookings Terminate Podcaster Force successfully for SagaId: {SagaId}", sagaId.ToString());
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Cancel Podcaster Bookings Terminate Podcaster Force for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject
+                    {
+                        { "ErrorMessage", "Cancel Podcaster Bookings Terminate Podcaster Force failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogError("Cancel Podcaster Bookings Terminate Podcaster Force failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
         }

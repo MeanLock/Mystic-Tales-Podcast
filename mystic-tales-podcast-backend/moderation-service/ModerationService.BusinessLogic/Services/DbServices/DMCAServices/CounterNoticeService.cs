@@ -70,11 +70,15 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             _appDbContext = appDbContext;
             _dateHelper = dateHelper;
         }
-        public async Task<CounterNoticeDetailResponseDTO> GetCounterNoticeByDMCAAccusationId(int dmcaAccusationId)
+        public async Task<CounterNoticeDetailResponseDTO?> GetCounterNoticeByDMCAAccusationId(int dmcaAccusationId)
         {
             var counterNotice = _counterNoticeGenericRepository.FindAll()
                 .Where(lp => lp.DmcaAccusationId == dmcaAccusationId)
                 .FirstOrDefault();
+            if(counterNotice == null)
+            {
+                return null;
+            }
             var counterNoticeAttachFile = await _counterNoticeAttachFileGenericRepository.FindAll()
                 .Where(lpaf => lpaf.CounterNoticeId.Equals(counterNotice.Id))
                 .Select(lpaf => new CounterNoticeAttachFileListItemResponseDTO
@@ -99,22 +103,22 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         }
         public async Task<CounterNotice> UpdateCounterNotice(CounterNotice counterNotice)
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
+            //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            //{
                 try
                 {
                     var result = await _counterNoticeGenericRepository.UpdateAsync(counterNotice.Id, counterNotice);
-                    await transaction.CommitAsync();
+                    //await transaction.CommitAsync();
                     _logger.LogInformation("Updated DMCA Counter Notice with ID: {CounterNoticeId}", result.Id);
                     return result;
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    //await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error updating CounterNotice");
                     throw;
                 }
-            }
+            //}
         }
         public async Task CreateCounterNoticeAsync(CreateCounterNoticeParameterDTO parameter, SagaCommandMessage command)
         {
@@ -146,7 +150,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         var newCounterNoticeAttachFile = new CounterNoticeAttachFile()
                         {
                             CounterNoticeId = createdCounterNotice.Id,
-                            AttachFileKey = null,
+                            AttachFileKey = "",
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
 
@@ -187,7 +191,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         { "DMCAAccusationId", createdCounterNotice.DmcaAccusationId },
                         { "DMCAcounternoticeId", createdCounterNotice.Id },
-                        { "CounterNoticeAttachFileKeys", JArray.FromObject(createCounterNoticeAttachFile) },
+                        //{ "CounterNoticeAttachFileKeys", JArray.FromObject(createCounterNoticeAttachFile) },
                         { "CreatedAt", createdCounterNotice.CreatedAt }
                     };
                     var newMessageName = messageName + ".success";

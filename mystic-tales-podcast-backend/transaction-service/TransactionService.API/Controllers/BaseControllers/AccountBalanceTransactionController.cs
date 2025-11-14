@@ -12,6 +12,7 @@ using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Helpers.FileHelpers;
 using TransactionService.BusinessLogic.Models.CrossService;
 using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using TransactionService.BusinessLogic.Services.DbServices.TransactionServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
 using TransactionService.Common.AppConfigurations.BusinessSetting.interfaces;
 using TransactionService.Common.AppConfigurations.FilePath.interfaces;
@@ -27,6 +28,7 @@ namespace TransactionService.API.Controllers.BaseControllers
     {
         private readonly GenericQueryService _genericQueryService;
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
+        private readonly AccountBalanceTransactionService _accountBalanceTransactionService;
         private readonly IFileValidationConfig _fileValidationConfig;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
@@ -37,6 +39,7 @@ namespace TransactionService.API.Controllers.BaseControllers
         public AccountBalanceTransactionController(
             GenericQueryService genericQueryService,
             HttpServiceQueryClient httpServiceQueryClient,
+            AccountBalanceTransactionService accountBalanceTransactionService,
             IFileValidationConfig fileValidationConfig,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
@@ -46,6 +49,7 @@ namespace TransactionService.API.Controllers.BaseControllers
         {
             _genericQueryService = genericQueryService;
             _httpServiceQueryClient = httpServiceQueryClient;
+            _accountBalanceTransactionService = accountBalanceTransactionService;
             _fileValidationConfig = fileValidationConfig;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
@@ -65,7 +69,7 @@ namespace TransactionService.API.Controllers.BaseControllers
                 Message = $"Hello, your account ID is {account.Id}, RoleId is {account.RoleId}, ViolationLevel is {account.ViolationLevel}, ViolationPoint is {account.ViolationPoint}, IsVerified is {account.IsVerified}, DeactivatedAt is {account.DeactivatedAt}, LastViolationLevelChanged is {account.LastViolationLevelChanged}, LastViolationPointChanged is {account.LastViolationPointChanged}"
             });
         }
-        [HttpPost("balance-deposit/create-payment-link")]
+        [HttpPost("balance-deposits/create-payment-link")]
         [Authorize(Policy = "Customer.NoViolationAccess")]
         public async Task<IActionResult> CreateBalanceDepositPaymentLink([FromBody] AccountBalanceTransactionCreateRequestDTO request)
         {
@@ -81,9 +85,9 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "CancelUrl", request.AccountBalanceTransactionCreateInfo.CancelUrl ?? string.Empty }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "account-balance-create-payment-link-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
@@ -133,9 +137,9 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "WebHookBody", JObject.FromObject(webhookBody) },
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "account-balance-confirm-payment-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
@@ -160,9 +164,9 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "Amount", request.Amount }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "account-balance-withdrawal-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
@@ -206,9 +210,9 @@ namespace TransactionService.API.Controllers.BaseControllers
                 { "IsReject", IsReject }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC, 
-                requestData: requestData, 
-                sagaInstanceId: null, 
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
                 messageName: "account-balance-withdrawal-confirmation-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
@@ -219,6 +223,35 @@ namespace TransactionService.API.Controllers.BaseControllers
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
+        }
+        [HttpGet("balance-change-history/{AccountBalanceTypeEnum}")]
+        public async Task<IActionResult> GetAccountBalanceTransactions(
+            [FromRoute] AccountBalanceTypeEnum AccountBalanceTypeEnum)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var transactions = await _accountBalanceTransactionService.GetAccountBalanceTransactionsAsync(accountId, AccountBalanceTypeEnum);
+            return Ok(
+                new
+                {
+                    AccountBalanceTransactionList = transactions
+                }
+            );
+        }
+        [HttpGet("balance-deposits/{OrderCode}")]
+        public async Task<IActionResult> GetAccountBalanceTransactionByOrderCode(
+            [FromRoute] string OrderCode)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var transaction = await _accountBalanceTransactionService.GetAccountBalanceTransactionByOrderCodeAsync(OrderCode);
+            return Ok(
+                new
+                {
+                    PaymentResult = transaction
+                }
+            );
         }
     }
 }

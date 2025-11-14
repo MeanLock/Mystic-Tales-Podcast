@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using GreenDonut;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
 using Net.payOS;
 using Net.payOS.Types;
@@ -8,6 +10,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction;
+using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction.ListItems;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.AccountBalanceCreatePaymentLink;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmAccountBalanceWithdrawal;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPayment;
@@ -84,7 +88,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var responseData = command.LastStepResponseData;
 
                     PayOS payOS = new PayOS(_payosConfig.ClientID, _payosConfig.APIKey, _payosConfig.ChecksumKey);
-                    long orderCode = GenerateRandomLong();
+                    long orderCode = await GenerateRandomLongAsync();
 
                     AccountBalanceTransaction accountBalanceTransaction = new AccountBalanceTransaction
                     {
@@ -180,6 +184,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         accountBalanceTransaction.TransactionStatusId = (int)TransactionStatusEnum.Error;
                     }
 
+                    accountBalanceTransaction.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
 
                     await transaction.CommitAsync();
@@ -243,6 +248,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     }
                     ;
                     accountBalanceTransaction.TransactionStatusId = (int)TransactionStatusEnum.Error; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    accountBalanceTransaction.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
                     await transaction.CommitAsync();
                     var newResponseData = new JObject{
@@ -298,6 +304,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     }
                     ;
                     accountBalanceTransaction.TransactionStatusId = (int)TransactionStatusEnum.Error; // Thay đổi trạng thái giao dịch thành "Thất bại"
+                    accountBalanceTransaction.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _accountBalanceTransactionGenericRepository.UpdateAsync(accountBalanceTransaction.Id, accountBalanceTransaction);
                     await transaction.CommitAsync();
                     var newResponseData = new JObject{
@@ -480,13 +487,117 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 }
             }
         }
-        public static long GenerateRandomLong(int minDigits = 5, int maxDigits = 8)
+        public async Task<List<AccountBalanceTransactionListItemResponseDTO>?> GetAccountBalanceTransactionsAsync(int accountId, AccountBalanceTypeEnum typeEnum)
+        {
+            try
+            {
+                switch (typeEnum)
+                {
+                    case AccountBalanceTypeEnum.MoneyIn:
+                        return await _accountBalanceTransactionGenericRepository.FindAll(
+                            includeFunc: function => function
+                            .Include(a => a.TransactionType)
+                            .Include(a => a.TransactionStatus))
+                            .Where(abt => abt.AccountId == accountId && abt.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceDeposits)
+                            .OrderByDescending(abt => abt.CreatedAt)
+                            .Select(a => new AccountBalanceTransactionListItemResponseDTO
+                            {
+                                Id = a.Id,
+                                Amount = a.Amount,
+                                TransactionType = new TransactionTypeResponseDTO
+                                {
+                                    Id = a.TransactionType.Id,
+                                    Name = a.TransactionType.Name
+                                },
+                                TransactionStatus = new TransactionStatusResponseDTO
+                                {
+                                    Id = a.TransactionStatus.Id,
+                                    Name = a.TransactionStatus.Name
+                                },
+                                CreatedAt = a.CreatedAt,
+                                ChangedAt = a.TransactionStatusId == (int)TransactionStatusEnum.Success || a.TransactionStatusId == (int)TransactionStatusEnum.Error || a.TransactionStatus.Id == (int)TransactionStatusEnum.Cancelled ? a.UpdatedAt : null
+                            })
+                            .ToListAsync();
+                    case AccountBalanceTypeEnum.MoneyOut:
+                        return await _accountBalanceTransactionGenericRepository.FindAll(
+                            includeFunc: function => function
+                            .Include(a => a.TransactionType)
+                            .Include(a => a.TransactionStatus))
+                            .Where(abt => abt.AccountId == accountId && abt.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceWithdrawal)
+                            .OrderByDescending(abt => abt.CreatedAt)
+                            .Select(a => new AccountBalanceTransactionListItemResponseDTO
+                            {
+                                Id = a.Id,
+                                Amount = a.Amount,
+                                TransactionType = new TransactionTypeResponseDTO
+                                {
+                                    Id = a.TransactionType.Id,
+                                    Name = a.TransactionType.Name
+                                },
+                                TransactionStatus = new TransactionStatusResponseDTO
+                                {
+                                    Id = a.TransactionStatus.Id,
+                                    Name = a.TransactionStatus.Name
+                                },
+                                CreatedAt = a.CreatedAt,
+                                ChangedAt = a.TransactionStatusId == (int)TransactionStatusEnum.Success || a.TransactionStatusId == (int)TransactionStatusEnum.Error || a.TransactionStatus.Id == (int)TransactionStatusEnum.Cancelled ? a.UpdatedAt : null
+                            })
+                            .ToListAsync();
+                    default:
+                        return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving account balance transactions for AccountId: {AccountId}", accountId);
+                throw new HttpRequestException("An error occurred while retrieving account balance transactions.");
+            }
+        }
+        public async Task<PaymentResultResponseDTO> GetAccountBalanceTransactionByOrderCodeAsync(string orderCode)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var result = await _accountBalanceTransactionGenericRepository.FindAll()
+                    .Where(abt => abt.OrderCode == orderCode && abt.TransactionStatusId == (int)TransactionStatusEnum.Success)
+                    .FirstOrDefaultAsync();
+
+                    result.OrderCode = orderCode + "*";
+                    await _accountBalanceTransactionGenericRepository.UpdateAsync(result.Id, result);
+
+                    await transaction.CommitAsync();
+
+                    return new PaymentResultResponseDTO
+                    {
+                        Amount = result.Amount,
+                        CompletedAt = result.UpdatedAt
+                    };
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while retrieving Payment Result");
+                    throw new HttpRequestException("An error occurred while retrieving Payment Result.");
+                }
+            }
+
+        }
+        public async Task<long> GenerateRandomLongAsync(int minDigits = 5, int maxDigits = 8)
         {
             var random = new Random();
-            int length = random.Next(minDigits, maxDigits + 1);
-            long min = (long)Math.Pow(10, length - 1);
-            long max = (long)Math.Pow(10, length) - 1;
-            return random.NextInt64(min, max);
+            long result;
+            
+            do
+            {
+                int length = random.Next(minDigits, maxDigits + 1);
+                long min = (long)Math.Pow(10, length - 1);
+                long max = (long)Math.Pow(10, length) - 1;
+                result = random.NextInt64(min, max);
+            }
+            while (await _accountBalanceTransactionGenericRepository.FindAll()
+                .AnyAsync(a => a.OrderCode == result.ToString()));
+    
+            return result;
         }
     }
 }
