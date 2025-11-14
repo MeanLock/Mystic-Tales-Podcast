@@ -15,24 +15,24 @@ using UserService.BusinessLogic.Services.DbServices.UserServices;
 
 namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
 {
-    public class AccountPodcastListenSlotRecoveryJob : BackgroundService
+    public class AccountViolationLevelResetJob : BackgroundService
     {
         private readonly ConsulDistributedLockService _lockService;
         private readonly IBackgroundJobsConfig _jobsConfig;
-        private readonly ILogger<AccountPodcastListenSlotRecoveryJob> _logger;
+        private readonly ILogger<AccountViolationLevelResetJob> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly IConsulDistributedLockConfig _consulDistributedLockConfig;
         private readonly IAppConfig _appConfig;
         private readonly DateHelper _dateHelper;
 
         // Job configuration
-        private BackgroundJob _jobConfig => _jobsConfig.AccountPodcastListenSlotRecoveryJob;
+        private BackgroundJob _jobConfig => _jobsConfig.AccountViolationLevelResetJob;
         private CronExpression? _cronExpression;
 
-        public AccountPodcastListenSlotRecoveryJob(
+        public AccountViolationLevelResetJob(
             ConsulDistributedLockService lockService,
             IBackgroundJobsConfig jobsConfig,
-            ILogger<AccountPodcastListenSlotRecoveryJob> logger,
+            ILogger<AccountViolationLevelResetJob> logger,
             IServiceProvider serviceProvider,
             IAppConfig appConfig,
             DateHelper dateHelper,
@@ -58,7 +58,7 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
 
                 _logger.LogInformation(
                     "Background job starting: {JobName}, Enabled={IsEnabled}, Cron={Cron}, LockKey={LockKey}",
-                    nameof(AccountPodcastListenSlotRecoveryJob),
+                    nameof(AccountViolationLevelResetJob),
                     _jobConfig.IsEnabled,
                     _jobConfig.CronExpression,
                     _jobConfig.ConsulLockKey);
@@ -79,13 +79,13 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
         {
             if (!_jobConfig.IsEnabled)
             {
-                _logger.LogInformation("Background job is disabled: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
+                _logger.LogInformation("Background job is disabled: {JobName}", nameof(AccountViolationLevelResetJob));
                 return;
             }
 
             _logger.LogInformation(
                 "Background job started: {JobName}, Description={Description}",
-                nameof(AccountPodcastListenSlotRecoveryJob),
+                nameof(AccountViolationLevelResetJob),
                 _jobConfig.Description);
 
             await WaitForNextRoundTimeAsync(stoppingToken);
@@ -122,17 +122,17 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger.LogInformation("Background job cancelled: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
+                    _logger.LogInformation("Background job cancelled: {JobName}", nameof(AccountViolationLevelResetJob));
                     break;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unexpected error in background job execution loop: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
+                    _logger.LogError(ex, "Unexpected error in background job execution loop: {JobName}", nameof(AccountViolationLevelResetJob));
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
             }
 
-            _logger.LogInformation("Background job stopped: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
+            _logger.LogInformation("Background job stopped: {JobName}", nameof(AccountViolationLevelResetJob));
         }
 
 
@@ -166,7 +166,7 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
                         : TimeSpan.FromMilliseconds(1000),
                     Metadata = new Dictionary<string, string>
                     {
-                        ["JobName"] = nameof(AccountPodcastListenSlotRecoveryJob),
+                        ["JobName"] = nameof(AccountViolationLevelResetJob),
                         ["ExecutionId"] = executionId,
                         ["InstanceId"] = Environment.MachineName,
                         ["ProcessId"] = Environment.ProcessId.ToString(),
@@ -245,7 +245,7 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var accountService = scope.ServiceProvider.GetRequiredService<AccountService>();
-                    await accountService.UpdateAccountPodcastListenSlotRecovery();
+                    await accountService.ResetAccountViolationLevelsAsync();
                 }
 
 
@@ -304,13 +304,13 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
         {
             _logger.LogInformation(
                 "Background job stopping: {JobName}",
-                nameof(AccountPodcastListenSlotRecoveryJob));
+                nameof(AccountViolationLevelResetJob));
 
             await base.StopAsync(cancellationToken);
 
             _logger.LogInformation(
                 "Background job stopped: {JobName}",
-                nameof(AccountPodcastListenSlotRecoveryJob));
+                nameof(AccountViolationLevelResetJob));
         }
 
     }

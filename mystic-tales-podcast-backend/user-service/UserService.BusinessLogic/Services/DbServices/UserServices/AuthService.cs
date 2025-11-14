@@ -31,6 +31,7 @@ using UserService.BusinessLogic.DTOs.Auth;
 using System.Security.Cryptography;
 using System.Text;
 using UserService.BusinessLogic.DTOs.SystemConfiguration;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateAccountPassword;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -336,16 +337,17 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
-                    var account = await _unitOfWork.AccountRepository.FindByEmailAsync(googlePayload.Email);
+                    var account = await _unitOfWork.AccountRepository.FindByEmailAsync(googlePayload.Email, a => a.Include(ac => ac.Role));
                     var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
 
                     if (account == null)
                     {
                         // Chưa có account, tạo mới
+                        var newpassword = Guid.NewGuid().ToString();
                         var newAccount = new Account
                         {
                             Email = googlePayload.Email,
-                            Password = _bcryptHelper.HashPassword(Guid.NewGuid().ToString()),
+                            Password = _bcryptHelper.HashPassword(newpassword),
                             FullName = googlePayload.Name ?? googlePayload.Email,
                             RoleId = 1,
                             IsVerified = true,
@@ -356,6 +358,30 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         newAccount = await _accountGenericRepository.CreateAsync(newAccount);
 
                         account = newAccount;
+                        account.Role = await _roleGenericRepository.FindByIdAsync(newAccount.RoleId);
+
+                        // gửi mail mật khẩu mới
+                        var mailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendUserServiceEmailMailInfo = new
+                                {
+                                    // MailTypeName = "CustomerRegistrationVerification",
+                                    MailTypeName = "CustomerGoogleRegistrationNewAccountPassword",
+                                    ToEmail = newAccount.Email,
+                                    MailObject = new CustomerGoogleRegistrationNewAccountPasswordMailViewModel
+                                    {
+                                        Email = newAccount.Email,
+                                        FullName = newAccount.FullName ?? "",
+                                        NewAccountPassword = newpassword
+                                    }
+                                }
+                            });
+                            var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.UserManagementDomain,
+                                    requestData: mailSendingRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "user-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(mailSendingFlow);
                     }
                     else
                     {
@@ -412,7 +438,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         new Claim(ClaimTypes.Email, account.Email),
                         new Claim("id", account.Id.ToString()),
                         new Claim("role_id", account.RoleId.ToString()),
-                        new Claim(ClaimTypes.Role, account.Role?.Name ?? "User"),
+                        new Claim(ClaimTypes.Role, account.Role.Name),
                         new Claim("balance", account.Balance.ToString()),
                         new Claim("device_info_token", googleLoginData.DeviceInfoToken ?? string.Empty),
                         new Claim(ClaimTypes.SerialNumber, Guid.NewGuid().ToString()),
@@ -734,8 +760,73 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             }
         }
 
+        public async Task UpdateAccountPassword(UpdateAccountPasswordParameterDTO updateAccountPasswordParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var account = await _accountGenericRepository.FindByIdAsync(updateAccountPasswordParameterDTO.AccountId);
+                    if (account == null)
+                    {
+                        throw new HttpRequestException("Account does not exist");
+                    }else if (account.IsVerified == false)
+                    {
+                        throw new HttpRequestException("Account has not been verified");
+                    }
+                    if (account.DeactivatedAt != null)
+                    {
+                        throw new HttpRequestException("Account has been deactivated");
+                    }
+                    if (!_bcryptHelper.VerifyPassword(updateAccountPasswordParameterDTO.OldPassword, account.Password))
+                    {
+                        throw new HttpRequestException("Old password is incorrect");
+                    }
 
+                    account.Password = _bcryptHelper.HashPassword(updateAccountPasswordParameterDTO.NewPassword);
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
 
+                    await transaction.CommitAsync();
 
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = account.Id;
+                    messageNextRequestData["OldPassword"] = updateAccountPasswordParameterDTO.OldPassword;
+                    messageNextRequestData["NewPassword"] = updateAccountPasswordParameterDTO.NewPassword;
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            // Message = "Password has been updated successfully"
+                            AccountId = account.Id,
+                            OldPassword = updateAccountPasswordParameterDTO.OldPassword,
+                            NewPassword = updateAccountPasswordParameterDTO.NewPassword
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-account-password.success"
+                        );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (HttpRequestException ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                       topic: KafkaTopicEnum.UserManagementDomain,
+                       requestData: command.RequestData,
+                       responseData: JObject.FromObject(new
+                       {
+                           ErrorMessage = $"Update password process failed, error: {ex.Message}"
+                       }),
+                       sagaInstanceId: command.SagaInstanceId,
+                       flowName: command.FlowName,
+                       messageName: "update-account-password.failed"
+                       );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
     }
 }

@@ -268,6 +268,41 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
+  
+  password-update-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật mật khẩu"
+    save-file: ""
+    steps:
+      - name: "update-account-password"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Nhận thông tin tài khoản để cập nhật mật khẩu"
+        parameters:
+          - AccountId
+          - OldPassword
+          - NewPassword
+        next-request-data:
+          - AccountId
+          - OldPassword
+          - NewPassword
+        response-data:
+          - AccountId
+          - OldPassword
+          - NewPassword
+        onSuccess:
+          emit: "update-account-password.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-account-password.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
 
   podcaster-profile-creation-flow:
     topic: "user-management-domain"

@@ -778,7 +778,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 if (existingEpisode == null)
                 {
                     throw new Exception("Podcast episode with id " + episodeId + " does not exist");
-                }else if (existingEpisode.DeletedAt != null)
+                }
+                else if (existingEpisode.DeletedAt != null)
                 {
                     throw new Exception("Podcast episode with id " + episodeId + " has been deleted");
                 }
@@ -790,7 +791,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 else if (existingEpisode.PodcastShow.DeletedAt != null)
                 {
                     throw new Exception("Podcast show with id " + existingEpisode.PodcastShowId + " has been deleted");
-                }else if (requestingAccount.RoleId == (int) RoleEnum.Customer && existingEpisode.PodcastShow.PodcasterId != requestingAccount.Id)
+                }
+                else if (requestingAccount.RoleId == (int)RoleEnum.Customer && existingEpisode.PodcastShow.PodcasterId != requestingAccount.Id)
                 {
                     throw new Exception("Podcast show with id " + existingEpisode.PodcastShowId + " does not belong to podcaster with id " + requestingAccount.Id);
                 }
@@ -883,7 +885,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = episode.PodcastShow.Id,
                         Name = episode.PodcastShow.Name,
-                        MainImageFileKey = episode.PodcastShow.MainImageFileKey
+                        MainImageFileKey = episode.PodcastShow.MainImageFileKey,
+                        IsReleased = episode.PodcastShow.IsReleased,
+                        ReleaseDate = episode.PodcastShow.ReleaseDate
                     },
                     Podcaster = new AccountSnippetResponseDTO
                     {
@@ -978,7 +982,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = episode.PodcastShow.Id,
                         Name = episode.PodcastShow.Name,
-                        MainImageFileKey = episode.PodcastShow.MainImageFileKey
+                        MainImageFileKey = episode.PodcastShow.MainImageFileKey,
+                        IsReleased = episode.PodcastShow.IsReleased,
+                        ReleaseDate = episode.PodcastShow.ReleaseDate
                     },
                     Podcaster = new AccountSnippetResponseDTO
                     {
@@ -2047,18 +2053,29 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             predicate: pe => pe.Id != existingPodcastEpisode.Id &&
                                 pe.AudioFingerPrint != null &&
                                 pe.DeletedAt == null &&
-                                pe.PodcastShow.PodcasterId != existingPodcastEpisode.PodcastShow.PodcasterId && // không so sánh với episode của cùng podcaster
-                                (pe.PodcastEpisodeStatusTrackings
-                                    .OrderByDescending(pet => pet.CreatedAt)
-                                    .FirstOrDefault()
-                                    .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published ||
-                                pe.PodcastEpisodeStatusTrackings
-                                    .OrderByDescending(pet => pet.CreatedAt)
-                                    .FirstOrDefault()
-                                    .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown),
+                                pe.PodcastShow.PodcasterId != existingPodcastEpisode.PodcastShow.PodcasterId , // không so sánh với episode của cùng podcaster
+                                // (pe.PodcastEpisodeStatusTrackings
+                                //     .OrderByDescending(pet => pet.CreatedAt)
+                                //     .FirstOrDefault()
+                                //     .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published ||
+                                // pe.PodcastEpisodeStatusTrackings
+                                //     .OrderByDescending(pet => pet.CreatedAt)
+                                //     .FirstOrDefault()
+                                //     .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown),
                             includeFunc: q => q.Include(pe => pe.PodcastEpisodeStatusTrackings)
                             .Include(pe => pe.PodcastShow)
                         ).ToListAsync();
+
+                        publishedEpisode = publishedEpisode.Where(pe =>
+                        {
+                            var latestStatusId = pe.PodcastEpisodeStatusTrackings
+                                .OrderByDescending(pet => pet.CreatedAt)
+                                .FirstOrDefault()
+                                .PodcastEpisodeStatusId;
+                            return latestStatusId == (int)PodcastEpisodeStatusEnum.Published ||
+                                   latestStatusId == (int)PodcastEpisodeStatusEnum.TakenDown;
+                        }).ToList();
+                
                         AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison comparison = new AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison
                         {
                             Target = null,
@@ -2115,13 +2132,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         // 				+ chuyển trạng thái của episode sang pending review
 
                         var pendingReviewSession = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
-                            predicate: pers => pers.PodcastEpisodeId == existingPodcastEpisode.Id &&
-                                pers.PodcastEpisodePublishReviewSessionStatusTrackings
-                                    .OrderByDescending(persst => persst.CreatedAt)
-                                    .FirstOrDefault()
-                                    .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
+                            predicate: pers => pers.PodcastEpisodeId == existingPodcastEpisode.Id,
                             includeFunc: q => q.Include(pers => pers.PodcastEpisodePublishReviewSessionStatusTrackings)
                         ).FirstOrDefaultAsync();
+
+                        var latestPendingReviewSessionStatusTracking = pendingReviewSession != null
+                            ? pendingReviewSession.PodcastEpisodePublishReviewSessionStatusTrackings
+                                .OrderByDescending(persst => persst.CreatedAt)
+                                .FirstOrDefault()
+                            : null;
+
+                        pendingReviewSession = (latestPendingReviewSessionStatusTracking != null && latestPendingReviewSessionStatusTracking.PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview)
+                            ? pendingReviewSession
+                            : null;
 
                         if (pendingReviewSession != null)
                         {
@@ -2495,13 +2518,25 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         throw new Exception("Podcaster with id " + existingPodcastEpisode.PodcastShow.PodcasterId + " does not exist");
                     }
                     var pendingReviewSession = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
-                        predicate: pers => pers.PodcastEpisodeId == existingPodcastEpisode.Id &&
-                            pers.PodcastEpisodePublishReviewSessionStatusTrackings
-                                .OrderByDescending(persst => persst.CreatedAt)
-                                .FirstOrDefault()
-                                .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
+                        predicate: pers => pers.PodcastEpisodeId == existingPodcastEpisode.Id,
+                            // pers.PodcastEpisodePublishReviewSessionStatusTrackings
+                            //     .OrderByDescending(persst => persst.CreatedAt)
+                            //     .FirstOrDefault()
+                            //     .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
                         includeFunc: q => q.Include(pers => pers.PodcastEpisodePublishReviewSessionStatusTrackings)
                     ).FirstOrDefaultAsync();
+
+                    var latestPendingReviewSessionStatusTracking = pendingReviewSession != null
+                        ? pendingReviewSession.PodcastEpisodePublishReviewSessionStatusTrackings
+                            .OrderByDescending(persst => persst.CreatedAt)
+                            .FirstOrDefault()
+                        : null;
+                    
+                    pendingReviewSession = (latestPendingReviewSessionStatusTracking != null && latestPendingReviewSessionStatusTracking.PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview)
+                        ? pendingReviewSession
+                        : null;
+
+
                     if (pendingReviewSession == null)
                     {
                         throw new Exception("No pending review session found for podcast episode with id " + discardEpisodePublishReviewSessionParameterDTO.PodcastEpisodeId);
@@ -3215,6 +3250,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 Id = validEpisode.Id,
                                 Name = validEpisode.Name,
                                 MainImageFileKey = validEpisode.MainImageFileKey,
+                                IsReleased = validEpisode.IsReleased,
+                                ReleaseDate = validEpisode.ReleaseDate,
                             },
                             Podcaster = new AccountSnippetResponseDTO
                             {
@@ -3415,6 +3452,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 Id = validEpisode.Id,
                                 Name = validEpisode.Name,
                                 MainImageFileKey = validEpisode.MainImageFileKey,
+                                IsReleased = validEpisode.IsReleased,
+                                ReleaseDate = validEpisode.ReleaseDate,
                             },
                             Podcaster = new AccountSnippetResponseDTO
                             {
@@ -3565,13 +3604,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     // PodcastEpisodePublishReviewSession discard status khác 2, 3, 4 (EpisodeId)
                     var session = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastEpisodeId == discardEpisodePublishReviewDmcaRemoveEpisodeForceParameterDTO.PodcastEpisodeId
-                            && pe.PodcastEpisodePublishReviewSessionStatusTrackings
-                            .OrderByDescending(pet => pet.CreatedAt)
-                            .FirstOrDefault()
-                            .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
+                        predicate: pe => pe.PodcastEpisodeId == discardEpisodePublishReviewDmcaRemoveEpisodeForceParameterDTO.PodcastEpisodeId,
+                            // && pe.PodcastEpisodePublishReviewSessionStatusTrackings
+                            // .OrderByDescending(pet => pet.CreatedAt)
+                            // .FirstOrDefault()
+                            // .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
                         includeFunc: pe => pe.Include(pe => pe.PodcastEpisodePublishReviewSessionStatusTrackings)
                     ).ToListAsync();
+
+                    session = session.Where(s => s.PodcastEpisodePublishReviewSessionStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview
+                    ).ToList();
 
                     foreach (var s in session)
                     {
@@ -3632,13 +3677,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     // PodcastEpisodePublishReviewSession discard status khác 2, 3, 4 (EpisodeId)
                     var sessions = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastEpisodeId == discardEpisodePublishReviewEpisodeDeletionForceParameterDTO.PodcastEpisodeId
-                            && pe.PodcastEpisodePublishReviewSessionStatusTrackings
-                            .OrderByDescending(pet => pet.CreatedAt)
-                            .FirstOrDefault()
-                            .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
+                        predicate: pe => pe.PodcastEpisodeId == discardEpisodePublishReviewEpisodeDeletionForceParameterDTO.PodcastEpisodeId,
+                            // && pe.PodcastEpisodePublishReviewSessionStatusTrackings
+                            // .OrderByDescending(pet => pet.CreatedAt)
+                            // .FirstOrDefault()
+                            // .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
                         includeFunc: pe => pe.Include(pe => pe.PodcastEpisodePublishReviewSessionStatusTrackings)
                     ).ToListAsync();
+
+                    sessions = sessions.Where(s => s.PodcastEpisodePublishReviewSessionStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview
+                    ).ToList();
 
                     foreach (var s in sessions)
                     {
@@ -3697,13 +3748,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     // PodcastEpisodePublishReviewSession discard status khác 2, 3, 4 (EpisodeId)
                     var sessions = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastEpisode.PodcastShowId == discardShowEpisodesPublishReviewDmcaRemoveShowForceParameterDTO.PodcastShowId
-                            && pe.PodcastEpisodePublishReviewSessionStatusTrackings
-                            .OrderByDescending(pet => pet.CreatedAt)
-                            .FirstOrDefault()
-                            .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
+                        predicate: pe => pe.PodcastEpisode.PodcastShowId == discardShowEpisodesPublishReviewDmcaRemoveShowForceParameterDTO.PodcastShowId,
+                            // && pe.PodcastEpisodePublishReviewSessionStatusTrackings
+                            // .OrderByDescending(pet => pet.CreatedAt)
+                            // .FirstOrDefault()
+                            // .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
                         includeFunc: pe => pe.Include(pe => pe.PodcastEpisodePublishReviewSessionStatusTrackings)
                     ).ToListAsync();
+
+                    sessions = sessions.Where(s => s.PodcastEpisodePublishReviewSessionStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview
+                    ).ToList();
 
                     foreach (var s in sessions)
                     {
@@ -3762,13 +3819,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     // PodcastEpisodePublishReviewSession discard status khác 2, 3, 4 (EpisodeId)
                     var sessions = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastEpisode.PodcastShow.PodcastChannelId == discardChannelEpisodesPublishReviewChannelDeletionForceParameterDTO.PodcastChannelId
-                            && pe.PodcastEpisodePublishReviewSessionStatusTrackings
-                            .OrderByDescending(pet => pet.CreatedAt)
-                            .FirstOrDefault()
-                            .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
+                        predicate: pe => pe.PodcastEpisode.PodcastShow.PodcastChannelId == discardChannelEpisodesPublishReviewChannelDeletionForceParameterDTO.PodcastChannelId,
+                            // && pe.PodcastEpisodePublishReviewSessionStatusTrackings
+                            // .OrderByDescending(pet => pet.CreatedAt)
+                            // .FirstOrDefault()
+                            // .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
                         includeFunc: pe => pe.Include(pe => pe.PodcastEpisodePublishReviewSessionStatusTrackings)
                     ).ToListAsync();
+
+                    sessions = sessions.Where(s => s.PodcastEpisodePublishReviewSessionStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview
+                    ).ToList();
 
                     foreach (var s in sessions)
                     {
@@ -3827,13 +3890,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     // PodcastEpisodePublishReviewSession discard status khác 2, 3, 4 (EpisodeId)
                     var sessions = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastEpisode.PodcastShow.PodcasterId == discardPodcasterEpisodesPublishReviewTerminatePodcasterForceParameterDTO.PodcasterId
-                            && pe.PodcastEpisodePublishReviewSessionStatusTrackings
-                            .OrderByDescending(pet => pet.CreatedAt)
-                            .FirstOrDefault()
-                            .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
+                        predicate: pe => pe.PodcastEpisode.PodcastShow.PodcasterId == discardPodcasterEpisodesPublishReviewTerminatePodcasterForceParameterDTO.PodcasterId,
+                            // && pe.PodcastEpisodePublishReviewSessionStatusTrackings
+                            // .OrderByDescending(pet => pet.CreatedAt)
+                            // .FirstOrDefault()
+                            // .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
                         includeFunc: pe => pe.Include(pe => pe.PodcastEpisodePublishReviewSessionStatusTrackings)
                     ).ToListAsync();
+
+                    sessions = sessions.Where(s => s.PodcastEpisodePublishReviewSessionStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview
+                    ).ToList();
 
                     foreach (var s in sessions)
                     {
@@ -3892,13 +3961,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     // PodcastEpisodePublishReviewSession discard status khác 2, 3, 4 (EpisodeId)
                     var sessions = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
-                        predicate: pe => pe.PodcastEpisode.PodcastShowId == discardShowEpisodesPublishReviewShowDeletionForceParameterDTO.PodcastShowId
-                            && pe.PodcastEpisodePublishReviewSessionStatusTrackings
-                            .OrderByDescending(pet => pet.CreatedAt)
-                            .FirstOrDefault()
-                            .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
+                        predicate: pe => pe.PodcastEpisode.PodcastShowId == discardShowEpisodesPublishReviewShowDeletionForceParameterDTO.PodcastShowId,
+                            // && pe.PodcastEpisodePublishReviewSessionStatusTrackings
+                            // .OrderByDescending(pet => pet.CreatedAt)
+                            // .FirstOrDefault()
+                            // .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
                         includeFunc: pe => pe.Include(pe => pe.PodcastEpisodePublishReviewSessionStatusTrackings)
                     ).ToListAsync();
+
+                    sessions = sessions.Where(s => s.PodcastEpisodePublishReviewSessionStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview
+                    ).ToList();
 
                     foreach (var s in sessions)
                     {
@@ -5447,6 +5522,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             Id = pes.PodcastEpisodeId,
                             Name = pes.PodcastEpisode.Name,
                             MainImageFileKey = pes.PodcastEpisode.MainImageFileKey,
+                            IsReleased = pes.PodcastEpisode.IsReleased,
+                            ReleaseDate = pes.PodcastEpisode.ReleaseDate
                         }).FirstOrDefault(),
                         Podcaster = g.Select(pes => new AccountSnippetResponseDTO
                         {
@@ -5568,6 +5645,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 Id = episode.Id,
                                 Name = episode.Name,
                                 MainImageFileKey = episode.MainImageFileKey,
+                                IsReleased = episode.IsReleased,
+                                ReleaseDate = episode.ReleaseDate
                             },
                             Podcaster = new AccountSnippetResponseDTO
                             {
@@ -5576,7 +5655,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 Email = podcaster.Email,
                                 MainImageFileKey = podcaster.MainImageFileKey,
                             },
-                            AudioFileUrl =  deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+                            AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
                                 ? await _fileIOHelper.GeneratePresignedUrlAsync(
                                     episode.AudioFileKey
                                 )
@@ -5822,7 +5901,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
             }
         }
-        
+
         public async Task TakedownContentDmcaEpisode(TakedownContentDmcaParameterDTO takedownContentDmcaParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -6036,6 +6115,156 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task ReleasePublishEpisodesAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // lấy tất cả các episode đang ở trạng thái Published và isReleased = false và ReleaseDate != null và chưa bị xoá và và nằm trong show chưa bị xoá với đang Published nằm trong channel chưa bị xoá (channel có thể có hoặc không)   
+                    // lấy cột releaseDate ra xem nó có == hôm nay không, nếu có thì chuyển isReleased = true
+
+                    var episodesToRelease = await _podcastEpisodeGenericRepository.FindAll(
+                        predicate: pe => pe.IsReleased == false
+                                    && pe.ReleaseDate != null
+                                    && pe.DeletedAt == null
+                                    && pe.PodcastShow.DeletedAt == null
+                                    && (pe.PodcastShow.PodcastChannel == null || pe.PodcastShow.PodcastChannel.DeletedAt == null),
+                        includeFunc: pe => pe.Include(pe => pe.PodcastEpisodeStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                    ).ToListAsync();
+
+                    foreach (var episode in episodesToRelease)
+                    {
+                        var currentEpisodeStatusTracking = episode.PodcastEpisodeStatusTrackings
+                            .OrderByDescending(pet => pet.CreatedAt)
+                            .FirstOrDefault();
+
+                        var currentShowStatusTracking = episode.PodcastShow.PodcastShowStatusTrackings
+                            .OrderByDescending(pst => pst.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (episode.ReleaseDate <= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone())
+                            && currentEpisodeStatusTracking.PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published
+                            && currentShowStatusTracking.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
+                        {
+                            episode.IsReleased = true;
+                            await _podcastEpisodeGenericRepository.UpdateAsync(episode.Id, episode);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new Exception("Release publish shows job failed, error: " + ex.Message);
+                }
+            }
+        }
+
+        public async Task RevertPendingEditRequiredEpisodesAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Lấy các episode đang ở trong trạng thái Pending Edit Required và created at của status trackig Pending Edit Required lâu hơn ReviewSessionConfig.podcastEpisodePublishEditRequirementExpiredHours giờ trước và chưa bị xoá  và nằm trong show chưa bị xoá và show nằm trong channel chưa bị xoá (channel là optional) , buộc phải đang có publish review session gần nhất đang Pending Review
+                    // chuyển episode về Draft
+                    // chuyển publish review session gần nhất về Discard
+                    var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
+                    var expirationTime = _dateHelper.GetNowByAppTimeZone().AddHours(-activeSystemConfigProfile.ReviewSessionConfig.PodcastEpisodePublishEditRequirementExpiredHours);
+
+                    var episodesToRevert = await _podcastEpisodeGenericRepository.FindAll(
+                        predicate: pe => pe.DeletedAt == null
+                                    && pe.PodcastShow.DeletedAt == null
+                                    && (pe.PodcastShow.PodcastChannel == null || pe.PodcastShow.PodcastChannel.DeletedAt == null),
+                        includeFunc: pe => pe
+                            .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                            .Include(pe => pe.PodcastEpisodePublishReviewSessions)
+                            .ThenInclude(pers => pers.PodcastEpisodePublishReviewSessionStatusTrackings)
+                    ).ToListAsync();
+
+                    foreach (var episode in episodesToRevert)
+                    {
+                        var currentEpisodeStatusTracking = episode.PodcastEpisodeStatusTrackings
+                            .OrderByDescending(pet => pet.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (currentEpisodeStatusTracking.PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.PendingEditRequired
+                            && currentEpisodeStatusTracking.CreatedAt <= expirationTime)
+                        {
+                            var latestPublishReviewSession = episode.PodcastEpisodePublishReviewSessions
+                                .OrderByDescending(pers => pers.CreatedAt)
+                                .FirstOrDefault();
+
+                            if (latestPublishReviewSession != null
+                                && latestPublishReviewSession.PodcastEpisodePublishReviewSessionStatusTrackings
+                                    .OrderByDescending(pesst => pesst.CreatedAt)
+                                    .FirstOrDefault()
+                                    .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview)
+                            {
+                                // revert episode to Draft
+                                var newStatusTracking = new PodcastEpisodeStatusTracking
+                                {
+                                    PodcastEpisodeId = episode.Id,
+                                    PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.Draft
+                                };
+                                await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                                // revert publish review session to Discard
+                                var newPublishReviewSessionStatusTracking = new PodcastEpisodePublishReviewSessionStatusTracking
+                                {
+                                    PodcastEpisodePublishReviewSessionId = latestPublishReviewSession.Id,
+                                    PodcastEpisodePublishReviewSessionStatusId = (int)PodcastEpisodePublishReviewSessionStatusEnum.Discard
+                                };
+                                await _podcastEpisodePublishReviewSessionStatusTrackingGenericRepository.CreateAsync(newPublishReviewSessionStatusTracking);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new Exception("Revert pending edit required episodes job failed, error: " + ex.Message);
+                }
+            }
+        }
+
+        public async Task ExpireEpisodeListenSessionsAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // lấy tất cả listensession có iscompleted =false và expiredat <= now
+                    var now = _dateHelper.GetNowByAppTimeZone();
+                    var sessionsToExpire = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+                        predicate: pes => pes.IsCompleted == false && pes.ExpiredAt <= now
+                    ).ToListAsync();
+
+                    foreach (var session in sessionsToExpire)
+                    {
+                        session.IsCompleted = true;
+                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new Exception("Expire episode listen sessions job failed, error: " + ex.Message);
                 }
             }
         }

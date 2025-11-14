@@ -13,6 +13,10 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting.interfaces
         BackgroundJob SystemPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
         BackgroundJob UserPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
 
+        BackgroundJob ShowPublishReleaseJob { get; set; }
+        BackgroundJob EpisodePublishReleaseJob { get; set; }
+        BackgroundJob EpisodeEditRequirementPendingTimeoutJob { get; set; }
+        BackgroundJob EpisodeListenSessionExpiryJob { get; set; }
     }
 
     public class BackgroundJob

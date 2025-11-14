@@ -297,20 +297,15 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         public int CalculateViolationLevel(int violationPoint, List<AccountViolationLevelConfigDTO> accountViolationLevelConfigs)
         {
             int violationLevel = 0;
-            // accountViolationLevelConfigs = new JArray(accountViolationLevelConfigs.OrderBy(c => c.Value<int>("ViolationPointThreshold")));
-            // int maxLevelPointThreshold = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationPointThreshold"));
             accountViolationLevelConfigs = accountViolationLevelConfigs.OrderBy(c => c.ViolationPointThreshold).ToList();
             int maxLevelPointThreshold = accountViolationLevelConfigs.Max(c => c.ViolationPointThreshold);
             if (violationPoint > maxLevelPointThreshold)
             {
-                // violationLevel = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationLevel"));
                 violationLevel = accountViolationLevelConfigs.Max(c => c.ViolationLevel);
                 return violationLevel;
             }
             foreach (var config in accountViolationLevelConfigs)
             {
-                // int level = config.Value<int>("ViolationLevel");
-                // int pointThreshold = config.Value<int>("ViolationPointThreshold");
                 int level = config.ViolationLevel;
                 int pointThreshold = config.ViolationPointThreshold;
                 if (violationPoint <= pointThreshold)
@@ -4919,32 +4914,31 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         public async Task UpdateAccountPodcastListenSlotRecovery()
         {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync()){
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
                 try
                 {
                     var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
-                    // lấy danh sách tất cả các tài khoản đang không bị deactivated và đã verified và có podcastListenSlot khắc null và  < AccountConfig.podcastListenSlotThreshold 
-                    // lấy systemconfig với field AccountConfig.podcastListenSlotRecoverySeconds , lặp qua từng account rồi so cột lastViolationPointChanged so với thời điểm hiện tại xem số giây có >= AccountConfig.podcastListenSlotRecoverySeconds không , nếu có thì trừ 1 
+                    // lấy danh sách tất cả các tài khoản đang không bị deactivated và đã verified và 
+                    // lấy systemconfig với field AccountConfig.podcastListenSlotRecoverySeconds , lặp qua từng account rồi so cột lastViolationPointChanged so với thời điểm hiện tại xem số giây có >= AccountConfig.podcastListenSlotRecoverySeconds không , nếu có thì cộng 1 vào podcastListenSlot 
                     var accounts = await _accountGenericRepository.FindAll(
                         predicate: a => a.DeactivatedAt == null
                             && a.IsVerified == true
                             && a.PodcastListenSlot != null
-                            && a.PodcastListenSlot < activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold,
+                            && a.PodcastListenSlot < activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold
+                            && a.LastViolationPointChanged != null,
                         includeFunc: null
                     ).ToListAsync();
 
                     foreach (var account in accounts)
                     {
-                        if (account.LastViolationPointChanged != null)
+                        var secondsSinceLastChange = (_dateHelper.GetNowByAppTimeZone() - account.LastViolationPointChanged.Value).TotalSeconds;
+                        if (secondsSinceLastChange >= activeSystemConfigProfile.AccountConfig.PodcastListenSlotRecoverySeconds && account.PodcastListenSlot < activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold)
                         {
-                            var secondsSinceLastChange = (_dateHelper.GetNowByAppTimeZone() - account.LastViolationPointChanged.Value).TotalSeconds;
-                            if (secondsSinceLastChange >= activeSystemConfigProfile.AccountConfig.PodcastListenSlotRecoverySeconds && account.PodcastListenSlot < activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold)
-                            {
-                                account.PodcastListenSlot += 1;
-                                
-                                account.LastViolationPointChanged = _dateHelper.GetNowByAppTimeZone();
-                                await _accountGenericRepository.UpdateAsync(account.Id, account);
-                            }
+                            account.PodcastListenSlot += 1;
+
+                            account.LastViolationPointChanged = _dateHelper.GetNowByAppTimeZone();
+                            await _accountGenericRepository.UpdateAsync(account.Id, account);
                         }
                     }
                     await transaction.CommitAsync();
@@ -4956,6 +4950,87 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await transaction.RollbackAsync();
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                     throw new Exception("UpdateAccountPodcastListenSlotRecovery failed, error: " + ex.Message);
+                }
+            }
+        }
+
+        public async Task DecayAccountViolationPointsAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // lấy danh sách tất cả các tài khoản đang không bị deactivated và đã verified và violationPoint >0  và violationLevel == 0
+                    // lấy systemconfig với field AccountConfig.violationPointDecayHours , lặp qua từng account rồi so cột lastViolationPointChanged so với thời điểm hiện tại xem số hours có >= AccountConfig.violationPointDecayHours không , nếu có thì trừ 1 vào violationPoint
+
+                    var accounts = await _accountGenericRepository.FindAll(
+                        predicate: a => a.DeactivatedAt == null
+                            && a.IsVerified == true
+                            && a.ViolationPoint > 0
+                            && a.ViolationLevel == 0
+                            && a.LastViolationPointChanged != null,
+                        includeFunc: null
+                    ).ToListAsync();
+
+                    foreach (var account in accounts)
+                    {
+                        var hoursSinceLastChange = (_dateHelper.GetNowByAppTimeZone() - account.LastViolationPointChanged.Value).TotalHours;
+                        var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
+                        if (hoursSinceLastChange >= activeSystemConfigProfile.AccountConfig.ViolationPointDecayHours && account.ViolationPoint > 0)
+                        {
+                            account.ViolationPoint -= 1;
+
+                            account.LastViolationPointChanged = _dateHelper.GetNowByAppTimeZone();
+                            await _accountGenericRepository.UpdateAsync(account.Id, account);
+                        }
+                    }
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new Exception("DecayAccountViolationPointsAsync failed, error: " + ex.Message);
+                }
+            }
+        }
+
+        public async Task ResetAccountViolationLevelsAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // lấy danh sách tất cả các tài khoản đang không bị deactivated và đã verified và violationLevel >0
+                    // lấy systemconfig với field AccountViolationLevelConfig[].violationLevel lấy ra punishmentDays , lặp qua từng account rồi so cột lastViolationLevelChanged so với thời điểm hiện tại xem số days có >= AccountViolationLevelConfig[] punishmentDays không , nếu có thì đặt lại violationLevel về 0
+
+                    var accounts = await _accountGenericRepository.FindAll(
+                        predicate: a => a.DeactivatedAt == null
+                            && a.IsVerified == true
+                            && a.ViolationLevel > 0
+                            && a.LastViolationLevelChanged != null,
+                        includeFunc: null
+                    ).ToListAsync();
+
+                    foreach (var account in accounts)
+                    {
+                        var daysSinceLastChange = (_dateHelper.GetNowByAppTimeZone() - account.LastViolationLevelChanged.Value).TotalDays;
+                        var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
+                        if (daysSinceLastChange >= activeSystemConfigProfile.AccountViolationLevelConfigs.FirstOrDefault(c => c.ViolationLevel == account.ViolationLevel)?.PunishmentDays && account.ViolationLevel > 0)
+                        {
+                            account.ViolationLevel = 0;
+
+                            account.LastViolationLevelChanged = _dateHelper.GetNowByAppTimeZone();
+                            await _accountGenericRepository.UpdateAsync(account.Id, account);
+                        }
+                    }
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new Exception("ResetAccountViolationLevelsAsync failed, error: " + ex.Message);
                 }
             }
         }

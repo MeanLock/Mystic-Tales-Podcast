@@ -9,6 +9,7 @@ namespace UserService.Common.AppConfigurations.BusinessSetting
         public MailProperty CustomerPasswordReset { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestConfirmation { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestResult { get; set; } = new MailProperty();
+        public MailProperty CustomerGoogleRegistrationNewAccountPassword { get; set; } = new MailProperty();
     }
     public class MailPropertiesConfig : IMailPropertiesConfig
     {
@@ -16,6 +17,7 @@ namespace UserService.Common.AppConfigurations.BusinessSetting
         public MailProperty CustomerRegistrationVerification { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestConfirmation { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestResult { get; set; } = new MailProperty();
+        public MailProperty CustomerGoogleRegistrationNewAccountPassword { get; set; } = new MailProperty();
 
         public MailPropertiesConfig(IConfiguration configuration)
         {
@@ -24,6 +26,7 @@ namespace UserService.Common.AppConfigurations.BusinessSetting
             PodcasterRequestConfirmation = mailConfig.PodcasterRequestConfirmation;
             PodcasterRequestResult = mailConfig.PodcasterRequestResult;
             CustomerPasswordReset = mailConfig.CustomerPasswordReset;
+            CustomerGoogleRegistrationNewAccountPassword = mailConfig.CustomerGoogleRegistrationNewAccountPassword;
         }
 
         // hàm nhận vào string mailType, trả về MailProperty tương ứng

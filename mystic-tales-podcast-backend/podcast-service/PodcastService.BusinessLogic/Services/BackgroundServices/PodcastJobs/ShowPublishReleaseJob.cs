@@ -1,38 +1,38 @@
 using Cronos;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using UserService.BusinessLogic.Helpers.DateHelpers;
-using UserService.Common.AppConfigurations.App.interfaces;
-using UserService.Common.AppConfigurations.BusinessSetting.interfaces;
-using UserService.Common.Configurations.Consul;
-using UserService.Common.Configurations.Consul.interfaces;
-using UserService.Infrastructure.Models.Consul.DistributedLock;
-using UserService.Infrastructure.Services.Consul.DistributedLock;
+using PodcastService.BusinessLogic.Helpers.DateHelpers;
+using PodcastService.Common.AppConfigurations.App.interfaces;
+using PodcastService.Common.AppConfigurations.BusinessSetting.interfaces;
+using PodcastService.Common.Configurations.Consul;
+using PodcastService.Common.Configurations.Consul.interfaces;
+using PodcastService.Infrastructure.Models.Consul.DistributedLock;
+using PodcastService.Infrastructure.Services.Consul.DistributedLock;
 using Microsoft.Extensions.DependencyInjection;
-using UserService.BusinessLogic.Services.DbServices.MiscServices;
-using UserService.BusinessLogic.Services.DbServices.CachingServices;
-using UserService.BusinessLogic.Services.DbServices.UserServices;
+using PodcastService.BusinessLogic.Services.DbServices.MiscServices;
+using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
+using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 
-namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
+namespace PodcastService.BusinessLogic.Services.BackgroundServices.PodcastJobs
 {
-    public class AccountPodcastListenSlotRecoveryJob : BackgroundService
+    public class ShowPublishReleaseJob : BackgroundService
     {
         private readonly ConsulDistributedLockService _lockService;
         private readonly IBackgroundJobsConfig _jobsConfig;
-        private readonly ILogger<AccountPodcastListenSlotRecoveryJob> _logger;
+        private readonly ILogger<ShowPublishReleaseJob> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly IConsulDistributedLockConfig _consulDistributedLockConfig;
         private readonly IAppConfig _appConfig;
         private readonly DateHelper _dateHelper;
 
         // Job configuration
-        private BackgroundJob _jobConfig => _jobsConfig.AccountPodcastListenSlotRecoveryJob;
+        private BackgroundJob _jobConfig => _jobsConfig.ShowPublishReleaseJob;
         private CronExpression? _cronExpression;
 
-        public AccountPodcastListenSlotRecoveryJob(
+        public ShowPublishReleaseJob(
             ConsulDistributedLockService lockService,
             IBackgroundJobsConfig jobsConfig,
-            ILogger<AccountPodcastListenSlotRecoveryJob> logger,
+            ILogger<ShowPublishReleaseJob> logger,
             IServiceProvider serviceProvider,
             IAppConfig appConfig,
             DateHelper dateHelper,
@@ -58,7 +58,7 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
 
                 _logger.LogInformation(
                     "Background job starting: {JobName}, Enabled={IsEnabled}, Cron={Cron}, LockKey={LockKey}",
-                    nameof(AccountPodcastListenSlotRecoveryJob),
+                    nameof(ShowPublishReleaseJob),
                     _jobConfig.IsEnabled,
                     _jobConfig.CronExpression,
                     _jobConfig.ConsulLockKey);
@@ -79,13 +79,13 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
         {
             if (!_jobConfig.IsEnabled)
             {
-                _logger.LogInformation("Background job is disabled: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
+                _logger.LogInformation("Background job is disabled: {JobName}", nameof(ShowPublishReleaseJob));
                 return;
             }
 
             _logger.LogInformation(
                 "Background job started: {JobName}, Description={Description}",
-                nameof(AccountPodcastListenSlotRecoveryJob),
+                nameof(ShowPublishReleaseJob),
                 _jobConfig.Description);
 
             await WaitForNextRoundTimeAsync(stoppingToken);
@@ -122,17 +122,17 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger.LogInformation("Background job cancelled: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
+                    _logger.LogInformation("Background job cancelled: {JobName}", nameof(ShowPublishReleaseJob));
                     break;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unexpected error in background job execution loop: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
+                    _logger.LogError(ex, "Unexpected error in background job execution loop: {JobName}", nameof(ShowPublishReleaseJob));
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
             }
 
-            _logger.LogInformation("Background job stopped: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
+            _logger.LogInformation("Background job stopped: {JobName}", nameof(ShowPublishReleaseJob));
         }
 
 
@@ -166,7 +166,7 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
                         : TimeSpan.FromMilliseconds(1000),
                     Metadata = new Dictionary<string, string>
                     {
-                        ["JobName"] = nameof(AccountPodcastListenSlotRecoveryJob),
+                        ["JobName"] = nameof(ShowPublishReleaseJob),
                         ["ExecutionId"] = executionId,
                         ["InstanceId"] = Environment.MachineName,
                         ["ProcessId"] = Environment.ProcessId.ToString(),
@@ -244,8 +244,8 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
                 // Example: Use scoped services
                 using (var scope = _serviceProvider.CreateScope())
                 {
-                    var accountService = scope.ServiceProvider.GetRequiredService<AccountService>();
-                    await accountService.UpdateAccountPodcastListenSlotRecovery();
+                    var showService = scope.ServiceProvider.GetRequiredService<PodcastShowService>();
+                    await showService.ReleasePublishShowsAsync();
                 }
 
 
@@ -304,13 +304,13 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
         {
             _logger.LogInformation(
                 "Background job stopping: {JobName}",
-                nameof(AccountPodcastListenSlotRecoveryJob));
+                nameof(ShowPublishReleaseJob));
 
             await base.StopAsync(cancellationToken);
 
             _logger.LogInformation(
                 "Background job stopped: {JobName}",
-                nameof(AccountPodcastListenSlotRecoveryJob));
+                nameof(ShowPublishReleaseJob));
         }
 
     }

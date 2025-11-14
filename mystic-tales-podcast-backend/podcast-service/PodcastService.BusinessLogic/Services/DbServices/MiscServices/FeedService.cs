@@ -367,7 +367,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = ls.PodcastEpisode.Id,
                             Name = ls.PodcastEpisode.Name,
-                            MainImageFileKey = ls.PodcastEpisode.MainImageFileKey
+                            MainImageFileKey = ls.PodcastEpisode.MainImageFileKey,
+                            IsReleased = ls.PodcastEpisode.IsReleased,
+                            ReleaseDate = ls.PodcastEpisode.ReleaseDate
                         },
                         Podcaster = podcasterAccount != null ? new AccountSnippetResponseDTO
                         {
@@ -2661,7 +2663,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     Id = ep.Id,
                     Name = ep.Name,
-                    MainImageFileKey = ep.MainImageFileKey
+                    MainImageFileKey = ep.MainImageFileKey,
+                    IsReleased = ep.IsReleased,
+                    ReleaseDate = ep.ReleaseDate
                 }).ToList();
 
                 Console.WriteLine($"[TrendingNewEpisodes] Built with {episodeListItems.Count} episodes");
@@ -2744,7 +2748,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     Id = ep.Id,
                     Name = ep.Name,
-                    MainImageFileKey = ep.MainImageFileKey
+                    MainImageFileKey = ep.MainImageFileKey,
+                    IsReleased = ep.IsReleased,
+                    ReleaseDate = ep.ReleaseDate
                 }).ToList();
 
                 Console.WriteLine($"[TrendingPopularEpisodes] Built with {episodeListItems.Count} episodes (A:{partAEpisodes.Count}, B:{partBEpisodes.Count})");

@@ -8,6 +8,7 @@ namespace UserService.Common.AppConfigurations.BusinessSetting.interfaces
         MailProperty CustomerPasswordReset { get; }
         MailProperty PodcasterRequestConfirmation { get; }
         MailProperty PodcasterRequestResult { get; }
+        MailProperty CustomerGoogleRegistrationNewAccountPassword { get; }
 
         MailProperty GetMailPropertyByTypeName(string mailTypeName);
     }

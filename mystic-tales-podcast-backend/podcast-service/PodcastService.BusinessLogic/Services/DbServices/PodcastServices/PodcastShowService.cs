@@ -690,7 +690,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = show.Id,
                             Name = show.Name,
-                            MainImageFileKey = show.MainImageFileKey
+                            MainImageFileKey = show.MainImageFileKey,
+                            IsReleased = show.IsReleased,
+                            ReleaseDate = show.ReleaseDate
                         },
                         PodcastEpisodeSubscriptionType = pe.PodcastEpisodeSubscriptionType != null ? new PodcastEpisodeSubscriptionTypeDTO
                         {
@@ -921,7 +923,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = show.Id,
                             Name = show.Name,
-                            MainImageFileKey = show.MainImageFileKey
+                            MainImageFileKey = show.MainImageFileKey,
+                            IsReleased = show.IsReleased,
+                            ReleaseDate = show.ReleaseDate
                         },
                         PodcastEpisodeSubscriptionType = pe.PodcastEpisodeSubscriptionType != null ? new PodcastEpisodeSubscriptionTypeDTO
                         {
@@ -2995,6 +2999,47 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task ReleasePublishShowsAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // lấy tất cả các show đang ở trạng thái Published và isReleased = false và chưa bị xoá và nằm trong channel chưa bị xoá (channel có thể có hoặc không)   
+                    // lấy cột releaseDate ra xem nó có == hôm nay không, nếu có thì chuyển isReleased = true
+                    var showsToRelease = await _podcastShowGenericRepository.FindAll(
+                        predicate: ps => ps.IsReleased == false
+                                    && ps.ReleaseDate != null
+                                    && ps.DeletedAt == null
+                                    && (ps.PodcastChannel == null || ps.PodcastChannel.DeletedAt == null),
+                        includeFunc: ps => ps.Include(ps => ps.PodcastShowStatusTrackings)
+                    ).ToListAsync();
+
+                    foreach (var show in showsToRelease)
+                    {
+                        var currentStatusTracking = show.PodcastShowStatusTrackings
+                            .OrderByDescending(pst => pst.CreatedAt)
+                            .FirstOrDefault();
+
+                        if (show.ReleaseDate <= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone())
+                            && currentStatusTracking.PodcastShowStatusId == (int)PodcastShowStatusEnum.Published)
+                        {
+                            show.IsReleased = true;
+                            await _podcastShowGenericRepository.UpdateAsync(show.Id, show);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new Exception("Release publish shows job failed, error: " + ex.Message);
                 }
             }
         }

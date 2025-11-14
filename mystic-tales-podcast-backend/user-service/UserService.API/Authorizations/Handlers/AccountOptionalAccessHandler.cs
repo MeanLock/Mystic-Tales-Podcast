@@ -37,7 +37,7 @@ namespace UserService.API.Authorizations.Handlers
                         Parameters = JObject.FromObject(new
                         {
                             id = accountId,
-                            include = "PodcasterProfile" 
+                            include = "PodcasterProfile"
                         }),
                         Fields = new[] {
                             "Id",

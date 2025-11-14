@@ -194,14 +194,15 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         public async Task<HashtagDTO> CreateHashtagAsync(HashtagCreateRequestDTO hashtagCreateRequestDTO)
         {
-            using(var transaction = await  _appDbContext.Database.BeginTransactionAsync())
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 try
                 {
                     hashtagCreateRequestDTO.HashtagName = hashtagCreateRequestDTO.HashtagName.Trim();
                     // kiểm tra trùng tên hashtag không ignore case
                     var existingHashtag = await _hashtagGenericRepository.FindAll(
-                        predicate: ht => ht.Name == hashtagCreateRequestDTO.HashtagName,
+                        predicate: ht => EF.Functions.Collate(ht.Name, "SQL_Latin1_General_CP1_CS_AS") ==
+                                        EF.Functions.Collate(hashtagCreateRequestDTO.HashtagName, "SQL_Latin1_General_CP1_CS_AS"),
                         includeFunc: null
                     ).FirstOrDefaultAsync();
 

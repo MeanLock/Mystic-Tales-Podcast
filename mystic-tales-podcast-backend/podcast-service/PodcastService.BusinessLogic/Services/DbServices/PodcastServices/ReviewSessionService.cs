@@ -443,6 +443,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Id = ps.PodcastEpisode.Id,
                         Name = ps.PodcastEpisode.Name,
                         MainImageFileKey = ps.PodcastEpisode.MainImageFileKey,
+                        IsReleased = ps.PodcastEpisode.IsReleased,
+                        ReleaseDate = ps.PodcastEpisode.ReleaseDate
                     },
                     CurrentStatus = ps.PodcastEpisodePublishReviewSessionStatusTrackings
                         .OrderByDescending(s => s.CreatedAt).Select(s => new PodcastEpisodePublishReviewSessionStatusDTO
@@ -592,6 +594,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Id = reviewSession.PodcastEpisode.PodcastShow.Id,
                         Name = reviewSession.PodcastEpisode.PodcastShow.Name,
                         MainImageFileKey = reviewSession.PodcastEpisode.PodcastShow.MainImageFileKey,
+                        IsReleased = reviewSession.PodcastEpisode.PodcastShow.IsReleased,
+                        ReleaseDate = reviewSession.PodcastEpisode.PodcastShow.ReleaseDate
                     },
                     PodcastChannel = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel != null ? new PodcastChannelSnippetResponseDTO
                     {

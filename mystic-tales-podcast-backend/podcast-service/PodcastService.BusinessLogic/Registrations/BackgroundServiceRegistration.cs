@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using PodcastService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
-using PodcastService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
+using PodcastService.BusinessLogic.Services.BackgroundServices.PodcastJobs;
 using PodcastService.BusinessLogic.Services.BackgroundServices.SystemQueryMetricUpdateJobs;
-using PodcastService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
 
 namespace PodcastService.BusinessLogic.Registrations
 {
@@ -25,6 +23,11 @@ namespace PodcastService.BusinessLogic.Registrations
             // services.AddHostedService<ChannelTemporal7dMaxQueryMetricUpdateJob>();
             // services.AddHostedService<SystemPreferencesTemporal30dQueryMetricUpdateJob>();
             // services.AddHostedService<UserPreferencesTemporal30dQueryMetricUpdateJob>();
+
+            services.AddHostedService<ShowPublishReleaseJob>();
+            services.AddHostedService<EpisodePublishReleaseJob>();
+            services.AddHostedService<EpisodeEditRequirementPendingTimeoutJob>();
+            services.AddHostedService<EpisodeListenSessionExpiryJob>();
             
             services.Configure<HostOptions>(options =>
             {

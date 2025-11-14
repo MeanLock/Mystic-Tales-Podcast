@@ -440,7 +440,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                     await _podcastEpisodeService.ProcessPodcastEpisodeDraftAudio(episode, command);
                 },
                 responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "publish-episode.failed"    // From YAML onFailure.emit
+                failedEmitMessage: "processing-episode-draft-audio.failed"    // From YAML onFailure.emit
             );
         }
 

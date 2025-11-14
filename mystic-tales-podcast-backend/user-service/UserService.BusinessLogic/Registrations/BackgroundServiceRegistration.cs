@@ -1,9 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using UserService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
-using UserService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
-using UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetricUpdateJobs;
-using UserService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
+using UserService.BusinessLogic.Services.BackgroundServices.AccountJobs;
 
 namespace UserService.BusinessLogic.Registrations
 {
@@ -19,6 +16,9 @@ namespace UserService.BusinessLogic.Registrations
 
             // services.AddHostedService<PodcasterAllTimeMaxQueryMetricUpdateJob>();
             // services.AddHostedService<PodcasterTemporal7dMaxQueryMetricUpdateJob>();
+            services.AddHostedService<AccountPodcastListenSlotRecoveryJob>();
+            services.AddHostedService<AccountViolationPointDecayJob>();
+            services.AddHostedService<AccountViolationLevelResetJob>();
             
             services.Configure<HostOptions>(options =>
             {

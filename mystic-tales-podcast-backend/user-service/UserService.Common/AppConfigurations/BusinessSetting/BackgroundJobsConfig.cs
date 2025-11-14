@@ -10,12 +10,16 @@ namespace UserService.Common.AppConfigurations.BusinessSetting
         // public BackgroundJob PodcasterAllTimeMaxQueryMetricUpdateJob { get; set; }
         // public BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob AccountPodcastListenSlotRecoveryJob { get; set; }
+        public BackgroundJob AccountViolationPointDecayJob { get; set; }
+        public BackgroundJob AccountViolationLevelResetJob { get; set; }
     }
     public class BackgroundJobsConfig : IBackgroundJobsConfig
     {
         // public BackgroundJob PodcasterAllTimeMaxQueryMetricUpdateJob { get; set; }
         // public BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob AccountPodcastListenSlotRecoveryJob { get; set; }
+        public BackgroundJob AccountViolationPointDecayJob { get; set; }
+        public BackgroundJob AccountViolationLevelResetJob { get; set; }
 
         public BackgroundJobsConfig(IConfiguration configuration)
         {
@@ -23,6 +27,8 @@ namespace UserService.Common.AppConfigurations.BusinessSetting
             // PodcasterAllTimeMaxQueryMetricUpdateJob = backgroundJobsConfig?.PodcasterAllTimeMaxQueryMetricUpdateJob;
             // PodcasterTemporal7dMaxQueryMetricUpdateJob = backgroundJobsConfig?.PodcasterTemporal7dMaxQueryMetricUpdateJob;
             AccountPodcastListenSlotRecoveryJob = backgroundJobsConfig?.AccountPodcastListenSlotRecoveryJob;
+            AccountViolationPointDecayJob = backgroundJobsConfig?.AccountViolationPointDecayJob;
+            AccountViolationLevelResetJob = backgroundJobsConfig?.AccountViolationLevelResetJob;
         }
     }
 }

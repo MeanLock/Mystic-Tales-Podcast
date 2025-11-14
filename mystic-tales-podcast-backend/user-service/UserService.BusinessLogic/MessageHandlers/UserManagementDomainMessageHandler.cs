@@ -66,6 +66,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAcc
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFavoritedPodcasterChannelsTerminatePodcasterForce;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountFollowedPodcasterShowsTerminatePodcasterForce;
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForce;
+using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.UpdateAccountPassword;
 
 namespace UserService.BusinessLogic.MessageHandlers
 {
@@ -114,6 +115,7 @@ namespace UserService.BusinessLogic.MessageHandlers
                         "CustomerPasswordReset" => mailInfo.MailObject.ToObject<CustomerPasswordResetMailViewModel>(),
                         "PodcasterRequestConfirmation" => mailInfo.MailObject.ToObject<PodcasterRequestConfirmationMailViewModel>(),
                         "PodcasterRequestResult" => mailInfo.MailObject.ToObject<PodcasterRequestResultMailViewModel>(),
+                        "CustomerGoogleRegistrationNewAccountPassword" => mailInfo.MailObject.ToObject<CustomerGoogleRegistrationNewAccountPasswordMailViewModel>(),
                         _ => mailInfo.MailObject.ToObject<object>()
                     };
                     Console.WriteLine("Sending email to: " + mailInfo.MailObject["VerifyCode"]);
@@ -1004,6 +1006,22 @@ namespace UserService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "delete-account-saved-podcaster-episodes-terminate-podcaster-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("update-account-password", SAGA_TOPIC)]
+        public async Task HandleUpdateAccountPasswordAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var passwordUpdateInfoDTO = command.RequestData.ToObject<UpdateAccountPasswordParameterDTO>();
+                    await _authService.UpdateAccountPassword(passwordUpdateInfoDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "update-account-password.failed"    // From YAML onFailure.emit
             );
         }
     }

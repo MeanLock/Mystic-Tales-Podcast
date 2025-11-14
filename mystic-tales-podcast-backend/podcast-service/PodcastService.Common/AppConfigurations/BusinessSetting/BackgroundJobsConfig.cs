@@ -16,6 +16,10 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         public BackgroundJob ChannelTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob SystemPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
         public BackgroundJob UserPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
+        public BackgroundJob ShowPublishReleaseJob { get; set; }
+        public BackgroundJob EpisodePublishReleaseJob { get; set; }
+        public BackgroundJob EpisodeEditRequirementPendingTimeoutJob { get; set; }
+        public BackgroundJob EpisodeListenSessionExpiryJob { get; set; }
     }
     public class BackgroundJobsConfig : IBackgroundJobsConfig
     {
@@ -27,6 +31,10 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         public BackgroundJob ChannelTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob SystemPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
         public BackgroundJob UserPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
+        public BackgroundJob ShowPublishReleaseJob { get; set; }
+        public BackgroundJob EpisodePublishReleaseJob { get; set; }
+        public BackgroundJob EpisodeEditRequirementPendingTimeoutJob { get; set; }
+        public BackgroundJob EpisodeListenSessionExpiryJob { get; set; }
 
 
         public BackgroundJobsConfig(IConfiguration configuration)
@@ -40,7 +48,10 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
             ChannelTemporal7dMaxQueryMetricUpdateJob = backgroundJobsConfig?.ChannelTemporal7dMaxQueryMetricUpdateJob;
             SystemPreferencesTemporal30dQueryMetricUpdateJob = backgroundJobsConfig?.SystemPreferencesTemporal30dQueryMetricUpdateJob;
             UserPreferencesTemporal30dQueryMetricUpdateJob = backgroundJobsConfig?.UserPreferencesTemporal30dQueryMetricUpdateJob;
-
+            ShowPublishReleaseJob = backgroundJobsConfig?.ShowPublishReleaseJob;
+            EpisodePublishReleaseJob = backgroundJobsConfig?.EpisodePublishReleaseJob;
+            EpisodeEditRequirementPendingTimeoutJob = backgroundJobsConfig?.EpisodeEditRequirementPendingTimeoutJob;
+            EpisodeListenSessionExpiryJob = backgroundJobsConfig?.EpisodeListenSessionExpiryJob;
         }
     }
 }

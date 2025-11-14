@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UserService.API.Filters.ExceptionFilters;
 using UserService.BusinessLogic.DTOs.Auth;
+using UserService.BusinessLogic.DTOs.Cache;
 using UserService.BusinessLogic.Helpers.AuthHelpers;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Models.CrossService;
@@ -258,6 +259,25 @@ namespace UserService.API.Controllers.BaseControllers
         {
             var requestData = JObject.FromObject(newResetPasswordRequestDTO.ResetPasswordInfo);
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "password-reset-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
+        // /api/user-service/api/auth/update-password
+        [HttpPost("update-password")]
+        [Authorize(Policy = "BasicAccess")]
+        public async Task<IActionResult> UpdatePassword([FromBody] PasswordUpdateRequestDTO passwordUpdateRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var requestData = JObject.FromObject(passwordUpdateRequestDTO.PasswordUpdateInfo);
+            requestData["AccountId"] = account.Id;
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "password-update-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return Ok(new
             {
