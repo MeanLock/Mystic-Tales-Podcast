@@ -17,8 +17,8 @@ namespace UserService.BusinessLogic.Registrations
             // services.AddHostedService<MinuteBaseRequestCancellationService>();
             // services.AddHostedService<HourBaseRequestCancellationService>();
 
-            services.AddHostedService<PodcasterAllTimeMaxQueryMetricUpdateJob>();
-            services.AddHostedService<PodcasterTemporal7dMaxQueryMetricUpdateJob>();
+            // services.AddHostedService<PodcasterAllTimeMaxQueryMetricUpdateJob>();
+            // services.AddHostedService<PodcasterTemporal7dMaxQueryMetricUpdateJob>();
             
             services.Configure<HostOptions>(options =>
             {

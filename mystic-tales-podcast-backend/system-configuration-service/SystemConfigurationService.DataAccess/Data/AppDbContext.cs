@@ -168,6 +168,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
             entity.Property(e => e.MinChannelQuery).HasColumnName("minChannelQuery");
+            entity.Property(e => e.MinExtraLongRangeContentBehaviorLookbackDayCount).HasColumnName("minExtraLongRangeContentBehaviorLookbackDayCount");
             entity.Property(e => e.MinLongRangeContentBehaviorLookbackDayCount).HasColumnName("minLongRangeContentBehaviorLookbackDayCount");
             entity.Property(e => e.MinLongRangeUserBehaviorLookbackDayCount).HasColumnName("minLongRangeUserBehaviorLookbackDayCount");
             entity.Property(e => e.MinMediumRangeContentBehaviorLookbackDayCount).HasColumnName("minMediumRangeContentBehaviorLookbackDayCount");

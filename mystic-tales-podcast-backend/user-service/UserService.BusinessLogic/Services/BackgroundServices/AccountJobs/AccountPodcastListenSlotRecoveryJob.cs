@@ -11,27 +11,28 @@ using UserService.Infrastructure.Services.Consul.DistributedLock;
 using Microsoft.Extensions.DependencyInjection;
 using UserService.BusinessLogic.Services.DbServices.MiscServices;
 using UserService.BusinessLogic.Services.DbServices.CachingServices;
+using UserService.BusinessLogic.Services.DbServices.UserServices;
 
 namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetricUpdateJobs
 {
-    public class PodcasterAllTimeMaxQueryMetricUpdateJob : BackgroundService
+    public class AccountPodcastListenSlotRecoveryJob : BackgroundService
     {
         private readonly ConsulDistributedLockService _lockService;
         private readonly IBackgroundJobsConfig _jobsConfig;
-        private readonly ILogger<PodcasterAllTimeMaxQueryMetricUpdateJob> _logger;
+        private readonly ILogger<AccountPodcastListenSlotRecoveryJob> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly IConsulDistributedLockConfig _consulDistributedLockConfig;
         private readonly IAppConfig _appConfig;
         private readonly DateHelper _dateHelper;
 
         // Job configuration
-        private BackgroundJob _jobConfig => _jobsConfig.PodcasterAllTimeMaxQueryMetricUpdateJob;
+        private BackgroundJob _jobConfig => _jobsConfig.AccountPodcastListenSlotRecoveryJob;
         private CronExpression? _cronExpression;
 
-        public PodcasterAllTimeMaxQueryMetricUpdateJob(
+        public AccountPodcastListenSlotRecoveryJob(
             ConsulDistributedLockService lockService,
             IBackgroundJobsConfig jobsConfig,
-            ILogger<PodcasterAllTimeMaxQueryMetricUpdateJob> logger,
+            ILogger<AccountPodcastListenSlotRecoveryJob> logger,
             IServiceProvider serviceProvider,
             IAppConfig appConfig,
             DateHelper dateHelper,
@@ -57,7 +58,7 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
 
                 _logger.LogInformation(
                     "Background job starting: {JobName}, Enabled={IsEnabled}, Cron={Cron}, LockKey={LockKey}",
-                    nameof(PodcasterAllTimeMaxQueryMetricUpdateJob),
+                    nameof(AccountPodcastListenSlotRecoveryJob),
                     _jobConfig.IsEnabled,
                     _jobConfig.CronExpression,
                     _jobConfig.ConsulLockKey);
@@ -78,13 +79,13 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
         {
             if (!_jobConfig.IsEnabled)
             {
-                _logger.LogInformation("Background job is disabled: {JobName}", nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
+                _logger.LogInformation("Background job is disabled: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
                 return;
             }
 
             _logger.LogInformation(
                 "Background job started: {JobName}, Description={Description}",
-                nameof(PodcasterAllTimeMaxQueryMetricUpdateJob),
+                nameof(AccountPodcastListenSlotRecoveryJob),
                 _jobConfig.Description);
 
             await WaitForNextRoundTimeAsync(stoppingToken);
@@ -121,17 +122,17 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger.LogInformation("Background job cancelled: {JobName}", nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
+                    _logger.LogInformation("Background job cancelled: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
                     break;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unexpected error in background job execution loop: {JobName}", nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
+                    _logger.LogError(ex, "Unexpected error in background job execution loop: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
                 }
             }
 
-            _logger.LogInformation("Background job stopped: {JobName}", nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
+            _logger.LogInformation("Background job stopped: {JobName}", nameof(AccountPodcastListenSlotRecoveryJob));
         }
 
 
@@ -165,7 +166,7 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
                         : TimeSpan.FromMilliseconds(1000),
                     Metadata = new Dictionary<string, string>
                     {
-                        ["JobName"] = nameof(PodcasterAllTimeMaxQueryMetricUpdateJob),
+                        ["JobName"] = nameof(AccountPodcastListenSlotRecoveryJob),
                         ["ExecutionId"] = executionId,
                         ["InstanceId"] = Environment.MachineName,
                         ["ProcessId"] = Environment.ProcessId.ToString(),
@@ -243,8 +244,8 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
                 // Example: Use scoped services
                 using (var scope = _serviceProvider.CreateScope())
                 {
-                    var metricService = scope.ServiceProvider.GetRequiredService<QueryMetricCachingService>();
-                    await metricService.UpdatePodcasterAllTimeMaxQueryMetric();
+                    var accountService = scope.ServiceProvider.GetRequiredService<AccountService>();
+                    await accountService.UpdateAccountPodcastListenSlotRecovery();
                 }
 
 
@@ -303,13 +304,13 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.SystemQueryMetri
         {
             _logger.LogInformation(
                 "Background job stopping: {JobName}",
-                nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
+                nameof(AccountPodcastListenSlotRecoveryJob));
 
             await base.StopAsync(cancellationToken);
 
             _logger.LogInformation(
                 "Background job stopped: {JobName}",
-                nameof(PodcasterAllTimeMaxQueryMetricUpdateJob));
+                nameof(AccountPodcastListenSlotRecoveryJob));
         }
 
     }

@@ -87,6 +87,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAcc
 using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAccountSavedPodcasterEpisodesTerminatePodcasterForce;
 using UserService.BusinessLogic.DTOs.Account.ListItems;
 using UserService.BusinessLogic.Services.DbServices.CachingServices;
+using UserService.BusinessLogic.DTOs.SystemConfiguration;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -252,7 +253,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             return new string(digits);
         }
 
-        public async Task<JObject> GetActiveSystemConfigProfile()
+        public async Task<SystemConfigProfileDTO> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -278,7 +279,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return ((JArray)result.Results["activeSystemConfigProfile"]).First as JObject;
+            var config = (result.Results["activeSystemConfigProfile"].First as JObject).ToObject<SystemConfigProfileDTO>();
+            return config;
         }
 
         public async Task<Guid> SendChangeAccountStatusMessage(int id)
@@ -292,21 +294,25 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             return startSagaTriggerMessage.SagaInstanceId;
         }
 
-        public int CalculateViolationLevel(int violationPoint, JArray accountViolationLevelConfigs)
+        public int CalculateViolationLevel(int violationPoint, List<AccountViolationLevelConfigDTO> accountViolationLevelConfigs)
         {
             int violationLevel = 0;
-            accountViolationLevelConfigs = new JArray(accountViolationLevelConfigs.OrderBy(c => c.Value<int>("ViolationPointThreshold")));
-            int maxLevelPointThreshold = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationPointThreshold"));
+            // accountViolationLevelConfigs = new JArray(accountViolationLevelConfigs.OrderBy(c => c.Value<int>("ViolationPointThreshold")));
+            // int maxLevelPointThreshold = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationPointThreshold"));
+            accountViolationLevelConfigs = accountViolationLevelConfigs.OrderBy(c => c.ViolationPointThreshold).ToList();
+            int maxLevelPointThreshold = accountViolationLevelConfigs.Max(c => c.ViolationPointThreshold);
             if (violationPoint > maxLevelPointThreshold)
             {
-                violationLevel = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationLevel"));
+                // violationLevel = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationLevel"));
+                violationLevel = accountViolationLevelConfigs.Max(c => c.ViolationLevel);
                 return violationLevel;
             }
             foreach (var config in accountViolationLevelConfigs)
             {
-                int level = config.Value<int>("ViolationLevel");
-                int pointThreshold = config.Value<int>("ViolationPointThreshold");
-                // Console.WriteLine($"Checking level {level} with threshold {pointThreshold} against violation point {violationPoint}");
+                // int level = config.Value<int>("ViolationLevel");
+                // int pointThreshold = config.Value<int>("ViolationPointThreshold");
+                int level = config.ViolationLevel;
+                int pointThreshold = config.ViolationPointThreshold;
                 if (violationPoint <= pointThreshold)
                 {
                     violationLevel = level;
@@ -317,9 +323,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             return violationLevel;
         }
 
-        public bool IsViolationLevelMax(int violationLevel, JArray accountViolationLevelConfigs)
+        public bool IsViolationLevelMax(int violationLevel, List<AccountViolationLevelConfigDTO> accountViolationLevelConfigs)
         {
-            int maxViolationLevel = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationLevel"));
+            // int maxViolationLevel = accountViolationLevelConfigs.Max(c => c.Value<int>("ViolationLevel"));
+            int maxViolationLevel = accountViolationLevelConfigs.Max(c => c.ViolationLevel);
             return violationLevel >= maxViolationLevel;
         }
 
@@ -358,7 +365,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             existAccount.Phone = registerInfo.Phone;
                             existAccount.IsVerified = registerInfo.RoleId == 1 ? false : true;
                             existAccount.VerifyCode = registerInfo.RoleId == 1 ? verifyCode : null;
-                            existAccount.PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold") : null;
+                            // existAccount.PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold") : null;
+                            existAccount.PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold : null;
                             existAccount.MainImageFileKey = null;
                             // await _fluentEmailService.SendEmail(registerInfo.Email, new VerifyCodeEmailViewModel
                             // {
@@ -413,7 +421,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             Phone = registerInfo.Phone,
                             IsVerified = registerInfo.RoleId == 1 ? false : true,
                             VerifyCode = registerInfo.RoleId == 1 ? verifyCode : null,
-                            PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold") : null,
+                            // PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold") : null,
+                            PodcastListenSlot = registerInfo.RoleId == 1 ? activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold : null,
                             MainImageFileKey = null,
                         };
 
@@ -1088,7 +1097,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         BuddyAudioFileKey = null,
                         CommitmentDocumentFileKey = null,
                         IsVerified = null,
-                        OwnedBookingStorageSize = activeSystemConfigProfile["BookingConfig"].Value<double>("FreeInitialBookingStorageSize"),
+                        // OwnedBookingStorageSize = activeSystemConfigProfile["BookingConfig"].Value<double>("FreeInitialBookingStorageSize"),
+                        OwnedBookingStorageSize = activeSystemConfigProfile.BookingConfig.FreeInitialBookingStorageSize,
                         UsedBookingStorageSize = 0,
                         RatingCount = 0
                     };
@@ -1238,7 +1248,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                 throw new HttpRequestException("Get account me failed, error: " + ex.Message);
             }
         }
-                    
+
         public async Task UpdatePodcasterProfile(UpdatePodcasterProfileParameterDTO updatePodcasterProfileParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -1560,7 +1570,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     // cập nhật violation level nếu account violation level hiện tại là 0
                     if (account.ViolationLevel == 0)
                     {
-                        var newViolationLevel = CalculateViolationLevel(account.ViolationPoint, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray);
+                        // var newViolationLevel = CalculateViolationLevel(account.ViolationPoint, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray);
+                        var newViolationLevel = CalculateViolationLevel(account.ViolationPoint, activeSystemConfigProfile.AccountViolationLevelConfigs);
                         account.ViolationLevel = newViolationLevel;
                         account.LastViolationLevelChanged = _dateHelper.GetNowByAppTimeZone();
                     }
@@ -1591,7 +1602,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     await SendChangeAccountStatusMessage(account.Id);
                     // [CHỈNH SỬA SAU] NẾU ACCOUNT VIOLATION LEVEL == MAX VIOLATION LEVEL THÌ CHẠY CÁC FLOW XOÁ TRONG booking, chanel/show/episode (AccountFavoritedPodcastChannel/AccountFollowedPodcastShow/AccountSavedPodcastEpisode), podcast subscription, Report review session, publish review session, DMCA Accusation, AccountFollowedPodcaster
-                    if (IsViolationLevelMax(account.ViolationLevel, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray) == true)
+                    // if (IsViolationLevelMax(account.ViolationLevel, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray) == true)
+                    if (IsViolationLevelMax(account.ViolationLevel, activeSystemConfigProfile.AccountViolationLevelConfigs) == true)
                     {
                         JObject podcasterTerminateRequestData = JObject.FromObject(new
                         {
@@ -4806,7 +4818,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     {
                         podcaster.AverageRating = 0;
                         podcaster.RatingCount = 0;
-                        
+
                         await _podcasterProfileGenericRepository.UpdateAsync(podcaster.AccountId, podcaster);
                     }
 
@@ -4902,6 +4914,29 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }
+            }
+        }
+
+        public async Task UpdateAccountPodcastListenSlotRecovery()
+        {
+            try
+            {
+                var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
+                // lấy danh sách tất cả các tài khoản đang không bị deactivated và đã verified và có podcastListenSlot khắc null và  < AccountConfig.podcastListenSlotThreshold 
+                // lấy systemconfig với field AccountConfig.podcastListenSlotRecoverySeconds , lặp qua từng account rồi so cột lastViolationPointChanged so với thời điểm hiện tại xem số giây có >= AccountConfig.podcastListenSlotRecoverySeconds không , nếu có thì trừ 1 
+                // var accounts = await _accountGenericRepository.FindAll(
+                //     predicate: a => a.DeactivatedAt == null 
+                //         && a.IsVerified == true 
+                //         && a.PodcastListenSlot != null 
+                //         && a.PodcastListenSlot < activeSystemConfigProfile
+                // );
+
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new Exception("UpdateAccountPodcastListenSlotRecovery failed, error: " + ex.Message);
             }
         }
     }

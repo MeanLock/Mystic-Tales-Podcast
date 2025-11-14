@@ -4,6 +4,7 @@ using UserService.API.Filters.ExceptionFilters;
 using UserService.BusinessLogic.DTOs.Channel;
 using UserService.BusinessLogic.DTOs.Episode;
 using UserService.BusinessLogic.DTOs.Show;
+using UserService.BusinessLogic.DTOs.SystemConfiguration;
 using UserService.BusinessLogic.Models.CrossService;
 using UserService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 
@@ -79,40 +80,46 @@ namespace UserService.API.Controllers.QueryControllers
             });
         }
 
-        [HttpPost("test-query")]
+        [HttpGet("test-query")]
         public async Task<IActionResult> TestQuery()
         {
             var batchRequest = new BatchQueryRequest
             {
                 Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
                         {
-                            new BatchQueryItem
-                            {
-                                Key = "podcastShow",
-                                QueryType = "findall",
-                                EntityType = "PodcastShow",
+                            Key = "activeSystemConfigProfile",
+                            QueryType = "findall",
+                            EntityType = "SystemConfigProfile",
                                 Parameters = JObject.FromObject(new
                                 {
                                     where = new
                                     {
-                                        PodcasterId = 17
+                                        IsActive = true
                                     },
-                                    include = "PodcastEpisodes"
+                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+
                                 }),
-                            }
+                            Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
                         }
+                    }
             };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
-
-
-            var podcastShow = result.Results["podcastShow"].ToObject<List<PodcastShowDTO>>();
-
-            List<Guid> podcastEpisodeIds = podcastShow.SelectMany(ps => ps.PodcastEpisodes).Select(pe => pe.Id).ToList();
+            // kiểm tra null
+            if (result.Results["activeSystemConfigProfile"] == null)
+            {
+                return NotFound(new { message = "Active SystemConfigProfile not found" });
+            }
+            else
+            {
+                Console.WriteLine(result.Results["activeSystemConfigProfile"].ToString());
+            }
+            var config = (result.Results["activeSystemConfigProfile"].First as JObject).ToObject<SystemConfigProfileDTO>();
             return Ok(new
             {
-                result = podcastEpisodeIds,
-                podcastShow = podcastShow,
+                result = config
             });
         }
     }
