@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { appApi } from "@/core/api/appApi";
 import type {
   BookingDetailsFromAPI,

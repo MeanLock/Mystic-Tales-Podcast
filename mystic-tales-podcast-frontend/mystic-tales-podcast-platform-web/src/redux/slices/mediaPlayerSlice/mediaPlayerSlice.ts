@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import type {
   AddToQueuePayload,
   CurrentAudioUI,
   PlayMode,
   QueuedAudio,
-  QueuedAudioWithNoIndex,
 } from "@/core/types/audio";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 

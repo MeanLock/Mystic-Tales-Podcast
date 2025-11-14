@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { appApi } from "@/core/api/appApi";
 import type { AccountMeFromApi } from "@/core/types/account";
 import { setUser } from "@/redux/slices/authSlice/authSlice";

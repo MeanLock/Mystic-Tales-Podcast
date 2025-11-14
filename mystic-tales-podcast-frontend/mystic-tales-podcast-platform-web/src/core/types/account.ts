@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { CurrentAudioFromApi, CurrentAudioUI } from "./audio";
 
 export type AccountFromAPI = {

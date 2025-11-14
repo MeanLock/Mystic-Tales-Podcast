@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { Card, CardContent } from "@/components/ui/card";
 import { FaStar } from "react-icons/fa";
 

@@ -60,6 +60,36 @@ const transactionApi = appApi.injectEndpoints({
         return { data: result };
       },
     }),
+    createWithdrawRequest: build.mutation<
+      {
+        Message: string;
+      },
+      {
+        Amount: number;
+      }
+    >({
+      async queryFn({ Amount }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: "/api/transaction-service/api/account-balance-transactions/balance-withdrawal",
+                method: "POST",
+                body: {
+                  Amount,
+                },
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result };
+      },
+    }),
     getTransactionHistory: build.query<
       { AccountBalanceTransactionList: AccountBalanceTransaction[] },
       { getEnum: string }
@@ -73,5 +103,8 @@ const transactionApi = appApi.injectEndpoints({
   }),
 });
 
-export const { useCreatePaymentLinkMutation, useGetTransactionHistoryQuery } =
-  transactionApi;
+export const {
+  useCreatePaymentLinkMutation,
+  useCreateWithdrawRequestMutation,
+  useGetTransactionHistoryQuery,
+} = transactionApi;

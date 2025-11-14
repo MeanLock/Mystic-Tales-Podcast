@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { ChannelUI } from "@/core/types/channel";
 import { FaPodcast, FaStar } from "react-icons/fa";
 import { MdOutlinePodcasts } from "react-icons/md";

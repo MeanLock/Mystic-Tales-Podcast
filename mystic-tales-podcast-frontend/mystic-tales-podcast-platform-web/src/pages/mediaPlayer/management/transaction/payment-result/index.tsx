@@ -2,7 +2,7 @@ import { FireworksBackground } from "@/components/ui/shadcn-io/fireworks-backgro
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 import { useEffect, useRef, useState } from "react";
 import { FaCheck, FaRegDizzy } from "react-icons/fa";
-import { TbCoinFilled, TbMoodSad } from "react-icons/tb";
+import { TbCoinFilled} from "react-icons/tb";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const PaymentResultPage = () => {

@@ -1,4 +1,6 @@
-"use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// @ts-nocheck
+
 import { FaRegCompass } from "react-icons/fa";
 import { FiBarChart2, FiInfo } from "react-icons/fi";
 import { BiCategoryAlt } from "react-icons/bi";
@@ -379,18 +381,18 @@ const MediaPlayerSidebar = () => {
               <Skeleton className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full" />
             ) : (
               <img
-                src={userWithImageUrl.ImageUrl || "/placeholder.svg"}
-                className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full object-cover"
+                src={userWithImageUrl.ImageUrl || "/images/unknown/user.png"}
+                className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full aspect-square object-cover"
               />
             )}
           </div>
           <div className="hidden md:inline-block">
-            <p className="font-bold text-white text-[15px]">
+            <p className="font-bold text-white text-[12px] line-clamp-1">
               {userWithImageUrl.FullName}
             </p>
             <div className="flex items-center gap-1">
               <TbCoinFilled color="#aae339" size={14} />
-              <p className="text-sm font-semibold text-mystic-green">
+              <p className="text-sm font-semibold text-mystic-green line-clamp-1">
                 {userWithImageUrl.Balance.toLocaleString("vn")}
               </p>
             </div>

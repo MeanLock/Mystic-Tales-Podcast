@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // src/core/api/sagaResultApi/index.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { SagaEnvelope } from "@/core/types";

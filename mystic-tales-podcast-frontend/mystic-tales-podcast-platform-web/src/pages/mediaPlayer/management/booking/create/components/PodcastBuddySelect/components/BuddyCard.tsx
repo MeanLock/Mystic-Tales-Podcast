@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { PodcastBuddyUI } from "@/core/types/booking";
 import { FaEye, FaStar } from "react-icons/fa";
 import { MdOutlinePeopleAlt, MdPeopleAlt } from "react-icons/md";

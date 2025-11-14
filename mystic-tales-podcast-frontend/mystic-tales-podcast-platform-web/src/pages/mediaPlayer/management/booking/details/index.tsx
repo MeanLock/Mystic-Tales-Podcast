@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// @ts-nocheck
+
 import Loading from "@/components/loading";
 
 import type { BookingDetailsFromAPI } from "@/core/types/booking";

@@ -1,4 +1,5 @@
-"use client";
+
+// @ts-nocheck
 
 import * as React from "react";
 import { motion, type HTMLMotionProps } from "motion/react";

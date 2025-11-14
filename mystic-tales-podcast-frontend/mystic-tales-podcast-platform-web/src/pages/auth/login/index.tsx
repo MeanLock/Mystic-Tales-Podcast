@@ -3,9 +3,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FcGoogle } from "react-icons/fc";
-import { useLoginMutation } from "@/core/services/auth/auth.service";
+import {
+  useLoginMutation,
+  useLoginGoogleMutation,
+  useSendForgotPasswordRequestMutation,
+} from "@/core/services/auth/auth.service";
 import "./styles.css";
-
+import { getCapacitorDevice } from "@/core/utils/device";
 // shadcn/ui
 import {
   Dialog,
@@ -40,12 +44,11 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
-
+import { useGoogleLogin } from "@react-oauth/google";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BackgroundGradient } from "@/components/ui/shadcn-io/background-gradient";
 import { useNavigate } from "react-router-dom";
-import { loginInfoMap, mockUsers } from "@/core/mockData/user.mockdata";
 // no direct redux dispatch needed here; auth service handles storing token/user
 
 /** Zod schema: email hợp lệ, password tối thiểu 8 ký tự,
@@ -71,6 +74,13 @@ const LoginPage = () => {
   // STATES
   const [serverError, setServerError] = useState<string | null>(null);
   const [login, { isLoading }] = useLoginMutation();
+  const [loginGoogle, { isLoading: isGoogleLoading }] =
+    useLoginGoogleMutation();
+  const [deviceInfo, setDeviceInfo] = useState<any>(null);
+  // HOOKS
+  useEffect(() => {
+    getCapacitorDevice().then(setDeviceInfo);
+  }, []);
 
   const [responseError, setResponseError] = useState<ErrorResponse>({
     isError: false,
@@ -83,8 +93,17 @@ const LoginPage = () => {
     verificationCode: "",
   });
 
+  const [forgotPasswordData, setForgotPasswordData] = useState({
+    isModalOpen: false,
+    email: "",
+    error: "",
+    success: "",
+  });
+
   // HOOKS
   const navigate = useNavigate();
+  const [forgotPassword, { isLoading: isForgotLoading }] =
+    useSendForgotPasswordRequestMutation();
 
   // HELPERS
   const resetResponseError = () =>
@@ -95,58 +114,7 @@ const LoginPage = () => {
     setVerificationData((prev) => ({ ...prev, isModalOpen: true }));
   };
 
-  // Fake logic here
-  const userData = mockUsers;
-
-  // const fakeLoginSubmitLogic = async (values: LoginFormValues) => {
-  //   const account = loginInfoMap.filter(
-  //     (info) => info.email === values.email
-  //   )[0];
-  //   if (account) {
-  //     if (account.password === values.password) {
-  //       const accountInformation = userData.filter(
-  //         (u) => u.Id === account.id
-  //       )[0];
-  //       if (accountInformation && !accountInformation.DeactivatedAt) {
-  //         if (accountInformation.IsVerified === true) {
-  //           dispatch(
-  //             setAuthToken(
-  //               "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiRFhCIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoiZHhiYWNoMjAwNEBnbWFpbC5jb20iLCJpZCI6IjEiLCJyb2xlX2lkIjoiMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkN1c3RvbWVyIiwiYmFsYW5jZSI6IjAuMDAiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3NlcmlhbG51bWJlciI6IjhjZGJlMWU2LTEwNDMtNDFmYS05ZGZlLWExYzBlYzY5NzQyMSIsImV4cCI6Nzc2MjY4NzMyMywiaXNzIjoibG9jYWxob3N0IiwiYXVkIjoibG9jYWxob3N0In0.Wt4b5heKvHBgc33ekDruYfvrule-ViKGMbe7u43wDlGZjaJ52Q8EpA9PbrEksHs8t6Osxa5qWAYi8OpeTnMvIEE0cp9uN9flYkoE8FFCx_Id5SULGczFiC99MclYjLEz_bLUPV40NpWTrS89oo3gZ3XrOal23jBVFidKClz0E-tvAIciWEat82MDt36zDYd1NIeogHDzu7TBFRtI2yocgsMIYrSNpFT3TC0L-nuiVRZ0TgL1D4MtQs79deJ2nYEN4bIHocdSEuApc6z1UhftLxPBCi7fxi9LD2_r8Wpli2v1hxv3VnRrUUN--Yh7jOIaXvfgFHAZVru5XeiD4JxN9w"
-  //             )
-  //           );
-  //           dispatch(setUser(accountInformation));
-
-  //           navigate("/media-player/discovery");
-  //         } else {
-  //           setResponseError({
-  //             isError: true,
-  //             message:
-  //               "Your Account Hasn't Verified Yet, Please Verified To Sign In",
-  //             isUnVerified: true,
-  //           });
-  //         }
-  //       } else {
-  //         setResponseError({
-  //           isError: true,
-  //           message: "Your Account Has Been Deactivated!",
-  //         });
-  //       }
-  //     } else {
-  //       setResponseError({
-  //         isError: true,
-  //         message: "Incorrect Password!",
-  //       });
-  //     }
-  //   } else {
-  //     setResponseError({
-  //       isError: true,
-  //       message: "Seems like your account doesn't exists!",
-  //     });
-  //   }
-  // };
-
   // đóng modal + reset mã
-
   const closeVerifyModal = () => {
     setVerificationData({ isModalOpen: false, verificationCode: "" });
   };
@@ -199,6 +167,11 @@ const LoginPage = () => {
     try {
       const payload = {
         ManualLoginInfo: { Email: values.Email, Password: values.Password },
+        DeviceInfo: {
+          DeviceId: deviceInfo?.DeviceId || "unknown",
+          Platform: deviceInfo?.Platform || "web",
+          OSName: deviceInfo?.OSName || "unknown",
+        },
       };
 
       const result = await login(payload).unwrap();
@@ -236,7 +209,131 @@ const LoginPage = () => {
     }
   };
 
-  const handleOAuth2Login = async () => {};
+  const handleLoginGoogleOAuth2 = useGoogleLogin({
+    flow: "auth-code",
+    onSuccess: async (codeResponse) => {
+      const authorizationCode = codeResponse.code;
+
+      try {
+        // reset errors
+        setServerError(null);
+        resetResponseError();
+
+        const payload = {
+          GoogleAuth: {
+            AuthorizationCode: authorizationCode,
+            RedirectUri: window.location.origin,
+          },
+          DeviceInfo: {
+            DeviceId: deviceInfo?.DeviceId || "unknown",
+            Platform: deviceInfo?.Platform || "web",
+            OSName: deviceInfo?.OSName || "unknown",
+          },
+        };
+
+        const result = await loginGoogle(payload).unwrap();
+
+        if (!result) {
+          setServerError("Empty response from server");
+          return;
+        }
+
+        if (result.isError) {
+          setResponseError({
+            isError: true,
+            message: result.message || "Google login failed",
+            isUnVerified: !!result.isUnVerified,
+          });
+          return;
+        }
+
+        // success path
+        if (result.isUnVerified) {
+          setResponseError({
+            isError: true,
+            message: result.message || "Account not verified",
+            isUnVerified: true,
+          });
+          return;
+        }
+
+        // login service already stores token and sets user in redux
+        navigate("/media-player/discovery");
+      } catch (e: any) {
+        setServerError(e?.message || "Google login failed. Please try again.");
+      }
+    },
+    onError: (error) => {
+      setServerError("Google OAuth error: " + error.error);
+      console.log("Google OAuth Error", error);
+    },
+  });
+
+  const handleGoogleLogin = () => {
+    handleLoginGoogleOAuth2();
+  };
+
+  const handleForgotPassword = () => {
+    setForgotPasswordData({
+      isModalOpen: true,
+      email: "",
+      error: "",
+      success: "",
+    });
+  };
+
+  const closeForgotPasswordModal = () => {
+    setForgotPasswordData({
+      isModalOpen: false,
+      email: "",
+      error: "",
+      success: "",
+    });
+  };
+
+  const handleSubmitForgotPassword = async () => {
+    setForgotPasswordData((prev) => ({ ...prev, error: "", success: "" }));
+
+    // Validate email
+    if (!forgotPasswordData.email.trim()) {
+      setForgotPasswordData((prev) => ({
+        ...prev,
+        error: "Email is required.",
+      }));
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(forgotPasswordData.email.trim())) {
+      setForgotPasswordData((prev) => ({
+        ...prev,
+        error: "Invalid email format.",
+      }));
+      return;
+    }
+
+    try {
+      await forgotPassword({ Email: forgotPasswordData.email.trim() }).unwrap();
+
+      // Show success message
+      setForgotPasswordData((prev) => ({
+        ...prev,
+        success: `A password reset link has been sent to ${forgotPasswordData.email}. Please check your inbox.`,
+      }));
+
+      // Auto close after 3 seconds
+      setTimeout(() => {
+        closeForgotPasswordModal();
+      }, 3000);
+    } catch (error: any) {
+      console.error("Forgot password error:", error);
+      const msg =
+        error?.data?.Message ||
+        error?.message ||
+        "Failed to send reset password email. Please try again.";
+      setForgotPasswordData((prev) => ({ ...prev, error: msg }));
+    }
+  };
 
   return (
     <div className="w-full h-screen overflow-hidden bg-[url(/background/login4.png)] object-cover bg-cover flex items-center justify-center">
@@ -346,12 +443,26 @@ const LoginPage = () => {
 
         {/* Navigation & Oauth2 */}
         <div className="w-full flex flex-col items-center gap-5 py-2">
+          <div className="w-full flex items-center justify-end">
+            <p
+              onClick={() => handleForgotPassword()}
+              className="text-[#D9D9D9] italic hover:underline cursor-pointer"
+            >
+              Forgot password ?
+            </p>
+          </div>
           <p className="text-xs text-gray-400">-----OR-----</p>
-
-          <BackgroundGradient className="cursor-pointer rounded-3xl w-full px-4 py-2 bg-white flex items-center justify-center gap-3">
-            <FcGoogle />
-            <p className="text-black font-bold">Sign in with Google</p>
-          </BackgroundGradient>
+          <div
+            className="w-full flex items-center justify-center"
+            onClick={() => handleGoogleLogin()}
+          >
+            <BackgroundGradient className="cursor-pointer rounded-3xl w-full px-4 py-2 bg-white flex items-center justify-center gap-3">
+              <FcGoogle />
+              <p className="text-black font-bold">
+                {isGoogleLoading ? "Loading..." : "Sign in with Google"}
+              </p>
+            </BackgroundGradient>
+          </div>
 
           <div className="w-full flex items-center justify-center px-4">
             <p className="text-sm text-gray-300">
@@ -461,6 +572,76 @@ const LoginPage = () => {
               disabled={verificationData.verificationCode.length !== 6}
             >
               Verify
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forgot Password Dialog */}
+      <Dialog
+        open={forgotPasswordData.isModalOpen}
+        onOpenChange={(open) => {
+          if (!open) closeForgotPasswordModal();
+        }}
+      >
+        <DialogContent className="sm:max-w-[440px] border border-white/10 bg-black/80 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-mystic-green">
+              Forgot Password
+            </DialogTitle>
+            <DialogDescription className="text-gray-200">
+              Enter your email address and we'll send you a password reset link.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-white/80">
+                Email Address
+              </label>
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                value={forgotPasswordData.email}
+                onChange={(e) =>
+                  setForgotPasswordData((prev) => ({
+                    ...prev,
+                    email: e.target.value,
+                  }))
+                }
+                disabled={isForgotLoading}
+                className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:ring-2 focus:ring-mystic-green"
+              />
+            </div>
+
+            {/* Error Message */}
+            {forgotPasswordData.error && (
+              <p className="text-red-400 text-sm">{forgotPasswordData.error}</p>
+            )}
+
+            {/* Success Message */}
+            {forgotPasswordData.success && (
+              <p className="text-mystic-green text-sm">
+                {forgotPasswordData.success}
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              className="border-white/20 text-black hover:bg-white/10"
+              onClick={closeForgotPasswordModal}
+              disabled={isForgotLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-mystic-green text-black font-semibold hover:bg-mystic-green/90"
+              onClick={handleSubmitForgotPassword}
+              disabled={isForgotLoading || !forgotPasswordData.email.trim()}
+            >
+              {isForgotLoading ? "Sending..." : "Send Reset Link"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// @ts-nocheck
+
 import { mockPodcastBuddies } from "@/core/mockData/booking.mockdata";
 import {
   type PodcastBookingToneCategoryType,

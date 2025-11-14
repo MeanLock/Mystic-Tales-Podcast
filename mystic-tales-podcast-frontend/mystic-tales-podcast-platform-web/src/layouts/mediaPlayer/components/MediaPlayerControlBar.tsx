@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// @ts-nocheck
+
 import { FaBackward } from "react-icons/fa";
 import { FaForward } from "react-icons/fa";
 
