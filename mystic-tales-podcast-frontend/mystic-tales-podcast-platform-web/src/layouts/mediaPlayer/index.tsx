@@ -10,7 +10,7 @@ const MediaPlayerLayout = () => {
 
   // Chỉ polling khi user đã đăng nhập (có token)
   useUpdateAccountMeQuery(undefined, {
-    pollingInterval: accessToken ? 30000 : 0, // 5 giây nếu có token, không poll nếu chưa login
+    pollingInterval: accessToken ? 30000 : 0, // 30 giây nếu có token, không poll nếu chưa login
     skip: !accessToken, // Skip query hoàn toàn nếu chưa login
   });
 

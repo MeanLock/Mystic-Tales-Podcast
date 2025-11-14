@@ -14,6 +14,14 @@ import {
   useConfirmAndDepositMutation,
   useGetBookingDetailQuery,
 } from "@/core/services/booking/booking.service";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
 import {
@@ -85,6 +93,8 @@ const BookingDetailsPage = () => {
   const [viewMode, setViewMode] = useState<string>("informations");
   const [resolvedBooking, setResolvedBooking] = useState<any>(null);
   const [isResolvingFiles, setIsResolvingFiles] = useState(false);
+  const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false);
+  const [neededTopUpAmount, setNeededTopUpAmount] = useState<number>(0);
 
   // HOOKS
   const navigate = useNavigate();
@@ -105,7 +115,8 @@ const BookingDetailsPage = () => {
     refetch,
   } = useGetBookingDetailQuery(id ? { id: Number(id) } : skipToken);
 
-  const [confirmDeal] = useConfirmAndDepositMutation();
+  const [confirmDeal, { isLoading: isConfirming }] =
+    useConfirmAndDepositMutation();
 
   // EFFECT: Resolve files khi có booking data
   useEffect(() => {
@@ -147,30 +158,47 @@ const BookingDetailsPage = () => {
   }, [booking]);
 
   const handleConfirmDeal = async () => {
-    if (!booking) {
-      return;
-    } else {
-      if (!user) {
-        return;
-      } else {
-        if (user.Balance < booking.Booking.Price / 2) {
-          alert("Your Account Balance Is Not Enough!");
-        } else {
-          try {
-            await confirmDeal({
-              BookingId: booking.Booking.Id,
-              Amount: booking.Booking.Price / 2,
-            }).unwrap();
+    if (!booking || !user) return;
 
-            // after successful confirm, refetch booking details to get updated state
-            refetch && (await refetch());
-          } catch (err) {
-            // handle error (could set an action error)
-            alert((err as any)?.message || "Confirm failed");
-          }
-        }
-      }
+    const requiredDeposit = booking.Booking.Price / 2;
+    const currentBalance = user.Balance || 0;
+
+    if (currentBalance < requiredDeposit) {
+      // Không đủ tiền -> mở dialog hỏi nạp thêm
+      const needed = requiredDeposit - currentBalance;
+      setNeededTopUpAmount(needed);
+      setIsTopUpDialogOpen(true);
+
+      // không làm gì nữa, chỉ mở dialog
+      return;
     }
+
+    // Đủ tiền -> confirm luôn
+    try {
+      await confirmDeal({
+        BookingId: booking.Booking.Id,
+        Amount: requiredDeposit,
+      }).unwrap();
+
+      // sau khi confirm thành công, refetch lại booking
+      refetch && (await refetch());
+    } catch (err) {
+      alert((err as any)?.message || "Confirm failed");
+    }
+  };
+
+  const handleConfirmTopUp = () => {
+    if (!booking) return;
+
+    // lưu số tiền cần nạp & backUrl rồi chuyển qua trang top-up
+    localStorage.setItem("neededTopUpAmount", neededTopUpAmount.toString());
+    localStorage.setItem(
+      "paymentBackUrl",
+      `/media-player/management/bookings/${booking.Booking.Id}`
+    );
+
+    setIsTopUpDialogOpen(false);
+    navigate("/media-player/management/transactions/top-up");
   };
 
   // LOADING STATE
@@ -411,10 +439,7 @@ const BookingDetailsPage = () => {
                     <div className="flex items-center gap-2">
                       <p className="text-2xl font-bold text-white">
                         <span className="text-mystic-green">
-                          {(
-                            getTotalWordCount(booking) *
-                            booking.Booking.PodcastBuddy.PriceBookingPerWord
-                          ).toLocaleString()}
+                          {booking.Booking.Price.toLocaleString()}
                         </span>
                       </p>
                       <TbCoinFilled className="w-5 h-5 text-mystic-green" />
@@ -438,12 +463,69 @@ const BookingDetailsPage = () => {
                   onClick={() => handleConfirmDeal()}
                   className="cursor-pointer px-5 font-bold py-2 bg-mystic-green rounded-sm text-white font-poppins shadow-xl transition-all duration-500 ease-out hover:-translate-y-1"
                 >
-                  Confirm
+                  {isConfirming ? "Confirming..." : "Confirm Deal"}
                 </div>
               </div>
             </div>
           )}
         </div>
+
+        <Dialog open={isTopUpDialogOpen} onOpenChange={setIsTopUpDialogOpen}>
+          <DialogContent className="bg-black/50 backdrop-blur-sm text-white border border-white/10">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">
+                Account Balance Not Enough!
+              </DialogTitle>
+              <DialogDescription className="text-slate-300">
+                Your account balance is not sufficient to place a deposit for
+                this booking.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-4 space-y-2 text-sm">
+              <p>
+                <span className="text-slate-400">Needed Amount: </span>
+                <span className="font-semibold text-mystic-green">
+                  {booking.Booking.Price / 2
+                    ? (booking.Booking.Price / 2).toLocaleString()
+                    : 0}{" "}
+                  Coins
+                </span>
+              </p>
+              <p>
+                <span className="text-slate-400">Current Balance: </span>
+                <span className="font-semibold text-[#d9d9d9]">
+                  {user?.Balance?.toLocaleString() ?? 0} Coins
+                </span>
+              </p>
+              <p>
+                <span className="text-slate-400">
+                  Additional Top-Up Amount:{" "}
+                </span>
+                <span className="font-semibold text-yellow-300">
+                  {neededTopUpAmount.toLocaleString()} Coins
+                </span>
+              </p>
+            </div>
+
+            <DialogFooter className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsTopUpDialogOpen(false)}
+                className="px-4 py-2 rounded-md border border-slate-600 text-sm text-slate-200 hover:bg-slate-800 transition"
+              >
+                Later
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmTopUp}
+                className="px-4 py-2 rounded-md bg-mystic-green text-sm font-semibold text-black hover:bg-mystic-green/90 transition"
+              >
+                Top Up
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

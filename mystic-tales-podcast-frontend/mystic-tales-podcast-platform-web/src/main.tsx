@@ -41,6 +41,7 @@ import ChannelDetailsPage from "./pages/mediaPlayer/channels/details/index.tsx";
 import ShowDetailsPage from "./pages/mediaPlayer/shows/details/index.tsx";
 import CreateBookingPage from "./pages/mediaPlayer/management/booking/create/index.tsx";
 import BecomePodcaster from "./pages/mediaPlayer/management/profile/becomePodcaster/index.tsx";
+import PaymentResultPage from "./pages/mediaPlayer/management/transaction/payment-result/index.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -181,6 +182,10 @@ createRoot(document.getElementById("root")!).render(
               <Route
                 path="management/transactions/top-up"
                 element={<TopUpPage />}
+              />
+              <Route
+                path="management/transactions/payment-result"
+                element={<PaymentResultPage />}
               />
               <Route
                 path="management/transactions/withdraw"

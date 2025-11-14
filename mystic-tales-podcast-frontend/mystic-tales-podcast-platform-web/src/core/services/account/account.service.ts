@@ -25,7 +25,7 @@ export const accountApi = appApi.injectEndpoints({
             })
           )
           .unwrap();
-        return { data: result.data as any };
+        return { data: result as any };
       },
     }),
     updateAccountMe: build.query<{ Account: AccountMeFromApi }, void>({
@@ -54,8 +54,53 @@ export const accountApi = appApi.injectEndpoints({
         return { error: { kind: "NETWORK_ERROR", message: "No data" } as any };
       },
     }),
+    getAccountInformations: build.query<{ Account: AccountMeFromApi }, void>({
+      async queryFn(_arg, api, _extraOptions, baseQuery) {
+        const result = await baseQuery({
+          url: "/api/user-service/api/accounts/me",
+          method: "GET",
+          authMode: "required",
+        });
+        if (result.error) {
+          return { error: result.error as any };
+        }
+        if (result.data) {
+          const rawData = result.data as { Account: AccountMeFromApi };
+          return { data: rawData };
+        }
+        return { error: { kind: "NETWORK_ERROR", message: "No data" } as any };
+      },
+    }),
+    updateAccountInformations: build.mutation<
+      { Message: string },
+      { uploadAccountInformationsFormData: any; accountId: number }
+    >({
+      async queryFn({ uploadAccountInformationsFormData, accountId }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/user-service/api/accounts/${accountId}`,
+                method: "PUT",
+                body: uploadAccountInformationsFormData,
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as any };
+      },
+    }),
   }),
 });
 
-export const { usePodcasterApplyMutation, useUpdateAccountMeQuery } =
-  accountApi;
+export const {
+  usePodcasterApplyMutation,
+  useUpdateAccountMeQuery,
+  useGetAccountInformationsQuery,
+  useUpdateAccountInformationsMutation,
+} = accountApi;

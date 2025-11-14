@@ -41,7 +41,7 @@ export const bookingApi = appApi.injectEndpoints({
               })
             )
             .unwrap();
-          return { data: result.data as any };
+          return { data: result as any };
         },
       }
     ),
@@ -94,5 +94,5 @@ export const {
   useCreateMutation,
   useGetBookingsQuery,
   useGetBookingDetailQuery,
-  useConfirmAndDepositMutation
+  useConfirmAndDepositMutation,
 } = bookingApi;

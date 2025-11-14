@@ -1,6 +1,7 @@
 type formatDateInput =
   | "DD/MM/YYYY"
   | "MM/DD/YYYY"
+  | "YYYY-MM-DD"
   | "mm:ssDD/MMM/YYYY"
   | "hh:mm:ssDD/MM/YYYY"
   | "hh:mmDD/MM/YYYY";
@@ -39,6 +40,8 @@ export const formatDate = (dateString: string, format: formatDateInput) => {
       return `${dd}/${mm}/${yyyy}`;
     case "MM/DD/YYYY":
       return `${mm}/${dd}/${yyyy}`;
+    case "YYYY-MM-DD":
+      return `${yyyy}-${mm}-${dd}`;
     case "mm:ssDD/MMM/YYYY":
       return `${min}:${ss} ${dd}/${mmm}/${yyyy}`;
     case "hh:mm:ssDD/MM/YYYY":

@@ -251,11 +251,9 @@ const CreateBookingPage = () => {
       const result = await createBooking({
         createBookingFormData: formData,
       }).unwrap();
-      // navigate to bookings list on success
-      // window.location.href = "/media-player/management/bookings";
       if (result.Message) {
         alert(result.Message);
-        // navigate("media-player/management/bookings");
+        navigate("media-player/management/bookings");
       }
     } catch (err: any) {
       console.error("Create booking failed:", err);

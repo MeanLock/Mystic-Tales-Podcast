@@ -181,7 +181,7 @@ function AppBody() {
         <Stack.Screen name="(content)" options={{ headerShown: false }} />
         <Stack.Screen name="(user)" options={{ headerShown: false }} />
       </Stack>
-
+    
       {isButtonVisible && (
         <Animated.View
           style={{

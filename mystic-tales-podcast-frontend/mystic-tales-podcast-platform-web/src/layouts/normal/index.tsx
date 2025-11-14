@@ -1,9 +1,10 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import NormalHeader from "./components/NormalHeader";
 import "./styles.css";
 import { useUpdateAccountMeQuery } from "@/core/services/account/account.service";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
+import { useEffect } from "react";
 
 const NormalLayout = () => {
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
@@ -13,6 +14,26 @@ const NormalLayout = () => {
     pollingInterval: accessToken ? 30000 : 0, // 5 giây nếu có token, không poll nếu chưa login
     skip: !accessToken, // Skip query hoàn toàn nếu chưa login
   });
+
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (accessToken) {
+      // Tạo ID riêng cho từng tab nếu chưa có
+      if (!sessionStorage.getItem("tabSessionId")) {
+        sessionStorage.setItem("tabSessionId", crypto.randomUUID());
+      }
+
+      const tabSessionId = sessionStorage.getItem("tabSessionId");
+      const isInWebKey = `${tabSessionId}:isInWeb`;
+
+      const isFirstInWeb = sessionStorage.getItem(isInWebKey);
+
+      if (!isFirstInWeb) {
+        sessionStorage.setItem(isInWebKey, "true");
+        navigate("/media-player/discovery");
+      }
+    }
+  }, [accessToken, navigate]);
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black">

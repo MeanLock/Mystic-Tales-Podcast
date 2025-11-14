@@ -11,16 +11,20 @@ import { useEffect, useState } from "react";
 import { useGetBookingsQuery } from "@/core/services/booking/booking.service";
 import BookingCard from "./components/BookingCard";
 import "./styles.css";
+import ShowOnHoverButton from "@/components/button/ShowOnHoverButton";
+import { MdNoteAdd } from "react-icons/md";
+import { RiFileAddFill } from "react-icons/ri";
+import { useNavigate } from "react-router-dom";
 
 const ITEMS_PER_PAGE = 4;
 
 const BookingsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
-
   // 🟢 Gọi API thật
   const { data: bookings, isLoading, error } = useGetBookingsQuery();
 
+  const navigate = useNavigate();
   // 🧮 Xử lý phân trang
   const totalItems = bookings?.BookingList.length ?? 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
@@ -35,6 +39,10 @@ const BookingsPage = () => {
     }
   };
 
+  const handleCreateBooking = () => {
+    localStorage.removeItem("selectedPodcaster");
+    navigate("/media-player/management/bookings/create");
+  };
   // ⚙️ Render
   return (
     <div className="w-full h-full flex flex-col text-white overflow-hidden rounded-3xl">
@@ -45,7 +53,12 @@ const BookingsPage = () => {
 
       {/* ACTION BAR */}
       <div className="h-16 bg-white text-black flex items-center px-6 font-bold text-lg shadow-[5px_5px_10px_#0000005c]">
-        Action Bar
+        <ShowOnHoverButton
+          Icon={RiFileAddFill}
+          onClick={() => handleCreateBooking()}
+          text="Create New Booking"
+          bgColor="#1b81cf"
+        />
       </div>
 
       {/* MAIN CONTENT */}
