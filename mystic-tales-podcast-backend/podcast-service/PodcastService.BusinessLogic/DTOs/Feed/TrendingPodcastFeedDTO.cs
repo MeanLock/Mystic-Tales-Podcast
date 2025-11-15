@@ -8,20 +8,20 @@ namespace PodcastService.BusinessLogic.DTOs.Feed;
 
 public class TrendingPodcastFeedDTO
 {
-    public PopularPodcastersTrendingPodcastFeedSection? PopularPodcasters { get; set; }
-    public CategoryTrendingPodcastFeedSection? Category1 { get; set; }
-    public HotPodcastersTrendingPodcastFeedSection? HotPodcasters { get; set; }
-    public CategoryTrendingPodcastFeedSection? Category2 { get; set; }
-    public PopularChannelsTrendingPodcastFeedSection? PopularChannels { get; set; }
-    public CategoryTrendingPodcastFeedSection? Category3 { get; set; }
-    public HotChannelsTrendingPodcastFeedSection? HotChannels { get; set; }
-    public CategoryTrendingPodcastFeedSection? Category4 { get; set; }
-    public PopularShowsTrendingPodcastFeedSection? PopularShows { get; set; }
-    public CategoryTrendingPodcastFeedSection? Category5 { get; set; }
-    public HotShowsTrendingPodcastFeedSection? HotShows { get; set; }
-    public CategoryTrendingPodcastFeedSection? Category6 { get; set; }
-    public NewEpisodesTrendingPodcastFeedSection? NewEpisodes { get; set; }
-    public PopularEpisodesTrendingPodcastFeedSection? PopularEpisodes { get; set; }
+    public required PopularPodcastersTrendingPodcastFeedSection PopularPodcasters { get; set; }
+    public required CategoryTrendingPodcastFeedSection Category1 { get; set; }
+    public required HotPodcastersTrendingPodcastFeedSection HotPodcasters { get; set; }
+    public required CategoryTrendingPodcastFeedSection Category2 { get; set; }
+    public required PopularChannelsTrendingPodcastFeedSection PopularChannels { get; set; }
+    public required CategoryTrendingPodcastFeedSection Category3 { get; set; }
+    public required HotChannelsTrendingPodcastFeedSection HotChannels { get; set; }
+    public required CategoryTrendingPodcastFeedSection Category4 { get; set; }
+    public required PopularShowsTrendingPodcastFeedSection PopularShows { get; set; }
+    public required CategoryTrendingPodcastFeedSection Category5 { get; set; }
+    public required HotShowsTrendingPodcastFeedSection HotShows { get; set; }
+    public required CategoryTrendingPodcastFeedSection Category6 { get; set; }
+    public required NewEpisodesTrendingPodcastFeedSection NewEpisodes { get; set; }
+    public required PopularEpisodesTrendingPodcastFeedSection PopularEpisodes { get; set; }
 
     public class PopularPodcastersTrendingPodcastFeedSection
     {

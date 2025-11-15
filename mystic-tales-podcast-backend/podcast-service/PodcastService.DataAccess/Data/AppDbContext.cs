@@ -118,6 +118,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Id)
                 .ValueGeneratedNever()
                 .HasColumnName("id");
+            entity.Property(e => e.MainImageFileKey).HasColumnName("mainImageFileKey");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .HasColumnName("name");

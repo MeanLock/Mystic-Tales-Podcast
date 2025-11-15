@@ -1086,7 +1086,7 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 stepHandler: async (command) =>
                 {
                     var parameterDTO = command.RequestData.ToObject<TakedownContentDmcaParameterDTO>();
-                    if (parameterDTO.PodcastEpisodeId == null || parameterDTO.PodcastShowId == null)
+                    if (parameterDTO.PodcastEpisodeId == null && parameterDTO.PodcastShowId == null)
                     {
                         throw new ArgumentNullException(nameof(parameterDTO), "Parameter DTO cannot be null");
                     }

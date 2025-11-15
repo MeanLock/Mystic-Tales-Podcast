@@ -885,6 +885,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = episode.PodcastShow.Id,
                         Name = episode.PodcastShow.Name,
+                        Description = episode.PodcastShow.Description,
                         MainImageFileKey = episode.PodcastShow.MainImageFileKey,
                         IsReleased = episode.PodcastShow.IsReleased,
                         ReleaseDate = episode.PodcastShow.ReleaseDate
@@ -982,6 +983,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = episode.PodcastShow.Id,
                         Name = episode.PodcastShow.Name,
+                        Description = episode.PodcastShow.Description,
                         MainImageFileKey = episode.PodcastShow.MainImageFileKey,
                         IsReleased = episode.PodcastShow.IsReleased,
                         ReleaseDate = episode.PodcastShow.ReleaseDate
@@ -3249,6 +3251,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             {
                                 Id = validEpisode.Id,
                                 Name = validEpisode.Name,
+                                Description = validEpisode.Description,
                                 MainImageFileKey = validEpisode.MainImageFileKey,
                                 IsReleased = validEpisode.IsReleased,
                                 ReleaseDate = validEpisode.ReleaseDate,
@@ -3451,6 +3454,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             {
                                 Id = validEpisode.Id,
                                 Name = validEpisode.Name,
+                                Description = validEpisode.Description, 
                                 MainImageFileKey = validEpisode.MainImageFileKey,
                                 IsReleased = validEpisode.IsReleased,
                                 ReleaseDate = validEpisode.ReleaseDate,
@@ -5521,6 +5525,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = pes.PodcastEpisodeId,
                             Name = pes.PodcastEpisode.Name,
+                            Description = pes.PodcastEpisode.Description,
                             MainImageFileKey = pes.PodcastEpisode.MainImageFileKey,
                             IsReleased = pes.PodcastEpisode.IsReleased,
                             ReleaseDate = pes.PodcastEpisode.ReleaseDate
@@ -5644,6 +5649,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             {
                                 Id = episode.Id,
                                 Name = episode.Name,
+                                Description = episode.Description,
                                 MainImageFileKey = episode.MainImageFileKey,
                                 IsReleased = episode.IsReleased,
                                 ReleaseDate = episode.ReleaseDate

@@ -47,19 +47,19 @@ namespace PodcastService.API.Controllers.BaseControllers
         [HttpGet("get-file-url/{**FileKey}")]
         public async Task<IActionResult> GetFileUrl(string FileKey)
         {
-            // Determine access level dựa trên user auth status
-            var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
-            var requiredLevel = isAuthenticated ? FileAccessLevelEnum.RequiresAuth : FileAccessLevelEnum.Public;
+            // Validate file key phải là HLS segment
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
 
-            var validation = FileAccessValidator.ValidateFileAccess(FileKey, requiredLevel);
-
-            if (!validation.IsValid)
+            if (category != FileCategoryEnum.BackgroundSoundTrackAudio && category != FileCategoryEnum.BackgroundSoundTrackMainImage)
             {
-                return StatusCode(403, new { error = validation.ErrorMessage });
+                return StatusCode(403, new
+                {
+                    error = $"Invalid file key: Must be a background sound track audio or main image file",
+                    actualCategory = category.ToString()
+                });
             }
-
-
             var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
             return Ok(new { FileUrl = url });
         }
 

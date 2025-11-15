@@ -5,7 +5,8 @@
 -- PodcastCategory table
 CREATE TABLE PodcastCategory (
     id INT PRIMARY KEY,
-    name NVARCHAR(50) NOT NULL
+    name NVARCHAR(50) NOT NULL,
+    mainImageFileKey NVARCHAR(MAX) NULL
 );
 
 -- PodcastSubCategory table

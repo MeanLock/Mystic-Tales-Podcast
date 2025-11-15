@@ -11,18 +11,18 @@ namespace PodcastService.BusinessLogic.DTOs.Feed;
 
 public class DiscoveryPodcastFeedDTO
 {
-    public ContinueListeningDiscoveryPodcastFeedSection? ContinueListening { get; set; }
-    public BasedOnYourTasteDiscoveryPodcastFeedSection? BasedOnYourTaste { get; set; }
-    public NewReleasesDiscoveryPodcastFeedSection? NewReleases { get; set; }
-    public HotThisWeekDiscoveryPodcastFeedSection? HotThisWeek { get; set; }
-    public TopSubCategoryDiscoveryPodcastFeedSection? TopSubCategory { get; set; }
-    public TopPodcastersDiscoveryPodcastFeedSection? TopPodcasters { get; set; }
-    public RandomCategoryDiscoveryPodcastFeedSection? RandomCategory { get; set; }
-    public TalentedRookiesDiscoveryPodcastFeedSection? TalentedRookies { get; set; }
+    public required ContinueListeningDiscoveryPodcastFeedSection ContinueListening { get; set; }
+    public required BasedOnYourTasteDiscoveryPodcastFeedSection BasedOnYourTaste { get; set; }
+    public required NewReleasesDiscoveryPodcastFeedSection NewReleases { get; set; }
+    public required HotThisWeekDiscoveryPodcastFeedSection HotThisWeek { get; set; }
+    public required TopSubCategoryDiscoveryPodcastFeedSection TopSubCategory { get; set; }
+    public required TopPodcastersDiscoveryPodcastFeedSection TopPodcasters { get; set; }
+    public required RandomCategoryDiscoveryPodcastFeedSection RandomCategory { get; set; }
+    public required TalentedRookiesDiscoveryPodcastFeedSection TalentedRookies { get; set; }
 
     public class ContinueListeningDiscoveryPodcastFeedSection
     {
-        public List<ListenSessionDiscoveryPodcastFeedListItem>? ListenSessionList { get; set; }
+        public required List<ListenSessionDiscoveryPodcastFeedListItem> ListenSessionList { get; set; }
     }
 
     public class ListenSessionDiscoveryPodcastFeedListItem

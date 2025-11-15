@@ -151,14 +151,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 return new DiscoveryPodcastFeedDTO
                 {
-                    ContinueListening = continueListening,
-                    BasedOnYourTaste = basedOnYourTaste,
-                    NewReleases = newReleases,
-                    HotThisWeek = hotThisWeek,
-                    TopSubCategory = topSubCategory,
-                    TopPodcasters = topPodcasters,
-                    RandomCategory = randomCategory,
-                    TalentedRookies = talentedRookies
+                    ContinueListening = continueListening ?? new DiscoveryPodcastFeedDTO.ContinueListeningDiscoveryPodcastFeedSection { ListenSessionList = new List<DiscoveryPodcastFeedDTO.ListenSessionDiscoveryPodcastFeedListItem>() },
+                    BasedOnYourTaste = basedOnYourTaste ?? new DiscoveryPodcastFeedDTO.BasedOnYourTasteDiscoveryPodcastFeedSection { ShowList = new List<ShowListItemResponseDTO>() },
+                    NewReleases = newReleases ?? new DiscoveryPodcastFeedDTO.NewReleasesDiscoveryPodcastFeedSection { ShowList = new List<ShowListItemResponseDTO>() },
+                    HotThisWeek = hotThisWeek ?? new DiscoveryPodcastFeedDTO.HotThisWeekDiscoveryPodcastFeedSection { ShowList = new List<ShowListItemResponseDTO>(), ChannelList = new List<ChannelListItemResponseDTO>() },
+                    TopSubCategory = topSubCategory ?? new DiscoveryPodcastFeedDTO.TopSubCategoryDiscoveryPodcastFeedSection { ShowList = new List<ShowListItemResponseDTO>() },
+                    TopPodcasters = topPodcasters ?? new DiscoveryPodcastFeedDTO.TopPodcastersDiscoveryPodcastFeedSection { PodcasterList = new List<AccountSnippetResponseDTO>() },
+                    RandomCategory = randomCategory ?? new DiscoveryPodcastFeedDTO.RandomCategoryDiscoveryPodcastFeedSection { PodcastCategory = new PodcastCategoryDTO(), ShowList = new List<ShowListItemResponseDTO>() },
+                    TalentedRookies = talentedRookies ?? new DiscoveryPodcastFeedDTO.TalentedRookiesDiscoveryPodcastFeedSection { PodcasterList = new List<AccountSnippetResponseDTO>() }
                 };
             }
             catch (Exception ex)
@@ -289,11 +289,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 var listenSessions = await _podcastEpisodeListenSessionGenericRepository.FindAll(
                     predicate: ls =>
                         ls.AccountId == userId.Value &&
-                        ls.IsCompleted == false &&
+                        // ls.IsCompleted == false &&
                         ls.LastListenDurationSeconds < ls.PodcastEpisode.AudioLength &&
                         ls.IsContentRemoved == false &&
                         ls.PodcastEpisode.DeletedAt == null &&
-                        ls.PodcastEpisode.PodcastShow.DeletedAt == null,
+                        ls.PodcastEpisode.PodcastShow.DeletedAt == null &&
+                        (ls.PodcastEpisode.PodcastShow.PodcastChannel == null || ls.PodcastEpisode.PodcastShow.PodcastChannel.DeletedAt == null),
                     includeFunc: q => q
                         .Include(ls => ls.PodcastEpisode)
                             .ThenInclude(pe => pe.PodcastShow)
@@ -367,6 +368,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = ls.PodcastEpisode.Id,
                             Name = ls.PodcastEpisode.Name,
+                            Description = ls.PodcastEpisode.Description,    
                             MainImageFileKey = ls.PodcastEpisode.MainImageFileKey,
                             IsReleased = ls.PodcastEpisode.IsReleased,
                             ReleaseDate = ls.PodcastEpisode.ReleaseDate
@@ -998,6 +1000,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = subCategory.PodcastCategory.Id,
                         Name = subCategory.PodcastCategory.Name,
+                        MainImageFileKey = subCategory.PodcastCategory.MainImageFileKey
                     }
                 };
 
@@ -1222,7 +1225,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     PodcastCategory = new PodcastCategoryDTO
                     {
                         Id = randomCategory.Id,
-                        Name = randomCategory.Name
+                        Name = randomCategory.Name,
+                        MainImageFileKey = randomCategory.MainImageFileKey
                     },
                     ShowList = showListItems
                 };
@@ -1881,6 +1885,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = categories[show.PodcastCategoryId.Value].Id,
                             Name = categories[show.PodcastCategoryId.Value].Name,
+                            MainImageFileKey = categories[show.PodcastCategoryId.Value].MainImageFileKey
                         }
                         : null,
 
@@ -1906,6 +1911,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = channels[show.PodcastChannelId.Value].Id,
                             Name = channels[show.PodcastChannelId.Value].Name,
+                            Description = channels[show.PodcastChannelId.Value].Description,
                             MainImageFileKey = channels[show.PodcastChannelId.Value].MainImageFileKey
                         }
                         : null,
@@ -2032,6 +2038,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = categories[channel.PodcastCategoryId.Value].Id,
                             Name = categories[channel.PodcastCategoryId.Value].Name,
+                            MainImageFileKey = categories[channel.PodcastCategoryId.Value].MainImageFileKey
                         }
                         : null,
 
@@ -2117,20 +2124,20 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 return new TrendingPodcastFeedDTO
                 {
-                    PopularPodcasters = popularPodcasters,
-                    Category1 = dynamicCategories[0],
-                    HotPodcasters = hotPodcasters,
-                    Category2 = dynamicCategories[1],
-                    PopularChannels = popularChannels,
-                    Category3 = dynamicCategories[2],
-                    HotChannels = hotChannels,
-                    Category4 = dynamicCategories[3],
-                    PopularShows = popularShows,
-                    Category5 = dynamicCategories[4],
-                    HotShows = hotShows,
-                    Category6 = dynamicCategories[5],
-                    NewEpisodes = newEpisodes,
-                    PopularEpisodes = popularEpisodes
+                    PopularPodcasters = popularPodcasters ?? new TrendingPodcastFeedDTO.PopularPodcastersTrendingPodcastFeedSection { PodcasterList = new List<AccountSnippetResponseDTO>() },
+                    Category1 = dynamicCategories[0] ?? new TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection { PodcastCategory = new PodcastCategoryDTO(), ShowList = new List<ShowListItemResponseDTO>() },
+                    HotPodcasters = hotPodcasters ?? new TrendingPodcastFeedDTO.HotPodcastersTrendingPodcastFeedSection { PodcasterList = new List<AccountSnippetResponseDTO>() },
+                    Category2 = dynamicCategories[1] ?? new TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection { PodcastCategory = new PodcastCategoryDTO(), ShowList = new List<ShowListItemResponseDTO>() },
+                    PopularChannels = popularChannels ?? new TrendingPodcastFeedDTO.PopularChannelsTrendingPodcastFeedSection { ChannelList = new List<ChannelListItemResponseDTO>() },
+                    Category3 = dynamicCategories[2] ?? new TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection { PodcastCategory = new PodcastCategoryDTO(), ShowList = new List<ShowListItemResponseDTO>() },
+                    HotChannels = hotChannels ?? new TrendingPodcastFeedDTO.HotChannelsTrendingPodcastFeedSection { ChannelList = new List<ChannelListItemResponseDTO>() },
+                    Category4 = dynamicCategories[3] ?? new TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection { PodcastCategory = new PodcastCategoryDTO(), ShowList = new List<ShowListItemResponseDTO>() },
+                    PopularShows = popularShows ?? new TrendingPodcastFeedDTO.PopularShowsTrendingPodcastFeedSection { ShowList = new List<ShowListItemResponseDTO>() },
+                    Category5 = dynamicCategories[4] ?? new TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection { PodcastCategory = new PodcastCategoryDTO(), ShowList = new List<ShowListItemResponseDTO>() },
+                    HotShows = hotShows ?? new TrendingPodcastFeedDTO.HotShowsTrendingPodcastFeedSection { ShowList = new List<ShowListItemResponseDTO>() },
+                    Category6 = dynamicCategories[5] ?? new TrendingPodcastFeedDTO.CategoryTrendingPodcastFeedSection { PodcastCategory = new PodcastCategoryDTO(), ShowList = new List<ShowListItemResponseDTO>() },
+                    NewEpisodes = newEpisodes ?? new TrendingPodcastFeedDTO.NewEpisodesTrendingPodcastFeedSection { EpisodeList = new List<PodcastEpisodeSnippetResponseDTO>() },
+                    PopularEpisodes = popularEpisodes ?? new TrendingPodcastFeedDTO.PopularEpisodesTrendingPodcastFeedSection { EpisodeList = new List<PodcastEpisodeSnippetResponseDTO>() }
                 };
             }
             catch (Exception ex)
@@ -2663,6 +2670,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     Id = ep.Id,
                     Name = ep.Name,
+                    Description = ep.Description,
                     MainImageFileKey = ep.MainImageFileKey,
                     IsReleased = ep.IsReleased,
                     ReleaseDate = ep.ReleaseDate
@@ -2748,6 +2756,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     Id = ep.Id,
                     Name = ep.Name,
+                    Description = ep.Description,
                     MainImageFileKey = ep.MainImageFileKey,
                     IsReleased = ep.IsReleased,
                     ReleaseDate = ep.ReleaseDate
@@ -2916,7 +2925,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     PodcastCategory = new PodcastCategoryDTO
                     {
                         Id = category.Id,
-                        Name = category.Name
+                        Name = category.Name,
+                        MainImageFileKey = category.MainImageFileKey
                     },
                     ShowList = showListItems
                 };
@@ -2927,6 +2937,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 return null;
             }
         }
+
+        #endregion
+
+        #region keyword search suggestions
 
         #endregion
     }

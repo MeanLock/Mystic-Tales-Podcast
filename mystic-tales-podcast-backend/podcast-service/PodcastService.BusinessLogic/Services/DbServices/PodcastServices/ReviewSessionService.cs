@@ -442,6 +442,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = ps.PodcastEpisode.Id,
                         Name = ps.PodcastEpisode.Name,
+                        Description = ps.PodcastEpisode.Description,
                         MainImageFileKey = ps.PodcastEpisode.MainImageFileKey,
                         IsReleased = ps.PodcastEpisode.IsReleased,
                         ReleaseDate = ps.PodcastEpisode.ReleaseDate
@@ -593,6 +594,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = reviewSession.PodcastEpisode.PodcastShow.Id,
                         Name = reviewSession.PodcastEpisode.PodcastShow.Name,
+                        Description = reviewSession.PodcastEpisode.PodcastShow.Description,
                         MainImageFileKey = reviewSession.PodcastEpisode.PodcastShow.MainImageFileKey,
                         IsReleased = reviewSession.PodcastEpisode.PodcastShow.IsReleased,
                         ReleaseDate = reviewSession.PodcastEpisode.PodcastShow.ReleaseDate
@@ -601,6 +603,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.Id,
                         Name = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.Name,
+                        Description = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.Description,
                         MainImageFileKey = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.MainImageFileKey,
                     } : null,
                     Podcaster = new AccountStatusSnippetResponseDTO

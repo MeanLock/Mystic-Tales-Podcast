@@ -7,5 +7,6 @@ namespace PodcastService.BusinessLogic.DTOs.Category
         public int Id { get; set; }
 
         public string Name { get; set; } = null!;
+        public string? MainImageFileKey { get; set; }
     }
 }

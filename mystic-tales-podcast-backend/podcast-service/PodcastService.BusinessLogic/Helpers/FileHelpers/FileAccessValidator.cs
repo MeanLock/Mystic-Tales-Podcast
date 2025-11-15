@@ -67,6 +67,11 @@ namespace PodcastService.BusinessLogic.Helpers.FileHelpers
                 FileAccessLevelEnum.Public,
                 "Background sound track audio"
             ),
+            [FileCategoryEnum.PodcastCategoryMainImage] = (
+                $@"^main_files/PodcastCategories/{INT_PATTERN}/main_image{IMAGE_EXT}",
+                FileAccessLevelEnum.Public,
+                "Podcast category main image"
+            ),
 
             // ============ REQUIRES AUTH ============
             [FileCategoryEnum.BuddyCommitmentDocument] = (

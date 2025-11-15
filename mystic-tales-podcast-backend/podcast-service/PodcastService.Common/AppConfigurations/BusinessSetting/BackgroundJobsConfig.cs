@@ -12,6 +12,7 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         public BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ShowAllTimeMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ChannelAllTimeMaxQueryMetricUpdateJob { get; set; }
+        public BackgroundJob EpisodeAllTimeMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ShowTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ChannelTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob SystemPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
@@ -27,6 +28,7 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         public BackgroundJob PodcasterTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ShowAllTimeMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ChannelAllTimeMaxQueryMetricUpdateJob { get; set; }
+        public BackgroundJob EpisodeAllTimeMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ShowTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob ChannelTemporal7dMaxQueryMetricUpdateJob { get; set; }
         public BackgroundJob SystemPreferencesTemporal30dQueryMetricUpdateJob { get; set; }
@@ -44,6 +46,7 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
             PodcasterTemporal7dMaxQueryMetricUpdateJob = backgroundJobsConfig?.PodcasterTemporal7dMaxQueryMetricUpdateJob;
             ShowAllTimeMaxQueryMetricUpdateJob = backgroundJobsConfig?.ShowAllTimeMaxQueryMetricUpdateJob;
             ChannelAllTimeMaxQueryMetricUpdateJob = backgroundJobsConfig?.ChannelAllTimeMaxQueryMetricUpdateJob;
+            EpisodeAllTimeMaxQueryMetricUpdateJob = backgroundJobsConfig?.EpisodeAllTimeMaxQueryMetricUpdateJob;
             ShowTemporal7dMaxQueryMetricUpdateJob = backgroundJobsConfig?.ShowTemporal7dMaxQueryMetricUpdateJob;
             ChannelTemporal7dMaxQueryMetricUpdateJob = backgroundJobsConfig?.ChannelTemporal7dMaxQueryMetricUpdateJob;
             SystemPreferencesTemporal30dQueryMetricUpdateJob = backgroundJobsConfig?.SystemPreferencesTemporal30dQueryMetricUpdateJob;

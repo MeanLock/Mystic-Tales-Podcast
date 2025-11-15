@@ -9,6 +9,8 @@ public partial class PodcastCategory
 
     public string Name { get; set; } = null!;
 
+    public string? MainImageFileKey { get; set; }
+
     public virtual ICollection<PodcastChannel> PodcastChannels { get; set; } = new List<PodcastChannel>();
 
     public virtual ICollection<PodcastEpisodeListenSession> PodcastEpisodeListenSessions { get; set; } = new List<PodcastEpisodeListenSession>();

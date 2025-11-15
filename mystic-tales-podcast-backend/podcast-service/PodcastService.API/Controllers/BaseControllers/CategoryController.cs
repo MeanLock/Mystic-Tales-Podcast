@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PodcastService.API.Filters.ExceptionFilters;
+using PodcastService.BusinessLogic.Enums.App;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
 using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -60,6 +61,25 @@ namespace PodcastService.API.Controllers.BaseControllers
             {
                 PodcastSubCategoryList = subCategories
             });
+        }
+
+        // /api/podcast-service/api/categories/podcast-categories/get-file-url/{**FileKey}
+        [HttpGet("podcast-categories/get-file-url/{**FileKey}")]
+        public async Task<IActionResult> GetPodcastCategoryFileUrl([FromRoute] string FileKey)
+        {
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.PodcastCategoryMainImage)
+            {
+                return StatusCode(403, new
+                {
+                    error = $"Invalid file key: Must be a podcast category main image file",
+                    actualCategory = category.ToString()
+                });
+            }
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            return Ok(new { FileUrl = url });
         }
     }
 }

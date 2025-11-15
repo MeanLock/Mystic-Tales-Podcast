@@ -726,14 +726,25 @@ namespace PodcastService.BusinessLogic.Services.DbServices.CachingServices
 
                 var allTimeShows = await _podcastShowGenericRepository.FindAll(
                     predicate: ps => ps.DeletedAt == null &&
+                    (ps.PodcastChannel == null || (ps.PodcastChannel != null &&
+                        ps.PodcastChannel.DeletedAt == null
+                    )),
                     // trạng thái cuối cùng không phải là Removed
-                    ps.PodcastShowStatusTrackings
-                            .OrderByDescending(pet => pet.CreatedAt)
-                            .FirstOrDefault()
-                            .PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed
-                    ,
-                    includeFunc: null
+                    // ps.PodcastShowStatusTrackings
+                    //         .OrderByDescending(pet => pet.CreatedAt)
+                    //         .FirstOrDefault()
+                    //         .PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed
+                    includeFunc: ps => ps.Include(ps => ps.PodcastShowStatusTrackings)
                 ).ToListAsync();
+
+                // trạng thái cuối cùng không phải là Removed
+                allTimeShows = allTimeShows
+                    .Where(ps => ps.PodcastShowStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed
+                    )
+                    .ToList();
 
                 var showAllTimeMaxQueryMetric = new ShowAllTimeMaxQueryMetric
                 {
@@ -810,6 +821,62 @@ namespace PodcastService.BusinessLogic.Services.DbServices.CachingServices
                 throw new Exception("UpdateChannelAllTimeMaxQueryMetric failed, error: " + ex.Message);
             }
 
+        }
+
+        public async Task UpdateEpisodeAllTimeMaxQueryMetricAsync()
+        {
+            try
+            {
+                // Logic to update episode all-time max query metric goes here
+                // 1: lấy MaxListenCount từ cột ListenCount của tất cả các episode (chưa bị xoá / Removed) trong bảng PodcastEpisode
+                // 2: lấy MaxTotalSave từ cột TotalSave của tất cả các episode (chưa bị xoá / Removed) trong bảng PodcastEpisode
+                // 2: lấy ra LastUpdated là hiện tại
+                // 3: lưu vào DTO sau đó đưa vào cache
+                // 4: cập nhật vào cache key trong config của job
+
+                var cacheKey = _jobsConfig.EpisodeAllTimeMaxQueryMetricUpdateJob.RedisKeyName;
+                var cacheTTL = _jobsConfig.EpisodeAllTimeMaxQueryMetricUpdateJob.RedisKeyTTLSeconds;
+
+                var allTimeEpisodes = await _podcastEpisodeGenericRepository.FindAll(
+                    predicate: pe => pe.DeletedAt == null &&
+                    pe.PodcastShow.DeletedAt == null &&
+                    (pe.PodcastShow.PodcastChannel == null || (pe.PodcastShow.PodcastChannel != null &&
+                        pe.PodcastShow.PodcastChannel.DeletedAt == null
+                    )),
+                    includeFunc: pe => pe.Include(pe => pe.PodcastEpisodeStatusTrackings)
+                ).ToListAsync();
+
+                // trạng thái cuối cùng không phải là Removed
+                allTimeEpisodes = allTimeEpisodes
+                    .Where(pe => pe.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(pet => pet.CreatedAt)
+                        .FirstOrDefault()
+                        .PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Removed
+                    )
+                    .ToList();
+
+                var episodeAllTimeMaxQueryMetric = new EpisodeAllTimeMaxQueryMetric
+                {
+                    MaxListenCount = allTimeEpisodes
+                        .Select(g => g.ListenCount)
+                        .DefaultIfEmpty(0)
+                        .Max(),
+                    MaxTotalSave = allTimeEpisodes
+                        .Select(g => g.TotalSave)
+                        .DefaultIfEmpty(0)
+                        .Max(),
+
+                    LastUpdated = _dateHelper.GetNowByAppTimeZone()
+                };
+
+                await _redisSharedCacheService.KeySetAsync(cacheKey, episodeAllTimeMaxQueryMetric, TimeSpan.FromSeconds(cacheTTL ?? 3600));
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new Exception("UpdateEpisodeAllTimeMaxQueryMetric failed, error: " + ex.Message);
+            }
         }
 
         public async Task UpdateShowTemporal7dMaxQueryMetric()

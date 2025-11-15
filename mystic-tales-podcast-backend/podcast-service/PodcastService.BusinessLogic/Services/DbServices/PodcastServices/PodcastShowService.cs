@@ -338,7 +338,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
                         {
                             Id = ps.PodcastCategory.Id,
-                            Name = ps.PodcastCategory.Name
+                            Name = ps.PodcastCategory.Name,
+                            MainImageFileKey = ps.PodcastCategory.MainImageFileKey
                         } : null,
                         PodcastSubCategory = ps.PodcastSubCategory != null ? new PodcastSubCategoryDTO
                         {
@@ -350,6 +351,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = ps.PodcastChannel.Id,
                             Name = ps.PodcastChannel.Name,
+                            Description = ps.PodcastChannel.Description,
                             MainImageFileKey = ps.PodcastChannel.MainImageFileKey
                         } : null,
                         Podcaster = new AccountSnippetResponseDTO
@@ -427,7 +429,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
                     {
                         Id = ps.PodcastCategory.Id,
-                        Name = ps.PodcastCategory.Name
+                        Name = ps.PodcastCategory.Name,
+                        MainImageFileKey = ps.PodcastCategory.MainImageFileKey
                     } : null,
                     PodcastSubCategory = ps.PodcastSubCategory != null ? new PodcastSubCategoryDTO
                     {
@@ -439,6 +442,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = ps.PodcastChannel.Id,
                         Name = ps.PodcastChannel.Name,
+                        Description = ps.PodcastChannel.Description,
                         MainImageFileKey = ps.PodcastChannel.MainImageFileKey
                     } : null,
                     PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
@@ -590,7 +594,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     PodcastCategory = show.PodcastCategory != null ? new PodcastCategoryDTO
                     {
                         Id = show.PodcastCategory.Id,
-                        Name = show.PodcastCategory.Name
+                        Name = show.PodcastCategory.Name,
+                        MainImageFileKey = show.PodcastCategory.MainImageFileKey
                     } : null,
                     PodcastSubCategory = show.PodcastSubCategory != null ? new PodcastSubCategoryDTO
                     {
@@ -602,6 +607,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = show.PodcastChannel.Id,
                         Name = show.PodcastChannel.Name,
+                        Description = show.PodcastChannel.Description,
                         MainImageFileKey = show.PodcastChannel.MainImageFileKey
                     } : null,
                     PodcastShowSubscriptionType = show.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
@@ -690,6 +696,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = show.Id,
                             Name = show.Name,
+                            Description = show.Description,
                             MainImageFileKey = show.MainImageFileKey,
                             IsReleased = show.IsReleased,
                             ReleaseDate = show.ReleaseDate
@@ -823,7 +830,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     PodcastCategory = show.PodcastCategory != null ? new PodcastCategoryDTO
                     {
                         Id = show.PodcastCategory.Id,
-                        Name = show.PodcastCategory.Name
+                        Name = show.PodcastCategory.Name,
+                        MainImageFileKey = show.PodcastCategory.MainImageFileKey
                     } : null,
                     PodcastSubCategory = show.PodcastSubCategory != null ? new PodcastSubCategoryDTO
                     {
@@ -835,6 +843,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         Id = show.PodcastChannel.Id,
                         Name = show.PodcastChannel.Name,
+                        Description = show.PodcastChannel.Description,
                         MainImageFileKey = show.PodcastChannel.MainImageFileKey
                     } : null,
                     PodcastShowSubscriptionType = show.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
@@ -923,6 +932,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             Id = show.Id,
                             Name = show.Name,
+                            Description = show.Description,
                             MainImageFileKey = show.MainImageFileKey,
                             IsReleased = show.IsReleased,
                             ReleaseDate = show.ReleaseDate

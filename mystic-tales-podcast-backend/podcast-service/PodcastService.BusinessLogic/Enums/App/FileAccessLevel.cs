@@ -24,6 +24,7 @@ namespace PodcastService.BusinessLogic.Enums.App
         BackgroundSoundTrackMainImage,
         BackgroundSoundTrackAudio,
         WithdrawalRequestTransferReceiptImage,
+        PodcastCategoryMainImage,
 
         // Authenticated files
         BuddyCommitmentDocument,

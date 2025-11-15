@@ -19,6 +19,8 @@ namespace PodcastService.Common.AppConfigurations.FilePath
         public string BOOKING_TEMP_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
+        public string PODCAST_CATEGORY_FILE_PATH { get; set; }
+        public string PODCAST_CATEGORY_TEMP_FILE_PATH { get; set; }
         
     }
     public class FilePathConfig : IFilePathConfig
@@ -37,7 +39,9 @@ namespace PodcastService.Common.AppConfigurations.FilePath
         public string BOOKING_TEMP_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
-        
+        public string PODCAST_CATEGORY_FILE_PATH { get; set; }
+        public string PODCAST_CATEGORY_TEMP_FILE_PATH { get; set; }
+
         public FilePathConfig(IConfiguration configuration)
         {
 
@@ -56,6 +60,8 @@ namespace PodcastService.Common.AppConfigurations.FilePath
             BOOKING_TEMP_FILE_PATH = filePaths.BOOKING_TEMP_FILE_PATH;
             DMCA_ACCUSATION_FILE_PATH = filePaths.DMCA_ACCUSATION_FILE_PATH;
             DMCA_ACCUSATION_TEMP_FILE_PATH = filePaths.DMCA_ACCUSATION_TEMP_FILE_PATH;
+            PODCAST_CATEGORY_FILE_PATH = filePaths.PODCAST_CATEGORY_FILE_PATH;
+            PODCAST_CATEGORY_TEMP_FILE_PATH = filePaths.PODCAST_CATEGORY_TEMP_FILE_PATH;
         }
 
     }

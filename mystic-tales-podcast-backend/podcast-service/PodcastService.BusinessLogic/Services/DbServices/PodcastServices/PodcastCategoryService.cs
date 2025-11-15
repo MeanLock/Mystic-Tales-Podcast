@@ -264,6 +264,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 {
                     Id = pc.Id,
                     Name = pc.Name,
+                    MainImageFileKey = pc.MainImageFileKey,
                     PodcastSubCategoryList = pc.PodcastSubCategories.Select(psc => new PodcastSubCategoryDTO
                     {
                         Id = psc.Id,
@@ -295,7 +296,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     PodcastCategory = new PodcastCategoryDTO
                     {
                         Id = psc.PodcastCategory.Id,
-                        Name = psc.PodcastCategory.Name
+                        Name = psc.PodcastCategory.Name,
+                        MainImageFileKey = psc.PodcastCategory.MainImageFileKey
                     }
                 }).ToList();
 

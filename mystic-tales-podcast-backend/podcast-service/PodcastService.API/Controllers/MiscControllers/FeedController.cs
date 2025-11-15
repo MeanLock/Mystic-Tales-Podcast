@@ -39,6 +39,8 @@ namespace PodcastService.API.Controllers.MiscControllers
         }
 
 
+
+
         // /api/podcast-service/api/misc/feed/podcast-contents/discovery
         [HttpGet("podcast-contents/discovery")]
         public async Task<IActionResult> GetDiscoveryPodcastFeedContents()
@@ -60,6 +62,16 @@ namespace PodcastService.API.Controllers.MiscControllers
             var feedContents = await _feedService.GetTrendingPodcastFeedContentsAsync();
 
             return Ok(feedContents);
+        }
+
+        // /api/podcast-service/api/misc/feed/podcast-keyword-search-suggestion
+        [HttpGet("podcast-keyword-search-suggestion")]
+        public async Task<IActionResult> GetPodcastKeywordSearchSuggestions([FromQuery] string keyword)
+        {
+            // var suggestions = await _feedService.GetPodcastKeywordSearchSuggestionsAsync(keyword);
+
+            // return Ok(suggestions);
+            return null;
         }
 
 

@@ -16,5 +16,7 @@
         string BOOKING_TEMP_FILE_PATH { get; set; }
         string DMCA_ACCUSATION_FILE_PATH { get; set; }
         string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
+        string PODCAST_CATEGORY_FILE_PATH { get; set; }
+        string PODCAST_CATEGORY_TEMP_FILE_PATH { get; set; }
     }
 }
