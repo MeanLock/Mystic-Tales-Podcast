@@ -1,11 +1,22 @@
 import { Button } from "@/components/ui/button";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import type { ShowDetailsUI } from "@/core/types/show";
 import { useState } from "react";
 import { FaPlus } from "react-icons/fa6";
 import { FaPlay } from "react-icons/fa6";
 import { IoPlay } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
 
 // Mock data theo hình ảnh "Kỳ Ẩn 101"
 export const mockdata: ShowDetailsUI = {
@@ -64,8 +75,7 @@ export const mockdata: ShowDetailsUI = {
         Id: 101,
         FullName: "Nguyễn Văn A",
         Email: "nguyenvana@example.com",
-        ImageUrl:
-          "https://randomuser.me/api/portraits/men/32.jpg",
+        ImageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
       },
       IsDeleted: false,
       CreatedAt: "2025-11-01T08:30:00Z",
@@ -73,15 +83,13 @@ export const mockdata: ShowDetailsUI = {
     {
       Id: "2b3c4d5e-2345-6789-abcd-ef0123456789",
       Title: "Ổn nhưng chưa hoàn hảo",
-      Content:
-        "Mọi thứ đều ổn, nhưng bass hơi yếu và cần được cải thiện thêm.",
+      Content: "Mọi thứ đều ổn, nhưng bass hơi yếu và cần được cải thiện thêm.",
       Rating: 3.5,
       Account: {
         Id: 102,
         FullName: "Trần Thị B",
         Email: "tranthib@example.com",
-        ImageUrl:
-          "https://randomuser.me/api/portraits/women/45.jpg",
+        ImageUrl: "https://randomuser.me/api/portraits/women/45.jpg",
       },
       IsDeleted: false,
       CreatedAt: "2025-10-28T14:15:00Z",
@@ -96,8 +104,7 @@ export const mockdata: ShowDetailsUI = {
         Id: 103,
         FullName: "Lê Văn C",
         Email: "levanc@example.com",
-        ImageUrl:
-          "https://randomuser.me/api/portraits/men/77.jpg",
+        ImageUrl: "https://randomuser.me/api/portraits/men/77.jpg",
       },
       IsDeleted: false,
       CreatedAt: "2025-10-20T10:00:00Z",
@@ -112,8 +119,7 @@ export const mockdata: ShowDetailsUI = {
         Id: 104,
         FullName: "Phạm Thảo D",
         Email: "phamthaod@example.com",
-        ImageUrl:
-          "https://randomuser.me/api/portraits/women/21.jpg",
+        ImageUrl: "https://randomuser.me/api/portraits/women/21.jpg",
       },
       IsDeleted: false,
       CreatedAt: "2025-11-03T16:45:00Z",
@@ -131,7 +137,8 @@ export const mockdata: ShowDetailsUI = {
     {
       Id: "ep-001",
       Name: "Vụ mất tích trong căn phòng khóa kín",
-      Description: "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
+      Description:
+        "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
       ExplicitContent: false,
       ReleaseDate: "2025-10-10T05:59:24.492Z",
       EpisodeOrder: 1,
@@ -165,13 +172,13 @@ export const mockdata: ShowDetailsUI = {
   ],
 };
 
-
 // Additional episodes for display (extending the mockdata)
 const additionalEpisodes = [
   {
     Id: "ep-002",
     Name: "Vụ mất tích trong căn phòng khóa kín",
-    Description: "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
+    Description:
+      "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
     ExplicitContent: false,
     ReleaseDate: "2025-10-17T05:59:24.492Z",
     EpisodeOrder: 2,
@@ -205,7 +212,8 @@ const additionalEpisodes = [
   {
     Id: "ep-003",
     Name: "Vụ mất tích trong căn phòng khóa kín",
-    Description: "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
+    Description:
+      "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
     ExplicitContent: false,
     ReleaseDate: "2025-10-24T05:59:24.492Z",
     EpisodeOrder: 3,
@@ -239,7 +247,8 @@ const additionalEpisodes = [
   {
     Id: "ep-004",
     Name: "Vụ mất tích trong căn phòng khóa kín",
-    Description: "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
+    Description:
+      "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
     ExplicitContent: false,
     ReleaseDate: "2025-10-31T05:59:24.492Z",
     EpisodeOrder: 4,
@@ -282,7 +291,9 @@ const formatDuration = (seconds: number): string => {
 const getTimeAgo = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
-  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  const diffInDays = Math.floor(
+    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   if (diffInDays === 0) return "Today";
   if (diffInDays === 1) return "1 day ago";
@@ -297,12 +308,26 @@ const ShowDetailsPage = () => {
   // Combine the main episode with additional episodes
   const allEpisodes = [...showData.EpisodeList, ...additionalEpisodes];
 
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen text-white py-6">
       {/* Back Button */}
-      <button className="px-12 flex items-center text-white  mb-6 cursor-pointer hover:-translate-y-1 ">
-        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      <button
+        onClick={() => navigate(-1)}
+        className="px-12 flex items-center text-white  mb-6 cursor-pointer hover:-translate-y-1 "
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
         Previous
       </button>
@@ -316,7 +341,7 @@ const ShowDetailsPage = () => {
             alt={showData.Name}
             className="w-full h-full object-cover"
             onError={(e) => {
-              e.currentTarget.style.display = 'none';
+              e.currentTarget.style.display = "none";
               e.currentTarget.parentElement!.innerHTML = `
                 <div class="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
                   <svg class="w-24 h-24 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
@@ -330,9 +355,16 @@ const ShowDetailsPage = () => {
 
         {/* Show Info */}
         <div className="flex-1">
-          <h1 className="text-4xl font-medium text-white mb-4">{showData.Name}</h1>
-          <p className="text-xl text-white mb-1 ">{showData.Podcaster.FullName}</p>
-          <span className="text-sm text-white">⭐ {showData.AverageRating} ({showData.RatingCount}) - {showData.PodcastCategory.Name} - {showData.PodcastSubCategory.Name}</span>
+          <h1 className="text-4xl font-medium text-white mb-4">
+            {showData.Name}
+          </h1>
+          <p className="text-xl text-white mb-1 ">
+            {showData.Podcaster.FullName}
+          </p>
+          <span className="text-sm text-white">
+            ⭐ {showData.AverageRating} ({showData.RatingCount}) -{" "}
+            {showData.PodcastCategory.Name} - {showData.PodcastSubCategory.Name}
+          </span>
           <p className="text-gray-300 text-base leading-relaxed my-6 max-w-2xl line-clamp-4">
             {showData.Description}
           </p>
@@ -364,7 +396,7 @@ const ShowDetailsPage = () => {
           controlsList="nodownload noplaybackrate"
           className="w-full px-12 pt-4"
         >
-          <source src={showData.TrailerAudioFileKey}type="audio/mpeg" />
+          <source src={showData.TrailerAudioFileKey} type="audio/mpeg" />
         </audio>
       </div>
       {/* Episodes Section */}
@@ -373,14 +405,17 @@ const ShowDetailsPage = () => {
 
         <div className="space-y-10 px-3">
           {allEpisodes.map((episode) => (
-            <div key={episode.Id} className="px-12 flex h-28 items-center gap-10 p-2 rounded-lg hover:bg-white/10  transition-colors group cursor-pointer">
+            <div
+              key={episode.Id}
+              className="px-12 flex h-28 items-center gap-10 p-2 rounded-lg hover:bg-white/10  transition-colors group cursor-pointer"
+            >
               <div className="relative aspect-square h-full bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 ">
                 <img
                   src={episode.ImageUrl}
                   alt={episode.Name}
                   className="w-full h-full aspect-square object-cover"
                   onError={(e) => {
-                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.style.display = "none";
                     e.currentTarget.parentElement!.innerHTML = `
                       <div class="w-full h-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center">
                         <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -400,7 +435,9 @@ const ShowDetailsPage = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#d9d9d9] mb-1">{getTimeAgo(episode.ReleaseDate)}</p>
+                      <p className="text-sm text-[#d9d9d9] mb-1">
+                        {getTimeAgo(episode.ReleaseDate)}
+                      </p>
                       <h4 className="font-bold text-lg text-white mb-2 leading-tight">
                         {episode.Name}
                       </h4>
@@ -415,7 +452,11 @@ const ShowDetailsPage = () => {
                   {formatDuration(episode.AudioLength)}
                 </p>
                 <button className="text-[#d9d9d9] text-mystic-green cursor-pointer">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                   </svg>
                 </button>
@@ -428,7 +469,10 @@ const ShowDetailsPage = () => {
       <div className="px-12">
         <div className="flex items-center gap-4 mb-8 mt-16">
           <h2 className="text-2xl font-medium">Ratings & Reviews</h2>
-          <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+          <Dialog
+            open={isReviewDialogOpen}
+            onOpenChange={setIsReviewDialogOpen}
+          >
             <DialogTrigger asChild>
               <button className="cursor-pointer w-8 h-8 rounded-full bg-mystic-green hover:bg-lime-400 flex items-center justify-center transition-all duration-300 hover:scale-110">
                 <FaPlus className="text-black" size={16} />
@@ -436,13 +480,17 @@ const ShowDetailsPage = () => {
             </DialogTrigger>
             <DialogContent className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
               <DialogHeader>
-                <DialogTitle className="text-2xl font-semibold text-white mb-2">Write a Review</DialogTitle>
+                <DialogTitle className="text-2xl font-semibold text-white mb-2">
+                  Write a Review
+                </DialogTitle>
               </DialogHeader>
 
               {/* Rating & Review Form */}
               <div className="mt-4">
                 <div className="mb-4">
-                  <label className="block text-white text-sm font-medium mb-3">Your Rating</label>
+                  <label className="block text-white text-sm font-medium mb-3">
+                    Your Rating
+                  </label>
                   <div className="flex gap-1">
                     {Array.from({ length: 5 }).map((_, i) => {
                       const index = i + 1;
@@ -456,10 +504,11 @@ const ShowDetailsPage = () => {
                           className="w-10 h-10 transition-transform duration-200 hover:scale-110"
                         >
                           <svg
-                            className={`w-full h-full cursor-pointer transition-colors duration-200 ${index <= (hover || rating)
-                              ? "text-yellow-400"
-                              : "text-gray-400"
-                              }`}
+                            className={`w-full h-full cursor-pointer transition-colors duration-200 ${
+                              index <= (hover || rating)
+                                ? "text-yellow-400"
+                                : "text-gray-400"
+                            }`}
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -473,7 +522,9 @@ const ShowDetailsPage = () => {
 
                 {/* Title Input */}
                 <div className="mb-4">
-                  <label className="block text-white text-sm font-medium mb-2">Review Title</label>
+                  <label className="block text-white text-sm font-medium mb-2">
+                    Review Title
+                  </label>
                   <input
                     type="text"
                     placeholder="Give your review a title..."
@@ -483,7 +534,9 @@ const ShowDetailsPage = () => {
 
                 {/* Content Textarea */}
                 <div className="mb-6">
-                  <label className="block text-white text-sm font-medium mb-2">Review Content</label>
+                  <label className="block text-white text-sm font-medium mb-2">
+                    Review Content
+                  </label>
                   <textarea
                     rows={5}
                     placeholder="Share your thoughts about this podcast..."
@@ -511,16 +564,19 @@ const ShowDetailsPage = () => {
                 {showData.AverageRating}
               </p>
               <p className="text-white text-center text-lg  mb-1">Out of 5</p>
-
             </div>
-
 
             {/* Rating bars */}
             <div className="space-y-2 w-100">
               {[5, 4, 3, 2, 1].map((rating) => {
                 // Calculate percentage for each rating
-                const count = showData.RatingList.filter(r => Math.floor(r.Rating) === rating).length;
-                const percentage = showData.RatingList.length > 0 ? (count / showData.RatingList.length) * 100 : 0;
+                const count = showData.RatingList.filter(
+                  (r) => Math.floor(r.Rating) === rating
+                ).length;
+                const percentage =
+                  showData.RatingList.length > 0
+                    ? (count / showData.RatingList.length) * 100
+                    : 0;
 
                 return (
                   <div key={rating} className="flex items-center gap-3">
@@ -546,15 +602,12 @@ const ShowDetailsPage = () => {
                       ></div>
                     </div>
                   </div>
-
                 );
               })}
               <div className="text-white text-xs font-light text-right ">
                 {showData.RatingCount.toLocaleString()} ratings
               </div>
             </div>
-
-
           </div>
         </div>
         <Carousel
@@ -567,7 +620,10 @@ const ShowDetailsPage = () => {
           <CarouselContent className="-ml-4">
             {showData.RatingList.map((review) => (
               <CarouselItem key={review.Id} className="pl-4 basis-1/3">
-                <div className=" rounded-2xl p-6 h-full " style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
+                <div
+                  className=" rounded-2xl p-6 h-full "
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                >
                   {/* Header with user info and date */}
                   <div className="flex justify-between items-start mb-2">
                     <div className="text-xs text-gray-200">
@@ -588,7 +644,11 @@ const ShowDetailsPage = () => {
                     {Array.from({ length: 5 }).map((_, i) => (
                       <svg
                         key={i}
-                        className={`w-4 h-4 ${i < Math.floor(review.Rating) ? 'text-yellow-400' : 'text-gray-400'}`}
+                        className={`w-4 h-4 ${
+                          i < Math.floor(review.Rating)
+                            ? "text-yellow-400"
+                            : "text-gray-400"
+                        }`}
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -617,15 +677,18 @@ const ShowDetailsPage = () => {
           {/* Creator */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Creator</h3>
-            <p className="text-white text-base">{showData.Podcaster.FullName}</p>
+            <p className="text-white text-base">
+              {showData.Podcaster.FullName}
+            </p>
           </div>
 
           {/* Seasons */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Seasons</h3>
-            <p className="text-white text-base">{showData.EpisodeList[0]?.SeasonNumber || 1}</p>
+            <p className="text-white text-base">
+              {showData.EpisodeList[0]?.SeasonNumber || 1}
+            </p>
           </div>
-
 
           {/* Rating */}
           <div>
@@ -640,7 +703,6 @@ const ShowDetailsPage = () => {
           </div>
 
           {/* Show Website */}
-
 
           {/* Provider */}
           <div>
