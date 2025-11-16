@@ -88,10 +88,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             
             var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
 
-            if (account.RoleId == (int)RoleEnum.Customer)
+            if (account.RoleId == (int)RoleEnum.Customer || account.RoleId == (int)RoleEnum.Staff)
             {
-                var isOwnedByPodcaster = await _podcastEpisodeService.IsAudioFileOwnedByPodcasterAsync(FileKey, account.Id);
-                if (!isOwnedByPodcaster)
+                var isOwnedByPodcasterOrAssignedStaff = await _podcastEpisodeService.IsAudioFileOwnedByPodcasterAsync(FileKey, account.Id);
+                if (!isOwnedByPodcasterOrAssignedStaff)
                 {
                     return StatusCode(403, new
                     {
