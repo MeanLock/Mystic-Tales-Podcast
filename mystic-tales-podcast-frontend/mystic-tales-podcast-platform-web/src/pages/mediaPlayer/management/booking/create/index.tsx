@@ -219,7 +219,7 @@ const CreateBookingPage = () => {
         DeadlineDayCount: bookingDeadlineDayCount,
         Description: bookingDescription,
         // selectedBuddy?.PodcastBuddyProfile.AccountId
-        PodcastBuddyId: 2,
+        PodcastBuddyId: 17,
         BookingRequirementInfo: transformedRequirements,
       },
       BookingRequirementFiles: bookingFiles,
@@ -231,7 +231,7 @@ const CreateBookingPage = () => {
         ...payload,
         BookingCreateInfo: {
           ...payload.BookingCreateInfo,
-          PodcastBuddyId: 2,
+          PodcastBuddyId: 17,
         },
       };
       const formData = new FormData();

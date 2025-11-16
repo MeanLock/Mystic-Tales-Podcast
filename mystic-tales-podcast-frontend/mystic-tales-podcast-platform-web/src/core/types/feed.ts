@@ -175,6 +175,23 @@ export type TrendingData = {
   PopularEpisodes: PopularEpisodes;
 };
 
+export type TrendingDataUI = {
+  PopularPodcasters: PopularPodcastersUI;
+  Category1: CategoryXUI;
+  HotPodcasters: HotPodcastersUI;
+  Category2: CategoryXUI;
+  PopularChannels: PopularChannelsUI;
+  Category3: CategoryXUI;
+  HotChannels: HotChannelsUI;
+  Category4: CategoryXUI;
+  PopularShows: PopularShowsUI;
+  Category5: CategoryXUI;
+  HotShows: HotShowsUI;
+  Category6: CategoryXUI;
+  NewEpisodes: NewEpisodesUI;
+  PopularEpisodes: PopularEpisodesUI;
+};
+
 export type PopularPodcasters = {
   PodcasterList: {
     Id: number;

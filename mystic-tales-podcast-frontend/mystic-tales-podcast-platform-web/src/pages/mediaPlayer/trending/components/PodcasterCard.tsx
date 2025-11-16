@@ -1,0 +1,29 @@
+interface PodcasterCardProps {
+  podcaster: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    ImageUrl: string;
+  };
+}
+
+const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
+  return (
+    <div className="w-full relative flex flex-col items-center p-2 transition-all duration-500 cursor-pointer ease-out hover:scale-105 hover:-translate-y-1">
+      <div className="w-full mb-3 flex items-center justify-center">
+        <img
+          src={podcaster.ImageUrl}
+          alt={podcaster.FullName}
+          className="w-full aspect-square object-cover rounded-full shadow-2xl"
+        />
+      </div>
+      <div className="w-full flex flex-col items-center gap-1">
+        <p className="font-semibold text-white line-clamp-1">
+          {podcaster.FullName}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default PodcasterCard;

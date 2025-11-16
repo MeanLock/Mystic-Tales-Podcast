@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// @ts-nocheck
 
 import { FaRegCompass } from "react-icons/fa";
 import { FiBarChart2, FiInfo } from "react-icons/fi";
@@ -27,6 +26,7 @@ import { MdOutlineNavigateNext } from "react-icons/md";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
 import { SidebarNavItems } from "./SideBarNavItem";
+import SearchSuggesstion from "./SearchSuggesstion";
 import { GrCircleQuestion } from "react-icons/gr";
 import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
@@ -37,12 +37,22 @@ import {
   PopoverTrigger,
   PopoverPortal,
 } from "@radix-ui/react-popover";
+import {
+  Popover as SearchPopover,
+  PopoverContent as SearchPopoverContent,
+  PopoverTrigger as SearchPopoverTrigger,
+} from "@/components/ui/popover";
 import type { AccountMeUI } from "@/core/types/account";
 import {
   resolveFiles,
   type FileResolveConfig,
 } from "@/core/utils/fileResolver.util";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ContentRealtimeResponse } from "@/core/types/search";
+import {
+  useGetAutocompleteWordRealTimeQuery,
+  useGetPodcastContentOnKeywordRealTimeQuery,
+} from "@/core/services/search/search.service";
 
 const navItems = [
   {
@@ -76,15 +86,15 @@ const navItems = [
         isSubItemsContain: false,
         subItems: [],
       },
-      {
-        icon: <TbMusicSearch color="#fff" size={11} />,
-        iconActive: <TbMusicSearch color="#fff" size={15} />,
-        iconWhenSmall: <TbMusicSearch color="#333" size={11} />,
-        name: "Search",
-        to: "/media-player/search",
-        isSubItemsContain: false,
-        subItems: [],
-      },
+      // {
+      //   icon: <TbMusicSearch color="#fff" size={11} />,
+      //   iconActive: <TbMusicSearch color="#fff" size={15} />,
+      //   iconWhenSmall: <TbMusicSearch color="#333" size={11} />,
+      //   name: "Search",
+      //   to: "/media-player/search",
+      //   isSubItemsContain: false,
+      //   subItems: [],
+      // },
       {
         icon: <IoMdMicrophone color="#fff" size={11} />,
         iconActive: <IoMdMicrophone color="#fff" size={15} />,
@@ -236,13 +246,41 @@ const FileConfig: FileResolveConfig[] = [
 ];
 
 const MediaPlayerSidebar = () => {
+  // STATES
   const user = useSelector((state: RootState) => state.auth.user);
   const [userWithImageUrl, setUserWithImageUrl] = useState<AccountMeUI | null>(
     null
   );
   const [isResolveLoading, setIsResolveLoading] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notifications, setNotifications] = useState<Array<any>>([]);
+  // Search States
+  const [keyword, setKeyword] = useState("");
+  const [showSearchSuggestion, setShowSearchSuggestion] = useState(false);
+  const [suggesstionAutocompleteKeywords, setSuggesstionAutocompleteKeywords] =
+    useState<Array<string>>([]);
+  const [suggesstionContents, setSuggesstionContents] = useState<
+    ContentRealtimeResponse[]
+  >([]);
 
+  // HOOKS
   const navigate = useNavigate();
+  const shouldSkipQuery = keyword.trim().length === 0;
+  const { data: suggestionKeywordData, isLoading: isSuggestionKeywordLoading } =
+    useGetAutocompleteWordRealTimeQuery(
+      { keyword },
+      {
+        skip: shouldSkipQuery,
+      }
+    );
+  const { data: suggestionContentData, isLoading: isSuggestionContentLoading } =
+    useGetPodcastContentOnKeywordRealTimeQuery(
+      { keyword },
+      {
+        skip: shouldSkipQuery,
+      }
+    );
+
   useEffect(() => {
     const resolveFile = async () => {
       if (user) {
@@ -268,8 +306,19 @@ const MediaPlayerSidebar = () => {
     resolveFile();
   }, [user]);
 
-  const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [notifications, setNotifications] = useState<Array<any>>([]);
+  useEffect(() => {
+    console.log("Suggestion Keywords Data:", suggestionKeywordData);
+    if (suggestionKeywordData) {
+      setSuggesstionAutocompleteKeywords(suggestionKeywordData);
+    } else {
+      setSuggesstionAutocompleteKeywords([]);
+    }
+    if (suggestionContentData) {
+      setSuggesstionContents(suggestionContentData.SearchItemList);
+    } else {
+      setSuggesstionContents([]);
+    }
+  }, [keyword, suggestionKeywordData, suggestionContentData]);
 
   return (
     <div
@@ -368,6 +417,63 @@ const MediaPlayerSidebar = () => {
         </div>
       </div>
 
+      {/* Search Components */}
+      <div className="w-full p-2">
+        <SearchPopover
+          open={showSearchSuggestion && keyword.trim().length > 0}
+          onOpenChange={setShowSearchSuggestion}
+        >
+          <SearchPopoverTrigger asChild>
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onFocus={() => setShowSearchSuggestion(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && keyword.trim().length > 0) {
+                  navigate(
+                    `/media-player/search?keyword=${encodeURIComponent(
+                      keyword
+                    )}`
+                  );
+                  setShowSearchSuggestion(false);
+                }
+              }}
+              placeholder="Search Anything Here"
+              className="w-full px-3 py-2 rounded-lg bg-white/10 text-white placeholder:text-gray-400 border border-white/20 focus:outline-none focus:border-mystic-green"
+            />
+          </SearchPopoverTrigger>
+          <SearchPopoverContent
+            className="w-[274px] p-0 bg-black border-0 shadow-none"
+            align="start"
+            sideOffset={8}
+          >
+            <SearchSuggesstion
+              keywords={suggesstionAutocompleteKeywords}
+              contents={suggesstionContents}
+              isLoading={
+                isSuggestionKeywordLoading || isSuggestionContentLoading
+              }
+              onKeywordClick={(kw) => {
+                navigate(
+                  `/media-player/search?keyword=${encodeURIComponent(kw)}`
+                );
+                setShowSearchSuggestion(false);
+              }}
+              onContentClick={(content) => {
+                if (content.Show) {
+                  navigate(`/media-player/show/${content.Show.Id}`);
+                } else if (content.Episode) {
+                  navigate(`/media-player/episode/${content.Episode.Id}`);
+                }
+                setShowSearchSuggestion(false);
+              }}
+            />
+          </SearchPopoverContent>
+        </SearchPopover>
+      </div>
+
+      {/* Navigation Items */}
       <SidebarNavItems navItems={navItems} isLoggedIn={!!user} />
 
       {/* User Informations */}
