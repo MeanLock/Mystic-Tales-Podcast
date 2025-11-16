@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.CounterNotice.Details;
 using ModerationService.BusinessLogic.DTOs.CounterNotice.ListItems;
 using ModerationService.BusinessLogic.DTOs.DMCANotice.Details;
@@ -32,6 +33,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
     {
         private readonly IGenericRepository<CounterNotice> _counterNoticeGenericRepository;
         private readonly IGenericRepository<CounterNoticeAttachFile> _counterNoticeAttachFileGenericRepository;
+        private readonly IGenericRepository<Dmcaaccusation> _dmcaAccusationGenericRepository;
 
         private readonly AccountCachingService _accountCachingService;
         private readonly IFilePathConfig _filePathConfig;
@@ -47,6 +49,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         public CounterNoticeService(
             IGenericRepository<CounterNotice> counterNoticeGenericRepository,
             IGenericRepository<CounterNoticeAttachFile> counterNoticeAttachFileGenericRepository,
+            IGenericRepository<Dmcaaccusation> dmcaAccusationGenericRepository,
             AccountCachingService accountCachingService,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
@@ -60,6 +63,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         {
             _counterNoticeGenericRepository = counterNoticeGenericRepository;
             _counterNoticeAttachFileGenericRepository = counterNoticeAttachFileGenericRepository;
+            _dmcaAccusationGenericRepository = dmcaAccusationGenericRepository;
             _accountCachingService = accountCachingService;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
@@ -88,13 +92,18 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     CreatedAt = lpaf.CreatedAt,
                 })
                 .ToListAsync();
+            AccountStatusCache? staffAccount = null;
+            if (counterNotice.ValidatedBy != null)
+            {
+                staffAccount = await _accountCachingService.GetAccountStatusCacheById(counterNotice.ValidatedBy.Value);
+            }
             return new CounterNoticeDetailResponseDTO
             {
                 Id = counterNotice.Id,
                 DMCAAccusationId = counterNotice.DmcaAccusationId,
                 IsValid = counterNotice.IsValid,
                 InValidReason = counterNotice.InvalidReason,
-                ValidatedBy = counterNotice.ValidatedBy,
+                ValidatedBy = staffAccount != null ? staffAccount.FullName : null,
                 ValidatedAt = counterNotice.ValidatedAt,
                 CreatedAt = counterNotice.CreatedAt,
                 UpdatedAt = counterNotice.UpdatedAt,
@@ -131,6 +140,28 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
+
+                    var dmcaAccusation = await _dmcaAccusationGenericRepository.FindByIdAsync(parameter.DMCAAccusationId, 
+                        includeFunc: function => function
+                        .Include(da => da.DmcaaccusationStatusTrackings));
+
+                    if(dmcaAccusation == null)
+                    {
+                        throw new Exception("DMCA Accusation not found");
+                    }
+                    if(dmcaAccusation.DmcaaccusationStatusTrackings.OrderByDescending(dast => dast.CreatedAt).FirstOrDefault().DmcaAccusationStatusId != (int)DMCAAccusationStatusEnum.ValidDMCANotice)
+                    {
+                        throw new Exception("DMCA Accusation is not allegible for creating counter notice");
+                    }
+                    
+                    var existingCounterNotice = _counterNoticeGenericRepository.FindAll()
+                        .Where(cn => cn.DmcaAccusationId == parameter.DMCAAccusationId)
+                        .FirstOrDefault();
+
+                    if (existingCounterNotice != null)
+                    {
+                        throw new Exception("Counter notice already exists for this DMCA accusation");
+                    }
 
                     var newCounterNotice = new CounterNotice
                     {

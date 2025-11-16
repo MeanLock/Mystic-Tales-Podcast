@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompletePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransactionRollback;
+using TransactionService.BusinessLogic.DTOs.SystemConfiguration;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
@@ -87,7 +88,6 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
 
                     var systemConfig = await GetActiveSystemConfigProfile();
 
-                    var profitRate = systemConfig?["PodcastSubscriptionConfig"]?.Value<double?>("ProfitRate") ?? 0;
                     var transactionTypeId = parameter.TransactionTypeId;
                     var newPodcastSubscriptionTransaction = null as PodcastSubscriptionTransaction;
                     switch (transactionTypeId)
@@ -343,7 +343,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 ? podcastSubsciptionRegistrationArray.First as JObject
                 : null;
         }
-        private async Task<JObject?> GetActiveSystemConfigProfile()
+        private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -369,9 +369,10 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
                 ? configArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
     }
 }

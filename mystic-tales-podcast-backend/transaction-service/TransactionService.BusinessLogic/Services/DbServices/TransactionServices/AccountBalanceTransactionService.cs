@@ -580,7 +580,32 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     throw new HttpRequestException("An error occurred while retrieving Payment Result.");
                 }
             }
-
+        }
+        public async Task<List<AccountBalanceWithdrawalRequestListItemResponseDTO>> GetAccountBalanceWithdrawalRequestsAsync(int accountId)
+        {
+            try
+            {
+                return await _accountBalanceWithdrawalRequestGenericRepository.FindAll()
+                    .Where(abwr => abwr.AccountId == accountId)
+                    .OrderByDescending(abwr => abwr.CreatedAt)
+                    .Select(a => new AccountBalanceWithdrawalRequestListItemResponseDTO
+                    {
+                        Id = a.Id,
+                        Amount = a.Amount,
+                        TransferReceiptImageFileKey = a.TransferReceiptImageFileKey,
+                        IsRejected = a.IsRejected,
+                        RejectReason = a.RejectReason,
+                        CompletedAt = a.CompletedAt,
+                        CreatedAt = a.CreatedAt,
+                        UpdatedAt = a.UpdatedAt
+                    })
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving account balance withdrawal requests for AccountId: {AccountId}", accountId);
+                throw new HttpRequestException("An error occurred while retrieving account balance withdrawal requests.");
+            }
         }
         public async Task<long> GenerateRandomLongAsync(int minDigits = 5, int maxDigits = 8)
         {

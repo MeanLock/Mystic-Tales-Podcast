@@ -21,6 +21,7 @@ using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.Details;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems;
 using SubscriptionService.BusinessLogic.DTOs.Subscription;
+using SubscriptionService.BusinessLogic.DTOs.SystemConfiguration;
 using SubscriptionService.BusinessLogic.Enums.Kafka;
 using SubscriptionService.BusinessLogic.Enums.Podcast;
 using SubscriptionService.BusinessLogic.Enums.Subscription;
@@ -285,7 +286,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 }
             }
         }
-        public async Task<PodcastSubscriptionDetailResponseDTO?> GetPodcastSubscriptionByIdAsync(int podcastSubscriptionId)
+        public async Task<PodcastSubscriptionDetailResponseDTO?> GetPodcastSubscriptionByIdAsync(bool isPodcaster, int podcastSubscriptionId)
         {
             var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll(
                 includeFunc: ps => ps
@@ -340,7 +341,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             CreatedAt = bm.CreatedAt,
                             UpdatedAt = bm.UpdatedAt
                         }).ToList(),
-                    PodcastSubscriptionRegistrationList = ps.PodcastSubscriptionRegistrations
+                    PodcastSubscriptionRegistrationList = isPodcaster ? ps.PodcastSubscriptionRegistrations
                         .Select(sr => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionRegistrationListItemResponseDTO
                         {
                             Id = sr.Id,
@@ -360,7 +361,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             CancelledAt = sr.CancelledAt,
                             CreatedAt = sr.CreatedAt,
                             UpdatedAt = sr.UpdatedAt
-                        }).ToList()
+                        }).ToList() : null
                 })
                 .FirstOrDefaultAsync();
             if (podcastSubscription == null)
@@ -736,13 +737,13 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 foreach (var podcastSubscriptionRegistration in listRegistration)
                                 {
                                     var systemConfig = await GetActiveSystemConfigProfile();
-                                    var profitRate = systemConfig?["PodcastSubscriptionConfig"]
-                                        .Where(psc => psc["SubscriptionCycleTypeId"].ToObject<int>() == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
-                                        .Select(psc => psc["ProfitRate"]?.ToObject<decimal>() ?? 0)
+                                    var profitRate = systemConfig.PodcastSubscriptionConfigs
+                                        .Where(ps => ps.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
+                                        .Select(psc => psc.ProfitRate)
                                         .FirstOrDefault();
-                                    var incomeTakenDelayDays = systemConfig?["PodcastSubscriptionConfig"]
-                                        .Where(psc => psc["SubscriptionCycleTypeId"].ToObject<int>() == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
-                                        .Select(psc => psc["IncomeTakenDelayDays"]?.ToObject<int>() ?? 0)
+                                    var incomeTakenDelayDays = systemConfig.PodcastSubscriptionConfigs
+                                        .Where(psc => psc.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
+                                        .Select(psc => psc.IncomeTakenDelayDays)
                                         .FirstOrDefault();
 
                                     if (podcastSubscriptionRegistration.LastPaidAt.AddDays((double)incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
@@ -755,8 +756,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                             .Select(ptcp => ptcp.Price)
                                             .FirstOrDefault();
 
-                                        var amount = originalPrice - originalPrice * profitRate;
-                                        var profit = originalPrice * profitRate;
+                                        var amount = originalPrice - originalPrice * (decimal)profitRate;
+                                        var profit = originalPrice * (decimal)profitRate;
 
                                         var transactionRequestData = new JObject
                                         {
@@ -1254,13 +1255,13 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .FirstOrDefaultAsync();
 
                     var systemConfig = await GetActiveSystemConfigProfile();
-                    var profitRate = systemConfig?["PodcastSubscriptionConfig"]
-                        .Where(psc => psc["SubscriptionCycleTypeId"].ToObject<int>() == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
-                        .Select(psc => psc["ProfitRate"]?.ToObject<decimal>() ?? 0)
+                    var profitRate = systemConfig.PodcastSubscriptionConfigs
+                        .Where(psc => psc.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
+                        .Select(psc => psc.ProfitRate)
                         .FirstOrDefault();
-                    var incomeTakenDelayDays = systemConfig?["PodcastSubscriptionConfig"]
-                        .Where(psc => psc["SubscriptionCycleTypeId"].ToObject<int>() == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
-                        .Select(psc => psc["IncomeTakenDelayDays"]?.ToObject<int>() ?? 0)
+                    var incomeTakenDelayDays = systemConfig.PodcastSubscriptionConfigs
+                        .Where(psc => psc.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
+                        .Select(psc => psc.IncomeTakenDelayDays)
                         .FirstOrDefault();
 
                     if (podcastSubscriptionRegistration.LastPaidAt.AddDays((double)incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
@@ -1273,8 +1274,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             .Select(ptcp => ptcp.Price)
                             .FirstOrDefault();
 
-                        var amount = originalPrice - originalPrice * profitRate;
-                        var profit = originalPrice * profitRate;
+                        var amount = originalPrice - originalPrice * (decimal)profitRate;
+                        var profit = originalPrice * (decimal)profitRate;
 
                         var transactionRequestData = new JObject
                         {
@@ -1551,7 +1552,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 try
                 {
                     var systemConfig = await GetActiveSystemConfigProfile();
-                    var podcastSubscriptionConfig = systemConfig["PodcastSubscriptionConfigs"].ToList();
+                    var podcastSubscriptionConfig = systemConfig.PodcastSubscriptionConfigs.ToList();
 
                     var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                         .Where(psr => !psr.IsIncomeTaken
@@ -1564,7 +1565,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         // Find the config object for the current SubscriptionCycleTypeId
                         var config = podcastSubscriptionConfig
-                            .FirstOrDefault(psc => psc["SubscriptionCycleTypeId"] != null && psc["SubscriptionCycleTypeId"].ToObject<int>() == registration.SubscriptionCycleTypeId);
+                            .FirstOrDefault(psc => psc.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId);
 
                         if (config != null)
                         {
@@ -1583,8 +1584,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 var temp = await GetPodcastShow(podcastSubscription.PodcastShowId.Value);
                                 podcasterId = temp.PodcasterId;
                             }
-                            int incomeTakenDelayDays = config["IncomeTakenDelayDays"]?.ToObject<int>() ?? 0;
-                            decimal profitRate = config["ProfitRate"]?.ToObject<decimal>() ?? 0;
+                            int incomeTakenDelayDays = config.IncomeTakenDelayDays;
+                            decimal profitRate = (decimal)config.ProfitRate;
                             var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                         .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                         .Select(psct => psct.Price)
@@ -2136,35 +2137,36 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 }
             }
         }
-        private async Task<JObject?> GetActiveSystemConfigProfile()
+        private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
             {
                 Queries = new List<BatchQueryItem>
-                    {
-                        new BatchQueryItem
+            {
+                new BatchQueryItem
+                {
+                    Key = "activeSystemConfigProfile",
+                    QueryType = "findall",
+                    EntityType = "SystemConfigProfile",
+                        Parameters = JObject.FromObject(new
                         {
-                            Key = "activeSystemConfigProfile",
-                            QueryType = "findall",
-                            EntityType = "SystemConfigProfile",
-                                Parameters = JObject.FromObject(new
-                                {
-                                    where = new
-                                    {
-                                        IsActive = true
-                                    },
-                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+                            where = new
+                            {
+                                IsActive = true
+                            },
+                            include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
 
-                                }),
-                            Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
-                        }
-                    }
+                        }),
+                    Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
+                }
+            }
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
                 ? configArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
         public async Task<bool> ValidatePodcastSubscriptionRegistration(int accountId, Guid PodcastSubscriptionRegistrationId)
         {

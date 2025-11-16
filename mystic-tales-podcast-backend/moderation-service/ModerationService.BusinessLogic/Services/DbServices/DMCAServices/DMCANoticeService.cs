@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.DMCANotice.Details;
 using ModerationService.BusinessLogic.DTOs.DMCANotice.ListItems;
 using ModerationService.BusinessLogic.DTOs.LawsuitProof.Details;
@@ -145,12 +146,17 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     CreatedAt = lpaf.CreatedAt,
                 })
                 .ToListAsync();
+            AccountStatusCache? staffAccount = null;
+            if (dmcaNotice.ValidatedBy != null)
+            {
+                staffAccount = await _accountCachingService.GetAccountStatusCacheById(dmcaNotice.ValidatedBy.Value);
+            }
             return new DMCANoticeDetailResponseDTO
             {
                 Id = dmcaNotice.Id,
                 IsValid = dmcaNotice.IsValid,
                 InValidReason = dmcaNotice.InvalidReason,
-                ValidatedBy = dmcaNotice.ValidatedBy,
+                ValidatedBy = staffAccount != null ? staffAccount.FullName : null,
                 ValidatedAt = dmcaNotice.ValidatedAt,
                 DMCAAccusationId = dmcaNotice.DmcaAccusationId,
                 CreatedAt = dmcaNotice.CreatedAt,

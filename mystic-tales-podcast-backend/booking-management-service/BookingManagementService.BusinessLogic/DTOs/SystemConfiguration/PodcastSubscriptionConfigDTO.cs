@@ -1,20 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace BookingManagementService.BusinessLogic.DTOs.SystemConfiguration;
-
-public class PodcastSubscriptionConfigDTO
+namespace BookingManagementService.BusinessLogic.DTOs.SystemConfiguration
 {
-    public int ConfigProfileId { get; set; }
+    public class PodcastSubscriptionConfigDTO
+    {
+        public int ConfigProfileId { get; set; }
 
-    public int SubscriptionCycleTypeId { get; set; }
+        public int SubscriptionCycleTypeId { get; set; }
 
-    public double ProfitRate { get; set; }
+        public double ProfitRate { get; set; }
 
-    public int IncomeTakenDelayDays { get; set; }
+        public int IncomeTakenDelayDays { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
 
-    public DateTime UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+
+    }
 
 }
+

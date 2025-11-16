@@ -14,6 +14,7 @@ using BookingManagementService.BusinessLogic.Services.DbServices.BookingServices
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.BusinessSetting.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
+using BookingManagementService.DataAccess.Entities.SqlServer;
 using BookingManagementService.Infrastructure.Models.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Audio.Hls;
@@ -533,6 +534,37 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 return NotFound("Unable to read segment");
 
             return File(fileData, "video/MP2T");
+        }
+        [HttpPost("podcast-booking-tone")]
+        public async Task<IActionResult> CreatePodcastBookingTone([FromBody] PodcasterBookingToneApplyRequestDTO request)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            if (!account.HasVerifiedPodcasterProfile)
+            {
+                throw new HttpRequestException("Only verified podcasters can create podcast booking tones.");
+            }
+
+            var requestData = new JObject
+            {
+                { "AccountId", accountId },
+                { "PodcastToneIds", JArray.FromObject(request.PodcastBookingToneIds) }
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "booking-podcast-tone-apply-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate podcaster booking tone apply process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
         }
     }
 }

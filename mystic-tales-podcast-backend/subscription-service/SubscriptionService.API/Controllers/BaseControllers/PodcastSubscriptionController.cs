@@ -157,18 +157,21 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("{PodcastSubscriptionId}")]
-        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
         public async Task<IActionResult> GetPodcastSubscriptionById([FromRoute] int PodcastSubscriptionId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
-            if (isValid == null)
+            var isPodcaster = account.HasVerifiedPodcasterProfile;
+            if (isPodcaster)
             {
-                return Forbid($"The Logged In Account is unauthorized to access Podcast Subscription Id: {PodcastSubscriptionId}");
+                var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
+                if (isValid == null)
+                {
+                    return Forbid($"The Logged In Account is unauthorized to access Podcast Subscription Id: {PodcastSubscriptionId}");
+                }
             }
-
-            var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionByIdAsync(PodcastSubscriptionId);
+            var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionByIdAsync(isPodcaster, PodcastSubscriptionId);
             //if (podcastSubscription == null)
             //{
             //    return NotFound($"No podcast subscription found with Id: {PodcastSubscriptionId}");
@@ -256,11 +259,11 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionByIdAsync(PodcastSubscriptionId);
-            if (podcastSubscription == null)
-            {
-                return NotFound($"No podcast subscription found with Id: {PodcastSubscriptionId}");
-            }
+            //var podcastSubscription = await _podcastSubscriptionService.GetPodcastSubscriptionByIdAsync(PodcastSubscriptionId);
+            //if (podcastSubscription == null)
+            //{
+            //    return NotFound($"No podcast subscription found with Id: {PodcastSubscriptionId}");
+            //}
             var requestData = new JObject
             {
                 { "AccountId", accountId },

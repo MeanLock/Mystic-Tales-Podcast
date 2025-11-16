@@ -152,7 +152,9 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__DMCAAccu__3213E83F1DB404F7");
 
-            entity.ToTable("DMCAAccusationConclusionReport");
+            // Add trigger configuration to disable OUTPUT clause
+            entity.ToTable("DMCAAccusationConclusionReport", tb => 
+                tb.HasTrigger("TR_DMCAAccusationConclusionReport_UpdatedAt"));
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")

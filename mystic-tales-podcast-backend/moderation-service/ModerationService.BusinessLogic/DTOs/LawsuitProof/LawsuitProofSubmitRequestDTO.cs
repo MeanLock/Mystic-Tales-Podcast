@@ -9,6 +9,6 @@ namespace ModerationService.BusinessLogic.DTOs.LawsuitProof
 {
     public class LawsuitProofSubmitRequestDTO
     {
-        public List<IFormFile> LawsuitProofAttachFileKeys { get; set; } = new List<IFormFile>();
+        public List<IFormFile> LawsuitProofAttachFiles { get; set; } = new List<IFormFile>();
     }
 }

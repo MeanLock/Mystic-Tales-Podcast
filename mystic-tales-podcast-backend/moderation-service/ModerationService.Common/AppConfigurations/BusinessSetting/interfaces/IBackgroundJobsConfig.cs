@@ -5,6 +5,8 @@ namespace ModerationService.Common.AppConfigurations.BusinessSetting.interfaces
     public interface IBackgroundJobsConfig
     {
         BackgroundJob SampleBackgroundJob { get; }
+        BackgroundJob DMCANoticeResponseTimeoutJob { get; }
+        BackgroundJob CounterNoticeResponseTimeoutJob { get; }
     }
 
     public class BackgroundJob

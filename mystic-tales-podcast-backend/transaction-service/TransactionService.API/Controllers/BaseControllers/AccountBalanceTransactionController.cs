@@ -253,5 +253,19 @@ namespace TransactionService.API.Controllers.BaseControllers
                 }
             );
         }
+        [HttpGet("balance-withdrawal-request")]
+        public async Task<IActionResult> GetAccountBalanceWithdrawalRequests()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var withdrawalRequests = await _accountBalanceTransactionService.GetAccountBalanceWithdrawalRequestsAsync(accountId);
+            return Ok(
+                new
+                {
+                    AccountBalanceWithdrawalRequestList = withdrawalRequests
+                }
+            );
+        }
     }
 }

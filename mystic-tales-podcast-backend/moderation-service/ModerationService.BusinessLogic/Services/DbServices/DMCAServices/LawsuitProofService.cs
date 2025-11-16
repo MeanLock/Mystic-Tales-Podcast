@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.LawsuitProof.Details;
 using ModerationService.BusinessLogic.DTOs.LawsuitProof.ListItems;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateLawsuitProof;
@@ -30,6 +31,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
     {
         private readonly IGenericRepository<LawsuitProof> _lawsuitProofGenericRepository;
         private readonly IGenericRepository<LawsuitProofAttachFile> _lawsuitProofAttachFileGenericRepository;
+        private readonly IGenericRepository<Dmcaaccusation> _dmcaAccusationGenericRepository;
 
         private readonly AccountCachingService _accountCachingService;
         private readonly IFilePathConfig _filePathConfig;
@@ -45,6 +47,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         public LawsuitProofService(
             IGenericRepository<LawsuitProof> lawsuitProofGenericRepository,
             IGenericRepository<LawsuitProofAttachFile> lawsuitProofAttachFileGenericRepository,
+            IGenericRepository<Dmcaaccusation> dmcaAccusationGenericRepository,
             AccountCachingService accountCachingService,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
@@ -58,6 +61,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         {
             _lawsuitProofGenericRepository = lawsuitProofGenericRepository;
             _lawsuitProofAttachFileGenericRepository = lawsuitProofAttachFileGenericRepository;
+            _dmcaAccusationGenericRepository = dmcaAccusationGenericRepository;
             _accountCachingService = accountCachingService;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
@@ -122,14 +126,18 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     CreatedAt = lpaf.CreatedAt,
                 })
                 .ToListAsync();
-
+            AccountStatusCache? staffAccount = null;
+            if (lawsuitProof.ValidatedBy != null)
+            {
+                staffAccount = await _accountCachingService.GetAccountStatusCacheById(lawsuitProof.ValidatedBy.Value);
+            }
             return new LawsuitProofDetailResponseDTO
             {
                 Id = lawsuitProof.Id,
                 DMCAAccusationId = lawsuitProof.DmcaAccusationId,
                 IsValid = lawsuitProof.IsValid,
                 InValidReason = lawsuitProof.InValidReason,
-                ValidatedBy = lawsuitProof.ValidatedBy,
+                ValidatedBy = staffAccount != null ? staffAccount.FullName : null,
                 ValidatedAt = lawsuitProof.ValidatedAt,
                 CreatedAt = lawsuitProof.CreatedAt,
                 UpdatedAt = lawsuitProof.UpdatedAt,
@@ -166,6 +174,29 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
+
+
+                    var dmcaAccusation = await _dmcaAccusationGenericRepository.FindByIdAsync(parameter.DMCAAccusationId,
+                        includeFunc: function => function
+                        .Include(da => da.DmcaaccusationStatusTrackings));
+
+                    if (dmcaAccusation == null)
+                    {
+                        throw new Exception("DMCA Accusation not found");
+                    }
+                    if (dmcaAccusation.DmcaaccusationStatusTrackings.OrderByDescending(dast => dast.CreatedAt).FirstOrDefault().DmcaAccusationStatusId != (int)DMCAAccusationStatusEnum.ValidCounterNotice)
+                    {
+                        throw new Exception("DMCA Accusation is not allegible for creating lawsuit proof");
+                    }
+
+                    var existingLawsuitProof = _lawsuitProofGenericRepository.FindAll()
+                        .Where(lp => lp.DmcaAccusationId == parameter.DMCAAccusationId)
+                        .FirstOrDefault();
+
+                    if (existingLawsuitProof != null)
+                    {
+                        throw new Exception("Lawsuit proof already exists for this DMCA accusation");
+                    }
 
                     var newLawsuitProof = new LawsuitProof
                     {

@@ -379,7 +379,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             var loginAccountId = account.Id;
 
             // Validate all attach files first
-            foreach (var attachFile in request.LawsuitProofAttachFileKeys)
+            foreach (var attachFile in request.LawsuitProofAttachFiles)
             {
                 var isValidDocumentFile = _fileValidationConfig.IsValidFile("LawsuitProofAttachFile.attachFileKey", attachFile.FileName, attachFile.Length, attachFile.ContentType);
                 if (!isValidDocumentFile)
@@ -391,7 +391,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             var attachFileList = new List<string>();
 
             // Process all attach files and prepare attach file list items
-            foreach (var attachFile in request.LawsuitProofAttachFileKeys)
+            foreach (var attachFile in request.LawsuitProofAttachFiles)
             {
                 try
                 {
@@ -416,7 +416,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "DMCAAccusationId", DMCAAccusationId },
-                { "LawsuitProofAttachFileKeys", DMCAAccusationId }
+                { "LawsuitProofAttachFileKeys", JArray.FromObject(attachFileList) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,
@@ -459,11 +459,11 @@ namespace ModerationService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
-        [HttpPut("staff/{DMCAAccusationId}")]
+        [HttpPut("{DMCAAccusationId}")]
         [Authorize(Policy = "Staff.BasicAccess")]
         public async Task<IActionResult> UpdateDMCAAccusationById(
             [FromRoute] int DMCAAccusationId,
-            [FromQuery] DMCAAccusationQueryEnum request)
+            [FromQuery] DMCAAccusationQueryEnum DMCAAccusationAction)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var loginAccountId = account.Id;
@@ -471,7 +471,7 @@ namespace ModerationService.API.Controllers.BaseControllers
             {
                 { "AccountId", loginAccountId },
                 { "DMCAAccusationId", DMCAAccusationId },
-                { "DMCAAccusationAction", (int)request },
+                { "DMCAAccusationAction", (int)DMCAAccusationAction },
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,
@@ -570,6 +570,33 @@ namespace ModerationService.API.Controllers.BaseControllers
             return Ok(new
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpGet("dmca-conclusion-report")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess")]
+        public async Task<IActionResult> GetDMCAAccusationConclusionReports()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var roleId = account.RoleId;
+            var dmcaAccusationConclusionReports = await _dmcaAccusationService.GetAllDMCAAccusationConclusionReportsForStaffOrAdminAsync(accountId, roleId);
+            return Ok(new
+            {
+                DMCAAccusationConclusionReportList = dmcaAccusationConclusionReports
+            });
+        }
+        [HttpGet("{DMCAAccusationId}/dmca-conclusion-report")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess")]
+        public async Task<IActionResult> GetDMCAAccusationConclusionReportsByAccusationId(
+            [FromRoute] int DMCAAccusationId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var roleId = account.RoleId;
+            var dmcaAccusationConclusionReports = await _dmcaAccusationService.GetAllDMCAAccusationConclusionReportsByAccusationIdForStaffOrAdminAsync(DMCAAccusationId, accountId, roleId);
+            return Ok(new
+            {
+                DMCAAccusationConclusionReportList = dmcaAccusationConclusionReports
             });
         }
     }

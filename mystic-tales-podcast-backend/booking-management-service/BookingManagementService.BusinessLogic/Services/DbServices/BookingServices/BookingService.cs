@@ -7,6 +7,7 @@ using BookingManagementService.BusinessLogic.DTOs.Booking.Details;
 using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AcceptBookingDealing;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AddPodcastTonesToPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelPodcasterBookingsTerminatePodcasterForce;
@@ -308,6 +309,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(parameter.PodcastBuddyId);
+                    if (podcaster == null)
+                    {
+                        throw new HttpRequestException($"PodcastBuddy with Id {parameter.PodcastBuddyId} not found");
+                    }
+                    if (!podcaster.HasVerifiedPodcasterProfile)
+                    {
+                        throw new HttpRequestException($"PodcastBuddy with Id {parameter.PodcastBuddyId} does not have a PodcasterProfile");
+                    }
+
                     var newBooking = new Booking
                     {
                         Title = parameter.Title,
@@ -331,6 +342,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     Console.WriteLine("________________________________________________________");
                     Console.WriteLine(parameter.BookingRequirementInfoList.Count());
+
                     // Process each track
                     foreach (var requirementDocumentInfo in parameter.BookingRequirementInfoList)
                     {
@@ -1774,6 +1786,71 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogError("Cancel Podcaster Bookings Terminate Podcaster Force failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
+        public async Task AddPodcastTonesToPodcasterAsync(AddPodcastTonesToPodcasterParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(parameter.AccountId);
+                    if (podcaster == null)
+                    {
+                        throw new HttpRequestException("Podcaster not found for AccountId: " + parameter.AccountId);
+                    }
+                    if (!podcaster.HasVerifiedPodcasterProfile)
+                    {
+                        throw new HttpRequestException("AccountId: " + parameter.AccountId + " is not a verified podcaster");
+                    }
+
+                    var existingBookingPodcastTones = await _podcastBuddyBookingToneGenericRepository.FindAll(
+                        predicate: bpt => bpt.PodcasterId == parameter.AccountId && parameter.PodcastToneIds.Contains(bpt.PodcastBookingToneId)
+                    ).ToListAsync();
+
+                    foreach (var existingTone in existingBookingPodcastTones)
+                    {
+                        await _podcastBuddyBookingToneGenericRepository.DeleteAsync(existingTone);
+                    }
+
+                    await transaction.CommitAsync();
+                    var newResponseData = command.RequestData;
+                    newResponseData["CreatedAt"] = _dateHelper.GetNowByAppTimeZone();
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("AddPodcastTonesToPodcaster successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while adding podcast tones to podcaster for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject
+                    {
+                        { "ErrorMessage", "Add Podcast Tones To Podcaster failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogError("Add Podcast Tones To Podcaster failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
         }

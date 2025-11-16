@@ -1,5 +1,6 @@
 ﻿using BookingManagementService.BusinessLogic.Attributes;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AcceptBookingDealing;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AddPodcastTonesToPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
@@ -272,6 +273,20 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "cancel-podcaster-bookings-terminate-podcaster-force.failed"
+            );
+        }
+        [MessageHandler("add-podcast-tones-to-podcaster", SAGA_TOPIC)]
+        public async Task HandleAddPodcastTonesToPodcasterAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<AddPodcastTonesToPodcasterParameterDTO>();
+                    await _bookingService.AddPodcastTonesToPodcasterAsync(parameter, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "add-podcast-tones-to-podcaster.failed"
             );
         }
     }

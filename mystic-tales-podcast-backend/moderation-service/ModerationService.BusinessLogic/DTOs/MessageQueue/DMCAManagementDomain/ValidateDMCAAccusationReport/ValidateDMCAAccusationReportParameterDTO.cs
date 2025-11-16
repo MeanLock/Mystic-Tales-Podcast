@@ -8,7 +8,7 @@ namespace ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain
 {
     public class ValidateDMCAAccusationReportParameterDTO
     {
-        public Guid DMCAAccusationReportId { get; set; }
+        public Guid DMCAAccusationConclusionReportId { get; set; }
         public bool IsValid { get; set; }
     }
 }

@@ -373,7 +373,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdAsync(parameter.BookingProducingRequestId);
                     if (bookingProducingRequest.FinishedAt != null)
                     {
-                        throw new Exception("This producing request has been finished already");
+                        throw new HttpRequestException("This producing request has been finished already");
                     }
                     var config = await GetActiveSystemConfigProfile();
                     var remainingPreviewListenSlot = config.BookingConfig.PodcastTrackPreviewListenSlot;
@@ -401,6 +401,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     var createdTracks = new List<BookingPodcastTrack>();
+
+                    if(parameter.Tracks == null || parameter.Tracks.Count == 0)
+                    {
+                        throw new HttpRequestException("No tracks provided for submission.");
+                    }
 
                     // Process each track
                     foreach (var trackInfo in parameter.Tracks)
@@ -534,8 +539,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
                     else
                     {
-                        await transaction.RollbackAsync();
-                        throw new Exception("Current booking status is not valid for submitting podcast track");
+                        throw new HttpRequestException("Current booking status is not valid for submitting podcast track");
                     }
 
                     bookingProducingRequest.FinishedAt = _dateHelper.GetNowByAppTimeZone();

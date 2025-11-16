@@ -1970,8 +1970,7 @@ flows:
         handle-service: "PodcastService"
         description: "Removes dismissed episodes from users' listen session."
         parameters:
-          - PodcastChannelId
-          - DmcaDismissedEpisodeIds
+          - DmcaDismissedShowIds
         next-request-data:
           - PodcastChannelId
           - DmcaDismissedShowIds
@@ -2236,7 +2235,7 @@ flows:
         handle-service: "ModerationService"
         description: "Resolves all channel episode report review sessions with no effect (includes resolving child reports)."
         parameters:
-          - PodcastChannelId
+          - DmcaDismissedShowIds
         next-request-data:
           - PodcastChannelId
           - DmcaDismissedShowIds
@@ -6024,6 +6023,39 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  booking-podcast-tone-apply-flow:
+    topic: "booking-management-domain"
+    handler-service: "BookingService"
+    description: "Applies podcast tones to a Podcaster."
+    save-files: ""
+    steps:
+      - name: "add-podcast-tones-to-podcaster"
+        topic: "booking-management-domain"
+        handler-service: "BookingService"
+        description: "Adds podcast tones to a Podcaster."
+        parameters:
+          - AccountId
+          - PodcastToneIds
+        next-request-data:
+          - AccountId
+          - PodcastToneIds
+        response-data:
+          - AccountId
+          - PodcastToneIds
+          - CreatedAt
+        onSuccess:
+          emit: "add-podcast-tones-to-podcaster.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "add-podcast-tones-to-podcaster.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   podcast-subscription-creation-flow:
     topic: "subscription-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -6675,16 +6707,14 @@ flows:
           - AccountId
           - Amount
         response-data:
+          - AccountBalanceTransactionId
           - AccountBalanceWithdrawalRequestId
           - CreatedAt
         onSuccess:
           emit: "create-withdrawal-request.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: 
-            - name: "subtract-account-balance-amount"
-              topic: "user-management-domain"
-              handle-service: "UserService"
+          nextSteps: []
           nextFlows: []
         onFailure:
           emit: "create-withdrawal-request.failed"
@@ -6692,39 +6722,6 @@ flows:
           handle-service: "UserService"
           nextSteps: []
           nextFlows: []
-      - name: "subtract-account-balance-amount"
-        topic: "user-management-domain"
-        handle-service: "UserService"
-        description: "Trừ tiền từ ví"
-        parameters:
-          - AccountId
-          - Amount
-        next-request-data:
-          - AccountId
-          - Amount
-          - TransactionTypeId
-        response-data:
-          - AccountId
-          - NewBalance
-          - UpdatedAt
-        onSuccess:
-          emit: "subtract-account-balance-amount.success"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: 
-            - name: "complete-withdrawal-request"
-              topic: "payment-processing-domain"
-              handle-service: "TransactionService"
-          nextFlows: []
-        onFailure:
-          emit: "subtract-account-balance-amount.failed"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: 
-            - name: "create-withdrawal-request-rollback-flow"
-              topic: "payment-processing-domain"
-              handle-service: "SagaOrchestratorService"
 
   account-balance-withdrawal-confirmation-flow:
     topic: "payment-processing-domain"
@@ -6756,11 +6753,41 @@ flows:
           emit: "confirm-account-balance-withdrawal.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "subtract-account-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
           nextFlows: []
         onFailure:
           emit: "confirm-account-balance-withdrawal.failed"
           topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "subtract-account-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Trừ tiền từ ví"
+        parameters:
+          - AccountId
+          - Amount
+        next-request-data:
+          - AccountId
+          - Amount
+          - TransactionTypeId
+        response-data:
+          - AccountId
+          - NewBalance
+          - UpdatedAt
+        onSuccess:
+          emit: "subtract-account-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "subtract-account-balance-amount.failed"
+          topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -9056,13 +9083,13 @@ flows:
         handler-service: "ModerationService"
         description: "Validates a dmca accusation report."
         parameters:
-          - DMCAAccusationReportId
+          - DMCAAccusationConclusionReportId
           - IsValid
         next-request-data:
-          - DMCAAccusationReportId
+          - DMCAAccusationConclusionReportId
           - IsValid
         response-data:
-          - DMCAAccusationReportId
+          - DMCAAccusationConclusionReportId
           - IsValid
           - UpdatedAt
         onSuccess:
@@ -9090,13 +9117,13 @@ flows:
         description: "Cancels a dmca accusation report."
         parameters:
           - AccountId
-          - DMCAAccusationReportId
+          - DMCAAccusationConclusionReportId
         next-request-data:
           - AccountId
-          - DMCAAccusationReportId
+          - DMCAAccusationConclusionReportId
         response-data:
           - AccountId
-          - DMCAAccusationReportId
+          - DMCAAccusationConclusionReportId
           - CancelledAt
         onSuccess:
           emit: "cancel-dmca-accusation-report.success"

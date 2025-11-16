@@ -4,6 +4,7 @@ using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.DMCAAccusation;
 using ModerationService.BusinessLogic.DTOs.DMCAAccusation.Details;
 using ModerationService.BusinessLogic.DTOs.DMCAAccusation.ListItems;
+using ModerationService.BusinessLogic.DTOs.DMCAReport.ListItems;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.AssignDMCAAccusationToStaff;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CancelDMCAAccusationReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.CreateDMCAAccusation;
@@ -27,6 +28,7 @@ using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.Upd
 using ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain.ValidateDMCAAccusationReport;
 using ModerationService.BusinessLogic.DTOs.Podcast;
 using ModerationService.BusinessLogic.DTOs.Snippet;
+using ModerationService.BusinessLogic.DTOs.SystemConfiguration;
 using ModerationService.BusinessLogic.Enums.Account;
 using ModerationService.BusinessLogic.Enums.DMCA;
 using ModerationService.BusinessLogic.Enums.Kafka;
@@ -47,8 +49,6 @@ using ModerationService.Infrastructure.Models.Kafka;
 using ModerationService.Infrastructure.Services.Kafka;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.Podcast;
-using SystemConfigurationService.DataAccess.Entities.SqlServer;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 {
@@ -149,6 +149,16 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 {
                     staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff.Value);
                 }
+                AccountStatusCache? podcaster = null;
+                if(episode != null)
+                {
+                    var showOfEpisode = await GetPodcastShow(episode.PodcastShowId);
+                    podcaster = await _accountCachingService.GetAccountStatusCacheById(showOfEpisode.PodcasterId);
+                }
+                if(show != null && podcaster == null)
+                {
+                    podcaster = await _accountCachingService.GetAccountStatusCacheById(show.PodcasterId);
+                }
                 return new DMCAAccusationListItemResponseDTO()
                 {
                     Id = pbrrs.Id,
@@ -156,19 +166,21 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     AccuserPhone = pbrrs.AccuserPhone,
                     AccuserFullName = pbrrs.AccuserFullName,
                     PodcastShow = show != null
-                        ? new PodcastShowSnippetResponseDTO()
+                        ? new DMCAPodcastShowSnippetResponseDTO()
                         {
                             Id = show.Id,
                             Name = show.Name,
-                            MainImageFileKey = show.MainImageFileKey
+                            MainImageFileKey = show.MainImageFileKey,
+                            PodcasterName = podcaster.FullName
                         }
                         : null,
                     PodcastEpisode = episode != null
-                        ? new PodcastEpisodeSnippetResponseDTO()
+                        ? new DMCAPodcastEpisodeSnippetResponseDTO()
                         {
                             Id = episode.Id,
                             Name = episode.Name,
-                            MainImageFileKey = episode.MainImageFileKey
+                            MainImageFileKey = episode.MainImageFileKey,
+                            PodcasterName = podcaster.FullName
                         }
                         : null,
                     AssignedStaff = staff != null
@@ -254,6 +266,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var createDMCANoticeAttachFile = new List<string>();
 
+                    if(parameter.DMCANoticeAttachFileKeys == null || parameter.DMCANoticeAttachFileKeys.Count == 0)
+                    {
+                        throw new Exception("At least one dmca notice attach file is required");
+                    }
                     // Process each file
                     foreach (var attachFileKey in parameter.DMCANoticeAttachFileKeys)
                     {
@@ -299,17 +315,17 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     await transaction.CommitAsync();
 
                     var newResponseData = new JObject
-                        {
-                            { "DMCAAccusationId", createdDmcaAccusation.Id },
-                            { "DMCANoticeId", createDmcaNotice.Id },
-                            { "AccuserEmail", createdDmcaAccusation.AccuserEmail },
-                            { "AccuserPhone", createdDmcaAccusation.AccuserPhone },
-                            { "AccuserFullName", createdDmcaAccusation.AccuserFullName },
-                            { "PodcastShowId", createdDmcaAccusation.PodcastShowId },
-                            { "PodcastEpisodeId", createdDmcaAccusation.PodcastEpisodeId },
-                            //{ "DMCAAttachFileKeys", JArray.FromObject(createDMCANoticeAttachFile) },
-                            { "CreatedAt", createdDmcaAccusation.CreatedAt }
-                        };
+                    {
+                        { "DMCAAccusationId", createdDmcaAccusation.Id },
+                        { "DMCANoticeId", createDmcaNotice.Id },
+                        { "AccuserEmail", createdDmcaAccusation.AccuserEmail },
+                        { "AccuserPhone", createdDmcaAccusation.AccuserPhone },
+                        { "AccuserFullName", createdDmcaAccusation.AccuserFullName },
+                        { "PodcastShowId", createdDmcaAccusation.PodcastShowId },
+                        { "PodcastEpisodeId", createdDmcaAccusation.PodcastEpisodeId },
+                        //{ "DMCAAttachFileKeys", JArray.FromObject(createDMCANoticeAttachFile) },
+                        { "CreatedAt", createdDmcaAccusation.CreatedAt }
+                    };
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.DmcaManagementDomain,
@@ -374,6 +390,15 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var exisitingDmcaAccusationReport = await _dmcaAccusationConclusionReportGenericRepository.FindAll(
+                        predicate: dar => dar.DmcaAccusationId == parameter.DmcaAccusationId && (dar.CompletedAt == null && dar.IsRejected == null && dar.CancelledAt == null)
+                        ).FirstOrDefaultAsync();
+
+                    if(exisitingDmcaAccusationReport != null)
+                    {
+                        throw new Exception("A current active DMCA Accusation Report already exists for this DMCA Accusation");
+                    }
+
                     var newDmcaAccusationReport = new DmcaaccusationConclusionReport
                     {
                         DmcaAccusationId = parameter.DmcaAccusationId,
@@ -387,14 +412,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     await transaction.CommitAsync();
                     var newResponseData = new JObject
-                        {
-                            { "DMCAAccusationReportId", createdDmcaAccusationReport.Id },
-                            { "DMCAAccusationId", createdDmcaAccusationReport.DmcaAccusationId },
-                            { "DmcaAccusationConclusionReportTypeId", createdDmcaAccusationReport.DmcaAccusationConclusionReportTypeId },
-                            { "Description", createdDmcaAccusationReport.Description },
-                            { "InvalidReason", createdDmcaAccusationReport.InvalidReason },
-                            { "CreatedAt", createdDmcaAccusationReport.CreatedAt }
-                        };
+                    {
+                        { "DMCAAccusationReportId", createdDmcaAccusationReport.Id },
+                        { "DMCAAccusationId", createdDmcaAccusationReport.DmcaAccusationId },
+                        { "DmcaAccusationConclusionReportTypeId", createdDmcaAccusationReport.DmcaAccusationConclusionReportTypeId },
+                        { "Description", createdDmcaAccusationReport.Description },
+                        { "InvalidReason", createdDmcaAccusationReport.InvalidReason },
+                        { "CreatedAt", createdDmcaAccusationReport.CreatedAt }
+                    };
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.DmcaManagementDomain,
@@ -447,19 +472,29 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 return null;
 
             PodcastEpisodeDTO? episode = null;
-                PodcastShowDTO? show = null;
-                if (da.PodcastEpisodeId != null)
-                {
-                    episode = await GetPodcastEpisode(da.PodcastEpisodeId.Value);
-                }
-                if(da.PodcastShowId != null)
-                {
-                    show = await GetPodcastShow(da.PodcastShowId.Value);
-                }
+            PodcastShowDTO? show = null;
+            if (da.PodcastEpisodeId != null)
+            {
+                episode = await GetPodcastEpisode(da.PodcastEpisodeId.Value);
+            }
+            if(da.PodcastShowId != null)
+            {
+                show = await GetPodcastShow(da.PodcastShowId.Value);
+            }
             AccountStatusCache? staff = null;
             if (da.AssignedStaff.HasValue)
             {
                 staff = await _accountCachingService.GetAccountStatusCacheById(da.AssignedStaff.Value);
+            }
+            AccountStatusCache? podcaster = null;
+            if (episode != null)
+            {
+                var showOfEpisode = await GetPodcastShow(episode.PodcastShowId);
+                podcaster = await _accountCachingService.GetAccountStatusCacheById(showOfEpisode.PodcasterId);
+            }
+            if (show != null && podcaster == null)
+            {
+                podcaster = await _accountCachingService.GetAccountStatusCacheById(show.PodcasterId);
             }
             var dmcaNoticeList = await _dmcaNoticeService.GetDMCANoticeByDMCAAccusationId(da.Id);
             var counterNoticeList = await _counterNoticeService.GetCounterNoticeByDMCAAccusationId(da.Id);
@@ -471,19 +506,21 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 AccuserPhone = da.AccuserPhone,
                 AccuserFullName = da.AccuserFullName,
                 PodcastShow = show != null
-                    ? new PodcastShowSnippetResponseDTO()
+                    ? new DMCAPodcastShowSnippetResponseDTO()
                     {
                         Id = show.Id,
                         Name = show.Name,
-                        MainImageFileKey = show.MainImageFileKey
+                        MainImageFileKey = show.MainImageFileKey,
+                        PodcasterName = podcaster.FullName
                     }
                     : null,
                 PodcastEpisode = episode != null
-                    ? new PodcastEpisodeSnippetResponseDTO()
+                    ? new DMCAPodcastEpisodeSnippetResponseDTO()
                     {
                         Id = episode.Id,
                         Name = episode.Name,
-                        MainImageFileKey = episode.MainImageFileKey
+                        MainImageFileKey = episode.MainImageFileKey,
+                        PodcasterName = podcaster.FullName
                     }
                     : null,
                 AssignedStaff = staff != null
@@ -630,24 +667,25 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             }
 
                             //Send TakeDownFlow
-                            //var takeDownFlowMessage = new JObject
-                            //{
-                            //    { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
-                            //    { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
-                            //    { "TakeDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
-                            //};
-                            //var takeDownMessageName = "content-dmca-takedown-flow";
-                            //var sagaTakeDownStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            //    topic: KafkaTopicEnum.ContentManagementDomain,
-                            //    requestData: takeDownFlowMessage,
-                            //    sagaInstanceId: command.SagaInstanceId,
-                            //    messageName: takeDownMessageName);
-                            //await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage, command.SagaInstanceId.ToString());
+                            var takeDownFlowMessage = new JObject
+                            {
+                                { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
+                                { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
+                                { "TakeDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
+                            };
+                            var takeDownMessageName = "content-dmca-takedown-flow";
+                            var sagaTakeDownStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ContentManagementDomain,
+                                requestData: takeDownFlowMessage,
+                                sagaInstanceId: command.SagaInstanceId,
+                                messageName: takeDownMessageName);
+                            await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage, command.SagaInstanceId.ToString());
+                            _logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
                             //Send Confirm email to Accuser
                             var accuserMailSendingRequestData = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCANoticeValidToAccuser",
                                     ToEmail = dmcaAccusation.AccuserEmail,
@@ -660,7 +698,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accuserMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accuserMailSendingRequestData,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
@@ -669,7 +707,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             //Send Email to Accused
                             var accusedMailSendingRequestData = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCANoticeValidToAccuser",
                                     ToEmail = podcaster.Email,
@@ -683,7 +721,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accusedMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accusedMailSendingRequestData,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
@@ -731,24 +769,25 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             }
 
                             //Send TakeDownFlow
-                            //var takeDownFlowMessage2 = new JObject
-                            //{
-                            //    { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
-                            //    { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
-                            //    { "TakeDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
-                            //};
-                            //var takeDownMessageName2 = "content-dmca-takedown-flow";
-                            //var sagaTakeDownStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            //    topic: KafkaTopicEnum.ContentManagementDomain,
-                            //    requestData: takeDownFlowMessage2,
-                            //    sagaInstanceId: null,
-                            //    messageName: takeDownMessageName2);
-                            //await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage2);
+                            var takeDownFlowMessage2 = new JObject
+                            {
+                                { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
+                                { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
+                                { "TakeDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
+                            };
+                            var takeDownMessageName2 = "content-dmca-takedown-flow";
+                            var sagaTakeDownStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ContentManagementDomain,
+                                requestData: takeDownFlowMessage2,
+                                sagaInstanceId: null,
+                                messageName: takeDownMessageName2);
+                            await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage2);
+                            _logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
                             //Send Email to Accuser
                             var accuserMailSendingRequestData2 = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCACounterNoticeValidToAccuser",
                                     ToEmail = dmcaAccusation.AccuserEmail,
@@ -771,7 +810,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             //Send Confirm email to Accused
                             var accusedMailSendingRequestData2 = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCACounterNoticeValidToAccused",
                                     ToEmail = dmcaAccusation.AccuserEmail,
@@ -784,7 +823,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accusedMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accusedMailSendingRequestData2,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
@@ -832,24 +871,25 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             }
 
                             //Send TakeDownFlow
-                            //var takeDownFlowMessage3 = new JObject
-                            //{
-                            //    { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
-                            //    { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
-                            //    { "TakeDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
-                            //};
-                            //var takeDownMessageName3 = "content-dmca-takedown-flow";
-                            //var sagaTakeDownStartSagaTriggerMessage3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            //    topic: KafkaTopicEnum.ContentManagementDomain,
-                            //    requestData: takeDownFlowMessage3,
-                            //    sagaInstanceId: null,
-                            //    messageName: takeDownMessageName3);
-                            //await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage3);
+                            var takeDownFlowMessage3 = new JObject
+                            {
+                                { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
+                                { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
+                                { "TakeDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
+                            };
+                            var takeDownMessageName3 = "content-dmca-takedown-flow";
+                            var sagaTakeDownStartSagaTriggerMessage3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ContentManagementDomain,
+                                requestData: takeDownFlowMessage3,
+                                sagaInstanceId: null,
+                                messageName: takeDownMessageName3);
+                            await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage3);
+                            _logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
                             //Send Confirm Email to Accuser
                             var accuserMailSendingRequestData3 = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCALawsuitProofValidToAccuser",
                                     ToEmail = dmcaAccusation.AccuserEmail,
@@ -871,10 +911,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             //Send email to Accused
                             var accusedMailSendingRequestData3 = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCALawsuitProofValidToAccused",
-                                    ToEmail = dmcaAccusation.AccuserEmail,
+                                    ToEmail = podcaster.Email,
                                     MailObject = new DMCALawsuitProofValidToAccusedMailViewModel
                                     {
                                         PodcasterEmail = podcaster.Email,
@@ -883,7 +923,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accusedMailSendingFlow3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accusedMailSendingRequestData3,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
@@ -967,9 +1007,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var dmcaAccusationReport = await _dmcaAccusationConclusionReportGenericRepository.FindByIdAsync(parameter.DMCAAccusationReportId);
+                    var dmcaAccusationReport = await _dmcaAccusationConclusionReportGenericRepository.FindByIdAsync(parameter.DMCAAccusationConclusionReportId);
 
-                    var dmcaAccusation =  await _dmcaAccusationGenericRepository.FindByIdAsync(dmcaAccusationReport.DmcaAccusationId);
+                    if(dmcaAccusationReport == null)
+                    {
+                        throw new Exception($"DMCA Accusation Report with Id: {parameter.DMCAAccusationConclusionReportId} not found");
+                    }
+                    if(dmcaAccusationReport.IsRejected != null || dmcaAccusationReport.CompletedAt != null)
+                    {
+                        throw new Exception($"DMCA Accusation Report with Id: {parameter.DMCAAccusationConclusionReportId} has been already processed");
+                    }
+                    var dmcaAccusation =  await _dmcaAccusationGenericRepository.FindByIdAsync(dmcaAccusationReport.DmcaAccusationId,
+                        includeFunc: function => function
+                        .Include(da => da.Dmcanotices)
+                        .Include(da => da.CounterNotices)
+                        .Include(da => da.LawsuitProofs));
+
+                    if(dmcaAccusation == null)
+                    {
+                        throw new Exception($"DMCA Accusation with Id: {dmcaAccusationReport.DmcaAccusationId} not found");
+                    }
+                    Console.WriteLine("Fetched DMCA Accusation Id: " + dmcaAccusation.Id);
 
                     PodcastShowDTO? show = null;
                     PodcastEpisodeDTO? episode = null;
@@ -989,7 +1047,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     if (parameter.IsValid)
                     {
-                        dmcaAccusationReport.IsRejected = true;
+                        dmcaAccusationReport.IsRejected = false;
                         dmcaAccusationReport.CompletedAt = _dateHelper.GetNowByAppTimeZone();
                         dmcaAccusationReport.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
 
@@ -1004,7 +1062,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 //Send Email to Accuser
                                 var mailSendingRequestData = JObject.FromObject(new
                                 {
-                                    SendUserServiceEmailMailInfo = new
+                                    SendModerationServiceEmailInfo = new
                                     {
                                         MailTypeName = "DMCANoticeInvalid",
                                         ToEmail = dmcaAccusation.AccuserEmail,
@@ -1018,7 +1076,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     }
                                 });
                                 var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.DmcaManagementDomain,
+                                    topic: KafkaTopicEnum.ReportManagementDomain,
                                     requestData: mailSendingRequestData,
                                     sagaInstanceId: null,
                                     messageName: "moderation-service-mail-sending-flow");
@@ -1034,19 +1092,20 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(invalidDmcaAccusationStatusTracking);
 
                                 //Update DMCA Notice
-                                var dmcaNoticeUpdate = dmcaAccusation.Dmcanotices.OrderByDescending(d => d.CreatedAt).FirstOrDefault();
+                                var dmcaNoticeUpdate = dmcaAccusation.Dmcanotices.OrderByDescending(d => d.CreatedAt).First();
+                                Console.WriteLine("Fetched DMCA Notice Id: " + dmcaNoticeUpdate.Id);
                                 dmcaNoticeUpdate.IsValid = false;
                                 dmcaNoticeUpdate.InvalidReason = dmcaAccusationReport.InvalidReason;
                                 dmcaNoticeUpdate.ValidatedAt = _dateHelper.GetNowByAppTimeZone();
                                 dmcaNoticeUpdate.ValidatedBy = dmcaAccusation.AssignedStaff;
-                                await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
+                                await _dmcaNoticeService.UpdateDMCANoticeAsync(dmcaNoticeUpdate);
 
                                 break;
                             case (int)DMCAAccusationConclusionReportTypeEnum.InvalidCounterNotice:
                                 //Send Email to Accuser
                                 var accuserMailSendingRequestData = JObject.FromObject(new
                                 {
-                                    SendUserServiceEmailMailInfo = new
+                                    SendModerationServiceEmailInfo = new
                                     {
                                         MailTypeName = "DMCACounterNoticeInvalidToAccuser",
                                         ToEmail = dmcaAccusation.AccuserEmail,
@@ -1060,7 +1119,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     }
                                 });
                                 var accuserMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.DmcaManagementDomain,
+                                    topic: KafkaTopicEnum.ReportManagementDomain,
                                     requestData: accuserMailSendingRequestData,
                                     sagaInstanceId: null,
                                     messageName: "moderation-service-mail-sending-flow");
@@ -1069,7 +1128,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 //Send Email to Accused
                                 var accusedMailSendingRequestData1 = JObject.FromObject(new
                                 {
-                                    SendUserServiceEmailMailInfo = new
+                                    SendModerationServiceEmailInfo = new
                                     {
                                         MailTypeName = "DMCACounterNoticeInvalidToAccused",
                                         ToEmail = podcaster.Email,
@@ -1085,7 +1144,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     }
                                 });
                                 var accusedMailSendingFlow1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.DmcaManagementDomain,
+                                    topic: KafkaTopicEnum.ReportManagementDomain,
                                     requestData: accusedMailSendingRequestData1,
                                     sagaInstanceId: null,
                                     messageName: "moderation-service-mail-sending-flow");
@@ -1104,36 +1163,39 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     sagaInstanceId: null,
                                     messageName: accountPunishMessageName1);
                                 await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage1);
+                                _logger.LogInformation("Started user violation punishment flow for Account Id: {AccountId}", podcaster.Id);
 
                                 //Remove Content
-                                //if(show != null)
-                                //{
-                                //    var removeShowRequestData1 = new JObject
-                                //    {
-                                //        { "PodcastShowId", show.Id }
-                                //    };
-                                //    var removeShowMessageName1 = "dmca-remove-show-flow";
-                                //    var sagaRemoveShowStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                //        topic: KafkaTopicEnum.ContentManagementDomain,
-                                //        requestData: removeShowRequestData1,
-                                //        sagaInstanceId: null,
-                                //        messageName: removeShowMessageName1);
-                                //    await _messagingService.SendSagaMessageAsync(sagaRemoveShowStartSagaTriggerMessage1);
-                                //}
-                                //if(episode != null)
-                                //{
-                                //    var removeEpisodeEpisodeRequestData1 = new JObject
-                                //    {
-                                //        { "PodcastEpisodeId", episode.Id }
-                                //    };
-                                //    var removeEpisodeMessageName1 = "dmca-remove-episode-flow";
-                                //    var sagaRemoveEpisodeStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                //        topic: KafkaTopicEnum.ContentManagementDomain,
-                                //        requestData: removeEpisodeEpisodeRequestData1,
-                                //        sagaInstanceId: null,
-                                //        messageName: removeEpisodeMessageName1);
-                                //    await _messagingService.SendSagaMessageAsync(sagaRemoveEpisodeStartSagaTriggerMessage1);
-                                //}
+                                if (show != null)
+                                {
+                                    var removeShowRequestData1 = new JObject
+                                    {
+                                        { "PodcastShowId", show.Id }
+                                    };
+                                    var removeShowMessageName1 = "dmca-remove-show-flow";
+                                    var sagaRemoveShowStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.ContentManagementDomain,
+                                        requestData: removeShowRequestData1,
+                                        sagaInstanceId: null,
+                                        messageName: removeShowMessageName1);
+                                    await _messagingService.SendSagaMessageAsync(sagaRemoveShowStartSagaTriggerMessage1);
+                                    _logger.LogInformation("Started dmca remove show flow for Podcast Show Id: {PodcastShowId}", show.Id);
+                                }
+                                if (episode != null)
+                                {
+                                    var removeEpisodeEpisodeRequestData1 = new JObject
+                                    {
+                                        { "PodcastEpisodeId", episode.Id }
+                                    };
+                                    var removeEpisodeMessageName1 = "dmca-remove-episode-flow";
+                                    var sagaRemoveEpisodeStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.ContentManagementDomain,
+                                        requestData: removeEpisodeEpisodeRequestData1,
+                                        sagaInstanceId: null,
+                                        messageName: removeEpisodeMessageName1);
+                                    await _messagingService.SendSagaMessageAsync(sagaRemoveEpisodeStartSagaTriggerMessage1);
+                                    _logger.LogInformation("Started dmca remove episode flow for Podcast Episode Id: {PodcastEpisodeId}", episode.Id);
+                                }
 
                                 //Second Level Punishment
                                 var accountPunishRequestData2 = new JObject
@@ -1148,6 +1210,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     sagaInstanceId: null,
                                     messageName: accountPunishMessageName2);
                                 await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage2);
+                                _logger.LogInformation("Started user violation punishment flow for Account Id: {AccountId}", podcaster.Id);
 
                                 //Switch Status
                                 var invalidCounterNoticeDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
@@ -1169,23 +1232,24 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 break;
                             case (int)DMCAAccusationConclusionReportTypeEnum.InvalidLawsuitProof:
                                 //Restore Content
-                                //var restoreContentRequestData1 = new JObject
-                                //{
-                                //    { "PodcastShowId", show != null ? show.Id : null },
-                                //    { "PodcastEpisodeId", episode != null ? episode.Id : null }
-                                //};
-                                //var restoreContentMessageName1 = "content-restoration-flow";
-                                //var sagaRestoreContentStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                //    topic: KafkaTopicEnum.ContentManagementDomain,
-                                //    requestData: restoreContentRequestData1,
-                                //    sagaInstanceId: null,
-                                //    messageName: restoreContentMessageName1);
-                                //await _messagingService.SendSagaMessageAsync(sagaRestoreContentStartSagaTriggerMessage1);
+                                var restoreContentRequestData1 = new JObject
+                                {
+                                    { "PodcastShowId", show != null ? show.Id : null },
+                                    { "PodcastEpisodeId", episode != null ? episode.Id : null }
+                                };
+                                var restoreContentMessageName1 = "content-restoration-flow";
+                                var sagaRestoreContentStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: restoreContentRequestData1,
+                                    sagaInstanceId: null,
+                                    messageName: restoreContentMessageName1);
+                                await _messagingService.SendSagaMessageAsync(sagaRestoreContentStartSagaTriggerMessage1);
+                                _logger.LogInformation("Sent content restoration message for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
                                 //Send Email to Accused
                                 var accusedMailSendingRequestData2 = JObject.FromObject(new
                                 {
-                                    SendUserServiceEmailMailInfo = new
+                                    SendModerationServiceEmailInfo = new
                                     {
                                         MailTypeName = "DMCALawsuitProofInvalidToAccused",
                                         ToEmail = podcaster.Email,
@@ -1198,7 +1262,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     }
                                 });
                                 var accusedMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.DmcaManagementDomain,
+                                    topic: KafkaTopicEnum.ReportManagementDomain,
                                     requestData: accusedMailSendingRequestData2,
                                     sagaInstanceId: null,
                                     messageName: "moderation-service-mail-sending-flow");
@@ -1207,7 +1271,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 //Send Email to Accuser
                                 var accuserMailSendingRequestData2 = JObject.FromObject(new
                                 {
-                                    SendUserServiceEmailMailInfo = new
+                                    SendModerationServiceEmailInfo = new
                                     {
                                         MailTypeName = "DMCALawsuitProofInvalidToAccuser",
                                         ToEmail = dmcaAccusation.AccuserEmail,
@@ -1223,7 +1287,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     }
                                 });
                                 var accuserMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.DmcaManagementDomain,
+                                    topic: KafkaTopicEnum.ReportManagementDomain,
                                     requestData: accuserMailSendingRequestData2,
                                     sagaInstanceId: null,
                                     messageName: "moderation-service-mail-sending-flow");
@@ -1251,7 +1315,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 //Send Email to Accuser
                                 var accuserMailSendingRequestData3 = JObject.FromObject(new
                                 {
-                                    SendUserServiceEmailMailInfo = new
+                                    SendModerationServiceEmailInfo = new
                                     {
                                         MailTypeName = "DMCALawsuitProofAccuserWinToAccuser",
                                         ToEmail = dmcaAccusation.AccuserEmail,
@@ -1266,7 +1330,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     }
                                 });
                                 var accuserMailSendingFlow3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.DmcaManagementDomain,
+                                    topic: KafkaTopicEnum.ReportManagementDomain,
                                     requestData: accuserMailSendingRequestData3,
                                     sagaInstanceId: null,
                                     messageName: "moderation-service-mail-sending-flow");
@@ -1275,9 +1339,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 //Send Email to Accused
                                 var accusedMailSendingRequestData3 = JObject.FromObject(new
                                 {
-                                    SendUserServiceEmailMailInfo = new
+                                    SendModerationServiceEmailInfo = new
                                     {
-                                        MailTypeName = "DMCALawsuitProofAccusedWinToAccused",
+                                        MailTypeName = "DMCALawsuitProofPodcasterWinToAccused",
                                         ToEmail = podcaster.Email,
                                         MailObject = new DMCALawsuitProofAccuserWinToAccusedMailViewModel
                                         {
@@ -1290,41 +1354,43 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     }
                                 });
                                 var accusedMailSendingFlow3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.DmcaManagementDomain,
+                                    topic: KafkaTopicEnum.ReportManagementDomain,
                                     requestData: accusedMailSendingRequestData3,
                                     sagaInstanceId: null,
                                     messageName: "moderation-service-mail-sending-flow");
                                 await _messagingService.SendSagaMessageAsync(accusedMailSendingFlow3);
 
                                 //Remove Content
-                                //if (show != null)
-                                //{
-                                //    var removeShowRequestData2 = new JObject
-                                //    {
-                                //        { "PodcastShowId", show.Id }
-                                //    };
-                                //    var removeShowMessageName2 = "dmca-remove-show-flow";
-                                //    var sagaRemoveShowStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                //        topic: KafkaTopicEnum.ContentManagementDomain,
-                                //        requestData: removeShowRequestData2,
-                                //        sagaInstanceId: null,
-                                //        messageName: removeShowMessageName2);
-                                //    await _messagingService.SendSagaMessageAsync(sagaRemoveShowStartSagaTriggerMessage2);
-                                //}
-                                //if (episode != null)
-                                //{
-                                //    var removeEpisodeEpisodeRequestData2 = new JObject
-                                //    {
-                                //        { "PodcastEpisodeId", episode.Id }
-                                //    };
-                                //    var removeEpisodeMessageName2 = "dmca-remove-episode-flow";
-                                //    var sagaRemoveEpisodeStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                //        topic: KafkaTopicEnum.ContentManagementDomain,
-                                //        requestData: removeEpisodeEpisodeRequestData2,
-                                //        sagaInstanceId: null,
-                                //        messageName: removeEpisodeMessageName2);
-                                //    await _messagingService.SendSagaMessageAsync(sagaRemoveEpisodeStartSagaTriggerMessage2);
-                                //}
+                                if (show != null)
+                                {
+                                    var removeShowRequestData2 = new JObject
+                                    {
+                                        { "PodcastShowId", show.Id }
+                                    };
+                                    var removeShowMessageName2 = "dmca-remove-show-flow";
+                                    var sagaRemoveShowStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.ContentManagementDomain,
+                                        requestData: removeShowRequestData2,
+                                        sagaInstanceId: null,
+                                        messageName: removeShowMessageName2);
+                                    await _messagingService.SendSagaMessageAsync(sagaRemoveShowStartSagaTriggerMessage2);
+                                    _logger.LogInformation("Sent remove show message for ShowId: {ShowId}", show.Id);
+                                }
+                                if (episode != null)
+                                {
+                                    var removeEpisodeEpisodeRequestData2 = new JObject
+                                    {
+                                        { "PodcastEpisodeId", episode.Id }
+                                    };
+                                    var removeEpisodeMessageName2 = "dmca-remove-episode-flow";
+                                    var sagaRemoveEpisodeStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.ContentManagementDomain,
+                                        requestData: removeEpisodeEpisodeRequestData2,
+                                        sagaInstanceId: null,
+                                        messageName: removeEpisodeMessageName2);
+                                    await _messagingService.SendSagaMessageAsync(sagaRemoveEpisodeStartSagaTriggerMessage2);
+                                    _logger.LogInformation("Sent remove episode message for EpisodeId: {EpisodeId}", episode.Id);
+                                }
 
                                 //Punish account
                                 var accountPunishRequestData3 = new JObject
@@ -1339,6 +1405,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     sagaInstanceId: null,
                                     messageName: accountPunishMessageName3);
                                 await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage3);
+                                _logger.LogInformation("Sent account punishment message for AccountId: {AccountId}", podcaster.Id);
 
                                 //Switch Status
                                 var accuserWinDmcaAccusationStatusTracking = new DmcaaccusationStatusTracking
@@ -1351,25 +1418,26 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 break;
                             case (int)DMCAAccusationConclusionReportTypeEnum.PodcasterLawsuitWin:
                                 //Restore Content
-                                //var restoreContentRequestData2 = new JObject
-                                //{
-                                //    { "PodcastShowId", show != null ? show.Id : null },
-                                //    { "PodcastEpisodeId", episode != null ? episode.Id : null }
-                                //};
-                                //var restoreContentMessageName2 = "content-restoration-flow";
-                                //var sagaRestoreContentStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                //    topic: KafkaTopicEnum.ContentManagementDomain,
-                                //    requestData: restoreContentRequestData2,
-                                //    sagaInstanceId: null,
-                                //    messageName: restoreContentMessageName2);
-                                //await _messagingService.SendSagaMessageAsync(sagaRestoreContentStartSagaTriggerMessage2, null);
+                                var restoreContentRequestData2 = new JObject
+                                {
+                                    { "PodcastShowId", show != null ? show.Id : null },
+                                    { "PodcastEpisodeId", episode != null ? episode.Id : null }
+                                };
+                                var restoreContentMessageName2 = "content-restoration-flow";
+                                var sagaRestoreContentStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: restoreContentRequestData2,
+                                    sagaInstanceId: null,
+                                    messageName: restoreContentMessageName2);
+                                await _messagingService.SendSagaMessageAsync(sagaRestoreContentStartSagaTriggerMessage2, null);
+                                _logger.LogInformation("Sent content restoration message for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
                                 //Send Email to Accuser
                                 var accuserMailSendingRequestData4 = JObject.FromObject(new
                                 {
-                                    SendUserServiceEmailMailInfo = new
+                                    SendModerationServiceEmailInfo = new
                                     {
-                                        MailTypeName = "DMCALawsuitProofAccusedWinToAccuser",
+                                        MailTypeName = "DMCALawsuitProofPodcasterWinToAccuser",
                                         ToEmail = dmcaAccusation.AccuserEmail,
                                         MailObject = new DMCALawsuitProofPodcasterWinToAccuserMailViewModel
                                         {
@@ -1382,7 +1450,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     }
                                 });
                                 var accuserMailSendingFlow4 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.DmcaManagementDomain,
+                                    topic: KafkaTopicEnum.ReportManagementDomain,
                                     requestData: accuserMailSendingRequestData4,
                                     sagaInstanceId: null,
                                     messageName: "moderation-service-mail-sending-flow");
@@ -1391,7 +1459,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 //Send Email to Accused
                                 var accusedMailSendingRequestData4 = JObject.FromObject(new
                                 {
-                                    SendUserServiceEmailMailInfo = new
+                                    SendModerationServiceEmailInfo = new
                                     {
                                         MailTypeName = "DMCALawsuitProofPodcasterWinToAccused",
                                         ToEmail = podcaster.Email,
@@ -1406,7 +1474,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     }
                                 });
                                 var accusedMailSendingFlow4 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.DmcaManagementDomain,
+                                    topic: KafkaTopicEnum.ReportManagementDomain,
                                     requestData: accusedMailSendingRequestData4,
                                     sagaInstanceId: null,
                                     messageName: "moderation-service-mail-sending-flow");
@@ -1426,13 +1494,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         }
                     } else
                     {
-                        dmcaAccusationReport.IsRejected = false;
+                        dmcaAccusationReport.IsRejected = true;
                         dmcaAccusationReport.CompletedAt = _dateHelper.GetNowByAppTimeZone();
                         dmcaAccusationReport.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     }
                     await _dmcaAccusationConclusionReportGenericRepository.UpdateAsync(dmcaAccusationReport.Id, dmcaAccusationReport);
 
                     await transaction.CommitAsync();
+
                     var newResponseData = new JObject
                         {
                             { "DMCAAccusationReportId", dmcaAccusationReport.Id },
@@ -1491,12 +1560,18 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         throw new Exception($"DMCA Report with id {dmcaAccusationConclusionReport.Id} has been processed and cannot be cancelled");
                     }
+                    if(dmcaAccusationConclusionReport.CompletedAt != null)
+                    {
+                        throw new Exception($"DMCA Report with id {dmcaAccusationConclusionReport.Id} has been completed and cannot be cancelled");
+                    }
                     dmcaAccusationConclusionReport.CancelledAt = _dateHelper.GetNowByAppTimeZone();
                     await _dmcaAccusationConclusionReportGenericRepository.UpdateAsync(dmcaAccusationConclusionReport.Id, dmcaAccusationConclusionReport);
 
+                    await transaction.CommitAsync();
+
                     var newResponseData = command.RequestData;
                     newResponseData["CancelledAt"] = dmcaAccusationConclusionReport.CancelledAt;
-                    var newMessageName = messageName = ".success";
+                    var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.DmcaManagementDomain,
                         requestData: command.RequestData,
@@ -1543,7 +1618,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         && da.ResolvedAt != null)
                         .ToListAsync();
 
-                    if(dmcaAccusationExists.Count == 0)
+                    var reason = DMCAAccusationDismissReasonEnum.EpisodeRemovedInDMCAAccusation;
+                    string description = reason.GetDescription();
+
+                    if (dmcaAccusationExists.Count == 0)
                     {
                         var episode = await GetPodcastEpisode(parameter.PodcastEpisodeId);
                         var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
@@ -1578,6 +1656,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         };
                         await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
 
+                        dmca.DismissReason = description;
                         dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                         dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -1660,7 +1739,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             //Send Email to Accused
                             var accusedMailSendingRequestData1 = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCANoticeValidNotResponseInTimeToAccused",
                                     ToEmail = podcaster.Email,
@@ -1674,7 +1753,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accusedMailSendingFlow1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accusedMailSendingRequestData1,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
@@ -1683,7 +1762,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             //Send Email to Accuser
                             var accuserMailSendingRequestData1 = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCANoticeValidNotResponseInTimeToAccuser",
                                     ToEmail = dmcaAccusation.AccuserEmail,
@@ -1697,62 +1776,62 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accuserMailSendingFlow1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accuserMailSendingRequestData1,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
                             await _messagingService.SendSagaMessageAsync(accuserMailSendingFlow1);
 
                             //Remove Content
-                            //if (show != null)
-                            //{
-                            //    var removeShowRequestData1 = new JObject
-                            //        {
-                            //            { "PodcastShowId", show.Id }
-                            //        };
-                            //    var removeShowMessageName1 = "dmca-remove-show-flow";
-                            //    var sagaRemoveShowStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            //        topic: KafkaTopicEnum.ContentManagementDomain,
-                            //        requestData: removeShowRequestData1,
-                            //        sagaInstanceId: null,
-                            //        messageName: removeShowMessageName1);
-                            //    await _messagingService.SendSagaMessageAsync(sagaRemoveShowStartSagaTriggerMessage1);
-                            //}
-                            //if (episode != null)
-                            //{
-                            //    var removeEpisodeEpisodeRequestData1 = new JObject
-                            //        {
-                            //            { "PodcastEpisodeId", episode.Id }
-                            //        };
-                            //    var removeEpisodeMessageName1 = "dmca-remove-episode-flow";
-                            //    var sagaRemoveEpisodeStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            //        topic: KafkaTopicEnum.ContentManagementDomain,
-                            //        requestData: removeEpisodeEpisodeRequestData1,
-                            //        sagaInstanceId: null,
-                            //        messageName: removeEpisodeMessageName1);
-                            //    await _messagingService.SendSagaMessageAsync(sagaRemoveEpisodeStartSagaTriggerMessage1);
-                            //}
+                            if (show != null)
+                            {
+                                var removeShowRequestData1 = new JObject
+                                    {
+                                        { "PodcastShowId", show.Id }
+                                    };
+                                var removeShowMessageName1 = "dmca-remove-show-flow";
+                                var sagaRemoveShowStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: removeShowRequestData1,
+                                    sagaInstanceId: null,
+                                    messageName: removeShowMessageName1);
+                                await _messagingService.SendSagaMessageAsync(sagaRemoveShowStartSagaTriggerMessage1);
+                            }
+                            if (episode != null)
+                            {
+                                var removeEpisodeEpisodeRequestData1 = new JObject
+                                    {
+                                        { "PodcastEpisodeId", episode.Id }
+                                    };
+                                var removeEpisodeMessageName1 = "dmca-remove-episode-flow";
+                                var sagaRemoveEpisodeStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: removeEpisodeEpisodeRequestData1,
+                                    sagaInstanceId: null,
+                                    messageName: removeEpisodeMessageName1);
+                                await _messagingService.SendSagaMessageAsync(sagaRemoveEpisodeStartSagaTriggerMessage1);
+                            }
                         }
                         else if(currentStatusId == (int)DMCAAccusationStatusEnum.ValidCounterNotice)
                         {
                             //Restore Content
-                            //var restoreContentRequestData1 = new JObject
-                            //    {
-                            //        { "PodcastShowId", show != null ? show.Id : null },
-                            //        { "PodcastEpisodeId", episode != null ? episode.Id : null }
-                            //    };
-                            //var restoreContentMessageName1 = "content-restoration-flow";
-                            //var sagaRestoreContentStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            //    topic: KafkaTopicEnum.ContentManagementDomain,
-                            //    requestData: restoreContentRequestData1,
-                            //    sagaInstanceId: null,
-                            //    messageName: restoreContentMessageName1);
-                            //await _messagingService.SendSagaMessageAsync(sagaRestoreContentStartSagaTriggerMessage1);
+                            var restoreContentRequestData1 = new JObject
+                                {
+                                    { "PodcastShowId", show != null ? show.Id : null },
+                                    { "PodcastEpisodeId", episode != null ? episode.Id : null }
+                                };
+                            var restoreContentMessageName1 = "content-restoration-flow";
+                            var sagaRestoreContentStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ContentManagementDomain,
+                                requestData: restoreContentRequestData1,
+                                sagaInstanceId: null,
+                                messageName: restoreContentMessageName1);
+                            await _messagingService.SendSagaMessageAsync(sagaRestoreContentStartSagaTriggerMessage1);
 
                             //Send Email to Accused
                             var accusedMailSendingRequestData2 = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCACounterNoticeValidNotResponseInTimeToAccused",
                                     ToEmail = podcaster.Email,
@@ -1764,7 +1843,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accusedMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accusedMailSendingRequestData2,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
@@ -1773,7 +1852,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             //Send Email to Accuser
                             var accuserMailSendingRequestData2 = JObject.FromObject(new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                SendModerationServiceEmailInfo = new
                                 {
                                     MailTypeName = "DMCACounterNoticeValidNotResponseInTimeToAccuser",
                                     ToEmail = dmcaAccusation.AccuserEmail,
@@ -1785,7 +1864,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accuserMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accuserMailSendingRequestData2,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
@@ -1809,6 +1888,255 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 }
             }
         }
+        public async Task DMCANoticeResponseTimeoutAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var dmcaNoticeResponseTime = _dmcaAccusationConfig.DMCANoticeResponseTime;
+                    var dmcaCounterNoticeResponseTime = _dmcaAccusationConfig.DMCACounterNoticeResponseTime;
+
+                    var dmcaAccusationCheckingList = await _dmcaAccusationGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(da => da.Dmcanotices)
+                        .Include(da => da.CounterNotices)
+                        .Include(da => da.LawsuitProofs)
+                        .Include(da => da.DmcaaccusationStatusTrackings))
+                        .Where(da =>
+                        da.DmcaaccusationStatusTrackings.OrderByDescending(st => st.CreatedAt).FirstOrDefault().DmcaAccusationStatusId == (int)DMCAAccusationStatusEnum.ValidDMCANotice && da.Dmcanotices.OrderByDescending(dn => dn.CreatedAt).FirstOrDefault().ValidatedAt.Value.AddDays(dmcaNoticeResponseTime) < _dateHelper.GetNowByAppTimeZone()
+                        )
+                        .ToListAsync();
+
+                    foreach (var dmcaAccusation in dmcaAccusationCheckingList)
+                    {
+                        PodcastShowDTO? show = null;
+                        PodcastEpisodeDTO? episode = null;
+                        var podcasterId = 0;
+                        if (dmcaAccusation.PodcastShowId != null)
+                        {
+                            show = await GetPodcastShow(dmcaAccusation.PodcastShowId.Value);
+                            podcasterId = show.PodcasterId;
+                        }
+                        if (dmcaAccusation.PodcastEpisodeId != null)
+                        {
+                            episode = await GetPodcastEpisode(dmcaAccusation.PodcastEpisodeId.Value);
+                            var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
+                            podcasterId = showFromEpisode.PodcasterId;
+                        }
+                        var podcaster = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
+
+                        var currentStatusId = dmcaAccusation.DmcaaccusationStatusTrackings.OrderByDescending(st => st.CreatedAt).FirstOrDefault().DmcaAccusationStatusId;
+                        if (currentStatusId == (int)DMCAAccusationStatusEnum.ValidDMCANotice)
+                        {
+                            //Send Email to Accused
+                            var accusedMailSendingRequestData1 = JObject.FromObject(new
+                            {
+                                SendModerationServiceEmailInfo = new
+                                {
+                                    MailTypeName = "DMCANoticeValidNotResponseInTimeToAccused",
+                                    ToEmail = podcaster.Email,
+                                    MailObject = new DMCANoticeValidNotResponseInTimeToAccusedMailViewModel
+                                    {
+                                        PodcasterEmail = podcaster.Email,
+                                        PodcasterFullName = podcaster.FullName,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null,
+                                        PodcastShowName = show != null ? show.Name : null
+                                    }
+                                }
+                            });
+                            var accusedMailSendingFlow1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ReportManagementDomain,
+                                requestData: accusedMailSendingRequestData1,
+                                sagaInstanceId: null,
+                                messageName: "moderation-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(accusedMailSendingFlow1);
+
+                            //Send Email to Accuser
+                            var accuserMailSendingRequestData1 = JObject.FromObject(new
+                            {
+                                SendModerationServiceEmailInfo = new
+                                {
+                                    MailTypeName = "DMCANoticeValidNotResponseInTimeToAccuser",
+                                    ToEmail = dmcaAccusation.AccuserEmail,
+                                    MailObject = new DMCANoticeValidNotResponseInTimeToAccuserMailViewModel
+                                    {
+                                        AccuserEmail = dmcaAccusation.AccuserEmail,
+                                        AccuserFullName = dmcaAccusation.AccuserFullName,
+                                        PodcastEpisodeName = episode != null ? episode.Name : null,
+                                        PodcastShowName = show != null ? show.Name : null
+                                    }
+                                }
+                            });
+                            var accuserMailSendingFlow1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ReportManagementDomain,
+                                requestData: accuserMailSendingRequestData1,
+                                sagaInstanceId: null,
+                                messageName: "moderation-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(accuserMailSendingFlow1);
+
+                            //Remove Content
+                            if (show != null)
+                            {
+                                var removeShowRequestData1 = new JObject
+                                    {
+                                        { "PodcastShowId", show.Id }
+                                    };
+                                var removeShowMessageName1 = "dmca-remove-show-flow";
+                                var sagaRemoveShowStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: removeShowRequestData1,
+                                    sagaInstanceId: null,
+                                    messageName: removeShowMessageName1);
+                                await _messagingService.SendSagaMessageAsync(sagaRemoveShowStartSagaTriggerMessage1);
+                            }
+                            if (episode != null)
+                            {
+                                var removeEpisodeEpisodeRequestData1 = new JObject
+                                    {
+                                        { "PodcastEpisodeId", episode.Id }
+                                    };
+                                var removeEpisodeMessageName1 = "dmca-remove-episode-flow";
+                                var sagaRemoveEpisodeStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    requestData: removeEpisodeEpisodeRequestData1,
+                                    sagaInstanceId: null,
+                                    messageName: removeEpisodeMessageName1);
+                                await _messagingService.SendSagaMessageAsync(sagaRemoveEpisodeStartSagaTriggerMessage1);
+                            }
+                        }
+
+                        //Close DMCA Accusation
+                        dmcaAccusation.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                        dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while checking DMCA Notice response time allowed");
+                    throw new HttpRequestException("Error occurred while checking DMCA Notice response time allowed. Error: " + ex.Message);
+                }
+            }
+        }
+        public async Task CounterNoticeResponseTimeoutAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var dmcaNoticeResponseTime = _dmcaAccusationConfig.DMCANoticeResponseTime;
+                    var dmcaCounterNoticeResponseTime = _dmcaAccusationConfig.DMCACounterNoticeResponseTime;
+
+                    var dmcaAccusationCheckingList = await _dmcaAccusationGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(da => da.Dmcanotices)
+                        .Include(da => da.CounterNotices)
+                        .Include(da => da.LawsuitProofs)
+                        .Include(da => da.DmcaaccusationStatusTrackings))
+                        .Where(da =>
+                        da.DmcaaccusationStatusTrackings.OrderByDescending(st => st.CreatedAt).FirstOrDefault().DmcaAccusationStatusId == (int)DMCAAccusationStatusEnum.ValidCounterNotice && da.CounterNotices.OrderByDescending(dn => dn.CreatedAt).FirstOrDefault().ValidatedAt.Value.AddDays(dmcaCounterNoticeResponseTime) < _dateHelper.GetNowByAppTimeZone()
+                        )
+                        .ToListAsync();
+
+                    foreach (var dmcaAccusation in dmcaAccusationCheckingList)
+                    {
+                        PodcastShowDTO? show = null;
+                        PodcastEpisodeDTO? episode = null;
+                        var podcasterId = 0;
+                        if (dmcaAccusation.PodcastShowId != null)
+                        {
+                            show = await GetPodcastShow(dmcaAccusation.PodcastShowId.Value);
+                            podcasterId = show.PodcasterId;
+                        }
+                        if (dmcaAccusation.PodcastEpisodeId != null)
+                        {
+                            episode = await GetPodcastEpisode(dmcaAccusation.PodcastEpisodeId.Value);
+                            var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
+                            podcasterId = showFromEpisode.PodcasterId;
+                        }
+                        var podcaster = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
+
+                        var currentStatusId = dmcaAccusation.DmcaaccusationStatusTrackings.OrderByDescending(st => st.CreatedAt).FirstOrDefault().DmcaAccusationStatusId;
+                        if (currentStatusId == (int)DMCAAccusationStatusEnum.ValidCounterNotice)
+                        {
+                            //Restore Content
+                            var restoreContentRequestData1 = new JObject
+                                {
+                                    { "PodcastShowId", show != null ? show.Id : null },
+                                    { "PodcastEpisodeId", episode != null ? episode.Id : null }
+                                };
+                            var restoreContentMessageName1 = "content-restoration-flow";
+                            var sagaRestoreContentStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ContentManagementDomain,
+                                requestData: restoreContentRequestData1,
+                                sagaInstanceId: null,
+                                messageName: restoreContentMessageName1);
+                            await _messagingService.SendSagaMessageAsync(sagaRestoreContentStartSagaTriggerMessage1);
+
+                            //Send Email to Accused
+                            var accusedMailSendingRequestData2 = JObject.FromObject(new
+                            {
+                                SendModerationServiceEmailInfo = new
+                                {
+                                    MailTypeName = "DMCACounterNoticeValidNotResponseInTimeToAccused",
+                                    ToEmail = podcaster.Email,
+                                    MailObject = new DMCACounterNoticeValidNotResponseInTimeToAccusedMailViewModel
+                                    {
+                                        PodcasterEmail = podcaster.Email,
+                                        PodcasterFullName = podcaster.FullName
+                                    }
+                                }
+                            });
+                            var accusedMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ReportManagementDomain,
+                                requestData: accusedMailSendingRequestData2,
+                                sagaInstanceId: null,
+                                messageName: "moderation-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(accusedMailSendingFlow2);
+
+                            //Send Email to Accuser
+                            var accuserMailSendingRequestData2 = JObject.FromObject(new
+                            {
+                                SendModerationServiceEmailInfo = new
+                                {
+                                    MailTypeName = "DMCACounterNoticeValidNotResponseInTimeToAccuser",
+                                    ToEmail = dmcaAccusation.AccuserEmail,
+                                    MailObject = new DMCACounterNoticeValidNotResponseInTimeToAccuserMailViewModel
+                                    {
+                                        AccuserEmail = dmcaAccusation.AccuserEmail,
+                                        AccuserFullName = dmcaAccusation.AccuserFullName
+                                    }
+                                }
+                            });
+                            var accuserMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.ReportManagementDomain,
+                                requestData: accuserMailSendingRequestData2,
+                                sagaInstanceId: null,
+                                messageName: "moderation-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(accuserMailSendingFlow2);
+                        }
+
+                        //Close DMCA Accusation
+                        dmcaAccusation.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                        dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _dmcaAccusationGenericRepository.UpdateAsync(dmcaAccusation.Id, dmcaAccusation);
+
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while checking Counter Notice response time allowed");
+                    throw new HttpRequestException("Error occurred while checking Counter Notice response time allowed. Error: " + ex.Message);
+                }
+            }
+        }
         public async Task DismissEpisodeDMCAUnpublishEpisodeForceAsync(DismissEpisodeDMCAUnpublishEpisodeForceParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -1824,6 +2152,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         .Where(da => da.PodcastEpisodeId == parameter.PodcastEpisodeId
                         && da.ResolvedAt != null)
                         .ToListAsync();
+
+                    var reason = DMCAAccusationDismissReasonEnum.EpisodeUnpublished;
+                    string description = reason.GetDescription();
 
                     if (dmcaAccusationExists.Count == 0)
                     {
@@ -1861,6 +2192,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         };
                         await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
 
+                        dmca.DismissReason = description;
                         dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                         dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -1918,6 +2250,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         && da.ResolvedAt != null)
                         .ToListAsync();
 
+                    var reason = DMCAAccusationDismissReasonEnum.ShowRemovedInDMCAAccusation;
+                    string description = reason.GetDescription();
+
                     if (dmcaAccusationExists.Count == 0)
                     {
                         var show = await GetPodcastShow(parameter.PodcastShowId);
@@ -1952,6 +2287,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                        
+                        dmca.DismissReason = description;
                         dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                         dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2015,6 +2352,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                            && da.ResolvedAt != null)
                            .ToListAsync();
 
+                        var reason = DMCAAccusationDismissReasonEnum.ShowRemovedInDMCAAccusation;
+                        string description = reason.GetDescription();
+
                         if (dmcaAccusationExists.Count == 0)
                         {
                             //Punish account
@@ -2046,6 +2386,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                            
+                            dmca.DismissReason = description;
                             dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                             dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2102,6 +2444,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         && da.ResolvedAt != null)
                         .ToListAsync();
 
+                    var reason = DMCAAccusationDismissReasonEnum.ShowUnpublished;
+                    string description = reason.GetDescription();
+
                     if (dmcaAccusationExists.Count == 0)
                     {
                         var show = await GetPodcastShow(parameter.PodcastShowId);
@@ -2136,6 +2481,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                        
+                        dmca.DismissReason = description;
                         dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                         dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2203,6 +2550,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                            && da.ResolvedAt != null)
                            .ToListAsync();
 
+                        var reason = DMCAAccusationDismissReasonEnum.ShowUnpublished;
+                        string description = reason.GetDescription();
+
                         if (dmcaAccusationExists.Count == 0)
                         {
                             //Punish account
@@ -2235,6 +2585,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                            
+                            dmca.DismissReason = description;
                             dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                             dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2294,10 +2646,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     foreach (var show in showList)
                     {
                         dismissedShowId.Add(show.Id);
+
                         var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                         .Where(da => da.PodcastShowId == show.Id
                         && da.ResolvedAt != null)
                         .ToListAsync();
+
+                        var reason = DMCAAccusationDismissReasonEnum.ChannelUnpublished;
+                        string description = reason.GetDescription();
 
                         if (dmcaAccusationExists.Count == 0)
                         {
@@ -2332,6 +2688,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                            
+                            dmca.DismissReason = description;
                             dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                             dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2402,6 +2760,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                && da.ResolvedAt != null)
                                .ToListAsync();
 
+                            var reason = DMCAAccusationDismissReasonEnum.ChannelUnpublished;
+                            string description = reason.GetDescription();
+
                             if (dmcaAccusationExists.Count == 0)
                             {
                                 //Punish account
@@ -2434,6 +2795,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     CreatedAt = _dateHelper.GetNowByAppTimeZone()
                                 };
                                 await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                                
+                                dmca.DismissReason = description;
                                 dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                                 dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                                 await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2494,6 +2857,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         && da.ResolvedAt != null)
                         .ToListAsync();
 
+                    var reason = DMCAAccusationDismissReasonEnum.EpisodeDeleted;
+                    string description = reason.GetDescription();
+
                     if (dmcaAccusationExists.Count == 0)
                     {
                         var episode = await GetPodcastEpisode(parameter.PodcastEpisodeId);
@@ -2530,6 +2896,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         };
                         await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
 
+                        dmca.DismissReason = description;
                         dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                         dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2588,6 +2955,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         && da.ResolvedAt != null)
                         .ToListAsync();
 
+                    var reason = DMCAAccusationDismissReasonEnum.ShowDeleted;
+                    string description = reason.GetDescription();
+
                     if (dmcaAccusationExists.Count == 0)
                     {
                         var show = await GetPodcastShow(parameter.PodcastShowId);
@@ -2622,6 +2992,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                        
+                        dmca.DismissReason = description;
                         dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                         dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2689,6 +3061,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                            && da.ResolvedAt != null)
                            .ToListAsync();
 
+                        var reason = DMCAAccusationDismissReasonEnum.ShowDeleted;
+                        string description = reason.GetDescription();
+
                         if (dmcaAccusationExists.Count == 0)
                         {
                             //Punish account
@@ -2721,6 +3096,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                            
+                            dmca.DismissReason = description;
                             dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                             dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2780,10 +3157,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     foreach (var show in showList)
                     {
                         dismissedShowId.Add(show.Id);
+                        
                         var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                         .Where(da => da.PodcastShowId == show.Id
                         && da.ResolvedAt != null)
                         .ToListAsync();
+
+                        var reason = DMCAAccusationDismissReasonEnum.ChannelDeleted;
+                        string description = reason.GetDescription();
 
                         if (dmcaAccusationExists.Count == 0)
                         {
@@ -2818,6 +3199,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                            
+                            dmca.DismissReason = description;
                             dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                             dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2888,6 +3271,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                && da.ResolvedAt != null)
                                .ToListAsync();
 
+                            var reason = DMCAAccusationDismissReasonEnum.ChannelDeleted;
+                            string description = reason.GetDescription();
+
                             if (dmcaAccusationExists.Count == 0)
                             {
                                 //Punish account
@@ -2920,6 +3306,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     CreatedAt = _dateHelper.GetNowByAppTimeZone()
                                 };
                                 await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                                
+                                dmca.DismissReason = description;
                                 dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                                 dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                                 await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -2980,10 +3368,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     foreach (var show in showList)
                     {
                         dismissedShowIds.Add(show.Id);
+                        
                         var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                         .Where(da => da.PodcastShowId == show.Id
                         && da.ResolvedAt != null)
                         .ToListAsync();
+
+                        var reason = DMCAAccusationDismissReasonEnum.PodcasterDeactivated;
+                        string description = reason.GetDescription();
 
                         if (dmcaAccusationExists.Count == 0)
                         {
@@ -3018,6 +3410,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                            
+                            dmca.DismissReason = description;
                             dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                             dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -3088,6 +3482,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                && da.ResolvedAt != null)
                                .ToListAsync();
 
+                            var reason = DMCAAccusationDismissReasonEnum.PodcasterDeactivated;
+                            string description = reason.GetDescription();
+
                             if (dmcaAccusationExists.Count == 0)
                             {
                                 //Punish account
@@ -3120,6 +3517,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     CreatedAt = _dateHelper.GetNowByAppTimeZone()
                                 };
                                 await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                                
+                                dmca.DismissReason = description;
                                 dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
                                 dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                                 await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
@@ -3164,7 +3563,89 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 }
             }
         }
-                    
+        public async Task<List<DMCAAccusationConclusionReportListItemResponseDTO>> GetAllDMCAAccusationConclusionReportsForStaffOrAdminAsync(int accountId, int roleId)
+        {
+            try
+            {
+                var query = _dmcaAccusationConclusionReportGenericRepository.FindAll(
+                    includeFunc: function => function
+                        .Include(dacr => dacr.DmcaAccusation)
+                        .Include(dacr => dacr.DmcaAccusationConclusionReportType)
+                );
+
+                if (roleId == (int)RoleEnum.Staff)
+                {
+                    query = query.Where(dacr => dacr.DmcaAccusation.AssignedStaff == accountId);
+                }
+                return await query
+                    .OrderByDescending(dacr => dacr.CreatedAt)
+                    .Select(dacr => new DMCAAccusationConclusionReportListItemResponseDTO
+                    {
+                        Id = dacr.Id,
+                        DmcaAccusationId = dacr.DmcaAccusationId,
+                        Description = dacr.Description,
+                        InvalidReason = dacr.InvalidReason,
+                        IsRejected = dacr.IsRejected,
+                        CompletedAt = dacr.CompletedAt,
+                        CancelledAt = dacr.CancelledAt,
+                        CreatedAt = dacr.CreatedAt,
+                        UpdatedAt = dacr.UpdatedAt,
+                        DmcaAccusationConclusionReportType = new DMCAAccusationConclusionReportTypeResponseDTO
+                        {
+                            Id = dacr.DmcaAccusationConclusionReportType.Id,
+                            Name = dacr.DmcaAccusationConclusionReportType.Name
+                        }
+                    })
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting all DMCA Accusation Conclusion Reports for Staff or Admin with AccountId: {AccountId}", accountId);
+                throw new HttpRequestException("Error occurred while getting all DMCA Accusation Conclusion Reports for Staff or Admin. Error: " + ex.Message);
+            }
+        }
+        public async Task<List<DMCAAccusationConclusionReportListItemResponseDTO>> GetAllDMCAAccusationConclusionReportsByAccusationIdForStaffOrAdminAsync(int dmcaAccusationId, int accountId, int roleId)
+        {
+            try
+            {
+                var query = _dmcaAccusationConclusionReportGenericRepository.FindAll(
+                    includeFunc: function => function
+                        .Include(dacr => dacr.DmcaAccusation)
+                        .Include(dacr => dacr.DmcaAccusationConclusionReportType)
+                );
+
+                if (roleId == (int)RoleEnum.Staff)
+                {
+                    query = query.Where(dacr => dacr.DmcaAccusation.AssignedStaff == accountId);
+                }
+                return await query
+                    .Where(dacr => dacr.DmcaAccusationId == dmcaAccusationId)
+                    .OrderByDescending(dacr => dacr.CreatedAt)
+                    .Select(dacr => new DMCAAccusationConclusionReportListItemResponseDTO
+                    {
+                        Id = dacr.Id,
+                        DmcaAccusationId = dacr.DmcaAccusationId,
+                        Description = dacr.Description,
+                        InvalidReason = dacr.InvalidReason,
+                        IsRejected = dacr.IsRejected,
+                        CompletedAt = dacr.CompletedAt,
+                        CancelledAt = dacr.CancelledAt,
+                        CreatedAt = dacr.CreatedAt,
+                        UpdatedAt = dacr.UpdatedAt,
+                        DmcaAccusationConclusionReportType = new DMCAAccusationConclusionReportTypeResponseDTO
+                        {
+                            Id = dacr.DmcaAccusationConclusionReportType.Id,
+                            Name = dacr.DmcaAccusationConclusionReportType.Name
+                        }
+                    })
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting all DMCA Accusation Conclusion Reports for DMCA Accusation Id: {DmcaAccusationId}", dmcaAccusationId);
+                throw new HttpRequestException("Error occurred while getting all DMCA Accusation Conclusion Reports. Error: " + ex.Message);
+            }
+        }
         private async Task<(bool isValid, string errorMessage)> ValidateEpisode(Guid podcastEpisodeId)
         {
             var episode = await GetPodcastEpisode(podcastEpisodeId);
