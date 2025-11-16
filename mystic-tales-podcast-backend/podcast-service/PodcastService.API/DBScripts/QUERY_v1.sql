@@ -27,6 +27,7 @@ delete from PodcastEpisodePublishDuplicateDetection
 delete from PodcastEpisodePublishReviewSession
 
 
+
 delete from PodcastChannelStatusTracking
 delete from PodcastChannel
 delete from PodcastShowReview
@@ -36,6 +37,9 @@ INSERT INTO PodcastShowStatusTracking(podcastShowId, podcastShowStatusId)
 VALUES (N'b4988aad-58cb-4c17-937e-3ad5e65336ce' , 3); 
 INSERT INTO PodcastEpisodePublishReviewSessionStatusTracking(podcastEpisodePublishReviewSessionId, podcastEpisodePublishReviewSessionStatusId)
 VALUES (7 , 3); 
+
+ALTER TABLE PodcastCategory
+ADD mainImageFileKey NVARCHAR(MAX) NULL;
 
 -- Query cơ bản: Lấy tất cả episode của podcaster 17
 SELECT 

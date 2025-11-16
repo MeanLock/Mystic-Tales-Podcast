@@ -64,14 +64,33 @@ namespace PodcastService.API.Controllers.MiscControllers
             return Ok(feedContents);
         }
 
-        // /api/podcast-service/api/misc/feed/podcast-keyword-search-suggestion
-        [HttpGet("podcast-keyword-search-suggestion")]
-        public async Task<IActionResult> GetPodcastKeywordSearchSuggestions([FromQuery] string keyword)
+        // /api/podcast-service/api/misc/feed/search-keyword-suggestion
+        [HttpGet("search-keyword-suggestion")]
+        public async Task<IActionResult> GetPodcastKeywordSearchSuggestions([FromQuery] string keyword, [FromQuery] int limit = 10)
         {
-            // var suggestions = await _feedService.GetPodcastKeywordSearchSuggestionsAsync(keyword);
+            var suggestions = await _feedService.GetPodcastKeywordSearchSuggestionsAsync(keyword, limit);
 
-            // return Ok(suggestions);
-            return null;
+            return Ok(suggestions);
+        }
+
+        // /api/podcast-service/api/misc/feed/podcast-contents/keyword-search
+        [HttpGet("podcast-contents/keyword-search")]
+        public async Task<IActionResult> GetPodcastFeedContentsByKeywordSearch([FromQuery] string keyword)
+        {
+
+            var feedContents = await _feedService.GetPodcastFeedContentsByKeywordSearchAsync(keyword);
+
+            return Ok(feedContents);
+        }
+
+        // /api/podcast-service/api/misc/feed/podcast-contents/podcast-categories/{PodcastCategoryId}
+        [HttpGet("podcast-contents/podcast-categories/{podcastCategoryId}")]
+        public async Task<IActionResult> GetPodcastFeedContentsByPodcastCategoryId([FromRoute] int podcastCategoryId)
+        {
+
+            var feedContents = await _feedService.GetPodcastFeedContentsByPodcastCategoryIdAsync(podcastCategoryId);
+
+            return Ok(feedContents);
         }
 
 

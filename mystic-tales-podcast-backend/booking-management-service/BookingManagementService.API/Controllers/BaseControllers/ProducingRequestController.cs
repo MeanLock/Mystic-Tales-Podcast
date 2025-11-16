@@ -3,6 +3,8 @@ using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
+using BookingManagementService.BusinessLogic.Enums.Account;
+using BookingManagementService.BusinessLogic.Enums.App;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
@@ -64,6 +66,41 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             _fileIOHelper = fileIOHelper;
             _audioFingerprintGenerator = audioFingerprintGenerator;
             _logger = logger;
+        }
+
+        // /api/booking-management-service/api/producing-requests/audio/get-file-url/{**FileKey}
+        [HttpGet("audio/get-file-url/{**FileKey}")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess.Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetEpisodeAudioFileUrl(string FileKey)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var (category, accessLevel) = FileAccessValidator.GetFileCategoryAndLevel(FileKey);
+
+            if (category != FileCategoryEnum.BookingTrackAudio)
+            {
+                return StatusCode(403, new
+                {
+                    error = "Invalid file key: Must be a Booking Track Audio file",
+                    actualCategory = category.ToString()
+                });
+            }
+            
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
+
+            if (account.RoleId == (int)RoleEnum.Customer)
+            {
+                var isOwnedByPodcaster = await _podcastEpisodeService.IsAudioFileOwnedByPodcasterAsync(FileKey, account.Id);
+                if (!isOwnedByPodcaster)
+                {
+                    return StatusCode(403, new
+                    {
+                        error = "Access denied: You do not have permission to access this audio file"
+                    });
+                }
+            }
+
+            return Ok(new { FileUrl = url });
         }
 
         [HttpGet("{BookingProducingRequestId}")]

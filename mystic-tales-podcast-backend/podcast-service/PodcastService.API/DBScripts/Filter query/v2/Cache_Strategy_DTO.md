@@ -32,6 +32,15 @@ class ChannelAllTimeMaxQueryMetric {
 }
 ```
 
+### EpisodeAllTimeMaxQueryMetric
+```typescript
+class EpisodeAllTimeMaxQueryMetric {
+  MaxListenCount: number;              // MLC
+  MaxTotalSave: number;                // MTS
+  LastUpdated: DateTime;
+}
+```
+
 ---
 
 ## II. TEMPORAL MAX VALUES (Refresh: Every 12h at 00:00, 12:00)
@@ -150,6 +159,7 @@ query:metric:show:all_time_max
 query:metric:show:temporal_7d_max
 query:metric:channel:all_time_max
 query:metric:channel:temporal_7d_max
+query:metric:episode:all_time_max
 query:metric:system_preferences:temporal_30d
 query:metric:user_preferences:temporal_30d
 ```
@@ -163,6 +173,7 @@ query:metric:user_preferences:temporal_30d
   - Update PodcasterAllTimeMaxQueryMetric
   - Update ShowAllTimeMaxQueryMetric
   - Update ChannelAllTimeMaxQueryMetric
+  - Update EpisodeAllTimeMaxQueryMetric
   - Update PodcasterTemporal7dMaxQueryMetric
   - Update ShowTemporal7dMaxQueryMetric
   - Update ChannelTemporal7dMaxQueryMetric
@@ -231,6 +242,7 @@ const TimeRangeConfig = {
 MTF    = MaxTotalFollow
 MLC    = MaxListenCount
 MRT    = MaxRatingTerm
+MTS    = MaxTotalSave
 MNLS   = MaxNewListenSession
 MNF    = MaxNewFollow
 MNF   = MaxNewFavorite (Channel specific)
@@ -239,6 +251,7 @@ MTF   = MaxTotalFavorite (Channel specific)
 TF     = TotalFollow
 LC     = ListenCount
 RT     = RatingTerm
+TS     = TotalSave
 NLS    = NewListenSession
 NF     = NewFollow
 NF   = NewFavorite (Channel specific)
