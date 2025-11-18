@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PodcastService.API.Filters.ExceptionFilters;
 using PodcastService.BusinessLogic.DTOs.Cache;
+using PodcastService.BusinessLogic.DTOs.Feed;
+using PodcastService.BusinessLogic.DTOs.Feed.ListItems;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
 using PodcastService.BusinessLogic.Services.DbServices.PodcastServices;
 using PodcastService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -64,8 +66,8 @@ namespace PodcastService.API.Controllers.MiscControllers
             return Ok(feedContents);
         }
 
-        // /api/podcast-service/api/misc/feed/search-keyword-suggestion
-        [HttpGet("search-keyword-suggestion")]
+        // /api/podcast-service/api/misc/feed/podcast-contents/search-keyword-suggestion
+        [HttpGet("podcast-contents/search-keyword-suggestion")]
         public async Task<IActionResult> GetPodcastKeywordSearchSuggestions([FromQuery] string keyword, [FromQuery] int limit = 10)
         {
             var suggestions = await _feedService.GetPodcastKeywordSearchSuggestionsAsync(keyword, limit);
@@ -91,6 +93,26 @@ namespace PodcastService.API.Controllers.MiscControllers
             var feedContents = await _feedService.GetPodcastFeedContentsByPodcastCategoryIdAsync(podcastCategoryId);
 
             return Ok(feedContents);
+        }
+
+        // /api/podcast-service/api/misc/feed/podcast-contents
+        [HttpGet("podcast-contents")]
+        public async Task<IActionResult> GetAllPodcastFeedContents([FromQuery] string keyword = null, [FromQuery] int limit = 20)
+        {
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                return Ok(new
+                {
+                    SearchItemList = new List<PodcastShowOrEpisodeKeywordSearchedListItemResponseDTO>()
+                });
+            }
+
+            var feedContents = await _feedService.GetPodcastFeedContentsByKeywordQueryAsync(keyword, limit);
+
+            return Ok(new
+                {
+                    SearchItemList = feedContents
+                });
         }
 
 

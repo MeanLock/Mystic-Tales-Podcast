@@ -37,5 +37,7 @@ public partial class PodcasterProfile
 
     public DateTime? VerifiedAt { get; set; }
 
+    public bool IsBuddy { get; set; }
+
     public virtual Account Account { get; set; } = null!;
 }

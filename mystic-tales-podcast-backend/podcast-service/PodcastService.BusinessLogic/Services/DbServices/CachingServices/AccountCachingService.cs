@@ -94,6 +94,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.CachingServices
             var podcasterProfile = result.Results["account"]["PodcasterProfile"] as JObject;
             accountStatusCache.PodcasterProfileName = podcasterProfile?["Name"]?.ToObject<string>();
             accountStatusCache.PodcasterProfileIsVerified = podcasterProfile?["IsVerified"]?.ToObject<bool?>();
+            accountStatusCache.PodcasterProfileIsBuddy = podcasterProfile?["IsBuddy"]?.ToObject<bool>() ?? false;
             accountStatusCache.PodcasterProfileVerifiedAt = podcasterProfile?["VerifiedAt"]?.ToObject<DateTime?>();
             accountStatusCache.HasVerifiedPodcasterProfile = accountStatusCache.RoleId == 1 && podcasterProfile != null && podcasterProfile["IsVerified"]?.ToObject<bool?>() == true ? true : false;
             return accountStatusCache;

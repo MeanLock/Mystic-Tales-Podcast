@@ -3092,6 +3092,55 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        public async Task<List<PodcastShowOrEpisodeKeywordSearchedListItemResponseDTO>> GetPodcastFeedContentsByKeywordQueryAsync(string keyword, int limit)
+        {
+            try
+            {
+                Console.WriteLine($"[KeywordSearch] Starting search for keyword: '{keyword}'");
+
+                // Normalize keyword
+                keyword = keyword.ToLower().Trim();
+                var queryTerms = keyword.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                // STEP 1: Load cache metrics for engagement scores
+                var cacheMetrics = await LoadSearchCacheMetricsAsync();
+
+                // STEP 2: Query all entities in parallel
+                var shows = await QueryShowsForSearchAsync(queryTerms);
+                var episodes = await QueryEpisodesForSearchAsync(queryTerms);
+
+                Console.WriteLine($"[KeywordQuery] Found - Shows: {shows.Count}, Episodes: {episodes.Count}");
+
+                // STEP 3: Calculate BM25 + Engagement scores
+                var showScores = CalculateShowSearchScores(shows, queryTerms, cacheMetrics);
+                var episodeScores = CalculateEpisodeSearchScores(episodes, queryTerms, cacheMetrics);
+
+                // STEP 4: Filter by minimum threshold
+                const double minScoreThreshold = 0.15;
+                showScores = showScores.Where(x => x.finalScore >= minScoreThreshold).ToList();
+                episodeScores = episodeScores.Where(x => x.finalScore >= minScoreThreshold).ToList();
+
+                // STEP 5: Normalize scores for mixed results
+                var (normalizedShows, normalizedEpisodes) = NormalizeScoresForMixedResults(showScores, episodeScores);
+
+                // STEP 6: Build Top Query Results (mixed Show + Episode)
+                var topQueryResults = BuildTopSearchResults(normalizedShows, normalizedEpisodes);
+
+                // STEP 7: Map to DTOs
+                var showList = await MapToShowListItemsAsync(showScores.OrderByDescending(x => x.finalScore).Select(x => x.show).ToList());
+                var episodeList = await MapToEpisodeListItemsAsync(episodeScores.OrderByDescending(x => x.finalScore).Select(x => x.episode).ToList());
+
+                Console.WriteLine($"[KeywordQuery] Results - Top: {topQueryResults.Count}, Shows: {showList.Count}, Episodes: {episodeList.Count}");
+
+                return topQueryResults.Take(limit).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[KeywordQuery] ERROR: {ex.Message}\n{ex.StackTrace}");
+                throw new Exception("Error while query podcast contents by keyword: " + ex.Message);
+            }
+
+        }
         public async Task<PodcastContentKeywordSearchResultResponseDTO> GetPodcastFeedContentsByKeywordSearchAsync(string keyword)
         {
             try
@@ -3824,6 +3873,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         #endregion
 
         #region Category Base Entry Point
+
         public async Task<CategoryBasePodcastFeedDTO> GetPodcastFeedContentsByPodcastCategoryIdAsync(int podcastCategoryId)
         {
             try
@@ -3876,7 +3926,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         #region Category Base - Top Channels (Popular Score, 16 items)
         private async Task<List<ChannelListItemResponseDTO>> BuildCategoryBaseTopChannelsSection(
-            int podcastCategoryId, 
+            int podcastCategoryId,
             CacheMetricsContainer cacheMetrics)
         {
             try
@@ -3902,7 +3952,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         var channelStatus = c.PodcastChannelStatusTrackings
                             ?.OrderByDescending(st => st.CreatedAt)
                             .FirstOrDefault()?.PodcastChannelStatusId;
-                        
+
                         if (channelStatus != (int)PodcastChannelStatusEnum.Published) return false;
 
                         // Has at least one published show in target category
@@ -3911,7 +3961,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             var showStatus = s.PodcastShowStatusTrackings
                                 ?.OrderByDescending(st => st.CreatedAt)
                                 .FirstOrDefault()?.PodcastShowStatusId;
-                            
+
                             return s.DeletedAt == null &&
                                    showStatus == (int)PodcastShowStatusEnum.Published &&
                                    s.PodcastSubCategory?.PodcastCategoryId == podcastCategoryId;
@@ -3972,7 +4022,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         var showStatus = s.PodcastShowStatusTrackings
                             ?.OrderByDescending(st => st.CreatedAt)
                             .FirstOrDefault()?.PodcastShowStatusId;
-                        
+
                         if (showStatus != (int)PodcastShowStatusEnum.Published) return false;
 
                         // If has channel, check channel status
@@ -3981,7 +4031,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             var channelStatus = s.PodcastChannel.PodcastChannelStatusTrackings
                                 ?.OrderByDescending(st => st.CreatedAt)
                                 .FirstOrDefault()?.PodcastChannelStatusId;
-                            
+
                             return channelStatus == (int)PodcastChannelStatusEnum.Published;
                         }
 
@@ -4042,7 +4092,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         var showStatus = s.PodcastShowStatusTrackings
                             ?.OrderByDescending(st => st.CreatedAt)
                             .FirstOrDefault()?.PodcastShowStatusId;
-                        
+
                         if (showStatus != (int)PodcastShowStatusEnum.Published) return false;
 
                         // If has channel, check channel status
@@ -4051,7 +4101,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             var channelStatus = s.PodcastChannel.PodcastChannelStatusTrackings
                                 ?.OrderByDescending(st => st.CreatedAt)
                                 .FirstOrDefault()?.PodcastChannelStatusId;
-                            
+
                             return channelStatus == (int)PodcastChannelStatusEnum.Published;
                         }
 
@@ -4120,14 +4170,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         var episodeStatus = e.PodcastEpisodeStatusTrackings
                             ?.OrderByDescending(st => st.CreatedAt)
                             .FirstOrDefault()?.PodcastEpisodeStatusId;
-                        
+
                         if (episodeStatus != (int)PodcastEpisodeStatusEnum.Published) return false;
 
                         // Get current show status
                         var showStatus = e.PodcastShow.PodcastShowStatusTrackings
                             ?.OrderByDescending(st => st.CreatedAt)
                             .FirstOrDefault()?.PodcastShowStatusId;
-                        
+
                         if (showStatus != (int)PodcastShowStatusEnum.Published) return false;
 
                         // If has channel, check channel status
@@ -4136,7 +4186,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             var channelStatus = e.PodcastShow.PodcastChannel.PodcastChannelStatusTrackings
                                 ?.OrderByDescending(st => st.CreatedAt)
                                 .FirstOrDefault()?.PodcastChannelStatusId;
-                            
+
                             return channelStatus == (int)PodcastChannelStatusEnum.Published;
                         }
 
@@ -4193,7 +4243,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                     // Query shows for this subcategory
                     var allShows = await _podcastShowGenericRepository.FindAll(
-                        predicate: s => s.DeletedAt == null && 
+                        predicate: s => s.DeletedAt == null &&
                                        s.PodcastSubCategoryId == subcategory.Id &&
                                        !dedupShowIds.Contains(s.Id), // Exclude TopShows + HotShows
                         includeFunc: query => query
@@ -4210,7 +4260,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             var showStatus = s.PodcastShowStatusTrackings
                                 ?.OrderByDescending(st => st.CreatedAt)
                                 .FirstOrDefault()?.PodcastShowStatusId;
-                            
+
                             if (showStatus != (int)PodcastShowStatusEnum.Published) return false;
 
                             // If has channel, check channel status
@@ -4219,7 +4269,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 var channelStatus = s.PodcastChannel.PodcastChannelStatusTrackings
                                     ?.OrderByDescending(st => st.CreatedAt)
                                     .FirstOrDefault()?.PodcastChannelStatusId;
-                                
+
                                 return channelStatus == (int)PodcastChannelStatusEnum.Published;
                             }
 

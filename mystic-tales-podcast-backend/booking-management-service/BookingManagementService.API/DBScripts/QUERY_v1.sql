@@ -1,3 +1,6 @@
+select * from BookingProducingRequest
+
+
 -- Add deadlineDays to Booking table
 ALTER TABLE Booking
 ADD deadlineDays INT NULL;

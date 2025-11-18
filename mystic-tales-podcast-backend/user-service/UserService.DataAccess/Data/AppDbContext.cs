@@ -323,6 +323,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Description)
                 .HasDefaultValue("")
                 .HasColumnName("description");
+            entity.Property(e => e.IsBuddy).HasColumnName("isBuddy");
             entity.Property(e => e.IsVerified)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnName("isVerified");

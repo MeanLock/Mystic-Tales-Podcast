@@ -1003,6 +1003,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         ViolationPoint = account.ViolationPoint,
                         PodcasterProfileName = account.PodcasterProfile != null ? account.PodcasterProfile.Name : null,
                         PodcasterProfileIsVerified = account.PodcasterProfile != null ? account.PodcasterProfile.IsVerified : null,
+                        PodcasterProfileIsBuddy = account.PodcasterProfile != null ? account.PodcasterProfile.IsBuddy : false,
                         PodcasterProfileVerifiedAt = account.PodcasterProfile != null ? account.PodcasterProfile.VerifiedAt : null,
                         HasVerifiedPodcasterProfile = account.RoleId == 1 && account.PodcasterProfile != null && account.PodcasterProfile.IsVerified == true ? true : false
                     },
