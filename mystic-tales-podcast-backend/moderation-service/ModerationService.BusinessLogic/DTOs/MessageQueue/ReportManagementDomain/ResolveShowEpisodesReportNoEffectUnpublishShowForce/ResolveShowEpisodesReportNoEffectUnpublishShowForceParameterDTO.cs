@@ -8,6 +8,6 @@ namespace ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDoma
 {
     public class ResolveShowEpisodesReportNoEffectUnpublishShowForceParameterDTO
     {
-        public List<Guid> DmcaDismissedEpisodeIds { get; set; }
+        public List<Guid>? DmcaDismissedEpisodeIds { get; set; }
     }
 }
