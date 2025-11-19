@@ -444,6 +444,12 @@ const ProfilePage = () => {
         <p className="text-red-400 font-poppins">
           Cannot load your profile. Please try again later.
         </p>
+        <ShowOnHoverButton
+          Icon={MdOutlineLogout}
+          text="Logout"
+          bgColor="#E06C75"
+          onClick={() => handleLogout()}
+        />
       </div>
     );
   }

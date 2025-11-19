@@ -1,54 +1,49 @@
-// @ts-nocheck
-
 import type { ChannelUI } from "@/core/types/channel";
-import { FaPodcast, FaStar } from "react-icons/fa";
-import { MdOutlinePodcasts } from "react-icons/md";
+import { BsFillPeopleFill } from "react-icons/bs";
+import { FaHeart } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
-interface ChannelCardProps {
-  channel: ChannelUI;
-}
+const ChannelCard = ({ channel }: { channel: ChannelUI }) => {
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+    }
+    return num.toString();
+  };
 
-const ChannelCard = ({ channel }: ChannelCardProps) => {
+  const navigate = useNavigate();
+
   return (
     <div
-      className="group p-3 relative w-full flex flex-col gap-2 rounded-2xl overflow-hidden    
-                 shadow-[0_4px_30px_rgba(0,0,0,0.1)]
-                 transition-all duration-500 ease-out hover:scale-105 hover:border-white/60 
-                 hover:shadow-[0_0_8px_rgba(255,255,255,1)] cursor-pointer"
+      onClick={() => navigate(`/media-player/channels/${channel.Id}`)}
+      className="w-full aspect-square rounded-md shadow-2xl overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:scale-105 hover:-translate-y-[6px]"
     >
-      {/* inner glass border nhẹ */}
-      {/* <div
-        className="absolute inset-0 rounded-2xl 
-                   border border-white/10 
-                   [box-shadow:inset_0_0_15px_rgba(255,255,255,0.05)] 
-                   pointer-events-none"
-      ></div> */}
-
-      <div className="relative w-full flex items-start justify-center p-2 z-10">
+      <div className="absolute inset-0 flex items-center justify-center">
         <img
           src={channel.ImageUrl}
-          className="aspect-square w-full object-cover rounded-md mx-auto shadow-[5px_5px_15px_#0000005c]"
+          alt={channel.Name}
+          className="w-full h-full object-cover"
         />
       </div>
-
-      <div className="w-full flex flex-col items-start justify-center gap-1 p-2 z-10">
-        {/* <p className="text-xs font-semibold text-gray-300 line-clamp-1">
-          #Lauv_You
-        </p> */}
-        <div className="flex items-center gap-1 text-[12px] font-semibold text-[#d9d9d9]">
-          <FaPodcast />
-          <p className="line-clamp-1">12 shows</p>
+      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30"></div>
+      <div className="w-full h-full z-20 flex flex-col justify-between relative p-3">
+        <div className="w-fit px-2 py-1 shadow-md rounded-full bg-white/40 text-white flex items-center gap-2">
+          <FaHeart />
+          <p className="font-poppins font-bold text-xs line-clamp-1">
+            {formatNumber(channel.TotalFavorite)}
+          </p>
         </div>
-        <p className="text-white text-[15px] font-semibold line-clamp-1">
-          {channel.Name}
-        </p>
 
-        <p className="text-[10px] font-medium text-[#d9d9d9]">
-          PSYCHOLOGY • HUMAN SOCIETY
-        </p>
-
-        <div className="italic flex items-center gap-1 text-[10px] font-md hover:text-mystic-green text-[#d9d9d9]">
-          #Show_Your_Lauv
+        <div className="w-full flex flex-col gap-1">
+          <p className="uppercase text-white font-bold text-sm line-clamp-1">
+            {channel.Name}
+          </p>
+          <p className="text-[#D9D9D9] font-light">
+            {channel.Podcaster.FullName}
+          </p>
         </div>
       </div>
     </div>

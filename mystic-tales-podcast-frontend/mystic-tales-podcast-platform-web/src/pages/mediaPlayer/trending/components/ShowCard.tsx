@@ -1,5 +1,6 @@
 import type { ShowUI } from "@/core/types/show";
 import { FaHeadphones, FaHeart } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 const ShowCard = ({ show }: { show: ShowUI }) => {
   const renderDescription = (show: ShowUI) => {
@@ -21,8 +22,10 @@ const ShowCard = ({ show }: { show: ShowUI }) => {
     return num.toString();
   };
 
+  const navigate = useNavigate();
+
   return (
-    <div className="w-full aspect-video bg-white rounded-md overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:-translate-y-[6px]">
+    <div onClick={() => navigate(`/media-player/shows/${show.Id}`)} className="w-full aspect-video bg-white rounded-md overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:-translate-y-[6px]">
       <div className="absolute inset-0 flex items-center justify-center">
         <img
           src={show.ImageUrl}

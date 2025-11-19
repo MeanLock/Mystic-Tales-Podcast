@@ -1,6 +1,7 @@
 import type { ChannelUI } from "@/core/types/channel";
 import { BsFillPeopleFill } from "react-icons/bs";
 import { FaHeart } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 const ChannelCard = ({ channel }: { channel: ChannelUI }) => {
   const formatNumber = (num: number): string => {
@@ -13,8 +14,10 @@ const ChannelCard = ({ channel }: { channel: ChannelUI }) => {
     return num.toString();
   };
 
+  const navigate = useNavigate();
+
   return (
-    <div className="w-full aspect-square rounded-md shadow-2xl overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:scale-105 hover:-translate-y-[6px]">
+    <div onClick={() => navigate(`/media-player/channels/${channel.Id}`)} className="w-full aspect-square rounded-md shadow-2xl overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:scale-105 hover:-translate-y-[6px]">
       <div className="absolute inset-0 flex items-center justify-center">
         <img
           src={channel.ImageUrl}

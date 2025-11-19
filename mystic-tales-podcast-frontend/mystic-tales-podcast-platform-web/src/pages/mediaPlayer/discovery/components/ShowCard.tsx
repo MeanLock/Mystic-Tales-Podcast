@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import type { ShowUI } from "@/core/types/show";
+import { useNavigate } from "react-router-dom";
 
 interface CardProps {
   card: {
@@ -13,9 +14,13 @@ interface CardProps {
   };
 }
 
-const ShowCard = ({ card }: {card: ShowUI}) => {
+const ShowCard = ({ card }: { card: ShowUI }) => {
+  const navigate = useNavigate();
   return (
-    <Card className="bg-transparent border-none shadow-sm p-1 transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+    <Card
+      onClick={() => navigate(`/media-player/shows/${card.Id}`)}
+      className="bg-transparent border-none shadow-sm p-1 transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+    >
       <CardContent className="flex flex-col aspect-square items-start justify-between text-card-foreground bg-transparent p-2 rounded-lg">
         <img
           src={card.ImageUrl}

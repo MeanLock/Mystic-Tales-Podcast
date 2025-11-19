@@ -1,6 +1,7 @@
 import { IoPlay } from "react-icons/io5";
 import { IoIosMore } from "react-icons/io";
 import type { EpisodeUI } from "@/core/types/episode";
+import { useNavigate } from "react-router-dom";
 
 const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   const getTimeRange = (releaseDate: string) => {
@@ -32,8 +33,11 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
     }
   };
 
+  const navigate = useNavigate();
+
   return (
     <div
+      onClick={() => navigate(`/media-player/episodes/${episode.Id}`)}
       style={{ backgroundImage: `url(${episode.ImageUrl})` }}
       className="bg-cover w-full aspect-[3/4] rounded-xl relative transition-all duration-500 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >

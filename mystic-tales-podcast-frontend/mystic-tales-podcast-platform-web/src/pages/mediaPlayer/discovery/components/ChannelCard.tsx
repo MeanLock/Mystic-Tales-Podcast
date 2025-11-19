@@ -1,11 +1,15 @@
 import { Card, CardContent } from "@/components/ui/card";
 import type { ChannelUI } from "@/core/types/channel";
+import { useNavigate } from "react-router-dom";
 
+const ChannelCard = ({ card }: { card: ChannelUI }) => {
+  const navigate = useNavigate();
 
-
-const ChannelCard = ({ card }: {card: ChannelUI}) => {
   return (
-    <Card className="bg-transparent border-none shadow-sm p-1 transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+    <Card
+      onClick={() => navigate(`/media-player/channels/${card.Id}`)}
+      className="bg-transparent border-none shadow-sm p-1 transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+    >
       <CardContent className="flex flex-col aspect-square items-start justify-between text-card-foreground bg-transparent p-2 rounded-lg">
         <img
           src={card.ImageUrl}

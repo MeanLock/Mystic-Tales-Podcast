@@ -1,5 +1,8 @@
-import type { ContentRealtimeResponse } from "@/core/types/search";
-import { IoMdMicrophone } from "react-icons/io";
+import type {
+  ContentRealtimeResponse,
+  ContentRealtimeResponseUI,
+} from "@/core/types/search";
+import { IoIosSearch, IoMdMicrophone } from "react-icons/io";
 import { RiSlideshow4Line } from "react-icons/ri";
 import {
   resolveFiles,
@@ -7,7 +10,25 @@ import {
 } from "@/core/utils/fileResolver.util";
 import { useEffect, useState } from "react";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
+import { playerApi } from "@/core/services/player/player.service";
+import { IoPlay } from "react-icons/io5";
+import PlayingWave from "@/components/playingWave/PlayWave";
+import {
+  pauseAudio,
+  playAudio,
+} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
+import type { CurrentAudioUI } from "@/core/types/audio";
+
 type SearchSuggestionProps = {
+  keywordOriginal: string;
   keywords: string[];
   contents: ContentRealtimeResponse[];
   isLoading: boolean;
@@ -24,6 +45,7 @@ const FileConfig: FileResolveConfig[] = [
 ];
 
 const SearchSuggesstion = ({
+  keywordOriginal,
   keywords,
   contents,
   isLoading,
@@ -34,6 +56,9 @@ const SearchSuggesstion = ({
     ContentRealtimeResponse[]
   >([]);
 
+  // HOOKS
+  const dispatch = useDispatch();
+  const mediaPlayer = useSelector((state: RootState) => state.player);
   useEffect(() => {
     const resolveContent = async () => {
       if (contents.length > 0) {
@@ -57,6 +82,7 @@ const SearchSuggesstion = ({
           })
         );
         setResolvedContents(resolved);
+        console.log("Resolved Contents:", resolved);
       } else {
         setResolvedContents([]);
       }
@@ -65,85 +91,200 @@ const SearchSuggesstion = ({
     resolveContent();
   }, [contents]);
 
-  if (isLoading) {
+  // FUNCTIONS
+  const highlightText = (text: string, keyword: string) => {
+    if (!keyword.trim()) return text;
+
+    const index = text.toLowerCase().indexOf(keyword.toLowerCase());
+    if (index === -1) return text;
+
+    const before = text.substring(0, index);
+    const match = text.substring(index, index + keyword.length);
+    const after = text.substring(index + keyword.length);
+
     return (
-      <div className="w-full bg-white/10 backdrop-blur-lg rounded-lg p-3 shadow-xl border border-white/20">
-        <p className="text-white text-sm">Searching...</p>
-      </div>
+      <>
+        {before}
+        <span className="font-bold">{match}</span>
+        {after}
+      </>
     );
-  }
+  };
 
-  if (keywords.length === 0 && resolvedContents.length === 0) {
-    return null;
-  }
+  const handlePlayNow = (content: ContentRealtimeResponseUI) => {
+    const newCurrentAudio: CurrentAudioUI = {
+      Id: content.Episode?.Id as string,
+      Name: content.Episode?.Name as string,
+      LatestPosition: 0, // giây
+      AudioLength: 200, // giây
+      EpisodeNumber: 12, // Số tập
+      FileUrl: "",
+      ImageUrl: content.Episode?.ImageUrl as string,
+      PodcasterName: "Ngu",
+      Show: { Id: "111", Name: "Example Show" },
+    };
 
+    dispatch(playAudio(newCurrentAudio));
+  };
+
+  const handlePause = () => {
+    dispatch(pauseAudio());
+  };
+
+  // Always return content to keep popover open
   return (
-    <div className="w-full  backdrop-blur-lg rounded-lg shadow-xl border border-white/20 max-h-[400px] overflow-y-auto">
-      {/* Keywords Section */}
-      {keywords.length > 0 && (
-        <div className="p-3 border-b border-white/10">
-          <div className="flex flex-col gap-1">
-            {keywords.map((keyword, index) => (
-              <div
-                key={index}
-                onClick={() => onKeywordClick(keyword)}
-                className="px-3 py-2 hover:bg-white/10 rounded-md cursor-pointer transition-colors"
-              >
-                <p className="text-[#252525] text-sm">{keyword}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Contents Section */}
-      {resolvedContents.length > 0 && (
+    <div className="w-full z-[9999] bg-white backdrop-blur-3xl rounded-sm shadow-xl border border-white/20">
+      {isLoading ? (
         <div className="p-3">
-          <p className="text-xs text-gray-400 mb-2 font-semibold">Results</p>
-          <div className="flex flex-col gap-2">
-            {resolvedContents.map((content, index) => {
-              const item = content.Show || content.Episode;
-              if (!item) return null;
-
-              return (
-                <div
-                  key={index}
-                  onClick={() => onContentClick(content)}
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-white/10 rounded-md cursor-pointer transition-colors"
-                >
-                  <img
-                    src={
-                      (item as any).ImageUrl || "/images/unknown/podcast.png"
-                    }
-                    alt={item.Name}
-                    className="w-12 h-12 rounded-md object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {content.Show ? (
-                        <RiSlideshow4Line
-                          size={12}
-                          className="text-mystic-green flex-shrink-0"
-                        />
-                      ) : (
-                        <IoMdMicrophone
-                          size={12}
-                          className="text-mystic-green flex-shrink-0"
-                        />
-                      )}
-                      <p className="text-white text-sm font-semibold line-clamp-1">
-                        {item.Name}
-                      </p>
-                    </div>
-                    <p className="text-gray-400 text-xs line-clamp-1 mt-1">
-                      {item.Description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+          <p className="text-sm text-black">Searching...</p>
+        </div>
+      ) : keywords.length === 0 && resolvedContents.length === 0 ? (
+        <div className="p-1">
+          <div
+            onClick={() => onKeywordClick(keywordOriginal)}
+            className="text-black cursor-pointer py-1 px-3 rounded-xs flex items-center justify-between hover:bg-gray-300"
+          >
+            <p className="text-sm">
+              {highlightText(keywordOriginal, keywordOriginal)}
+            </p>
+            <IoIosSearch />
           </div>
         </div>
+      ) : (
+        <>
+          {keywords.length > 0 && (
+            <div className="p-3 border-b border-white/10">
+              <div className="flex flex-col gap-1">
+                {keywords.map((keyword, index) => (
+                  <TooltipProvider key={index}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          onClick={() => onKeywordClick(keyword)}
+                          className="group text-black cursor-pointer py-1 px-3 rounded-xs flex items-center justify-between hover:bg-gray-300"
+                        >
+                          <p className="text-sm line-clamp-1 max-w-[220px]">
+                            {highlightText(keyword, keywordOriginal)}
+                          </p>
+                          <IoIosSearch />
+                        </div>
+                      </TooltipTrigger>
+
+                      <TooltipContent
+                        side="right"
+                        align="start"
+                        className="max-w-xs absolute z-[9999] w-[500px]"
+                      >
+                        {keyword}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Contents Section */}
+          {resolvedContents.length > 0 && (
+            <div className="p-3 border-t border-t-[#252525]">
+              <div className="flex flex-col gap-2">
+                {resolvedContents.map((content, index) => {
+                  const item = content.Show || content.Episode;
+                  if (!item) return null;
+
+                  // Show UI
+                  if (content.Show) {
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => onContentClick(content)}
+                        className="flex items-start gap-3 px-2 py-1 rounded-md cursor-pointer transition-colors hover:bg-gray-300"
+                      >
+                        {/* TODO: Design Show UI */}
+                        <img
+                          src={
+                            (item as any).ImageUrl ||
+                            "/images/unknown/podcast.png"
+                          }
+                          alt={item.Name}
+                          className="w-10 h-10 rounded-full object-cover shadow-md"
+                        />
+                        <div className="flex-1 h-10 flex items-center min-w-0">
+                          <p className="text-[#252525] text-sm font-semibold line-clamp-1">
+                            {item.Name}
+                          </p>
+                          {/* <p className="text-gray-700 text-[9px] line-clamp-1 mt-1">
+                            {item.Description}
+                          </p> */}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Episode UI
+                  if (content.Episode) {
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => onContentClick(content)}
+                        className="flex items-start gap-3 px-2 py-1 rounded-md cursor-pointer transition-colors hover:bg-gray-300"
+                      >
+                        {/* TODO: Design Episode UI */}
+                        <div className="group w-10 aspect-square rounded-sm flex items-center justify-center relative">
+                          <img
+                            src={
+                              (item as any).ImageUrl ||
+                              "/images/unknown/podcast.png"
+                            }
+                            alt={item.Name}
+                            className="w-10 h-10 rounded-sm shadow-md object-cover"
+                          />
+                          {mediaPlayer.playMode.playStatus === "play" &&
+                          mediaPlayer.currentAudio?.Id ===
+                            content.Episode.Id ? (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePause();
+                              }}
+                              className="z-10 absolute inset-0 bg-black/40 rounded-sm items-center justify-center cursor-pointer"
+                            >
+                              <PlayingWave />
+                            </div>
+                          ) : (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePlayNow(
+                                  content as ContentRealtimeResponseUI
+                                );
+                              }}
+                              className="hidden group-hover:inline-flex z-10 absolute inset-0 bg-black/40 rounded-sm items-center justify-center cursor-pointer"
+                            >
+                              <IoPlay className="text-white w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 h-10 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-[#252525] text-sm font-semibold line-clamp-1">
+                              {item.Name}
+                            </p>
+                          </div>
+                          <p className="text-gray-700 text-xs line-clamp-1 mt-1">
+                            {item.Description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

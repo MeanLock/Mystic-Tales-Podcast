@@ -139,10 +139,12 @@ const MediaPlayerControl = () => {
         <div className="absolute inset-0 bg-black/50 "></div>
 
         <div className="flex items-center gap-3">
-          <div className="bg-gray-500 w-12 h-12 rounded-md" />
-          <div className="flex flex-col items-start justify-center">
-            <p className="text-gray-400 font-semibold">No Audio Yet</p>
-            <p className="text-gray-400 text-sm">
+          <div className="bg-gray-500 w-12 aspect-square rounded-md" />
+          <div className="flex flex-col items-start justify-center ">
+            <p className="text-gray-400 font-semibold line-clamp-1">
+              No Audio Yet
+            </p>
+            <p className="text-gray-400 text-sm line-clamp-1">
               You might need to play an audio to continue
             </p>
           </div>

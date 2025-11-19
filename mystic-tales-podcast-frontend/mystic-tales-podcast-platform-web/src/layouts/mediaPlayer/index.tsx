@@ -31,6 +31,7 @@ const MediaPlayerLayout = () => {
             [&::-webkit-scrollbar]:hidden
             [-ms-overflow-style:none]
             [scrollbar-width:none]
+          
           "
         >
           <Outlet />

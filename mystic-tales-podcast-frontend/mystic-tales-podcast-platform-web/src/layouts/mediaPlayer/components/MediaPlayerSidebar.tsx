@@ -4,7 +4,11 @@ import { FaRegCompass } from "react-icons/fa";
 import { FiBarChart2, FiInfo } from "react-icons/fi";
 import { BiCategoryAlt } from "react-icons/bi";
 import { TbMusicSearch } from "react-icons/tb";
-import { IoIosNotificationsOutline, IoMdMicrophone } from "react-icons/io";
+import {
+  IoIosNotificationsOutline,
+  IoIosSearch,
+  IoMdMicrophone,
+} from "react-icons/io";
 import { RiHistoryLine } from "react-icons/ri";
 import { FaHeart } from "react-icons/fa";
 import { RiSlideshow4Line } from "react-icons/ri";
@@ -37,22 +41,141 @@ import {
   PopoverTrigger,
   PopoverPortal,
 } from "@radix-ui/react-popover";
-import {
-  Popover as SearchPopover,
-  PopoverContent as SearchPopoverContent,
-  PopoverTrigger as SearchPopoverTrigger,
-} from "@/components/ui/popover";
 import type { AccountMeUI } from "@/core/types/account";
 import {
   resolveFiles,
   type FileResolveConfig,
 } from "@/core/utils/fileResolver.util";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ContentRealtimeResponse } from "@/core/types/search";
+import type {
+  ContentRealtimeResponse,
+  ContentRealtimeResponseUI,
+} from "@/core/types/search";
 import {
   useGetAutocompleteWordRealTimeQuery,
   useGetPodcastContentOnKeywordRealTimeQuery,
 } from "@/core/services/search/search.service";
+import { Input } from "@/components/ui/input";
+
+const mocksuggesstionContents: ContentRealtimeResponse[] = [
+  // 1 — Episode
+  {
+    Episode: {
+      Id: "ep1",
+      Description: "An exciting episode about technology.",
+      Name: "The Future of Tech",
+      IsReleased: true,
+      ReleaseDate: "2023-10-01T10:00:00Z",
+      MainImageFileKey:
+        "https://i.pinimg.com/736x/6d/fc/98/6dfc98d4b99f8a5cd34f39a3ade230a5.jpg",
+    },
+    Show: null,
+  },
+
+  // 2 — Show
+  {
+    Show: {
+      Id: "show1",
+      Description: "A podcast about daily news and events.",
+      Name: "Daily News Roundup",
+      MainImageFileKey:
+        "https://i.pinimg.com/736x/12/45/98/124598c3ef4f1b3af3120048d964eab0.jpg",
+      IsReleased: true,
+      ReleaseDate: "2023-09-10T08:00:00Z",
+    },
+    Episode: null,
+  },
+
+  // 3 — Episode
+  {
+    Episode: {
+      Id: "ep2",
+      Description: "Exploring the mysteries of the ocean.",
+      Name: "Into The Deep Sea",
+      IsReleased: true,
+      ReleaseDate: "2023-07-18T09:30:00Z",
+      MainImageFileKey:
+        "https://i.pinimg.com/736x/96/cc/f0/96ccf014f1afc8b6d7c35f3e3c0fa0b3.jpg",
+    },
+    Show: null,
+  },
+
+  // 4 — Show
+  {
+    Show: {
+      Id: "show2",
+      Description: "Stories behind the most iconic movies ever made.",
+      Name: "Cinema Legends",
+      MainImageFileKey:
+        "https://i.pinimg.com/736x/46/84/3b/46843b9f2bb286a7a3cd8be6b23607b5.jpg",
+      IsReleased: true,
+      ReleaseDate: "2022-05-12T00:00:00Z",
+    },
+    Episode: null,
+  },
+
+  // 5 — Episode
+  {
+    Episode: {
+      Id: "ep3",
+      Description: "A deep dive into how AI is shaping the world.",
+      Name: "AI and Society",
+      IsReleased: true,
+      ReleaseDate: "2024-01-20T14:00:00Z",
+      MainImageFileKey:
+        "https://i.pinimg.com/736x/aa/07/2d/aa072d662735bb21f1ed4d610d112cf0.jpg",
+    },
+    Show: null,
+  },
+
+  // 6 — Show
+  {
+    Show: {
+      Id: "show3",
+      Description: "A lifestyle podcast covering health and wellness.",
+      Name: "Mind & Body Weekly",
+      MainImageFileKey:
+        "https://i.pinimg.com/736x/19/76/6c/19766c7b8ad0df7f42e852ccfa324f25.jpg",
+      IsReleased: true,
+      ReleaseDate: "2023-02-14T07:00:00Z",
+    },
+    Episode: null,
+  },
+
+  // 7 — Episode
+  {
+    Episode: {
+      Id: "ep4",
+      Description: "Tips to improve productivity every day.",
+      Name: "Productivity Hacks 101",
+      IsReleased: true,
+      ReleaseDate: "2023-04-22T13:15:00Z",
+      MainImageFileKey:
+        "https://i.pinimg.com/736x/72/2f/04/722f04dd1d34a8fdaa88840935fc8cda.jpg",
+    },
+    Show: null,
+  },
+
+  // 8 — Show
+  {
+    Show: {
+      Id: "show4",
+      Description: "True crime stories that shocked the world.",
+      Name: "Crime Files",
+      MainImageFileKey:
+        "https://i.pinimg.com/736x/37/c3/1b/37c31b3fe35eede81dd3538f6c9c264e.jpg",
+      IsReleased: true,
+      ReleaseDate: "2021-12-01T00:00:00Z",
+    },
+    Episode: null,
+  },
+];
+
+const mockAutocompleteKeywords: string[] = [
+  "Truyện Ma",
+  "Truyện Ma Kinh Dị",
+  "Truyện Ma ông út đánh ma dú dài",
+];
 
 const navItems = [
   {
@@ -310,15 +433,31 @@ const MediaPlayerSidebar = () => {
     console.log("Suggestion Keywords Data:", suggestionKeywordData);
     if (suggestionKeywordData) {
       setSuggesstionAutocompleteKeywords(suggestionKeywordData);
+      // Push thêm mockdata vào
+      // setSuggesstionAutocompleteKeywords([
+      //   ...suggestionKeywordData,
+      //   ...mockAutocompleteKeywords,
+      // ]);
     } else {
       setSuggesstionAutocompleteKeywords([]);
+      // Push thêm mockdata vào
+      // setSuggesstionAutocompleteKeywords([...mockAutocompleteKeywords]);
     }
     if (suggestionContentData) {
       setSuggesstionContents(suggestionContentData.SearchItemList);
+      // Push thêm mockdata vào
+      setSuggesstionContents([
+        ...suggestionContentData.SearchItemList,
+        ...mocksuggesstionContents,
+      ]);
     } else {
       setSuggesstionContents([]);
+      // Push thêm mockdata vào
+      setSuggesstionContents([...mocksuggesstionContents]);
     }
   }, [keyword, suggestionKeywordData, suggestionContentData]);
+
+  // FUNCTIONS
 
   return (
     <div
@@ -330,6 +469,7 @@ const MediaPlayerSidebar = () => {
         md:w-[290px] md:rounded-3xl md:p-5
         h-full
         md:h-[734px]
+        z-[9999]
       "
     >
       {/* Mystic Tales Logo */}
@@ -418,17 +558,36 @@ const MediaPlayerSidebar = () => {
       </div>
 
       {/* Search Components */}
-      <div className="w-full p-2">
-        <SearchPopover
-          open={showSearchSuggestion && keyword.trim().length > 0}
-          onOpenChange={setShowSearchSuggestion}
-        >
-          <SearchPopoverTrigger asChild>
-            <input
+      <div className="w-full flex flex-col">
+        <p className="hidden md:block text-[12px] font-bold text-[#d9d9d9] uppercase tracking-wider px-2">
+          Search
+        </p>
+        <div className="w-full p-2 relative">
+          <div className="relative w-full">
+            <Input
               type="text"
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onFocus={() => setShowSearchSuggestion(true)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setKeyword(value);
+
+                // gõ chữ vào: nếu có keyword => mở, nếu xóa hết => đóng
+                if (value.trim().length > 0) {
+                  setShowSearchSuggestion(true);
+                } else {
+                  setShowSearchSuggestion(false);
+                }
+              }}
+              onFocus={() => {
+                // chỉ mở khi có keyword
+                if (keyword.trim().length > 0) {
+                  setShowSearchSuggestion(true);
+                }
+              }}
+              onBlur={() => {
+                // Chỉ đóng nếu click ra ngoài, không phải vào suggestion
+                setTimeout(() => setShowSearchSuggestion(false), 200);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && keyword.trim().length > 0) {
                   navigate(
@@ -439,38 +598,80 @@ const MediaPlayerSidebar = () => {
                   setShowSearchSuggestion(false);
                 }
               }}
-              placeholder="Search Anything Here"
-              className="w-full px-3 py-2 rounded-lg bg-white/10 text-white placeholder:text-gray-400 border border-white/20 focus:outline-none focus:border-mystic-green"
+              placeholder="Find Your Contents Here..."
+              className="
+                w-full
+                pl-0
+                bg-transparent
+                border-0
+                border-b
+                rounded-none
+                border-white/30
+                focus-visible:ring-0
+                focus-visible:border-white
+                focus-visible:border-b-2
+                text-white
+                placeholder:text-white/30
+                pr-12
+              "
             />
-          </SearchPopoverTrigger>
-          <SearchPopoverContent
-            className="w-[274px] p-0 bg-black border-0 shadow-none"
-            align="start"
-            sideOffset={8}
-          >
-            <SearchSuggesstion
-              keywords={suggesstionAutocompleteKeywords}
-              contents={suggesstionContents}
-              isLoading={
-                isSuggestionKeywordLoading || isSuggestionContentLoading
-              }
-              onKeywordClick={(kw) => {
-                navigate(
-                  `/media-player/search?keyword=${encodeURIComponent(kw)}`
-                );
-                setShowSearchSuggestion(false);
-              }}
-              onContentClick={(content) => {
-                if (content.Show) {
-                  navigate(`/media-player/show/${content.Show.Id}`);
-                } else if (content.Episode) {
-                  navigate(`/media-player/episode/${content.Episode.Id}`);
+
+            <IoIosSearch
+              size={20}
+              onClick={() => {
+                if (keyword.trim()) {
+                  navigate(
+                    `/media-player/search?keyword=${encodeURIComponent(
+                      keyword
+                    )}`
+                  );
+                  setShowSearchSuggestion(false);
                 }
-                setShowSearchSuggestion(false);
               }}
+              className="
+                absolute right-3 top-1/2 -translate-y-1/2
+                cursor-pointer
+                text-white/40
+                hover:text-white
+                transition
+              "
             />
-          </SearchPopoverContent>
-        </SearchPopover>
+          </div>
+
+          {/* Custom Dropdown - không dùng Shadcn Popover */}
+          {showSearchSuggestion && keyword.trim().length > 0 && (
+            <div
+              className="absolute w-[300px] top-full left-0 mt-2 z-[99999]"
+              onMouseDown={(e) => {
+                // Ngăn blur event khi click vào suggestion
+                e.preventDefault();
+              }}
+            >
+              <SearchSuggesstion
+                keywordOriginal={keyword}
+                keywords={suggesstionAutocompleteKeywords}
+                contents={suggesstionContents}
+                isLoading={
+                  isSuggestionKeywordLoading || isSuggestionContentLoading
+                }
+                onKeywordClick={(kw) => {
+                  navigate(
+                    `/media-player/search?keyword=${encodeURIComponent(kw)}`
+                  );
+                  setShowSearchSuggestion(false);
+                }}
+                onContentClick={(content) => {
+                  if (content.Show) {
+                    navigate(`/media-player/show/${content.Show.Id}`);
+                  } else if (content.Episode) {
+                    navigate(`/media-player/episode/${content.Episode.Id}`);
+                  }
+                  setShowSearchSuggestion(false);
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Navigation Items */}

@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 
 import * as React from "react";
@@ -20,6 +19,8 @@ const buttonVariants = cva(
           "text-secondary hover:text-secondary-foreground !bg-muted [--liquid-button-color:var(--secondary)]",
         colored:
           "text-white border hover:border-none hover:text-white bg-gradient-to-r from-[#1D976C] to-[#93F9B9] [--liquid-button-color:rgba(147,249,185,0.8)]",
+        minimal:
+          "text-[#aee339] font-bold rounded-full border border-2 border-[#AEE339] hover:border-none hover:text-white bg-gradient-to-r from-[#1D976C] to-[#93F9B9] [--liquid-button-color:rgba(173,227,57,0.8)]",
       },
       size: {
         default: "h-10 px-4 py-2 has-[>svg]:px-3",

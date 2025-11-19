@@ -3,7 +3,7 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { appApi } from "@/core/api/appApi";
 import authReducer from "./slices/authSlice/authSlice";
 import mediaPlayerReducer from "./slices/mediaPlayerSlice/mediaPlayerSlice";
-
+import errorReducer from "./slices/errorSlice/errorSlice";
 // ⬇️ redux-persist
 import storage from "redux-persist/lib/storage"; // web: localStorage
 import {
@@ -23,6 +23,7 @@ const rootReducer = combineReducers({
   [appApi.reducerPath]: appApi.reducer,
   auth: authReducer,
   player: mediaPlayerReducer,
+  error: errorReducer,
   // ...reducers khác
 });
 

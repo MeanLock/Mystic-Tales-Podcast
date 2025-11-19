@@ -46,3 +46,10 @@ export type SearchResultResponse = {
   EpisodeList: EpisodeFromAPI[];
   ChannelList: ChannelFromAPI[];
 };
+
+export type SearchResultResponseUI = {
+  TopSearchResults: ContentRealtimeResponseUI[];
+  ShowList: ShowFromAPI[];
+  EpisodeList: EpisodeFromAPI[];
+  ChannelList: ChannelFromAPI[];
+};

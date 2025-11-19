@@ -18,7 +18,7 @@ const searchApi = appApi.injectEndpoints({
       { keyword: string }
     >({
       query: ({ keyword }) => ({
-        url: `/api/podcast-service/api/misc/feed/podcast-contents?keyword=${keyword}&limit=10`,
+        url: `/api/podcast-service/api/misc/feed/podcast-contents?keyword=${keyword}&limit=8`,
         method: "GET",
         authMode: "public",
       }),

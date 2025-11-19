@@ -41,6 +41,7 @@ import ShowDetailsPage from "./pages/mediaPlayer/shows/details/index.tsx";
 import CreateBookingPage from "./pages/mediaPlayer/management/booking/create/index.tsx";
 import BecomePodcaster from "./pages/mediaPlayer/management/profile/becomePodcaster/index.tsx";
 import PaymentResultPage from "./pages/mediaPlayer/management/transaction/payment-result/index.tsx";
+import ErrorModal from "./components/ErrorModal.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -119,6 +120,7 @@ createRoot(document.getElementById("root")!).render(
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <PlayerCore />
+          <ErrorModal />
           <BrowserRouter>
             <Routes>
               {/* 1️⃣ NORMAL LAYOUT */}
