@@ -2556,7 +2556,6 @@ flows:
           - PodcastCategoryId
           - PodcastSubCategoryId
           - PodcastShowSubscriptionTypeId
-          - PodcastChannelId
           - HashtagIds
         next-request-data:
           - PodcastShowId
@@ -2570,7 +2569,6 @@ flows:
           - PodcastCategoryId
           - PodcastSubCategoryId
           - PodcastShowSubscriptionTypeId
-          - PodcastChannelId
           - HashtagIds
         response-data:
           - PodcastShowId
@@ -2584,7 +2582,6 @@ flows:
           - PodcastCategoryId
           - PodcastSubCategoryId
           - PodcastShowSubscriptionTypeId
-          - PodcastChannelId
           - HashtagIds
         onSuccess:
           emit: "update-show.success"
