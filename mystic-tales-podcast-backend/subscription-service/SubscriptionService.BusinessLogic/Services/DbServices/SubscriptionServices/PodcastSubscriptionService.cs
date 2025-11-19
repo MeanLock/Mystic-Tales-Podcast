@@ -152,15 +152,15 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         }
                         var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                             .FirstOrDefaultAsync(ps => ps.PodcastShowId == parameter.PodcastShowId && ps.DeletedAt == null);
-                        if (existPodcastSubscription != null)
-                        {
-                            throw new Exception($"A Podcast Subscription already exists for PodcastShow Id: {parameter.PodcastShowId}");
-                        }
-                        var showValidation = await ValidateShow(parameter.PodcastShowId.Value);
-                        if (!showValidation.isValid)
-                        {
-                            throw new Exception(showValidation.errorMessage);
-                        }
+                        //if (existPodcastSubscription != null)
+                        //{
+                        //    throw new Exception($"A Podcast Subscription already exists for PodcastShow Id: {parameter.PodcastShowId}");
+                        //}
+                        //var showValidation = await ValidateShow(parameter.PodcastShowId.Value);
+                        //if (!showValidation.isValid)
+                        //{
+                        //    throw new Exception(showValidation.errorMessage);
+                        //}
                     }
                     if (parameter.PodcastChannelId != null)
                     {
@@ -171,15 +171,15 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         }
                         var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                             .FirstOrDefaultAsync(ps => ps.PodcastChannelId == parameter.PodcastChannelId && ps.DeletedAt == null);
-                        if (existPodcastSubscription != null)
-                        {
-                            throw new Exception($"An Active Podcast Subscription already exists for PodcastChannel Id: {parameter.PodcastChannelId}");
-                        }
-                        var channelValidation = await ValidateChannel(parameter.PodcastChannelId.Value);
-                        if (!channelValidation.isValid)
-                        {
-                            throw new Exception(channelValidation.errorMessage);
-                        }
+                        //if (existPodcastSubscription != null)
+                        //{
+                        //    throw new Exception($"An Active Podcast Subscription already exists for PodcastChannel Id: {parameter.PodcastChannelId}");
+                        //}
+                        //var channelValidation = await ValidateChannel(parameter.PodcastChannelId.Value);
+                        //if (!channelValidation.isValid)
+                        //{
+                        //    throw new Exception(channelValidation.errorMessage);
+                        //}
                     }
 
                     //if(show.Count > 0 && show.HasValues)
