@@ -6,6 +6,7 @@ using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagement
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcasterChannelsSubscriptionTerminatePodcasterForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscriptionRegistration;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcastSubscriptionRegistrationChannelShows;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelShowSubscriptionDmcaRemoveShowForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelShowSubscriptionShowDeletionForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelShowSubscriptionUnpublishShowForce;
@@ -267,6 +268,21 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "cancel-podcaster-channels-subscription-terminate-podcaster-force.failed"
+            );
+        }
+        [MessageHandler("cancel-podcast-subscription-registration-channel-shows", SAGA_TOPIC)]
+        public async Task HandleCancelPodcastSubscriptionRegistrationChannelShowsAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CancelPodcastSubscriptionRegistrationChannelShowsParameterDTO>();
+                    await _podcastSubscriptionService.CancelPodcastSubscriptionRegistrationChannelShowsAsync(parameter, command);
+                    _logger.LogInformation("Handled cancel-podcast-subscription-registration-channel-shows command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "cancel-podcast-subscription-registration-channel-shows.failed"
             );
         }
     }
