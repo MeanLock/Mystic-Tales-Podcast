@@ -747,7 +747,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
 
                 var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
-                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.IsVerified == true && a.IsVerified == true,
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.IsVerified == true && a.IsVerified == true && a.PodcasterProfile.IsBuddy == true,
                         a => a.Include(ac => ac.Role)
                                 .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
                                 .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
@@ -908,7 +908,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             try
             {
                 var podcaster = (await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
-                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.AccountId == accountId && a.PodcasterProfile.IsVerified == true && a.IsVerified == true,
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.AccountId == accountId && a.PodcasterProfile.IsVerified == true && a.IsVerified == true && a.PodcasterProfile.IsBuddy == true,
                         a => a.Include(ac => ac.Role)
                                 .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
                                 .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)

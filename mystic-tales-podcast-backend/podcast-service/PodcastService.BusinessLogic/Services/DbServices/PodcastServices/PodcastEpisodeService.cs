@@ -94,6 +94,7 @@ using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
 using PodcastService.BusinessLogic.DTOs.Auth;
 using PodcastService.BusinessLogic.Enums.App;
 using PodcastService.BusinessLogic.DTOs.SystemConfiguration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -2878,7 +2879,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task<PodcastEpisode> GetValidEpisodeListenPermission(Guid podcastEpisodeId, int listenerAccountId)
+        public async Task<PodcastEpisode> GetValidEpisodeListenPermission(Guid podcastEpisodeId)
         {
             var podcastEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(podcastEpisodeId,
                         includeFunc: q => q
@@ -3126,7 +3127,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }
 
 
-                        var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId, listenerAccountId);
+                        var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
                         var podcaster = await _accountCachingService.GetAccountStatusCacheById(validEpisode.PodcastShow.PodcasterId);
                         var playlistFileKey = FilePathHelper.CombinePaths(
                                         _filePathConfig.PODCAST_EPISODE_FILE_PATH,
@@ -3277,7 +3278,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     }
                     else // token == null
                     {
-                        var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId, listenerAccountId);
+                        var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
                         var podcaster = await _accountCachingService.GetAccountStatusCacheById(validEpisode.PodcastShow.PodcasterId);
                         var playlistFileKey = FilePathHelper.CombinePaths(
                                         _filePathConfig.PODCAST_EPISODE_FILE_PATH,
@@ -3361,10 +3362,23 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             }
                             else
                             {
-                                // nếu có gói channel subscription active thì chỉ cần 1 query vào channel subscription , nếu không thì query vào show subscription
-                                PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = channelSubscription != null ?
-                                    await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id) :
-                                    await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
+                                // // nếu có gói channel subscription active thì chỉ cần 1 query vào channel subscription , nếu không thì query vào show subscription
+                                // PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = channelSubscription != null ? 
+                                //     await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id) :
+                                //     await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
+
+                                // kiểm tra việc đăng kí gói subscription của người dùng , người dùng sẽ đăng kí 1 trong 2 level subscription (channel level hoặc show level) nhưng 1 lần chỉ được đăng kí 1 level chứ không được đk cả 2, dù có đăng kí ở level nào thì benefit cũng được áp dụng
+                                // kiểm tra channel subscription != null thì kiểm tra đăng kí , nếu đăng kí bằng null thì kiểm tra show subscription != null thì kiểm tra đăng kí 
+                                PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = null;
+                                if(channelSubscription != null)
+                                {
+                                    listenerSubscriptionRegistration = await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id);
+                                }
+                                
+                                if (showSubscription != null && listenerSubscriptionRegistration == null)
+                                {
+                                    listenerSubscriptionRegistration = await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
+                                }   
 
                                 if (listenerSubscriptionRegistration == null)
                                 {
@@ -5605,7 +5619,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     var episode = latestListenSession.PodcastEpisode;
                     var canListen = await this.CheckListenerCanListenToEpisodeAsync(
                         listenerId: listenerId,
-                        podcastEpisodeId: episode.Id
+                        podcastEpisodeId: episode.Id,
+                        isNonQuotaListeningCheck: false
                     );
 
                     EpisodeListenResponseDTO responseDTO = null!;
@@ -5697,12 +5712,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
 
 
-        public async Task<ListenPermissionResult> CheckListenerCanListenToEpisodeAsync(int listenerId, Guid podcastEpisodeId)
+        public async Task<ListenPermissionResult> CheckListenerCanListenToEpisodeAsync(int listenerId, Guid podcastEpisodeId, bool isNonQuotaListeningCheck)
         {
             try
             {
                 // 1. Validate Episode/Show/Channel status
-                var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId, listenerId);
+                var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
 
                 // 2. Get listener account
                 var account = await GetAccountById(listenerId);
@@ -5727,6 +5742,11 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Reason = null
                     };
                 }
+                // remove NonQuotaListening condition if not checking for it
+                if (isNonQuotaListeningCheck == false && listenPermissionConditions.Contains(PodcastSubscriptionBenefitEnum.NonQuotaListening))
+                {
+                    listenPermissionConditions.Remove(PodcastSubscriptionBenefitEnum.NonQuotaListening);
+                }
 
                 // 5. Check subscription requirements
                 PodcastSubscriptionDTO channelSubscription = null;
@@ -5747,7 +5767,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         MissingConditions = listenPermissionConditions
                     };
                 }
-
+                // [CHỈNH LẠI] sau này sẽ xem th subscription nào != và dựa vào mảng listenerSubscriptionRegistration để xong cho ở level đó không từ đó so sánh contain
+                // ở hàm gọi thì nếu slot còn lại n và không có benefit nonquota thì chỉ giữa lại n item đầu tiên trong mảng đủ điều kiện nghe trả về với n là slot còn lại (nếu ngay từ đầu không có benefit nonquota và slot còn lại là 0 thì trả về order rỗng luôn)
                 // 6. Check listener's subscription registration
                 PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = channelSubscription != null ?
                     await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerId, channelSubscription.Id) :
@@ -5845,7 +5866,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     // }
                     var canListen = await this.CheckListenerCanListenToEpisodeAsync(
                         listenerId: updateEpisodeListenSessionDurationDTO.ListenerId,
-                        podcastEpisodeId: listenSession.PodcastEpisodeId
+                        podcastEpisodeId: listenSession.PodcastEpisodeId,
+                        isNonQuotaListeningCheck: false
                     );
                     if (!canListen.CanListen)
                     {

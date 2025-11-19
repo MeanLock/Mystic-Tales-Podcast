@@ -120,7 +120,7 @@ namespace PodcastService.API.Authorizations.Handlers
                 }
             }
 
-            Console.WriteLine($"Account fetched: Id={account.Id}, RoleId={account.RoleId}, IsVerified={account.IsVerified}, DeactivatedAt={account.DeactivatedAt}");
+            Console.WriteLine($"Account fetched: Id={account.Id}, RoleId={account.RoleId}, IsVerified={account.IsVerified}, DeactivatedAt={account.DeactivatedAt}, HasVerifiedPodcasterProfile={account.HasVerifiedPodcasterProfile}, ViolationLevel={account.ViolationLevel}, ViolationPoint={account.ViolationPoint}");
 
             if (account.RoleId != int.Parse(roleId))
             {

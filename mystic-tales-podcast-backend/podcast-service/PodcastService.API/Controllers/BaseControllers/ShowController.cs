@@ -294,10 +294,10 @@ namespace PodcastService.API.Controllers.BaseControllers
 
         // /api/podcast-service/api/shows
         [HttpGet("")]
-        public async Task<IActionResult> GetShows([FromQuery] int? PodcasterId, [FromQuery] string? SearchKeyword, [FromQuery] int PageNumber = 1, [FromQuery] int PageSize = 10)
+        public async Task<IActionResult> GetShows([FromQuery] int? podcaster_id, [FromQuery] string? SearchKeyword, [FromQuery] int PageNumber = 1, [FromQuery] int PageSize = 10)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var shows = await _podcastShowService.GetShows(account?.RoleId);
+            var shows = await _podcastShowService.GetShows(account?.RoleId, podcaster_id);
 
             return Ok(new
             {

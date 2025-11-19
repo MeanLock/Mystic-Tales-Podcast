@@ -245,13 +245,13 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         #region Sample coding format must be followed
         #endregion
 
-        public async Task<List<ChannelListItemResponseDTO>> GetChannels(int? roleId)
+        public async Task<List<ChannelListItemResponseDTO>> GetChannels(int? roleId, int? podcasterId)
         {
             // tuân thủ cách viết ở trên
             try
             {
                 var query = _podcastChannelGenericRepository.FindAll(
-                    predicate: c => c.DeletedAt == null,
+                    predicate: c => c.DeletedAt == null && (podcasterId == null || c.PodcasterId == podcasterId),
                     includeFunc: q => q
                         .Include(pc => pc.PodcastCategory)
                         .Include(pc => pc.PodcastSubCategory)
