@@ -2556,7 +2556,6 @@ flows:
           - PodcastCategoryId
           - PodcastSubCategoryId
           - PodcastShowSubscriptionTypeId
-          - PodcastChannelId
           - HashtagIds
         next-request-data:
           - PodcastShowId
@@ -2570,7 +2569,6 @@ flows:
           - PodcastCategoryId
           - PodcastSubCategoryId
           - PodcastShowSubscriptionTypeId
-          - PodcastChannelId
           - HashtagIds
         response-data:
           - PodcastShowId
@@ -2584,7 +2582,6 @@ flows:
           - PodcastCategoryId
           - PodcastSubCategoryId
           - PodcastShowSubscriptionTypeId
-          - PodcastChannelId
           - HashtagIds
         onSuccess:
           emit: "update-show.success"
@@ -3422,13 +3419,15 @@ flows:
         parameters:
           - PodcastShowId
           - PodcastChannelId
+          - PodcasterId
         next-request-data:
           - PodcastShowId
           - PodcastChannelId
+          - PodcasterId
         response-data:
           - PodcastShowId
           - PodcastChannelId
-          - UpdatedAt
+          - PodcasterId
         onSuccess:
           emit: "assign-show.success"
           topic: "content-management-domain"
@@ -3450,10 +3449,16 @@ flows:
         description: "Customer hủy đăng ký subscription package cho kênh và các show"
         parameters:
           - PodcastShowId
+          - PodcastChannelId
+          - PodcasterId
         next-request-data:
           - PodcastShowId
+          - PodcastChannelId
+          - PodcasterId
         response-data:
           - PodcastShowId
+          - PodcastChannelId
+          - PodcasterId
         onSuccess:
           emit: "cancel-podcast-subscription-registration-channel-shows.success"
           topic: "subscription-management-domain"

@@ -2314,23 +2314,19 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var responseData = command.LastStepResponseData;
 
                     var show = await GetPodcastShow(parameter.PodcastShowId);
-                    var showPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                    var bothSubscriptions = await _podcastSubscriptionGenericRepository.FindAll()
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                        .Where(ps => ps.PodcastShowId == parameter.PodcastShowId && ps.IsActive && ps.DeletedAt == null)
-                        .FirstOrDefaultAsync();
-
-                    var channelPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
-                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                        .Where(ps => ps.PodcastChannelId == show.PodcastChannelId && ps.IsActive && ps.DeletedAt == null)
-                        .FirstOrDefaultAsync();
-
-                    var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                        .Where(sr => sr.PodcastSubscriptionId == showPodcastSubscription.Id && sr.CancelledAt == null)
+                        .Include(ps => ps.PodcastSubscriptionRegistrations.Where(r => r.CancelledAt == null))
+                        .Where(ps => (ps.PodcastShowId == parameter.PodcastShowId ||
+                                      ps.PodcastChannelId == show.PodcastChannelId) &&
+                                     ps.IsActive && ps.DeletedAt == null)
                         .ToListAsync();
 
-                    var subscriptionRegistrationsChannel = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                        .Where(sr => sr.PodcastSubscriptionId == channelPodcastSubscription.Id && sr.CancelledAt == null)
-                        .ToListAsync();
+                    var showPodcastSubscription = bothSubscriptions.FirstOrDefault(ps => ps.PodcastShowId == parameter.PodcastShowId);
+                    var channelPodcastSubscription = bothSubscriptions.FirstOrDefault(ps => ps.PodcastChannelId == show.PodcastChannelId);
+
+                    var subscriptionRegistrations = showPodcastSubscription?.PodcastSubscriptionRegistrations?.ToList() ?? new List<PodcastSubscriptionRegistration>();
+                    var subscriptionRegistrationsChannel = channelPodcastSubscription?.PodcastSubscriptionRegistrations?.ToList() ?? new List<PodcastSubscriptionRegistration>();
 
                     foreach (var registration in subscriptionRegistrations)
                     {
@@ -2653,7 +2649,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while retrieving Podcast Subscription for PodcastShowId: {podcastShowId}. Error: {ex.Message}");
             }
         }
-        public async Task<PodcastSubscriptionRegistrationDetailResponseDTO>? GetPodcastSubscriptionRegistrationsByPodcastEpisodeIdAsync(Guid podcastEpisodeId, int accountId)
+        public async Task<PodcastSubscriptionRegistrationDetailResponseDTO> GetPodcastSubscriptionRegistrationsByPodcastEpisodeIdAsync(Guid podcastEpisodeId, int accountId)
         {
             try
             {
