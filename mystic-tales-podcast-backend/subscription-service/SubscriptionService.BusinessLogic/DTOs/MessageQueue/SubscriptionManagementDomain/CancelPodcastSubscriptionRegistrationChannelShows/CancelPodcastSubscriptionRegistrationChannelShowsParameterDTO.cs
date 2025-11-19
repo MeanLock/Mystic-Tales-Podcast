@@ -9,5 +9,7 @@ namespace SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManage
     public class CancelPodcastSubscriptionRegistrationChannelShowsParameterDTO
     {
         public Guid PodcastShowId { get; set; }
+        public Guid? PodcastChannelId { get; set; }
+        public int PodcasterId { get; set; }
     }
 }
