@@ -5,6 +5,8 @@ namespace BookingManagementService.Common.AppConfigurations.BusinessSetting.inte
     public interface IBackgroundJobsConfig
     {
         BackgroundJob SampleBackgroundJob { get; }
+        BackgroundJob BookingProducingRequestedResponseTimeoutJob { get; }
+        BackgroundJob BookingTrackPreviewingResponseTimeoutJob { get; }
     }
 
     public class BackgroundJob

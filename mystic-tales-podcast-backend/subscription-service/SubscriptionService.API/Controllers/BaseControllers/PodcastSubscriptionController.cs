@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.API.Filters.ExceptionFilters;
 using SubscriptionService.BusinessLogic.DTOs.Cache;
@@ -395,6 +396,30 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             return Ok(new
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+        [HttpGet("/api/subscription-service/api/podcast-subscriptions/channels/{PodcastChannelId}/active-subscription")]
+        public async Task<IActionResult> GetActivePodcastSubscriptionByPodcastChannelId([FromRoute] Guid PodcastChannelId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account?.Id;
+
+            var podcastSubscription = await _podcastSubscriptionService.GetActivePodcastSubscriptionByPodcastChannelIdAsync(PodcastChannelId, accountId);
+            return Ok(new
+            {
+                PodcastSubscription = podcastSubscription
+            });
+        }
+        [HttpGet("/api/subscription-service/api/podcast-subscriptions/shows/{PodcastShowId}/active-subscription")]
+        public async Task<IActionResult> GetActivePodcastSubscriptionByPodcastShowId([FromRoute] Guid PodcastShowId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account?.Id;
+
+            var podcastSubscription = await _podcastSubscriptionService.GetActivePodcastSubscriptionByPodcastShowIdAsync(PodcastShowId, accountId);
+            return Ok(new
+            {
+                PodcastSubscription = podcastSubscription
             });
         }
     }

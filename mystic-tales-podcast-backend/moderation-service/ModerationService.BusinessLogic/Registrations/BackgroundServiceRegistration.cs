@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Hosting;
 using ModerationService.BusinessLogic.Services.BackgroundServices;
 using ModerationService.BusinessLogic.Services.BackgroundServices.DMCAJobs;
-using ModerationService.BusinessLogic.Services.BackgroundServices.DMCAScheduleServices;
 using ModerationService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
 using ModerationService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
 using ModerationService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
@@ -22,8 +21,6 @@ namespace ModerationService.BusinessLogic.Registrations
             services.AddHostedService<SampleBackgroundJob>();
             services.AddHostedService<DMCANoticeResponseTimeoutJob>();
             services.AddHostedService<CounterNoticeResponseTimeoutJob>();
-
-            services.AddHostedService<HourlyResponseTimeDMCAAccusationCheckingService>();
 
             services.Configure<HostOptions>(options =>
             {
