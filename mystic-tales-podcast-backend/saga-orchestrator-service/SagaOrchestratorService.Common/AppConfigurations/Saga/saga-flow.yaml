@@ -2024,6 +2024,32 @@ flows:
     description: "Handles the deletion of podcast channels."
     save-files: ""
     steps:
+      - name: "keep-channel-shows-channel-deletion-force"
+        topic: "content-management-domain"
+        handle-service: "PodcastService"
+        description: "Keeps all shows of the channel (changes channelId to null)."
+        parameters:
+          - KeptShowIds
+          - PodcastChannelId
+        next-request-data:
+          - PodcastChannelId
+        response-data:
+          - PodcastChannelId
+        onSuccess:
+          emit: "keep-channel-shows-channel-deletion-force.success"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps:
+            - name: "cancel-channel-subscription-channel-deletion-force"
+              topic: "subscription-management-domain"
+              handle-service: "SubscriptionService"
+          nextFlows: []
+        onFailure:
+          emit: "keep-channel-shows-channel-deletion-force.failed"
+          topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
       - name: "cancel-channel-subscription-channel-deletion-force"
         topic: "subscription-management-domain"
         handle-service: "SubscriptionService"
@@ -3406,11 +3432,36 @@ flows:
           emit: "assign-show.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
-          nextSteps: []
+          nextSteps: 
+            - name: "cancel-podcast-subscription-registration-channel-shows"
+              topic: "subscription-management-domain"
+              handle-service: "SubscriptionService"
           nextFlows: []
         onFailure:
           emit: "assign-show.failed"
           topic: "content-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "cancel-podcast-subscription-registration-channel-shows"
+        topic: "subscription-management-domain"
+        handle-service: "SubscriptionService"
+        description: "Customer hủy đăng ký subscription package cho kênh và các show"
+        parameters:
+          - PodcastShowId
+        next-request-data:
+          - PodcastShowId
+        response-data:
+          - PodcastShowId
+        onSuccess:
+          emit: "cancel-podcast-subscription-registration-channel-shows.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "cancel-podcast-subscription-registration-channel-shows.failed"
+          topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -6247,35 +6298,6 @@ flows:
           nextFlows: []
         onFailure:
           emit: "create-account-podcast-subscription-registration.failed"
-          topic: "subscription-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-
-  podcast-subscription-registration-channel-shows-cancellation:
-    topic: "subscription-management-domain"
-    handle-service: "SagaOrchestratorService"
-    description: "Hủy đăng ký gói đăng ký podcast cho các show của kênh"
-    save-file: ""
-    steps:
-      - name: "cancel-podcast-subscription-registration-channel-shows"
-        topic: "subscription-management-domain"
-        handle-service: "SubscriptionService"
-        description: "Customer hủy đăng ký subscription package cho kênh và các show"
-        parameters:
-          - PodcastShowId
-        next-request-data:
-          - PodcastShowId
-        response-data:
-          - PodcastShowId
-        onSuccess:
-          emit: "cancel-podcast-subscription-registration-channel-shows.success"
-          topic: "subscription-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: []
-        onFailure:
-          emit: "cancel-podcast-subscription-registration-channel-shows.failed"
           topic: "subscription-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
