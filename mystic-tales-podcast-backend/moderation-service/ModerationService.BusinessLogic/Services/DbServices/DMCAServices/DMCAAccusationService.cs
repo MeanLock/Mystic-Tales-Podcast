@@ -3198,7 +3198,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         dismissedShowId.Add(show.Id);
 
-
                         var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
                             .Where(da => da.PodcastShowId == show.Id
                             && da.ResolvedAt == null)
@@ -3255,8 +3254,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var newResponseData = command.RequestData;
                     var newRequestData = command.RequestData;
-                    newResponseData["DmcaDismissedEpisodeIds"] = JArray.FromObject(dismissedShowId);
-                    newRequestData["DmcaDismissedEpisodeIds"] = JArray.FromObject(dismissedShowId);
+                    newResponseData["DmcaDismissedShowIds"] = JArray.FromObject(dismissedShowId);
+                    newRequestData["DmcaDismissedShowIds"] = JArray.FromObject(dismissedShowId);
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.DmcaManagementDomain,
