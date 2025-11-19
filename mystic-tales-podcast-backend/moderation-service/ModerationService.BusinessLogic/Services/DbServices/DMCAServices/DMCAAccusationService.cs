@@ -2479,10 +2479,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                             //Punish account
                             var accountPunishRequestData = new JObject
-                        {
-                            { "AccountId", podcasterId },
-                            { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
-                        };
+                            {
+                                { "AccountId", podcasterId },
+                                { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
+                            };
                             var accountPunishMessageName = "user-violation-punishment-flow";
                             var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.ContentManagementDomain,
@@ -2773,65 +2773,68 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var responseData = command.LastStepResponseData;
 
                     List<Guid> dismissedEpisodeIds = new List<Guid>();
-                    foreach (var showId in parameter.DmcaDismissedShowIds)
+                    if (parameter.DmcaDismissedShowIds != null && parameter.DmcaDismissedShowIds.Count > 0)
                     {
-                        var show = await GetPodcastShow(showId);
-                        var podcasterId = show.PodcasterId;
-
-                        var episodeList = await GetPodcastEpisodeByShowId(showId);
-                        var episodeIdList = episodeList.Select(e => e.Id).ToList();
-
-                        foreach (var episodeId in episodeIdList)
+                        foreach (var showId in parameter.DmcaDismissedShowIds)
                         {
+                            var show = await GetPodcastShow(showId);
+                            var podcasterId = show.PodcasterId;
 
-                            var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
-                                .Where(da => da.PodcastEpisodeId == episodeId
-                                && da.ResolvedAt == null)
-                                .ToListAsync();
+                            var episodeList = await GetPodcastEpisodeByShowId(showId);
+                            var episodeIdList = episodeList.Select(e => e.Id).ToList();
 
-                            if (dmcaList.Count != 0)
+                            foreach (var episodeId in episodeIdList)
                             {
-                                dismissedEpisodeIds.Add(episodeId);
 
-                                var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
-                                   .Where(da => da.PodcastEpisodeId == episodeId
-                                   && da.ResolvedAt != null)
-                                   .ToListAsync();
+                                var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
+                                    .Where(da => da.PodcastEpisodeId == episodeId
+                                    && da.ResolvedAt == null)
+                                    .ToListAsync();
 
-                                var reason = DMCAAccusationDismissReasonEnum.ChannelUnpublished;
-                                string description = reason.GetDescription();
-
-                                if (dmcaAccusationExists.Count == 0)
+                                if (dmcaList.Count != 0)
                                 {
-                                    //Punish account
-                                    var accountPunishRequestData = new JObject
+                                    dismissedEpisodeIds.Add(episodeId);
+
+                                    var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
+                                       .Where(da => da.PodcastEpisodeId == episodeId
+                                       && da.ResolvedAt != null)
+                                       .ToListAsync();
+
+                                    var reason = DMCAAccusationDismissReasonEnum.ChannelUnpublished;
+                                    string description = reason.GetDescription();
+
+                                    if (dmcaAccusationExists.Count == 0)
+                                    {
+                                        //Punish account
+                                        var accountPunishRequestData = new JObject
                                     {
                                         { "AccountId", podcasterId },
                                         { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
                                     };
-                                    var accountPunishMessageName = "user-violation-punishment-flow";
-                                    var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                        topic: KafkaTopicEnum.ContentManagementDomain,
-                                        requestData: accountPunishRequestData,
-                                        sagaInstanceId: null,
-                                        messageName: accountPunishMessageName);
-                                    await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
-                                }
+                                        var accountPunishMessageName = "user-violation-punishment-flow";
+                                        var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            requestData: accountPunishRequestData,
+                                            sagaInstanceId: null,
+                                            messageName: accountPunishMessageName);
+                                        await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
+                                    }
 
-                                foreach (var dmca in dmcaList)
-                                {
-                                    var dismissedStatusTracking = new DmcaaccusationStatusTracking
+                                    foreach (var dmca in dmcaList)
                                     {
-                                        DmcaAccusationId = dmca.Id,
-                                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Dismissed,
-                                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                                    };
-                                    await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                                        var dismissedStatusTracking = new DmcaaccusationStatusTracking
+                                        {
+                                            DmcaAccusationId = dmca.Id,
+                                            DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Dismissed,
+                                            CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                                        };
+                                        await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
 
-                                    dmca.DismissReason = description;
-                                    dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
-                                    dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                                    await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
+                                        dmca.DismissReason = description;
+                                        dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                        dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                                        await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
+                                    }
                                 }
                             }
                         }
@@ -3302,64 +3305,67 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var responseData = command.LastStepResponseData;
 
                     List<Guid> dismissedEpisodeIds = new List<Guid>();
-                    foreach (var showId in parameter.DmcaDismissedShowIds)
+                    if (parameter.DmcaDismissedShowIds != null && parameter.DmcaDismissedShowIds.Count > 0)
                     {
-                        var show = await GetPodcastShow(showId);
-                        var podcasterId = show.PodcasterId;
-
-                        var episodeList = await GetPodcastEpisodeByShowId(showId);
-                        var episodeIdList = episodeList.Select(e => e.Id).ToList();
-
-                        foreach (var episodeId in episodeIdList)
+                        foreach (var showId in parameter.DmcaDismissedShowIds)
                         {
-                            var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
-                                .Where(da => da.PodcastEpisodeId == episodeId
-                                && da.ResolvedAt == null)
-                                .ToListAsync();
+                            var show = await GetPodcastShow(showId);
+                            var podcasterId = show.PodcasterId;
 
-                            if (dmcaList.Count != 0)
+                            var episodeList = await GetPodcastEpisodeByShowId(showId);
+                            var episodeIdList = episodeList.Select(e => e.Id).ToList();
+
+                            foreach (var episodeId in episodeIdList)
                             {
-                                dismissedEpisodeIds.Add(episodeId);
+                                var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
+                                    .Where(da => da.PodcastEpisodeId == episodeId
+                                    && da.ResolvedAt == null)
+                                    .ToListAsync();
 
-                                var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
-                               .Where(da => da.PodcastEpisodeId == episodeId
-                               && da.ResolvedAt != null)
-                               .ToListAsync();
-
-                                var reason = DMCAAccusationDismissReasonEnum.ChannelDeleted;
-                                string description = reason.GetDescription();
-
-                                if (dmcaAccusationExists.Count == 0)
+                                if (dmcaList.Count != 0)
                                 {
-                                    //Punish account
-                                    var accountPunishRequestData = new JObject
+                                    dismissedEpisodeIds.Add(episodeId);
+
+                                    var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
+                                   .Where(da => da.PodcastEpisodeId == episodeId
+                                   && da.ResolvedAt != null)
+                                   .ToListAsync();
+
+                                    var reason = DMCAAccusationDismissReasonEnum.ChannelDeleted;
+                                    string description = reason.GetDescription();
+
+                                    if (dmcaAccusationExists.Count == 0)
+                                    {
+                                        //Punish account
+                                        var accountPunishRequestData = new JObject
                                     {
                                         { "AccountId", podcasterId },
                                         { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
                                     };
-                                    var accountPunishMessageName = "user-violation-punishment-flow";
-                                    var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                        topic: KafkaTopicEnum.ContentManagementDomain,
-                                        requestData: accountPunishRequestData,
-                                        sagaInstanceId: null,
-                                        messageName: accountPunishMessageName);
-                                    await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
-                                }
+                                        var accountPunishMessageName = "user-violation-punishment-flow";
+                                        var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            requestData: accountPunishRequestData,
+                                            sagaInstanceId: null,
+                                            messageName: accountPunishMessageName);
+                                        await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
+                                    }
 
-                                foreach (var dmca in dmcaList)
-                                {
-                                    var dismissedStatusTracking = new DmcaaccusationStatusTracking
+                                    foreach (var dmca in dmcaList)
                                     {
-                                        DmcaAccusationId = dmca.Id,
-                                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Dismissed,
-                                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                                    };
-                                    await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+                                        var dismissedStatusTracking = new DmcaaccusationStatusTracking
+                                        {
+                                            DmcaAccusationId = dmca.Id,
+                                            DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Dismissed,
+                                            CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                                        };
+                                        await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
 
-                                    dmca.DismissReason = description;
-                                    dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
-                                    dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                                    await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
+                                        dmca.DismissReason = description;
+                                        dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                        dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                                        await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
+                                    }
                                 }
                             }
                         }
@@ -3520,66 +3526,69 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var responseData = command.LastStepResponseData;
 
                     List<Guid> dismissedEpisodeIds = new List<Guid>();
-                    foreach (var showId in parameter.DmcaDismissedShowIds)
+                    if (parameter.DmcaDismissedShowIds != null && parameter.DmcaDismissedShowIds.Count > 0)
                     {
-                        var show = await GetPodcastShow(showId);
-                        var podcasterId = show.PodcasterId;
-
-                        var episodeList = await GetPodcastEpisodeByShowId(showId);
-                        var episodeIdList = episodeList.Select(e => e.Id).ToList();
-
-                        foreach (var episodeId in episodeIdList)
+                        foreach (var showId in parameter.DmcaDismissedShowIds)
                         {
+                            var show = await GetPodcastShow(showId);
+                            var podcasterId = show.PodcasterId;
 
-                            var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
-                                .Where(da => da.PodcastEpisodeId == episodeId
-                                && da.ResolvedAt == null)
-                                .ToListAsync();
+                            var episodeList = await GetPodcastEpisodeByShowId(showId);
+                            var episodeIdList = episodeList.Select(e => e.Id).ToList();
 
-                            if (dmcaList.Count != 0)
+                            foreach (var episodeId in episodeIdList)
                             {
-                                dismissedEpisodeIds.Add(episodeId);
 
-                                var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
-                                   .Where(da => da.PodcastEpisodeId == episodeId
-                                   && da.ResolvedAt != null)
-                                   .ToListAsync();
+                                var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
+                                    .Where(da => da.PodcastEpisodeId == episodeId
+                                    && da.ResolvedAt == null)
+                                    .ToListAsync();
 
-                                var reason = DMCAAccusationDismissReasonEnum.PodcasterDeactivated;
-                                string description = reason.GetDescription();
-
-                                if (dmcaAccusationExists.Count == 0)
+                                if (dmcaList.Count != 0)
                                 {
-                                    //Punish account
-                                    var accountPunishRequestData = new JObject
+                                    dismissedEpisodeIds.Add(episodeId);
+
+                                    var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
+                                       .Where(da => da.PodcastEpisodeId == episodeId
+                                       && da.ResolvedAt != null)
+                                       .ToListAsync();
+
+                                    var reason = DMCAAccusationDismissReasonEnum.PodcasterDeactivated;
+                                    string description = reason.GetDescription();
+
+                                    if (dmcaAccusationExists.Count == 0)
+                                    {
+                                        //Punish account
+                                        var accountPunishRequestData = new JObject
                                 {
                                     { "AccountId", podcasterId },
                                     { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
                                 };
-                                    var accountPunishMessageName = "user-violation-punishment-flow";
-                                    var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                        topic: KafkaTopicEnum.ContentManagementDomain,
-                                        requestData: accountPunishRequestData,
-                                        sagaInstanceId: null,
-                                        messageName: accountPunishMessageName);
-                                    await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
-                                }
+                                        var accountPunishMessageName = "user-violation-punishment-flow";
+                                        var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            requestData: accountPunishRequestData,
+                                            sagaInstanceId: null,
+                                            messageName: accountPunishMessageName);
+                                        await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
+                                    }
 
-                                foreach (var dmca in dmcaList)
-                                {
-                                    
-                                    var dismissedStatusTracking = new DmcaaccusationStatusTracking
+                                    foreach (var dmca in dmcaList)
                                     {
-                                        DmcaAccusationId = dmca.Id,
-                                        DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Dismissed,
-                                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                                    };
-                                    await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
 
-                                    dmca.DismissReason = description;
-                                    dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
-                                    dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                                    await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
+                                        var dismissedStatusTracking = new DmcaaccusationStatusTracking
+                                        {
+                                            DmcaAccusationId = dmca.Id,
+                                            DmcaAccusationStatusId = (int)DMCAAccusationStatusEnum.Dismissed,
+                                            CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                                        };
+                                        await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(dismissedStatusTracking);
+
+                                        dmca.DismissReason = description;
+                                        dmca.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                        dmca.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                                        await _dmcaAccusationGenericRepository.UpdateAsync(dmca.Id, dmca);
+                                    }
                                 }
                             }
                         }

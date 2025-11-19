@@ -8,6 +8,6 @@ namespace ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDoma
 {
     public class ResolvePodcasterShowsReportNoEffectTerminatePodcasterForceParameterDTO
     {
-        public List<Guid> DmcaDismissedShowIds { get; set; }
+        public List<Guid>? DmcaDismissedShowIds { get; set; }
     }
 }

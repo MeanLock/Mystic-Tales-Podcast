@@ -588,25 +588,28 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    foreach (var showId in parameter.DmcaDismissedShowIds)
+                    if (parameter.DmcaDismissedShowIds != null && parameter.DmcaDismissedShowIds.Count > 0)
                     {
-                        var podcastShowReportReviewSessions = await _podcastShowReportReviewSessionGenericRepository.FindAll()
-                            .Where(psrrs => psrrs.PodcastShowId == showId)
-                            .ToListAsync();
-
-                        foreach (var session in podcastShowReportReviewSessions)
+                        foreach (var showId in parameter.DmcaDismissedShowIds)
                         {
-                            session.IsResolved = true;
-                            await _podcastShowReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+                            var podcastShowReportReviewSessions = await _podcastShowReportReviewSessionGenericRepository.FindAll()
+                                .Where(psrrs => psrrs.PodcastShowId == showId)
+                                .ToListAsync();
 
-                            var podcastShowReportList = await _podcastShowReportGenericRepository.FindAll()
-                            .Where(pbr => pbr.PodcastShowId == session.PodcastShowId
-                            && pbr.ResolvedAt == null)
-                            .ToListAsync();
-                            foreach (var ShowReport in podcastShowReportList)
+                            foreach (var session in podcastShowReportReviewSessions)
                             {
-                                ShowReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
-                                await _podcastShowReportGenericRepository.UpdateAsync(ShowReport.Id, ShowReport);
+                                session.IsResolved = true;
+                                await _podcastShowReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                                var podcastShowReportList = await _podcastShowReportGenericRepository.FindAll()
+                                .Where(pbr => pbr.PodcastShowId == session.PodcastShowId
+                                && pbr.ResolvedAt == null)
+                                .ToListAsync();
+                                foreach (var ShowReport in podcastShowReportList)
+                                {
+                                    ShowReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                    await _podcastShowReportGenericRepository.UpdateAsync(ShowReport.Id, ShowReport);
+                                }
                             }
                         }
                     }
@@ -791,25 +794,28 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var responseData = command.LastStepResponseData;
 
                     var showListIds = parameter.DmcaDismissedShowIds;
-                    foreach (var showId in showListIds)
+                    if (showListIds != null && showListIds.Count > 0)
                     {
-                        var podcastShowReportReviewSessions = await _podcastShowReportReviewSessionGenericRepository.FindAll()
-                            .Where(psrrs => psrrs.PodcastShowId == showId)
-                            .ToListAsync();
-
-                        foreach (var session in podcastShowReportReviewSessions)
+                        foreach (var showId in showListIds)
                         {
-                            session.IsResolved = true;
-                            await _podcastShowReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+                            var podcastShowReportReviewSessions = await _podcastShowReportReviewSessionGenericRepository.FindAll()
+                                .Where(psrrs => psrrs.PodcastShowId == showId)
+                                .ToListAsync();
 
-                            var podcastShowReportList = await _podcastShowReportGenericRepository.FindAll()
-                            .Where(pbr => pbr.PodcastShowId == session.PodcastShowId
-                            && pbr.ResolvedAt == null)
-                            .ToListAsync();
-                            foreach (var ShowReport in podcastShowReportList)
+                            foreach (var session in podcastShowReportReviewSessions)
                             {
-                                ShowReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
-                                await _podcastShowReportGenericRepository.UpdateAsync(ShowReport.Id, ShowReport);
+                                session.IsResolved = true;
+                                await _podcastShowReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                                var podcastShowReportList = await _podcastShowReportGenericRepository.FindAll()
+                                .Where(pbr => pbr.PodcastShowId == session.PodcastShowId
+                                && pbr.ResolvedAt == null)
+                                .ToListAsync();
+                                foreach (var ShowReport in podcastShowReportList)
+                                {
+                                    ShowReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                    await _podcastShowReportGenericRepository.UpdateAsync(ShowReport.Id, ShowReport);
+                                }
                             }
                         }
                     }
