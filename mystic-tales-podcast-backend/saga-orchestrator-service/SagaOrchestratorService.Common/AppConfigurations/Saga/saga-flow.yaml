@@ -3412,7 +3412,7 @@ flows:
     description: "Gán chương trình vào kênh"
     save-file: ""
     steps:
-      - name: "assign-show"
+      - name: "assign-show-channel"
         topic: "content-management-domain"
         handle-service: "PodcastService"
         description: "Gán show vào channel"
@@ -3429,7 +3429,7 @@ flows:
           - PodcastChannelId
           - PodcasterId
         onSuccess:
-          emit: "assign-show.success"
+          emit: "assign-show-channel.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
@@ -3438,7 +3438,7 @@ flows:
               handle-service: "SubscriptionService"
           nextFlows: []
         onFailure:
-          emit: "assign-show.failed"
+          emit: "assign-show-channel.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
