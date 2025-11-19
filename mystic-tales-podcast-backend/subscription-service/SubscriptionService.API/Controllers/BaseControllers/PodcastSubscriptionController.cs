@@ -398,7 +398,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
-        [HttpGet("/api/subscription-service/api/podcast-subscriptions/channels/{PodcastChannelId}/active-subscription")]
+        [HttpGet("channels/{PodcastChannelId}/active-subscription")]
         public async Task<IActionResult> GetActivePodcastSubscriptionByPodcastChannelId([FromRoute] Guid PodcastChannelId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -410,7 +410,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 PodcastSubscription = podcastSubscription
             });
         }
-        [HttpGet("/api/subscription-service/api/podcast-subscriptions/shows/{PodcastShowId}/active-subscription")]
+        [HttpGet("shows/{PodcastShowId}/active-subscription")]
         public async Task<IActionResult> GetActivePodcastSubscriptionByPodcastShowId([FromRoute] Guid PodcastShowId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -420,6 +420,19 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             return Ok(new
             {
                 PodcastSubscription = podcastSubscription
+            });
+        }
+        [HttpGet("podcast-subscriptions-registrations/episodes/{PodcastEpisodeId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionRegistrationsByPodcastEpisodeId([FromRoute] Guid PodcastEpisodeId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var podcastSubscriptionRegistration = await _podcastSubscriptionService.GetPodcastSubscriptionRegistrationsByPodcastEpisodeIdAsync(PodcastEpisodeId, accountId);
+            return Ok(new
+            {
+                PodcastSubscriptionRegistration = podcastSubscriptionRegistration
             });
         }
     }

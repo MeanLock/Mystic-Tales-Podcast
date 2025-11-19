@@ -2467,100 +2467,18 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         }
         public async Task<PodcastSubscriptionDetailResponseDTO> GetActivePodcastSubscriptionByPodcastChannelIdAsync(Guid podcastChannelId, int? accountId)
         {
-            var result = await _podcastSubscriptionGenericRepository.FindAll(
-                includeFunc: ps => ps
-                    .Include(sct => sct.PodcastSubscriptionCycleTypePrices)
-                    .ThenInclude(sct => sct.SubscriptionCycleType)
-                    .Include(bm => bm.PodcastSubscriptionBenefitMappings)
-                    .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
-                    .Include(sr => sr.PodcastSubscriptionRegistrations)
-                    .ThenInclude(sr => sr.SubscriptionCycleType)
-                )
-                .Where(ps => ps.PodcastChannelId == podcastChannelId && ps.IsActive && ps.DeletedAt == null)
-                .Select(ps => new PodcastSubscriptionDetailResponseDTO
-                {
-                    Id = ps.Id,
-                    Name = ps.Name,
-                    Description = ps.Description,
-                    PodcastShowId = ps.PodcastShowId,
-                    PodcastChannelId = ps.PodcastChannelId,
-                    IsActive = ps.DeletedAt == null,
-                    CurrentVersion = ps.CurrentVersion,
-                    DeletedAt = ps.DeletedAt,
-                    CreatedAt = ps.CreatedAt,
-                    UpdatedAt = ps.UpdatedAt,
-                    PodcastSubscriptionCycleTypePriceList = ps.PodcastSubscriptionCycleTypePrices
-                        .Where(ctp => ctp.Version == ps.CurrentVersion)
-                        .Select(ctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
-                        {
-                            PodcastSubscriptionId = ctp.PodcastSubscriptionId,
-                            SubscriptionCycleType = ctp.SubscriptionCycleType == null
-                            ? null
-                            : new SubscriptionCycleTypeDTO
-                            {
-                                Id = ctp.SubscriptionCycleType.Id,
-                                Name = ctp.SubscriptionCycleType.Name
-                            },
-                            Version = ctp.Version,
-                            Price = ctp.Price,
-                            CreatedAt = ctp.CreatedAt,
-                            UpdatedAt = ctp.UpdatedAt
-                        }).ToList(),
-                    PodcastSubscriptionBenefitMappingList = ps.PodcastSubscriptionBenefitMappings
-                        .Where(bm => bm.Version == ps.CurrentVersion)
-                        .Select(bm => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionBenefitMappingListItemResponseDTO
-                        {
-                            PodcastSubscriptionId = bm.PodcastSubscriptionId,
-                            PodcastSubscriptionBenefit = bm.PodcastSubscriptionBenefit == null
-                            ? null
-                            : new PodcastSubscriptionBenefitDTO
-                            {
-                                Id = bm.PodcastSubscriptionBenefit.Id,
-                                Name = bm.PodcastSubscriptionBenefit.Name
-                            },
-                            Version = bm.Version,
-                            CreatedAt = bm.CreatedAt,
-                            UpdatedAt = bm.UpdatedAt
-                        }).ToList(),
-                    PodcastSubscriptionRegistrationList = null
-                })
-                .FirstOrDefaultAsync();
-            if (accountId != null)
+            try
             {
-                var temp = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                    .Where(psr => psr.AccountId == accountId && psr.CancelledAt == null && psr.PodcastSubscriptionId == result.Id)
-                    .FirstOrDefaultAsync();
-                if(temp != null)
-                    return null;
-            }
-            return result;
-        }
-        public async Task<PodcastSubscriptionDetailResponseDTO> GetActivePodcastSubscriptionByPodcastShowIdAsync(Guid podcastShowId, int? accountId)
-        {
-            var show = await GetPodcastShow(podcastShowId);
-            var temp = await _podcastSubscriptionGenericRepository.FindAll()
-                .Where(ps => ps.PodcastChannelId == show.PodcastChannelId && ps.IsActive && ps.DeletedAt == null)
-                .FirstOrDefaultAsync();
-
-            var query = _podcastSubscriptionGenericRepository.FindAll(
-                includeFunc: ps => ps
-                    .Include(sct => sct.PodcastSubscriptionCycleTypePrices)
-                    .ThenInclude(sct => sct.SubscriptionCycleType)
-                    .Include(bm => bm.PodcastSubscriptionBenefitMappings)
-                    .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
-                    .Include(sr => sr.PodcastSubscriptionRegistrations)
-                    .ThenInclude(sr => sr.SubscriptionCycleType)
-                );
-
-            if (temp != null)
-            {
-                query = query.Where(ps => ps.PodcastChannelId == show.PodcastChannelId);
-            }
-            else
-            {
-                query = query.Where(ps => ps.PodcastShowId == podcastShowId);
-            }
-            var result = await query
+                var result = await _podcastSubscriptionGenericRepository.FindAll(
+                    includeFunc: ps => ps
+                        .Include(sct => sct.PodcastSubscriptionCycleTypePrices)
+                        .ThenInclude(sct => sct.SubscriptionCycleType)
+                        .Include(bm => bm.PodcastSubscriptionBenefitMappings)
+                        .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                        .Include(sr => sr.PodcastSubscriptionRegistrations)
+                        .ThenInclude(sr => sr.SubscriptionCycleType)
+                    )
+                    .Where(ps => ps.PodcastChannelId == podcastChannelId && ps.IsActive && ps.DeletedAt == null)
                     .Select(ps => new PodcastSubscriptionDetailResponseDTO
                     {
                         Id = ps.Id,
@@ -2609,19 +2527,207 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         PodcastSubscriptionRegistrationList = null
                     })
                     .FirstOrDefaultAsync();
-
-            if(accountId != null)
-            {
-                var temp2 = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                    .Where(psr => psr.AccountId == accountId && psr.CancelledAt == null && psr.PodcastSubscriptionId == result.Id)
-                    .FirstOrDefaultAsync();
-                if(temp2 != null)
-                    return null;
+                if (accountId != null)
+                {
+                    var temp = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        .Where(psr => psr.AccountId == accountId && psr.CancelledAt == null && psr.PodcastSubscriptionId == result.Id)
+                        .FirstOrDefaultAsync();
+                    if (temp != null)
+                        return null;
+                }
+                return result;
             }
-
-            return result;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetActivePodcastSubscriptionByPodcastChannelIdAsync for PodcastChannelId: {PodcastChannelId}", podcastChannelId);
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription for PodcastChannelId: {podcastChannelId}. Error: {ex.Message}");
+            }
         }
+        public async Task<PodcastSubscriptionDetailResponseDTO> GetActivePodcastSubscriptionByPodcastShowIdAsync(Guid podcastShowId, int? accountId)
+        {
+            try
+            {
+                var show = await GetPodcastShow(podcastShowId);
+                var temp = await _podcastSubscriptionGenericRepository.FindAll()
+                    .Where(ps => ps.PodcastChannelId == show.PodcastChannelId && ps.IsActive && ps.DeletedAt == null)
+                    .FirstOrDefaultAsync();
 
+                var query = _podcastSubscriptionGenericRepository.FindAll(
+                    includeFunc: ps => ps
+                        .Include(sct => sct.PodcastSubscriptionCycleTypePrices)
+                        .ThenInclude(sct => sct.SubscriptionCycleType)
+                        .Include(bm => bm.PodcastSubscriptionBenefitMappings)
+                        .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                        .Include(sr => sr.PodcastSubscriptionRegistrations)
+                        .ThenInclude(sr => sr.SubscriptionCycleType)
+                    );
+
+                if (temp != null)
+                {
+                    query = query.Where(ps => ps.PodcastChannelId == show.PodcastChannelId);
+                }
+                else
+                {
+                    query = query.Where(ps => ps.PodcastShowId == podcastShowId);
+                }
+                var result = await query
+                        .Select(ps => new PodcastSubscriptionDetailResponseDTO
+                        {
+                            Id = ps.Id,
+                            Name = ps.Name,
+                            Description = ps.Description,
+                            PodcastShowId = ps.PodcastShowId,
+                            PodcastChannelId = ps.PodcastChannelId,
+                            IsActive = ps.DeletedAt == null,
+                            CurrentVersion = ps.CurrentVersion,
+                            DeletedAt = ps.DeletedAt,
+                            CreatedAt = ps.CreatedAt,
+                            UpdatedAt = ps.UpdatedAt,
+                            PodcastSubscriptionCycleTypePriceList = ps.PodcastSubscriptionCycleTypePrices
+                                .Where(ctp => ctp.Version == ps.CurrentVersion)
+                                .Select(ctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
+                                {
+                                    PodcastSubscriptionId = ctp.PodcastSubscriptionId,
+                                    SubscriptionCycleType = ctp.SubscriptionCycleType == null
+                                    ? null
+                                    : new SubscriptionCycleTypeDTO
+                                    {
+                                        Id = ctp.SubscriptionCycleType.Id,
+                                        Name = ctp.SubscriptionCycleType.Name
+                                    },
+                                    Version = ctp.Version,
+                                    Price = ctp.Price,
+                                    CreatedAt = ctp.CreatedAt,
+                                    UpdatedAt = ctp.UpdatedAt
+                                }).ToList(),
+                            PodcastSubscriptionBenefitMappingList = ps.PodcastSubscriptionBenefitMappings
+                                .Where(bm => bm.Version == ps.CurrentVersion)
+                                .Select(bm => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionBenefitMappingListItemResponseDTO
+                                {
+                                    PodcastSubscriptionId = bm.PodcastSubscriptionId,
+                                    PodcastSubscriptionBenefit = bm.PodcastSubscriptionBenefit == null
+                                    ? null
+                                    : new PodcastSubscriptionBenefitDTO
+                                    {
+                                        Id = bm.PodcastSubscriptionBenefit.Id,
+                                        Name = bm.PodcastSubscriptionBenefit.Name
+                                    },
+                                    Version = bm.Version,
+                                    CreatedAt = bm.CreatedAt,
+                                    UpdatedAt = bm.UpdatedAt
+                                }).ToList(),
+                            PodcastSubscriptionRegistrationList = null
+                        })
+                        .FirstOrDefaultAsync();
+
+                if (accountId != null)
+                {
+                    var temp2 = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        .Where(psr => psr.AccountId == accountId && psr.CancelledAt == null && psr.PodcastSubscriptionId == result.Id)
+                        .FirstOrDefaultAsync();
+                    if (temp2 != null)
+                        return null;
+                }
+
+                return result;
+            } catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetActivePodcastSubscriptionByPodcastShowIdAsync for PodcastShowId: {PodcastShowId}", podcastShowId);
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription for PodcastShowId: {podcastShowId}. Error: {ex.Message}");
+            }
+        }
+        public async Task<PodcastSubscriptionRegistrationDetailResponseDTO>? GetPodcastSubscriptionRegistrationsByPodcastEpisodeIdAsync(Guid podcastEpisodeId, int accountId)
+        {
+            try
+            {
+                PodcastSubscriptionRegistrationDetailResponseDTO? result = null;
+                var episode = await GetPodcastEpisode(podcastEpisodeId);
+                if (episode == null)
+                {
+                    throw new HttpRequestException("Podcast episode not found");
+                }
+                if (episode.PodcastShowId != null)
+                {
+                    result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        .Include(psr => psr.PodcastSubscription)
+                        .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                        .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                        .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastShowId == episode.PodcastShowId && psr.CancelledAt != null)
+                        .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
+                        {
+                            Id = psr.Id,
+                            AccountId = psr.AccountId ?? 0,
+                            PodcastSubscriptionId = psr.PodcastSubscriptionId,
+                            SubscriptionCycleType = psr.SubscriptionCycleType == null
+                            ? null
+                            : new SubscriptionCycleTypeDTO
+                            {
+                                Id = psr.SubscriptionCycleType.Id,
+                                Name = psr.SubscriptionCycleType.Name
+                            },
+                            CurrentVersion = psr.CurrentVersion,
+                            IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
+                            IsIncomeTaken = psr.IsIncomeTaken,
+                            LastPaidAt = psr.LastPaidAt,
+                            CancelledAt = psr.CancelledAt,
+                            CreatedAt = psr.CreatedAt,
+                            UpdatedAt = psr.UpdatedAt,
+                            PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                                .Select(bm => new PodcastSubscriptionBenefitDTO
+                                {
+                                    Id = bm.PodcastSubscriptionBenefit.Id,
+                                    Name = bm.PodcastSubscriptionBenefit.Name
+                                }).ToList()
+                        })
+                        .FirstAsync();
+                    if(result == null)
+                    {
+                        var show = await GetPodcastShow(episode.PodcastShowId);
+                        if (show.PodcastChannelId != null)
+                        {
+                            result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                                .Include(psr => psr.PodcastSubscription)
+                                .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                                .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                                .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastChannelId == show.PodcastChannelId && psr.CancelledAt != null)
+                                .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
+                                {
+                                    Id = psr.Id,
+                                    AccountId = psr.AccountId ?? 0,
+                                    PodcastSubscriptionId = psr.PodcastSubscriptionId,
+                                    SubscriptionCycleType = psr.SubscriptionCycleType == null
+                                    ? null
+                                    : new SubscriptionCycleTypeDTO
+                                    {
+                                        Id = psr.SubscriptionCycleType.Id,
+                                        Name = psr.SubscriptionCycleType.Name
+                                    },
+                                    CurrentVersion = psr.CurrentVersion,
+                                    IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
+                                    IsIncomeTaken = psr.IsIncomeTaken,
+                                    LastPaidAt = psr.LastPaidAt,
+                                    CancelledAt = psr.CancelledAt,
+                                    CreatedAt = psr.CreatedAt,
+                                    UpdatedAt = psr.UpdatedAt,
+                                    PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                                        .Select(bm => new PodcastSubscriptionBenefitDTO
+                                        {
+                                            Id = bm.PodcastSubscriptionBenefit.Id,
+                                            Name = bm.PodcastSubscriptionBenefit.Name
+                                        }).ToList()
+                                })
+                                .FirstAsync();
+                        }
+                    } 
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetPodcastSubscriptionRegistrationsByPodcastEpisodeIdAsync for PodcastEpisodeId: {PodcastEpisodeId}", podcastEpisodeId);
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription for PodcastEpisodeId: {podcastEpisodeId}. Error: {ex.Message}");
+            }
+        }
         public async Task<JObject?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
         {
             var batchRequest = new BatchQueryRequest
