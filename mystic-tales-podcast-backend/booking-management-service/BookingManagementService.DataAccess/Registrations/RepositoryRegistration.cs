@@ -17,6 +17,7 @@ namespace BookingManagementService.DataAccess.Registrations
         }
 
         public static IServiceCollection AddDbRepositories (this IServiceCollection services) {
+            services.AddScoped<IPodcastBuddyBookingToneRepository, PodcastBuddyBookingToneRepository>();
             // services.AddScoped<IAccountRepository, AccountRepository>();
             // services.AddScoped<IAccountOnlineTrackingRepository, AccountOnlineTrackingRepository>();
             // services.AddScoped<ISurveyRepository, SurveyRepository>();

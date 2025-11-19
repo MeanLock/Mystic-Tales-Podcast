@@ -3,8 +3,8 @@ using Microsoft.Extensions.Hosting;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.MajorScheduleServices;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.NonTimeRequiredRequestServices;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
-using BookingManagementService.BusinessLogic.Services.BackgroundServices.BookingScheduleServices;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices;
+using BookingManagementService.BusinessLogic.Services.BackgroundServices.BookingJobs;
 
 namespace BookingManagementService.BusinessLogic.Registrations
 {
@@ -19,8 +19,9 @@ namespace BookingManagementService.BusinessLogic.Registrations
             // services.AddHostedService<HourBaseRequestCancellationService>();
 
             services.AddHostedService<SampleBackgroundJob>();
+            services.AddHostedService<BookingProducingRequestedResponseTimeoutJob>();
+            services.AddHostedService<BookingTrackPreviewingResponseTimeoutJob>();
 
-            services.AddHostedService<HourlyDeadlineBookingCheckingServices>();
 
             services.Configure<HostOptions>(options =>
             {

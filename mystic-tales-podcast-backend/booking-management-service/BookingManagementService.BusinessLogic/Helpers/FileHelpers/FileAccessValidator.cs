@@ -134,7 +134,7 @@ namespace BookingManagementService.BusinessLogic.Helpers.FileHelpers
                 "Episode raw audio (use HLS streaming)"
             ),
             [FileCategoryEnum.BookingTrackAudio] = (
-                $@"^main_files/Bookings/{INT_PATTERN}/{GUID_PATTERN}_track_audio{AUDIO_EXT}",
+                $@"^main_files/Bookings/{INT_PATTERN}/{GUID_PATTERN}/{GUID_PATTERN}/audio{AUDIO_EXT}",
                 FileAccessLevelEnum.RequiresToken,
                 "Booking track audio (use HLS streaming)"
             ),

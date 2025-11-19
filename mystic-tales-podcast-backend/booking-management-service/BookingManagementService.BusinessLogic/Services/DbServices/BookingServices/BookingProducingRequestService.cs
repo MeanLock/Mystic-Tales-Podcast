@@ -1,4 +1,5 @@
 ﻿using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
+using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateProducingRequest;
@@ -110,7 +111,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var requirement = await _bookingRequirementGenericRepository.FindByIdAsync(bp.BookingPodcastTrack.BookingRequirementId);
                     editRequirementList.Add(new BookingEditRequirementListItemResponseDTO
                     {
-                        Id = bp.Id,
+                        Id = bp.BookingPodcastTrack.BookingRequirementId,
                         Name = requirement?.Name,
                         BookingPodcastTrack = new BookingPodcastTrackListItemResponseDTO
                         {
@@ -976,6 +977,20 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     _logger.LogInformation("Booking cancellation validation failed for SagaId: {SagaId}, error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
             }
+        }
+        public async Task<bool> IsAudioFileOwnedByPodcasterOrAssignedStaffAsync(string audioFileKey, AccountStatusCache account)
+        {
+            var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindAll()
+                .Include(bpt => bpt.BookingProducingRequest)
+                .ThenInclude(bpr => bpr.Booking)
+                .Where(bpt => bpt.AudioFileKey == audioFileKey)
+                .FirstOrDefaultAsync();
+            if (bookingPodcastTrack == null)
+            {
+                return false;
+            }
+            var booking = bookingPodcastTrack.BookingProducingRequest.Booking;
+            return booking.PodcastBuddyId == account.Id || booking.AssignedStaffId == account.Id;
         }
         public async Task<bool> ValidateBookingAccountOrPodcasterAsync(int bookingId, int accountId)
         {

@@ -90,7 +90,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
             if (account.RoleId == (int)RoleEnum.Customer || account.RoleId == (int)RoleEnum.Staff)
             {
-                var isOwnedByPodcasterOrAssignedStaff = await _podcastEpisodeService.IsAudioFileOwnedByPodcasterAsync(FileKey, account.Id);
+                var isOwnedByPodcasterOrAssignedStaff = await _bookingProducingRequestService.IsAudioFileOwnedByPodcasterOrAssignedStaffAsync(FileKey, account);
                 if (!isOwnedByPodcasterOrAssignedStaff)
                 {
                     return StatusCode(403, new
@@ -115,48 +115,6 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             return Ok(new
             {
                 BookingProducingRequest = result
-            });
-        }
-
-        [HttpPost("bookings/{BookingId}")]
-        [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> CreateProducingRequest([FromRoute] int BookingId, [FromBody] BookingProducingRequestCreateRequestDTO request)
-        {
-            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            if (account == null)
-            {
-                return Unauthorized("Account information not found.");
-            }
-
-            var accountId = account.Id;
-            //var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
-            //if (!isValid)
-            //{
-            //    return Forbid("You are not authorized to create booking producing request for this booking.");
-            //}
-
-            var requestData = new JObject
-            {
-                { "AccountId", accountId },
-                { "BookingId", BookingId },
-                { "Note", request.BookingProducingRequestInfo.Note },
-                { "Deadline", request.BookingProducingRequestInfo.Deadline.ToString() }, // Convert DateOnly to string
-                { "BookingPodcastTrackIds", JArray.FromObject(request.BookingProducingRequestInfo.BookingPodcastTrackIds) }
-            };
-
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC,
-                requestData: requestData,
-                sagaInstanceId: null,
-                messageName: "booking-producing-request-creation-flow");
-            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-            if (!result)
-            {
-                return StatusCode(500, "Failed to initiate booking producing request creation process.");
-            }
-            return Ok(new
-            {
-                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
 
@@ -347,73 +305,6 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 return StatusCode(500, "Failed to initiate booking podcast track preview update process.");
             }
             return Ok("Booking podcast track details updated successfully.");
-        }
-        [HttpPost("{BookingId}/cancel")]
-        [Authorize(Policy = "Customer.NoViolationAccess")]
-        public async Task<IActionResult> CancelProducingRequest(
-            [FromRoute] int BookingId,
-            [FromBody] BookingCancelRequestRequestDTO request)
-        {
-            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var accountId = account.Id;
-            //var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
-            //if (!isValid)
-            //{
-            //    return Forbid("You are not authorized to cancel producing request for this booking.");
-            //}
-            var requestData = new JObject
-            {
-                { "AccountId", accountId },
-                { "BookingId", BookingId },
-                { "BookingManualCancelledReason", request.BookingCancelInfo.BookingManualCancelledReason }
-            };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC,
-                requestData: requestData,
-                sagaInstanceId: null,
-                messageName: "booking-producing-request-cancellation-flow");
-            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-            if (!result)
-            {
-                return StatusCode(500, "Failed to initiate booking producing request cancellation process.");
-            }
-            return Ok(new
-            {
-                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
-            });
-        }
-        [HttpPut("{BookingId}/cancel/{IsAccepted}")]
-        [Authorize (Policy = "Staff.BasicAccess")]
-        public async Task<IActionResult> ProcessCancelRequest(
-            [FromRoute] int BookingId,
-            [FromRoute] bool IsAccepted,
-            [FromBody] BookingCancelValidationRequestDTO request)
-        {
-            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var accountId = account.Id;
-
-            var requestData = new JObject
-            {
-                { "AccountId", accountId },
-                { "BookingId", BookingId },
-                { "IsAccepted", IsAccepted },
-                { "CustomerBookingCancelDepositRefundRate", request.BookingCancelValidationInfo.CustomerBookingCancelDepositRefundRate },
-                { "PodcastBuddyBookingCancelDepositRefundRate", request.BookingCancelValidationInfo.PodcastBuddyBookingCancelDepositRefundRate }
-            };
-            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                topic: SAGA_TOPIC,
-                requestData: requestData,
-                sagaInstanceId: null,
-                messageName: "booking-cancel-validation-flow");
-            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
-            if (!result)
-            {
-                return StatusCode(500, "Failed to initiate booking producing request cancel validation process.");
-            }
-            return Ok(new
-            {
-                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
-            });
         }
     }
 }

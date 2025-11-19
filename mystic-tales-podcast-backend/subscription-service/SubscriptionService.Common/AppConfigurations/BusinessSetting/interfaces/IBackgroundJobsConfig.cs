@@ -5,6 +5,8 @@ namespace SubscriptionService.Common.AppConfigurations.BusinessSetting.interface
     public interface IBackgroundJobsConfig
     {
         BackgroundJob SampleBackgroundJob { get; }
+        BackgroundJob PodcastSubscriptionIncomeReleaseJob { get; }
+        BackgroundJob PodcastSubscriptionRegistrationRenewalJob { get; }
     }
 
     public class BackgroundJob

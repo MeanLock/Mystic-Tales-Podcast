@@ -1459,169 +1459,169 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 }
             }
         }
-        public async Task PodcastSubscriptionRegistrationRenewalByHourAsync()
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                        .Where(psr => psr.CancelledAt == null
-                            && psr.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Monthly
-                            && psr.LastPaidAt.AddDays(30) < _dateHelper.GetNowByAppTimeZone() ||
-                            psr.CancelledAt == null
-                            && psr.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Annually
-                            && psr.LastPaidAt.AddYears(1) < _dateHelper.GetNowByAppTimeZone())
-                        .ToListAsync();
-                    foreach (var registration in registrationsList)
-                    {
-                        if (registration.IsAcceptNewestVersionSwitch == null)
-                        {
-                            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
-                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                                .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
-                                .FirstOrDefaultAsync();
-                            registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
-                            var renewalRequestData = new JObject
-                            {
-                                { "PodcastSubscriptionRegistrationId", registration.Id },
-                                { "Profit", null },
-                                { "AccountId", registration.AccountId },
-                                { "PodcasterId", null },
-                                { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
-                                    && ptcp.Version == registration.CurrentVersion)
-                                    .Select(ptcp => ptcp.Price)
-                                    .FirstOrDefault() },
-                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
-                            };
-                            var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                requestData: renewalRequestData,
-                                sagaInstanceId: null,
-                                messageName: "podcast-subscription-payment-flow");
-                            await _messagingService.SendSagaMessageAsync(renewalMessage, null);
-                        }
-                        if (registration.IsAcceptNewestVersionSwitch == true)
-                        {
-                            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
-                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                                .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
-                                .FirstOrDefaultAsync();
-                            registration.CurrentVersion = podcastSubscription.CurrentVersion;
-                            registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
-                            var renewalRequestData = new JObject
-                            {
-                                { "PodcastSubscriptionRegistrationId", registration.Id },
-                                { "Profit", null },
-                                { "AccountId", registration.AccountId },
-                                { "PodcasterId", null },
-                                { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
-                                    && ptcp.Version == podcastSubscription.CurrentVersion)
-                                    .Select(ptcp => ptcp.Price)
-                                    .FirstOrDefault() },
-                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
-                            };
-                            var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                requestData: renewalRequestData,
-                                sagaInstanceId: null,
-                                messageName: "podcast-subscription-payment-flow");
-                            await _messagingService.SendSagaMessageAsync(renewalMessage, null);
-                        }
-                        if (registration.IsAcceptNewestVersionSwitch == false)
-                        {
-                            registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
-                        }
-                    }
+        //public async Task PodcastSubscriptionRegistrationRenewalByHourAsync()
+        //{
+        //    using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //    {
+        //        try
+        //        {
+        //            var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+        //                .Where(psr => psr.CancelledAt == null
+        //                    && psr.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Monthly
+        //                    && psr.LastPaidAt.AddDays(30) < _dateHelper.GetNowByAppTimeZone() ||
+        //                    psr.CancelledAt == null
+        //                    && psr.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Annually
+        //                    && psr.LastPaidAt.AddYears(1) < _dateHelper.GetNowByAppTimeZone())
+        //                .ToListAsync();
+        //            foreach (var registration in registrationsList)
+        //            {
+        //                if (registration.IsAcceptNewestVersionSwitch == null)
+        //                {
+        //                    var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+        //                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+        //                        .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
+        //                        .FirstOrDefaultAsync();
+        //                    registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
+        //                    var renewalRequestData = new JObject
+        //                    {
+        //                        { "PodcastSubscriptionRegistrationId", registration.Id },
+        //                        { "Profit", null },
+        //                        { "AccountId", registration.AccountId },
+        //                        { "PodcasterId", null },
+        //                        { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
+        //                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
+        //                            && ptcp.Version == registration.CurrentVersion)
+        //                            .Select(ptcp => ptcp.Price)
+        //                            .FirstOrDefault() },
+        //                        { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
+        //                    };
+        //                    var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+        //                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+        //                        requestData: renewalRequestData,
+        //                        sagaInstanceId: null,
+        //                        messageName: "podcast-subscription-payment-flow");
+        //                    await _messagingService.SendSagaMessageAsync(renewalMessage, null);
+        //                }
+        //                if (registration.IsAcceptNewestVersionSwitch == true)
+        //                {
+        //                    var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+        //                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+        //                        .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
+        //                        .FirstOrDefaultAsync();
+        //                    registration.CurrentVersion = podcastSubscription.CurrentVersion;
+        //                    registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
+        //                    var renewalRequestData = new JObject
+        //                    {
+        //                        { "PodcastSubscriptionRegistrationId", registration.Id },
+        //                        { "Profit", null },
+        //                        { "AccountId", registration.AccountId },
+        //                        { "PodcasterId", null },
+        //                        { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
+        //                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
+        //                            && ptcp.Version == podcastSubscription.CurrentVersion)
+        //                            .Select(ptcp => ptcp.Price)
+        //                            .FirstOrDefault() },
+        //                        { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
+        //                    };
+        //                    var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+        //                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+        //                        requestData: renewalRequestData,
+        //                        sagaInstanceId: null,
+        //                        messageName: "podcast-subscription-payment-flow");
+        //                    await _messagingService.SendSagaMessageAsync(renewalMessage, null);
+        //                }
+        //                if (registration.IsAcceptNewestVersionSwitch == false)
+        //                {
+        //                    registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+        //                }
+        //            }
 
-                    await transaction.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while checking podcast subscription registration renewal");
-                }
-            }
-        }
-        public async Task PodcastSubscriptionIncomeCheckingByHourAsync()
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    var systemConfig = await GetActiveSystemConfigProfile();
-                    var podcastSubscriptionConfig = systemConfig.PodcastSubscriptionConfigs.ToList();
+        //            await transaction.CommitAsync();
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            await transaction.RollbackAsync();
+        //            _logger.LogError(ex, "Error occurred while checking podcast subscription registration renewal");
+        //        }
+        //    }
+        //}
+        //public async Task PodcastSubscriptionIncomeCheckingByHourAsync()
+        //{
+        //    using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //    {
+        //        try
+        //        {
+        //            var systemConfig = await GetActiveSystemConfigProfile();
+        //            var podcastSubscriptionConfig = systemConfig.PodcastSubscriptionConfigs.ToList();
 
-                    var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                        .Where(psr => !psr.IsIncomeTaken
-                            && psr.IsAcceptNewestVersionSwitch == null
-                            && psr.CancelledAt != null
-                            && psr.LastPaidAt.AddDays(30) > _dateHelper.GetNowByAppTimeZone())
-                        .ToListAsync();
+        //            var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+        //                .Where(psr => !psr.IsIncomeTaken
+        //                    && psr.IsAcceptNewestVersionSwitch == null
+        //                    && psr.CancelledAt != null
+        //                    && psr.LastPaidAt.AddDays(30) > _dateHelper.GetNowByAppTimeZone())
+        //                .ToListAsync();
 
-                    foreach (var registration in registrationsList)
-                    {
-                        // Find the config object for the current SubscriptionCycleTypeId
-                        var config = podcastSubscriptionConfig
-                            .FirstOrDefault(psc => psc.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId);
+        //            foreach (var registration in registrationsList)
+        //            {
+        //                // Find the config object for the current SubscriptionCycleTypeId
+        //                var config = podcastSubscriptionConfig
+        //                    .FirstOrDefault(psc => psc.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId);
 
-                        if (config != null)
-                        {
-                            var podcasterId = 0;
-                            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
-                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                                .Where(ps => ps.Id == registration.PodcastSubscriptionId)
-                                .FirstOrDefaultAsync();
-                            if (podcastSubscription.PodcastChannelId != null)
-                            {
-                                var temp = await GetPodcastChannel(podcastSubscription.PodcastChannelId.Value);
-                                podcasterId = temp.PodcasterId;
-                            }
-                            if (podcastSubscription.PodcastShowId != null)
-                            {
-                                var temp = await GetPodcastShow(podcastSubscription.PodcastShowId.Value);
-                                podcasterId = temp.PodcasterId;
-                            }
-                            int incomeTakenDelayDays = config.IncomeTakenDelayDays;
-                            decimal profitRate = (decimal)config.ProfitRate;
-                            var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                        .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
-                                        .Select(psct => psct.Price)
-                                        .FirstOrDefault();
-                            if (registration.LastPaidAt.AddDays(incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
-                            {
-                                var incomeRequestData = new JObject()
-                                {
-                                    { "PodcastSubscriptionRegistrationId", registration.Id },
-                                    { "Profit", originalPrice * profitRate},
-                                    { "AccountId", null },
-                                    { "PodcasterId", podcasterId },
-                                    { "Amount", originalPrice - originalPrice * profitRate },
-                                    { "TransactionTypeId", (int)TransactionTypeEnum.PodcasterSubscriptionIncome }
-                                };
-                                var incomeMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                requestData: incomeRequestData,
-                                sagaInstanceId: null,
-                                messageName: "podcaster-subscription-income-release-flow");
-                                await _messagingService.SendSagaMessageAsync(incomeMessage, null);
-                                registration.IsIncomeTaken = true;
-                                await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
-                            }
-                        }
-                    }
+        //                if (config != null)
+        //                {
+        //                    var podcasterId = 0;
+        //                    var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+        //                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+        //                        .Where(ps => ps.Id == registration.PodcastSubscriptionId)
+        //                        .FirstOrDefaultAsync();
+        //                    if (podcastSubscription.PodcastChannelId != null)
+        //                    {
+        //                        var temp = await GetPodcastChannel(podcastSubscription.PodcastChannelId.Value);
+        //                        podcasterId = temp.PodcasterId;
+        //                    }
+        //                    if (podcastSubscription.PodcastShowId != null)
+        //                    {
+        //                        var temp = await GetPodcastShow(podcastSubscription.PodcastShowId.Value);
+        //                        podcasterId = temp.PodcasterId;
+        //                    }
+        //                    int incomeTakenDelayDays = config.IncomeTakenDelayDays;
+        //                    decimal profitRate = (decimal)config.ProfitRate;
+        //                    var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
+        //                                .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+        //                                .Select(psct => psct.Price)
+        //                                .FirstOrDefault();
+        //                    if (registration.LastPaidAt.AddDays(incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
+        //                    {
+        //                        var incomeRequestData = new JObject()
+        //                        {
+        //                            { "PodcastSubscriptionRegistrationId", registration.Id },
+        //                            { "Profit", originalPrice * profitRate},
+        //                            { "AccountId", null },
+        //                            { "PodcasterId", podcasterId },
+        //                            { "Amount", originalPrice - originalPrice * profitRate },
+        //                            { "TransactionTypeId", (int)TransactionTypeEnum.PodcasterSubscriptionIncome }
+        //                        };
+        //                        var incomeMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+        //                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+        //                        requestData: incomeRequestData,
+        //                        sagaInstanceId: null,
+        //                        messageName: "podcaster-subscription-income-release-flow");
+        //                        await _messagingService.SendSagaMessageAsync(incomeMessage, null);
+        //                        registration.IsIncomeTaken = true;
+        //                        await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+        //                    }
+        //                }
+        //            }
 
-                    await transaction.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while checking podcast subscription income");
-                }
-            }
-        }
+        //            await transaction.CommitAsync();
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            await transaction.RollbackAsync();
+        //            _logger.LogError(ex, "Error occurred while checking podcast subscription income");
+        //        }
+        //    }
+        //}
         public async Task CancelShowSubscriptionDmcaRemoveShowForceAsync(CancelShowSubscriptionDmcaRemoveShowForceParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -2134,6 +2134,169 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Cancel Podcaster Channels Subscription Terminate Podcaster Force failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
+        }
+        public async Task PodcastSubscriptionIncomeReleaseAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var systemConfig = await GetActiveSystemConfigProfile();
+                    var podcastSubscriptionConfig = systemConfig.PodcastSubscriptionConfigs.ToList();
+
+                    var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        .Where(psr => !psr.IsIncomeTaken
+                            && psr.IsAcceptNewestVersionSwitch == null
+                            && psr.CancelledAt != null
+                            && psr.LastPaidAt.AddDays(30) > _dateHelper.GetNowByAppTimeZone())
+                        .ToListAsync();
+
+                    foreach (var registration in registrationsList)
+                    {
+                        // Find the config object for the current SubscriptionCycleTypeId
+                        var config = podcastSubscriptionConfig
+                            .FirstOrDefault(psc => psc.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId);
+
+                        if (config != null)
+                        {
+                            var podcasterId = 0;
+                            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                .Where(ps => ps.Id == registration.PodcastSubscriptionId)
+                                .FirstOrDefaultAsync();
+                            if (podcastSubscription.PodcastChannelId != null)
+                            {
+                                var temp = await GetPodcastChannel(podcastSubscription.PodcastChannelId.Value);
+                                podcasterId = temp.PodcasterId;
+                            }
+                            if (podcastSubscription.PodcastShowId != null)
+                            {
+                                var temp = await GetPodcastShow(podcastSubscription.PodcastShowId.Value);
+                                podcasterId = temp.PodcasterId;
+                            }
+                            int incomeTakenDelayDays = config.IncomeTakenDelayDays;
+                            decimal profitRate = (decimal)config.ProfitRate;
+                            var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                        .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                        .Select(psct => psct.Price)
+                                        .FirstOrDefault();
+                            if (registration.LastPaidAt.AddDays(incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
+                            {
+                                var incomeRequestData = new JObject()
+                                {
+                                    { "PodcastSubscriptionRegistrationId", registration.Id },
+                                    { "Profit", originalPrice * profitRate},
+                                    { "AccountId", null },
+                                    { "PodcasterId", podcasterId },
+                                    { "Amount", originalPrice - originalPrice * profitRate },
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.PodcasterSubscriptionIncome }
+                                };
+                                var incomeMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: incomeRequestData,
+                                sagaInstanceId: null,
+                                messageName: "podcaster-subscription-income-release-flow");
+                                await _messagingService.SendSagaMessageAsync(incomeMessage, null);
+                                registration.IsIncomeTaken = true;
+                                await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while checking podcast subscription income");
+                }
+            }
+        }
+        public async Task PodcastSubscriptionRegistrationRenewalAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        .Where(psr => psr.CancelledAt == null
+                            && psr.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Monthly
+                            && psr.LastPaidAt.AddDays(30) < _dateHelper.GetNowByAppTimeZone() ||
+                            psr.CancelledAt == null
+                            && psr.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Annually
+                            && psr.LastPaidAt.AddYears(1) < _dateHelper.GetNowByAppTimeZone())
+                        .ToListAsync();
+                    foreach (var registration in registrationsList)
+                    {
+                        if (registration.IsAcceptNewestVersionSwitch == null)
+                        {
+                            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
+                                .FirstOrDefaultAsync();
+                            registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
+                            var renewalRequestData = new JObject
+                            {
+                                { "PodcastSubscriptionRegistrationId", registration.Id },
+                                { "Profit", null },
+                                { "AccountId", registration.AccountId },
+                                { "PodcasterId", null },
+                                { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
+                                    && ptcp.Version == registration.CurrentVersion)
+                                    .Select(ptcp => ptcp.Price)
+                                    .FirstOrDefault() },
+                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
+                            };
+                            var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: renewalRequestData,
+                                sagaInstanceId: null,
+                                messageName: "podcast-subscription-payment-flow");
+                            await _messagingService.SendSagaMessageAsync(renewalMessage, null);
+                        }
+                        if (registration.IsAcceptNewestVersionSwitch == true)
+                        {
+                            var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                                .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
+                                .FirstOrDefaultAsync();
+                            registration.CurrentVersion = podcastSubscription.CurrentVersion;
+                            registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
+                            var renewalRequestData = new JObject
+                            {
+                                { "PodcastSubscriptionRegistrationId", registration.Id },
+                                { "Profit", null },
+                                { "AccountId", registration.AccountId },
+                                { "PodcasterId", null },
+                                { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
+                                    && ptcp.Version == podcastSubscription.CurrentVersion)
+                                    .Select(ptcp => ptcp.Price)
+                                    .FirstOrDefault() },
+                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
+                            };
+                            var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                requestData: renewalRequestData,
+                                sagaInstanceId: null,
+                                messageName: "podcast-subscription-payment-flow");
+                            await _messagingService.SendSagaMessageAsync(renewalMessage, null);
+                        }
+                        if (registration.IsAcceptNewestVersionSwitch == false)
+                        {
+                            registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while checking podcast subscription registration renewal");
                 }
             }
         }
