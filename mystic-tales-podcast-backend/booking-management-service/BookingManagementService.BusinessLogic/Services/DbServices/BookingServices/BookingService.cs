@@ -317,9 +317,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         throw new HttpRequestException($"PodcastBuddy with Id {parameter.PodcastBuddyId} not found");
                     }
-                    if (!podcaster.HasVerifiedPodcasterProfile)
+                    if (!podcaster.HasVerifiedPodcasterProfile || !podcaster.PodcasterProfileIsBuddy)
                     {
-                        throw new HttpRequestException($"PodcastBuddy with Id {parameter.PodcastBuddyId} does not have a PodcasterProfile");
+                        throw new HttpRequestException($"Podcaster with Id {parameter.PodcastBuddyId} does not qualify to request booking");
                     }
 
                     var newBooking = new Booking
