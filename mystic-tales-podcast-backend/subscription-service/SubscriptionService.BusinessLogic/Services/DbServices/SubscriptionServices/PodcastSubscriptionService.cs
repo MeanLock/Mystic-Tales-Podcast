@@ -31,6 +31,7 @@ using SubscriptionService.BusinessLogic.Enums.Transaction;
 using SubscriptionService.BusinessLogic.Helpers.DateHelpers;
 using SubscriptionService.BusinessLogic.Models.CrossService;
 using SubscriptionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using SubscriptionService.BusinessLogic.Services.DbServices.MiscServices;
 using SubscriptionService.BusinessLogic.Services.MessagingServices.interfaces;
 using SubscriptionService.DataAccess.Data;
 using SubscriptionService.DataAccess.Entities.SqlServer;
@@ -47,6 +48,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         private readonly IGenericRepository<PodcastSubscriptionBenefitMapping> _podcastSubscriptionBenefitMappingGenericRepository;
         private readonly IGenericRepository<PodcastSubscriptionRegistration> _podcastSubscriptionRegistrationGenericRepository;
 
+        private readonly AccountCachingService _accountCachingService;
         private readonly ILogger<PodcastSubscriptionService> _logger;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
@@ -59,6 +61,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             IGenericRepository<PodcastSubscriptionCycleTypePrice> podcastSubscriptionCycleTypePriceGenericRepository,
             IGenericRepository<PodcastSubscriptionBenefitMapping> podcastSubscriptionBenefitMappingGenericRepository,
             IGenericRepository<PodcastSubscriptionRegistration> podcastSubscriptionRegistrationGenericRepository,
+            AccountCachingService accountCachingService,
             ILogger<PodcastSubscriptionService> logger,
             KafkaProducerService kafkaProducerService,
             IMessagingService messagingService,
@@ -70,6 +73,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             _podcastSubscriptionCycleTypePriceGenericRepository = podcastSubscriptionCycleTypePriceGenericRepository;
             _podcastSubscriptionBenefitMappingGenericRepository = podcastSubscriptionBenefitMappingGenericRepository;
             _podcastSubscriptionRegistrationGenericRepository = podcastSubscriptionRegistrationGenericRepository;
+            _accountCachingService = accountCachingService;
             _logger = logger;
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
@@ -2313,49 +2317,66 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var show = await GetPodcastShow(parameter.PodcastShowId);
-                    var bothSubscriptions = await _podcastSubscriptionGenericRepository.FindAll()
-                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                        .Include(ps => ps.PodcastSubscriptionRegistrations.Where(r => r.CancelledAt == null))
-                        .Where(ps => (ps.PodcastShowId == parameter.PodcastShowId ||
-                                      ps.PodcastChannelId == show.PodcastChannelId) &&
-                                     ps.IsActive && ps.DeletedAt == null)
-                        .ToListAsync();
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(parameter.PodcasterId);
 
-                    var showPodcastSubscription = bothSubscriptions.FirstOrDefault(ps => ps.PodcastShowId == parameter.PodcastShowId);
-                    var channelPodcastSubscription = bothSubscriptions.FirstOrDefault(ps => ps.PodcastChannelId == show.PodcastChannelId);
-
-                    var subscriptionRegistrations = showPodcastSubscription?.PodcastSubscriptionRegistrations?.ToList() ?? new List<PodcastSubscriptionRegistration>();
-                    var subscriptionRegistrationsChannel = channelPodcastSubscription?.PodcastSubscriptionRegistrations?.ToList() ?? new List<PodcastSubscriptionRegistration>();
-
-                    foreach (var registration in subscriptionRegistrations)
+                    if(podcaster == null)
                     {
-                        foreach (var channelRegistration in subscriptionRegistrationsChannel)
+                        throw new Exception("Podcaster account is not found");
+                    }
+                    if (!podcaster.HasVerifiedPodcasterProfile)
+                    {
+                        throw new Exception("Podcaster account is not verified");
+                    }
+
+                    if(parameter.PodcastChannelId != null)
+                    {
+                        var showPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                        .Where(ps => ps.PodcastShowId == parameter.PodcastShowId && ps.IsActive && ps.DeletedAt == null)
+                        .FirstOrDefaultAsync();
+
+                        var channelPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                            .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                            .Where(ps => ps.PodcastChannelId == parameter.PodcastChannelId && ps.IsActive && ps.DeletedAt == null)
+                            .FirstOrDefaultAsync();
+
+                        var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                            .Where(sr => sr.PodcastSubscriptionId == showPodcastSubscription.Id && sr.CancelledAt == null)
+                            .ToListAsync();
+
+                        var subscriptionRegistrationsChannel = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                            .Where(sr => sr.PodcastSubscriptionId == channelPodcastSubscription.Id && sr.CancelledAt == null)
+                            .ToListAsync();
+
+                        foreach (var registration in subscriptionRegistrations)
                         {
-                            if(registration.AccountId == channelRegistration.AccountId)
+                            foreach (var channelRegistration in subscriptionRegistrationsChannel)
                             {
-                                if (!registration.IsIncomeTaken)
+                                if(registration.AccountId == channelRegistration.AccountId)
                                 {
-                                    var amount = showPodcastSubscription.PodcastSubscriptionCycleTypePrices
-                                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
-                                        .Select(ptcp => ptcp.Price)
-                                        .FirstOrDefault();
-                                    var tempRequestData = new JObject
+                                    if (!registration.IsIncomeTaken)
                                     {
-                                        { "PodcastSubscriptionRegistrationId", registration.Id },
-                                        { "Profit", null },
-                                        { "AccountId", registration.AccountId },
-                                        { "Amount", amount },
-                                        { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
-                                    };
-                                    var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                        topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                        requestData: tempRequestData,
-                                        sagaInstanceId: null,
-                                        messageName: "podcast-subscription-refund-flow");
-                                    await _messagingService.SendSagaMessageAsync(refundMessage, null);
+                                        var amount = showPodcastSubscription.PodcastSubscriptionCycleTypePrices
+                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                            .Select(ptcp => ptcp.Price)
+                                            .FirstOrDefault();
+                                        var tempRequestData = new JObject
+                                        {
+                                            { "PodcastSubscriptionRegistrationId", registration.Id },
+                                            { "Profit", null },
+                                            { "AccountId", registration.AccountId },
+                                            { "Amount", amount },
+                                            { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
+                                        };
+                                        var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                            topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                            requestData: tempRequestData,
+                                            sagaInstanceId: null,
+                                            messageName: "podcast-subscription-refund-flow");
+                                        await _messagingService.SendSagaMessageAsync(refundMessage, null);
+                                    }
+                                    await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
                                 }
-                                await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
                             }
                         }
                     }
