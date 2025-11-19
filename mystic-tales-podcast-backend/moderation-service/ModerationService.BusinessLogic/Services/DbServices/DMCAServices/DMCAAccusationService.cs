@@ -2573,6 +2573,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                         if (dmcaList.Count != 0)
                         {
+                            dismissedEpisodeIds.Add(episodeId);
+
                             var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                                .Where(da => da.PodcastEpisodeId == episodeId
                                && da.ResolvedAt != null)
@@ -2600,7 +2602,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                             foreach (var dmca in dmcaList)
                             {
-                                dismissedEpisodeIds.Add(dmca.PodcastEpisodeId.Value);
                                 var dismissedStatusTracking = new DmcaaccusationStatusTracking
                                 {
                                     DmcaAccusationId = dmca.Id,
@@ -2669,8 +2670,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var showList = await GetPodcastShowByChannelId(parameter.PodcastChannelId);
                     foreach (var show in showList)
                     {
-                        dismissedShowId.Add(show.Id);
-
                         var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
                             .Where(da => da.PodcastShowId == show.Id
                             && da.ResolvedAt == null)
@@ -2678,6 +2677,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                         if (dmcaList.Count != 0)
                         {
+                            dismissedShowId.Add(show.Id);
+
                             var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                             .Where(da => da.PodcastShowId == show.Id
                             && da.ResolvedAt != null)
@@ -2790,6 +2791,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                             if (dmcaList.Count != 0)
                             {
+                                dismissedEpisodeIds.Add(episodeId);
+
                                 var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                                    .Where(da => da.PodcastEpisodeId == episodeId
                                    && da.ResolvedAt != null)
@@ -2817,7 +2820,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                                 foreach (var dmca in dmcaList)
                                 {
-                                    dismissedEpisodeIds.Add(dmca.PodcastEpisodeId.Value);
                                     var dismissedStatusTracking = new DmcaaccusationStatusTracking
                                     {
                                         DmcaAccusationId = dmca.Id,
@@ -3100,6 +3102,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                         if (dmcaList.Count != 0)
                         {
+                            dismissedEpisodeIds.Add(episodeId);
+
                             var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                                .Where(da => da.PodcastEpisodeId == episodeId
                                && da.ResolvedAt != null)
@@ -3127,7 +3131,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                             foreach (var dmca in dmcaList)
                             {
-                                dismissedEpisodeIds.Add(dmca.PodcastEpisodeId.Value);
                                 var dismissedStatusTracking = new DmcaaccusationStatusTracking
                                 {
                                     DmcaAccusationId = dmca.Id,
@@ -3196,8 +3199,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var showList = await GetPodcastShowByChannelId(parameter.PodcastChannelId);
                     foreach (var show in showList)
                     {
-                        dismissedShowId.Add(show.Id);
-
                         var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
                             .Where(da => da.PodcastShowId == show.Id
                             && da.ResolvedAt == null)
@@ -3205,6 +3206,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                         if (dmcaList.Count != 0)
                         {
+                            dismissedShowId.Add(show.Id);
+
                             var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                             .Where(da => da.PodcastShowId == show.Id
                             && da.ResolvedAt != null)
@@ -3316,6 +3319,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                             if (dmcaList.Count != 0)
                             {
+                                dismissedEpisodeIds.Add(episodeId);
+
                                 var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                                .Where(da => da.PodcastEpisodeId == episodeId
                                && da.ResolvedAt != null)
@@ -3328,10 +3333,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 {
                                     //Punish account
                                     var accountPunishRequestData = new JObject
-                            {
-                                { "AccountId", podcasterId },
-                                { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
-                            };
+                                    {
+                                        { "AccountId", podcasterId },
+                                        { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
+                                    };
                                     var accountPunishMessageName = "user-violation-punishment-flow";
                                     var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -3343,7 +3348,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                                 foreach (var dmca in dmcaList)
                                 {
-                                    dismissedEpisodeIds.Add(dmca.PodcastEpisodeId.Value);
                                     var dismissedStatusTracking = new DmcaaccusationStatusTracking
                                     {
                                         DmcaAccusationId = dmca.Id,
@@ -3413,8 +3417,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var showList = await GetPodcastShowByPodcasterId(parameter.PodcasterId);
                     foreach (var show in showList)
                     {
-                        dismissedShowIds.Add(show.Id);
-
                         var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
                             .Where(da => da.PodcastShowId == show.Id
                             && da.ResolvedAt == null)
@@ -3422,6 +3424,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                         if (dmcaList.Count != 0)
                         {
+                            dismissedShowIds.Add(show.Id);
+
                             var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                                 .Where(da => da.PodcastShowId == show.Id
                                 && da.ResolvedAt != null)
@@ -3534,6 +3538,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                             if (dmcaList.Count != 0)
                             {
+                                dismissedEpisodeIds.Add(episodeId);
+
                                 var dmcaAccusationExists = await _dmcaAccusationGenericRepository.FindAll()
                                    .Where(da => da.PodcastEpisodeId == episodeId
                                    && da.ResolvedAt != null)
@@ -3546,10 +3552,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 {
                                     //Punish account
                                     var accountPunishRequestData = new JObject
-                            {
-                                { "AccountId", podcasterId },
-                                { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
-                            };
+                                {
+                                    { "AccountId", podcasterId },
+                                    { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
+                                };
                                     var accountPunishMessageName = "user-violation-punishment-flow";
                                     var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                         topic: KafkaTopicEnum.ContentManagementDomain,
@@ -3561,7 +3567,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                                 foreach (var dmca in dmcaList)
                                 {
-                                    dismissedEpisodeIds.Add(dmca.PodcastEpisodeId.Value);
+                                    
                                     var dismissedStatusTracking = new DmcaaccusationStatusTracking
                                     {
                                         DmcaAccusationId = dmca.Id,
