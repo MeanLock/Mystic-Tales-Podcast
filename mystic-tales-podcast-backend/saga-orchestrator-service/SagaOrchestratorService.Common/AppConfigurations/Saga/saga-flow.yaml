@@ -2035,6 +2035,7 @@ flows:
           - PodcastChannelId
         response-data:
           - PodcastChannelId
+          - KeptShowIds
         onSuccess:
           emit: "keep-channel-shows-channel-deletion-force.success"
           topic: "content-management-domain"
