@@ -1,9 +1,3 @@
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Amazon;
-using Amazon.S3;
-using Amazon.S3.Model;
-using Amazon.S3.Transfer;
 using Microsoft.Extensions.Logging;
 using UserService.Infrastructure.Configurations.Redis.interfaces;
 using StackExchange.Redis;
@@ -180,6 +174,143 @@ namespace UserService.Infrastructure.Services.Redis
             return result;
         }
 
+        // Get tất cả các key-value theo prefix pattern (ví dụ: "account:listen_session:123:procedure")
+        // Pattern hỗ trợ wildcards: "*" (match bất kỳ), "?" (match 1 ký tự), "[abc]" (match a, b hoặc c)
+        public async Task<List<RedisValueInfo>> GetKeyValuesByPrefixAsync(string keyPrefix)
+        {
+            var result = new List<RedisValueInfo>();
+
+            try
+            {
+                // Build full Redis key pattern with prefix
+                var redisPattern = GetRedisKey(keyPrefix + "*");
+                
+                _logger.LogInformation($"Searching for keys with pattern: {redisPattern}");
+
+                await foreach (var key in _redisServer.KeysAsync(pattern: redisPattern))
+                {
+                    try
+                    {
+                        var keyString = key.ToString();
+                        var type = await _redisDb.KeyTypeAsync(key);
+                        var expiry = await _redisDb.KeyTimeToLiveAsync(key);
+                        object value = null;
+
+                        // Tách prefix và original key
+                        string prefix = null;
+                        string originalKey = keyString;
+                        if (keyString.Contains(":"))
+                        {
+                            var parts = keyString.Split(':');
+                            prefix = parts[0];
+                            originalKey = string.Join(":", parts.Skip(1));
+                        }
+
+                        switch (type)
+                        {
+                            case RedisType.String:
+                                value = await _redisDb.StringGetAsync(key);
+                                break;
+                            case RedisType.Hash:
+                                var hashEntries = await _redisDb.HashGetAllAsync(key);
+                                value = hashEntries.ToDictionary(
+                                    entry => entry.Name.ToString(),
+                                    entry => entry.Value.ToString()
+                                );
+                                break;
+                            case RedisType.List:
+                                var listValues = await _redisDb.ListRangeAsync(key);
+                                value = listValues.Select(v => v.ToString()).ToList();
+                                break;
+                            case RedisType.Set:
+                                var setValues = await _redisDb.SetMembersAsync(key);
+                                value = setValues.Select(v => v.ToString()).ToList();
+                                break;
+                            case RedisType.SortedSet:
+                                var sortedSetEntries = await _redisDb.SortedSetRangeByScoreWithScoresAsync(key);
+                                value = sortedSetEntries.ToDictionary(
+                                    entry => entry.Element.ToString(),
+                                    entry => entry.Score
+                                );
+                                break;
+                        }
+
+                        result.Add(new RedisValueInfo
+                        {
+                            Key = keyString,
+                            Type = type.ToString(),
+                            Value = value,
+                            Expiry = expiry,
+                            Prefix = prefix,
+                            OriginalKey = originalKey
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Error getting value for key: {key}");
+                    }
+                }
+
+                _logger.LogInformation($"Found {result.Count} keys matching prefix: {keyPrefix}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting keys by prefix: {keyPrefix}");
+            }
+
+            return result;
+        }
+
+        // Get tất cả các key-value với type String theo prefix pattern, trả về Dictionary<string, T>
+        public async Task<Dictionary<string, T>> GetStringKeyValuesByPrefixAsync<T>(string keyPrefix)
+        {
+            var result = new Dictionary<string, T>();
+
+            try
+            {
+                // Build full Redis key pattern with prefix
+                var redisPattern = GetRedisKey(keyPrefix + "*");
+                
+                _logger.LogInformation($"Searching for string keys with pattern: {redisPattern}");
+
+                await foreach (var key in _redisServer.KeysAsync(pattern: redisPattern))
+                {
+                    try
+                    {
+                        var keyString = key.ToString();
+                        var type = await _redisDb.KeyTypeAsync(key);
+
+                        // Chỉ lấy keys có type là String
+                        if (type == RedisType.String)
+                        {
+                            var value = await _redisDb.StringGetAsync(key);
+                            if (value.HasValue)
+                            {
+                                // Deserialize value
+                                var deserializedValue = JsonConvert.DeserializeObject<T>(value);
+                                
+                                // Remove Redis prefix để lấy original key
+                                var originalKey = keyString.Replace(_redisPrefix + ":", "");
+                                result[originalKey] = deserializedValue;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Error getting string value for key: {key}");
+                    }
+                }
+
+                _logger.LogInformation($"Found {result.Count} string keys matching prefix: {keyPrefix}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting string keys by prefix: {keyPrefix}");
+            }
+
+            return result;
+        }
+
         // Set giá trị vào Redis cache với thời gian hết hạn tùy chọn
         public async Task<bool> KeySetAsync<T>(string key, T value, TimeSpan? expiry = null)
         {
@@ -193,6 +324,22 @@ namespace UserService.Infrastructure.Services.Redis
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error setting cache for key: {key}");
+                return false;
+            }
+        }
+
+        // Set giá trị vào Redis cache KHÔNG có thời gian hết hạn (persistent key)
+        public async Task<bool> KeySetWithoutExpiryAsync<T>(string key, T value)
+        {
+            try
+            {
+                var redisKey = GetRedisKey(key);
+                var serializedValue = ValueToString(value);
+                return await _redisDb.StringSetAsync(redisKey, serializedValue);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error setting cache without expiry for key: {key}");
                 return false;
             }
         }

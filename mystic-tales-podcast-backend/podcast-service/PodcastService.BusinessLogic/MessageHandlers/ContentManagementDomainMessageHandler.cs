@@ -1169,6 +1169,21 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "restore-content-dmca.failed"    // From YAML onFailure.emit
             );
         }
+
+        [MessageHandler("complete-all-user-episode-listen-sessions", SAGA_TOPIC)]
+        public async Task HandleCompleteAllUserEpisodeListenSessionsAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<CompleteAllUserEpisodeListenSessionsParameterDTO>();
+                    await _podcastEpisodeService.CompleteAllUserEpisodeListenSessions(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "complete-all-user-episode-listen-sessions.failed"    // From YAML onFailure.emit
+            );
+        }
     }
 }
 

@@ -45,7 +45,8 @@ namespace PodcastService.Common.Registrations
             services.AddSingleton<IPodcastPublishReviewSessionConfig, PodcastPublishReviewSessionConfig>();
             services.AddSingleton<IPodcastListenSessionConfig, PodcastListenSessionConfig>();
             services.AddSingleton<IBackgroundJobsConfig, BackgroundJobsConfig>();
-
+            services.AddSingleton<ICustomerListenSessionProcedureConfig, CustomerListenSessionProcedureConfig>();
+            
             // SystemService
             services.AddSingleton<ISystemServiceConfig,SystemServiceConfig>();
  

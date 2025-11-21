@@ -191,6 +191,22 @@ namespace SystemConfigurationService.Infrastructure.Services.Redis
             }
         }
 
+        // Set giá trị vào Redis cache KHÔNG có thời gian hết hạn (persistent key)
+        public async Task<bool> KeySetWithoutExpiryAsync<T>(string key, T value)
+        {
+            try
+            {
+                var redisKey = GetRedisKey(key);
+                var serializedValue = ValueToString(value);
+                return await _redisDb.StringSetAsync(redisKey, serializedValue);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error setting cache without expiry for key: {key}");
+                return false;
+            }
+        }
+
         // Get giá trị từ Redis cache theo key
         public async Task<T> KeyGetAsync<T>(string key)
         {

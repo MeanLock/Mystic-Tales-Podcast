@@ -3,6 +3,7 @@ using SubscriptionService.Infrastructure.Services.Redis;
 using SubscriptionService.BusinessLogic.DTOs.Cache;
 using SubscriptionService.BusinessLogic.Models.CrossService;
 using Newtonsoft.Json.Linq;
+using SubscriptionService.Common.AppConfigurations.BusinessSetting.interfaces;
 
 namespace SubscriptionService.BusinessLogic.Services.DbServices.MiscServices
 {
@@ -10,16 +11,19 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.MiscServices
     {
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly RedisSharedCacheService _redisSharedCacheService;
+        private readonly IAccountConfig _accountConfig;
 
 
 
         public AccountCachingService(
             HttpServiceQueryClient httpServiceQueryClient,
-            RedisSharedCacheService redisSharedCacheService
+            RedisSharedCacheService redisSharedCacheService,
+            IAccountConfig accountConfig
             )
         {
             _httpServiceQueryClient = httpServiceQueryClient;
             _redisSharedCacheService = redisSharedCacheService;
+            _accountConfig = accountConfig;
         }
 
         public async Task<AccountStatusCache> GetAccountStatusCacheById(int accountId)
@@ -35,7 +39,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.MiscServices
                 var accountStatus = await QueryAccountStatusCacheById(accountId);
                 if (accountStatus != null)
                 {
-                    await _redisSharedCacheService.KeySetAsync(cacheKey, accountStatus, TimeSpan.FromHours(1));
+                    await _redisSharedCacheService.KeySetAsync(cacheKey, accountStatus, TimeSpan.FromSeconds(_accountConfig.AccountStatusCacheExpirySeconds));
                 }
                 return accountStatus;
             }

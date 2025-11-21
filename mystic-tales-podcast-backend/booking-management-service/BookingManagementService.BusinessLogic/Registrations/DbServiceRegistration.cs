@@ -14,6 +14,7 @@ namespace BookingManagementService.BusinessLogic.Registrations
 
             // CachingServices
             services.AddScoped<AccountCachingService>();
+            services.AddScoped<CustomerListenSessionProcedureCachingService>();
 
             // BookingServices
             services.AddScoped<BookingService>(); 

@@ -4853,13 +4853,12 @@ flows:
         handle-service: "PodcastService"
         description: "Đánh dấu tất cả phiên nghe episode của người dùng là hoàn thành"
         parameters:
-          - IsEpisodeCompleted
+          - IsEpisodeListenSessionCompleted
         next-request-data:
-          - IsEpisodeCompleted
-          - IsBookingCompleted
+          - IsEpisodeListenSessionCompleted
+          - IsBookingListenSessionCompleted
         response-data:
-          - IsEpisodeCompleted
-          - IsBookingComplete
+          - IsEpisodeListenSessionCompleted
         onSuccess:
           emit: "complete-all-user-listen-sessions.success"
           topic: "content-management-domain"
@@ -4880,13 +4879,12 @@ flows:
         handle-service: "BookingManagementService"
         description: "Đánh dấu tất cả phiên nghe booking của người dùng là hoàn thành"
         parameters:
-          - IsBookingCompleted
+          - IsBookingListenSessionCompleted
         next-request-data:
-          - IsEpisodeCompleted
-          - IsBookingCompleted
+          - IsEpisodeListenSessionCompleted
+          - IsBookingListenSessionCompleted
         response-data:
-          - IsEpisodeCompleted
-          - IsBookingCompleted
+          - IsBookingListenSessionCompleted
         onSuccess:
           emit: "complete-all-user-booking-listen-sessions.success"
           topic: "booking-management-domain"

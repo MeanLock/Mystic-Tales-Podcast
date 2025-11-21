@@ -19,6 +19,7 @@ namespace UserService.BusinessLogic.Registrations
 
             // CachingServices
             services.AddScoped<AccountCachingService>();
+            services.AddScoped<CustomerListenSessionProcedureCachingService>();
 
             return services;
         }

@@ -5,5 +5,6 @@ namespace SystemConfigurationService.Common.AppConfigurations.BusinessSetting.in
     public interface IAccountConfig
     {
         int VerifyCodeLength { get; set; }
+        int AccountStatusCacheExpirySeconds { get; set; }
     }
 }

@@ -27,6 +27,8 @@ public partial class BookingPodcastTrack
 
     public virtual Booking Booking { get; set; } = null!;
 
+    public virtual ICollection<BookingPodcastTrackListenSession> BookingPodcastTrackListenSessions { get; set; } = new List<BookingPodcastTrackListenSession>();
+
     public virtual BookingProducingRequest BookingProducingRequest { get; set; } = null!;
 
     public virtual ICollection<BookingProducingRequestPodcastTrackToEdit> BookingProducingRequestPodcastTrackToEdits { get; set; } = new List<BookingProducingRequestPodcastTrackToEdit>();

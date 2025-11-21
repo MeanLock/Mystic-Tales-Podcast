@@ -43,6 +43,7 @@ namespace UserService.Common.Registrations
             services.AddSingleton<IFileValidationConfig, FileValidationConfig>();
             services.AddSingleton<IMailPropertiesConfig, MailPropertiesConfig>();
             services.AddSingleton<IBackgroundJobsConfig, BackgroundJobsConfig>();
+            services.AddSingleton<ICustomerListenSessionProcedureConfig, CustomerListenSessionProcedureConfig>();
 
             // SystemService
             services.AddSingleton<ISystemServiceConfig,SystemServiceConfig>();

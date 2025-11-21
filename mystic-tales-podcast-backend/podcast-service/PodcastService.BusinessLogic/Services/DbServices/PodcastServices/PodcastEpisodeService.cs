@@ -1492,7 +1492,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         {
                             string fileNameWithoutExtension = FilePathHelper.GetFileNameWithoutExtension(licenseDocumentFileKey);
                             // kiểm tra tên file có phải là con số nguyên không để dùng nó làm PodcastEpisodeLicenseTypeId
-                            fileNameWithoutExtension = fileNameWithoutExtension.Trim().Split('_')[1];
+                            fileNameWithoutExtension = fileNameWithoutExtension.Trim().Split("_")[2];
                             if (int.TryParse(fileNameWithoutExtension, out int licenseTypeId))
                             {
                                 var existingLicenseType = await _podcastEpisodeLicenseTypeGenericRepository.FindByIdAsync(licenseTypeId);

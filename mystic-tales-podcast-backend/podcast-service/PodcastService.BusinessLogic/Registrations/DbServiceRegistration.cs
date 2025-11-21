@@ -27,6 +27,7 @@ namespace PodcastService.BusinessLogic.Registrations
 
             // CachingServices
             services.AddScoped<AccountCachingService>();
+            services.AddScoped<CustomerListenSessionProcedureCachingService>();
 
 
 

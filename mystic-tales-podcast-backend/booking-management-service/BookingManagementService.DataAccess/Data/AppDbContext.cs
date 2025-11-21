@@ -24,6 +24,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<BookingPodcastTrack> BookingPodcastTracks { get; set; }
 
+    public virtual DbSet<BookingPodcastTrackListenSession> BookingPodcastTrackListenSessions { get; set; }
+
     public virtual DbSet<BookingProducingRequest> BookingProducingRequests { get; set; }
 
     public virtual DbSet<BookingProducingRequestPodcastTrackToEdit> BookingProducingRequestPodcastTrackToEdits { get; set; }
@@ -191,6 +193,33 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.BookingRequirementId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__BookingPo__booki__3864608B");
+        });
+
+        modelBuilder.Entity<BookingPodcastTrackListenSession>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__BookingP__3213E83FDBE33FF2");
+
+            entity.ToTable("BookingPodcastTrackListenSession");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("(newid())")
+                .HasColumnName("id");
+            entity.Property(e => e.AccountId).HasColumnName("accountId");
+            entity.Property(e => e.BookingPodcastTrackId).HasColumnName("bookingPodcastTrackId");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.ExpiredAt)
+                .HasColumnType("datetime")
+                .HasColumnName("expiredAt");
+            entity.Property(e => e.IsCompleted).HasColumnName("isCompleted");
+            entity.Property(e => e.LastListenDurationSeconds).HasColumnName("lastListenDurationSeconds");
+
+            entity.HasOne(d => d.BookingPodcastTrack).WithMany(p => p.BookingPodcastTrackListenSessions)
+                .HasForeignKey(d => d.BookingPodcastTrackId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__BookingPo__booki__531856C7");
         });
 
         modelBuilder.Entity<BookingProducingRequest>(entity =>
