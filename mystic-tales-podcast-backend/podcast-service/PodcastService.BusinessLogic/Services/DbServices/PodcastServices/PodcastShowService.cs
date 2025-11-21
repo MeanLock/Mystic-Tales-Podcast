@@ -275,12 +275,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         }
 
         /////////////////////////////////////////////////////////////
-        public async Task<List<ShowListItemResponseDTO>> GetShows(int? roleId)
+        public async Task<List<ShowListItemResponseDTO>> GetShows(int? roleId, int? podcasterId)
         {
             try
             {
                 var showsQuery = _podcastShowGenericRepository.FindAll(
-                    predicate: ps => ps.DeletedAt == null,
+                    predicate: ps => ps.DeletedAt == null && (podcasterId == null || ps.PodcasterId == podcasterId),
                     includeFunc: q => q
                         .Include(ps => ps.PodcastShowStatusTrackings)
                         .ThenInclude(pst => pst.PodcastShowStatus)

@@ -50,10 +50,10 @@ namespace PodcastService.API.Controllers.BaseControllers
 
         // /api/podcast-service/api/channels
         [HttpGet("")]
-        public async Task<IActionResult> GetChannels([FromQuery] int? PodcasterId, [FromQuery] string? SearchKeyword, [FromQuery] int PageNumber = 1, [FromQuery] int PageSize = 10)
+        public async Task<IActionResult> GetChannels([FromQuery] int? podcaster_id, [FromQuery] string? SearchKeyword, [FromQuery] int PageNumber = 1, [FromQuery] int PageSize = 10)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var channels = await _podcastChannelService.GetChannels(account?.RoleId);
+            var channels = await _podcastChannelService.GetChannels(account?.RoleId, podcaster_id);
 
             return Ok(new
             {
@@ -265,12 +265,13 @@ namespace PodcastService.API.Controllers.BaseControllers
         public async Task<IActionResult> PublishOrUnpublishChannelById(Guid PodcastChannelId, bool IsPublish)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            if (IsPublish == true && account.ViolationLevel >= 0)
+            Console.WriteLine($"Attempting to {(IsPublish ? "publish" : "unpublish")} channel. Account ViolationLevel: {account.ViolationLevel}");
+            if (IsPublish == true && account.ViolationLevel > 0)
             {
                 return StatusCode(403, "Your account has violation level that is not allowed to publish channel.");
             }
 
-            var flowName = IsPublish ? "channel-publish-flow" : "channel-unpublish-flow";
+            var flowName = IsPublish == true ? "channel-publish-flow" : "channel-unpublish-flow";
             JObject requestData = new JObject
             {
                 ["PodcastChannelId"] = PodcastChannelId,
