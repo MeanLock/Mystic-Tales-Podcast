@@ -2783,7 +2783,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .Include(psr => psr.PodcastSubscription)
                         .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
                         .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
-                        .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastShowId == episode.PodcastShowId && psr.CancelledAt != null)
+                        .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastShowId == episode.PodcastShowId && psr.CancelledAt == null)
                         .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                         {
                             Id = psr.Id,
@@ -2810,7 +2810,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     Name = bm.PodcastSubscriptionBenefit.Name
                                 }).ToList()
                         })
-                        .FirstAsync();
+                        .FirstOrDefaultAsync();
                     if(result == null)
                     {
                         var show = await GetPodcastShow(episode.PodcastShowId);
@@ -2820,7 +2820,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 .Include(psr => psr.PodcastSubscription)
                                 .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
                                 .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
-                                .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastChannelId == show.PodcastChannelId && psr.CancelledAt != null)
+                                .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastChannelId == show.PodcastChannelId && psr.CancelledAt == null)
                                 .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                                 {
                                     Id = psr.Id,
@@ -2847,7 +2847,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                             Name = bm.PodcastSubscriptionBenefit.Name
                                         }).ToList()
                                 })
-                                .FirstAsync();
+                                .FirstOrDefaultAsync();
                         }
                     } 
                 }
