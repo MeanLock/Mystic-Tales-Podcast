@@ -1,0 +1,235 @@
+@model SubscriptionService.BusinessLogic.Models.Mail.PodcastSubscriptionDuplicateMailViewModel
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Verification - Mystic Tales Podcast</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e8e8e8;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #2c2c54 0%, #40407a 100%);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            border: 1px solid #4a4a6a;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="30" cy="70" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="80" r="2.5" fill="rgba(255,255,255,0.1)"/></svg>');
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+            margin-top: 5px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .greeting {
+            font-size: 24px;
+            color: #ffa726;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .user-name {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+        
+        .message {
+            color: #d0d0d0;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .verification-section {
+            background: linear-gradient(145deg, #3c3c6e 0%, #4a4a7a 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 1px solid #5a5a8a;
+            text-align: center;
+        }
+        
+        .verification-title {
+            color: #ffa726;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .verify-code {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+            padding: 20px 30px;
+            border-radius: 15px;
+            letter-spacing: 8px;
+            margin: 15px 0;
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .info-box {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            color: #fff3cd;
+        }
+        
+        .welcome-message {
+            background: rgba(76, 175, 80, 0.1);
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            color: #c8e6c9;
+        }
+        
+        .footer {
+            background: linear-gradient(145deg, #1a1a2e 0%, #2c2c54 100%);
+            padding: 25px 30px;
+            text-align: center;
+            border-top: 1px solid #4a4a6a;
+        }
+        
+        .signature {
+            color: #b0b0b0;
+            font-style: italic;
+        }
+        
+        .team-name {
+            color: #ffa726;
+            font-weight: 600;
+        }
+        
+        @@media (max-width: 600px) {
+            .email-container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .content {
+                padding: 25px 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .logo {
+                font-size: 24px;
+            }
+            
+            .verify-code {
+                font-size: 28px;
+                letter-spacing: 4px;
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">Mystic Tales Podcast</div>
+            <div class="subtitle">Discover the world of mysterious audio</div>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">Hello <span class="user-name">@Model.CustomerFullName</span>!</div>
+            
+            <div class="welcome-message">
+                <strong>Podcast Subscription Duplicate Mail</strong><br />
+            @*     We are sadly to inform you that your DMCA Notice is invalid.
+            </div>
+            
+            <p class="message">
+                Our staff has reject your dmca notice with this reason: <strong>@Model.InvalidReason</strong>, this was validated at @Model.CompletedAt.ToString("f").
+            </p>  *@
+            
+            @* <div class="verification-section">
+                <div class="verification-title">Account Verification Code</div>
+                <p style="color: #d0d0d0; margin-bottom: 20px;">
+                    Enter this code on the verification page to complete your registration
+                </p>
+                <div class="verify-code">@Model.text</div>
+            </div> *@
+            
+            @* <div class="info-box">
+                <strong>Important Note:</strong><br/>
+                • This verification code is valid for 15 minutes<br/>
+                • Do not share this code with anyone<br/>
+                • If you did not make this request, please ignore this email
+            </div> *@
+            
+            @* <p class="message">
+                The target content of your dmca notice will be remain on our platform. If you believe this is a mistake, you may consider submitting a new DMCA notice with accurate information.
+            </p>
+
+            <div class="info-box">
+                <strong>Important Note:</strong><br />
+                • Repeat invalid attempt will lead to punishment from our platform according to our rule so please provide accurate information<br />
+            </div> *@
+        </div>
+        
+        <div class="footer">
+            <p class="signature">
+                Best regards,<br />
+                <span class="team-name">Mystic Tales Podcast Team</span>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

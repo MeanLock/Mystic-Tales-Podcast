@@ -43,6 +43,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
+using System.Security.Principal;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServices
@@ -2010,6 +2011,184 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     await transaction.RollbackAsync();
                     _logger.LogError(ex, "Error occurred while checking booking producing requested response timeout");
                 }
+            }
+        }
+        public async Task<List<BookingListItemResponseDTO>> GetCompletedBookingsByAccountIdAsync(int accountId, bool isPodcaster)
+        {
+            try
+            {
+                var query = _bookingGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(b => b.BookingStatusTrackings));
+                if (isPodcaster)
+                {
+                    query = query.Where(b => b.PodcastBuddyId == accountId);
+                }
+                else
+                {
+                    query = query.Where(b => b.AccountId == accountId);
+                }
+
+                query = query.Where(b => b.BookingStatusTrackings
+                    .OrderByDescending(bst => bst.CreatedAt)
+                    .FirstOrDefault()
+                    .BookingStatusId == (int)BookingStatusEnum.Completed);
+                var bookings = await query.ToListAsync();
+
+                var result = new List<BookingListItemResponseDTO>();
+
+                foreach (var booking in bookings)
+                {
+                    var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    result.Add(new BookingListItemResponseDTO
+                    {
+                        Id = booking.Id,
+                        Title = booking.Title,
+                        Description = booking.Description,
+                        Account = new AccountSnippetResponseDTO
+                        {
+                            Id = account.Id,
+                            FullName = account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        },
+                        PodcastBuddy = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.FullName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        Price = booking.Price,
+                        Deadline = booking.Deadline,
+                        DeadlineDays = booking.DeadlineDays,
+                        DemoAudioFileKey = booking.DemoAudioFileKey,
+                        BookingManualCancelledReason = booking.BookingManualCancelledReason,
+                        BookingAutoCancelledReason = booking.BookingAutoCancelReason,
+                        CreatedAt = booking.CreatedAt,
+                        UpdatedAt = booking.UpdatedAt,
+                        CurrentStatus = new BookingStatusResponseDTO
+                        {
+                            Id = booking.BookingStatusTrackings
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Id,
+                            Name = booking.BookingStatusTrackings
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Name
+                        }
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting completed bookings for AccountId: {AccountId}", accountId);
+                throw new HttpRequestException("Error occurred while retrieving completed booking");
+            }
+        }
+        public async Task<BookingResultDetailResponseDTO> GetBookingResultByIdAsync(int bookingId, int accountId)
+        {
+            try
+            {
+                var booking = await _bookingGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(b => b.BookingStatusTrackings)
+                    .Include(b => b.BookingProducingRequests)
+                        .ThenInclude(bpr => bpr.BookingPodcastTracks))
+                    .Where(b => b.Id == bookingId)
+                    .FirstOrDefaultAsync();
+                if (booking == null)
+                {
+                    throw new HttpRequestException("Booking not found for BookingId: " + bookingId);
+                }
+                if (booking.AccountId != accountId && booking.PodcastBuddyId != accountId)
+                {
+                    throw new HttpRequestException("You are not authorized to view this booking");
+                }
+                if(booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId != (int)BookingStatusEnum.Completed)
+                {
+                    throw new HttpRequestException("Booking is not completed yet for BookingId: " + bookingId);
+                }
+
+                var account = await GetPodcaster(booking.AccountId);
+                var podcaster = await GetPodcaster(booking.PodcastBuddyId);
+                return new BookingResultDetailResponseDTO
+                {
+                    Id = booking.Id,
+                    Title = booking.Title,
+                    Description = booking.Description,
+                    Account = new AccountSnippetResponseDTO
+                    {
+                        Id = account.Id,
+                        FullName = account.FullName,
+                        Email = account.Email,
+                        MainImageFileKey = account.MainImageFileKey
+                    },
+                    PodcastBuddy = new PodcastBuddySnippetResponseDTO
+                    {
+                        Id = podcaster.Id,
+                        FullName = podcaster.FullName,
+                        Email = podcaster.Email,
+                        MainImageFileKey = podcaster.MainImageFileKey
+                    },
+                    Deadline = booking.Deadline,
+                    DeadlineDays = booking.DeadlineDays,
+                    Price = booking.Price,
+                    DemoAudioFileKey = booking.DemoAudioFileKey,
+                    BookingManualCancelledReason = booking.BookingManualCancelledReason,
+                    BookingAutoCancelledReason = booking.BookingAutoCancelReason,
+                    CreatedAt = booking.CreatedAt,
+                    UpdatedAt = booking.UpdatedAt,
+                    CurrentStatus = new BookingStatusResponseDTO
+                    {
+                        Id = booking.BookingStatusTrackings
+                            .OrderByDescending(bst => bst.CreatedAt)
+                            .FirstOrDefault().BookingStatus.Id,
+                        Name = booking.BookingStatusTrackings
+                            .OrderByDescending(bst => bst.CreatedAt)
+                            .FirstOrDefault().BookingStatus.Name
+                    },
+                    BookingRequirementFileList = booking.BookingRequirements
+                        .OrderBy(brf => brf.Order)
+                        .Select(brf => new BookingRequirementListItemResponseDTO
+                        {
+                            Id = brf.Id,
+                            BookingId = brf.BookingId,
+                            Description = brf.Description,
+                            Name = brf.Name,
+                            Order = brf.Order,
+                            PodcastBookingTone = new PodcastBookingToneDetailResponseDTO
+                            {
+                                Id = brf.PodcastBookingTone.Id,
+                                Name = brf.PodcastBookingTone.Name,
+                                Description = brf.PodcastBookingTone.Description,
+                            },
+                            RequirementDocumentFileKey = brf.RequirementDocumentFileKey,
+                            WordCount = brf.WordCount
+                        })
+                        .ToList(),
+                    BookingPodcastTrackList = booking.BookingProducingRequests.OrderByDescending(bp => bp.CreatedAt)
+                        .FirstOrDefault()
+                        .BookingPodcastTracks
+                        .Select(bpt => new BookingPodcastTrackListItemResponseDTO
+                        {
+                            Id = bpt.Id,
+                            BookingId = bpt.BookingId,
+                            BookingRequirementId = bpt.BookingRequirementId,
+                            BookingProducingRequestId = bpt.BookingProducingRequestId,
+                            AudioFileKey = bpt.AudioFileKey,
+                            AudioFileSize = bpt.AudioFileSize,
+                            AudioLength = bpt.AudioLength,
+                            RemainingPreviewListenSlot = bpt.RemainingPreviewListenSlot
+                        }).ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting booking result for BookingId: {BookingId}", bookingId);
+                throw new HttpRequestException("Error occurred while retrieving booking result");
             }
         }
         private async Task<PodcasterDTO> GetPodcaster(int accountId)

@@ -675,5 +675,38 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
+        [HttpGet("completed")]
+        [Authorize("BasicAccess")]
+        public async Task<IActionResult> GetCompletedBookings()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var isPodcaster = account.HasVerifiedPodcasterProfile && account.PodcasterProfileIsBuddy;
+            var result = await _bookingService.GetCompletedBookingsByAccountIdAsync(accountId, isPodcaster);
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No completed bookings found for the current user.");
+            //}
+            return Ok(new
+            {
+                BookingList = result
+            });
+        }
+        [HttpGet("{BookingId}/result")]
+        [Authorize("BasicAccess")]
+        public async Task<IActionResult> GetBookingResultById(int BookingId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var result = await _bookingService.GetBookingResultByIdAsync(BookingId, accountId);
+            //if (result == null)
+            //{
+            //    return NotFound($"Booking result with ID {BookingId} not found.");
+            //}
+            return Ok(new
+            {
+                BookingResult = result
+            });
+        }
     }
 }

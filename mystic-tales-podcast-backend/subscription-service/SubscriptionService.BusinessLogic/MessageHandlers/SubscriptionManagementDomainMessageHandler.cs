@@ -15,10 +15,14 @@ using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagement
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CreatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeactivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.DeletePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.SendSubscriptionServiceEmail;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.UpdatePodcastSubscription;
 using SubscriptionService.BusinessLogic.Enums.Kafka;
+using SubscriptionService.BusinessLogic.Models.Mail;
+using SubscriptionService.BusinessLogic.Services.DbServices.MiscServices;
 using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
 using SubscriptionService.BusinessLogic.Services.MessagingServices.interfaces;
+using SubscriptionService.Common.AppConfigurations.BusinessSetting.interfaces;
 using SubscriptionService.Infrastructure.Services.Kafka;
 using System;
 using System.Collections.Generic;
@@ -33,6 +37,9 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
         private readonly ILogger<SubscriptionManagementDomainMessageHandler> _logger;
         private readonly PodcastSubscriptionService _podcastSubscriptionService;
         private readonly MemberSubscriptionService _memberSubscriptionService;
+        private readonly IMailPropertiesConfig _mailPropertiesConfig;
+        private readonly MailOperationService _mailOperationService;
+        private readonly KafkaProducerService _kafkaProducerService;
         private const string SAGA_TOPIC = KafkaTopicEnum.SubscriptionManagementDomain;
         public SubscriptionManagementDomainMessageHandler(
             IMessagingService messagingService,
@@ -283,6 +290,47 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "cancel-podcast-subscription-registration-channel-shows.failed"
+            );
+        }
+        [MessageHandler("send-subscription-service-email", SAGA_TOPIC)]
+        public async Task HandleSendSubscriptionServiceEmailCommandAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var sendSubscriptionServiceEmailParameterDTO = command.RequestData.ToObject<SendSubscriptionServiceEmailParameterDTO>();
+                    var mailInfo = sendSubscriptionServiceEmailParameterDTO.SendSubscriptionServiceEmailInfo;
+                    Console.WriteLine("Preparing to send email of type: " + mailInfo.MailTypeName);
+                    object mailModel = mailInfo.MailTypeName switch
+                    {
+                        "PodcastSubscriptionRegistration" => mailInfo.MailObject.ToObject<PodcastSubscriptionRegistrationMailViewModel>(),
+                        "PodcastSubscriptionNewVersion" => mailInfo.MailObject.ToObject<PodcastSubscriptionNewVersionMailViewModel>(),
+                        "PodcastSubscriptionRegistrationRenewalSuccess" => mailInfo.MailObject.ToObject<PodcastSubscriptionRegistrationRenewalSuccessMailViewModel>(),
+                        "PodcastSubscriptionRegistrationRenewalFailure" => mailInfo.MailObject.ToObject<PodcastSubscriptionRegistrationRenewalFailureMailViewModel>(),
+                        "PodcastSubscriptionRegistrationCancel" => mailInfo.MailObject.ToObject<PodcastSubscriptionRegistrationCancelMailViewModel>(),
+                        "PodcastSubscriptionCancel" => mailInfo.MailObject.ToObject<PodcastSubscriptionCancelMailViewModel>(),
+                        "PodcastSubscriptionInactive" => mailInfo.MailObject.ToObject<PodcastSubscriptionInactiveMailViewModel>(),
+                        "PodcastSubscriptionDuplicate" => mailInfo.MailObject.ToObject<PodcastSubscriptionDuplicateMailViewModel>(),
+                        _ => mailInfo.MailObject.ToObject<object>()
+                    };
+                    //Console.WriteLine("Sending email to: " + mailInfo.MailObject["VerifyCode"]);
+                    var mailProperty = _mailPropertiesConfig.GetMailPropertyByTypeName(mailInfo.MailTypeName);
+                    await _mailOperationService.SendSubscriptionServiceEmail(mailProperty, mailInfo.ToEmail, mailModel);
+                    // SagaEventMessage KafkaProducerService.PrepareSagaEventMessage(string topic, JObject requestData, JObject responseData, Guid? sagaInstanceId, string flowName, string messageName, [string? key = null])
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: SAGA_TOPIC,
+                        requestData: command.RequestData,
+                        responseData: command.RequestData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "send-subscription-service-email.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    _logger.LogInformation("Handled send-subscription-service-email command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "send-subscription-service-email.failed"
             );
         }
     }

@@ -143,8 +143,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var responseData = command.LastStepResponseData;
 
                     var podcastSubscription = new PodcastSubscription();
-                    var cycleTypePrices = new List<PodcastSubscriptionCycleTypePrice>();
-                    var benefitMappings = new List<PodcastSubscriptionBenefitMapping>();
+                    //var cycleTypePrices = new List<PodcastSubscriptionCycleTypePrice>();
+                    //var benefitMappings = new List<PodcastSubscriptionBenefitMapping>();
                     var show = new JObject();
                     var channel = new JObject();
                     if (parameter.PodcastShowId != null)
@@ -230,7 +230,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var cycleTypePriceResult = await _podcastSubscriptionCycleTypePriceGenericRepository.CreateAsync(newCycleTypePrice);
-                        cycleTypePrices.Add(cycleTypePriceResult);
+                        //cycleTypePrices.Add(cycleTypePriceResult);
                     }
                     foreach (var benefitId in parameter.PodcastSubscriptionBenefitMappingList)
                     {
@@ -243,10 +243,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var benefitMappingResult = await _podcastSubscriptionBenefitMappingGenericRepository.CreateAsync(newBenefitMapping);
-                        if (benefitMappings == null)
-                        {
-                            benefitMappings.Add(benefitMappingResult);
-                        }
+                        //if (benefitMappings == null)
+                        //{
+                        //    benefitMappings.Add(benefitMappingResult);
+                        //}
                     }
 
                     await transaction.CommitAsync();
@@ -257,8 +257,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         { "Description", podcastSubscription.Description },
                         { "PodcastShowId", podcastSubscription.PodcastShowId },
                         { "PodcastChannelId", podcastSubscription.PodcastChannelId },
-                        { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(cycleTypePrices) },
-                        { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
+                        //{ "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(cycleTypePrices) },
+                        //{ "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
                         { "CreatedAt", podcastSubscription.CreatedAt }
                     };
                     var newMessageName = messageName + ".success";
@@ -389,8 +389,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var responseData = command.LastStepResponseData;
 
                     var podcastSubscription = null as PodcastSubscription;
-                    var cycleTypePrices = null as List<PodcastSubscriptionCycleTypePrice>;
-                    var benefitMappings = null as List<PodcastSubscriptionBenefitMapping>;
+                    //var cycleTypePrices = null as List<PodcastSubscriptionCycleTypePrice>;
+                    //var benefitMappings = null as List<PodcastSubscriptionBenefitMapping>;
                     var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                         .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null);
                     if (existPodcastSubscription == null)
@@ -408,11 +408,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to update PodcastSubscription for PodcastShow with Id: {existPodcastSubscription.PodcastShowId}");
                         }
-                        var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
-                        if (!showValidation.isValid)
-                        {
-                            throw new Exception(showValidation.errorMessage);
-                        }
+                        //var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
+                        //if (!showValidation.isValid)
+                        //{
+                        //    throw new Exception(showValidation.errorMessage);
+                        //}
                     }
                     if (existPodcastSubscription.PodcastChannelId != null)
                     {
@@ -421,11 +421,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to update PodcastSubscription for PodcastChannel with Id: {existPodcastSubscription.PodcastChannelId}");
                         }
-                        var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
-                        if (!channelValidation.isValid)
-                        {
-                            throw new Exception(channelValidation.errorMessage);
-                        }
+                        //var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
+                        //if (!channelValidation.isValid)
+                        //{
+                        //    throw new Exception(channelValidation.errorMessage);
+                        //}
                     }
 
                     //if (show.Count > 0 && show.HasValues)
@@ -467,10 +467,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var cycleTypePriceResult = await _podcastSubscriptionCycleTypePriceGenericRepository.CreateAsync(newCycleTypePrice);
-                        if (cycleTypePrices == null)
-                        {
-                            cycleTypePrices.Add(cycleTypePriceResult);
-                        }
+                        //if (cycleTypePrices == null)
+                        //{
+                        //    cycleTypePrices.Add(cycleTypePriceResult);
+                        //}
                     }
                     foreach (var benefitId in parameter.PodcastSubscriptionBenefitMappingList)
                     {
@@ -483,10 +483,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var benefitMappingResult = await _podcastSubscriptionBenefitMappingGenericRepository.CreateAsync(newBenefitMapping);
-                        if (benefitMappings == null)
-                        {
-                            benefitMappings.Add(benefitMappingResult);
-                        }
+                        //if (benefitMappings == null)
+                        //{
+                        //    benefitMappings.Add(benefitMappingResult);
+                        //}
                     }
 
                     var updateRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
@@ -506,8 +506,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         { "PodcastSubscriptionId", podcastSubscription.Id },
                         { "Name", podcastSubscription.Name },
                         { "Description", podcastSubscription.Description },
-                        { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(cycleTypePrices) },
-                        { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
+                        //{ "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(cycleTypePrices) },
+                        //{ "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
                         { "UpdatedAt", podcastSubscription.UpdatedAt },
                         { "NewVersion", podcastSubscription.CurrentVersion }
                     };
@@ -570,11 +570,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to delete PodcastSubscription for PodcastShow with Id: {existPodcastSubscription.PodcastShowId}");
                         }
-                        var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
-                        if (!showValidation.isValid)
-                        {
-                            throw new Exception(showValidation.errorMessage);
-                        }
+                        //var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
+                        //if (!showValidation.isValid)
+                        //{
+                        //    throw new Exception(showValidation.errorMessage);
+                        //}
                     }
                     if (existPodcastSubscription.PodcastChannelId != null)
                     {
@@ -583,11 +583,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to delete PodcastSubscription for PodcastChannel with Id: {existPodcastSubscription.PodcastChannelId}");
                         }
-                        var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
-                        if (!channelValidation.isValid)
-                        {
-                            throw new Exception(channelValidation.errorMessage);
-                        }
+                        //var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
+                        //if (!channelValidation.isValid)
+                        //{
+                        //    throw new Exception(channelValidation.errorMessage);
+                        //}
                     }
 
                     //if (show.Count > 0 && show.HasValues)
@@ -1001,11 +1001,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to activate PodcastSubscription for PodcastShow with Id: {podcastSubscription.PodcastShowId}");
                         }
-                        var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
-                        if (!showValidation.isValid)
-                        {
-                            throw new Exception(showValidation.errorMessage);
-                        }
+                        //var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
+                        //if (!showValidation.isValid)
+                        //{
+                        //    throw new Exception(showValidation.errorMessage);
+                        //}
                     }
                     if (podcastSubscription.PodcastChannelId != null)
                     {
@@ -1014,11 +1014,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to activate PodcastSubscription for PodcastChannel with Id: {podcastSubscription.PodcastChannelId}");
                         }
-                        var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
-                        if (!channelValidation.isValid)
-                        {
-                            throw new Exception(channelValidation.errorMessage);
-                        }
+                        //var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
+                        //if (!channelValidation.isValid)
+                        //{
+                        //    throw new Exception(channelValidation.errorMessage);
+                        //}
                     }
 
                     //if (show.Count > 0 && show.HasValues)
@@ -1139,11 +1139,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to deactivate PodcastSubscription for PodcastShow with Id: {podcastSubscription.PodcastShowId}");
                         }
-                        var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
-                        if (!showValidation.isValid)
-                        {
-                            throw new Exception(showValidation.errorMessage);
-                        }
+                        //var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
+                        //if (!showValidation.isValid)
+                        //{
+                        //    throw new Exception(showValidation.errorMessage);
+                        //}
                     }
                     if (podcastSubscription.PodcastChannelId != null)
                     {
@@ -1152,11 +1152,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to deactivate PodcastSubscription for PodcastChannel with Id: {podcastSubscription.PodcastChannelId}");
                         }
-                        var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
-                        if (!channelValidation.isValid)
-                        {
-                            throw new Exception(channelValidation.errorMessage);
-                        }
+                        //var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
+                        //if (!channelValidation.isValid)
+                        //{
+                        //    throw new Exception(channelValidation.errorMessage);
+                        //}
                     }
                     podcastSubscription.IsActive = false;
                     podcastSubscription.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
