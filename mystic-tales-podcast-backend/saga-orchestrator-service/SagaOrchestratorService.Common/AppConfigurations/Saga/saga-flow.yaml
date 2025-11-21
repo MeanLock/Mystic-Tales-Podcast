@@ -4853,14 +4853,17 @@ flows:
         handle-service: "PodcastService"
         description: "Đánh dấu tất cả phiên nghe episode của người dùng là hoàn thành"
         parameters:
+          - AccountId
           - IsEpisodeListenSessionCompleted
         next-request-data:
+          - AccountId
           - IsEpisodeListenSessionCompleted
-          - IsBookingListenSessionCompleted
+          - IsBookingProducingListenSessionCompleted
         response-data:
+          - AccountId
           - IsEpisodeListenSessionCompleted
         onSuccess:
-          emit: "complete-all-user-listen-sessions.success"
+          emit: "complete-all-user-episode-listen-sessions.success"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
@@ -4869,30 +4872,33 @@ flows:
               handle-service: "BookingManagementService"
           nextFlows: []
         onFailure:
-          emit: "complete-all-user-listen-sessions.failed"
+          emit: "complete-all-user-episode-listen-sessions.failed"
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "complete-all-user-booking-listen-sessions"
+      - name: "complete-all-user-booking-producing-listen-sessions"
         topic: "booking-management-domain"
         handle-service: "BookingManagementService"
         description: "Đánh dấu tất cả phiên nghe booking của người dùng là hoàn thành"
         parameters:
-          - IsBookingListenSessionCompleted
+          - AccountId
+          - IsBookingProducingListenSessionCompleted
         next-request-data:
+          - AccountId
           - IsEpisodeListenSessionCompleted
-          - IsBookingListenSessionCompleted
+          - IsBookingProducingListenSessionCompleted
         response-data:
-          - IsBookingListenSessionCompleted
+          - AccountId
+          - IsBookingProducingListenSessionCompleted
         onSuccess:
-          emit: "complete-all-user-booking-listen-sessions.success"
+          emit: "complete-all-user-booking-producing-listen-sessions.success"
           topic: "booking-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "complete-all-user-booking-listen-sessions.failed"
+          emit: "complete-all-user-booking-producing-listen-sessions.failed"
           topic: "booking-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []

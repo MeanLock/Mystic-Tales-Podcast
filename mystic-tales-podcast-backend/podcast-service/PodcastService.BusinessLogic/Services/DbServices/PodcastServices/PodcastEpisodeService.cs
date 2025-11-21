@@ -95,6 +95,7 @@ using PodcastService.BusinessLogic.DTOs.Auth;
 using PodcastService.BusinessLogic.Enums.App;
 using PodcastService.BusinessLogic.DTOs.SystemConfiguration;
 using Microsoft.IdentityModel.Tokens;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CompleteAllUserEpisodeListenSessions;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -3370,15 +3371,15 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 // kiểm tra việc đăng kí gói subscription của người dùng , người dùng sẽ đăng kí 1 trong 2 level subscription (channel level hoặc show level) nhưng 1 lần chỉ được đăng kí 1 level chứ không được đk cả 2, dù có đăng kí ở level nào thì benefit cũng được áp dụng
                                 // kiểm tra channel subscription != null thì kiểm tra đăng kí , nếu đăng kí bằng null thì kiểm tra show subscription != null thì kiểm tra đăng kí 
                                 PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = null;
-                                if(channelSubscription != null)
+                                if (channelSubscription != null)
                                 {
                                     listenerSubscriptionRegistration = await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id);
                                 }
-                                
+
                                 if (showSubscription != null && listenerSubscriptionRegistration == null)
                                 {
                                     listenerSubscriptionRegistration = await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
-                                }   
+                                }
 
                                 if (listenerSubscriptionRegistration == null)
                                 {
@@ -6302,6 +6303,67 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     await transaction.RollbackAsync();
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                     throw new Exception("Expire episode listen sessions job failed, error: " + ex.Message);
+                }
+            }
+        }
+
+        public async Task CompleteAllUserEpisodeListenSessions(CompleteAllUserEpisodeListenSessionsParameterDTO completeAllUserEpisodeListenSessionsParameterDTO, SagaCommandMessage command)
+        {
+
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    if (completeAllUserEpisodeListenSessionsParameterDTO.IsEpisodeListenSessionCompleted == true)
+                    {
+                        var sessionsToComplete = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+                                                predicate: pes => pes.AccountId == completeAllUserEpisodeListenSessionsParameterDTO.AccountId && pes.IsCompleted == false
+                                            ).ToListAsync();
+
+                        foreach (var session in sessionsToComplete)
+                        {
+                            session.IsCompleted = true;
+                            await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = completeAllUserEpisodeListenSessionsParameterDTO.AccountId;
+                    messageNextRequestData["IsEpisodeListenSessionCompleted"] = completeAllUserEpisodeListenSessionsParameterDTO.IsEpisodeListenSessionCompleted;
+
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        AccountId = completeAllUserEpisodeListenSessionsParameterDTO.AccountId,
+                        IsEpisodeListenSessionCompleted = completeAllUserEpisodeListenSessionsParameterDTO.IsEpisodeListenSessionCompleted,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "complete-all-user-episode-listen-sessions.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Complete all user episode listen sessions failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "complete-all-user-episode-listen-sessions.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }
             }
         }
