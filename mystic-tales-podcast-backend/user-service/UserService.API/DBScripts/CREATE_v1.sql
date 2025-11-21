@@ -64,6 +64,7 @@ CREATE TABLE PodcasterProfile (
     isVerified BIT NULL DEFAULT NULL,
     pricePerBookingWord DECIMAL(18,2) NULL DEFAULT NULL,
     verifiedAt DATETIME NULL DEFAULT NULL,
+    isBuddy BIT NOT NULL DEFAULT 0,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (accountId) REFERENCES Account(id)
@@ -129,7 +130,7 @@ CREATE TABLE AccountNotification (
     notificationTypeId INT NOT NULL,
     isSeen BIT NOT NULL DEFAULT 0,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
-    FOREIGN KEY (accountId) REFERENCES Account(id)
+    FOREIGN KEY (accountId) REFERENCES Account(id),
     FOREIGN KEY (notificationTypeId) REFERENCES NotificationType(id)
 );
 

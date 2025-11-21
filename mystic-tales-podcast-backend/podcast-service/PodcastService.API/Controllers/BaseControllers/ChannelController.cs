@@ -247,7 +247,8 @@ namespace PodcastService.API.Controllers.BaseControllers
             JObject requestData = new JObject
             {
                 ["PodcastChannelId"] = PodcastChannelId,
-                ["PodcasterId"] = account.Id
+                ["PodcasterId"] = account.Id,
+                ["KeptShowIds"] = JArray.FromObject(channelDeleteRequestDTO.ChannelDeletionOptions.KeptShowIds)
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "channel-deletion-flow");

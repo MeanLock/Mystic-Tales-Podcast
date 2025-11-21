@@ -25,7 +25,7 @@ namespace PodcastService.BusinessLogic.DTOs.Show
 
         public int PodcastShowSubscriptionTypeId { get; set; }
 
-        public Guid? PodcastChannelId { get; set; }
+        // public Guid? PodcastChannelId { get; set; }
         
         public List<int>? HashtagIds { get; set; }
     }

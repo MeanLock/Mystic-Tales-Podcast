@@ -66,6 +66,9 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Tak
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.RestoreContentDmca;
 using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
 using PodcastService.BusinessLogic.DTOs.SystemConfiguration;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.KeepChannelShowsChannelDeletionForce;
+using Hangfire.Common;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.AssignShowChannel;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -1105,6 +1108,184 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        public async Task<List<PodcastChannelSnippetResponseDTO>> GetShowAssignableChannelsByIdAsync(Guid showId, int podcasterId)
+        {
+            try
+            {
+                // validate podcaster
+                var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
+                if (existingPodcaster == null || existingPodcaster.Id != podcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                {
+                    throw new Exception("Podcaster with id " + podcasterId + " does not exist");
+                }
+
+                // validate show
+                var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(showId,
+                    includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                );
+                if (existingPodcastShow == null)
+                {
+                    throw new Exception("Podcast show with id " + showId + " does not exist");
+                }
+                else if (existingPodcastShow.DeletedAt != null)
+                {
+                    throw new Exception("Podcast show with id " + showId + " has been deleted");
+                }
+                else if (existingPodcastShow.PodcasterId != podcasterId)
+                {
+                    throw new Exception("Podcast show with id " + showId + " does not belong to podcaster with id " + podcasterId);
+                }
+                else if (existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.TakenDown)
+                {
+                    throw new Exception("Podcast show with id " + showId + " has been taken down");
+                }
+                else if (existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                {
+                    throw new Exception("Podcast show with id " + showId + " has been removed");
+                }
+
+                var query = _podcastChannelGenericRepository.FindAll(
+                    predicate: pc => pc.DeletedAt == null && pc.PodcasterId == podcasterId,
+                    includeFunc: q => q
+                        .Include(pc => pc.PodcastShows)
+                );
+
+                var channelList = await query.ToListAsync();
+
+                channelList = channelList.Where(pc => pc.PodcastShows.All(ps => ps.Id != showId)).ToList();
+
+                return channelList.Select(pc => new PodcastChannelSnippetResponseDTO
+                {
+                    Id = pc.Id,
+                    Name = pc.Name,
+                    Description = pc.Description,
+                    MainImageFileKey = pc.MainImageFileKey
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get show assignable channels failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task AssignPodcastShowChannel(AssignShowChannelParameterDTO assignShowChannelParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var existingPodcastShow = await _podcastShowGenericRepository.FindByIdAsync(assignShowChannelParameterDTO.PodcastShowId,
+                     includeFunc: q => q.Include(ps => ps.PodcastShowStatusTrackings)
+                    .Include(ps => ps.PodcastChannel)
+                    );
+
+                    if (existingPodcastShow == null)
+                    {
+                        throw new Exception("Podcast show with id " + assignShowChannelParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    else if (existingPodcastShow.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast show with id " + assignShowChannelParameterDTO.PodcastShowId + " has been deleted");
+                    }
+                    else if (existingPodcastShow.PodcasterId != assignShowChannelParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast show with id " + assignShowChannelParameterDTO.PodcastShowId + " does not belong to podcaster with id " + assignShowChannelParameterDTO.PodcasterId);
+                    }
+                    else if (existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.TakenDown)
+                    {
+                        throw new Exception("Podcast show with id " + assignShowChannelParameterDTO.PodcastShowId + " has been taken down");
+                    }
+                    else if (existingPodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Removed)
+                    {
+                        throw new Exception("Podcast show with id " + assignShowChannelParameterDTO.PodcastShowId + " has been removed");
+                    }
+
+                    if (existingPodcastShow.PodcastChannel != null && existingPodcastShow.PodcastChannel.DeletedAt != null)
+                    {
+                        throw new Exception("Podcast channel with id " + assignShowChannelParameterDTO.PodcastShowId + " does not exist");
+                    }
+                    else if (existingPodcastShow.PodcastChannelId != null && existingPodcastShow.PodcastChannel.PodcasterId != assignShowChannelParameterDTO.PodcasterId)
+                    {
+                        throw new Exception("Podcast channel with id " + existingPodcastShow.PodcastChannelId + " does not belong to podcaster with id " + existingPodcastShow.PodcasterId);
+                    }
+
+                    var existingPodcaster = await _accountCachingService.GetAccountStatusCacheById(existingPodcastShow.PodcasterId);
+                    if (existingPodcaster == null || existingPodcaster.Id != existingPodcastShow.PodcasterId || existingPodcaster.IsVerified == false || existingPodcaster.DeactivatedAt != null || existingPodcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + existingPodcastShow.PodcasterId + " does not exist");
+                    }
+
+                    // [BỎ]
+                    if (assignShowChannelParameterDTO.PodcastChannelId != null)
+                    {
+                        var existingPodcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(assignShowChannelParameterDTO.PodcastChannelId.Value,
+
+                            includeFunc: null
+                            );
+                        if (existingPodcastChannel == null)
+                        {
+                            throw new Exception("Podcast channel with id " + assignShowChannelParameterDTO.PodcastChannelId + " does not exist");
+                        }
+                        else if (existingPodcastChannel.DeletedAt != null)
+                        {
+                            throw new Exception("Podcast channel with id " + assignShowChannelParameterDTO.PodcastChannelId + " has been deleted");
+                        }
+                        else if (existingPodcastChannel.PodcasterId != existingPodcastShow.PodcasterId)
+                        {
+                            throw new Exception("Podcast channel with id " + assignShowChannelParameterDTO.PodcastChannelId + " does not belong to podcaster with id " + existingPodcastShow.PodcasterId);
+                        }
+                        existingPodcastShow.PodcastChannelId = assignShowChannelParameterDTO.PodcastChannelId;
+                    }
+                    else
+                    {
+                        existingPodcastShow.PodcastChannelId = null;
+                    }
+
+
+
+                    await _podcastShowGenericRepository.UpdateAsync(existingPodcastShow.Id, existingPodcastShow);
+
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["PodcastShowId"] = existingPodcastShow.Id;
+                    messageNextRequestData["PodcastChannelId"] = existingPodcastShow.PodcastChannelId;
+                    messageNextRequestData["PodcasterId"] = existingPodcastShow.PodcasterId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastShowId = existingPodcastShow.Id,
+                        PodcastChannelId = existingPodcastShow.PodcastChannelId,
+                        PodcasterId = existingPodcastShow.PodcasterId,
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "assign-show-channel.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Assign show channel failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "assign-show-channel.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
 
         public async Task UpdatePodcastShow(UpdateShowParameterDTO updateShowParameterDTO, SagaCommandMessage command)
         {
@@ -1137,7 +1318,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         throw new Exception("Podcast channel with id " + updateShowParameterDTO.PodcastShowId + " does not exist");
                     }
-                    else if (existingPodcastShow.PodcastChannelId != null && existingPodcastShow.PodcasterId != updateShowParameterDTO.PodcasterId)
+                    else if (existingPodcastShow.PodcastChannelId != null && existingPodcastShow.PodcastChannel.PodcasterId != updateShowParameterDTO.PodcasterId)
                     {
                         throw new Exception("Podcast channel with id " + existingPodcastShow.PodcastChannelId + " does not belong to podcaster with id " + existingPodcastShow.PodcasterId);
                     }
@@ -1148,22 +1329,23 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         throw new Exception("Podcaster with id " + existingPodcastShow.PodcasterId + " does not exist");
                     }
 
-                    if (updateShowParameterDTO.PodcastChannelId != null)
-                    {
-                        var existingPodcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(updateShowParameterDTO.PodcastChannelId.Value);
-                        if (existingPodcastChannel == null)
-                        {
-                            throw new Exception("Podcast channel with id " + updateShowParameterDTO.PodcastChannelId + " does not exist");
-                        }
-                        else if (existingPodcastChannel.DeletedAt != null)
-                        {
-                            throw new Exception("Podcast channel with id " + updateShowParameterDTO.PodcastChannelId + " has been deleted");
-                        }
-                        else if (existingPodcastChannel.PodcasterId != existingPodcastShow.PodcasterId)
-                        {
-                            throw new Exception("Podcast channel with id " + updateShowParameterDTO.PodcastChannelId + " does not belong to podcaster with id " + existingPodcastShow.PodcasterId);
-                        }
-                    }
+                    // [BỎ]
+                    // if (updateShowParameterDTO.PodcastChannelId != null)
+                    // {
+                    //     var existingPodcastChannel = await _podcastChannelGenericRepository.FindByIdAsync(updateShowParameterDTO.PodcastChannelId.Value);
+                    //     if (existingPodcastChannel == null)
+                    //     {
+                    //         throw new Exception("Podcast channel with id " + updateShowParameterDTO.PodcastChannelId + " does not exist");
+                    //     }
+                    //     else if (existingPodcastChannel.DeletedAt != null)
+                    //     {
+                    //         throw new Exception("Podcast channel with id " + updateShowParameterDTO.PodcastChannelId + " has been deleted");
+                    //     }
+                    //     else if (existingPodcastChannel.PodcasterId != existingPodcastShow.PodcasterId)
+                    //     {
+                    //         throw new Exception("Podcast channel with id " + updateShowParameterDTO.PodcastChannelId + " does not belong to podcaster with id " + existingPodcastShow.PodcasterId);
+                    //     }
+                    // }
                     existingPodcastShow.Name = updateShowParameterDTO.Name;
                     existingPodcastShow.Description = updateShowParameterDTO.Description;
                     existingPodcastShow.Language = updateShowParameterDTO.Language;
@@ -1172,7 +1354,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     existingPodcastShow.PodcastCategoryId = updateShowParameterDTO.PodcastCategoryId;
                     existingPodcastShow.PodcastSubCategoryId = updateShowParameterDTO.PodcastSubCategoryId;
                     existingPodcastShow.PodcastShowSubscriptionTypeId = updateShowParameterDTO.PodcastShowSubscriptionTypeId;
-                    existingPodcastShow.PodcastChannelId = updateShowParameterDTO.PodcastChannelId;
+                    // existingPodcastShow.PodcastChannelId = updateShowParameterDTO.PodcastChannelId;
                     if (updateShowParameterDTO.MainImageFileKey != null && updateShowParameterDTO.MainImageFileKey != "")
                     {
                         if (existingPodcastShow.MainImageFileKey != null && existingPodcastShow.MainImageFileKey != "")
@@ -1216,7 +1398,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     messageNextRequestData["PodcastCategoryId"] = existingPodcastShow.PodcastCategoryId;
                     messageNextRequestData["PodcastSubCategoryId"] = existingPodcastShow.PodcastSubCategoryId;
                     messageNextRequestData["PodcastShowSubscriptionTypeId"] = existingPodcastShow.PodcastShowSubscriptionTypeId;
-                    messageNextRequestData["PodcastChannelId"] = existingPodcastShow.PodcastChannelId;
+                    // messageNextRequestData["PodcastChannelId"] = existingPodcastShow.PodcastChannelId;
                     messageNextRequestData["HashtagIds"] = JArray.FromObject(updateShowParameterDTO.HashtagIds);
                     var messageResponseData = JObject.FromObject(new
                     {
@@ -1231,7 +1413,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         PodcastCategoryId = existingPodcastShow.PodcastCategoryId,
                         PodcastSubCategoryId = existingPodcastShow.PodcastSubCategoryId,
                         PodcastShowSubscriptionTypeId = existingPodcastShow.PodcastShowSubscriptionTypeId,
-                        PodcastChannelId = existingPodcastShow.PodcastChannelId,
+                        // PodcastChannelId = existingPodcastShow.PodcastChannelId,
                         HashtagIds = updateShowParameterDTO.HashtagIds,
                     });
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
@@ -1295,8 +1477,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         await _fileIOHelper.CopyFileToFileAsync(submitShowTrailerAudioFileParameterDTO.TrailerAudioFileKey, TrailerAudioFileKey);
                         await _fileIOHelper.DeleteFileAsync(submitShowTrailerAudioFileParameterDTO.TrailerAudioFileKey);
                         existingPodcastShow.TrailerAudioFileKey = TrailerAudioFileKey;
-
                     }
+
 
                     await _podcastShowGenericRepository.UpdateAsync(existingPodcastShow.Id, existingPodcastShow);
                     await transaction.CommitAsync();
@@ -2463,7 +2645,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                                 .OrderByDescending(pet => pet.CreatedAt)
                                                 .FirstOrDefault();
 
-                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Published && currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.TakenDown)
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.ReadyToRelease && currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Draft)
                         {
                             // nếu có ít nhất 1 episode ở trạng thái published thì chuyển thành ready to release, ngược lại là draft
                             bool hasPublishedEpisode = false;
@@ -2792,6 +2974,62 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
                         messageName: "delete-show-show-deletion-force.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
+
+        public async Task KeepChannelShowsChannelDeletionForce(KeepChannelShowsChannelDeletionForceParameterDTO keepChannelShowsChannelDeletionForceParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var shows = await _podcastShowGenericRepository.FindAll(
+                        predicate: ps => ps.PodcastChannelId == keepChannelShowsChannelDeletionForceParameterDTO.PodcastChannelId && keepChannelShowsChannelDeletionForceParameterDTO.KeptShowIds.Contains(ps.Id),
+                        includeFunc: ps => ps.Include(ps => ps.PodcastShowStatusTrackings)
+                    ).ToListAsync();
+
+                    foreach (var show in shows)
+                    {
+                        show.PodcastChannelId = null;
+                        await _podcastShowGenericRepository.UpdateAsync(show.Id, show);
+                    }
+
+                    await transaction.CommitAsync();
+
+                    var messageNextRequestData = new JObject();
+                    messageNextRequestData["PodcastChannelId"] = keepChannelShowsChannelDeletionForceParameterDTO.PodcastChannelId;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        PodcastChannelId = keepChannelShowsChannelDeletionForceParameterDTO.PodcastChannelId,
+                        KeptShowIds = keepChannelShowsChannelDeletionForceParameterDTO.KeptShowIds
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "keep-channel-shows-channel-deletion-force.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Keep channel shows channel deletion force failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "keep-channel-shows-channel-deletion-force.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
                     Console.WriteLine("\n" + ex.StackTrace + "\n");

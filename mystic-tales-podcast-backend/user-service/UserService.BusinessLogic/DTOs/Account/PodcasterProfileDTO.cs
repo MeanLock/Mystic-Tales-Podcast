@@ -23,6 +23,8 @@ namespace UserService.BusinessLogic.DTOs.Account
         public double UsedBookingStorageSize { get; set; }
 
         public bool? IsVerified { get; set; }
+        public required DateTime? VerifiedAt { get; set; }
+        public required bool IsBuddy { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

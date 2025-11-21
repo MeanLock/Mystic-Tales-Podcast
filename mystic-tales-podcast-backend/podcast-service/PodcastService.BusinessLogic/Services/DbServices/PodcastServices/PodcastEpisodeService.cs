@@ -5281,7 +5281,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                                 .OrderByDescending(pet => pet.CreatedAt)
                                                 .FirstOrDefault();
 
-                        if (currentStatusTracking.PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Published && currentStatusTracking.PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.TakenDown)
+                        if (currentStatusTracking.PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published || currentStatusTracking.PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
                         {
                             // Unpublish khác với delete
                             var newStatusTracking = new PodcastEpisodeStatusTracking

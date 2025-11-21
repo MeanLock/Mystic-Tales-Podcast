@@ -172,26 +172,67 @@ namespace UserService.API.Controllers.BaseControllers
             return Ok(new { StaffList = staffs });
         }
 
-        // /api/user-service/api/accounts/podcasters
-        [HttpGet("podcasters")]
+        // /api/user-service/api/accounts/admin/podcasters
+        [HttpGet("admin/podcasters")]
         [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> GetPodcasters([FromQuery] PodcasterQueryEnum? QueryType = null, [FromQuery] int? PodcastCategoryId = null)
         {
-            var podcasters = await _accountService.GetPodcasterAccounts();
+            var podcasters = await _accountService.GetPodcasterAccountsForAdmin();
 
             return Ok(new { PodcasterList = podcasters });
         }
 
+        // /api/user-service/api/accounts/customer/podcasters
+        [HttpGet("customer/podcasters")]
+        // [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastersForCustomer()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var podcasters = await _accountService.GetPodcasterAccountsForCustomer(account?.Id);
+
+            return Ok(new { PodcasterList = podcasters });
+        }
+
+        // /api/user-service/api/accounts/followed-podcasters
+        [HttpGet("followed-podcasters")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetFollowedPodcasters()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var podcasters = await _accountService.GetFollowedPodcasterAccounts(account.Id);
+
+            return Ok(new { FollowedPodcasterList = podcasters });
+        }
+
+
+
         // /api/user-service/api/accounts/podcast-buddies
         [HttpGet("podcast-buddies")]
-        // [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetPodcastBuddies()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             Console.WriteLine($"Logged in account from HttpContext.Items: Id={account?.Id}, RoleId={account?.RoleId}, IsVerified={account?.IsVerified}, DeactivatedAt={account?.DeactivatedAt}");
-            var podcastBuddies = await _accountService.GetPodcastBuddyAccounts(account?.RoleId);
+            var podcastBuddies = await _accountService.GetPodcastBuddyAccounts(account);
 
             return Ok(new { PodcastBuddyList = podcastBuddies });
+        }
+
+        // /api/user-service/api/accounts/podcast-buddies/{AccountId}
+        [HttpGet("podcast-buddies/{AccountId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastBuddyProfileByAccountId(int AccountId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (AccountId == account.Id)
+            {
+                return StatusCode(403, "You cannot view your own podcast buddy profile as a customer");
+            }
+            var podcastBuddyProfile = await _accountService.GetPodcastBuddyProfileByAccountId(AccountId, account.Id);
+
+            return Ok(podcastBuddyProfile);
         }
 
         // /api/user-service/api/accounts/podcaster/apply
@@ -245,28 +286,36 @@ namespace UserService.API.Controllers.BaseControllers
         [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
         public async Task<IActionResult> GetPodcasterProfileByAccountId(int AccountId)
         {
-            var podcasterProfile = await _accountService.GetPodcasterProfileByAccountId(AccountId);
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            if (account.RoleId == 1 && podcasterProfile.Id != account.Id)
+            if (account.RoleId == 1 && AccountId != account.Id)
             {
                 return StatusCode(403, "Customer accounts can only view their own podcaster profiles.");
             }
+            var podcasterProfile = await _accountService.GetPodcasterProfileForAdminByAccountId(AccountId);
+
             return Ok(new { PodcasterAccount = podcasterProfile });
         }
 
-        // /api/user-service/api/accounts/podcast-buddies/{AccountId}
-        [HttpGet("podcast-buddies/{AccountId}")]
-        [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
-        public async Task<IActionResult> GetPodcastBuddyProfileByAccountId(int AccountId)
+        // /api/user-service/api/accounts/customer/podcasters/{AccountId}
+        [HttpGet("customer/podcasters/{AccountId}")]
+        // [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcasterProfileForCustomerByAccountId(int AccountId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var podcastBuddyProfile = await _accountService.GetPodcastBuddyProfileByAccountId(AccountId, account.RoleId);
+            Console.WriteLine($"Logged in account from HttpContext.Items: Id={account?.Id}, RoleId={account?.RoleId}, IsVerified={account?.IsVerified}, DeactivatedAt={account?.DeactivatedAt}");
+            if (account != null && account.Id == AccountId)
+            {
+                return StatusCode(403, "You cannot view your own podcaster profile as a customer");
+            }
+            var podcasterProfile = await _accountService.GetPodcasterProfileForCustomerByAccountId(AccountId, account?.Id);
 
-            return Ok(podcastBuddyProfile);
+            return Ok(podcasterProfile);
         }
 
-        // /api/user-service/api/accounts/podcaster/{AccountId}
-        [HttpPut("podcaster/{AccountId}")]
+
+
+        // /api/user-service/api/accounts/customer/podcaster/{AccountId}
+        [HttpPut("customer/podcaster/{AccountId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> UpdatePodcasterProfileByAccountId(PodcasterProfileUpdateRequestDTO podcasterProfileUpdateRequestDTO, int AccountId)
         {

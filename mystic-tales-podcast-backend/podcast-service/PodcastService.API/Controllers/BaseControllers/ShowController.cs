@@ -395,6 +395,44 @@ namespace PodcastService.API.Controllers.BaseControllers
             });
         }
 
+        // /api/podcast-service/api/shows/{PodcastShowId}/show-assignable-channels
+        [HttpGet("{PodcastShowId}/show-assignable-channels")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetShowAssignableChannelsById(Guid PodcastShowId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var assignableChannels = await _podcastShowService.GetShowAssignableChannelsByIdAsync(PodcastShowId, account.Id);
+
+            return Ok(new
+            {
+                ShowAssignableChannelList = assignableChannels
+            });
+        }
+
+        // /api/podcast-service/api/shows/{PodcastShowId}/assign-channel
+        [HttpPut("{PodcastShowId}/assign-channel")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> AssignChannelToShowById(Guid PodcastShowId, ShowChannelAssignRequestDTO showAssignChannelRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            JObject requestData = new JObject
+            {
+                ["PodcastShowId"] = PodcastShowId,
+                ["PodcasterId"] = account.Id,
+                ["PodcastChannelId"] = showAssignChannelRequestDTO.PodcastChannelId
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "show-channel-assignment-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
         // /api/podcast-service/api/shows/{PodcastShowId}
         [HttpPut("{PodcastShowId}")]
         [Authorize(Policy = "Customer.PodcasterAccess")]

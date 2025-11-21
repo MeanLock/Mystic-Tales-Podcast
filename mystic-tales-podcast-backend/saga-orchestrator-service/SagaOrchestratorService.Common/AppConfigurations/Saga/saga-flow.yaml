@@ -3394,13 +3394,13 @@ flows:
           - PodcasterId
           - TrailerAudioFileKey
         onSuccess:
-          emit: " submit-show-trailer-audio-file.success"
+          emit: "submit-show-trailer-audio-file.success"
           topic: "content-management-domain"
           handle-service: "PodcastService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: " submit-show-trailer-audio-file.failed"
+          emit: "submit-show-trailer-audio-file.failed"
           topic: "content-management-domain"
           handle-service: "PodcastService"
           nextSteps: []

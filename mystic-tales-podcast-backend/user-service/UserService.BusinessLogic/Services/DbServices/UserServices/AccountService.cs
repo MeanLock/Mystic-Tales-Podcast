@@ -88,6 +88,7 @@ using UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.DeleteAcc
 using UserService.BusinessLogic.DTOs.Account.ListItems;
 using UserService.BusinessLogic.Services.DbServices.CachingServices;
 using UserService.BusinessLogic.DTOs.SystemConfiguration;
+using UserService.BusinessLogic.DTOs.Account.Details;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -650,7 +651,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         }
 
-        public async Task<List<PodcasterListItemResponseDTO>> GetPodcasterAccounts()
+        public async Task<List<PodcasterListItemResponseDTO>> GetPodcasterAccountsForAdmin()
         {
             try
             {
@@ -709,6 +710,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             OwnedBookingStorageSize = item.PodcasterProfile.OwnedBookingStorageSize,
                             UsedBookingStorageSize = item.PodcasterProfile.UsedBookingStorageSize,
                             IsVerified = item.PodcasterProfile.IsVerified,
+                            IsBuddy = item.PodcasterProfile.IsBuddy,
+                            VerifiedAt = item.PodcasterProfile.VerifiedAt,
                             CreatedAt = item.PodcasterProfile.CreatedAt,
                             UpdatedAt = item.PodcasterProfile.UpdatedAt,
                         },
@@ -741,24 +744,112 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             }
         }
 
-        public async Task<List<PodcastBuddyListItemResponseDTO>> GetPodcastBuddyAccounts(int? requestRoleId)
+        public async Task<List<PodcasterProfileCustomerListItemResponseDTO>> GetPodcasterAccountsForCustomer(int? customerAccountId = null)
         {
             try
             {
 
                 var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
-                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.IsVerified == true && a.IsVerified == true && a.PodcasterProfile.IsBuddy == true,
+                    // nếu có customerAccountId thì loại bỏ podcaster có id trùng với customerAccountId
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.IsVerified == true && a.DeactivatedAt == null && a.IsVerified == true && (a.Id != (customerAccountId ?? 0)),
+                    includeFunc: a => a.Include(ac => ac.Role)
+                                .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+                                .Include(ac => ac.AccountFollowedPodcasterPodcasters)
+                    );
+
+
+                var result = podcasters.Select(item =>
+                {
+
+                    return new PodcasterProfileCustomerListItemResponseDTO
+                    {
+                        AccountId = item.Id,
+                        AverageRating = item.PodcasterProfile.AverageRating,
+                        RatingCount = item.PodcasterProfile.RatingCount,
+                        Name = item.PodcasterProfile.Name,
+                        Description = item.PodcasterProfile.Description,
+                        IsBuddy = item.PodcasterProfile.IsBuddy,
+                        IsFollowedByCurrentUser = customerAccountId != null && item.AccountFollowedPodcasterPodcasters.Any(afp => afp.AccountId == customerAccountId),
+                        IsVerified = item.PodcasterProfile.IsVerified,
+                        TotalFollow = item.PodcasterProfile.TotalFollow,
+                        MainImageFileKey = item.MainImageFileKey,
+                        ListenCount = item.PodcasterProfile.ListenCount,
+                        VerifiedAt = item.PodcasterProfile.VerifiedAt,
+                    };
+                });
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get podcaster account list failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<List<PodcasterProfileCustomerListItemResponseDTO>> GetFollowedPodcasterAccounts(int customerAccountId)
+        {
+            try
+            {
+                var accountFollowedPodcaster = await _accountFollowedPodcasterGenericRepository.FindAll(
+                    predicate: afp => afp.AccountId == customerAccountId,
+                    includeFunc: a => a.Include(afp => afp.Podcaster)
+                                    .ThenInclude(pa => pa.PodcasterProfile)
+                ).ToListAsync();
+
+
+
+
+                var result = accountFollowedPodcaster.Select(item =>
+                {
+
+                    return new PodcasterProfileCustomerListItemResponseDTO
+                    {
+                        AccountId = item.Podcaster.Id,
+                        AverageRating = item.Podcaster.PodcasterProfile.AverageRating,
+                        RatingCount = item.Podcaster.PodcasterProfile.RatingCount,
+                        Name = item.Podcaster.PodcasterProfile.Name,
+                        Description = item.Podcaster.PodcasterProfile.Description,
+                        IsBuddy = item.Podcaster.PodcasterProfile.IsBuddy,
+                        IsFollowedByCurrentUser = true,
+                        IsVerified = item.Podcaster.PodcasterProfile.IsVerified,
+                        TotalFollow = item.Podcaster.PodcasterProfile.TotalFollow,
+                        MainImageFileKey = item.Podcaster.MainImageFileKey,
+                        ListenCount = item.Podcaster.PodcasterProfile.ListenCount,
+                        VerifiedAt = item.Podcaster.PodcasterProfile.VerifiedAt,
+                    };
+                });
+                return result.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get podcaster account list failed, error: " + ex.Message);
+            }
+        }
+
+
+
+        public async Task<List<PodcastBuddyListItemResponseDTO>> GetPodcastBuddyAccounts(AccountStatusCache requesterAccount)
+        {
+            try
+            {
+
+                var excludeRequesterId = requesterAccount.Id;
+                var podcasters = await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+                    // nếu có requestAccount thì loai bỏ podcaster có id trùng với requestAccount.Id
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.IsVerified == true && a.IsVerified == true && a.PodcasterProfile.IsBuddy == true && (a.Id != excludeRequesterId) && a.DeactivatedAt == null && (a.ViolationLevel == 0 || a.ViolationLevel == null),
                         a => a.Include(ac => ac.Role)
                                 .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
                                 .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
                                 .ThenInclude(r => r.Account)
+                                .Include(ac => ac.AccountFollowedPodcasterPodcasters)
                     );
 
                 // nếu requestRoleId là 1 thì loại bỏ các account có DeactivatedAt khác null và violation level != 0
-                if (requestRoleId == null || requestRoleId == 1)
-                {
-                    podcasters = podcasters.Where(p => p.DeactivatedAt == null && (p.ViolationLevel == 0 || p.ViolationLevel == null)).ToList();
-                }
+                // if (requesterAccount == null || requesterAccount.RoleId == 1)
+                // {
+                //     podcasters = podcasters.Where(p => p.DeactivatedAt == null && (p.ViolationLevel == 0 || p.ViolationLevel == null)).ToList();
+                // }
 
 
 
@@ -781,6 +872,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             CommitmentDocumentFileKey = item.PodcasterProfile.CommitmentDocumentFileKey,
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
                             IsVerified = item.PodcasterProfile.IsVerified,
+                            IsFollowedByCurrentUser = item.AccountFollowedPodcasterPodcasters.Any(afp => afp.AccountId == requesterAccount.Id),
                         },
                         ReviewList = item.PodcastBuddyReviewPodcastBuddies?
                         .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
@@ -811,7 +903,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             }
         }
 
-        public async Task<PodcasterListItemResponseDTO> GetPodcasterProfileByAccountId(int accountId)
+        public async Task<PodcasterListItemResponseDTO> GetPodcasterProfileForAdminByAccountId(int accountId)
         {
             try
             {
@@ -872,6 +964,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         OwnedBookingStorageSize = podcaster.PodcasterProfile.OwnedBookingStorageSize,
                         UsedBookingStorageSize = podcaster.PodcasterProfile.UsedBookingStorageSize,
                         IsVerified = podcaster.PodcasterProfile.IsVerified,
+                        IsBuddy = podcaster.PodcasterProfile.IsBuddy,
+                        VerifiedAt = podcaster.PodcasterProfile.VerifiedAt,
                         CreatedAt = podcaster.PodcasterProfile.CreatedAt,
                         UpdatedAt = podcaster.PodcasterProfile.UpdatedAt,
                     },
@@ -903,31 +997,99 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             }
         }
 
-        public async Task<PodcastBuddyListItemResponseDTO> GetPodcastBuddyProfileByAccountId(int accountId, int requestRoleId)
+        public async Task<PodcasterProfileCustomerDetailResponseDTO> GetPodcasterProfileForCustomerByAccountId(int podcasterId, int? customerAccountId = null)
         {
             try
             {
                 var podcaster = (await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
-                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.AccountId == accountId && a.PodcasterProfile.IsVerified == true && a.IsVerified == true && a.PodcasterProfile.IsBuddy == true,
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.AccountId == podcasterId && a.PodcasterProfile.IsVerified == true && a.DeactivatedAt == null && a.IsVerified == true,
                         a => a.Include(ac => ac.Role)
                                 .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
                                 .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
                                 .ThenInclude(r => r.Account)
+                                .Include(ac => ac.AccountFollowedPodcasterPodcasters)
                     )).FirstOrDefault();
 
                 // đếm số review
                 if (podcaster == null)
                 {
-                    throw new Exception("Podcaster account with id " + accountId + " not found");
+                    throw new Exception("Podcaster account with id " + podcasterId + " not found");
+                }
+
+                Console.WriteLine("Số podcaster tìm thấy: " + (podcaster.PodcastBuddyReviewPodcastBuddies.Count > 0 ? podcaster.PodcastBuddyReviewPodcastBuddies.Count : 0));
+
+                return new PodcasterProfileCustomerDetailResponseDTO
+                {
+                    AccountId = podcaster.Id,
+                    AverageRating = podcaster.PodcasterProfile.AverageRating,
+                    RatingCount = podcaster.PodcasterProfile.RatingCount,
+                    Name = podcaster.PodcasterProfile.Name,
+                    Description = podcaster.PodcasterProfile.Description,
+                    IsBuddy = podcaster.PodcasterProfile.IsBuddy,
+                    IsFollowedByCurrentUser = customerAccountId != null && podcaster.AccountFollowedPodcasterPodcasters.Any(afp => afp.AccountId == customerAccountId),
+                    IsVerified = podcaster.PodcasterProfile.IsVerified,
+                    TotalFollow = podcaster.PodcasterProfile.TotalFollow,
+                    MainImageFileKey = podcaster.MainImageFileKey,
+                    ListenCount = podcaster.PodcasterProfile.ListenCount,
+                    VerifiedAt = podcaster.PodcasterProfile.VerifiedAt,
+                    ReviewList = podcaster.PodcastBuddyReviewPodcastBuddies?
+                    .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                    {
+                        Id = r.Id,
+                        Account = new AccountSnippetResponseDTO
+                        {
+                            Id = r.Account.Id,
+                            FullName = r.Account.FullName,
+                            Email = r.Account.Email,
+                            MainImageFileKey = r.Account.MainImageFileKey
+                        },
+                        Rating = r.Rating,
+                        Content = r.Content,
+                        DeletedAt = r.DeletedAt,
+                        PodcastBuddyId = r.PodcastBuddyId,
+                        Title = r.Title,
+                        UpdatedAt = r.UpdatedAt
+                    }).ToList()
+                };
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get podcaster account list failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<PodcastBuddyListItemResponseDTO> GetPodcastBuddyProfileByAccountId(int buddyId, int requestAccountId)
+        {
+            try
+            {
+                var podcaster = (await _unitOfWork.AccountRepository.FindByRoleIdAsync(1,
+                    predicate: a => a.PodcasterProfile != null && a.PodcasterProfile.AccountId == buddyId && a.PodcasterProfile.IsVerified == true && a.IsVerified == true && a.PodcasterProfile.IsBuddy == true && a.DeactivatedAt == null && (a.ViolationLevel == 0 || a.ViolationLevel == null),
+                        a => a.Include(ac => ac.Role)
+                                .Include(ac => ac.PodcasterProfile)  // Expression riêng biệt
+                                .Include(ac => ac.PodcastBuddyReviewPodcastBuddies)
+                                .ThenInclude(r => r.Account)
+                                .Include(ac => ac.AccountFollowedPodcasterPodcasters)
+                    )).FirstOrDefault();
+
+                // đếm số review
+                if (podcaster == null)
+                {
+                    throw new Exception("Podcast buddy account with id " + buddyId + " not found");
                 }
 
                 // nếu requestRoleId là 1 thì loại bỏ các account có DeactivatedAt khác null và violation level != 0
-                if (requestRoleId == 1 && (podcaster.DeactivatedAt != null || podcaster.ViolationLevel != 0))
-                {
-                    throw new Exception("Podcaster account with id " + accountId + " not found");
-                }
+                // if (requestRoleId == 1 && (podcaster.DeactivatedAt != null || podcaster.ViolationLevel != 0))
+                // {
+                //     throw new Exception("Podcast buddy account with id " + buddyId + " not found");
+                // }
 
-
+                // in ra danh sách follow
+                // foreach (var afp in podcaster.AccountFollowedPodcasterPodcasters)
+                // {
+                //     Console.WriteLine("Followed podcaster account id: " + afp.PodcasterId + " by account id: " + afp.AccountId);
+                // }
 
 
                 Console.WriteLine("Số podcaster tìm thấy: " + (podcaster.PodcastBuddyReviewPodcastBuddies.Count > 0 ? podcaster.PodcastBuddyReviewPodcastBuddies.Count : 0));
@@ -947,6 +1109,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         CommitmentDocumentFileKey = podcaster.PodcasterProfile.CommitmentDocumentFileKey,
                         BuddyAudioFileKey = podcaster.PodcasterProfile.BuddyAudioFileKey,
                         IsVerified = podcaster.PodcasterProfile.IsVerified,
+                        IsFollowedByCurrentUser = podcaster.AccountFollowedPodcasterPodcasters.Any(afp => afp.AccountId == requestAccountId),
                     },
                     ReviewList = podcaster.PodcastBuddyReviewPodcastBuddies?
                     .Where(r => r.Account != null).Select(r => new ReviewListItemDTO

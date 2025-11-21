@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using PodcastService.BusinessLogic.Attributes;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.AssignShowChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateBackgroundSoundTrack;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateChannel;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CreateEpisode;
@@ -12,6 +13,7 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Del
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteEpisodeLicenses;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowEpisodesShowDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.DeleteShowShowShowDeletionForce;
+using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.KeepChannelShowsChannelDeletionForce;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusChannelTotalFavorite;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusEpisodeTotalSaved;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.PlusShowTotalFollow;
@@ -245,6 +247,21 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "create-show.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("assign-show-channel", SAGA_TOPIC)]
+        public async Task HandleShowChannelAssignFlowAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var show = command.RequestData.ToObject<AssignShowChannelParameterDTO>();
+                    await _podcastShowService.AssignPodcastShowChannel(show, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "assign-show-channel.failed"    // From YAML onFailure.emit
             );
         }
 
@@ -879,6 +896,21 @@ namespace PodcastService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "delete-show-show-deletion-force.failed"    // From YAML onFailure.emit
+            );
+        }
+
+        [MessageHandler("keep-channel-shows-channel-deletion-force", SAGA_TOPIC)]
+        public async Task HandleKeepChannelShowsChannelDeletionForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var parameterDTO = command.RequestData.ToObject<KeepChannelShowsChannelDeletionForceParameterDTO>();
+                    await _podcastShowService.KeepChannelShowsChannelDeletionForce(parameterDTO, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "keep-channel-shows-channel-deletion-force.failed"    // From YAML onFailure.emit
             );
         }
 

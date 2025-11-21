@@ -1347,14 +1347,16 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         id: unpublishChannelUnpublishChannelForceParameterDTO.PodcastChannelId,
                         includeFunc: pe => pe.Include(pe => pe.PodcastChannelStatusTrackings)
                     );
+                    Console.WriteLine("Channel found: " + (channel != null));
 
                     if (channel != null)
                     {
+                        Console.WriteLine("Channel Status Trackings count: " + channel.Name + " - " + channel.PodcastChannelStatusTrackings.Count);
                         var currentStatusTracking = channel.PodcastChannelStatusTrackings
                                                 .OrderByDescending(pet => pet.CreatedAt)
                                                 .FirstOrDefault();
 
-                        if (currentStatusTracking.PodcastChannelStatusId != (int)PodcastChannelStatusEnum.Published)
+                        if (currentStatusTracking.PodcastChannelStatusId != (int)PodcastChannelStatusEnum.Unpublished)
                         {
                             var newStatusTracking = new PodcastChannelStatusTracking
                             {

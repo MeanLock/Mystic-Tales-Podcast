@@ -12,7 +12,7 @@ namespace PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain
         public int? PodcastCategoryId { get; set; }
         public int? PodcastSubCategoryId { get; set; }
         public int PodcastShowSubscriptionTypeId { get; set; }
-        public Guid? PodcastChannelId { get; set; }
+        // public Guid? PodcastChannelId { get; set; }
         public List<int>? HashtagIds { get; set; }
         public string? MainImageFileKey { get; set; }
     }
