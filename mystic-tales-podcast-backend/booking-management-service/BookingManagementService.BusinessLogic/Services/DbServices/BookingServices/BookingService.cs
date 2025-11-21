@@ -6,6 +6,7 @@ using BookingManagementService.BusinessLogic.DTOs.Booking;
 using BookingManagementService.BusinessLogic.DTOs.Booking.Details;
 using BookingManagementService.BusinessLogic.DTOs.Booking.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.Cache;
+using BookingManagementService.BusinessLogic.DTOs.Cache.ListesnSessionProcedure;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AcceptBookingDealing;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AddPodcastTonesToPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
@@ -24,6 +25,7 @@ using BookingManagementService.BusinessLogic.Enums.Account;
 using BookingManagementService.BusinessLogic.Enums.App;
 using BookingManagementService.BusinessLogic.Enums.Booking;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
+using BookingManagementService.BusinessLogic.Enums.ListenSessionProcedure;
 using BookingManagementService.BusinessLogic.Enums.Transaction;
 using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
@@ -31,6 +33,7 @@ using BookingManagementService.BusinessLogic.Models.CrossService;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using BookingManagementService.BusinessLogic.Services.DbServices.CachingServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
+using BookingManagementService.Common.AppConfigurations.BusinessSetting.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.DataAccess.Data;
 using BookingManagementService.DataAccess.Entities;
@@ -65,10 +68,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly AccountCachingService _accountCachingService;
+        private readonly CustomerListenSessionProcedureCachingService _customerListenSessionProcedureCachingService;
         private readonly ILogger<BookingService> _logger;
         private readonly IHlsConfig _hlsConfig;
 
         private readonly AppDbContext _appDbContext;
+        private readonly ICustomerListenSessionProcedureConfig _customerListenSessionProcedureConfig;
         private readonly IFilePathConfig _filePathConfig;
         private readonly FileIOHelper _fileIOHelper;
         private readonly DateHelper _dateHelper;
@@ -87,9 +92,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
             AccountCachingService accountCachingService,
+            CustomerListenSessionProcedureCachingService customerListenSessionProcedureCachingService,
             ILogger<BookingService> logger,
             IHlsConfig hlsConfig,
             AppDbContext appDbContext,
+            ICustomerListenSessionProcedureConfig customerListenSessionProcedureConfig,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
             DateHelper dateHelper
@@ -110,9 +117,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
             _accountCachingService = accountCachingService;
+            _customerListenSessionProcedureCachingService = customerListenSessionProcedureCachingService;
             _logger = logger;
             _hlsConfig = hlsConfig;
             _appDbContext = appDbContext;
+            _customerListenSessionProcedureConfig = customerListenSessionProcedureConfig;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
             _dateHelper = dateHelper;
@@ -2256,7 +2265,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var booking = await _bookingGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(b => b.BookingStatusTrackings)
-                        .Include(b => b.BookingProducingRequests))
+                        .Include(b => b.BookingProducingRequests)
+                        .ThenInclude(bp => bp.BookingPodcastTracks)
+                        .ThenInclude(bpt => bpt.BookingRequirement))
                         .Where(b => b.Id == bookingId)
                         .FirstOrDefaultAsync();
 
@@ -2317,7 +2328,49 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         messageName: "all-user-listen-session-completion-flow");
                     await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, booking.Id.ToString());
 
+                    List<ListenSessionProcedureListenObjectQueueItem> listenObjectSequential = new List<ListenSessionProcedureListenObjectQueueItem>();
+                    List<ListenSessionProcedureListenObjectQueueItem> listenObjectRandom = new List<ListenSessionProcedureListenObjectQueueItem>();
 
+                    foreach(var track in currentBookingProducingRequest.BookingPodcastTracks)
+                    {
+                        var isListenable = true;
+                        if (track.RemainingPreviewListenSlot <= 0)
+                        {
+                            isListenable = false;
+                        }
+                        var listenObjectItem = new ListenSessionProcedureListenObjectQueueItem
+                        {
+                            ListenObjectId = track.Id,
+                            Order = track.BookingRequirement.Order,
+                            IsListenable = isListenable
+                        };
+                        listenObjectSequential.Add(listenObjectItem);
+                        listenObjectRandom.Add(listenObjectItem);
+
+                    }
+                    var random = new Random();
+                    listenObjectRandom = listenObjectRandom.OrderBy(x => random.Next()).ToList();
+
+                    var createdProcedure = new CustomerListenSessionProcedure
+                    {
+                        Id = Guid.NewGuid(),
+                        PlayOrderMode = _customerListenSessionProcedureConfig.DefaultPlayOrderMode,
+                        IsAutoPlay = _customerListenSessionProcedureConfig.DefaultIsAutoPlay,
+                        SourceDetail = new ListenSessionProcedureSourceDetail
+                        {
+                            Type = Enum.GetName(ListenSessionProcedureSourceDetailTypeEnum.BookingProducingTracks),
+                            Booking = new BookingInfo
+                            {
+                                BookingProducingRequestId = currentBookingProducingRequest.Id,
+                                BookingTitle = booking.Title
+                            },
+                            PodcastShow = null
+                        },
+                        ListenObjectsSequentialOrder = listenObjectSequential,
+                        ListenObjectsRandomOrder = listenObjectRandom,
+                        IsCompleted = false,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                    };
 
                     await transaction.CommitAsync();
 

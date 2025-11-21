@@ -435,5 +435,29 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 PodcastSubscriptionRegistration = podcastSubscriptionRegistration
             });
         }
+        [HttpGet("podcast-subscriptions-registrations/channels/{PodcastChannelId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionRegistrationsByPodcastChannelId([FromRoute] Guid PodcastChannelId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var podcastSubscriptionRegistration = await _podcastSubscriptionService.GetPodcastSubscriptionRegistrationsByPodcastChannelIdAsync(PodcastChannelId, accountId);
+            return Ok(new
+            {
+                PodcastSubscriptionRegistration = podcastSubscriptionRegistration
+            });
+        }
+        [HttpGet("podcast-subscriptions-registrations/shows/{PodcastShowId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionRegistrationsByPodcastShowId([FromRoute] Guid PodcastShowId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var podcastSubscriptionRegistration = await _podcastSubscriptionService.GetPodcastSubscriptionRegistrationsByPodcastShowIdAsync(PodcastShowId, accountId);
+            return Ok(new
+            {
+                PodcastSubscriptionRegistration = podcastSubscriptionRegistration
+            });
+        }
     }
 }
