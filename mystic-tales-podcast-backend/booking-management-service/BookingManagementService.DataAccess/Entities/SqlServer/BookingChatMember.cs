@@ -9,5 +9,5 @@ public partial class BookingChatMember
 
     public int AccountId { get; set; }
 
-    public virtual BookingChatRoom ChatRoom { get; set; } = null!;
+    public virtual BookingChatRoom ChatRoom { get; set; }
 }

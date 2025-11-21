@@ -11,7 +11,7 @@ public partial class BookingProducingRequestPodcastTrackToEdit
 
     public Guid BookingPodcastTrackId { get; set; }
 
-    public virtual BookingPodcastTrack BookingPodcastTrack { get; set; } = null!;
+    public virtual BookingPodcastTrack BookingPodcastTrack { get; set; }
 
-    public virtual BookingProducingRequest BookingProducingRequest { get; set; } = null!;
+    public virtual BookingProducingRequest BookingProducingRequest { get; set; }
 }

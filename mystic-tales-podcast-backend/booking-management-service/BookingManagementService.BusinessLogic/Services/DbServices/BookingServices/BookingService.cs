@@ -2304,6 +2304,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                     }
 
+                    var requestData = new JObject
+                    {
+                        { "AccountId", accountId },
+                        { "IsBookingProducingListenSessionCompleted", false },
+                        { "IsEpisodeListenSessionCompleted", true }
+                    };
+                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        topic: KafkaTopicEnum.ContentManagementDomain,
+                        requestData: requestData,
+                        sagaInstanceId: null,
+                        messageName: "all-user-listen-session-completion-flow");
+                    await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, booking.Id.ToString());
+
+
+
                     await transaction.CommitAsync();
 
                     var playlistFileKey = FilePathHelper.CombinePaths(

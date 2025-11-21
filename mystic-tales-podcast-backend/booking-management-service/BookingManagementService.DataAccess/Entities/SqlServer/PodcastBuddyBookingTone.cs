@@ -11,5 +11,5 @@ public partial class PodcastBuddyBookingTone
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual PodcastBookingTone PodcastBookingTone { get; set; } = null!;
+    public virtual PodcastBookingTone PodcastBookingTone { get; set; }
 }

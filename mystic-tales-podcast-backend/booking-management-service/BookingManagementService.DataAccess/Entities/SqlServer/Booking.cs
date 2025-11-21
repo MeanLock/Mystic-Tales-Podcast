@@ -7,9 +7,9 @@ public partial class Booking
 {
     public int Id { get; set; }
 
-    public string Title { get; set; } = null!;
+    public string Title { get; set; }
 
-    public string Description { get; set; } = null!;
+    public string Description { get; set; }
 
     public int AccountId { get; set; }
 
@@ -19,11 +19,11 @@ public partial class Booking
 
     public DateOnly? Deadline { get; set; }
 
-    public string? DemoAudioFileKey { get; set; }
+    public string DemoAudioFileKey { get; set; }
 
-    public string? BookingManualCancelledReason { get; set; }
+    public string BookingManualCancelledReason { get; set; }
 
-    public string? BookingAutoCancelReason { get; set; }
+    public string BookingAutoCancelReason { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

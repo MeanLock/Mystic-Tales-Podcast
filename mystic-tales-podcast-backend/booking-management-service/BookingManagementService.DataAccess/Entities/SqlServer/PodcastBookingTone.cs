@@ -7,9 +7,9 @@ public partial class PodcastBookingTone
 {
     public Guid Id { get; set; }
 
-    public string Name { get; set; } = null!;
+    public string Name { get; set; }
 
-    public string? Description { get; set; }
+    public string Description { get; set; }
 
     public int PodcastBookingToneCategoryId { get; set; }
 
@@ -19,7 +19,7 @@ public partial class PodcastBookingTone
 
     public virtual ICollection<BookingRequirement> BookingRequirements { get; set; } = new List<BookingRequirement>();
 
-    public virtual PodcastBookingToneCategory PodcastBookingToneCategory { get; set; } = null!;
+    public virtual PodcastBookingToneCategory PodcastBookingToneCategory { get; set; }
 
     public virtual ICollection<PodcastBuddyBookingTone> PodcastBuddyBookingTones { get; set; } = new List<PodcastBuddyBookingTone>();
 }

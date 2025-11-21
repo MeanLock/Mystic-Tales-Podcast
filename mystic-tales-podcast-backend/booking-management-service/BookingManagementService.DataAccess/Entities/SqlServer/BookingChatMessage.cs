@@ -7,9 +7,9 @@ public partial class BookingChatMessage
 {
     public Guid Id { get; set; }
 
-    public string? Text { get; set; }
+    public string Text { get; set; }
 
-    public string? AudioFileKey { get; set; }
+    public string AudioFileKey { get; set; }
 
     public Guid ChatRoomId { get; set; }
 
@@ -17,5 +17,5 @@ public partial class BookingChatMessage
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual BookingChatRoom ChatRoom { get; set; } = null!;
+    public virtual BookingChatRoom ChatRoom { get; set; }
 }

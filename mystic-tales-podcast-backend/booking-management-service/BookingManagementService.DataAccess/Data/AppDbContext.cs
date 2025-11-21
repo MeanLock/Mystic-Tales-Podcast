@@ -46,7 +46,7 @@ public partial class AppDbContext : DbContext
     {
         modelBuilder.Entity<Booking>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Booking__3213E83F3C4DBC0D");
+            entity.HasKey(e => e.Id).HasName("PK__Booking__3213E83FE3653C2E");
 
             entity.ToTable("Booking", tb => tb.HasTrigger("TR_Booking_UpdatedAt"));
 
@@ -66,6 +66,7 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.DeadlineDays).HasColumnName("deadlineDays");
             entity.Property(e => e.DemoAudioFileKey).HasColumnName("demoAudioFileKey");
             entity.Property(e => e.Description)
+                .IsRequired()
                 .HasDefaultValue("")
                 .HasColumnName("description");
             entity.Property(e => e.PodcastBuddyBookingCancelDepositRefundRate)
@@ -76,6 +77,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("price");
             entity.Property(e => e.Title)
+                .IsRequired()
                 .HasMaxLength(250)
                 .HasColumnName("title");
             entity.Property(e => e.UpdatedAt)
@@ -86,7 +88,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<BookingChatMember>(entity =>
         {
-            entity.HasKey(e => new { e.ChatRoomId, e.AccountId }).HasName("PK__BookingC__347EC6C34424824E");
+            entity.HasKey(e => new { e.ChatRoomId, e.AccountId }).HasName("PK__BookingC__347EC6C34BDA8C29");
 
             entity.ToTable("BookingChatMember");
 
@@ -96,12 +98,12 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.ChatRoom).WithMany(p => p.BookingChatMembers)
                 .HasForeignKey(d => d.ChatRoomId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingCh__chatR__778AC167");
+                .HasConstraintName("FK__BookingCh__chatR__5AEE82B9");
         });
 
         modelBuilder.Entity<BookingChatMessage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BookingC__3213E83FB506977F");
+            entity.HasKey(e => e.Id).HasName("PK__BookingC__3213E83F431A144E");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
@@ -118,12 +120,12 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.ChatRoom).WithMany(p => p.BookingChatMessages)
                 .HasForeignKey(d => d.ChatRoomId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingCh__chatR__74AE54BC");
+                .HasConstraintName("FK__BookingCh__chatR__5BE2A6F2");
         });
 
         modelBuilder.Entity<BookingChatRoom>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BookingC__3213E83FB174F737");
+            entity.HasKey(e => e.Id).HasName("PK__BookingC__3213E83FA51906BC");
 
             entity.ToTable("BookingChatRoom");
 
@@ -139,12 +141,12 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.Booking).WithMany(p => p.BookingChatRooms)
                 .HasForeignKey(d => d.BookingId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingCh__booki__70DDC3D8");
+                .HasConstraintName("FK__BookingCh__booki__5CD6CB2B");
         });
 
         modelBuilder.Entity<BookingOptionalManualCancelReason>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BookingO__3213E83F779B281A");
+            entity.HasKey(e => e.Id).HasName("PK__BookingO__3213E83F4B216F13");
 
             entity.ToTable("BookingOptionalManualCancelReason");
 
@@ -152,13 +154,14 @@ public partial class AppDbContext : DbContext
                 .ValueGeneratedNever()
                 .HasColumnName("id");
             entity.Property(e => e.Name)
+                .IsRequired()
                 .HasMaxLength(250)
                 .HasColumnName("name");
         });
 
         modelBuilder.Entity<BookingPodcastTrack>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BookingP__3213E83F338988F1");
+            entity.HasKey(e => e.Id).HasName("PK__BookingP__3213E83F3806AE47");
 
             entity.ToTable("BookingPodcastTrack");
 
@@ -171,7 +174,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.AudioEncryptionKeyId)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnName("audioEncryptionKeyId");
-            entity.Property(e => e.AudioFileKey).HasColumnName("audioFileKey");
+            entity.Property(e => e.AudioFileKey)
+                .IsRequired()
+                .HasColumnName("audioFileKey");
             entity.Property(e => e.AudioFileSize).HasColumnName("audioFileSize");
             entity.Property(e => e.AudioLength).HasColumnName("audioLength");
             entity.Property(e => e.BookingId).HasColumnName("bookingId");
@@ -182,17 +187,44 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.Booking).WithMany(p => p.BookingPodcastTracks)
                 .HasForeignKey(d => d.BookingId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingPo__booki__68487DD7");
+                .HasConstraintName("FK__BookingPo__booki__5EBF139D");
 
             entity.HasOne(d => d.BookingProducingRequest).WithMany(p => p.BookingPodcastTracks)
                 .HasForeignKey(d => d.BookingProducingRequestId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingPo__booki__693CA210");
+                .HasConstraintName("FK__BookingPo__booki__5FB337D6");
 
             entity.HasOne(d => d.BookingRequirement).WithMany(p => p.BookingPodcastTracks)
                 .HasForeignKey(d => d.BookingRequirementId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingPo__booki__3864608B");
+                .HasConstraintName("FK__BookingPo__booki__17036CC0");
+        });
+
+        modelBuilder.Entity<BookingPodcastTrackListenSession>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__BookingP__3213E83F122471B5");
+
+            entity.ToTable("BookingPodcastTrackListenSession");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("(newid())")
+                .HasColumnName("id");
+            entity.Property(e => e.AccountId).HasColumnName("accountId");
+            entity.Property(e => e.BookingPodcastTrackId).HasColumnName("bookingPodcastTrackId");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(CONVERT([datetime],(sysdatetimeoffset() AT TIME ZONE 'N. Central Asia Standard Time')))")
+                .HasColumnType("datetime")
+                .HasColumnName("createdAt");
+            entity.Property(e => e.ExpiredAt)
+                .HasColumnType("datetime")
+                .HasColumnName("expiredAt");
+            entity.Property(e => e.IsCompleted).HasColumnName("isCompleted");
+            entity.Property(e => e.LastListenDurationSeconds).HasColumnName("lastListenDurationSeconds");
+
+            entity.HasOne(d => d.BookingPodcastTrack).WithMany(p => p.BookingPodcastTrackListenSessions)
+                .HasForeignKey(d => d.BookingPodcastTrackId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__BookingPo__booki__40058253");
         });
 
         modelBuilder.Entity<BookingPodcastTrackListenSession>(entity =>
@@ -224,7 +256,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<BookingProducingRequest>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BookingP__3213E83F1C41137B");
+            entity.HasKey(e => e.Id).HasName("PK__BookingP__3213E83FA7AB6EA1");
 
             entity.ToTable("BookingProducingRequest");
 
@@ -246,6 +278,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("finishedAt");
             entity.Property(e => e.IsAccepted).HasColumnName("isAccepted");
             entity.Property(e => e.Note)
+                .IsRequired()
                 .HasDefaultValue("")
                 .HasColumnName("note");
             entity.Property(e => e.RejectReason)
@@ -255,12 +288,12 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.Booking).WithMany(p => p.BookingProducingRequests)
                 .HasForeignKey(d => d.BookingId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingPr__booki__656C112C");
+                .HasConstraintName("FK__BookingPr__booki__60A75C0F");
         });
 
         modelBuilder.Entity<BookingProducingRequestPodcastTrackToEdit>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BookingP__3213E83FFC47A118");
+            entity.HasKey(e => e.Id).HasName("PK__BookingP__3213E83F25B9490E");
 
             entity.ToTable("BookingProducingRequestPodcastTrackToEdit");
 
@@ -273,17 +306,17 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.BookingPodcastTrack).WithMany(p => p.BookingProducingRequestPodcastTrackToEdits)
                 .HasForeignKey(d => d.BookingPodcastTrackId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingPr__booki__6D0D32F4");
+                .HasConstraintName("FK__BookingPr__booki__628FA481");
 
             entity.HasOne(d => d.BookingProducingRequest).WithMany(p => p.BookingProducingRequestPodcastTrackToEdits)
                 .HasForeignKey(d => d.BookingProducingRequestId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingPr__booki__6C190EBB");
+                .HasConstraintName("FK__BookingPr__booki__619B8048");
         });
 
         modelBuilder.Entity<BookingRequirement>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BookingR__3213E83FFEFFA280");
+            entity.HasKey(e => e.Id).HasName("PK__BookingR__3213E83FBFADCCBF");
 
             entity.ToTable("BookingRequirement");
 
@@ -292,30 +325,34 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("id");
             entity.Property(e => e.BookingId).HasColumnName("bookingId");
             entity.Property(e => e.Description)
+                .IsRequired()
                 .HasDefaultValue("")
                 .HasColumnName("description");
             entity.Property(e => e.Name)
+                .IsRequired()
                 .HasDefaultValue("")
                 .HasColumnName("name");
             entity.Property(e => e.Order).HasColumnName("order");
             entity.Property(e => e.PodcastBookingToneId).HasColumnName("podcastBookingToneId");
-            entity.Property(e => e.RequirementDocumentFileKey).HasColumnName("requirementDocumentFileKey");
+            entity.Property(e => e.RequirementDocumentFileKey)
+                .IsRequired()
+                .HasColumnName("requirementDocumentFileKey");
             entity.Property(e => e.WordCount).HasColumnName("wordCount");
 
             entity.HasOne(d => d.Booking).WithMany(p => p.BookingRequirements)
                 .HasForeignKey(d => d.BookingId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingRe__booki__3493CFA7");
+                .HasConstraintName("FK__BookingRe__booki__123EB7A3");
 
             entity.HasOne(d => d.PodcastBookingTone).WithMany(p => p.BookingRequirements)
                 .HasForeignKey(d => d.PodcastBookingToneId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingRe__podca__3587F3E0");
+                .HasConstraintName("FK__BookingRe__podca__1332DBDC");
         });
 
         modelBuilder.Entity<BookingStatus>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BookingS__3213E83FD852AACA");
+            entity.HasKey(e => e.Id).HasName("PK__BookingS__3213E83FAC5D7F70");
 
             entity.ToTable("BookingStatus");
 
@@ -323,13 +360,14 @@ public partial class AppDbContext : DbContext
                 .ValueGeneratedNever()
                 .HasColumnName("id");
             entity.Property(e => e.Name)
+                .IsRequired()
                 .HasMaxLength(50)
                 .HasColumnName("name");
         });
 
         modelBuilder.Entity<BookingStatusTracking>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__BookingS__3213E83F94A470A9");
+            entity.HasKey(e => e.Id).HasName("PK__BookingS__3213E83F6DA55706");
 
             entity.ToTable("BookingStatusTracking");
 
@@ -346,17 +384,17 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.Booking).WithMany(p => p.BookingStatusTrackings)
                 .HasForeignKey(d => d.BookingId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingSt__booki__5EBF139D");
+                .HasConstraintName("FK__BookingSt__booki__6477ECF3");
 
             entity.HasOne(d => d.BookingStatus).WithMany(p => p.BookingStatusTrackings)
                 .HasForeignKey(d => d.BookingStatusId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__BookingSt__booki__5FB337D6");
+                .HasConstraintName("FK__BookingSt__booki__656C112C");
         });
 
         modelBuilder.Entity<PodcastBookingTone>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__PodcastB__3213E83F74170A1C");
+            entity.HasKey(e => e.Id).HasName("PK__PodcastB__3213E83FF106C0C3");
 
             entity.ToTable("PodcastBookingTone");
 
@@ -376,6 +414,7 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnName("description");
             entity.Property(e => e.Name)
+                .IsRequired()
                 .HasMaxLength(100)
                 .HasColumnName("name");
             entity.Property(e => e.PodcastBookingToneCategoryId).HasColumnName("podcastBookingToneCategoryId");
@@ -383,12 +422,12 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.PodcastBookingToneCategory).WithMany(p => p.PodcastBookingTones)
                 .HasForeignKey(d => d.PodcastBookingToneCategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__PodcastBo__podca__2B0A656D");
+                .HasConstraintName("FK__PodcastBo__podca__08B54D69");
         });
 
         modelBuilder.Entity<PodcastBookingToneCategory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__PodcastB__3213E83F8B8CD0C3");
+            entity.HasKey(e => e.Id).HasName("PK__PodcastB__3213E83F37BB42C5");
 
             entity.ToTable("PodcastBookingToneCategory");
 
@@ -396,13 +435,14 @@ public partial class AppDbContext : DbContext
                 .ValueGeneratedNever()
                 .HasColumnName("id");
             entity.Property(e => e.Name)
+                .IsRequired()
                 .HasMaxLength(100)
                 .HasColumnName("name");
         });
 
         modelBuilder.Entity<PodcastBuddyBookingTone>(entity =>
         {
-            entity.HasKey(e => new { e.PodcasterId, e.PodcastBookingToneId }).HasName("PK__PodcastB__04D9E9B7A241A40A");
+            entity.HasKey(e => new { e.PodcasterId, e.PodcastBookingToneId }).HasName("PK__PodcastB__04D9E9B795A8BFA7");
 
             entity.ToTable("PodcastBuddyBookingTone");
 
@@ -416,7 +456,7 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.PodcastBookingTone).WithMany(p => p.PodcastBuddyBookingTones)
                 .HasForeignKey(d => d.PodcastBookingToneId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__PodcastBu__podca__2EDAF651");
+                .HasConstraintName("FK__PodcastBu__podca__0C85DE4D");
         });
 
         OnModelCreatingPartial(modelBuilder);

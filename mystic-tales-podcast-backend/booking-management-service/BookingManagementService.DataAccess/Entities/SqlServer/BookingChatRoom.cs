@@ -11,7 +11,7 @@ public partial class BookingChatRoom
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual Booking Booking { get; set; } = null!;
+    public virtual Booking Booking { get; set; }
 
     public virtual ICollection<BookingChatMember> BookingChatMembers { get; set; } = new List<BookingChatMember>();
 

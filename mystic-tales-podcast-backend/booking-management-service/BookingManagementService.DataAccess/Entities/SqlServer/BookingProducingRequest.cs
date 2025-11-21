@@ -9,7 +9,7 @@ public partial class BookingProducingRequest
 
     public int BookingId { get; set; }
 
-    public string Note { get; set; } = null!;
+    public string Note { get; set; }
 
     public DateTime? Deadline { get; set; }
 
@@ -19,11 +19,11 @@ public partial class BookingProducingRequest
 
     public DateTime CreatedAt { get; set; }
 
-    public string? RejectReason { get; set; }
+    public string RejectReason { get; set; }
 
     public int? DeadlineDays { get; set; }
 
-    public virtual Booking Booking { get; set; } = null!;
+    public virtual Booking Booking { get; set; }
 
     public virtual ICollection<BookingPodcastTrack> BookingPodcastTracks { get; set; } = new List<BookingPodcastTrack>();
 

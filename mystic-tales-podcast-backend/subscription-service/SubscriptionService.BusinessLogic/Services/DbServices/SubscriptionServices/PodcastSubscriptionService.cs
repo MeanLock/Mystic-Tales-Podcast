@@ -735,7 +735,9 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                    var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices))
                         .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null);
                     if (podcastSubscription == null)
                     {
@@ -850,7 +852,6 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 }
                             }
                         }
-
                         var newRegistration = new PodcastSubscriptionRegistration
                         {
                             AccountId = parameter.AccountId,
@@ -863,6 +864,27 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var registrationResult = await _podcastSubscriptionRegistrationGenericRepository.CreateAsync(newRegistration);
+
+                        var originalPrice2 = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId)
+                            .Select(ptcp => ptcp.Price)
+                            .FirstOrDefault();
+
+                        var transactionRequestData2 = new JObject
+                        {
+                            { "PodcastSubscriptionRegistrationId", newRegistration.Id },
+                            { "Profit", null },
+                            { "AccountId", parameter.AccountId },
+                            { "Amount", originalPrice2 },
+                            { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
+                        };
+                        var transactionMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.PaymentProcessingDomain,
+                            requestData: transactionRequestData2,
+                            sagaInstanceId: null,
+                            messageName: "podcast-subscription-payment-flow");
+                        await _messagingService.SendSagaMessageAsync(transactionMessage2, null);
+
                         await transaction.CommitAsync();
                         var newResponseData = new JObject
                         {
