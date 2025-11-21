@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
 using ModerationService.BusinessLogic.DTOs.Podcast;
 using Newtonsoft.Json.Linq;
+using SubscriptionService.BusinessLogic.DTOs.Cache;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelChannelSubscriptionChannelDeletionForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelChannelSubscriptionUnpublishChannelForce;
@@ -22,6 +23,7 @@ using SubscriptionService.BusinessLogic.DTOs.Podcast;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.Details;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems;
+using SubscriptionService.BusinessLogic.DTOs.Snippet;
 using SubscriptionService.BusinessLogic.DTOs.Subscription;
 using SubscriptionService.BusinessLogic.DTOs.SystemConfiguration;
 using SubscriptionService.BusinessLogic.Enums.Kafka;
@@ -143,8 +145,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var responseData = command.LastStepResponseData;
 
                     var podcastSubscription = new PodcastSubscription();
-                    var cycleTypePrices = new List<PodcastSubscriptionCycleTypePrice>();
-                    var benefitMappings = new List<PodcastSubscriptionBenefitMapping>();
+                    //var cycleTypePrices = new List<PodcastSubscriptionCycleTypePrice>();
+                    //var benefitMappings = new List<PodcastSubscriptionBenefitMapping>();
                     var show = new JObject();
                     var channel = new JObject();
                     if (parameter.PodcastShowId != null)
@@ -230,7 +232,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var cycleTypePriceResult = await _podcastSubscriptionCycleTypePriceGenericRepository.CreateAsync(newCycleTypePrice);
-                        cycleTypePrices.Add(cycleTypePriceResult);
+                        //cycleTypePrices.Add(cycleTypePriceResult);
                     }
                     foreach (var benefitId in parameter.PodcastSubscriptionBenefitMappingList)
                     {
@@ -243,10 +245,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var benefitMappingResult = await _podcastSubscriptionBenefitMappingGenericRepository.CreateAsync(newBenefitMapping);
-                        if (benefitMappings == null)
-                        {
-                            benefitMappings.Add(benefitMappingResult);
-                        }
+                        //if (benefitMappings == null)
+                        //{
+                        //    benefitMappings.Add(benefitMappingResult);
+                        //}
                     }
 
                     await transaction.CommitAsync();
@@ -257,8 +259,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         { "Description", podcastSubscription.Description },
                         { "PodcastShowId", podcastSubscription.PodcastShowId },
                         { "PodcastChannelId", podcastSubscription.PodcastChannelId },
-                        { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(cycleTypePrices) },
-                        { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
+                        //{ "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(cycleTypePrices) },
+                        //{ "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
                         { "CreatedAt", podcastSubscription.CreatedAt }
                     };
                     var newMessageName = messageName + ".success";
@@ -304,78 +306,118 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     .ThenInclude(sr => sr.SubscriptionCycleType)
                 )
                 .Where(ps => ps.Id == podcastSubscriptionId)
-                .Select(ps => new PodcastSubscriptionDetailResponseDTO
+                .FirstOrDefaultAsync();
+
+            if (podcastSubscription == null)
+            {
+                _logger.LogWarning("No Podcast subscription with ID {PodcastSubscriptionId} found.", podcastSubscriptionId);
+                return null;
+            }
+
+            // Handle account caching separately after the main query
+            List<PodcastSubscriptionRegistrationListItemResponseDTO>? registrationList = null;
+            
+            if (isPodcaster && podcastSubscription.PodcastSubscriptionRegistrations?.Any() == true)
+            {
+                // Get all unique account IDs first
+                var accountIds = podcastSubscription.PodcastSubscriptionRegistrations
+                    .Select(sr => sr.AccountId)
+                    .Where(id => id.HasValue)
+                    .Select(id => id.Value)
+                    .Distinct()
+                    .ToList();
+
+                // Batch fetch accounts (more efficient)
+                var accountCache = new Dictionary<int, AccountStatusCache>();
+                foreach (var accountId in accountIds)
                 {
-                    Id = ps.Id,
-                    Name = ps.Name,
-                    Description = ps.Description,
-                    PodcastShowId = ps.PodcastShowId,
-                    PodcastChannelId = ps.PodcastChannelId,
-                    IsActive = ps.DeletedAt == null,
-                    CurrentVersion = ps.CurrentVersion,
-                    DeletedAt = ps.DeletedAt,
-                    CreatedAt = ps.CreatedAt,
-                    UpdatedAt = ps.UpdatedAt,
-                    PodcastSubscriptionCycleTypePriceList = ps.PodcastSubscriptionCycleTypePrices
-                        .Select(ctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
-                        {
-                            PodcastSubscriptionId = ctp.PodcastSubscriptionId,
-                            SubscriptionCycleType = ctp.SubscriptionCycleType == null
-                            ? null
-                            : new SubscriptionCycleTypeDTO
+                    var account = await _accountCachingService.GetAccountStatusCacheById(accountId);
+                    if (account != null)
+                    {
+                        accountCache[accountId] = account;
+                    }
+                }
+
+                // Map registrations with cached accounts
+                registrationList = podcastSubscription.PodcastSubscriptionRegistrations
+                    .Select(sr => new PodcastSubscriptionRegistrationListItemResponseDTO
+                    {
+                        Id = sr.Id,
+                        Account = sr.AccountId.HasValue && accountCache.ContainsKey(sr.AccountId.Value) 
+                            ? new AccountSnippetResponseDTO
                             {
-                                Id = ctp.SubscriptionCycleType.Id,
-                                Name = ctp.SubscriptionCycleType.Name
-                            },
-                            Version = ctp.Version,
-                            Price = ctp.Price,
-                            CreatedAt = ctp.CreatedAt,
-                            UpdatedAt = ctp.UpdatedAt
-                        }).ToList(),
-                    PodcastSubscriptionBenefitMappingList = ps.PodcastSubscriptionBenefitMappings
-                        .Select(bm => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionBenefitMappingListItemResponseDTO
-                        {
-                            PodcastSubscriptionId = bm.PodcastSubscriptionId,
-                            PodcastSubscriptionBenefit = bm.PodcastSubscriptionBenefit == null
-                            ? null
-                            : new PodcastSubscriptionBenefitDTO
-                            {
-                                Id = bm.PodcastSubscriptionBenefit.Id,
-                                Name = bm.PodcastSubscriptionBenefit.Name
-                            },
-                            Version = bm.Version,
-                            CreatedAt = bm.CreatedAt,
-                            UpdatedAt = bm.UpdatedAt
-                        }).ToList(),
-                    PodcastSubscriptionRegistrationList = isPodcaster ? ps.PodcastSubscriptionRegistrations
-                        .Select(sr => new DTOs.PodcastSubscription.ListItems.PodcastSubscriptionRegistrationListItemResponseDTO
-                        {
-                            Id = sr.Id,
-                            AccountId = sr.AccountId ?? 0,
-                            PodcastSubscriptionId = sr.PodcastSubscriptionId,
-                            SubscriptionCycleType = sr.SubscriptionCycleType == null
+                                Id = accountCache[sr.AccountId.Value].Id,
+                                Email = accountCache[sr.AccountId.Value].Email,
+                                FullName = accountCache[sr.AccountId.Value].FullName,
+                                MainImageFileKey = accountCache[sr.AccountId.Value].MainImageFileKey
+                            }
+                            : null,
+                        PodcastSubscriptionId = sr.PodcastSubscriptionId,
+                        SubscriptionCycleType = sr.SubscriptionCycleType == null
                             ? null
                             : new SubscriptionCycleTypeDTO
                             {
                                 Id = sr.SubscriptionCycleType.Id,
                                 Name = sr.SubscriptionCycleType.Name
                             },
-                            CurrentVersion = sr.CurrentVersion,
-                            IsAcceptNewestVersionSwitch = sr.IsAcceptNewestVersionSwitch,
-                            IsIncomeTaken = sr.IsIncomeTaken,
-                            LastPaidAt = sr.LastPaidAt,
-                            CancelledAt = sr.CancelledAt,
-                            CreatedAt = sr.CreatedAt,
-                            UpdatedAt = sr.UpdatedAt
-                        }).ToList() : null
-                })
-                .FirstOrDefaultAsync();
-            if (podcastSubscription == null)
-            {
-                _logger.LogWarning("No Podcast subscription with ID {PodcastSubscriptionId} found.", podcastSubscriptionId);
-                return null;
+                        CurrentVersion = sr.CurrentVersion,
+                        IsAcceptNewestVersionSwitch = sr.IsAcceptNewestVersionSwitch,
+                        IsIncomeTaken = sr.IsIncomeTaken,
+                        LastPaidAt = sr.LastPaidAt,
+                        CancelledAt = sr.CancelledAt,
+                        CreatedAt = sr.CreatedAt,
+                        UpdatedAt = sr.UpdatedAt
+                    }).ToList();
             }
-            return podcastSubscription;
+
+            // Create the response DTO
+            var result = new PodcastSubscriptionDetailResponseDTO
+            {
+                Id = podcastSubscription.Id,
+                Name = podcastSubscription.Name,
+                Description = podcastSubscription.Description,
+                PodcastShowId = podcastSubscription.PodcastShowId,
+                PodcastChannelId = podcastSubscription.PodcastChannelId,
+                IsActive = podcastSubscription.DeletedAt == null,
+                CurrentVersion = podcastSubscription.CurrentVersion,
+                DeletedAt = podcastSubscription.DeletedAt,
+                CreatedAt = podcastSubscription.CreatedAt,
+                UpdatedAt = podcastSubscription.UpdatedAt,
+                PodcastSubscriptionCycleTypePriceList = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                    .Select(ctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
+                    {
+                        PodcastSubscriptionId = ctp.PodcastSubscriptionId,
+                        SubscriptionCycleType = ctp.SubscriptionCycleType == null
+                            ? null
+                            : new SubscriptionCycleTypeDTO
+                            {
+                                Id = ctp.SubscriptionCycleType.Id,
+                                Name = ctp.SubscriptionCycleType.Name
+                            },
+                        Version = ctp.Version,
+                        Price = ctp.Price,
+                        CreatedAt = ctp.CreatedAt,
+                        UpdatedAt = ctp.UpdatedAt
+                    }).ToList(),
+                PodcastSubscriptionBenefitMappingList = podcastSubscription.PodcastSubscriptionBenefitMappings
+                    .Select(bm => new PodcastSubscriptionBenefitMappingListItemResponseDTO
+                    {
+                        PodcastSubscriptionId = bm.PodcastSubscriptionId,
+                        PodcastSubscriptionBenefit = bm.PodcastSubscriptionBenefit == null
+                            ? null
+                            : new PodcastSubscriptionBenefitDTO
+                            {
+                                Id = bm.PodcastSubscriptionBenefit.Id,
+                                Name = bm.PodcastSubscriptionBenefit.Name
+                            },
+                        Version = bm.Version,
+                        CreatedAt = bm.CreatedAt,
+                        UpdatedAt = bm.UpdatedAt
+                    }).ToList(),
+                PodcastSubscriptionRegistrationList = registrationList
+            };
+
+            return result;
         }
         public async Task UpdatePodcastSubscriptionAsync(UpdatePodcastSubscriptionParameterDTO parameter, SagaCommandMessage command)
         {
@@ -389,8 +431,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var responseData = command.LastStepResponseData;
 
                     var podcastSubscription = null as PodcastSubscription;
-                    var cycleTypePrices = null as List<PodcastSubscriptionCycleTypePrice>;
-                    var benefitMappings = null as List<PodcastSubscriptionBenefitMapping>;
+                    //var cycleTypePrices = null as List<PodcastSubscriptionCycleTypePrice>;
+                    //var benefitMappings = null as List<PodcastSubscriptionBenefitMapping>;
                     var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                         .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null);
                     if (existPodcastSubscription == null)
@@ -408,11 +450,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to update PodcastSubscription for PodcastShow with Id: {existPodcastSubscription.PodcastShowId}");
                         }
-                        var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
-                        if (!showValidation.isValid)
-                        {
-                            throw new Exception(showValidation.errorMessage);
-                        }
+                        //var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
+                        //if (!showValidation.isValid)
+                        //{
+                        //    throw new Exception(showValidation.errorMessage);
+                        //}
                     }
                     if (existPodcastSubscription.PodcastChannelId != null)
                     {
@@ -421,11 +463,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to update PodcastSubscription for PodcastChannel with Id: {existPodcastSubscription.PodcastChannelId}");
                         }
-                        var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
-                        if (!channelValidation.isValid)
-                        {
-                            throw new Exception(channelValidation.errorMessage);
-                        }
+                        //var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
+                        //if (!channelValidation.isValid)
+                        //{
+                        //    throw new Exception(channelValidation.errorMessage);
+                        //}
                     }
 
                     //if (show.Count > 0 && show.HasValues)
@@ -467,10 +509,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var cycleTypePriceResult = await _podcastSubscriptionCycleTypePriceGenericRepository.CreateAsync(newCycleTypePrice);
-                        if (cycleTypePrices == null)
-                        {
-                            cycleTypePrices.Add(cycleTypePriceResult);
-                        }
+                        //if (cycleTypePrices == null)
+                        //{
+                        //    cycleTypePrices.Add(cycleTypePriceResult);
+                        //}
                     }
                     foreach (var benefitId in parameter.PodcastSubscriptionBenefitMappingList)
                     {
@@ -483,10 +525,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var benefitMappingResult = await _podcastSubscriptionBenefitMappingGenericRepository.CreateAsync(newBenefitMapping);
-                        if (benefitMappings == null)
-                        {
-                            benefitMappings.Add(benefitMappingResult);
-                        }
+                        //if (benefitMappings == null)
+                        //{
+                        //    benefitMappings.Add(benefitMappingResult);
+                        //}
                     }
 
                     var updateRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
@@ -506,8 +548,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         { "PodcastSubscriptionId", podcastSubscription.Id },
                         { "Name", podcastSubscription.Name },
                         { "Description", podcastSubscription.Description },
-                        { "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(cycleTypePrices) },
-                        { "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
+                        //{ "PodcastSubscriptionCycleTypePriceList", JArray.FromObject(cycleTypePrices) },
+                        //{ "PodcastSubscriptionBenefitMappingList", JArray.FromObject(benefitMappings) },
                         { "UpdatedAt", podcastSubscription.UpdatedAt },
                         { "NewVersion", podcastSubscription.CurrentVersion }
                     };
@@ -570,11 +612,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to delete PodcastSubscription for PodcastShow with Id: {existPodcastSubscription.PodcastShowId}");
                         }
-                        var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
-                        if (!showValidation.isValid)
-                        {
-                            throw new Exception(showValidation.errorMessage);
-                        }
+                        //var showValidation = await ValidateShow(existPodcastSubscription.PodcastShowId.Value);
+                        //if (!showValidation.isValid)
+                        //{
+                        //    throw new Exception(showValidation.errorMessage);
+                        //}
                     }
                     if (existPodcastSubscription.PodcastChannelId != null)
                     {
@@ -583,11 +625,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to delete PodcastSubscription for PodcastChannel with Id: {existPodcastSubscription.PodcastChannelId}");
                         }
-                        var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
-                        if (!channelValidation.isValid)
-                        {
-                            throw new Exception(channelValidation.errorMessage);
-                        }
+                        //var channelValidation = await ValidateChannel(existPodcastSubscription.PodcastChannelId.Value);
+                        //if (!channelValidation.isValid)
+                        //{
+                        //    throw new Exception(channelValidation.errorMessage);
+                        //}
                     }
 
                     //if (show.Count > 0 && show.HasValues)
@@ -814,7 +856,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             AccountId = parameter.AccountId,
                             PodcastSubscriptionId = parameter.PodcastSubscriptionId,
                             SubscriptionCycleTypeId = parameter.SubscriptionCycleTypeId,
-                            CurrentVersion = existRegistration.CurrentVersion,
+                            CurrentVersion = podcastSubscription.CurrentVersion,
                             IsAcceptNewestVersionSwitch = null,
                             IsIncomeTaken = false,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -870,10 +912,21 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     .Include(sct => sct.SubscriptionCycleType)
                 )
                 .Where(psr => psr.AccountId == accountId && psr.CancelledAt == null && psr.PodcastSubscription.PodcastChannelId != null)
-                .Select(psr => new PodcastSubscriptionRegistrationListItemResponseDTO
+                .ToListAsync();
+            List<PodcastSubscriptionRegistrationListItemResponseDTO> result = new();
+            foreach (var psr in podcastSubscriptionsRegistrations)
+            {
+                var account = await _accountCachingService.GetAccountStatusCacheById(psr.AccountId.Value);
+                result.Add(new PodcastSubscriptionRegistrationListItemResponseDTO
                 {
                     Id = psr.Id,
-                    AccountId = psr.AccountId ?? 0,
+                    Account = new AccountSnippetResponseDTO
+                    {
+                        Id = account.Id,
+                        Email = account.Email,
+                        FullName = account.FullName,
+                        MainImageFileKey = account.MainImageFileKey
+                    },
                     PodcastSubscriptionId = psr.PodcastSubscriptionId,
                     SubscriptionCycleType = psr.SubscriptionCycleType == null
                     ? null
@@ -889,14 +942,15 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     CancelledAt = psr.CancelledAt,
                     CreatedAt = psr.CreatedAt,
                     UpdatedAt = psr.UpdatedAt
-                })
-                .ToListAsync();
-            if (podcastSubscriptionsRegistrations == null || podcastSubscriptionsRegistrations.Count == 0)
+                });
+            };
+                
+            if (result == null || result.Count == 0)
             {
                 _logger.LogWarning("No Podcast subscription registrations found for Account ID {AccountId}.", accountId);
                 return null;
             }
-            return podcastSubscriptionsRegistrations;
+            return result;
         }
         public async Task<List<PodcastSubscriptionRegistrationListItemResponseDTO>> GetShowPodcastSubscriptionsRegistrationsByAccountIdAsync(int accountId)
         {
@@ -906,10 +960,21 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     .Include(sct => sct.SubscriptionCycleType)
                 )
                 .Where(psr => psr.AccountId == accountId && psr.CancelledAt == null && psr.PodcastSubscription.PodcastShowId != null)
-                .Select(psr => new PodcastSubscriptionRegistrationListItemResponseDTO
+                .ToListAsync();
+            List<PodcastSubscriptionRegistrationListItemResponseDTO> result = new();
+            foreach (var psr in podcastSubscriptionsRegistrations)
+            {
+                var account = await _accountCachingService.GetAccountStatusCacheById(psr.AccountId.Value);
+                result.Add(new PodcastSubscriptionRegistrationListItemResponseDTO
                 {
                     Id = psr.Id,
-                    AccountId = psr.AccountId ?? 0,
+                    Account = new AccountSnippetResponseDTO
+                    {
+                        Id = account.Id,
+                        Email = account.Email,
+                        FullName = account.FullName,
+                        MainImageFileKey = account.MainImageFileKey
+                    },
                     PodcastSubscriptionId = psr.PodcastSubscriptionId,
                     SubscriptionCycleType = psr.SubscriptionCycleType == null
                     ? null
@@ -925,14 +990,15 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     CancelledAt = psr.CancelledAt,
                     CreatedAt = psr.CreatedAt,
                     UpdatedAt = psr.UpdatedAt
-                })
-                .ToListAsync();
-            if (podcastSubscriptionsRegistrations == null || podcastSubscriptionsRegistrations.Count == 0)
+                });
+            };
+
+            if (result == null || result.Count == 0)
             {
                 _logger.LogWarning("No Podcast subscription registrations found for Account ID {AccountId}.", accountId);
                 return null;
             }
-            return podcastSubscriptionsRegistrations;
+            return result;
         }
         public async Task<PodcastSubscriptionRegistrationDetailResponseDTO> GetPodcastSubscriptionRegistrationByIdAsync(Guid PodcastSubscriptionRegistrationId)
         {
@@ -1001,11 +1067,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to activate PodcastSubscription for PodcastShow with Id: {podcastSubscription.PodcastShowId}");
                         }
-                        var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
-                        if (!showValidation.isValid)
-                        {
-                            throw new Exception(showValidation.errorMessage);
-                        }
+                        //var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
+                        //if (!showValidation.isValid)
+                        //{
+                        //    throw new Exception(showValidation.errorMessage);
+                        //}
                     }
                     if (podcastSubscription.PodcastChannelId != null)
                     {
@@ -1014,11 +1080,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to activate PodcastSubscription for PodcastChannel with Id: {podcastSubscription.PodcastChannelId}");
                         }
-                        var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
-                        if (!channelValidation.isValid)
-                        {
-                            throw new Exception(channelValidation.errorMessage);
-                        }
+                        //var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
+                        //if (!channelValidation.isValid)
+                        //{
+                        //    throw new Exception(channelValidation.errorMessage);
+                        //}
                     }
 
                     //if (show.Count > 0 && show.HasValues)
@@ -1139,11 +1205,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to deactivate PodcastSubscription for PodcastShow with Id: {podcastSubscription.PodcastShowId}");
                         }
-                        var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
-                        if (!showValidation.isValid)
-                        {
-                            throw new Exception(showValidation.errorMessage);
-                        }
+                        //var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
+                        //if (!showValidation.isValid)
+                        //{
+                        //    throw new Exception(showValidation.errorMessage);
+                        //}
                     }
                     if (podcastSubscription.PodcastChannelId != null)
                     {
@@ -1152,11 +1218,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to deactivate PodcastSubscription for PodcastChannel with Id: {podcastSubscription.PodcastChannelId}");
                         }
-                        var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
-                        if (!channelValidation.isValid)
-                        {
-                            throw new Exception(channelValidation.errorMessage);
-                        }
+                        //var channelValidation = await ValidateChannel(podcastSubscription.PodcastChannelId.Value);
+                        //if (!channelValidation.isValid)
+                        //{
+                        //    throw new Exception(channelValidation.errorMessage);
+                        //}
                     }
                     podcastSubscription.IsActive = false;
                     podcastSubscription.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
@@ -2331,22 +2397,31 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     if(parameter.PodcastChannelId != null)
                     {
                         var showPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
-                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                        .Where(ps => ps.PodcastShowId == parameter.PodcastShowId && ps.IsActive && ps.DeletedAt == null)
-                        .FirstOrDefaultAsync();
+                            .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                            .Where(ps => ps.PodcastShowId == parameter.PodcastShowId && ps.IsActive && ps.DeletedAt == null)
+                            .FirstOrDefaultAsync();
 
                         var channelPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                             .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
                             .Where(ps => ps.PodcastChannelId == parameter.PodcastChannelId && ps.IsActive && ps.DeletedAt == null)
                             .FirstOrDefaultAsync();
 
-                        var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        List<PodcastSubscriptionRegistration> subscriptionRegistrations = new List<PodcastSubscriptionRegistration>();
+                        List<PodcastSubscriptionRegistration> subscriptionRegistrationsChannel = new List<PodcastSubscriptionRegistration>();
+
+                        if(showPodcastSubscription != null)
+                        {
+                            subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                             .Where(sr => sr.PodcastSubscriptionId == showPodcastSubscription.Id && sr.CancelledAt == null)
                             .ToListAsync();
-
-                        var subscriptionRegistrationsChannel = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                        }
+                        
+                        if(channelPodcastSubscription != null)
+                        {
+                            subscriptionRegistrationsChannel = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                             .Where(sr => sr.PodcastSubscriptionId == channelPodcastSubscription.Id && sr.CancelledAt == null)
                             .ToListAsync();
+                        }
 
                         foreach (var registration in subscriptionRegistrations)
                         {

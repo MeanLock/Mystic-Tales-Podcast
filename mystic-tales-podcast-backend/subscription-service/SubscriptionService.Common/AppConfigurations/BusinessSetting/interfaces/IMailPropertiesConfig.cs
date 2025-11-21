@@ -7,7 +7,14 @@ namespace SubscriptionService.Common.AppConfigurations.BusinessSetting.interface
         MailProperty CustomerRegistrationVerification { get; }
         MailProperty PodcasterRequestConfirmation { get; }
         MailProperty PodcasterRequestResult { get; }
-
+        MailProperty PodcastSubscriptionRegistration { get; }
+        MailProperty PodcastSubscriptionNewVersion { get; }
+        MailProperty PodcastSubscriptionRegistrationRenewalSuccess { get; }
+        MailProperty PodcastSubscriptionRegistrationRenewalFailure { get; }
+        MailProperty PodcastSubscriptionRegistrationCancel { get; }
+        MailProperty PodcastSubscriptionCancel { get; }
+        MailProperty PodcastSubscriptionInactive { get; }
+        MailProperty PodcastSubscriptionDuplicate { get; }
         MailProperty GetMailPropertyByTypeName(string mailTypeName);
     }
     

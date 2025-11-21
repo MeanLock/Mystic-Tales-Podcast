@@ -8,12 +8,28 @@ namespace SubscriptionService.Common.AppConfigurations.BusinessSetting
         public MailProperty CustomerRegistrationVerification { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestConfirmation { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestResult { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionRegistration { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionNewVersion { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionRegistrationRenewalSuccess { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionRegistrationRenewalFailure { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionRegistrationCancel { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionCancel { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionInactive { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionDuplicate { get; set; } = new MailProperty();
     }
     public class MailPropertiesConfig : IMailPropertiesConfig
     {
         public MailProperty CustomerRegistrationVerification { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestConfirmation { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestResult { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionRegistration { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionNewVersion { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionRegistrationRenewalSuccess { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionRegistrationRenewalFailure { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionRegistrationCancel { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionCancel { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionInactive { get; set; } = new MailProperty();
+        public MailProperty PodcastSubscriptionDuplicate { get; set; } = new MailProperty();
 
         public MailPropertiesConfig(IConfiguration configuration)
         {
@@ -21,6 +37,14 @@ namespace SubscriptionService.Common.AppConfigurations.BusinessSetting
             CustomerRegistrationVerification = mailConfig.CustomerRegistrationVerification;
             PodcasterRequestConfirmation = mailConfig.PodcasterRequestConfirmation;
             PodcasterRequestResult = mailConfig.PodcasterRequestResult;
+            PodcastSubscriptionRegistration = mailConfig.PodcastSubscriptionRegistration;
+            PodcastSubscriptionNewVersion = mailConfig.PodcastSubscriptionNewVersion;
+            PodcastSubscriptionRegistrationRenewalSuccess = mailConfig.PodcastSubscriptionRegistrationRenewalSuccess;
+            PodcastSubscriptionRegistrationRenewalFailure = mailConfig.PodcastSubscriptionRegistrationRenewalFailure;
+            PodcastSubscriptionRegistrationCancel = mailConfig.PodcastSubscriptionRegistrationCancel;
+            PodcastSubscriptionCancel = mailConfig.PodcastSubscriptionCancel;
+            PodcastSubscriptionInactive = mailConfig.PodcastSubscriptionInactive;
+            PodcastSubscriptionDuplicate = mailConfig.PodcastSubscriptionDuplicate;
         }
 
 

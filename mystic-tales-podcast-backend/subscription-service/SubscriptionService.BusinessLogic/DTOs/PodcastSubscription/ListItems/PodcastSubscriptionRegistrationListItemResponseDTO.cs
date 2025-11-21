@@ -1,4 +1,5 @@
-﻿using SubscriptionService.BusinessLogic.DTOs.Subscription;
+﻿using SubscriptionService.BusinessLogic.DTOs.Snippet;
+using SubscriptionService.BusinessLogic.DTOs.Subscription;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems
     public class PodcastSubscriptionRegistrationListItemResponseDTO
     {
         public Guid Id { get; set; }
-        public int AccountId { get; set; }
+        public AccountSnippetResponseDTO Account { get; set; }
         public int PodcastSubscriptionId { get; set; }
         public SubscriptionCycleTypeDTO SubscriptionCycleType { get; set; }
         public int CurrentVersion { get; set; }
