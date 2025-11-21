@@ -1,4 +1,33 @@
-import type { AccountRole } from "./account";
+export type PodcasterFromApi = {
+  AccountId: number;
+  Name: string;
+  Description: string | null;
+  AverageRating: number;
+  RatingCount: number;
+  TotalFollow: number;
+  ListenCount: number;
+  IsVerified: boolean;
+  VerifiedAt: string;
+  MainImageFileKey: string;
+  IsBuddy: boolean;
+  IsFollowedByCurrentUser: boolean;
+};
+
+export type PodcasterUI = {
+  AccountId: number;
+  Name: string;
+  Description: string | null;
+  AverageRating: number;
+  RatingCount: number;
+  TotalFollow: number;
+  ListenCount: number;
+  IsVerified: boolean;
+  VerifiedAt: string;
+  ImageUrl: string;
+  IsBuddy: boolean;
+  IsFollowedByCurrentUser: boolean;
+};
+
 
 export type PodcasterDetailsFromAPI = {
   AccountId: number;

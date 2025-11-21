@@ -1353,7 +1353,7 @@ const TrendingPage = () => {
       flex flex-col items-center gap-10 mb-20 p-8
     "
     >
-      <div className="w-full flex flex-col items-start justify-center mb-10">
+      <div className="w-full flex flex-col items-start justify-center mb-10 gap-2">
         <p className="text-9xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#DBE6F6] to-[#C5796D]">
           Trending
         </p>

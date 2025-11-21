@@ -1,5 +1,9 @@
 import { appApi } from "@/core/api/appApi";
-import type { SubscriptionDetails } from "@/core/types/subscription";
+import type {
+  PodcastSubscriptionRegistration,
+  SubscriptionDetails,
+} from "@/core/types/subscription";
+import { url } from "zod";
 
 const subscriptionApi = appApi.injectEndpoints({
   endpoints: (build) => ({
@@ -18,16 +22,16 @@ const subscriptionApi = appApi.injectEndpoints({
     // Customer subscribe 1 Show/Channel
     subscribePodcastSubscription: build.mutation<
       { Message: string },
-      { PodcastSubscriptionId: string }
+      { PodcastSubscriptionId: number; CycleTypeId: number }
     >({
-      async queryFn({ PodcastSubscriptionId }, api) {
+      async queryFn({ PodcastSubscriptionId, CycleTypeId }, api) {
         const result = await api
           .dispatch(
             appApi.endpoints.kickoffThenWait.initiate({
               kickoff: {
                 url: `/api/subscription-service/api/podcast-subscriptions/${PodcastSubscriptionId}`,
                 method: "POST",
-                body: { PodcastSubscriptionId },
+                body: { SubscriptionCycleTypeId: CycleTypeId },
                 authMode: "required",
               },
               poll: {
@@ -51,7 +55,7 @@ const subscriptionApi = appApi.injectEndpoints({
           .dispatch(
             appApi.endpoints.kickoffThenWait.initiate({
               kickoff: {
-                url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscription-registrations/${PodcastSubscriptionRegistrationId}/cancel`,
+                url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscriptions-registrations/${PodcastSubscriptionRegistrationId}/cancel`,
                 method: "PUT",
                 authMode: "required",
               },
@@ -72,7 +76,7 @@ const subscriptionApi = appApi.injectEndpoints({
       void
     >({
       query: () => ({
-        url: `/api/subscription-service/api/podcast-subscriptions/channels/podcast-subscription-registrations`,
+        url: `/api/subscription-service/api/podcast-subscriptions/channels/podcast-subscriptions-registrations`,
         method: "GET",
         authMode: "required",
       }),
@@ -89,6 +93,34 @@ const subscriptionApi = appApi.injectEndpoints({
         authMode: "required",
       }),
     }),
+
+    // Lấy thông tin đăng ký của Customer so với Channel đó
+    getCustomerRegistrationInfoFromChannel: build.query<
+      {
+        PodcastSubscriptionRegistration: PodcastSubscriptionRegistration | null;
+      },
+      { PodcastChannelId: string }
+    >({
+      query: ({ PodcastChannelId }) => ({
+        url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscriptions-registrations/channels/${PodcastChannelId}`,
+        authMode: "required",
+        method: "GET",
+      }),
+    }),
+
+    // Lấy thông tin đăng ký của Customer so với Show đó
+    getCustomerRegistrationInfoFromShow: build.query<
+      {
+        PodcastSubscriptionRegistration: PodcastSubscriptionRegistration | null;
+      },
+      { PodcastShowId: string }
+    >({
+      query: ({ PodcastShowId }) => ({
+        url: `/api/podcast-subscriptions/podcast-subscriptions-registrations/shows/${PodcastShowId}`,
+        authMode: "required",
+        method: "GET",
+      }),
+    }),
   }),
 });
 
@@ -96,4 +128,6 @@ export const {
   useGetSubscriptionDetailsQuery,
   useSubscribePodcastSubscriptionMutation,
   useUnsubscribePodcastSubscriptionMutation,
+  useGetCustomerRegistrationInfoFromChannelQuery,
+  useGetCustomerRegistrationInfoFromShowQuery,
 } = subscriptionApi;

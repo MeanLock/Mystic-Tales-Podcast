@@ -11,6 +11,7 @@ export type SubscriptionDetails = {
   UpdatedAt: string;
   PodcastSubscriptionCycleTypePriceList: PodcastSubscriptionCycleTypePriceType[];
   PodcastSubscriptionBenefitMappingList: PodcastSubscriptionBenefitType[];
+  PodcastSubscriptionRegistrationList: null;
 };
 
 export type PodcastSubscriptionCycleTypePriceType = {
@@ -51,7 +52,7 @@ export type SubscriptionCycleType =
     }
   | {
       Id: 2;
-      Name: "Ananually";
+      Name: "Annually";
     };
 
 export type PodcastSubscriptionBenefit =
@@ -79,3 +80,20 @@ export type PodcastSubscriptionBenefit =
       Id: 6;
       Name: "Archive Episodes Access";
     };
+
+export type PodcastSubscriptionRegistration = {
+  Id: string;
+  AccountId: string;
+  PodcastSubscriptionId: number;
+  SubscriptionCycleType: {
+    Id: number;
+    Name: string;
+  };
+  CurrentVersion: number;
+  IsAcceptNewestVersionSwitch: boolean;
+  IsIncomeTaken: boolean;
+  LastPaidAt: string;
+  CancelledAt: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+};

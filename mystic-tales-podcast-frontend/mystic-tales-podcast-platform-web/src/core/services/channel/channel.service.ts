@@ -1,5 +1,9 @@
 import { appApi } from "@/core/api/appApi";
-import type { ChannelFromAPI } from "@/core/types/channel";
+import type {
+  ChannelDetailsFromApi,
+  ChannelFromAPI,
+} from "@/core/types/channel";
+import type { SubscriptionDetails } from "@/core/types/subscription";
 
 const channelApi = appApi.injectEndpoints({
   endpoints: (build) => ({
@@ -23,10 +27,32 @@ const channelApi = appApi.injectEndpoints({
         authMode: "public",
       }),
     }),
+    getChannelDetails: build.query<
+      ChannelDetailsFromApi,
+      { ChannelId: string }
+    >({
+      query: ({ ChannelId }) => ({
+        url: `/api/podcast-service/api/channels/${ChannelId}`,
+        method: "GET",
+        authMode: "public",
+      }),
+    }),
+    getActiveChannelSubscription: build.query<
+      { PodcastSubscription: SubscriptionDetails },
+      { ChannelId: string }
+    >({
+      query: ({ ChannelId }) => ({
+        url: `/api/subscription-service/api/podcast-subscriptions/channels/${ChannelId}/active-subscription`,
+        method: "GET",
+        authMode: "hybrid",
+      }),
+    }),
   }),
 });
 
 export const {
   useGetChannelListFromPodcasterQuery,
   useGetChannelListByQueryKeyQuery,
+  useGetChannelDetailsQuery,
+  useGetActiveChannelSubscriptionQuery,
 } = channelApi;

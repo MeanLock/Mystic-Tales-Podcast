@@ -1,8 +1,21 @@
 import { appApi } from "@/core/api/appApi";
-import type { PodcasterDetailsFromAPI } from "@/core/types/podcaster";
+import type {
+  PodcasterDetailsFromAPI,
+  PodcasterFromApi,
+} from "@/core/types/podcaster";
 
 const podcasterApi = appApi.injectEndpoints({
   endpoints: (build) => ({
+    getPodcasters: build.query<
+      { PodcasterList: PodcasterFromApi[] },
+      { queryKey: string }
+    >({
+      query: ({ queryKey }) => ({
+        url: `/api/user-service/api/accounts/customer/podcasters?${queryKey}`,
+        method: "GET",
+        authMode: "public",
+      }),
+    }),
     getPodcasterDetails: build.query<
       PodcasterDetailsFromAPI,
       { podcasterId: number }
@@ -77,4 +90,5 @@ export const {
   useGetFollowedPodcastersQuery,
   useFollowPodcasterMutation,
   useUnFollowPodcasterMutation,
+  useGetPodcastersQuery,
 } = podcasterApi;
