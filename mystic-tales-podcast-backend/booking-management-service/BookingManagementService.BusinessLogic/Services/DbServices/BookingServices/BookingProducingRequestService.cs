@@ -16,6 +16,7 @@ using BookingManagementService.BusinessLogic.Helpers.DateHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Models.CrossService;
 using BookingManagementService.BusinessLogic.Services.CrossServiceServices.QueryServices;
+using BookingManagementService.BusinessLogic.Services.DbServices.CachingServices;
 using BookingManagementService.BusinessLogic.Services.MessagingServices.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.DataAccess.Data;
@@ -41,7 +42,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IGenericRepository<Booking> _bookingGenericRepository;
         private readonly IGenericRepository<BookingStatusTracking> _bookingStatusTrackingGenericRepository;
         private readonly IGenericRepository<BookingRequirement> _bookingRequirementGenericRepository;
+        private readonly IGenericRepository<BookingPodcastTrackListenSession> _bookingPodcastTrackListenSessionGenericRepository;
 
+        private readonly CustomerListenSessionProcedureCachingService _customerListenSessionProcedureCachingService;
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly IMessagingService _messagingService;
         private readonly KafkaProducerService _kafkaProducerService;
@@ -60,7 +63,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             IGenericRepository<Booking> bookingGenericRepository,
             IGenericRepository<BookingStatusTracking> bookingStatusTrackingGenericRepository,
             IGenericRepository<BookingRequirement> bookingRequirementGenericRepository,
+            IGenericRepository<BookingPodcastTrackListenSession> bookingPodcastTrackListenSessionGenericRepository,
             HttpServiceQueryClient httpServiceQueryClient,
+            CustomerListenSessionProcedureCachingService customerListenSessionProcedureCachingService,
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
             ILogger<BookingService> logger,
@@ -78,6 +83,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _bookingGenericRepository = bookingGenericRepository;
             _bookingStatusTrackingGenericRepository = bookingStatusTrackingGenericRepository;
             _bookingRequirementGenericRepository = bookingRequirementGenericRepository;
+            _bookingPodcastTrackListenSessionGenericRepository = bookingPodcastTrackListenSessionGenericRepository;
+            _customerListenSessionProcedureCachingService = customerListenSessionProcedureCachingService;
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
             _logger = logger;
@@ -175,6 +182,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new HttpRequestException("The logged in account are not authorized to create booking producing request for this booking.");
                     }
 
+                    var previousProducingRequest = await _bookingProducingRequestGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(ppr => ppr.BookingPodcastTracks))
+                        .Where(pr => pr.BookingId == parameter.BookingId)
+                        .OrderByDescending(pr => pr.CreatedAt)
+                        .FirstOrDefaultAsync();
+
                     var newProducingRequest = new BookingProducingRequest
                     {
                         BookingId = parameter.BookingId,
@@ -197,9 +211,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
                     var producingRequest = await _bookingProducingRequestGenericRepository.CreateAsync(newProducingRequest);
 
-                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
                         parameter.BookingId,
-                        "BookingStatusTrackings"
+                        includeFunc: include => include
+                            .Include(b => b.BookingStatusTrackings)
                     );
 
                     if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
@@ -214,37 +229,49 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
                     else
                     {
-                        throw new Exception("Current booking status is not valid for creating producing request");
+                        throw new HttpRequestException("Current booking status is not valid for creating producing request");
                     }
 
-                    if (producingRequest != null)
+                    // Complete all listen sessions in the previous producing request
+                    var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                        .Where(ls => !ls.IsCompleted && previousProducingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == parameter.AccountId)
+                        .ToListAsync();
+                    foreach (var session in listenSession)
                     {
-                        await transaction.CommitAsync();
-                        var newResponseData = new JObject
+                        session.IsCompleted = true;
+                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                    }
+
+                    // Complete all listen session procedures of the previous producing request in cache
+                    var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
+                    foreach (var procedure in customerListenSessionCacheKey.Values)
+                    {
+                        if(!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == previousProducingRequest.Id)
                         {
-                            { "BookingProducingRequestId", producingRequest.Id },
-                            { "BookingId" , producingRequest.BookingId},
-                            { "Note", producingRequest.Note},
-                            { "DeadlineDays", producingRequest.DeadlineDays },
-                            { "BookingPodcastTrackIds", JArray.FromObject(producingRequest.BookingProducingRequestPodcastTrackToEdits.Select(x => x.BookingPodcastTrackId).ToList()) },
-                            { "CreatedAt", producingRequest.CreatedAt }
-                        };
-                        var newMessageName = messageName + ".success";
-                        var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                            topic: KafkaTopicEnum.BookingManagementDomain,
-                            requestData: command.RequestData,
-                            responseData: newResponseData,
-                            sagaInstanceId: sagaId,
-                            flowName: flowName,
-                            messageName: newMessageName);
-                        var result = await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
-                        _logger.LogInformation("Booking producing request create successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                            await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                        }
                     }
-                    else
+
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject
                     {
-                        await transaction.RollbackAsync();
-                        _logger.LogError("Something Went Wrong");
-                    }
+                        { "BookingProducingRequestId", producingRequest.Id },
+                        { "BookingId" , producingRequest.BookingId},
+                        { "Note", producingRequest.Note},
+                        { "DeadlineDays", producingRequest.DeadlineDays },
+                        { "BookingPodcastTrackIds", JArray.FromObject(producingRequest.BookingProducingRequestPodcastTrackToEdits.Select(x => x.BookingPodcastTrackId).ToList()) },
+                        { "CreatedAt", producingRequest.CreatedAt }
+                    };
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    var result = await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Booking producing request create successfully for SagaId: {SagaId}", command.SagaInstanceId);
                 }
                 catch (Exception ex)
                 {
@@ -523,9 +550,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         }
                     }
 
-                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
                         bookingProducingRequest.BookingId,
-                        "BookingStatusTrackings"
+                        includeFunc: include => include
+                            .Include(b => b.BookingStatusTrackings)
                     );
 
                     if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Producing)
@@ -640,9 +668,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var isAccepted = parameter.IsAccepted;
 
                     var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdAsync(bookingProducingRequestId);
-                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
                         bookingProducingRequest.BookingId,
-                        "BookingStatusTrackings"
+                        includeFunc: include => include
+                            .Include(b => b.BookingStatusTrackings)
                     );
 
                     bookingProducingRequest.IsAccepted = parameter.IsAccepted;
@@ -797,9 +826,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var profitRate = systemConfig.BookingConfig.ProfitRate;
                     var depositRate = systemConfig.BookingConfig.DepositRate;
 
-                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
                         parameter.BookingId,
-                        "BookingStatusTrackings"
+                        includeFunc: include => include
+                            .Include(b => b.BookingStatusTrackings)
                     );
                     if (booking == null)
                     {
@@ -942,6 +972,33 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+                    }
+
+                    // Complete all listen session of lastest producing request
+                    var producingRequest = await _bookingProducingRequestGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(pr => pr.BookingPodcastTracks))
+                        .Where(bpr => bpr.BookingId == booking.Id)
+                        .OrderByDescending(bpr => bpr.CreatedAt)
+                        .FirstOrDefaultAsync();
+
+                    var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                        .Where(ls => !ls.IsCompleted && producingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == parameter.AccountId)
+                        .ToListAsync();
+                    foreach (var session in listenSession)
+                    {
+                        session.IsCompleted = true;
+                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                    }
+
+                    // Complete all customer listen session procedure of the producing request in cache
+                    var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
+                    foreach (var procedure in customerListenSessionCacheKey.Values)
+                    {
+                        if (!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                        {
+                            await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                        }
                     }
 
                     await transaction.CommitAsync();

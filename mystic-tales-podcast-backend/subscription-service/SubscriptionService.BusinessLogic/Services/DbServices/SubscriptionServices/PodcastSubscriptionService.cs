@@ -2924,11 +2924,15 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         {
             try
             {
-                return await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                PodcastSubscriptionRegistrationDetailResponseDTO result = null;
+                var show = await GetPodcastShow(showId);
+                if(show.PodcastChannelId != null)
+                {
+                    result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                     .Include(psr => psr.PodcastSubscription)
                     .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
                     .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
-                    .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastShowId == showId && psr.CancelledAt == null)
+                    .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastChannelId == show.PodcastChannelId && psr.CancelledAt == null)
                     .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                     {
                         Id = psr.Id,
@@ -2957,6 +2961,78 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             }).ToList()
                     })
                     .FirstOrDefaultAsync();
+                    if(result != null)
+                        result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                            .Include(psr => psr.PodcastSubscription)
+                            .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                            .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                            .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastShowId == showId && psr.CancelledAt == null)
+                            .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
+                            {
+                                Id = psr.Id,
+                                AccountId = psr.AccountId ?? 0,
+                                PodcastSubscriptionId = psr.PodcastSubscriptionId,
+                                SubscriptionCycleType = psr.SubscriptionCycleType == null
+                                ? null
+                                : new SubscriptionCycleTypeDTO
+                                {
+                                    Id = psr.SubscriptionCycleType.Id,
+                                    Name = psr.SubscriptionCycleType.Name
+                                },
+                                CurrentVersion = psr.CurrentVersion,
+                                IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
+                                IsIncomeTaken = psr.IsIncomeTaken,
+                                LastPaidAt = psr.LastPaidAt,
+                                CancelledAt = psr.CancelledAt,
+                                CreatedAt = psr.CreatedAt,
+                                UpdatedAt = psr.UpdatedAt,
+                                PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                                    .Where(psb => psb.Version == psr.CurrentVersion)
+                                    .Select(bm => new PodcastSubscriptionBenefitDTO
+                                    {
+                                        Id = bm.PodcastSubscriptionBenefit.Id,
+                                        Name = bm.PodcastSubscriptionBenefit.Name
+                                    }).ToList()
+                            })
+                            .FirstOrDefaultAsync();
+                }
+                else
+                {
+                    result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                            .Include(psr => psr.PodcastSubscription)
+                            .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                            .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                            .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastShowId == showId && psr.CancelledAt == null)
+                            .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
+                            {
+                                Id = psr.Id,
+                                AccountId = psr.AccountId ?? 0,
+                                PodcastSubscriptionId = psr.PodcastSubscriptionId,
+                                SubscriptionCycleType = psr.SubscriptionCycleType == null
+                                ? null
+                                : new SubscriptionCycleTypeDTO
+                                {
+                                    Id = psr.SubscriptionCycleType.Id,
+                                    Name = psr.SubscriptionCycleType.Name
+                                },
+                                CurrentVersion = psr.CurrentVersion,
+                                IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
+                                IsIncomeTaken = psr.IsIncomeTaken,
+                                LastPaidAt = psr.LastPaidAt,
+                                CancelledAt = psr.CancelledAt,
+                                CreatedAt = psr.CreatedAt,
+                                UpdatedAt = psr.UpdatedAt,
+                                PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                                    .Where(psb => psb.Version == psr.CurrentVersion)
+                                    .Select(bm => new PodcastSubscriptionBenefitDTO
+                                    {
+                                        Id = bm.PodcastSubscriptionBenefit.Id,
+                                        Name = bm.PodcastSubscriptionBenefit.Name
+                                    }).ToList()
+                            })
+                            .FirstOrDefaultAsync();
+                }
+                return result;
             }
             catch (Exception ex)
             {

@@ -669,9 +669,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
                         bookingId,
-                        "BookingStatusTrackings"
+                        includeFunc: function => function
+                            .Include(b => b.BookingStatusTrackings)
                     );
 
                     if (booking == null)
@@ -744,10 +745,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     var systemConfig = await GetActiveSystemConfigProfile();
 
-                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
                         bookingId,
-                        "BookingStatusTrackings",
-                        "BookingProducingRequests"
+                        includeFunc: function => function
+                            .Include(b => b.BookingStatusTrackings)
+                            .Include(b => b.BookingProducingRequests)
                     );
                     if (booking != null && booking.Price.HasValue)
                     {
@@ -1258,9 +1260,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
 
-                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
                         bookingId,
-                        "BookingStatusTrackings"
+                        includeFunc: function => function
+                            .Include(b => b.BookingStatusTrackings)
                     );
                     if (booking == null)
                     {
@@ -1346,9 +1349,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var booking = await _bookingGenericRepository.FindByIdWithPaths(
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
                         bookingId,
-                        "BookingStatusTrackings"
+                        includeFunc: function => function
+                            .Include(b => b.BookingStatusTrackings)
                     );
 
                     if (booking == null)
@@ -2295,7 +2299,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .FirstOrDefault();
 
                     var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindAll(
-                        predicate: bpt => bpt.BookingId == bookingId && bpt.Id == podcastTrackId
+                        predicate: bpt => bpt.BookingId == bookingId && bpt.Id == podcastTrackId,
+                        includeFunc: bpt => bpt.Include(b => b.BookingRequirement)
                     ).FirstOrDefaultAsync();
 
                     if (bookingPodcastTrack == null)
@@ -2412,7 +2417,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         AccountId = accountId,
                         BookingPodcastTrackId = bookingPodcastTrack.Id,
-                        LastListenDurationSeconds = _bookingListenSessionConfig.SessionExpirationMinutes * 60,
+                        LastListenDurationSeconds = 0,
                         IsCompleted = false,
                         ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_bookingListenSessionConfig.SessionExpirationMinutes),
                         CreatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -2429,14 +2434,31 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                         "playlist",
                                         _hlsConfig.PlaylistFileName
                                     );
-                    var result = new BookingTrackListenResponseDTO
+                    var bookingListenSession = new BookingTrackListenResponseDTO
                     {
-                        PlaylistFileKey = playlistFileKey,
+                        Booking = new BookingListenSnippetResponseDTO
+                        {
+                            Id = booking.Id,
+                            Title = booking.Title,
+                            Description = booking.Description
+                        },
+                        BookingPodcastTrack = new BookingPodcastTrackListenSnippetResponseDTO
+                        {
+                            Id = bookingPodcastTrack.Id,
+                            BookingRequirementName = bookingPodcastTrack.BookingRequirement.Name,
+                            BookingRequirementDescription = bookingPodcastTrack.BookingRequirement.Description
+                        },
+                        BookingPodcastTrackListenSession = new BookingPodcastTrackListenSessionSnippetResponseDTO
+                        {
+                            Id = createdListenSession.Id,
+                            LastListenDurationSeconds = createdListenSession.LastListenDurationSeconds
+                        },
                         AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
                                 ? await _fileIOHelper.GeneratePresignedUrlAsync(
                                     bookingPodcastTrack.AudioFileKey
                                 )
-                                : null
+                                : null,
+                        PlaylistFileKey = playlistFileKey
                     };
                     return result;
                 }
