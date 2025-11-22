@@ -7,6 +7,7 @@ namespace BookingManagementService.Common.AppConfigurations.BusinessSetting.inte
         BackgroundJob SampleBackgroundJob { get; }
         BackgroundJob BookingProducingRequestedResponseTimeoutJob { get; }
         BackgroundJob BookingTrackPreviewingResponseTimeoutJob { get; }
+        BackgroundJob BookingPodcastTrackListenSessionExpiryJob { get; }
     }
 
     public class BackgroundJob

@@ -334,8 +334,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         throw new HttpRequestException($"PodcastBuddy with Id {parameter.PodcastBuddyId} not found");
                     }
-                    if (!podcaster.HasVerifiedPodcasterProfile || !podcaster.PodcasterProfileIsBuddy)
+                    //if (!podcaster.HasVerifiedPodcasterProfile || !podcaster.PodcasterProfileIsBuddy)
+                    //{
+                    //    _logger.LogError($"PodcasterProfile: {podcaster.HasVerifiedPodcasterProfile}. PodcastBuddy: {podcaster.PodcasterProfileIsBuddy}. PodcastVerified: {podcaster.PodcasterProfileIsVerified}");
+                    //    throw new HttpRequestException($"Podcaster with Id {parameter.PodcastBuddyId} does not qualify to request booking");
+                    //}
+                    if (!podcaster.HasVerifiedPodcasterProfile)
                     {
+                        _logger.LogError($"PodcasterProfile: {podcaster.HasVerifiedPodcasterProfile}. PodcastBuddy: {podcaster.PodcasterProfileIsBuddy}. PodcastVerified: {podcaster.PodcasterProfileIsVerified}");
                         throw new HttpRequestException($"Podcaster with Id {parameter.PodcastBuddyId} does not qualify to request booking");
                     }
 
@@ -2671,6 +2677,57 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
+
+                    var bookingPodcastTrackListenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindByIdAsync(
+                        id: parameter.BookingPodcastTrackListenSessionId,
+                        includeFunc: bpts => bpts.Include(bpts => bpts.BookingPodcastTrack)
+                        .ThenInclude(bpt => bpt.BookingProducingRequest)
+                    );
+                    if(bookingPodcastTrackListenSession == null)
+                    {
+                        throw new Exception("BookingPodcastTrackListenSession not found for Id: " + parameter.BookingPodcastTrackListenSessionId);
+                    }
+
+                    var check = await CheckListenerCanListenToTrackAsync(parameter.ListenerId, bookingPodcastTrackListenSession.BookingPodcastTrack.Id);
+                    if(check == false)
+                    {
+                        bookingPodcastTrackListenSession.IsCompleted = true;
+                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bookingPodcastTrackListenSession.Id, bookingPodcastTrackListenSession);
+                        throw new Exception("Listener is not allowed to listen to this track for BookingPodcastTrackListenSessionId: " + parameter.BookingPodcastTrackListenSessionId);
+                    }
+
+                    var lastestListenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll(
+                        predicate: bpts => bpts.AccountId == parameter.ListenerId,
+                        includeFunc: bpts => bpts
+                            .Include(bpts => bpts.BookingPodcastTrack)
+                            .ThenInclude(bpt => bpt.BookingProducingRequest)
+                    ).OrderByDescending(bpts => bpts.CreatedAt).FirstOrDefaultAsync();
+
+                    if (lastestListenSession != null && lastestListenSession.Id == bookingPodcastTrackListenSession.Id && lastestListenSession.ExpiredAt <= _dateHelper.GetNowByAppTimeZone())
+                    {
+                        bookingPodcastTrackListenSession.IsCompleted = false;
+                        bookingPodcastTrackListenSession.LastListenDurationSeconds = parameter.LastListenDurationSeconds;
+                        bookingPodcastTrackListenSession.ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_bookingListenSessionConfig.SessionAdditionalUpdateBufferExpirationMinutes);
+                    }
+                    else
+                    {
+                        bookingPodcastTrackListenSession.LastListenDurationSeconds = parameter.LastListenDurationSeconds;
+                    }
+                    await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bookingPodcastTrackListenSession.Id, bookingPodcastTrackListenSession);
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Successfully updated booking listen session duration for SagaId: {SagaId}", command.SagaInstanceId);
                 }
                 catch (Exception ex)
                 {
@@ -2678,7 +2735,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     _logger.LogError(ex, "Error occurred while updating booking listen session duration for BookingPodcastTrackListenSessionId: {BookingPodcastTrackListenSessionId}", parameter.BookingPodcastTrackListenSessionId);
                     var newResponseData = new JObject
                     {
-                        { "ErrorMessage", "Add Podcast Tones To Podcaster failed, error: " + ex.Message }
+                        { "ErrorMessage", "Updating booking listen session duration failed, error: " + ex.Message }
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
@@ -2689,7 +2746,35 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         flowName: command.FlowName,
                         messageName: newMessageName);
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
-                    _logger.LogError("Add Podcast Tones To Podcaster failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                    _logger.LogError("Updating booking listen session duration failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
+        public async Task ExpireBookingPodcastTrackListenSessionsAsync()
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // lấy tất cả listensession có iscompleted =false và expiredat <= now
+                    var now = _dateHelper.GetNowByAppTimeZone();
+                    var sessionsToExpire = await _bookingPodcastTrackListenSessionGenericRepository.FindAll(
+                        predicate: btls => btls.IsCompleted == false && btls.ExpiredAt <= now
+                    ).ToListAsync();
+
+                    foreach (var session in sessionsToExpire)
+                    {
+                        session.IsCompleted = true;
+                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                    }
+
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new Exception("Expire booking podcast track listen sessions job failed, error: " + ex.Message);
                 }
             }
         }

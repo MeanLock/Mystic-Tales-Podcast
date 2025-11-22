@@ -2211,8 +2211,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     await transaction.CommitAsync();
                     var newResponseData = command.RequestData;
                     var newRequestData = command.RequestData;
-                    newResponseData["DmcaDismissedEpisodeId"] = parameter.PodcastEpisodeId;
-                    newRequestData["DmcaDismissedEpisodeId"] = parameter.PodcastEpisodeId;
+                    newResponseData["DmcaDismissedEpisodeId"] = dmcaList.Count != 0 ? parameter.PodcastEpisodeId : null;
+                    newRequestData["DmcaDismissedEpisodeId"] = dmcaList.Count != 0 ? parameter.PodcastEpisodeId : null;
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.DmcaManagementDomain,
@@ -2513,8 +2513,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var newResponseData = command.RequestData;
                     var newRequestData = command.RequestData;
-                    newResponseData["DmcaDismissedShowId"] = parameter.PodcastShowId;
-                    newRequestData["DmcaDismissedShowId"] = parameter.PodcastShowId;
+                    newResponseData["DmcaDismissedShowId"] = dmcaList.Count != 0 ? parameter.PodcastShowId : null;
+                    newRequestData["DmcaDismissedShowId"] = dmcaList.Count != 0 ? parameter.PodcastShowId : null;
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.DmcaManagementDomain,
@@ -2945,8 +2945,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var newResponseData = command.RequestData;
                     var newRequestData = command.RequestData;
-                    newResponseData["DmcaDismissedEpisodeId"] = parameter.PodcastEpisodeId;
-                    newRequestData["DmcaDismissedEpisodeId"] = parameter.PodcastEpisodeId;
+                    newResponseData["DmcaDismissedEpisodeId"] = dmcaList.Count != 0 ? parameter.PodcastEpisodeId : null;
+                    newRequestData["DmcaDismissedEpisodeId"] = dmcaList.Count != 0 ? parameter.PodcastEpisodeId : null;
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.DmcaManagementDomain,
@@ -3045,8 +3045,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var newResponseData = command.RequestData;
                     var newRequestData = command.RequestData;
-                    newResponseData["DmcaDismissedShowId"] = parameter.PodcastShowId;
-                    newRequestData["DmcaDismissedShowId"] = parameter.PodcastShowId;
+                    newResponseData["DmcaDismissedShowId"] = dmcaList.Count != 0 ? parameter.PodcastShowId : null;
+                    newRequestData["DmcaDismissedShowId"] = dmcaList.Count != 0 ? parameter.PodcastShowId : null;
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.DmcaManagementDomain,

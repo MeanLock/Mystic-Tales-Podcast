@@ -5,6 +5,7 @@ using BookingManagementService.BusinessLogic.Services.BackgroundServices.NonTime
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.TimeRequiredRequestServices;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices;
 using BookingManagementService.BusinessLogic.Services.BackgroundServices.BookingJobs;
+using BookingManagementService.BusinessLogic.Services.BackgroundServices.PodcastJobs;
 
 namespace BookingManagementService.BusinessLogic.Registrations
 {
@@ -21,6 +22,7 @@ namespace BookingManagementService.BusinessLogic.Registrations
             services.AddHostedService<SampleBackgroundJob>();
             services.AddHostedService<BookingProducingRequestedResponseTimeoutJob>();
             services.AddHostedService<BookingTrackPreviewingResponseTimeoutJob>();
+            services.AddHostedService<BookingPodcastTrackListenSessionExpiryJob>();
 
 
             services.Configure<HostOptions>(options =>

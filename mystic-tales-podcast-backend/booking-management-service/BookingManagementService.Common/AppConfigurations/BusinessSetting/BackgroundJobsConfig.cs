@@ -10,14 +10,14 @@ namespace BookingManagementService.Common.AppConfigurations.BusinessSetting
         public BackgroundJob SampleBackgroundJob { get; set; }
         public BackgroundJob BookingProducingRequestedResponseTimeoutJob { get; set; }
         public BackgroundJob BookingTrackPreviewingResponseTimeoutJob { get; set; }
+        public BackgroundJob BookingPodcastTrackListenSessionExpiryJob { get; set; }
     }
     public class BackgroundJobsConfig : IBackgroundJobsConfig
     {
         public BackgroundJob SampleBackgroundJob { get; set; }
-
         public BackgroundJob BookingProducingRequestedResponseTimeoutJob { get; set; }
-
         public BackgroundJob BookingTrackPreviewingResponseTimeoutJob { get; set; }
+        public BackgroundJob BookingPodcastTrackListenSessionExpiryJob { get; set; }
 
         public BackgroundJobsConfig(IConfiguration configuration)
         {
@@ -25,6 +25,7 @@ namespace BookingManagementService.Common.AppConfigurations.BusinessSetting
             SampleBackgroundJob = backgroundJobsConfig?.SampleBackgroundJob;
             BookingProducingRequestedResponseTimeoutJob = backgroundJobsConfig?.BookingProducingRequestedResponseTimeoutJob;
             BookingTrackPreviewingResponseTimeoutJob = backgroundJobsConfig?.BookingTrackPreviewingResponseTimeoutJob;
+            BookingPodcastTrackListenSessionExpiryJob = backgroundJobsConfig?.BookingPodcastTrackListenSessionExpiryJob;
         }
     }
 }
