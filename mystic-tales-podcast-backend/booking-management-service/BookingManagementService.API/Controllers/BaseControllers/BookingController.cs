@@ -429,9 +429,9 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen
-        [HttpGet("{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen")]
+        [HttpPost("{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> MarkBookingPodcastTrackAsListened(int BookingId, Guid BookingPodcastTrackId)
+        public async Task<IActionResult> MarkBookingPodcastTrackAsListened(int BookingId, Guid BookingPodcastTrackId, [FromBody] BookingTrackListenRequestDTO request)
         {
             string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
             string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
@@ -463,7 +463,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
 
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var trackListenResponse = await _bookingService.GetTrackListenAsync(BookingId, BookingPodcastTrackId, account.Id, deviceInfo);
+            var trackListenResponse = await _bookingService.GetTrackListenAsync(BookingId, BookingPodcastTrackId, account.Id, deviceInfo, request.SourceType);
 
             return Ok(new
             {

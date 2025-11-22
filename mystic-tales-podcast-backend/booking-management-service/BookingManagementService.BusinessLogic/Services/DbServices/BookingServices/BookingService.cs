@@ -2265,7 +2265,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 : null;
             return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
-        public async Task<BookingTrackListenResponseDTO> GetTrackListenAsync(int bookingId, Guid podcastTrackId, int accountId, DeviceInfoDTO deviceInfo)
+        public async Task<BookingListenResponseDTO> GetTrackListenAsync(int bookingId, Guid podcastTrackId, int accountId, DeviceInfoDTO deviceInfo, string SourceType)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -2283,11 +2283,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     if(booking == null)
                     {
-                        throw new Exception("Booking with id " + bookingId + " does not exist");
+                        throw new HttpRequestException("Booking with id " + bookingId + " does not exist");
                     }
                     if (booking.AccountId != accountId && booking.PodcastBuddyId != accountId)
                     {
-                        throw new Exception("You are not authorized to listen to tracks of this booking");
+                        throw new HttpRequestException("You are not authorized to listen to tracks of this booking");
                     }
                     var currentBookingStatusId = booking.BookingStatusTrackings
                         .OrderByDescending(bst => bst.CreatedAt)
@@ -2305,25 +2305,30 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     if (bookingPodcastTrack == null)
                     {
-                        throw new Exception("Podcast track with id " + podcastTrackId + " does not exist");
+                        throw new HttpRequestException("Podcast track with id " + podcastTrackId + " does not exist");
                     }
 
                     if (accountId != booking.PodcastBuddyId)
                     {
                         if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
                         {
-                            throw new Exception("Booking with id " + bookingId + " is not in Track Previewing status");
+                            throw new HttpRequestException("Booking with id " + bookingId + " is not in Track Previewing status");
                         }
                         if (currentBookingProducingRequest.Id.Equals(bookingPodcastTrack.BookingProducingRequestId) == false)
                         {
-                            throw new Exception("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
+                            throw new HttpRequestException("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
                         }
                         if(bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
                         {
-                            throw new Exception("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
+                            throw new HttpRequestException("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
                         }
                         bookingPodcastTrack.RemainingPreviewListenSlot = bookingPodcastTrack.RemainingPreviewListenSlot - 1;
                         await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
+                    }
+
+                    if (!SourceType.Equals(ListenSessionProcedureSourceDetailTypeEnum.BookingProducingTracks.ToString()))
+                    {
+                        throw new HttpRequestException("Invalid SourceType: " + SourceType);
                     }
 
                     // Complete existing booking listen session if any
@@ -2392,7 +2397,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         IsAutoPlay = _customerListenSessionProcedureConfig.DefaultIsAutoPlay,
                         SourceDetail = new ListenSessionProcedureSourceDetail
                         {
-                            Type = Enum.GetName(ListenSessionProcedureSourceDetailTypeEnum.BookingProducingTracks),
+                            Type = SourceType,
                             Booking = new BookingInfo
                             {
                                 BookingProducingRequestId = currentBookingProducingRequest.Id,
@@ -2460,7 +2465,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 : null,
                         PlaylistFileKey = playlistFileKey
                     };
-                    return result;
+                    
+                    return new BookingListenResponseDTO
+                    {
+                        ListenSession = bookingListenSession,
+                        ListenSessionProcedure = createdProcedure
+                    };
                 }
                 catch (Exception ex)
                 {
