@@ -2362,7 +2362,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Booking = new BookingInfo
                             {
                                 BookingProducingRequestId = currentBookingProducingRequest.Id,
-                                BookingTitle = booking.Title
+                                Title = booking.Title
                             },
                             PodcastShow = null
                         },

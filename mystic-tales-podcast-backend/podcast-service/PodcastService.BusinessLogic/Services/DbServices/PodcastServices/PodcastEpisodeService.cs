@@ -3065,441 +3065,662 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
         }
 
-        public async Task<EpisodeListenResponseDTO> GetEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId, string? token, DeviceInfoDTO deviceInfo)
+        // public async Task<EpisodeListenResponseDTO> GetEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId, List<PodcastSubscriptionBenefitDTO> currentPodcastSubscriptionRegistrationBenefitList, DeviceInfoDTO deviceInfo, string? token)
+        // {
+        //     using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //     {
+        //         bool transactionCompleted = false;
+        //         try
+        //         {
+        //             // nếu có token:
+        //             // + kiểm tra token phải hợp lệ với secret key và có trường ExpiredAt chưa hết hạn
+        //             // + lấy trường SessionId từ token để kiểm tra session tồn tại và IsCompleted = false 
+        //             // + Check điều kiện cần đề nghe (alway cho mọi trường hợp): 
+        //             //      + check channel nếu có thì deleted == null và phải đang publish
+        //             //      + check show deleted == null và phải đang publish
+        //             //      + check episode deleted == null và phải đang publish
+        //             // + Check điều kiện liên quan đến subscription type của show và episode đang yêu cầu nghe, để append vào danh sách điều kiện (kiểu Set PodcastSubscriptionBenefitEnum điều kiện cần):
+        //             //      + isreleased = false (Show) : PodcastSubscriptionBenefitEnum.ShowsEpisodesEarlyAccess
+        //             //      + PodcastListenSlot == 0 : PodcastSubscriptionBenefitEnum.NonQuotaListening
+        //             //      + Subscriber only (PodcastShowSubscriptionType) : PodcastSubscriptionBenefitEnum.SubscriberOnlyShows
+        //             //      + Subscriber only (PodcastEpisodeSubscriptionType) : PodcastSubscriptionBenefitEnum.SubscriberOnlyEpisodes
+        //             //      + Bonus (PodcastEpisodeSubscriptionType) : PodcastSubscriptionBenefitEnum.BonusEpisodes
+        //             //      + Archive (PodcastEpisodeSubscriptionType) : PodcastSubscriptionBenefitEnum.ArchiveEpisodesAccess
+        //             //  * nếu không tồn tại điều kiện nào trong số trên thì cho nghe bình thường
+        //             //  * nếu tồn tại điều kiện và Show có ít nhất 1 gói subscription đang active hoặc channel (nếu channel != null) có ít nhất 1 gói subscription đang active, thì query vào subscription service để kiểm tra listenerAccountId đang đăng kí 1 trong 2 gói subscription đó hay không:
+        //             //      + nếu không thì từ chối nghe + set IsCompleted = true cho session
+        //             //      + nếu có thì lấy ra danh sách beneifit của gói đó để kiểm tra với danh sách điều kiện cần:
+        //             //            + nếu bao gồm tất cả các điều kiện cần thì cho nghe
+        //             //            + nếu không bao gồm tất cả các điều kiện cần thì từ chối nghe + set IsCompleted = true cho session
+        //             // + tạo token mới với (SessionId, IsUsed = false, ExpiredAt = now + PodcastListenSessionConfig.TokenEncryptionKeyRequestExpirationMinutes)
+        //             // + update token vào session
+        //             // + gọi hàm cập nhật listenCount ở các đối tượng liên quan
+        //             // + trả về token mới  + playlist file key
+        //             // nếu không có token:
+        //             // + Check điều kiện cần đề nghe như trên:
+        //             //      + nếu không tồn tại điều kiện nào trong số trên thì cho nghe bình thường
+        //             //      + nếu tồn tại điều kiện và Show có ít nhất 1 gói subscription đang active hoặc channel (nếu channel != null) có ít nhất 1 gói subscription đang active, thì query vào subscription service để kiểm tra listenerAccountId đang đăng kí 1 trong 2 gói subscription đó hay không:
+        //             //          + nếu không thì từ chối nghe
+        //             //          + nếu có thì lấy ra danh sách beneifit của gói đó để kiểm tra với danh sách điều kiện cần:
+        //             //              + nếu bao gồm tất cả các điều kiện cần thì cho nghe
+        //             //              + nếu không bao gồm tất cả các điều kiện cần thì từ chối nghe
+        //             // + tạo mới session với IsCompleted = false và ExpiredAt = now + PodcastListenSessionConfig.SessionExpirationMinutes
+        //             // + đánh isCompleted = true ở tất cả các session cũ chưa completed của episode này và account này
+        //             // + tạo token mới với (SessionId, IsUsed = false, ExpiredAt = now + PodcastListenSessionConfig.TokenEncryptionKeyRequestExpirationMinutes)
+        //             // + update token vào session
+        //             // + gọi hàm cập nhật listenCount ở các đối tượng liên quan
+        //             // + trả về token mới  + playlist file key
+
+        //             // kiểm tra token sơ bộ
+        //             ClaimsPrincipal? principal = null;
+        //             if (token != null)
+        //             {
+        //                 principal = _jwtHelper.DecodeToken_OneSecretKey(token, _podcastListenSessionConfig.TokenSecretKey);
+        //                 // kiểm tra session
+        //                 var sessionId = principal?.FindFirst("SessionId")?.Value;
+        //                 var existingSession = await (_podcastEpisodeListenSessionGenericRepository.FindAll(
+        //                     predicate: pes => pes.Id.ToString() == sessionId && pes.AccountId == listenerAccountId && pes.IsCompleted == false,
+        //                     includeFunc: null
+        //                 )).FirstOrDefaultAsync();
+        //                 if (existingSession == null)
+        //                 {
+        //                     throw new Exception("Invalid or already used token, session does not exist or already completed");
+        //                 }
+
+
+        //                 var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
+        //                 var podcaster = await _accountCachingService.GetAccountStatusCacheById(validEpisode.PodcastShow.PodcasterId);
+        //                 var playlistFileKey = FilePathHelper.CombinePaths(
+        //                                 _filePathConfig.PODCAST_EPISODE_FILE_PATH,
+        //                                 validEpisode.Id.ToString(),
+        //                                 "playlist",
+        //                                 _hlsConfig.PlaylistFileName
+        //                             );
+        //                 string sessionToken = null;
+        //                 var account = await GetAccountById(listenerAccountId);
+        //                 if (account == null)
+        //                 {
+        //                     throw new Exception("Listener with id " + listenerAccountId + " does not exist");
+        //                 }
+        //                 HashSet<PodcastSubscriptionBenefitEnum> listenPermissionConditions = await GetEpisodeListenPermissionConditionsAsync(validEpisode, account);
+        //                 if (listenPermissionConditions.Count == 0)
+        //                 {
+        //                     // sessionToken = GenerateEpisodeListenToken(existingSession.Id, false);
+        //                     // existingSession.Token = sessionToken;
+        //                     // await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
+        //                     sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(existingSession.Id);
+        //                     await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+        //                     {
+        //                         PodcastEpisodeListenSessionId = existingSession.Id,
+        //                         Token = sessionToken,
+        //                         IsUsed = false,
+        //                     });
+        //                 }
+        //                 else
+        //                 {
+        //                     PodcastSubscriptionDTO channelSubscription = null;
+        //                     PodcastSubscriptionDTO showSubscription = null;
+        //                     // kiểm tra điều kiện subscription
+        //                     if (validEpisode.PodcastShow.PodcastChannelId != null)
+        //                     {
+        //                         channelSubscription = await GetActivePodcastSubscriptionByChannelId(validEpisode.PodcastShow.PodcastChannelId);
+        //                     }
+        //                     showSubscription = await GetActivePodcastSubscriptionByShowId(validEpisode.PodcastShow.Id);
+
+        //                     if (channelSubscription == null && showSubscription == null)
+        //                     {
+        //                         // không có gói subscription active nào => từ chối nghe
+        //                         existingSession.IsCompleted = true;
+        //                         await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
+        //                         await transaction.CommitAsync();
+        //                         transactionCompleted = true;
+        //                         throw new Exception("Listener does not have permission to listen to this episode, reason: no active subscription");
+        //                     }
+        //                     else
+        //                     {
+        //                         // nếu có gói channel subscription active thì chỉ cần 1 query vào channel subscription , nếu không thì query vào show subscription
+        //                         PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = channelSubscription != null ?
+        //                             await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id) :
+        //                             await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
+
+        //                         if (listenerSubscriptionRegistration == null)
+        //                         {
+        //                             // không đăng kí gói subscription active nào => từ chối nghe
+        //                             existingSession.IsCompleted = true;
+        //                             await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
+        //                             await transaction.CommitAsync();
+        //                             transactionCompleted = true;
+        //                             throw new Exception("Listener does not have permission to listen to this episode, reason: no subscription registration");
+        //                         }
+        //                         else
+        //                         {
+        //                             // kiểm tra benefit đang có 
+        //                             List<int> listenerBenefits = listenerSubscriptionRegistration.PodcastSubscription.PodcastSubscriptionBenefitMappings
+        //                                 .Where(psbm => psbm.Version == listenerSubscriptionRegistration.CurrentVersion)
+        //                                 .Select(psbm => psbm.PodcastSubscriptionBenefitId)
+        //                                 .ToList();
+
+        //                             bool hasAllConditions = true;
+        //                             HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
+        //                             foreach (var condition in listenPermissionConditions)
+        //                             {
+        //                                 if (!listenerBenefits.Contains((int)condition))
+        //                                 {
+        //                                     hasAllConditions = false;
+        //                                     // break;
+        //                                     missingConditions.Add(condition);
+        //                                 }
+        //                             }
+
+        //                             if (hasAllConditions == false)
+        //                             {
+        //                                 // không có đủ benefit để nghe => từ chối nghe
+        //                                 existingSession.IsCompleted = true;
+        //                                 await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
+        //                                 await transaction.CommitAsync();
+        //                                 transactionCompleted = true;
+        //                                 throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits - missing conditions: " + string.Join(", ", missingConditions));
+        //                             }
+        //                             else
+        //                             {
+        //                                 // sessionToken = GenerateEpisodeListenToken(existingSession.Id, false);
+        //                                 // existingSession.Token = sessionToken;
+        //                                 // await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
+        //                                 sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(existingSession.Id);
+        //                                 await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+        //                                 {
+        //                                     PodcastEpisodeListenSessionId = existingSession.Id,
+        //                                     Token = sessionToken,
+        //                                     IsUsed = false,
+        //                                 });
+        //                             }
+        //                         }
+
+        //                     }
+
+        //                 }
+
+        //                 // Cập nhật listenCount ở các đối tượng liên quan
+        //                 // await UpdateListenCountAsync(validEpisode, account, podcaster);
+        //                 await transaction.CommitAsync();
+        //                 transactionCompleted = true;
+        //                 return new EpisodeListenResponseDTO
+        //                 {
+        //                     // Token = existingSession.Token,
+        //                     Token = sessionToken,
+        //                     PlaylistFileKey = playlistFileKey,
+        //                     PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
+        //                     {
+        //                         Id = existingSession.Id,
+        //                         LastListenDurationSeconds = existingSession.LastListenDurationSeconds
+        //                     },
+        //                     PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
+        //                     {
+        //                         Id = validEpisode.Id,
+        //                         Name = validEpisode.Name,
+        //                         Description = validEpisode.Description,
+        //                         MainImageFileKey = validEpisode.MainImageFileKey,
+        //                         IsReleased = validEpisode.IsReleased,
+        //                         ReleaseDate = validEpisode.ReleaseDate,
+        //                     },
+        //                     Podcaster = new AccountSnippetResponseDTO
+        //                     {
+        //                         Id = podcaster.Id,
+        //                         Email = podcaster.Email,
+        //                         FullName = podcaster.PodcasterProfileName,
+        //                         MainImageFileKey = podcaster.MainImageFileKey
+        //                     },
+        //                     AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+        //                         ? await _fileIOHelper.GeneratePresignedUrlAsync(
+        //                             validEpisode.AudioFileKey
+        //                         )
+        //                         : null
+        //                 };
+        //             }
+        //             else // token == null
+        //             {
+        //                 var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
+        //                 var podcaster = await _accountCachingService.GetAccountStatusCacheById(validEpisode.PodcastShow.PodcasterId);
+        //                 var playlistFileKey = FilePathHelper.CombinePaths(
+        //                                 _filePathConfig.PODCAST_EPISODE_FILE_PATH,
+        //                                 validEpisode.Id.ToString(),
+        //                                 "playlist",
+        //                                 _hlsConfig.PlaylistFileName
+        //                             );
+
+        //                 var account = await GetAccountById(listenerAccountId);
+        //                 if (account == null)
+        //                 {
+        //                     throw new Exception("Listener with id " + listenerAccountId + " does not exist");
+        //                 }
+
+        //                 HashSet<PodcastSubscriptionBenefitEnum> listenPermissionConditions = await GetEpisodeListenPermissionConditionsAsync(validEpisode, account);
+
+        //                 PodcastEpisodeListenSession newSession = null;
+        //                 string sessionToken = null;
+
+        //                 if (listenPermissionConditions.Count == 0)
+        //                 {
+        //                     // đánh iscopleted = true ở tất cả các session cũ chưa completed của episode này và account này
+        //                     var oldSessionIds = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+        //                         predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
+        //                         includeFunc: null
+        //                     ).Select(pes => pes.Id).ToListAsync();
+        //                     foreach (var oldSessionId in oldSessionIds)
+        //                     {
+        //                         var oldSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(oldSessionId);
+        //                         oldSession.IsCompleted = true;
+        //                         await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(oldSession.Id, oldSession);
+        //                     }
+
+        //                     // không có điều kiện đặc biệt => cho nghe bình thường
+
+
+        //                     newSession = new PodcastEpisodeListenSession
+        //                     {
+        //                         Id = Guid.NewGuid(),
+        //                         AccountId = listenerAccountId,
+        //                         PodcastEpisodeId = validEpisode.Id,
+        //                         PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
+        //                         PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
+        //                         IsContentRemoved = false,
+        //                         ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
+        //                     };
+
+        //                     // sessionToken = GenerateEpisodeListenToken(newSession.Id, false);
+        //                     // newSession.Token = sessionToken;
+        //                     await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
+        //                     sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
+        //                     await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+        //                     {
+        //                         PodcastEpisodeListenSessionId = newSession.Id,
+        //                         Token = sessionToken,
+        //                         IsUsed = false,
+        //                     });
+
+        //                     await UpdateListenCountAsync(validEpisode, account, podcaster, new List<int>());
+
+
+        //                 }
+        //                 else
+        //                 {
+        //                     PodcastSubscriptionDTO channelSubscription = null;
+        //                     PodcastSubscriptionDTO showSubscription = null;
+
+        //                     // kiểm tra điều kiện subscription
+        //                     if (validEpisode.PodcastShow.PodcastChannelId != null)
+        //                     {
+        //                         channelSubscription = await GetActivePodcastSubscriptionByChannelId(validEpisode.PodcastShow.PodcastChannelId);
+        //                     }
+        //                     showSubscription = await GetActivePodcastSubscriptionByShowId(validEpisode.PodcastShow.Id);
+
+        //                     if (channelSubscription == null && showSubscription == null)
+        //                     {
+        //                         // không có gói subscription active nào => từ chối nghe
+        //                         await transaction.CommitAsync();
+        //                         transactionCompleted = true;
+        //                         throw new Exception("Listener does not have permission to listen to this episode, reason: no active subscription");
+        //                     }
+        //                     else
+        //                     {
+        //                         // // nếu có gói channel subscription active thì chỉ cần 1 query vào channel subscription , nếu không thì query vào show subscription
+        //                         // PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = channelSubscription != null ? 
+        //                         //     await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id) :
+        //                         //     await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
+
+        //                         // kiểm tra việc đăng kí gói subscription của người dùng , người dùng sẽ đăng kí 1 trong 2 level subscription (channel level hoặc show level) nhưng 1 lần chỉ được đăng kí 1 level chứ không được đk cả 2, dù có đăng kí ở level nào thì benefit cũng được áp dụng
+        //                         // kiểm tra channel subscription != null thì kiểm tra đăng kí , nếu đăng kí bằng null thì kiểm tra show subscription != null thì kiểm tra đăng kí 
+        //                         PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = null;
+        //                         if (channelSubscription != null)
+        //                         {
+        //                             listenerSubscriptionRegistration = await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id);
+        //                         }
+
+        //                         if (showSubscription != null && listenerSubscriptionRegistration == null)
+        //                         {
+        //                             listenerSubscriptionRegistration = await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
+        //                         }
+
+        //                         if (listenerSubscriptionRegistration == null)
+        //                         {
+        //                             // không đăng kí gói subscription active nào => từ chối nghe
+        //                             await transaction.CommitAsync();
+        //                             transactionCompleted = true;
+        //                             throw new Exception("Listener does not have permission to listen to this episode, reason: no subscription registration");
+        //                         }
+        //                         else
+        //                         {
+        //                             // kiểm tra benefit đang có 
+        //                             List<int> listenerBenefits = listenerSubscriptionRegistration.PodcastSubscription.PodcastSubscriptionBenefitMappings
+        //                                 .Where(psbm => psbm.Version == listenerSubscriptionRegistration.CurrentVersion)
+        //                                 .Select(psbm => psbm.PodcastSubscriptionBenefitId)
+        //                                 .ToList();
+
+        //                             bool hasAllConditions = true;
+        //                             HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
+        //                             foreach (var condition in listenPermissionConditions)
+        //                             {
+        //                                 if (!listenerBenefits.Contains((int)condition))
+        //                                 {
+        //                                     hasAllConditions = false;
+        //                                     // break;
+        //                                     missingConditions.Add(condition);
+        //                                 }
+        //                             }
+
+        //                             if (hasAllConditions == false)
+        //                             {
+        //                                 // không có đủ benefit để nghe => từ chối nghe
+        //                                 await transaction.CommitAsync();
+        //                                 transactionCompleted = true;
+        //                                 throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits - missing conditions: " + string.Join(", ", missingConditions));
+        //                             }
+        //                             else
+        //                             {
+        //                                 // Đánh dấu các session cũ là đã hoàn thành
+        //                                 var oldSessionIds = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+        //                                     predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
+        //                                     includeFunc: null
+        //                                 ).Select(pes => pes.Id).ToListAsync();
+        //                                 foreach (var oldSessionId in oldSessionIds)
+        //                                 {
+        //                                     var oldSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(oldSessionId);
+        //                                     oldSession.IsCompleted = true;
+        //                                     await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(oldSession.Id, oldSession);
+        //                                 }
+
+        //                                 // có đủ benefit => tạo session mới
+        //                                 newSession = new PodcastEpisodeListenSession
+        //                                 {
+        //                                     Id = Guid.NewGuid(),
+        //                                     AccountId = listenerAccountId,
+        //                                     PodcastEpisodeId = validEpisode.Id,
+        //                                     PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
+        //                                     PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
+        //                                     IsContentRemoved = false,
+        //                                     ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
+        //                                 };
+
+        //                                 // sessionToken = GenerateEpisodeListenToken(newSession.Id, false);
+        //                                 // newSession.Token = sessionToken;
+        //                                 await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
+        //                                 sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
+        //                                 await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+        //                                 {
+        //                                     PodcastEpisodeListenSessionId = newSession.Id,
+        //                                     Token = sessionToken,
+        //                                     IsUsed = false,
+        //                                 });
+
+        //                                 await UpdateListenCountAsync(validEpisode, account, podcaster, listenerBenefits);
+
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+
+        //                 // Cập nhật listenCount ở các đối tượng liên quan
+        //                 await transaction.CommitAsync();
+        //                 transactionCompleted = true;
+
+        //                 return new EpisodeListenResponseDTO
+        //                 {
+        //                     // Token = newSession.Token,
+        //                     Token = sessionToken,
+        //                     PlaylistFileKey = playlistFileKey,
+        //                     // LastListenDurationSeconds = 0,
+        //                     PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
+        //                     {
+        //                         Id = newSession.Id,
+        //                         LastListenDurationSeconds = newSession.LastListenDurationSeconds
+        //                     },
+        //                     PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
+        //                     {
+        //                         Id = validEpisode.Id,
+        //                         Name = validEpisode.Name,
+        //                         Description = validEpisode.Description,
+        //                         MainImageFileKey = validEpisode.MainImageFileKey,
+        //                         IsReleased = validEpisode.IsReleased,
+        //                         ReleaseDate = validEpisode.ReleaseDate,
+        //                     },
+        //                     Podcaster = new AccountSnippetResponseDTO
+        //                     {
+        //                         Id = podcaster.Id,
+        //                         Email = podcaster.Email,
+        //                         FullName = podcaster.PodcasterProfileName,
+        //                         MainImageFileKey = podcaster.MainImageFileKey
+        //                     },
+        //                     AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+        //                         ? await _fileIOHelper.GeneratePresignedUrlAsync(
+        //                             validEpisode.AudioFileKey
+        //                         )
+        //                         : null
+        //                 };
+        //             }
+        //         }
+
+
+        //         catch (Exception ex)
+        //         {
+        //             if (!transactionCompleted)
+        //             {
+        //                 await transaction.RollbackAsync();
+        //             }
+        //             Console.WriteLine("\n" + ex.StackTrace + "\n");
+        //             throw new HttpRequestException("An error occurred while processing your request, error: " + ex.Message);
+        //         }
+        //     }
+        // }
+
+
+        public async Task<EpisodeListenResponseDTO> GetEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId, List<PodcastSubscriptionBenefitDTO> currentPodcastSubscriptionRegistrationBenefitList, DeviceInfoDTO deviceInfo, string? token)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 bool transactionCompleted = false;
                 try
                 {
-                    // nếu có token:
-                    // + kiểm tra token phải hợp lệ với secret key và có trường ExpiredAt chưa hết hạn
-                    // + lấy trường SessionId từ token để kiểm tra session tồn tại và IsCompleted = false 
-                    // + Check điều kiện cần đề nghe (alway cho mọi trường hợp): 
-                    //      + check channel nếu có thì deleted == null và phải đang publish
-                    //      + check show deleted == null và phải đang publish
-                    //      + check episode deleted == null và phải đang publish
-                    // + Check điều kiện liên quan đến subscription type của show và episode đang yêu cầu nghe, để append vào danh sách điều kiện (kiểu Set PodcastSubscriptionBenefitEnum điều kiện cần):
-                    //      + isreleased = false (Show) : PodcastSubscriptionBenefitEnum.ShowsEpisodesEarlyAccess
-                    //      + PodcastListenSlot == 0 : PodcastSubscriptionBenefitEnum.NonQuotaListening
-                    //      + Subscriber only (PodcastShowSubscriptionType) : PodcastSubscriptionBenefitEnum.SubscriberOnlyShows
-                    //      + Subscriber only (PodcastEpisodeSubscriptionType) : PodcastSubscriptionBenefitEnum.SubscriberOnlyEpisodes
-                    //      + Bonus (PodcastEpisodeSubscriptionType) : PodcastSubscriptionBenefitEnum.BonusEpisodes
-                    //      + Archive (PodcastEpisodeSubscriptionType) : PodcastSubscriptionBenefitEnum.ArchiveEpisodesAccess
-                    //  * nếu không tồn tại điều kiện nào trong số trên thì cho nghe bình thường
-                    //  * nếu tồn tại điều kiện và Show có ít nhất 1 gói subscription đang active hoặc channel (nếu channel != null) có ít nhất 1 gói subscription đang active, thì query vào subscription service để kiểm tra listenerAccountId đang đăng kí 1 trong 2 gói subscription đó hay không:
-                    //      + nếu không thì từ chối nghe + set IsCompleted = true cho session
-                    //      + nếu có thì lấy ra danh sách beneifit của gói đó để kiểm tra với danh sách điều kiện cần:
-                    //            + nếu bao gồm tất cả các điều kiện cần thì cho nghe
-                    //            + nếu không bao gồm tất cả các điều kiện cần thì từ chối nghe + set IsCompleted = true cho session
-                    // + tạo token mới với (SessionId, IsUsed = false, ExpiredAt = now + PodcastListenSessionConfig.TokenEncryptionKeyRequestExpirationMinutes)
-                    // + update token vào session
-                    // + gọi hàm cập nhật listenCount ở các đối tượng liên quan
-                    // + trả về token mới  + playlist file key
-                    // nếu không có token:
-                    // + Check điều kiện cần đề nghe như trên:
-                    //      + nếu không tồn tại điều kiện nào trong số trên thì cho nghe bình thường
-                    //      + nếu tồn tại điều kiện và Show có ít nhất 1 gói subscription đang active hoặc channel (nếu channel != null) có ít nhất 1 gói subscription đang active, thì query vào subscription service để kiểm tra listenerAccountId đang đăng kí 1 trong 2 gói subscription đó hay không:
-                    //          + nếu không thì từ chối nghe
-                    //          + nếu có thì lấy ra danh sách beneifit của gói đó để kiểm tra với danh sách điều kiện cần:
-                    //              + nếu bao gồm tất cả các điều kiện cần thì cho nghe
-                    //              + nếu không bao gồm tất cả các điều kiện cần thì từ chối nghe
-                    // + tạo mới session với IsCompleted = false và ExpiredAt = now + PodcastListenSessionConfig.SessionExpirationMinutes
-                    // + đánh isCompleted = true ở tất cả các session cũ chưa completed của episode này và account này
-                    // + tạo token mới với (SessionId, IsUsed = false, ExpiredAt = now + PodcastListenSessionConfig.TokenEncryptionKeyRequestExpirationMinutes)
-                    // + update token vào session
-                    // + gọi hàm cập nhật listenCount ở các đối tượng liên quan
-                    // + trả về token mới  + playlist file key
+                    var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(validEpisode.PodcastShow.PodcasterId);
+                    var playlistFileKey = FilePathHelper.CombinePaths(
+                                    _filePathConfig.PODCAST_EPISODE_FILE_PATH,
+                                    validEpisode.Id.ToString(),
+                                    "playlist",
+                                    _hlsConfig.PlaylistFileName
+                                );
 
-                    // kiểm tra token sơ bộ
-                    ClaimsPrincipal? principal = null;
-                    if (token != null)
+                    var account = await GetAccountById(listenerAccountId);
+                    if (account == null)
                     {
-                        principal = _jwtHelper.DecodeToken_OneSecretKey(token, _podcastListenSessionConfig.TokenSecretKey);
-                        // kiểm tra session
-                        var sessionId = principal?.FindFirst("SessionId")?.Value;
-                        var existingSession = await (_podcastEpisodeListenSessionGenericRepository.FindAll(
-                            predicate: pes => pes.Id.ToString() == sessionId && pes.AccountId == listenerAccountId && pes.IsCompleted == false,
+                        throw new Exception("Listener with id " + listenerAccountId + " does not exist");
+                    }
+
+                    HashSet<PodcastSubscriptionBenefitEnum> listenPermissionConditions = await GetEpisodeListenPermissionConditionsAsync(validEpisode, account);
+
+                    PodcastEpisodeListenSession newSession = null;
+                    string sessionToken = null;
+
+                    if (listenPermissionConditions.Count == 0)
+                    {
+                        // đánh iscopleted = true ở tất cả các session cũ chưa completed của episode này và account này
+                        var oldSessionIds = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+                            predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
                             includeFunc: null
-                        )).FirstOrDefaultAsync();
-                        if (existingSession == null)
+                        ).Select(pes => pes.Id).ToListAsync();
+                        foreach (var oldSessionId in oldSessionIds)
                         {
-                            throw new Exception("Invalid or already used token, session does not exist or already completed");
+                            var oldSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(oldSessionId);
+                            oldSession.IsCompleted = true;
+                            await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(oldSession.Id, oldSession);
                         }
 
+                        // không có điều kiện đặc biệt => cho nghe bình thường
 
-                        var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
-                        var podcaster = await _accountCachingService.GetAccountStatusCacheById(validEpisode.PodcastShow.PodcasterId);
-                        var playlistFileKey = FilePathHelper.CombinePaths(
-                                        _filePathConfig.PODCAST_EPISODE_FILE_PATH,
-                                        validEpisode.Id.ToString(),
-                                        "playlist",
-                                        _hlsConfig.PlaylistFileName
-                                    );
-                        string sessionToken = null;
-                        var account = await GetAccountById(listenerAccountId);
-                        if (account == null)
+
+                        newSession = new PodcastEpisodeListenSession
                         {
-                            throw new Exception("Listener with id " + listenerAccountId + " does not exist");
-                        }
-                        HashSet<PodcastSubscriptionBenefitEnum> listenPermissionConditions = await GetEpisodeListenPermissionConditionsAsync(validEpisode, account);
-                        if (listenPermissionConditions.Count == 0)
-                        {
-                            // sessionToken = GenerateEpisodeListenToken(existingSession.Id, false);
-                            // existingSession.Token = sessionToken;
-                            // await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
-                            sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(existingSession.Id);
-                            await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
-                            {
-                                PodcastEpisodeListenSessionId = existingSession.Id,
-                                Token = sessionToken,
-                                IsUsed = false,
-                            });
-                        }
-                        else
-                        {
-                            PodcastSubscriptionDTO channelSubscription = null;
-                            PodcastSubscriptionDTO showSubscription = null;
-                            // kiểm tra điều kiện subscription
-                            if (validEpisode.PodcastShow.PodcastChannelId != null)
-                            {
-                                channelSubscription = await GetActivePodcastSubscriptionByChannelId(validEpisode.PodcastShow.PodcastChannelId);
-                            }
-                            showSubscription = await GetActivePodcastSubscriptionByShowId(validEpisode.PodcastShow.Id);
-
-                            if (channelSubscription == null && showSubscription == null)
-                            {
-                                // không có gói subscription active nào => từ chối nghe
-                                existingSession.IsCompleted = true;
-                                await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
-                                await transaction.CommitAsync();
-                                transactionCompleted = true;
-                                throw new Exception("Listener does not have permission to listen to this episode, reason: no active subscription");
-                            }
-                            else
-                            {
-                                // nếu có gói channel subscription active thì chỉ cần 1 query vào channel subscription , nếu không thì query vào show subscription
-                                PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = channelSubscription != null ?
-                                    await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id) :
-                                    await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
-
-                                if (listenerSubscriptionRegistration == null)
-                                {
-                                    // không đăng kí gói subscription active nào => từ chối nghe
-                                    existingSession.IsCompleted = true;
-                                    await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
-                                    await transaction.CommitAsync();
-                                    transactionCompleted = true;
-                                    throw new Exception("Listener does not have permission to listen to this episode, reason: no subscription registration");
-                                }
-                                else
-                                {
-                                    // kiểm tra benefit đang có 
-                                    List<int> listenerBenefits = listenerSubscriptionRegistration.PodcastSubscription.PodcastSubscriptionBenefitMappings
-                                        .Where(psbm => psbm.Version == listenerSubscriptionRegistration.CurrentVersion)
-                                        .Select(psbm => psbm.PodcastSubscriptionBenefitId)
-                                        .ToList();
-
-                                    bool hasAllConditions = true;
-                                    HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
-                                    foreach (var condition in listenPermissionConditions)
-                                    {
-                                        if (!listenerBenefits.Contains((int)condition))
-                                        {
-                                            hasAllConditions = false;
-                                            // break;
-                                            missingConditions.Add(condition);
-                                        }
-                                    }
-
-                                    if (hasAllConditions == false)
-                                    {
-                                        // không có đủ benefit để nghe => từ chối nghe
-                                        existingSession.IsCompleted = true;
-                                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
-                                        await transaction.CommitAsync();
-                                        transactionCompleted = true;
-                                        throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits - missing conditions: " + string.Join(", ", missingConditions));
-                                    }
-                                    else
-                                    {
-                                        // sessionToken = GenerateEpisodeListenToken(existingSession.Id, false);
-                                        // existingSession.Token = sessionToken;
-                                        // await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(existingSession.Id, existingSession);
-                                        sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(existingSession.Id);
-                                        await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
-                                        {
-                                            PodcastEpisodeListenSessionId = existingSession.Id,
-                                            Token = sessionToken,
-                                            IsUsed = false,
-                                        });
-                                    }
-                                }
-
-                            }
-
-                        }
-
-                        // Cập nhật listenCount ở các đối tượng liên quan
-                        // await UpdateListenCountAsync(validEpisode, account, podcaster);
-                        await transaction.CommitAsync();
-                        transactionCompleted = true;
-                        return new EpisodeListenResponseDTO
-                        {
-                            // Token = existingSession.Token,
-                            Token = sessionToken,
-                            PlaylistFileKey = playlistFileKey,
-                            PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
-                            {
-                                Id = existingSession.Id,
-                                LastListenDurationSeconds = existingSession.LastListenDurationSeconds
-                            },
-                            PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
-                            {
-                                Id = validEpisode.Id,
-                                Name = validEpisode.Name,
-                                Description = validEpisode.Description,
-                                MainImageFileKey = validEpisode.MainImageFileKey,
-                                IsReleased = validEpisode.IsReleased,
-                                ReleaseDate = validEpisode.ReleaseDate,
-                            },
-                            Podcaster = new AccountSnippetResponseDTO
-                            {
-                                Id = podcaster.Id,
-                                Email = podcaster.Email,
-                                FullName = podcaster.PodcasterProfileName,
-                                MainImageFileKey = podcaster.MainImageFileKey
-                            },
-                            AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
-                                ? await _fileIOHelper.GeneratePresignedUrlAsync(
-                                    validEpisode.AudioFileKey
-                                )
-                                : null
+                            Id = Guid.NewGuid(),
+                            AccountId = listenerAccountId,
+                            PodcastEpisodeId = validEpisode.Id,
+                            PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
+                            PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
+                            IsContentRemoved = false,
+                            ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
                         };
+
+
+                        await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
+                        sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
+                        await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+                        {
+                            PodcastEpisodeListenSessionId = newSession.Id,
+                            Token = sessionToken,
+                            IsUsed = false,
+                        });
+
+                        await UpdateListenCountAsync(validEpisode, account, podcaster, new List<int>());
+
+
                     }
-                    else // token == null
+                    else
                     {
-                        var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
-                        var podcaster = await _accountCachingService.GetAccountStatusCacheById(validEpisode.PodcastShow.PodcasterId);
-                        var playlistFileKey = FilePathHelper.CombinePaths(
-                                        _filePathConfig.PODCAST_EPISODE_FILE_PATH,
-                                        validEpisode.Id.ToString(),
-                                        "playlist",
-                                        _hlsConfig.PlaylistFileName
-                                    );
+                        PodcastSubscriptionDTO channelSubscription = null;
+                        PodcastSubscriptionDTO showSubscription = null;
 
-                        var account = await GetAccountById(listenerAccountId);
-                        if (account == null)
+                        // kiểm tra điều kiện subscription
+                        if (validEpisode.PodcastShow.PodcastChannelId != null)
                         {
-                            throw new Exception("Listener with id " + listenerAccountId + " does not exist");
+                            channelSubscription = await GetActivePodcastSubscriptionByChannelId(validEpisode.PodcastShow.PodcastChannelId);
                         }
+                        showSubscription = await GetActivePodcastSubscriptionByShowId(validEpisode.PodcastShow.Id);
 
-                        HashSet<PodcastSubscriptionBenefitEnum> listenPermissionConditions = await GetEpisodeListenPermissionConditionsAsync(validEpisode, account);
-
-                        PodcastEpisodeListenSession newSession = null;
-                        string sessionToken = null;
-
-                        if (listenPermissionConditions.Count == 0)
+                        if (channelSubscription == null && showSubscription == null)
                         {
-                            // đánh iscopleted = true ở tất cả các session cũ chưa completed của episode này và account này
-                            var oldSessionIds = await _podcastEpisodeListenSessionGenericRepository.FindAll(
-                                predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
-                                includeFunc: null
-                            ).Select(pes => pes.Id).ToListAsync();
-                            foreach (var oldSessionId in oldSessionIds)
-                            {
-                                var oldSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(oldSessionId);
-                                oldSession.IsCompleted = true;
-                                await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(oldSession.Id, oldSession);
-                            }
-
-                            // không có điều kiện đặc biệt => cho nghe bình thường
-
-
-                            newSession = new PodcastEpisodeListenSession
-                            {
-                                Id = Guid.NewGuid(),
-                                AccountId = listenerAccountId,
-                                PodcastEpisodeId = validEpisode.Id,
-                                PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
-                                PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
-                                IsContentRemoved = false,
-                                ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
-                            };
-
-                            // sessionToken = GenerateEpisodeListenToken(newSession.Id, false);
-                            // newSession.Token = sessionToken;
-                            await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
-                            sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
-                            await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
-                            {
-                                PodcastEpisodeListenSessionId = newSession.Id,
-                                Token = sessionToken,
-                                IsUsed = false,
-                            });
-
-                            await UpdateListenCountAsync(validEpisode, account, podcaster, new List<int>());
-
-
+                            // không có gói subscription active nào => từ chối nghe
+                            await transaction.CommitAsync();
+                            transactionCompleted = true;
+                            throw new Exception("Listener does not have permission to listen to this episode, reason: no active subscription");
                         }
                         else
                         {
-                            PodcastSubscriptionDTO channelSubscription = null;
-                            PodcastSubscriptionDTO showSubscription = null;
+                            // kiểm tra các benefit người dùng gửi vào 
 
-                            // kiểm tra điều kiện subscription
-                            if (validEpisode.PodcastShow.PodcastChannelId != null)
+                            if (currentPodcastSubscriptionRegistrationBenefitList == null || currentPodcastSubscriptionRegistrationBenefitList.Count == 0)
                             {
-                                channelSubscription = await GetActivePodcastSubscriptionByChannelId(validEpisode.PodcastShow.PodcastChannelId);
-                            }
-                            showSubscription = await GetActivePodcastSubscriptionByShowId(validEpisode.PodcastShow.Id);
-
-                            if (channelSubscription == null && showSubscription == null)
-                            {
-                                // không có gói subscription active nào => từ chối nghe
+                                // không đăng kí gói subscription active nào => từ chối nghe
                                 await transaction.CommitAsync();
                                 transactionCompleted = true;
-                                throw new Exception("Listener does not have permission to listen to this episode, reason: no active subscription");
+                                throw new Exception("Listener does not have permission to listen to this episode, reason: no subscription registration");
                             }
                             else
                             {
-                                // // nếu có gói channel subscription active thì chỉ cần 1 query vào channel subscription , nếu không thì query vào show subscription
-                                // PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = channelSubscription != null ? 
-                                //     await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id) :
-                                //     await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
+                                // kiểm tra benefit đang có theo danh sách người dùng gửi vào 
+                                List<int> listenerBenefits = currentPodcastSubscriptionRegistrationBenefitList
+                                    .Select(psb => psb.Id)
+                                    .ToList();  
 
-                                // kiểm tra việc đăng kí gói subscription của người dùng , người dùng sẽ đăng kí 1 trong 2 level subscription (channel level hoặc show level) nhưng 1 lần chỉ được đăng kí 1 level chứ không được đk cả 2, dù có đăng kí ở level nào thì benefit cũng được áp dụng
-                                // kiểm tra channel subscription != null thì kiểm tra đăng kí , nếu đăng kí bằng null thì kiểm tra show subscription != null thì kiểm tra đăng kí 
-                                PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = null;
-                                if (channelSubscription != null)
+                                bool hasAllConditions = true;
+                                HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
+                                foreach (var condition in listenPermissionConditions)
                                 {
-                                    listenerSubscriptionRegistration = await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, channelSubscription.Id);
+                                    if (!listenerBenefits.Contains((int)condition))
+                                    {
+                                        hasAllConditions = false;
+                                        // break;
+                                        missingConditions.Add(condition);
+                                    }
                                 }
 
-                                if (showSubscription != null && listenerSubscriptionRegistration == null)
+                                if (hasAllConditions == false)
                                 {
-                                    listenerSubscriptionRegistration = await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerAccountId, showSubscription.Id);
-                                }
-
-                                if (listenerSubscriptionRegistration == null)
-                                {
-                                    // không đăng kí gói subscription active nào => từ chối nghe
+                                    // không có đủ benefit để nghe => từ chối nghe
                                     await transaction.CommitAsync();
                                     transactionCompleted = true;
-                                    throw new Exception("Listener does not have permission to listen to this episode, reason: no subscription registration");
+                                    throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits - missing conditions: " + string.Join(", ", missingConditions));
                                 }
                                 else
                                 {
-                                    // kiểm tra benefit đang có 
-                                    List<int> listenerBenefits = listenerSubscriptionRegistration.PodcastSubscription.PodcastSubscriptionBenefitMappings
-                                        .Where(psbm => psbm.Version == listenerSubscriptionRegistration.CurrentVersion)
-                                        .Select(psbm => psbm.PodcastSubscriptionBenefitId)
-                                        .ToList();
-
-                                    bool hasAllConditions = true;
-                                    HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
-                                    foreach (var condition in listenPermissionConditions)
+                                    // Đánh dấu các session cũ là đã hoàn thành
+                                    var oldSessionIds = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+                                        predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
+                                        includeFunc: null
+                                    ).Select(pes => pes.Id).ToListAsync();
+                                    foreach (var oldSessionId in oldSessionIds)
                                     {
-                                        if (!listenerBenefits.Contains((int)condition))
-                                        {
-                                            hasAllConditions = false;
-                                            // break;
-                                            missingConditions.Add(condition);
-                                        }
+                                        var oldSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(oldSessionId);
+                                        oldSession.IsCompleted = true;
+                                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(oldSession.Id, oldSession);
                                     }
 
-                                    if (hasAllConditions == false)
+                                    // có đủ benefit => tạo session mới
+                                    newSession = new PodcastEpisodeListenSession
                                     {
-                                        // không có đủ benefit để nghe => từ chối nghe
-                                        await transaction.CommitAsync();
-                                        transactionCompleted = true;
-                                        throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits - missing conditions: " + string.Join(", ", missingConditions));
-                                    }
-                                    else
+                                        Id = Guid.NewGuid(),
+                                        AccountId = listenerAccountId,
+                                        PodcastEpisodeId = validEpisode.Id,
+                                        PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
+                                        PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
+                                        IsContentRemoved = false,
+                                        ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
+                                    };
+
+                                    await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
+                                    sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
+                                    await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
                                     {
-                                        // Đánh dấu các session cũ là đã hoàn thành
-                                        var oldSessionIds = await _podcastEpisodeListenSessionGenericRepository.FindAll(
-                                            predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
-                                            includeFunc: null
-                                        ).Select(pes => pes.Id).ToListAsync();
-                                        foreach (var oldSessionId in oldSessionIds)
-                                        {
-                                            var oldSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(oldSessionId);
-                                            oldSession.IsCompleted = true;
-                                            await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(oldSession.Id, oldSession);
-                                        }
+                                        PodcastEpisodeListenSessionId = newSession.Id,
+                                        Token = sessionToken,
+                                        IsUsed = false,
+                                    });
 
-                                        // có đủ benefit => tạo session mới
-                                        newSession = new PodcastEpisodeListenSession
-                                        {
-                                            Id = Guid.NewGuid(),
-                                            AccountId = listenerAccountId,
-                                            PodcastEpisodeId = validEpisode.Id,
-                                            PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
-                                            PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
-                                            IsContentRemoved = false,
-                                            ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
-                                        };
+                                    await UpdateListenCountAsync(validEpisode, account, podcaster, listenerBenefits);
 
-                                        // sessionToken = GenerateEpisodeListenToken(newSession.Id, false);
-                                        // newSession.Token = sessionToken;
-                                        await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
-                                        sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
-                                        await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
-                                        {
-                                            PodcastEpisodeListenSessionId = newSession.Id,
-                                            Token = sessionToken,
-                                            IsUsed = false,
-                                        });
-
-                                        await UpdateListenCountAsync(validEpisode, account, podcaster, listenerBenefits);
-
-                                    }
                                 }
                             }
                         }
-
-                        // Cập nhật listenCount ở các đối tượng liên quan
-                        await transaction.CommitAsync();
-                        transactionCompleted = true;
-
-                        return new EpisodeListenResponseDTO
-                        {
-                            // Token = newSession.Token,
-                            Token = sessionToken,
-                            PlaylistFileKey = playlistFileKey,
-                            // LastListenDurationSeconds = 0,
-                            PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
-                            {
-                                Id = newSession.Id,
-                                LastListenDurationSeconds = newSession.LastListenDurationSeconds
-                            },
-                            PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
-                            {
-                                Id = validEpisode.Id,
-                                Name = validEpisode.Name,
-                                Description = validEpisode.Description,
-                                MainImageFileKey = validEpisode.MainImageFileKey,
-                                IsReleased = validEpisode.IsReleased,
-                                ReleaseDate = validEpisode.ReleaseDate,
-                            },
-                            Podcaster = new AccountSnippetResponseDTO
-                            {
-                                Id = podcaster.Id,
-                                Email = podcaster.Email,
-                                FullName = podcaster.PodcasterProfileName,
-                                MainImageFileKey = podcaster.MainImageFileKey
-                            },
-                            AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
-                                ? await _fileIOHelper.GeneratePresignedUrlAsync(
-                                    validEpisode.AudioFileKey
-                                )
-                                : null
-                        };
                     }
+
+                    // Cập nhật listenCount ở các đối tượng liên quan
+                    await transaction.CommitAsync();
+                    transactionCompleted = true;
+
+                    // 
+
+                    return new EpisodeListenResponseDTO
+                    {
+                        // Token = newSession.Token,
+                        Token = sessionToken,
+                        PlaylistFileKey = playlistFileKey,
+                        // LastListenDurationSeconds = 0,
+                        PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
+                        {
+                            Id = newSession.Id,
+                            LastListenDurationSeconds = newSession.LastListenDurationSeconds
+                        },
+                        PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
+                        {
+                            Id = validEpisode.Id,
+                            Name = validEpisode.Name,
+                            Description = validEpisode.Description,
+                            MainImageFileKey = validEpisode.MainImageFileKey,
+                            IsReleased = validEpisode.IsReleased,
+                            ReleaseDate = validEpisode.ReleaseDate,
+                        },
+                        Podcaster = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            Email = podcaster.Email,
+                            FullName = podcaster.PodcasterProfileName,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+                            ? await _fileIOHelper.GeneratePresignedUrlAsync(
+                                validEpisode.AudioFileKey
+                            )
+                            : null
+                    };
+
                 }
-
-
                 catch (Exception ex)
                 {
                     if (!transactionCompleted)
@@ -3511,6 +3732,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
             }
         }
+
 
         public async Task<byte[]> GetEpisodeHlsEncryptionKeyFileAsync(Guid episodeId, Guid keyId, string? token = null)
         {
@@ -5713,7 +5935,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
 
 
-        public async Task<ListenPermissionResult> CheckListenerCanListenToEpisodeAsync(int listenerId, Guid podcastEpisodeId, bool isNonQuotaListeningCheck)
+        public async Task<ListenPermissionResult> CheckListenerCanListenToEpisodeAsync(int listenerId, Guid podcastEpisodeId, bool isNonQuotaListeningCheck, List<PodcastSubscriptionBenefitDTO> listenerCurrentPodcastSubscriptionRegistrationBenefitList = null!)
         {
             try
             {
@@ -5771,11 +5993,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 // [CHỈNH LẠI] sau này sẽ xem th subscription nào != và dựa vào mảng listenerSubscriptionRegistration để xong cho ở level đó không từ đó so sánh contain
                 // ở hàm gọi thì nếu slot còn lại n và không có benefit nonquota thì chỉ giữa lại n item đầu tiên trong mảng đủ điều kiện nghe trả về với n là slot còn lại (nếu ngay từ đầu không có benefit nonquota và slot còn lại là 0 thì trả về order rỗng luôn)
                 // 6. Check listener's subscription registration
-                PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = channelSubscription != null ?
-                    await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerId, channelSubscription.Id) :
-                    await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerId, showSubscription.Id);
+                // PodcastSubscriptionRegistrationDTO listenerSubscriptionRegistration = channelSubscription != null ?
+                //     await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerId, channelSubscription.Id) :
+                //     await GetAccountSubscriptionRegistrationByAccountIdAndSubscriptionId(listenerId, showSubscription.Id);
 
-                if (listenerSubscriptionRegistration == null)
+
+                if (listenerCurrentPodcastSubscriptionRegistrationBenefitList == null || listenerCurrentPodcastSubscriptionRegistrationBenefitList.Count == 0)
                 {
                     return new ListenPermissionResult
                     {
@@ -5786,10 +6009,13 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
 
                 // 7. Check listener's benefits vs required conditions
-                List<int> listenerBenefits = listenerSubscriptionRegistration.PodcastSubscription.PodcastSubscriptionBenefitMappings
-                    .Where(psbm => psbm.Version == listenerSubscriptionRegistration.CurrentVersion)
-                    .Select(psbm => psbm.PodcastSubscriptionBenefitId)
-                    .ToList();
+                // List<int> listenerBenefits = listenerSubscriptionRegistration.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                //     .Where(psbm => psbm.Version == listenerSubscriptionRegistration.CurrentVersion)
+                //     .Select(psbm => psbm.PodcastSubscriptionBenefitId)
+                //     .ToList();
+                List<int> listenerBenefits = listenerCurrentPodcastSubscriptionRegistrationBenefitList
+                                    .Select(psb => psb.Id)
+                                    .ToList();  
 
                 HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
                 foreach (var condition in listenPermissionConditions)
@@ -5861,14 +6087,13 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         throw new Exception($"Podcast episode listen session with id {updateEpisodeListenSessionDurationDTO.PodcastEpisodeListenSessionId} does not exist");
                     }
-                    // if (listenSession.IsCompleted)
-                    // {
-                    //     throw new Exception($"Podcast episode listen session with id {updateEpisodeListenSessionDurationDTO.PodcastEpisodeListenSessionId} is already completed");
-                    // }
+
+
                     var canListen = await this.CheckListenerCanListenToEpisodeAsync(
                         listenerId: updateEpisodeListenSessionDurationDTO.ListenerId,
                         podcastEpisodeId: listenSession.PodcastEpisodeId,
-                        isNonQuotaListeningCheck: false
+                        isNonQuotaListeningCheck: false,
+                        listenerCurrentPodcastSubscriptionRegistrationBenefitList: updateEpisodeListenSessionDurationDTO.CurrentPodcastSubscriptionRegistrationBenefitList
                     );
                     if (!canListen.CanListen)
                     {

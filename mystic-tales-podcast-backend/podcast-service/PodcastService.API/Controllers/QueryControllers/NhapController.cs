@@ -9,6 +9,8 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using PodcastService.BusinessLogic.Enums.Account;
 using PodcastService.BusinessLogic.DTOs.Account;
+using PodcastService.BusinessLogic.DTOs.Subscription;
+using PodcastService.BusinessLogic.DTOs.Episode;
 
 namespace PodcastService.API.Controllers.QueryControllers
 {

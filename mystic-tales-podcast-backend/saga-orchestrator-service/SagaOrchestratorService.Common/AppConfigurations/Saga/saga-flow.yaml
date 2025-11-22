@@ -5581,14 +5581,17 @@ flows:
           - PodcastEpisodeListenSessionId
           - ListenerId
           - LastListenDurationSeconds
+          - CurrentPodcastSubscriptionRegistrationBenefitList
         next-request-data:
           - PodcastEpisodeListenSessionId
           - ListenerId
           - LastListenDurationSeconds
+          - CurrentPodcastSubscriptionRegistrationBenefitList
         response-data:
           - PodcastEpisodeListenSessionId
           - ListenerId
           - LastListenDurationSeconds
+          - CurrentPodcastSubscriptionRegistrationBenefitList
         onSuccess:
           emit: "update-episode-listen-session-duration.success"
           topic: "content-management-domain"

@@ -29,7 +29,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.Cache.ListesnSessionProced
     public class BookingInfo
     {
         public required Guid BookingProducingRequestId { get; set; }
-        public required string BookingTitle { get; set; }
+        public required string Title { get; set; }
     }
 
     public class ListenSessionProcedureListenObjectQueueItem

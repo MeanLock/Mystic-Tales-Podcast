@@ -429,9 +429,9 @@ namespace PodcastService.API.Controllers.BaseControllers
         }
 
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/listen
-        [HttpGet("{PodcastEpisodeId}/listen")]
+        [HttpPost("{PodcastEpisodeId}/listen")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId, [FromQuery] string? Token = null)
+        public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId, [FromBody] EpisodeListenRequestDTO listenRequestDTO, [FromQuery] string? Token = null)
         {
             string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
             string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
@@ -465,7 +465,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
 
-            var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, Token, deviceInfo);
+            var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, listenRequestDTO.CurrentPodcastSubscriptionRegistrationBenefitList, deviceInfo, Token);
 
             return Ok(new
             {
@@ -688,7 +688,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         // /api/podcast-service/api/episodes/listen-sessions/{PodcastEpisodeListenSessionId}/last-duration-seconds/{LastListenDurationSeconds}
         [HttpPut("listen-sessions/{PodcastEpisodeListenSessionId}/last-duration-seconds/{LastListenDurationSeconds}")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> UpdatePodcastEpisodeListenSessionLastDurationSeconds(Guid PodcastEpisodeListenSessionId, int LastListenDurationSeconds)
+        public async Task<IActionResult> UpdatePodcastEpisodeListenSessionLastDurationSeconds(Guid PodcastEpisodeListenSessionId, int LastListenDurationSeconds, [FromBody] EpisodeListenLastDurationSecondsUpdateRequestDTO listenRequestDTO)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
@@ -696,7 +696,8 @@ namespace PodcastService.API.Controllers.BaseControllers
             {
                 ["PodcastEpisodeListenSessionId"] = PodcastEpisodeListenSessionId,
                 ["ListenerId"] = account.Id,
-                ["LastListenDurationSeconds"] = LastListenDurationSeconds
+                ["LastListenDurationSeconds"] = LastListenDurationSeconds,
+                ["CurrentPodcastSubscriptionRegistrationBenefitList"] = JArray.FromObject(listenRequestDTO.CurrentPodcastSubscriptionRegistrationBenefitList)
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-listen-session-duration-update-flow");
