@@ -7068,7 +7068,7 @@ flows:
           - BookingTransactionId
           - CreatedAt
         onSuccess:
-          emit: "create-booking-final-transaction.success"
+          emit: "create-booking-transaction.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
@@ -7077,7 +7077,7 @@ flows:
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "create-booking-final-transaction.failed"
+          emit: "create-booking-transaction.failed"
           topic: "user-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -7233,7 +7233,7 @@ flows:
           - BookingTransactionId
           - CreatedAt
         onSuccess:
-          emit: "refund-booking-transaction.success"
+          emit: "create-booking-transaction.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
@@ -7242,7 +7242,7 @@ flows:
               handle-service: "SagaOrchestratorService"
           nextFlows: []
         onFailure:
-          emit: "refund-booking-transaction.failed"
+          emit: "create-booking-transaction.failed"
           topic: "user-management-domain"
           handle-service: "UserService"
           nextSteps: []
@@ -7355,7 +7355,7 @@ flows:
           - BookingTransactionId
           - CreatedAt
         onSuccess:
-          emit: "refund-booking-deposit-transaction.success"
+          emit: "create-booking-transaction.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
@@ -7364,7 +7364,7 @@ flows:
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "refund-booking-deposit-transaction.failed"
+          emit: "create-booking-transaction.failed"
           topic: "user-management-domain"
           handle-service: "UserService"
           nextSteps: []
@@ -7451,7 +7451,7 @@ flows:
     description: "Giải phóng thu nhập cho podcaster sau khi hoàn thành booking"
     save-file: ""
     steps:
-      - name: "release-podcaster-booking-income"
+      - name: "create-booking-transaction"
         topic: "payment-processing-domain"
         handle-service: "TransactionService"
         description: "Giải phóng thu nhập cho podcaster"
@@ -7479,7 +7479,7 @@ flows:
           - Amount
           - TransactionTypeId
         onSuccess:
-          emit: "release-podcaster-booking-income.success"
+          emit: "create-booking-transaction.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
@@ -7488,7 +7488,7 @@ flows:
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "release-podcaster-booking-income.failed"
+          emit: "create-booking-transaction.failed"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -7572,7 +7572,7 @@ flows:
     description: "Thanh toán phí dịch vụ booking cho hệ thống"
     save-file: ""
     steps:
-      - name: "create-booking-system-transaction"
+      - name: "create-booking-transaction"
         topic: "payment-processing-domain"
         handle-service: "TransactionService"
         description: "Tạo booking system payment transaction"
@@ -7601,13 +7601,13 @@ flows:
           - TransactionTypeId
           - CreatedAt
         onSuccess:
-          emit: "create-booking-system-transaction.success"
+          emit: "create-booking-transaction.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
         onFailure:
-          emit: "create-booking-system-transaction.failed"
+          emit: "create-booking-transaction.failed"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
@@ -7642,7 +7642,7 @@ flows:
           - PodcastSubscriptionPaymentTransactionId
           - CreatedAt
         onSuccess:
-          emit: "create-podcast-subscription-payment-transaction.success"
+          emit: "create-podcast-subscription-transaction.success"
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
@@ -7651,8 +7651,8 @@ flows:
               handle-service: "UserService"
           nextFlows: []
         onFailure:
-          emit: "create-podcast-subscription-payment-transaction.failed"
-          topic: "user-management-domain"
+          emit: "create-podcast-subscription-transaction.failed"
+          topic: "payment-processing-domain"
           handle-service: "UserService"
           nextSteps: []
           nextFlows: []
@@ -7880,7 +7880,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "create-podcast-subscription-transaction.failed"
-          topic: "user-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "UserService"
           nextSteps: []
           nextFlows: []
@@ -7993,7 +7993,7 @@ flows:
           - CreatedAt
         onSuccess:
           emit: "create-podcast-subscription-transaction.success"
-          topic: "subscription-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
             - name: "add-account-balance-amount"
@@ -8002,7 +8002,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "create-podcast-subscription-transaction.failed"
-          topic: "subscription-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
@@ -8115,7 +8115,7 @@ flows:
           nextFlows: []
         onFailure:
           emit: "create-podcast-subscription-transaction.failed"
-          topic: "user-management-domain"
+          topic: "payment-processing-domain"
           handle-service: "UserService"
           nextSteps: []
           nextFlows: []
@@ -10000,7 +10000,7 @@ flows:
         handle-service: "SagaOrchestratorService"
         nextSteps: []
         nextFlows: []
-
+  
   create-channel-favorited-rollback-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"

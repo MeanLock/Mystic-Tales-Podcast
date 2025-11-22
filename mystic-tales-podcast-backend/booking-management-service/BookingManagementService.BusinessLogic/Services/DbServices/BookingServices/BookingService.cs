@@ -62,6 +62,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IGenericRepository<PodcastBookingTone> _podcastBookingToneGenericRepository;
         private readonly IGenericRepository<BookingPodcastTrack> _bookingPodcastTrackGenericRepository;
         private readonly IGenericRepository<PodcastBuddyBookingTone> _podcastBuddyBookingToneGenericRepository;
+        private readonly IGenericRepository<BookingPodcastTrackListenSession> _bookingPodcastTrackListenSessionGenericRepository;
         private readonly IPodcastBuddyBookingToneRepository _podcastBuddyBookingToneRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
@@ -75,6 +76,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly AppDbContext _appDbContext;
         private readonly ICustomerListenSessionProcedureConfig _customerListenSessionProcedureConfig;
         private readonly IFilePathConfig _filePathConfig;
+        private readonly IBookingListenSessionConfig _bookingListenSessionConfig;
         private readonly FileIOHelper _fileIOHelper;
         private readonly DateHelper _dateHelper;
         public BookingService(
@@ -87,6 +89,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             IGenericRepository<PodcastBookingTone> podcastBookingToneGenericRepository,
             IGenericRepository<BookingPodcastTrack> bookingPodcastTrackGenericRepository,
             IGenericRepository<PodcastBuddyBookingTone> podcastBuddyBookingToneGenericRepository,
+            IGenericRepository<BookingPodcastTrackListenSession> bookingPodcastTrackListenSessionGenericRepository,
             IPodcastBuddyBookingToneRepository podcastBuddyBookingToneRepository,
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
@@ -98,6 +101,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             AppDbContext appDbContext,
             ICustomerListenSessionProcedureConfig customerListenSessionProcedureConfig,
             IFilePathConfig filePathConfig,
+            IBookingListenSessionConfig bookingListenSessionConfig,
             FileIOHelper fileIOHelper,
             DateHelper dateHelper
             )
@@ -111,6 +115,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _podcastBookingToneGenericRepository = podcastBookingToneGenericRepository;
             _bookingPodcastTrackGenericRepository = bookingPodcastTrackGenericRepository;
             _podcastBuddyBookingToneGenericRepository = podcastBuddyBookingToneGenericRepository;
+            _bookingPodcastTrackListenSessionGenericRepository = bookingPodcastTrackListenSessionGenericRepository;
             _podcastBuddyBookingToneRepository = podcastBuddyBookingToneRepository;
 
             _httpServiceQueryClient = httpServiceQueryClient;
@@ -123,6 +128,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _appDbContext = appDbContext;
             _customerListenSessionProcedureConfig = customerListenSessionProcedureConfig;
             _filePathConfig = filePathConfig;
+            _bookingListenSessionConfig = bookingListenSessionConfig;
             _fileIOHelper = fileIOHelper;
             _dateHelper = dateHelper;
         }
@@ -2315,6 +2321,17 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                     }
 
+                    // Complete existing booking listen session if any
+                    var existingBookingListenSession = _bookingPodcastTrackListenSessionGenericRepository.FindAll(
+                        predicate: bpts => bpts.BookingPodcastTrackId == bookingPodcastTrack.Id && bpts.AccountId == accountId && bpts.IsCompleted == false
+                    ).ToListAsync();
+                    foreach(var session in existingBookingListenSession.Result)
+                    {
+                        session.IsCompleted = true;
+                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                    }
+
+                    // Complete existing episode listen session if any
                     var requestData = new JObject
                     {
                         { "AccountId", accountId },
@@ -2328,6 +2345,18 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         messageName: "all-user-listen-session-completion-flow");
                     await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, booking.Id.ToString());
 
+                    // Complete exisiting procedure
+                    var procedureAffected = await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(accountId);
+                    if(procedureAffected > 0)
+                    {
+                        _logger.LogInformation("Completed {ProcedureAffected} existing listen session procedures for AccountId: {AccountId}", procedureAffected, accountId);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("No existing listen session procedures to complete for AccountId: {AccountId}", accountId);
+                    }
+
+                    // Create new procedure
                     List<ListenSessionProcedureListenObjectQueueItem> listenObjectSequential = new List<ListenSessionProcedureListenObjectQueueItem>();
                     List<ListenSessionProcedureListenObjectQueueItem> listenObjectRandom = new List<ListenSessionProcedureListenObjectQueueItem>();
 
@@ -2372,6 +2401,24 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
                     };
 
+                    var isCreatedSuccess = await _customerListenSessionProcedureCachingService.CreateProcedureAsync(accountId, createdProcedure.Id, createdProcedure);
+                    if(!isCreatedSuccess)
+                    {
+                        throw new Exception("An error occurred while creating listen session procedure for booking with id " + bookingId);
+                    }
+
+                    // Create new listen session
+                    var createdListenSession = new BookingPodcastTrackListenSession
+                    {
+                        AccountId = accountId,
+                        BookingPodcastTrackId = bookingPodcastTrack.Id,
+                        LastListenDurationSeconds = _bookingListenSessionConfig.SessionExpirationMinutes * 60,
+                        IsCompleted = false,
+                        ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_bookingListenSessionConfig.SessionExpirationMinutes),
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                    };
+                    await _bookingPodcastTrackListenSessionGenericRepository.CreateAsync(createdListenSession);
+
                     await transaction.CommitAsync();
 
                     var playlistFileKey = FilePathHelper.CombinePaths(
@@ -2390,7 +2437,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     bookingPodcastTrack.AudioFileKey
                                 )
                                 : null
-
                     };
                     return result;
                 }

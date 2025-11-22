@@ -214,7 +214,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var responseData = command.LastStepResponseData;
 
                     var podcastSubscriptionTransaction = await _podcastSubscriptionTransactionGenericRepository.FindByIdAsync(parameter.PodcastSubscriptionTransactionId);
-                    if (podcastSubscriptionTransaction != null)
+                    if (podcastSubscriptionTransaction == null)
                     {
                         throw new Exception($"No podcast subscription transaction found for Id: {parameter.PodcastSubscriptionTransactionId}");
                     }

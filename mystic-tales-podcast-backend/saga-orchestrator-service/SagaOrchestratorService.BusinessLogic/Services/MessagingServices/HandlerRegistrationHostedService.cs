@@ -113,12 +113,34 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
             var handlers = _handlerRegistry.GetAllHandlers();
             var topicMessageNames = _handlerRegistry.GetTopicMessageNames();
 
+            //_logger.LogInformation("DEBUG: Total handlers from registry: {Count}", handlers.Count);
+            //_logger.LogInformation("DEBUG: Topics: {Topics}", string.Join(", ", topicMessageNames.Keys));
+
             foreach (var handler in handlers)
             {
                 var topic = topicMessageNames.FirstOrDefault(t => t.Value.Contains(handler.Key)).Key;
+
+                // Add detailed logging for the specific problematic message
+                //if (handler.Key.Contains("create-podcast-subscription-transaction"))
+                //{
+                //    _logger.LogError("DEBUG: Found handler key: {HandlerKey}, Topic: {Topic}", handler.Key, topic ?? "NULL");
+                //    foreach (var topicKvp in topicMessageNames)
+                //    {
+                //        _logger.LogInformation("DEBUG: Topic '{Topic}' contains messages: {Messages}",
+                //            topicKvp.Key, string.Join(", ", topicKvp.Value));
+                //    }
+                //}
+
                 if (!string.IsNullOrEmpty(topic))
                 {
                     RegisterMessageNameHandler(kafkaConsumerService, handler.Key, topic, handler.Value);
+
+                    // Log registration for the specific problematic message
+                    //if (handler.Key.Contains("create-podcast-subscription-transaction.success"))
+                    //{
+                    //    _logger.LogError("DEBUG: Successfully registered handler for {MessageName} on topic {Topic}",
+                    //        handler.Key, topic);
+                    //}
                 }
                 else
                 {

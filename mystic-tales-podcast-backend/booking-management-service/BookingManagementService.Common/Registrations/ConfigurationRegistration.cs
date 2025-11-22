@@ -45,6 +45,7 @@ namespace BookingManagementService.Common.Registrations
             services.AddSingleton<IDMCAAccusationConfig, DMCAAccusationConfig>();
             services.AddSingleton<IBackgroundJobsConfig, BackgroundJobsConfig>();
             services.AddSingleton<ICustomerListenSessionProcedureConfig, CustomerListenSessionProcedureConfig>();
+            services.AddSingleton<IBookingListenSessionConfig, BookingListenSessionConfig>();
 
             // SystemService
             services.AddSingleton<ISystemServiceConfig, SystemServiceConfig>();

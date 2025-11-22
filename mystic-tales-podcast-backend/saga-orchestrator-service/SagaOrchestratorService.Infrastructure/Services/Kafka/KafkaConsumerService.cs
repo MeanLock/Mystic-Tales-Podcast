@@ -126,8 +126,16 @@ namespace SagaOrchestratorService.Infrastructure.Services.Kafka
                 _topicMessageNames[topic].Add(messageName);
             }
 
-            _logger.LogInformation("Registered handler for MessageName: {MessageName} on Topic: {Topic}",
-                messageName, topic);
+            if (compositeKey.Contains("create-podcast-subscription-transaction.success"))
+            {
+                _logger.LogError("DEBUG: Successfully registered handler for {compositeKey} on topic {Topic}",
+                    compositeKey, topic);
+            }
+            //_logger.LogInformation("-------------------------------------------");
+            //_logger.LogInformation("Registered handler for MessageName: {MessageName} on Topic: {Topic}",
+            //    messageName, topic);
+            //if (compositeKey.Equals("payment-processing-domain:create-booking-system-transaction.success"))
+            //    _logger.LogInformation("Registered handler for CREATE PODCAST SUBSCRIPTION TRANSACTION SUCCESS");
         }
 
         /// <summary>

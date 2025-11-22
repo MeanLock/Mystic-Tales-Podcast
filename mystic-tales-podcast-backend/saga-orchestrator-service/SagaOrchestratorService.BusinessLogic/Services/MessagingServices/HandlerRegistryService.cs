@@ -108,16 +108,31 @@ namespace SagaOrchestratorService.BusinessLogic.Services.MessagingServices
                     {
                         var successAttr = new MessageHandlerAttribute(step.OnSuccess.Emit, step.OnSuccess.Topic);
                         result.Add((emitHandlerType, emitMethod, successAttr, step.OnSuccess.Topic));
+                        
+                        // Add debugging for the specific problematic message
+                        //if (step.OnSuccess.Emit.Contains("create-podcast-subscription-transaction"))
+                        //{
+                        //    _logger.LogError("DEBUG: Registering SUCCESS emit handler - MessageName: {MessageName}, Topic: {Topic}, Flow: {Flow}, Step: {Step}", 
+                        //        step.OnSuccess.Emit, step.OnSuccess.Topic, flowName, step.Name);
+                        //}
                     }
 
                     if (step.OnFailure != null && !string.IsNullOrWhiteSpace(step.OnFailure.Emit) && !string.IsNullOrWhiteSpace(step.OnFailure.Topic))
                     {
                         var failureAttr = new MessageHandlerAttribute(step.OnFailure.Emit, step.OnFailure.Topic);
                         result.Add((emitHandlerType, emitMethod, failureAttr, step.OnFailure.Topic));
+                        
+                        // Add debugging for the specific problematic message
+                        //if (step.OnFailure.Emit.Contains("create-podcast-subscription-transaction"))
+                        //{
+                        //    _logger.LogError("DEBUG: Registering FAILURE emit handler - MessageName: {MessageName}, Topic: {Topic}, Flow: {Flow}, Step: {Step}", 
+                        //        step.OnFailure.Emit, step.OnFailure.Topic, flowName, step.Name);
+                        //}
                     }
                 }
             }
 
+            _logger.LogInformation("DEBUG: Total handlers collected: {Count}", result.Count);
             return result;
         }
 

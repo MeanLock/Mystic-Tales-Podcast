@@ -2805,6 +2805,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             CreatedAt = psr.CreatedAt,
                             UpdatedAt = psr.UpdatedAt,
                             PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                                .Where(psb => psb.Version == psr.CurrentVersion)
                                 .Select(bm => new PodcastSubscriptionBenefitDTO
                                 {
                                     Id = bm.PodcastSubscriptionBenefit.Id,
@@ -2842,6 +2843,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     CreatedAt = psr.CreatedAt,
                                     UpdatedAt = psr.UpdatedAt,
                                     PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                                        .Where(psb => psb.Version == psr.CurrentVersion)
                                         .Select(bm => new PodcastSubscriptionBenefitDTO
                                         {
                                             Id = bm.PodcastSubscriptionBenefit.Id,
@@ -2889,6 +2891,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         CreatedAt = psr.CreatedAt,
                         UpdatedAt = psr.UpdatedAt,
                         PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                            .Where(psb => psb.Version == psr.CurrentVersion)
                             .Select(bm => new PodcastSubscriptionBenefitDTO
                             {
                                 Id = bm.PodcastSubscriptionBenefit.Id,
@@ -2932,6 +2935,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         CreatedAt = psr.CreatedAt,
                         UpdatedAt = psr.UpdatedAt,
                         PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                            .Where(psb => psb.Version == psr.CurrentVersion)
                             .Select(bm => new PodcastSubscriptionBenefitDTO
                             {
                                 Id = bm.PodcastSubscriptionBenefit.Id,
