@@ -96,6 +96,8 @@ using PodcastService.BusinessLogic.Enums.App;
 using PodcastService.BusinessLogic.DTOs.SystemConfiguration;
 using Microsoft.IdentityModel.Tokens;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CompleteAllUserEpisodeListenSessions;
+using PodcastService.BusinessLogic.DTOs.Cache.ListesnSessionProcedure;
+using PodcastService.BusinessLogic.Enums.ListenSessionProcedure;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -110,6 +112,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         private readonly IPodcastPublishReviewSessionConfig _podcastPublishReviewSessionConfig;
         private readonly IPodcastListenSessionConfig _podcastListenSessionConfig;
         private readonly IHlsConfig _hlsConfig;
+        private readonly ICustomerListenSessionProcedureConfig _customerListenSessionProcedureConfig;
 
         // DB CONTEXT
         private readonly AppDbContext _appDbContext;
@@ -148,6 +151,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         // CACHING SERVICE
         private readonly AccountCachingService _accountCachingService;
+        private readonly CustomerListenSessionProcedureCachingService _customerListenSessionProcedureCachingService;
 
         // GOOGLE SERVICE
         private readonly FluentEmailService _fluentEmailService;
@@ -204,10 +208,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             IPodcastPublishReviewSessionConfig podcastPublishReviewSessionConfig,
             IPodcastListenSessionConfig podcastListenSessionConfig,
             IHlsConfig hlsConfig,
+            ICustomerListenSessionProcedureConfig customerListenSessionProcedureConfig,
 
             HttpServiceQueryClient httpServiceQueryClient,
 
             AccountCachingService accountCachingService,
+            CustomerListenSessionProcedureCachingService customerListenSessionProcedureCachingService,
 
             IMessagingService messagingService,
             KafkaProducerService kafkaProducerService,
@@ -258,10 +264,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _appConfig = appConfig;
             _podcastListenSessionConfig = podcastListenSessionConfig;
             _hlsConfig = hlsConfig;
+            _customerListenSessionProcedureConfig = customerListenSessionProcedureConfig;
 
             _httpServiceQueryClient = httpServiceQueryClient;
 
             _accountCachingService = accountCachingService;
+            _customerListenSessionProcedureCachingService = customerListenSessionProcedureCachingService;
 
             _messagingService = messagingService;
             _kafkaProducerService = kafkaProducerService;
@@ -927,7 +935,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             try
             {
                 var episodeQuery = _podcastEpisodeGenericRepository.FindAll(
-                    predicate: pe => pe.DeletedAt == null && pe.Id == episodeId,
+                    predicate: pe => pe.DeletedAt == null && pe.Id == episodeId && pe.PodcastShow.DeletedAt == null && pe.PodcastShow.PodcasterId == podcasterId && (pe.PodcastShow.PodcastChannel == null || pe.PodcastShow.PodcastChannel.DeletedAt == null),
                     includeFunc: q => q
                         .Include(pe => pe.PodcastShow)
                         .Include(pe => pe.PodcastEpisodeStatusTrackings)
@@ -2963,7 +2971,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             var conditions = new HashSet<PodcastSubscriptionBenefitEnum>();
 
             // isreleased = false (Show) : PodcastSubscriptionBenefitEnum.ShowsEpisodesEarlyAccess
-            if (podcastEpisode.IsReleased == false)
+            if (podcastEpisode.IsReleased == false || podcastEpisode.PodcastShow.IsReleased == false)
             {
                 conditions.Add(PodcastSubscriptionBenefitEnum.ShowsEpisodesEarlyAccess);
             }
@@ -3684,7 +3692,26 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     await transaction.CommitAsync();
                     transactionCompleted = true;
 
-                    // 
+                    // đánh completed mọi prcedure , tạo procedure mới và chạy flow complete-all-user-episode-listen-sessions 
+                    await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(listenerAccountId);
+                    Guid newProcedureId = new Guid();
+                    // CustomerListenSessionProcedure newProcedure = new CustomerListenSessionProcedure
+                    // {
+                    //     Id = newProcedureId,
+                    //     PlayOrderMode = _customerListenSessionProcedureConfig.DefaultPlayOrderMode,
+                    //     IsAutoPlay = _customerListenSessionProcedureConfig.DefaultIsAutoPlay,
+                    //     ListenObjectsRandomOrder=,
+                    //     ListenObjectsSequentialOrder=,
+                    //     SourceDetail = new ListenSessionProcedureSourceDetail
+                    //     {
+                    //         SourceType = CustomerListenSessionProcedureSourceDetailTypeEnum.,
+                    //         PodcastEpisodeId = validEpisode.Id
+                    //     },
+                    //     IsCompleted = false,
+                    //     CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                    // };
+                    // await _customerListenSessionProcedureCachingService.CreateProcedureAsync(listenerAccountId, newProcedureId, newProcedure);
+                       
 
                     return new EpisodeListenResponseDTO
                     {

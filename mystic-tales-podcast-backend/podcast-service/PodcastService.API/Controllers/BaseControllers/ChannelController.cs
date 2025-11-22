@@ -247,7 +247,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             JObject requestData = new JObject
             {
                 ["PodcastChannelId"] = PodcastChannelId,
-                ["PodcasterId"] = account.Id,
+                // ["PodcasterId"] = account.Id,
                 ["KeptShowIds"] = JArray.FromObject(channelDeleteRequestDTO.ChannelDeletionOptions.KeptShowIds)
             };
 

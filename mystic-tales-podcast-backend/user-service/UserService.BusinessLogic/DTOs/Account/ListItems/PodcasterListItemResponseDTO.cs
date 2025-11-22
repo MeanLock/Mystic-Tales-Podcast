@@ -23,7 +23,7 @@ namespace UserService.BusinessLogic.DTOs.Account.ListItems
         public string CreatedAt { get; set; }
         public string UpdatedAt { get; set; }
         public PodcasterProfileDTO PodcasterProfile { get; set; } = null!;
-        public List<ReviewListItemDTO> ReviewList { get; set; } = new List<ReviewListItemDTO>();
+        public List<PodcastBuddyReviewListItemResponseDTO> ReviewList { get; set; } = new List<PodcastBuddyReviewListItemResponseDTO>();
 
     }
 

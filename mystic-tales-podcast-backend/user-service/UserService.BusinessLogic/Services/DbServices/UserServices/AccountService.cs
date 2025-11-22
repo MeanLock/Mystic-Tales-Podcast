@@ -716,7 +716,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             UpdatedAt = item.PodcasterProfile.UpdatedAt,
                         },
                         ReviewList = item.PodcastBuddyReviewPodcastBuddies?
-                        .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                        .Where(r => r.Account != null).Select(r => new PodcastBuddyReviewListItemResponseDTO
                         {
                             Id = r.Id,
                             Account = new AccountSnippetResponseDTO
@@ -875,7 +875,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             IsFollowedByCurrentUser = item.AccountFollowedPodcasterPodcasters.Any(afp => afp.AccountId == requesterAccount.Id),
                         },
                         ReviewList = item.PodcastBuddyReviewPodcastBuddies?
-                        .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                        .Where(r => r.Account != null).Select(r => new PodcastBuddyReviewListItemResponseDTO
                         {
                             Id = r.Id,
                             Account = new AccountSnippetResponseDTO
@@ -970,7 +970,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         UpdatedAt = podcaster.PodcasterProfile.UpdatedAt,
                     },
                     ReviewList = podcaster.PodcastBuddyReviewPodcastBuddies?
-                    .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                    .Where(r => r.Account != null).Select(r => new PodcastBuddyReviewListItemResponseDTO
                     {
                         Id = r.Id,
                         Account = new AccountSnippetResponseDTO
@@ -1033,7 +1033,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     ListenCount = podcaster.PodcasterProfile.ListenCount,
                     VerifiedAt = podcaster.PodcasterProfile.VerifiedAt,
                     ReviewList = podcaster.PodcastBuddyReviewPodcastBuddies?
-                    .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                    .Where(r => r.Account != null).Select(r => new PodcastBuddyReviewListItemResponseDTO
                     {
                         Id = r.Id,
                         Account = new AccountSnippetResponseDTO
@@ -1112,7 +1112,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                         IsFollowedByCurrentUser = podcaster.AccountFollowedPodcasterPodcasters.Any(afp => afp.AccountId == requestAccountId),
                     },
                     ReviewList = podcaster.PodcastBuddyReviewPodcastBuddies?
-                    .Where(r => r.Account != null).Select(r => new ReviewListItemDTO
+                    .Where(r => r.Account != null).Select(r => new PodcastBuddyReviewListItemResponseDTO
                     {
                         Id = r.Id,
                         Account = new AccountSnippetResponseDTO

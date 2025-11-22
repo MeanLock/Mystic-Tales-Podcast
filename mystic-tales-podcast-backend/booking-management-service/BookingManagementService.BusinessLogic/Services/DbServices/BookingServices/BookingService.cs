@@ -2326,7 +2326,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                     }
 
-                    if (!SourceType.Equals(ListenSessionProcedureSourceDetailTypeEnum.BookingProducingTracks.ToString()))
+                    if (!SourceType.Equals(CustomerListenSessionProcedureSourceDetailTypeEnum.BookingProducingTracks.ToString()))
                     {
                         throw new HttpRequestException("Invalid SourceType: " + SourceType);
                     }

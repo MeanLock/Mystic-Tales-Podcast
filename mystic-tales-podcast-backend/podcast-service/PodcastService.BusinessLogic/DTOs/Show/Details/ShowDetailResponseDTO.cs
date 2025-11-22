@@ -12,7 +12,7 @@ namespace PodcastService.BusinessLogic.DTOs.Show.Details
     {
         public List<PodcastSubscriptionListItemResponseDTO> PodcastSubscriptionList { get; set; } = new();
         public List<EpisodeListItemResponseDTO> EpisodeList { get; set; } = new();
-
+        public required List<PodcastShowReviewListItemResponseDTO> ReviewList { get; set; } = new List<PodcastShowReviewListItemResponseDTO>();
 
 
     }

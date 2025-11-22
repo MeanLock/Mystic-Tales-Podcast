@@ -1,6 +1,8 @@
-namespace UserService.BusinessLogic.DTOs.Account.ListItems
+using PodcastService.BusinessLogic.DTOs.Account;
+
+namespace PodcastService.BusinessLogic.DTOs.Show.ListItems
 {
-    public class ReviewListItemDTO
+    public class PodcastShowReviewListItemResponseDTO
     {
         public Guid Id { get; set; }
 
@@ -12,7 +14,7 @@ namespace UserService.BusinessLogic.DTOs.Account.ListItems
 
         public AccountSnippetResponseDTO Account { get; set; }
 
-        public int PodcastBuddyId { get; set; }
+        public Guid PodcastShowId { get; set; }
 
         public DateTime? DeletedAt { get; set; }
 

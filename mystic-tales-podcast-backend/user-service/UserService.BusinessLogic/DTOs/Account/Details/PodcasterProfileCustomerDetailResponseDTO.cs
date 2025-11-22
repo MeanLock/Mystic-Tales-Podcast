@@ -16,6 +16,6 @@ namespace UserService.BusinessLogic.DTOs.Account.Details
         public string? MainImageFileKey { get; set; }
         public bool IsBuddy { get; set; }
         public bool IsFollowedByCurrentUser { get; set; }
-        public List<ReviewListItemDTO> ReviewList { get; set; } = new List<ReviewListItemDTO>();
+        public List<PodcastBuddyReviewListItemResponseDTO> ReviewList { get; set; } = new List<PodcastBuddyReviewListItemResponseDTO>();
     }
 }

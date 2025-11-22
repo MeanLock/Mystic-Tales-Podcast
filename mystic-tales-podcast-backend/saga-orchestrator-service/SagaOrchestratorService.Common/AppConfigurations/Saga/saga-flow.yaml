@@ -4781,7 +4781,7 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps:
             - name: "remove-dismissed-episode-dmca-episode-deletion-force"
-              topic: "dmca-management-domain"
+              topic: "content-management-domain"
               handle-service: "ModerationService"
           nextFlows: []
         onFailure:

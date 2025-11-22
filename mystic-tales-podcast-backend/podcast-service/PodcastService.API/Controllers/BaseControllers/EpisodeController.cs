@@ -219,6 +219,27 @@ namespace PodcastService.API.Controllers.BaseControllers
             });
         }
 
+        // /api/podcast-service/api/episodes/{PodcastEpisodeId}
+        [HttpDelete("{PodcastEpisodeId}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> DeleteEpisodeById(Guid PodcastEpisodeId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            JObject requestData = new JObject
+            {
+                ["PodcastEpisodeId"] = PodcastEpisodeId,
+                // ["PodcasterId"] = account.Id
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "episode-deletion-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
+
         // /api/podcast-service/api/episodes/podcast-episode-license-types
         [HttpGet("podcast-episode-license-types")]
         public async Task<IActionResult> GetPodcastEpisodeLicenseTypes()

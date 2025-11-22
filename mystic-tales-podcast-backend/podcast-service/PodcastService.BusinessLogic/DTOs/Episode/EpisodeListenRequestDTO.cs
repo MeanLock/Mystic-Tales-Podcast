@@ -8,6 +8,7 @@ namespace PodcastService.BusinessLogic.DTOs.Episode
 {
     public class EpisodeListenRequestDTO
     {
+        public required CustomerLi
         public required List<PodcastSubscriptionBenefitDTO> CurrentPodcastSubscriptionRegistrationBenefitList { get; set; }
     }
 }

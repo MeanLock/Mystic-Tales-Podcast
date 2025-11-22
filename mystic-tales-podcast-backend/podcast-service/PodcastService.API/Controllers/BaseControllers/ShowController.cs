@@ -476,6 +476,28 @@ namespace PodcastService.API.Controllers.BaseControllers
             );
         }
 
+        // /api/podcast-service/api/shows/{PodcastShowId}
+        [HttpDelete("{PodcastShowId}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> DeleteShowById(Guid PodcastShowId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            JObject requestData = new JObject
+            {
+                ["PodcastShowId"] = PodcastShowId,
+                // ["PodcasterId"] = account.Id
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "show-deletion-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+
 
         // /api/podcast-service/api/shows/{PodcastShowId}/trailer-audio
         [HttpPut("{PodcastShowId}/trailer-audio")]

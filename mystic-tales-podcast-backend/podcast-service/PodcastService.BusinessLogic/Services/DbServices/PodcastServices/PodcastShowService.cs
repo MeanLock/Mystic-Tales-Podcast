@@ -398,7 +398,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             try
             {
                 var query = _podcastShowGenericRepository.FindAll(
-                    predicate: c => c.DeletedAt == null && c.PodcasterId == podcasterId,
+                    predicate: c => c.DeletedAt == null && c.PodcasterId == podcasterId && (c.PodcastChannel == null || c.PodcastChannel.DeletedAt == null),
                     includeFunc: q => q
                         .Include(pc => pc.PodcastCategory)
                         .Include(pc => pc.PodcastSubCategory)
@@ -496,6 +496,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .Include(pc => pc.PodcastChannel)
                         .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                         .Include(pc => pc.PodcastShowSubscriptionType)
+                        .Include(pc => pc.PodcastShowReviews)
                 );
 
                 if (role == null || role == 1)
@@ -570,6 +571,31 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 var episodeList = await episodeByShowIdQuery.ToListAsync();
 
+                var reviewList = (await Task.WhenAll(show.PodcastShowReviews.Where(psr => psr.DeletedAt == null).Select(async psr =>
+                {
+                    var reviewer = await _accountCachingService.GetAccountStatusCacheById(psr.AccountId);
+                    if (reviewer == null || reviewer.Id != psr.AccountId || reviewer.IsVerified == false)
+                    {
+                        throw new Exception("Reviewer with id " + psr.AccountId + " does not exist");
+                    }
+                    return new PodcastShowReviewListItemResponseDTO
+                    {
+                        Id = psr.Id,
+                        Rating = psr.Rating,
+                        Content = psr.Content,
+                        Account = new AccountSnippetResponseDTO
+                        {
+                            Id = reviewer.Id,
+                            Email = reviewer.Email,
+                            FullName = reviewer.FullName,
+                            MainImageFileKey = reviewer.MainImageFileKey
+                        },
+                        DeletedAt = psr.DeletedAt,
+                        PodcastShowId = psr.PodcastShowId,
+                        Title = psr.Title,
+                        UpdatedAt = psr.UpdatedAt
+                    };
+                }))).ToList();
 
                 var showDetail = new ShowDetailResponseDTO
                 {
@@ -717,6 +743,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             Name = pet.PodcastEpisodeStatus.Name
                         }).FirstOrDefault()!,
                     }).ToList(),
+                    ReviewList = reviewList,
                     CreatedAt = show.CreatedAt,
                     UpdatedAt = show.UpdatedAt,
                 };
@@ -735,7 +762,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             try
             {
                 var query = _podcastShowGenericRepository.FindAll(
-                    predicate: c => c.DeletedAt == null && c.Id == showId,
+                    predicate: c => c.DeletedAt == null && c.Id == showId && (c.PodcastChannel == null || c.PodcastChannel.DeletedAt == null),
                     includeFunc: q => q
                         .Include(pc => pc.PodcastCategory)
                         .Include(pc => pc.PodcastSubCategory)
@@ -746,6 +773,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .Include(pc => pc.PodcastChannel)
                         .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                         .Include(pc => pc.PodcastShowSubscriptionType)
+                        .Include(pc => pc.PodcastShowReviews)
                 );
 
 
@@ -806,6 +834,31 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 var episodeList = await episodeByShowIdQuery.ToListAsync();
 
+                var reviewList = (await Task.WhenAll(show.PodcastShowReviews.Where(psr => psr.DeletedAt == null).Select(async psr =>
+                                {
+                                    var reviewer = await _accountCachingService.GetAccountStatusCacheById(psr.AccountId);
+                                    if (reviewer == null || reviewer.Id != psr.AccountId || reviewer.IsVerified == false)
+                                    {
+                                        throw new Exception("Reviewer with id " + psr.AccountId + " does not exist");
+                                    }
+                                    return new PodcastShowReviewListItemResponseDTO
+                                    {
+                                        Id = psr.Id,
+                                        Rating = psr.Rating,
+                                        Content = psr.Content,
+                                        Account = new AccountSnippetResponseDTO
+                                        {
+                                            Id = reviewer.Id,
+                                            Email = reviewer.Email,
+                                            FullName = reviewer.FullName,
+                                            MainImageFileKey = reviewer.MainImageFileKey
+                                        },
+                                        DeletedAt = psr.DeletedAt,
+                                        PodcastShowId = psr.PodcastShowId,
+                                        Title = psr.Title,
+                                        UpdatedAt = psr.UpdatedAt
+                                    };
+                                }))).ToList();
 
                 var showDetail = new ShowDetailResponseDTO
                 {
@@ -953,6 +1006,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             Name = pet.PodcastEpisodeStatus.Name
                         }).FirstOrDefault()!,
                     }).ToList(),
+                    ReviewList = reviewList,
                     CreatedAt = show.CreatedAt,
                     UpdatedAt = show.UpdatedAt,
                 };

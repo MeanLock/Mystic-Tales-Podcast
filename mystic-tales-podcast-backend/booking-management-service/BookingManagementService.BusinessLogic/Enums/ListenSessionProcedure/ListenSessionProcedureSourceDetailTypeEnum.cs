@@ -1,6 +1,6 @@
 namespace BookingManagementService.BusinessLogic.Enums.ListenSessionProcedure
 {
-    public enum ListenSessionProcedureSourceDetailTypeEnum
+    public enum CustomerListenSessionProcedureSourceDetailTypeEnum
     {
         SavedEpisodes = 1,
         SpecifyShowEpisodes = 2,
