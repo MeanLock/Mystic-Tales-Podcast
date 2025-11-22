@@ -5866,6 +5866,41 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  booking-listen-session-duration-update-flow:
+    topic: "booking-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật thời lượng nghe của phiên nghe booking"
+    save-file: ""
+    steps:
+      - name: "update-booking-listen-session-duration"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Cập nhật thời lượng nghe của phiên nghe booking"
+        parameters:
+          - BookingPodcastTrackListenSessionId
+          - ListenerId
+          - LastListenDurationSeconds
+        next-request-data:
+          - BookingPodcastTrackListenSessionId
+          - ListenerId
+          - LastListenDurationSeconds
+        response-data:
+          - BookingPodcastTrackListenSessionId
+          - ListenerId
+          - LastListenDurationSeconds
+        onSuccess:
+          emit: "update-booking-listen-session-duration.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-booking-listen-session-duration.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   booking-completion-flow:
     topic: "booking-management-domain"
     handle-service: "SagaOrchestratorService"

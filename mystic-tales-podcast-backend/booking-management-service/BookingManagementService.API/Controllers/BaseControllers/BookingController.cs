@@ -465,10 +465,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var trackListenResponse = await _bookingService.GetTrackListenAsync(BookingId, BookingPodcastTrackId, account.Id, deviceInfo, request.SourceType);
 
-            return Ok(new
-            {
-                ListenSession = trackListenResponse
-            });
+            return Ok(trackListenResponse);
         }
 
         // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/hls-encryption-key/{KeyId}
@@ -706,6 +703,61 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             return Ok(new
             {
                 BookingResult = result
+            });
+        }
+        [HttpGet("listen-sessions/latest")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetLatestBookingPodcastTrackListenSession()
+        {
+            string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
+            string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
+            if (string.IsNullOrEmpty(deviceTokenHeader))
+            {
+                return BadRequest(new
+                {
+                    error = "Missing X-Device-Fingerprint header"
+                });
+            }
+            else if (string.IsNullOrEmpty(authorizedDeviceToken))
+            {
+                return Unauthorized(new
+                {
+                    error = "Unauthorized: Missing device_fingerprint claim"
+                });
+            }
+            else if (deviceTokenHeader != authorizedDeviceToken)
+            {
+                return Unauthorized(new
+                {
+                    error = "Unauthorized: Device fingerprint mismatch"
+                });
+            }
+            var deviceInfo = JwtHelper.ClaimsPrincipalToObject<DeviceInfoDTO>(_jwtHelper.DecodeToken_OneSecretKey(deviceTokenHeader));
+
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var listenSession = await _bookingService.GetLatestBookingPodcastTrackListenSessionAsync(account.Id, deviceInfo);
+
+            return Ok(listenSession);
+        }
+        [HttpPut("listen-sessions/{BookingPodcastTrackListenSessionId}/last-duration-seconds/{LastListenDurationSeconds}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> UpdatePodcastEpisodeListenSessionLastDurationSeconds(Guid BookingPodcastTrackListenSessionId, int LastListenDurationSeconds)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            JObject requestData = new JObject
+            {
+                ["BookingPodcastTrackListenSessionId"] = BookingPodcastTrackListenSessionId,
+                ["ListenerId"] = account.Id,
+                ["LastListenDurationSeconds"] = LastListenDurationSeconds,
+            };
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(KafkaTopicEnum.BookingManagementDomain, requestData, null, "booking-listen-session-duration-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
     }

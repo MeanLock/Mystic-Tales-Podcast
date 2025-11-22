@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace BookingManagementService.BusinessLogic.DTOs.Booking
 {
-    public class BookingListenResponseDTO
+    public class BookingListenSessionResponseDTO
     {
-        public BookingTrackListenResponseDTO ListenSession { get; set; }
-        public CustomerListenSessionProcedure ListenSessionProcedure { get; set; }
+        public BookingTrackListenResponseDTO? ListenSession { get; set; }
+        public CustomerListenSessionProcedure? ListenSessionProcedure { get; set; }
     }
 }

@@ -14,6 +14,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateBookingListenSessionDuration;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateTrackListenSlot;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ValidateBookingCancellation;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
@@ -287,6 +288,20 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "add-podcast-tones-to-podcaster.failed"
+            );
+        }
+        [MessageHandler("update-booking-listen-session-duration", SAGA_TOPIC)]
+        public async Task HandleUpdateBookingListenSessionDurationAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<UpdateBookingListenSessionDurationParameterDTO>();
+                    await _bookingService.UpdateBookingListenSessionDurationAsync(parameter, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "update-booking-listen-session-duration.failed"
             );
         }
     }
