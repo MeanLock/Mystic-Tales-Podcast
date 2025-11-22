@@ -1626,7 +1626,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         PodcastShowStatusId = (int)PodcastShowStatusEnum.Published
                     };
 
-                    if (publishShowParameterDTO.ReleaseDate == null)
+                    if (publishShowParameterDTO.ReleaseDate == null || publishShowParameterDTO.ReleaseDate <= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()))
                     {
                         existingPodcastShow.IsReleased = true;
                     }

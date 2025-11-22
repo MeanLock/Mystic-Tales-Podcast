@@ -2676,6 +2676,19 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         throw new Exception("Podcaster with id " + existingPodcastEpisode.PodcastShow.PodcasterId + " does not exist");
                     }
 
+                    existingPodcastEpisode.ReleaseDate = publishEpisodeParameterDTO.ReleaseDate;
+
+
+                    if (publishEpisodeParameterDTO.ReleaseDate == null || publishEpisodeParameterDTO.ReleaseDate <= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()))
+                    {
+                        existingPodcastEpisode.IsReleased = true;
+                    }
+                    else
+                    {
+                        existingPodcastEpisode.IsReleased = false;
+                    }
+                    await _podcastEpisodeGenericRepository.UpdateAsync(existingPodcastEpisode.Id, existingPodcastEpisode);
+
                     // Change episode status to Published
                     var newStatusTracking = new PodcastEpisodeStatusTracking
                     {
@@ -2847,6 +2860,22 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         PodcastEpisodeStatusId = (int)PodcastEpisodeStatusEnum.Published
                     };
                     await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                    // kiểm tra nếu status của show hiện tại là Draft thì chuyển nó thành ready to release
+                    var podcastShowCurrentStatusId = existingPodcastEpisode.PodcastShow.PodcastShowStatusTrackings
+                        .OrderByDescending(pst => pst.CreatedAt)
+                        .Select(pst => pst.PodcastShowStatusId)
+                        .FirstOrDefault();
+
+                    if (podcastShowCurrentStatusId == (int)PodcastShowStatusEnum.Draft)
+                    {
+                        var podcastShowNewStatusTracking = new PodcastShowStatusTracking
+                        {
+                            PodcastShowId = existingPodcastEpisode.PodcastShow.Id,
+                            PodcastShowStatusId = (int)PodcastShowStatusEnum.ReadyToRelease
+                        };
+                        await _podcastShowStatusTrackingGenericRepository.CreateAsync(podcastShowNewStatusTracking);
+                    }
 
                     await transaction.CommitAsync();
                     var messageNextRequestData = command.RequestData;
@@ -3521,7 +3550,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         // }
 
 
-        public async Task<EpisodeListenResponseDTO> GetEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId, List<PodcastSubscriptionBenefitDTO> currentPodcastSubscriptionRegistrationBenefitList, DeviceInfoDTO deviceInfo, string? token)
+        public async Task<EpisodeListenResponseDTO> GetEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId, EpisodeListenRequestDTO episodeListenRequest, DeviceInfoDTO deviceInfo, string? token)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
@@ -3612,6 +3641,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         else
                         {
                             // kiểm tra các benefit người dùng gửi vào 
+                            var currentPodcastSubscriptionRegistrationBenefitList = episodeListenRequest.CurrentPodcastSubscriptionRegistrationBenefitList;
 
                             if (currentPodcastSubscriptionRegistrationBenefitList == null || currentPodcastSubscriptionRegistrationBenefitList.Count == 0)
                             {
@@ -3625,7 +3655,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 // kiểm tra benefit đang có theo danh sách người dùng gửi vào 
                                 List<int> listenerBenefits = currentPodcastSubscriptionRegistrationBenefitList
                                     .Select(psb => psb.Id)
-                                    .ToList();  
+                                    .ToList();
 
                                 bool hasAllConditions = true;
                                 HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
@@ -3759,6 +3789,23 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
             }
         }
+
+        // hàm refresh order của episode đối với nguồn SavedEpisodes (order by createdAt trong danh sách AccountSavedPodcastEpisode) 
+        // Mode là CustomerListenSessionProcedurePlayOrderModeEnum.Sequencial sẽ refreh trên ListenObjectsSequentialOrder và Random sẽ refresh trên ListenObjectsRandomOrder
+        // truyền vào List<PodcastSubscriptionBenefitDTO> listenerCurrentPodcastSubscriptionRegistrationBenefitList để làm điều kiện cho field IsListenable ở các item trong order
+        // truyền vào CustomerListenSessionProcedure (lấy ra PlayOrderMode để xác định mục đích order, và SourceDetail để xác định nguồn là SavedEpisodes hay SpecifyShowEpisodes để làm cơ sở truy vấn, và order hiện tại để làm cơ sở modify lại (chỉ thêm và không xoá bớt, nếu có rồi thì cập nhật lại IsListenable))
+        // truy vấn các episode từ nguồn (đảm bảo cả 3 level đều Publish và không cái nào bị xoá), sau đó kiểu tra điều kiện nghe của từng cái bằng hàm CheckListenerCanListenToEpisodeAsync(không check NonQuota tại hàm này vì lí do business rule), sau đó refresh lại order đang có , nếu có rồi thì chỉ cần đánh dấu lại IsListenable tuỳ theo điều kiện nghe của episode, nếu chưa có thể append theo đúng logic của PlayOrderMode
+        // truyền vào vị trí order đang đứng hiện tại (truyền vào ListenObjectId đang đứng ở hiện ) (tham số này chỉ dùng để làm việc với mode random, nếu có vị trí đứng thì các order item mới không có trong mảng order cũ sẽ phải được random bố trí vào 1 vị trí nào đó ở đằng sau vị trí đứng , nếu vị trí đứng là ListenObject order cuối cùng thì sẽ random vào 1 vị trí nào đó ở đằng trước, nếu không có vị trí đứng thì random toàn bộ. nếu mode là sequencial thì không cần dùng tham số này. nếu trường hợp phải bố trí các item mới vào đằng trước/sau thì phải bố trí theo kiểu đẩy vào 1 order bất kì chứ không phải suffle lại toàn bộ đằng trước/sau với item mới thêm)
+        // Đối với Sequencial thì xếp theo (season number asc, episode order asc, created at asc)
+        // ĐỐi với random sẽ chỉ random toà bộ khi không có vị trí đứng hiện, ngược lại sẽ random bố trí vào trước/sau tuy vào việc vị trí đứng có phải là cuối cùng hay không
+        // hàm này lấy ra tất cả các episode đang publish ở cả 3 level (channel level, show level, episode level) trong danh sách episode của soure type và đặt IsListenable theo điều kiện nghe của listener
+        public async Task RefreshEpisodeOrderForSavedEpisodesSourceAsync(CustomerListenSessionProcedure customerListenSessionProcedure, int listenerAccountId, Guid? currentListenObjectId, List<PodcastSubscriptionBenefitDTO> listenerCurrentPodcastSubscriptionRegistrationBenefitList)
+        {
+            
+        }
+
+
+        // hàm refresh order của episode đối với nguồn SpecifyShowEpisodes (order by episode season number tới episode order tới created at , vì có thể có sự trùng nhau về seansonnumer hoặc episode order giữa những episode) (truyền vào chế độ là CustomerListenSessionProcedureSPlayOrderModeEnum.Sequencial hoặc Random)
 
 
         public async Task<byte[]> GetEpisodeHlsEncryptionKeyFileAsync(Guid episodeId, Guid keyId, string? token = null)
@@ -4436,6 +4483,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             {
                 try
                 {
+                    Console.WriteLine("Removing dismissed episode dmca unpublish episode force for DmcaDismissedEpisodeId: " + removeDismissedEpisodeDmcaUnpublishEpisodeForceParameterDTO.DmcaDismissedEpisodeId == null ? "null" : removeDismissedEpisodeDmcaUnpublishEpisodeForceParameterDTO.DmcaDismissedEpisodeId.ToString());
                     // unpublish episode
                     var episode = await _podcastEpisodeGenericRepository.FindByIdAsync(
                         id: removeDismissedEpisodeDmcaUnpublishEpisodeForceParameterDTO.DmcaDismissedEpisodeId,
@@ -5856,9 +5904,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                     var latestListenSession = await _podcastEpisodeListenSessionGenericRepository.FindAll(
                         predicate: pes => pes.AccountId == listenerId,
-                        includeFunc: pe => pe
-                            .Include(pes => pes.PodcastEpisode)
-                            .ThenInclude(pe => pe.PodcastShow)
+                        includeFunc: null
+                            // .Include(pes => pes.PodcastEpisode)
+                            // .ThenInclude(pe => pe.PodcastShow)
                     )
                         .OrderByDescending(pes => pes.CreatedAt)
                         .FirstOrDefaultAsync();
@@ -5866,10 +5914,11 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         return null!;
                     }
-                    var episode = latestListenSession.PodcastEpisode;
+                    // var episode = latestListenSession.PodcastEpisode;
+                    var episode = await GetValidEpisodeListenPermission(latestListenSession.PodcastEpisodeId);
                     var canListen = await this.CheckListenerCanListenToEpisodeAsync(
                         listenerId: listenerId,
-                        podcastEpisodeId: episode.Id,
+                        validEpisode: episode,
                         isNonQuotaListeningCheck: false
                     );
 
@@ -5962,12 +6011,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
 
 
-        public async Task<ListenPermissionResult> CheckListenerCanListenToEpisodeAsync(int listenerId, Guid podcastEpisodeId, bool isNonQuotaListeningCheck, List<PodcastSubscriptionBenefitDTO> listenerCurrentPodcastSubscriptionRegistrationBenefitList = null!)
+        public async Task<ListenPermissionResult> CheckListenerCanListenToEpisodeAsync(int listenerId, PodcastEpisode validEpisode, bool isNonQuotaListeningCheck, List<PodcastSubscriptionBenefitDTO> listenerCurrentPodcastSubscriptionRegistrationBenefitList = null!)
         {
             try
             {
                 // 1. Validate Episode/Show/Channel status
-                var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
+                // var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
 
                 // 2. Get listener account
                 var account = await GetAccountById(listenerId);
@@ -6106,9 +6155,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                     var listenSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(
                         id: updateEpisodeListenSessionDurationDTO.PodcastEpisodeListenSessionId,
-                        includeFunc: pe => pe
-                            .Include(pes => pes.PodcastEpisode)
-                            .ThenInclude(pe => pe.PodcastShow)
+                        includeFunc: null
                     );
                     if (listenSession == null)
                     {
@@ -6118,7 +6165,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                     var canListen = await this.CheckListenerCanListenToEpisodeAsync(
                         listenerId: updateEpisodeListenSessionDurationDTO.ListenerId,
-                        podcastEpisodeId: listenSession.PodcastEpisodeId,
+                        validEpisode: await GetValidEpisodeListenPermission(listenSession.PodcastEpisodeId),
                         isNonQuotaListeningCheck: false,
                         listenerCurrentPodcastSubscriptionRegistrationBenefitList: updateEpisodeListenSessionDurationDTO.CurrentPodcastSubscriptionRegistrationBenefitList
                     );

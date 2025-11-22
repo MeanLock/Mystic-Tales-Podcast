@@ -80,25 +80,39 @@ namespace PodcastService.API.Controllers.QueryControllers
         [HttpGet("test-query")]
         public async Task<IActionResult> TestQuery()
         {
-                var batchRequest = new BatchQueryRequest
+            var batchRequest = new BatchQueryRequest
             {
                 Queries = new List<BatchQueryItem>
-        {
-            new BatchQueryItem
             {
-                Key = "accountFollowedPodcasters",
-                QueryType = "findall",
-                EntityType = "AccountFollowedPodcaster",
-                Parameters = JObject.FromObject(new { })
+                new BatchQueryItem
+                {
+                    Key = "savedEpisodes",
+                    QueryType = "findall",
+                    EntityType = "AccountSavedPodcastEpisode",
+                    Parameters = JObject.FromObject(new
+                    {
+                        where = new
+                        {
+                            AccountId = 1012
+                        },
+                        orderBy = "CreatedAt"
+                    }),
+                    Fields = new[] { "Id", "AccountId", "PodcastEpisodeId", "CreatedAt" }
+                }
             }
-        }
             };
 
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
-            var allFollows = result.Results["accountFollowedPodcasters"].ToObject<List<AccountFollowedPodcasterDTO>>();
+            var savedEpisodes = ((JArray)result.Results["savedEpisodes"])
+                .ToObject<List<AccountSavedPodcastEpisodeDTO>>();
             return Ok(new
             {
-                result = allFollows
+                result = savedEpisodes.Select(se => new
+                {
+                    // se.AccountId,
+                    se.PodcastEpisodeId,
+                    se.CreatedAt
+                })
             });
         }
     }

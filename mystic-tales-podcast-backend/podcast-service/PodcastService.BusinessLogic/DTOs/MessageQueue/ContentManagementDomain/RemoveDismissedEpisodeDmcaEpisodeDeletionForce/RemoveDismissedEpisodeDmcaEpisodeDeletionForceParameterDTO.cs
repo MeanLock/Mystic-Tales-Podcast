@@ -3,6 +3,6 @@ namespace PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain
     public class RemoveDismissedEpisodeDmcaEpisodeDeletionForceParameterDTO
     {
         public required Guid PodcastEpisodeId { get; set; }
-        public required Guid DmcaDismissedEpisodeId { get; set; }
+        public required Guid? DmcaDismissedEpisodeId { get; set; } = null;
     }
 }

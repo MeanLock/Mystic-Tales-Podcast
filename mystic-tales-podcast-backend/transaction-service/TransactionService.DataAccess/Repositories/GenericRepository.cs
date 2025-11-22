@@ -59,6 +59,9 @@ namespace TransactionService.DataAccess.Repositories
         }
         public async Task<T?> FindByIdAsync(object id, params Expression<Func<T, object>>[] includeProperties)
         {
+            if (id == null)
+                return null;
+
             var query = _appDbContext.Set<T>().AsQueryable();
 
             // Apply includes
@@ -121,6 +124,9 @@ namespace TransactionService.DataAccess.Repositories
 
         public async Task<T?> FindByIdAsync(object id, Func<IQueryable<T>, IQueryable<T>>? includeFunc = null)
         {
+            if (id == null)
+                return null;
+
             var query = _appDbContext.Set<T>().AsQueryable();
 
             // Apply includes using func
@@ -182,6 +188,9 @@ namespace TransactionService.DataAccess.Repositories
         
         public async Task<T?> FindByIdWithPaths(object id, params string[] includePaths)
         {
+            if (id == null)
+                return null;
+
             IQueryable<T> query = _dbSet;
 
             // Apply string-based includes

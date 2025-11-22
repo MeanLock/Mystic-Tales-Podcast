@@ -4251,12 +4251,15 @@ flows:
         parameters:
           - PodcastEpisodeId
           - PodcasterId  # không dùng trong publish nhưng giữ để kiểm tra quyền (lấy từ jwt)  
+          - ReleaseDate
         next-request-data:
           - PodcastEpisodeId
           - PodcasterId
+          - ReleaseDate
         response-data:
           - PodcastEpisodeId
           - PodcasterId
+          - ReleaseDate
         onSuccess:
           emit: "publish-episode.success"
           topic: "content-management-domain"
@@ -4342,7 +4345,7 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  episode-episode-flow:
+  episode-unpublish-flow:
     topic: "content-management-domain"
     handle-service: "PodcastService"
     description: "Handles the unpublishing of podcast episodes."

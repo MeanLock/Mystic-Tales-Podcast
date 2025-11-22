@@ -550,7 +550,7 @@ namespace PodcastService.API.Controllers.BaseControllers
                 return StatusCode(403, "Your account has violation level that is not allowed to show channel.");
             }
 
-            var flowName = IsPublish ? "show-publish-flow" : "show-unpublish-flow";
+            var flowName = IsPublish == true ? "show-publish-flow" : "show-unpublish-flow";
             JObject requestData = new JObject
             {
                 ["PodcastShowId"] = PodcastShowId,

@@ -430,15 +430,16 @@ namespace PodcastService.API.Controllers.BaseControllers
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/publish/{IsPublish}
         [HttpPut("{PodcastEpisodeId}/publish/{IsPublish}")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
-        public async Task<IActionResult> PublishOrUnpublishEpisodeById(Guid PodcastEpisodeId, bool IsPublish)
+        public async Task<IActionResult> PublishOrUnpublishEpisodeById(Guid PodcastEpisodeId, bool IsPublish, EpisodePublishRequestDTO episodePublishRequestDTO)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
-            var flowName = IsPublish ? "episode-publish-flow" : "episode-unpublish-flow";
+            var flowName = IsPublish == true ? "episode-publish-flow" : "episode-unpublish-flow";
             JObject requestData = new JObject
             {
                 ["PodcastEpisodeId"] = PodcastEpisodeId,
-                ["PodcasterId"] = account.Id
+                ["PodcasterId"] = account.Id,
+                ["ReleaseDate"] = episodePublishRequestDTO.EpisodePublishInfo.ReleaseDate?.ToString("yyyy-MM-dd")
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, flowName);
@@ -486,7 +487,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
 
-            var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, listenRequestDTO.CurrentPodcastSubscriptionRegistrationBenefitList, deviceInfo, Token);
+            var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, listenRequestDTO, deviceInfo, Token);
 
             return Ok(new
             {
