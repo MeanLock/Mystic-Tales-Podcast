@@ -853,41 +853,56 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 }
                             }
                         }
-                        var newRegistration = new PodcastSubscriptionRegistration
+                    }
+                    else if (podcastSubscription.PodcastShowId != null)
+                    {
+                        var show = await GetPodcastShow(podcastSubscription.PodcastShowId.Value);
+                        if(show.PodcastChannelId != null)
                         {
-                            AccountId = parameter.AccountId,
-                            PodcastSubscriptionId = parameter.PodcastSubscriptionId,
-                            SubscriptionCycleTypeId = parameter.SubscriptionCycleTypeId,
-                            CurrentVersion = podcastSubscription.CurrentVersion,
-                            IsAcceptNewestVersionSwitch = null,
-                            IsIncomeTaken = false,
-                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
-                            UpdatedAt = _dateHelper.GetNowByAppTimeZone()
-                        };
-                        var registrationResult = await _podcastSubscriptionRegistrationGenericRepository.CreateAsync(newRegistration);
+                            var existSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                                .FirstOrDefaultAsync(ps => ps.PodcastChannelId == show.PodcastChannelId && ps.DeletedAt == null && ps.IsActive);
+                            if (existSubscription != null)
+                            {
+                                throw new HttpRequestException($"An Active Podcast Subscription exists for Podcast Channel Id: {show.PodcastChannelId}. Please subscribe to the channel subscription instead.");
+                            }
+                        }
+                    }
 
-                        var originalPrice2 = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId)
-                            .Select(ptcp => ptcp.Price)
-                            .FirstOrDefault();
+                    var newRegistration = new PodcastSubscriptionRegistration
+                    {
+                        AccountId = parameter.AccountId,
+                        PodcastSubscriptionId = parameter.PodcastSubscriptionId,
+                        SubscriptionCycleTypeId = parameter.SubscriptionCycleTypeId,
+                        CurrentVersion = podcastSubscription.CurrentVersion,
+                        IsAcceptNewestVersionSwitch = null,
+                        IsIncomeTaken = false,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                        UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                    };
+                    var registrationResult = await _podcastSubscriptionRegistrationGenericRepository.CreateAsync(newRegistration);
 
-                        var transactionRequestData2 = new JObject
-                        {
-                            { "PodcastSubscriptionRegistrationId", newRegistration.Id },
-                            { "Profit", null },
-                            { "AccountId", parameter.AccountId },
-                            { "Amount", originalPrice2 },
-                            { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
-                        };
-                        var transactionMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.PaymentProcessingDomain,
-                            requestData: transactionRequestData2,
-                            sagaInstanceId: null,
-                            messageName: "podcast-subscription-payment-flow");
-                        await _messagingService.SendSagaMessageAsync(transactionMessage2, null);
+                    var originalPrice2 = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId)
+                        .Select(ptcp => ptcp.Price)
+                        .FirstOrDefault();
 
-                        await transaction.CommitAsync();
-                        var newResponseData = new JObject
+                    var transactionRequestData2 = new JObject
+                    {
+                        { "PodcastSubscriptionRegistrationId", newRegistration.Id },
+                        { "Profit", null },
+                        { "AccountId", parameter.AccountId },
+                        { "Amount", originalPrice2 },
+                        { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
+                    };
+                    var transactionMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: transactionRequestData2,
+                        sagaInstanceId: null,
+                        messageName: "podcast-subscription-payment-flow");
+                    await _messagingService.SendSagaMessageAsync(transactionMessage2, null);
+
+                    await transaction.CommitAsync();
+                    var newResponseData = new JObject
                         {
                             { "PodcastSubscriptionRegistrationId", registrationResult.Id },
                             { "AccountId", registrationResult.AccountId },
@@ -895,17 +910,16 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             { "SubscriptionCycleTypeId", registrationResult.SubscriptionCycleTypeId },
                             { "CreatedAt", registrationResult.CreatedAt }
                         };
-                        var newMessageName = messageName + ".success";
-                        var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                            topic: KafkaTopicEnum.SubscriptionManagementDomain,
-                            requestData: command.RequestData,
-                            responseData: newResponseData,
-                            sagaInstanceId: sagaId,
-                            flowName: flowName,
-                            messageName: newMessageName);
-                        await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
-                        _logger.LogInformation("Successfully created podcast subscription registration for SagaId: {SagaId}", sagaId);
-                    }
+                    var newMessageName = messageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully created podcast subscription registration for SagaId: {SagaId}", sagaId);
                 }
                 catch (Exception ex)
                 {
@@ -3161,7 +3175,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
                 ? podcastShowArray.First as JObject
                 : null;
-            Console.WriteLine("Real Result: " + realResult);
+            //Console.WriteLine("Real Result: " + realResult);
             return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
         }
         public async Task<List<PodcastShowDTO>> GetPodcastShowByPodcastChannelId(Guid podcastChannelId)
