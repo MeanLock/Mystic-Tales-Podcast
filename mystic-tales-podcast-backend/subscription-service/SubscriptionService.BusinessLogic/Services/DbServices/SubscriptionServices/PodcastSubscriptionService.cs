@@ -739,7 +739,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices))
-                        .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null);
+                        .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive);
                     if (podcastSubscription == null)
                     {
                         throw new Exception($"No Active Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
