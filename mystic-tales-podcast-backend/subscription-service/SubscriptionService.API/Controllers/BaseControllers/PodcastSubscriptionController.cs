@@ -459,5 +459,14 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 PodcastSubscriptionRegistration = podcastSubscriptionRegistration
             });
         }
+        [HttpPost("service-query/{accountId}")]
+        public async Task<IActionResult> ServiceQueryGetPodcastSubscriptions([FromRoute] int accountId, [FromBody] UserPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO request)
+        {
+            var podcastSubscriptions = await _podcastSubscriptionService.GetPodcastSubscriptionsByAccountIdAsync(accountId, request.EpisodeBaseSourceInfoList);
+            return Ok(new
+            {
+                EpisodeBaseBenefitList = podcastSubscriptions
+            });
+        }
     }
 }

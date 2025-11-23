@@ -7,6 +7,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest;
 using BookingManagementService.BusinessLogic.Enums.App;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
+using BookingManagementService.BusinessLogic.Enums.ListenSessionProcedure;
 using BookingManagementService.BusinessLogic.Helpers.AuthHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
 using BookingManagementService.BusinessLogic.Models.CrossService;
@@ -759,6 +760,38 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
+        }
+        [HttpPost("listen-sessions/navigate")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> NavigateBookingPodcastTrackListenSession([FromBody] BookingPodcastTrackListenSessionNavigateRequestDTO request, [FromQuery] ListenSessionNavigateTypeEnum listen_session_navigate_type)
+        {
+            string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
+            string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
+            if (string.IsNullOrEmpty(deviceTokenHeader))
+            {
+                return BadRequest(new
+                {
+                    error = "Missing X-Device-Fingerprint header"
+                });
+            }
+            else if (string.IsNullOrEmpty(authorizedDeviceToken))
+            {
+                return Unauthorized(new
+                {
+                    error = "Unauthorized: Missing device_fingerprint claim"
+                });
+            }
+            else if (deviceTokenHeader != authorizedDeviceToken)
+            {
+                return Unauthorized(new
+                {
+                    error = "Unauthorized: Device fingerprint mismatch"
+                });
+            }
+            var deviceInfo = JwtHelper.ClaimsPrincipalToObject<DeviceInfoDTO>(_jwtHelper.DecodeToken_OneSecretKey(deviceTokenHeader));
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var listenSession = await _bookingService.NavigateBookingPodcastTrackListenSessionAsync(account.Id, deviceInfo, request.CurrentListenSession.ListenSessionId, request.CurrentListenSession.ListenSessionProcedureId, listen_session_navigate_type);
+            return Ok(listenSession);
         }
     }
 }

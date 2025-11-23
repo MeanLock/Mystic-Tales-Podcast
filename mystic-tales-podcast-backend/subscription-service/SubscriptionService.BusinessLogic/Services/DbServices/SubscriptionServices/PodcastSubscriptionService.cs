@@ -3040,6 +3040,69 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while retrieving Podcast Subscription for PodcastShowId: {showId}. Error: {ex.Message}");
             }
         }
+        public async Task<UserPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO> GetPodcastSubscriptionsByAccountIdAsync(int accountId, List<EpisodeBaseSourceInfoDTO> request)
+        {
+            try
+            {
+                //request = request.DistinctBy(r => new { r.PodcastEpisodeId, r.PodcastShowId, r.PodcastChannelId }).ToList();
+                var showIds = request.Select(r => r.ShowId).Distinct().ToList();
+                var channelIds = request.Where(r => r.ChannelId.HasValue).Select(r => r.ChannelId.Value).Distinct().ToList();
+
+                // Get subscriptions data
+                var subscriptionsData = await _podcastSubscriptionGenericRepository.FindAll(
+                    includeFunc: ps => ps
+                        .Include(ps => ps.PodcastSubscriptionRegistrations)
+                        .Include(ps => ps.PodcastSubscriptionBenefitMappings)
+                )
+                .Where(ps => ps.IsActive && ps.DeletedAt == null &&
+                             ps.PodcastSubscriptionRegistrations.Any(psr =>
+                                 psr.AccountId == accountId && psr.CancelledAt == null) &&
+                             (ps.PodcastShowId.HasValue && showIds.Contains(ps.PodcastShowId.Value) ||
+                              (ps.PodcastChannelId.HasValue && channelIds.Contains(ps.PodcastChannelId.Value))))
+                .Select(ps => new
+                {
+                    ps.PodcastShowId,
+                    ps.PodcastChannelId,
+                    ps.CurrentVersion,
+                    BenefitIds = ps.PodcastSubscriptionBenefitMappings
+                        .Where(bm => bm.Version == ps.PodcastSubscriptionRegistrations.Where(psr =>
+                                 psr.AccountId == accountId && psr.CancelledAt == null).Select(psr => psr.CurrentVersion).FirstOrDefault())
+                        .Select(bm => bm.PodcastSubscriptionBenefitId)
+                        .ToList()
+                })
+                .ToListAsync();
+
+                // Create lookup dictionaries for better performance
+                var showSubscriptions = subscriptionsData
+                    .Where(s => s.PodcastShowId.HasValue)
+                    .ToDictionary(s => s.PodcastShowId.Value, s => s.BenefitIds);
+
+                var channelSubscriptions = subscriptionsData
+                    .Where(s => s.PodcastChannelId.HasValue)
+                    .ToDictionary(s => s.PodcastChannelId.Value, s => s.BenefitIds);
+
+                // Map episodes to benefits
+                var episodeBaseBenefitList = request.Select(r => new UserPodcastSubscriptionRegistrationEpisodeBaseBenefitListItemResponseDTO
+                {
+                    EpisodeId = r.EpisodeId,
+                    PodcastSubscriptionBenefitIds = showSubscriptions.ContainsKey(r.ShowId)
+                        ? showSubscriptions[r.ShowId]
+                        : (r.ChannelId.HasValue && channelSubscriptions.ContainsKey(r.ChannelId.Value)
+                            ? channelSubscriptions[r.ChannelId.Value]
+                            : new List<int>())
+                }).ToList();
+
+                return new UserPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO
+                {
+                    EpisodeBaseBenefitList = episodeBaseBenefitList ?? new List<UserPodcastSubscriptionRegistrationEpisodeBaseBenefitListItemResponseDTO>()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetPodcastSubscriptionsByAccountIdAsync for AccountId: {AccountId}", accountId);
+                throw new HttpRequestException($"Error while retrieving Podcast Subscriptions for AccountId: {accountId}. Error: {ex.Message}");
+            }
+        }
         public async Task<JObject?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
         {
             var batchRequest = new BatchQueryRequest

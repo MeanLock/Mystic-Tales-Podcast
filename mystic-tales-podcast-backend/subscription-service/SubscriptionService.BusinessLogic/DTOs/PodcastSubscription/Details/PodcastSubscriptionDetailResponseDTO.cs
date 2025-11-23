@@ -14,8 +14,8 @@ namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.Details
         public DateTime? DeletedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public List<PodcastSubscriptionCycleTypePriceListItemResponseDTO> PodcastSubscriptionCycleTypePriceList { get; set; }
-        public List<PodcastSubscriptionBenefitMappingListItemResponseDTO> PodcastSubscriptionBenefitMappingList { get; set; }
+        public List<PodcastSubscriptionCycleTypePriceListItemResponseDTO>? PodcastSubscriptionCycleTypePriceList { get; set; }
+        public List<PodcastSubscriptionBenefitMappingListItemResponseDTO>? PodcastSubscriptionBenefitMappingList { get; set; }
         public List<PodcastSubscriptionRegistrationListItemResponseDTO>? PodcastSubscriptionRegistrationList { get; set; }
     }
 }
