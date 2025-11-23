@@ -299,7 +299,7 @@ export type ShowDetailsUI = {
       ImageUrl: string;
     };
     IsDeleted: boolean;
-    CreatedAt: string;
+    UpdatedAt: string;
   }[];
   TakenDownReason: string;
   CreatedAt: string;

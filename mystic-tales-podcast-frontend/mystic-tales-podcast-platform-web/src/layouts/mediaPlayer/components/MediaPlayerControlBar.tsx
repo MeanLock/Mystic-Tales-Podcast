@@ -1,46 +1,31 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// @ts-nocheck
 
 import { FaBackward } from "react-icons/fa";
 import { FaForward } from "react-icons/fa";
 
-import { IoClose, IoPlayCircle } from "react-icons/io5";
-import { MdOutlineFastRewind, MdPauseCircleFilled } from "react-icons/md";
+import { IoPlayCircle } from "react-icons/io5";
+import { MdPauseCircleFilled } from "react-icons/md";
 
 import { MdOutlineReplay10 } from "react-icons/md";
 import { MdOutlineForward10 } from "react-icons/md";
-
-import { IoIosHeartEmpty } from "react-icons/io";
-import { IoMdHeart } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
-  nextAudio,
   pauseAudio,
   playAudio,
-  removeFromQueue,
-  updateVolume,
+  setVolume,
 } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import { useState } from "react";
-
-import { MdOutlineQueueMusic } from "react-icons/md";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  FaRegCirclePlay,
-  FaVolumeHigh,
-  FaVolumeLow,
-  FaVolumeXmark,
-} from "react-icons/fa6";
+import { FaVolumeHigh, FaVolumeLow, FaVolumeXmark } from "react-icons/fa6";
 
 import { Slider } from "@/components/ui/slider";
 import { getAudioEngine } from "@/core/services/player/playerBridge";
 import { useAudioProgress } from "@/core/services/player/useAudioPress";
-import Waving from "@/components/loader/Waving";
 
 const MediaPlayerControl = () => {
   // REDUX
@@ -54,13 +39,10 @@ const MediaPlayerControl = () => {
   // REFS
 
   // STATES
-  const [volume, setVolume] = useState<number>(player.playMode.volume);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [volume, setVolumeState] = useState<number>(player.playMode.volume);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekPreview, setSeekPreview] = useState<number | null>(null);
 
-  const [isQueueModelOpen, setIsQueueModelOpen] = useState(false);
   const [isVolumeModelOpen, setIsVolumeModelOpen] = useState(false);
 
   const effectiveTime = isSeeking && seekPreview != null ? seekPreview : t;
@@ -109,9 +91,8 @@ const MediaPlayerControl = () => {
   };
 
   const handleUpdateVolume = (newVolume: number) => {
-    setVolume(newVolume);
-    // dispatch action to update volume in redux
-    dispatch(updateVolume(newVolume));
+    setVolumeState(newVolume);
+    dispatch(setVolume(newVolume));
   };
 
   const handleSeekBackward = () => {
@@ -224,14 +205,6 @@ const MediaPlayerControl = () => {
         >
           <MdOutlineForward10 size={20} />
         </div>
-        {player.queueAudios.length > 0 && (
-          <div
-            onClick={() => dispatch(nextAudio())}
-            className="text-white ml-10 hover:text-mystic-green cursor-pointer"
-          >
-            <FaForward size={30} />
-          </div>
-        )}
       </div>
 
       {/* Audio Length Tracking */}
@@ -281,126 +254,8 @@ const MediaPlayerControl = () => {
         </div>
       </div>
 
-      {/* Queue & Volume Management */}
+      {/* Volume Management */}
       <div className="md:w-[200px] hidden md:inline-flex items-center justify-end gap-10">
-        <div className="hidden md:inline-flex items-center justify-end">
-          <Popover open={isQueueModelOpen} onOpenChange={setIsQueueModelOpen}>
-            {/* chỉ icon mới toggle */}
-            <PopoverTrigger asChild>
-              <button
-                className="
-                  p-2 rounded-full cursor-pointer
-                  bg-transparent hover:bg-gray-300/30 text-gray-300 hover:text-white
-                  transition ease-out duration-300
-                "
-                aria-label="Open queue"
-              >
-                <MdOutlineQueueMusic size={25} />
-              </button>
-            </PopoverTrigger>
-
-            <PopoverContent
-              side="top" // mở phía trên icon
-              align="end" // mép phải bám icon (kiểu chatbot)
-              sideOffset={12} // cách icon 12px
-              collisionPadding={8}
-              className="
-                w-96 h-96 rounded-2xl shadow-2xl
-                bg-black/40 backdrop-blur-md border border-white/10
-                text-white p-3
-                flex flex-col items-start gap-3
-              "
-              // ⛔ không đóng khi click ra vùng body: chỉ icon mới toggle
-              onInteractOutside={(e) => e.preventDefault()}
-            >
-              <p className="font-poppins text-xs text-neutral-400">Current</p>
-              {/* Current Audio */}
-              <div className="w-full flex items-center">
-                <div className="flex items-center justify-center relative">
-                  <img
-                    src={player.currentAudio.ImageUrl}
-                    className="w-12 h-12 aspect-square rounded-md shadow-md"
-                    alt={player.currentAudio.Name}
-                  />
-
-                  {player.playMode.playStatus === "play" ? (
-                    <div
-                      onClick={() => dispatch(pauseAudio())}
-                      className="absolute w-12 h-12 flex items-center justify-center inset-0"
-                    >
-                      <Waving />
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => dispatch(playAudio(null))}
-                      className="bg-black/30 absolute w-12 h-12 flex items-center justify-center inset-0"
-                    >
-                      <FaRegCirclePlay size={25} color="#fff" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col items-start justify-center ml-3 overflow-ellipsis">
-                  <p className="text-white font-semibold line-clamp-1">
-                    {player.currentAudio.Name}
-                  </p>
-                  <p className="text-sm text-white font-light line-clamp-1">
-                    {player.currentAudio.PodcasterName}
-                  </p>
-                </div>
-              </div>
-              <div className="w-full h-[0.3px] bg-neutral-400" />
-
-              <p className="font-poppins text-xs text-neutral-400">Queue</p>
-              <div
-                className="w-full md:h-[230px] overflow-y-scroll flex flex-col items-center gap-2  [&::-webkit-scrollbar]:hidden
-                [-ms-overflow-style:none]
-                [scrollbar-width:none]"
-              >
-                {player.queueAudios.length === 0 ? (
-                  <p className="text-gray-400 italic text-sm">
-                    No audio in queue
-                  </p>
-                ) : (
-                  player.queueAudios.map((audio) => (
-                    <div
-                      key={`queue-audio-${audio.Id}-${audio.Index}`}
-                      className="w-full flex items-center transition-all hover:bg-white/10 p-1 rounded-md cursor-pointer"
-                    >
-                      <img
-                        src={audio.ImageUrl}
-                        className="w-10 h-10 aspect-square rounded-md shadow-md"
-                        alt={audio.Name}
-                      />
-                      <div className="flex flex-col items-start justify-center ml-3 w-2/3 overflow-ellipsis">
-                        <p className="text-white font-semibold line-clamp-1">
-                          {audio.Name}
-                        </p>
-                        <p className="text-sm text-white font-light line-clamp-1">
-                          {audio.PodcasterName}
-                        </p>
-                      </div>
-                      <div
-                        onClick={() =>
-                          dispatch(
-                            removeFromQueue({
-                              id: audio.Id,
-                              index: audio.Index,
-                            })
-                          )
-                        }
-                        className="flex-1 flex items-center justify-end pr-3 text-neutral-400 hover:text-white cursor-pointer"
-                      >
-                        <IoClose size={15} />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-
         <div className="hidden md:inline-flex items-center justify-center">
           <Popover open={isVolumeModelOpen} onOpenChange={setIsVolumeModelOpen}>
             {/* chỉ icon mới toggle */}

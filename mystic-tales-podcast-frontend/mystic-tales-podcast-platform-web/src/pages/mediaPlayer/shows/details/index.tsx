@@ -41,6 +41,8 @@ import { IoPlay } from "react-icons/io5";
 import { LiaDizzy } from "react-icons/lia";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
+import { playAudio } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
+import { useUpdatePlayModeMutation } from "@/core/services/player/player.service";
 
 const ShowFileConfig: FileResolveConfig[] = [
   {
@@ -487,6 +489,51 @@ const ShowDetailsPage = () => {
     }
   };
 
+  const handlePlayEpisode = (episodeId: string) => {
+    dispatch(
+      playAudio({
+        sourceType: "SpecifyShowEpisodes",
+        audioId: episodeId,
+      })
+    );
+  };
+
+  const [updatePlayMode, { isLoading: isUpdatingPlayMode }] =
+    useUpdatePlayModeMutation();
+  const player = useSelector((state: RootState) => state.player);
+
+  const handleMode = (mode: string) => {
+    if (!player.listenSessionProcedure) {
+      return;
+    } else {
+      if (mode === "a") {
+        updatePlayMode({
+          PlayOrderMode: "Sequential",
+          CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
+          IsAutoPlay: player.listenSessionProcedure.IsAutoPlay,
+        });
+      } else if (mode === "b") {
+        updatePlayMode({
+          PlayOrderMode: "Random",
+          CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
+          IsAutoPlay: player.listenSessionProcedure.IsAutoPlay,
+        });
+      } else if (mode === "c") {
+        updatePlayMode({
+          PlayOrderMode: player.listenSessionProcedure.PlayOrderMode,
+          CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
+          IsAutoPlay: false,
+        });
+      } else if (mode === "d") {
+        updatePlayMode({
+          PlayOrderMode: player.listenSessionProcedure.PlayOrderMode,
+          CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
+          IsAutoPlay: false,
+        });
+      }
+    }
+  };
+
   // RENDER
   if (isShowDetailsLoading || isFileResolving) {
     return (
@@ -608,6 +655,20 @@ const ShowDetailsPage = () => {
 
       {/* Episodes Section */}
       <div>
+        <div className="w-full flex items-center gap-10">
+          <LiquidButton onClick={() => handleMode("a")} variant="minimal">
+            <p>Set Sequential</p>
+          </LiquidButton>
+          <LiquidButton onClick={() => handleMode("b")} variant="minimal">
+            <p>Set Random</p>
+          </LiquidButton>
+          <LiquidButton onClick={() => handleMode("c")} variant="minimal">
+            <p>Set Is AutoPlay True</p>
+          </LiquidButton>
+          <LiquidButton onClick={() => handleMode("d")} variant="minimal">
+            <p>Set Is AutoPlay False</p>
+          </LiquidButton>
+        </div>
         <h2 className="text-2xl font-medium mb-8 mt-12 px-12 ">Episodes</h2>
         <div className="space-y-10 px-3">
           {show.EpisodeList.map((episode) => (
@@ -632,7 +693,10 @@ const ShowDetailsPage = () => {
                   }}
                 />
                 <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
-                  <div className="p-2  rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green ">
+                  <div
+                    onClick={() => handlePlayEpisode(episode.Id)}
+                    className="p-2  rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green "
+                  >
                     <IoPlay size={25} color="#ffffff" />
                   </div>
                 </div>
@@ -685,7 +749,7 @@ const ShowDetailsPage = () => {
                   <FaPlus className="text-black" size={16} />
                 </button>
               </DialogTrigger>
-              <DialogContent className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
+              <DialogContent className="z-[9999] backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-semibold text-white mb-2">
                     Write a Review
@@ -840,7 +904,7 @@ const ShowDetailsPage = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="text-xs text-gray-200">
-                      {getTimeAgo(review.CreatedAt)}
+                      {getTimeAgo(review.UpdatedAt)}
                     </div>
                     <div className="text-xs text-gray-200">
                       {review.Account.FullName}

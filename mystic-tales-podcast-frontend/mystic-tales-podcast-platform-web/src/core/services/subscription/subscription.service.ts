@@ -5,6 +5,17 @@ import type {
 } from "@/core/types/subscription";
 import { url } from "zod";
 
+type SubscriptionApiResponse = {
+  PodcastSubscriptionRegistration?: {
+    PodcastSubscriptionBenefit?: SubscriptionBenefit[];
+  };
+};
+
+type SubscriptionBenefit = {
+  Id: number;
+  Name: string;
+};
+
 const subscriptionApi = appApi.injectEndpoints({
   endpoints: (build) => ({
     // Lấy chi tiết subscription
@@ -123,6 +134,37 @@ const subscriptionApi = appApi.injectEndpoints({
         method: "GET",
       }),
     }),
+
+    getSubscriptionBenefitsMapListFromEpisodeId: build.query<
+      {
+        CurrentPodcastSubscriptionRegistrationBenefitList: SubscriptionBenefit[];
+      },
+      { PodcastEpisodeId: string }
+    >({
+      query: ({ PodcastEpisodeId }) => ({
+        url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscriptions-registrations/episodes/${PodcastEpisodeId}`,
+        method: "GET",
+        authMode: "required",
+      }),
+      transformResponse: (response: SubscriptionApiResponse) => {
+        console.log("API Response:", response);
+
+        const benefits =
+          response?.PodcastSubscriptionRegistration
+            ?.PodcastSubscriptionBenefit ?? [];
+
+        console.log("Fetched Benefits:", benefits);
+
+        return {
+          CurrentPodcastSubscriptionRegistrationBenefitList: benefits.map(
+            (b) => ({
+              Id: b.Id,
+              Name: b.Name,
+            })
+          ),
+        };
+      },
+    }),
   }),
 });
 
@@ -132,4 +174,5 @@ export const {
   useUnsubscribePodcastSubscriptionMutation,
   useGetCustomerRegistrationInfoFromChannelQuery,
   useGetCustomerRegistrationInfoFromShowQuery,
+  useGetSubscriptionBenefitsMapListFromEpisodeIdQuery,
 } = subscriptionApi;

@@ -1,163 +1,95 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import type {
-  AddToQueuePayload,
+  ListenSession,
+  ListenSessionProcedure,
+  PlayerControl,
   CurrentAudioUI,
-  PlayMode,
-  QueuedAudio,
 } from "@/core/types/audio";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface MediaPlayerSlice {
-  playMode: PlayMode;
+  playMode: PlayerControl;
   currentAudio: CurrentAudioUI;
-  queueAudios: QueuedAudio[];
+  listenSession: ListenSession;
+  listenSessionProcedure: ListenSessionProcedure;
 }
 
 const initialState: MediaPlayerSlice = {
   playMode: {
-    nextMode: "normal",
     playStatus: "stop",
+    isAutoPlay: false,
+    nextMode: "Sequential",
+    sourceType: null,
+    audioId: null,
     volume: 100,
   },
   currentAudio: null,
-  queueAudios: [],
+  listenSession: null,
+  listenSessionProcedure: null,
 };
 
-function reindexQueue(q: QueuedAudio[]) {
-  for (let i = 0; i < q.length; i++) q[i].Index = i;
-}
-
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(n, max));
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
 
 const mediaPlayerSlice = createSlice({
   name: "player",
   initialState: initialState,
   reducers: {
-    // Action1: Phát Audio
-    // - Nếu playload là null => chỉ chuyển trạng thái playStatus thành play
-    // - Nếu có payload => chuyển audio kia ra, và đưa audio mới vào phát ngay
-    playAudio(state, action: PayloadAction<CurrentAudioUI | null>) {
+    setListenSession: (state, action: PayloadAction<ListenSession>) => {
+      state.listenSession = action.payload;
+    },
+    setListenSessionProcedure: (
+      state,
+      action: PayloadAction<ListenSessionProcedure>
+    ) => {
+      state.listenSessionProcedure = action.payload;
+    },
+    setCurrentAudio: (state, action: PayloadAction<CurrentAudioUI>) => {
+      state.currentAudio = action.payload;
+    },
+    playAudio: (
+      state,
+      action: PayloadAction<{
+        sourceType:
+          | "SpecifyShowEpisodes"
+          | "SavedEpisodes"
+          | "BookingProducingTracks";
+        audioId: string;
+      } | null>
+    ) => {
+      state.playMode.playStatus = "play";
       if (action.payload) {
-        state.currentAudio = action.payload;
-        state.playMode.playStatus = "play";
-      } else {
-        state.playMode.playStatus = "play";
+        state.playMode.sourceType = action.payload.sourceType;
+        state.playMode.audioId = action.payload.audioId;
       }
     },
-
-    // Action2: Tạm dừng Audio
-    pauseAudio(state) {
+    pauseAudio: (state) => {
       state.playMode.playStatus = "pause";
     },
-
-    // Action3: Dừng media player
-    // => dừng phát, xóa currentAudio và queueAudios
-    stopAudio(state) {
+    stopAudio: (state) => {
       state.playMode.playStatus = "stop";
-      state.currentAudio = null;
-      state.queueAudios = [];
     },
-
-    // Action4: Thêm audio vào queue
-    // position: to-top | to-last
-    addToQueue(state, action: PayloadAction<AddToQueuePayload>) {
-      const { audio, position } = action.payload;
-      if (position === "to-top") {
-        state.queueAudios.unshift({ Index: 0, ...audio });
-      } else {
-        const nextIndex = state.queueAudios.length;
-        state.queueAudios.push({ Index: nextIndex, ...audio });
-      }
-      state.queueAudios.forEach((item, i) => {
-        item.Index = i;
-      });
+    setVolume: (state, action: PayloadAction<number>) => {
+      state.playMode.volume = clamp(action.payload, 0, 100);
     },
-
-    // Action5: Xóa audio khỏi queue
-    // Check cả id và index để đảm bảo xóa đúng audio (vì queue có thể có nhiều audio trùng id)
-    removeFromQueue(
-      state,
-      action: PayloadAction<{ id: string; index: number }>
-    ) {
-      state.queueAudios = state.queueAudios.filter(
-        (x) => !(x.Id === action.payload.id && x.Index === action.payload.index)
-      );
-      reindexQueue(state.queueAudios);
-    },
-
-    // Action6: Cập nhật vị trí của các audio trong queue
-    // from: vị trí cũ, to: vị trí mới
-    // đưa from đến to, các audio khác dịch chuyển cho phù hợp
-    moveInQueue(state, action: PayloadAction<{ from: number; to: number }>) {
-      const len = state.queueAudios.length;
-      if (len <= 1) return;
-
-      let { from, to } = action.payload;
-      from = clamp(from, 0, len - 1);
-      to = clamp(to, 0, len - 1);
-
-      if (from === to) return;
-
-      const [item] = state.queueAudios.splice(from, 1);
-      state.queueAudios.splice(to, 0, item);
-      reindexQueue(state.queueAudios);
-    },
-
-    // Action7: Set Next Mode
-    setNextMode(state, action: PayloadAction<PlayMode["nextMode"]>) {
+    setNextMode: (state, action: PayloadAction<"Sequential" | "Random">) => {
       state.playMode.nextMode = action.payload;
     },
-
-    // Action8: Next Audio
-    // Check playMode.nextMode để quyết định next thế nào
-    // Case1: nextMode === "normal":
-    //   - Nếu có audio trong queue -> phát audio đầu tiên trong queue (đưa nó lên làm current), xóa nó khỏi queue
-    //   - Nếu không có audio trong queue -> dừng phát (stop luôn)
-
-    // Case 2: nextMode === "show":
-    //   - Nếu có audio trong queue -> phát audio đầu tiên trong queue (đưa nó lên làm current), xóa nó khỏi queue
-    //   - Nếu không có audio trong queue -> gọi API getNextInShow(currentAudio.Id) để lấy audio tiếp theo trong show, nếu có thì phát, nếu không có thì dừng phát
-
-    // Case 3: nextMode === "saved":
-    //   - Nếu có audio trong queue -> phát audio đầu tiên trong queue (đưa nó lên làm current), xóa nó khỏi queue
-    //   - Tương tự case "show", nhưng gọi API getNextInSaved(currentAudio.Id)
-
-    // Case 4: nextMode === "bookings":
-    //   - Nếu có audio trong queue -> phát audio đầu tiên trong queue (đưa nó lên làm current), xóa nó khỏi queue
-    //   - Nếu không có audio trong queue -> dừng phát (stop luôn) (tạm thời chưa implement API getNextInBookings)
-
-    nextAudio(state) {
-      // ưu tiên queue
-      if (state.queueAudios.length > 0) {
-        const next = state.queueAudios.shift()!;
-        reindexQueue(state.queueAudios);
-        state.currentAudio = next as any; // map trường cho đúng CurrentAudioUI
-        state.playMode.playStatus = "pause";
-        return;
-      }
-      // TODO: các mode khác (show/saved/bookings) như comment bạn để
-      state.playMode.playStatus = "stop";
-      state.currentAudio = null;
-    },
-
-    // Action9: Cập nhật âm lượng
-    updateVolume(state, action: PayloadAction<number>) {
-      state.playMode.volume = clamp(action.payload, 0, 100);
+    nextAudio: () => {
+      // This reducer is just a placeholder to trigger next audio logic in middleware
     },
   },
 });
 
 export const {
+  setListenSession,
+  setListenSessionProcedure,
+  setCurrentAudio,
   playAudio,
   pauseAudio,
   stopAudio,
-  addToQueue,
-  removeFromQueue,
+  setVolume,
   setNextMode,
-  updateVolume,
   nextAudio,
 } = mediaPlayerSlice.actions;
 

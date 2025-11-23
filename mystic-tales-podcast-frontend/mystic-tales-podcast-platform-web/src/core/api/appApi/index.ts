@@ -5,7 +5,6 @@ import type { AuthMode, ApiErrorModel, PollConfig } from "@/core/types";
 import { prepareAuthHeaders } from "./modes";
 import { pollSagaResult } from "./polling";
 
-
 /** Thay theo backend thực tế của bạn */
 export const BASE_URL =
   import.meta.env.VITE_PUBLIC_API_URL ?? "https://65662aa8a6e5.ngrok-free.app";
@@ -33,6 +32,7 @@ const modeAwareBaseQuery: BaseQueryFn<
     params?: any;
     authMode?: AuthMode;
     responseHandler?: "json" | "text";
+    headers?: Record<string, string>;
   },
   unknown,
   ApiErrorModel
@@ -44,6 +44,7 @@ const modeAwareBaseQuery: BaseQueryFn<
     params,
     authMode = "public",
     responseHandler,
+    headers: endpointHeaders,
   } = args;
 
   // Clone headers tạm để gắn token theo mode
@@ -55,8 +56,30 @@ const modeAwareBaseQuery: BaseQueryFn<
     };
   }
 
+  // Gắn thêm header từ endpoint nếu có
+  // IMPORTANT: Headers.set() normalizes header names, so we need to convert to plain object
+  const headersRecord: Record<string, string> = {};
+
+  // Copy auth headers
+  headers.forEach((value, key) => {
+    headersRecord[key] = value;
+  });
+
+  // Add endpoint headers with exact casing
+  if (endpointHeaders) {
+    Object.entries(endpointHeaders).forEach(([k, v]) => {
+      if (v != null) headersRecord[k] = v;
+    });
+  }
+
   // Truyền headers sang fetchBaseQuery qua "headers" và cho phép override responseHandler
-  const baseQueryArgs: any = { url, method, body, params, headers };
+  const baseQueryArgs: any = {
+    url,
+    method,
+    body,
+    params,
+    headers: headersRecord,
+  };
   if (responseHandler) baseQueryArgs.responseHandler = responseHandler;
 
   const res: any = await rawBaseQuery(baseQueryArgs, api, extraOptions);

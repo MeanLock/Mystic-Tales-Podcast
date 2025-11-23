@@ -112,19 +112,8 @@ const SearchSuggesstion = ({
   };
 
   const handlePlayNow = (content: ContentRealtimeResponseUI) => {
-    const newCurrentAudio: CurrentAudioUI = {
-      Id: content.Episode?.Id as string,
-      Name: content.Episode?.Name as string,
-      LatestPosition: 0, // giây
-      AudioLength: 200, // giây
-      EpisodeNumber: 12, // Số tập
-      FileUrl: "",
-      ImageUrl: content.Episode?.ImageUrl as string,
-      PodcasterName: "Ngu",
-      Show: { Id: "111", Name: "Example Show" },
-    };
-
-    dispatch(playAudio(newCurrentAudio));
+    // TODO: Implement play functionality with new flow
+    // dispatch(playAudio({ sourceType: ..., audioId: content.Episode.Id }));
   };
 
   const handlePause = () => {
