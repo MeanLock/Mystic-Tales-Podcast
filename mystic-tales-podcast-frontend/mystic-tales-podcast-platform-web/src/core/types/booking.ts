@@ -195,3 +195,43 @@ export type PodcastBuddyUI = {
     PodcastBuddyBookingTone: PodcastBookingToneType[];
   };
 };
+
+export type BookingProducingRequestDetails = {
+  Id: string;
+  BookingId: number;
+  Note: string | null;
+  DeadlineDays: number;
+  Deadline: string;
+  IsAccepted: boolean;
+  FinishedAt: string;
+  RejectReason: string;
+  CreatedAt: string;
+  BookingPodcastTracks: {
+    Id: string;
+    BookingId: number;
+    BookingRequirementId: string;
+    BookingProducingRequestId: string;
+    AudioFileKey: string;
+    AudioFileSize: number;
+    AudioLength: number;
+    RemainingPreviewListenSlot: number;
+  }[];
+  EditRequirementList: {
+    Id: string;
+    Name: string;
+    BookingPodcastTrack: {
+      Id: string;
+      BookingId: number;
+      BookingRequirementId: string;
+      BookingProducingRequestId: string;
+      AudioFileKey: string;
+      AudioFileSize: number;
+      AudioLength: number;
+      RemainingPreviewListenSlot: number;
+    };
+  }[];
+  CurrentStatus: {
+    Id: number;
+    Name: string;
+  };
+};

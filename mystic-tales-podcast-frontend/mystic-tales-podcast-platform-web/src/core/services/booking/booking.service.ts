@@ -1,10 +1,10 @@
-// @ts-nocheck
+
 
 import { appApi } from "@/core/api/appApi";
 import type {
   BookingDetailsFromAPI,
-  BookingDetailsUI,
   BookingFromAPI,
+  BookingProducingRequestDetails,
 } from "@/core/types/booking";
 
 export type CreateBookingPayload = {
@@ -88,6 +88,51 @@ export const bookingApi = appApi.injectEndpoints({
         return { data: result.data as any };
       },
     }),
+    getBookingProducingRequestDetails: build.query<
+      { BookingProducingRequest: BookingProducingRequestDetails },
+      { BookingProducingRequestId: string }
+    >({
+      query: ({ BookingProducingRequestId }) => ({
+        url: `/api/booking-management-service/api/producing-requests/${BookingProducingRequestId}`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
+    sendNewEditRequest: build.mutation<
+      { Message: string },
+      {
+        BookingId: number;
+        Note: string;
+        DeadlineDayCount: number;
+        BookingPodcastTrackIds: string[];
+      }
+    >({
+      async queryFn({ BookingId, Note, DeadlineDayCount, BookingPodcastTrackIds }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/booking-management-service/api/bookings/${BookingId}/producing-request`,
+                method: "POST",
+                body: {
+                  BookingProducingRequestInfo: {
+                    Note,
+                    DeadlineDayCount,
+                    BookingPodcastTrackIds,
+                  },
+                },
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result.data as any };
+      },
+    }),
   }),
 });
 
@@ -97,4 +142,6 @@ export const {
   useGetBookingsQuery,
   useGetBookingDetailQuery,
   useConfirmAndDepositMutation,
+  useGetBookingProducingRequestDetailsQuery,
+  useSendNewEditRequestMutation,
 } = bookingApi;

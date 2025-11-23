@@ -11,7 +11,8 @@ export type FileResolveConfig = {
     | "TemplateCommitment"
     | "PodcasterCommitment"
     | "BookingPublic"
-    | "PodcastPublic";
+    | "PodcastPublic"
+    | "CategoryPublic";
   output: string;
 };
 
@@ -23,6 +24,7 @@ const fileTypeTriggerMap = {
   PodcasterCommitment: fileApi.endpoints.getPodcastBuddyCommitmentFile.initiate,
   BookingPublic: fileApi.endpoints.getBookingPublicSource.initiate,
   PodcastPublic: fileApi.endpoints.getPodcastPublicSource.initiate,
+  CategoryPublic: fileApi.endpoints.getCategoryPublicSource.initiate,
 };
 
 /** Fallback URL cho từng type (nếu không có file key hoặc resolve lỗi) */

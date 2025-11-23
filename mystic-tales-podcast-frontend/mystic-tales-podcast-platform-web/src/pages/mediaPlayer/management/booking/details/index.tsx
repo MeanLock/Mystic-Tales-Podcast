@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// @ts-nocheck
-
 import Loading from "@/components/loading";
 
 import type { BookingDetailsFromAPI } from "@/core/types/booking";
@@ -16,6 +13,8 @@ import RequirementCardWithWordCount from "./components/RequirementCardWithWordCo
 import {
   useConfirmAndDepositMutation,
   useGetBookingDetailQuery,
+  useGetBookingProducingRequestDetailsQuery,
+  useSendNewEditRequestMutation,
 } from "@/core/services/booking/booking.service";
 import {
   Dialog,
@@ -31,6 +30,7 @@ import {
   resolveFiles,
   type FileResolveConfig,
 } from "@/core/utils/fileResolver.util";
+import { IoPlay } from "react-icons/io5";
 
 export function renderDescriptionHTML(description: string | null) {
   if (!description) return "";
@@ -98,6 +98,15 @@ const BookingDetailsPage = () => {
   const [isResolvingFiles, setIsResolvingFiles] = useState(false);
   const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false);
   const [neededTopUpAmount, setNeededTopUpAmount] = useState<number>(0);
+  const [selectedProducingRequestId, setSelectedProducingRequestId] = useState<
+    string | null
+  >(null);
+  const [isProducingRequestDialogOpen, setIsProducingRequestDialogOpen] =
+    useState(false);
+  const [isEditRequestDialogOpen, setIsEditRequestDialogOpen] = useState(false);
+  const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
+  const [editNote, setEditNote] = useState("");
+  const [deadlineDayCount, setDeadlineDayCount] = useState<number>(1);
 
   // HOOKS
   const navigate = useNavigate();
@@ -110,6 +119,15 @@ const BookingDetailsPage = () => {
     );
   };
 
+  const getEarliestProducingRequest = (requests: any[]) => {
+    if (!requests || requests.length === 0) return null;
+    return requests.reduce((latest, current) => {
+      return new Date(current.CreatedAt) > new Date(latest.CreatedAt)
+        ? current
+        : latest;
+    });
+  };
+
   // MỞ LẠI LOGIC SAU
   const {
     data: booking,
@@ -120,6 +138,16 @@ const BookingDetailsPage = () => {
 
   const [confirmDeal, { isLoading: isConfirming }] =
     useConfirmAndDepositMutation();
+
+  const [sendNewEditRequest, { isLoading: isSendingEditRequest }] =
+    useSendNewEditRequestMutation();
+
+  const { data: producingRequestDetails, isLoading: isLoadingRequestDetails } =
+    useGetBookingProducingRequestDetailsQuery(
+      selectedProducingRequestId
+        ? { BookingProducingRequestId: selectedProducingRequestId }
+        : skipToken
+    );
 
   // EFFECT: Resolve files khi có booking data
   useEffect(() => {
@@ -202,6 +230,66 @@ const BookingDetailsPage = () => {
 
     setIsTopUpDialogOpen(false);
     navigate("/media-player/management/transactions/top-up");
+  };
+
+  const handleOpenProducingRequestDetails = (requestId: string) => {
+    setSelectedProducingRequestId(requestId);
+    setIsProducingRequestDialogOpen(true);
+  };
+
+  const handleCloseProducingRequestDialog = () => {
+    setIsProducingRequestDialogOpen(false);
+    setSelectedProducingRequestId(null);
+  };
+
+  const handleOpenCreateEditRequestForm = () => {
+    setIsProducingRequestDialogOpen(false);
+    setIsEditRequestDialogOpen(true);
+    // Reset form states
+    setSelectedTrackIds([]);
+    setEditNote("");
+    setDeadlineDayCount(1);
+  };
+
+  const handleToggleTrackSelection = (trackId: string) => {
+    setSelectedTrackIds((prev) =>
+      prev.includes(trackId)
+        ? prev.filter((id) => id !== trackId)
+        : [...prev, trackId]
+    );
+  };
+
+  const handleSubmitEditRequest = async () => {
+    if (!booking) return;
+
+    // Validation
+    if (selectedTrackIds.length === 0) {
+      alert("Please select at least one track to edit");
+      return;
+    }
+    if (!editNote.trim()) {
+      alert("Please enter a note for the edit request");
+      return;
+    }
+    if (deadlineDayCount <= 0) {
+      alert("Deadline day count must be greater than 0");
+      return;
+    }
+
+    try {
+      await sendNewEditRequest({
+        BookingId: booking.Booking.Id,
+        Note: editNote.trim(),
+        DeadlineDayCount: deadlineDayCount,
+        BookingPodcastTrackIds: selectedTrackIds,
+      }).unwrap();
+
+      // Success - close dialog and refetch
+      setIsEditRequestDialogOpen(false);
+      await refetch();
+    } catch (error) {
+      alert(`Error sending edit request: ${error}`);
+    }
   };
 
   // LOADING STATE
@@ -471,8 +559,528 @@ const BookingDetailsPage = () => {
               </div>
             </div>
           )}
+
+          {viewMode === "producingRequest" && (
+            <div className="w-full flex flex-col gap-5 p-5">
+              <p className="font-poppins font-bold text-white text-2xl">
+                Producing Requests
+              </p>
+              {booking.Booking.BookingProducingRequestList.length === 0 ? (
+                <div className="w-full p-8 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 text-center">
+                  <p className="text-white/70">No producing requests yet</p>
+                </div>
+              ) : (
+                (() => {
+                  const latestRequest = getEarliestProducingRequest(
+                    booking.Booking.BookingProducingRequestList
+                  );
+                  return booking.Booking.BookingProducingRequestList.map(
+                    (request, index) => {
+                      const isLatest =
+                        latestRequest && request.Id === latestRequest.Id;
+                      return (
+                        <div
+                          key={request.Id}
+                          className="w-full p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-mystic-green/50 transition-all duration-300"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 space-y-3">
+                              <div className="flex items-center gap-3">
+                                <span className="px-3 py-1 bg-mystic-green/20 text-mystic-green rounded-full text-sm font-semibold">
+                                  Request #{index + 1}
+                                </span>
+                                {request.IsAccepted === true ? (
+                                  <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-semibold">
+                                    Accepted
+                                  </span>
+                                ) : request.IsAccepted === false ? (
+                                  <span className="px-3 py-1 bg-red-500/20 text-red-200 rounded-full text-sm font-semibold">
+                                    Rejected
+                                  </span>
+                                ) : (
+                                  <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-semibold">
+                                    Pending
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-white/60 text-sm">
+                                    Created At
+                                  </p>
+                                  <p className="text-white font-semibold">
+                                    {TimeUtil.formatDate(
+                                      request.CreatedAt,
+                                      "DD/MM/YYYY"
+                                    )}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-white/60 text-sm">
+                                    Deadline
+                                  </p>
+                                  <p className="text-white font-semibold">
+                                    {/* {TimeUtil.formatISOStringToDate(
+                                  request.Deadline
+                                )} */}
+                                    {TimeUtil.formatDate(
+                                      request.Deadline,
+                                      "DD/MM/YYYY"
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {request.Note && (
+                                <div>
+                                  <p className="text-white/60 text-sm">Note</p>
+                                  <p className="text-white">{request.Note}</p>
+                                </div>
+                              )}
+
+                              {request.RejectReason && (
+                                <div>
+                                  <p className="text-red-400 text-sm">
+                                    Reject Reason
+                                  </p>
+                                  <p className="text-white">
+                                    {request.RejectReason}
+                                  </p>
+                                </div>
+                              )}
+
+                              {request.FinishedAt && (
+                                <div>
+                                  <p className="text-white/60 text-sm">
+                                    Finished At
+                                  </p>
+                                  <p className="text-white font-semibold">
+                                    {/* {TimeUtil.formatISOStringToDate(
+                                  
+                                )} */}
+                                    {TimeUtil.formatDate(
+                                      request.FinishedAt,
+                                      "DD/MM/YYYY"
+                                    )}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            {isLatest && (
+                              <button
+                                onClick={() =>
+                                  handleOpenProducingRequestDetails(request.Id)
+                                }
+                                className="px-4 py-2 bg-mystic-green hover:bg-mystic-green/80 text-black font-semibold rounded-lg transition-all duration-300 hover:scale-105"
+                              >
+                                View Details
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+                  );
+                })()
+              )}
+            </div>
+          )}
         </div>
 
+        {/* Producing Request Details Dialog */}
+        <Dialog
+          open={isProducingRequestDialogOpen}
+          onOpenChange={setIsProducingRequestDialogOpen}
+        >
+          <DialogContent
+            className="max-w-[90vw] sm:max-w-[80vw]
+              z-[9999] 
+              w-full 
+              max-h-[80vh] overflow-y-auto 
+            bg-black/50 backdrop-blur-sm 
+            text-white border border-white/10"
+          >
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-mystic-green">
+                Producing Request Details
+              </DialogTitle>
+            </DialogHeader>
+
+            {isLoadingRequestDetails ? (
+              <div className="flex items-center justify-center py-12">
+                <Loading />
+              </div>
+            ) : producingRequestDetails ? (
+              <div className="space-y-6 mt-4 w-full">
+                {/* Basic Information */}
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="p-4 bg-white/5 rounded-lg">
+                    <p className="text-white/60 text-sm mb-1">Status</p>
+                    <p
+                      className={`font-semibold ${
+                        producingRequestDetails.BookingProducingRequest
+                          .IsAccepted
+                          ? "text-mystic-green"
+                          : producingRequestDetails.BookingProducingRequest
+                          ? "text-red-300"
+                          : "text-blue-400"
+                      }`}
+                    >
+                      {producingRequestDetails.BookingProducingRequest
+                        .IsAccepted
+                        ? "Accepted"
+                        : producingRequestDetails.BookingProducingRequest
+                            .RejectReason
+                        ? "Rejected"
+                        : "Pending"}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-white/5 rounded-lg">
+                    <p className="text-white/60 text-sm mb-1">Deadline Days</p>
+                    {producingRequestDetails.BookingProducingRequest
+                      .DeadlineDays ? (
+                      <p className="text-white font-semibold">
+                        {
+                          producingRequestDetails.BookingProducingRequest
+                            .DeadlineDays
+                        }{" "}
+                        days
+                      </p>
+                    ) : (
+                      <p className="text-[#d9d9d9] font-semibold">Unknown</p>
+                    )}
+                  </div>
+                  <div className="p-4 bg-white/5 rounded-lg">
+                    <p className="text-white/60 text-sm mb-1">Created At</p>
+                    <p className="text-white font-semibold">
+                      {TimeUtil.formatDate(
+                        producingRequestDetails.BookingProducingRequest
+                          .CreatedAt,
+                        "hh:mm:ssDD/MM/YYYY"
+                      )}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-white/5 rounded-lg">
+                    <p className="text-white/60 text-sm mb-1">Deadline</p>
+                    <p className="text-white font-semibold">
+                      {TimeUtil.formatDate(
+                        producingRequestDetails.BookingProducingRequest
+                          .Deadline,
+                        "hh:mm:ssDD/MM/YYYY"
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Note */}
+                {producingRequestDetails.BookingProducingRequest.Note && (
+                  <div className="p-4 bg-white/5 rounded-lg">
+                    <p className="text-white/60 text-sm mb-2">Note</p>
+                    <div
+                      className="text-white text-base leading-relaxed"
+                      dangerouslySetInnerHTML={{
+                        __html: renderDescriptionHTML(
+                          producingRequestDetails.BookingProducingRequest.Note
+                        ),
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Reject Reason */}
+                {producingRequestDetails.BookingProducingRequest
+                  .RejectReason && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <p className="text-red-400 text-sm mb-2 font-semibold">
+                      Reject Reason
+                    </p>
+                    <p className="text-white">
+                      {
+                        producingRequestDetails.BookingProducingRequest
+                          .RejectReason
+                      }
+                    </p>
+                  </div>
+                )}
+
+                {/* Podcast Tracks */}
+                {producingRequestDetails.BookingProducingRequest
+                  .BookingPodcastTracks &&
+                  producingRequestDetails.BookingProducingRequest
+                    .BookingPodcastTracks.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">
+                        Podcast Tracks (
+                        {
+                          producingRequestDetails.BookingProducingRequest
+                            .BookingPodcastTracks.length
+                        }
+                        )
+                      </h3>
+                      <div className="space-y-3">
+                        {producingRequestDetails.BookingProducingRequest.BookingPodcastTracks.map(
+                          (track, idx) => (
+                            <div
+                              key={track.Id}
+                              className="p-4 bg-white/5 border border-white/10 rounded-lg"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-mystic-green font-semibold">
+                                  Track #{idx + 1}
+                                </span>
+                                <span className="text-white/60 text-sm">
+                                  {Math.floor(track.AudioLength / 60)}:
+                                  {String(track.AudioLength % 60).padStart(
+                                    2,
+                                    "0"
+                                  )}{" "}
+                                  min
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-4 gap-3 text-sm">
+                                <div>
+                                  <p className="text-white/60">File Size</p>
+                                  <p className="text-white">
+                                    {(
+                                      track.AudioFileSize /
+                                      1024 /
+                                      1024
+                                    ).toFixed(2)}{" "}
+                                    MB
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-white/60">Preview Slots</p>
+                                  <p className="text-white">
+                                    {track.RemainingPreviewListenSlot}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-white/60">
+                                    Requirement ID
+                                  </p>
+                                  <p className="text-white text-xs truncate">
+                                    {track.BookingRequirementId}
+                                  </p>
+                                </div>
+                                {track.RemainingPreviewListenSlot > 0 && (
+                                  <div className="flex items-center justify-end">
+                                    <div className="px-3 py-2 rounded-full flex items-center justify-center bg-mystic-green text-black font-bold transition-all duration-500 ease-out hover:-translate-y-1 gap-2 cursor-pointer">
+                                      <IoPlay />
+                                      <p>Play Track</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Edit Requirements */}
+                {producingRequestDetails.BookingProducingRequest
+                  .EditRequirementList &&
+                  producingRequestDetails.BookingProducingRequest
+                    .EditRequirementList.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-white mb-3">
+                        Edit Requirements (
+                        {
+                          producingRequestDetails.BookingProducingRequest
+                            .EditRequirementList.length
+                        }
+                        )
+                      </h3>
+                      <div className="space-y-2">
+                        {producingRequestDetails.BookingProducingRequest.EditRequirementList.map(
+                          (edit, idx) => (
+                            <div
+                              key={edit.Id}
+                              className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg"
+                            >
+                              <p className="text-yellow-400 font-semibold text-sm">
+                                Edit #{idx + 1}: {edit.Name}
+                              </p>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Current Status */}
+                {/* <div className="p-4 bg-mystic-green/10 border border-mystic-green/20 rounded-lg">
+                  <p className="text-white/60 text-sm mb-1">Current Status</p>
+                  <p className="text-mystic-green font-bold text-lg">
+                    {
+                      producingRequestDetails.BookingProducingRequest
+                        .CurrentStatus.Name
+                    }
+                  </p>
+                </div> */}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-white/60">
+                No details available
+              </div>
+            )}
+
+            <DialogFooter className="mt-6">
+              <button
+                onClick={handleOpenCreateEditRequestForm}
+                className="px-6 py-2 bg-blue-400/10 hover:bg-blue-400/20 text-blue-400 border-blue-400 border-[1px] rounded-lg transition-all duration-300"
+              >
+                Send New Edit Request
+              </button>
+              <button
+                onClick={handleCloseProducingRequestDialog}
+                className="px-6 py-2 bg-white/10 hover:bg-white/20 border-white border-[1px] text-white rounded-lg transition-all duration-300"
+              >
+                Close
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ----- EDIT REQUEST DIALOG ----- */}
+        <Dialog
+          open={isEditRequestDialogOpen}
+          onOpenChange={setIsEditRequestDialogOpen}
+        >
+          <DialogContent className="z-[9999] max-w-3xl max-h-[80vh] overflow-y-auto bg-black/50 backdrop-blur-sm text-white border border-white/10">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-mystic-green">
+                Send New Edit Request
+              </DialogTitle>
+              <DialogDescription className="text-white/70">
+                Select tracks you want to edit and provide details for the edit
+                request
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6 mt-4">
+              {/* Track Selection */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-3">
+                  Select Tracks to Edit
+                </h3>
+                {producingRequestDetails &&
+                producingRequestDetails.BookingProducingRequest
+                  .BookingPodcastTracks &&
+                producingRequestDetails.BookingProducingRequest
+                  .BookingPodcastTracks.length > 0 ? (
+                  <div className="space-y-2">
+                    {producingRequestDetails.BookingProducingRequest.BookingPodcastTracks.map(
+                      (track, idx) => (
+                        <div
+                          key={track.Id}
+                          onClick={() => handleToggleTrackSelection(track.Id)}
+                          className={`p-4 rounded-lg border cursor-pointer transition-all duration-300 ${
+                            selectedTrackIds.includes(track.Id)
+                              ? "bg-mystic-green/20 border-mystic-green"
+                              : "bg-white/5 border-white/10 hover:border-white/30"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={selectedTrackIds.includes(track.Id)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleTrackSelection(track.Id);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-5 h-5 cursor-pointer accent-mystic-green"
+                              />
+                              <span className="text-white font-semibold">
+                                Track #{idx + 1}
+                              </span>
+                            </div>
+                            <span className="text-white/60 text-sm">
+                              {Math.floor(track.AudioLength / 60)}:
+                              {String(track.AudioLength % 60).padStart(2, "0")}{" "}
+                              min
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
+                            <div>
+                              <p className="text-white/60">File Size</p>
+                              <p className="text-white">
+                                {(track.AudioFileSize / 1024 / 1024).toFixed(2)}{" "}
+                                MB
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-white/60">Preview Slots</p>
+                              <p className="text-white">
+                                {track.RemainingPreviewListenSlot}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-8 bg-white/5 rounded-lg text-center">
+                    <p className="text-white/60">No tracks available</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Note Input */}
+              <div>
+                <label className="block text-white font-semibold mb-2">
+                  Note <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                  placeholder="Describe what needs to be edited..."
+                  rows={4}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-mystic-green transition-all"
+                />
+              </div>
+
+              {/* Deadline Day Count */}
+              <div>
+                <label className="block text-white font-semibold mb-2">
+                  Deadline (Days) <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={deadlineDayCount}
+                  onChange={(e) => setDeadlineDayCount(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-mystic-green transition-all"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="mt-6 flex gap-3">
+              <button
+                onClick={() => setIsEditRequestDialogOpen(false)}
+                className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all duration-300"
+                disabled={isSendingEditRequest}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitEditRequest}
+                disabled={isSendingEditRequest}
+                className="px-6 py-2 bg-mystic-green hover:bg-mystic-green/80 text-black font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSendingEditRequest ? "Sending..." : "Send Edit Request"}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {/* ----- ALERT BÁO KHÔNG ĐỦ TIỀN ----- */}
         <Dialog open={isTopUpDialogOpen} onOpenChange={setIsTopUpDialogOpen}>
           <DialogContent className="bg-black/50 backdrop-blur-sm text-white border border-white/10">
             <DialogHeader>
@@ -532,12 +1140,6 @@ const BookingDetailsPage = () => {
       </div>
     );
   }
-
-  // if (error) {
-  //   <div>
-  //     <p>Có lỗi xảy ra</p>
-  //   </div>;
-  // }
 };
 
 export default BookingDetailsPage;

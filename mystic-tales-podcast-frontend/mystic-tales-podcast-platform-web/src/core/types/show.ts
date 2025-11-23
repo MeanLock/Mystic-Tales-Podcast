@@ -148,6 +148,21 @@ export type ShowDetailsFromAPI = {
     Id: number;
     Name: string;
   }[];
+  ReviewList: {
+    Id: string;
+    Title: string;
+    Content: string;
+    Rating: number;
+    Account: {
+      Id: number;
+      FullName: string;
+      Email: string;
+      MainImageFileKey: string;
+    };
+    PodcastShowId: string;
+    DeletedAt: string;
+    UpdatedAt: string;
+  }[];
   TakenDownReason: string;
   CreatedAt: string;
   UpdatedAt: string;
@@ -272,7 +287,7 @@ export type ShowDetailsUI = {
     Id: number;
     Name: string;
   }[];
-  RatingList: {
+  ReviewList: {
     Id: string;
     Title: string;
     Content: string;

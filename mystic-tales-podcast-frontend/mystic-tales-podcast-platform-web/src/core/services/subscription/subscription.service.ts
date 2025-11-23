@@ -70,9 +70,11 @@ const subscriptionApi = appApi.injectEndpoints({
       },
     }),
 
-    // Lấy danh sách subscription của user với Channel
+    // Lấy danh sách subscription của user với Channels
     getUserChannelSubscriptions: build.query<
-      { ChannelSubscriptionRegistrationList: any[] },
+      {
+        ChannelSubscriptionRegistrationList: PodcastSubscriptionRegistration[];
+      },
       void
     >({
       query: () => ({
@@ -82,9 +84,9 @@ const subscriptionApi = appApi.injectEndpoints({
       }),
     }),
 
-    // Lấy danh sách subscription của user với Show
+    // Lấy danh sách subscription của user với Shows
     getUserShowSubscriptions: build.query<
-      { ShowSubscriptionRegistrationList: any[] },
+      { ShowSubscriptionRegistrationList: PodcastSubscriptionRegistration[] },
       void
     >({
       query: () => ({
@@ -116,7 +118,7 @@ const subscriptionApi = appApi.injectEndpoints({
       { PodcastShowId: string }
     >({
       query: ({ PodcastShowId }) => ({
-        url: `/api/podcast-subscriptions/podcast-subscriptions-registrations/shows/${PodcastShowId}`,
+        url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscriptions-registrations/shows/${PodcastShowId}`,
         authMode: "required",
         method: "GET",
       }),

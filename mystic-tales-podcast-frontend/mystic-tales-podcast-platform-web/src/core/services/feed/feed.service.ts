@@ -1,5 +1,9 @@
 import { appApi } from "@/core/api/appApi";
-import type { DiscoveryData, TrendingData } from "@/core/types/feed";
+import type {
+  CategoryFeedDataFromAPI,
+  DiscoveryData,
+  TrendingData,
+} from "@/core/types/feed";
 
 const feedApi = appApi.injectEndpoints({
   endpoints: (build) => ({
@@ -13,6 +17,16 @@ const feedApi = appApi.injectEndpoints({
     getTrendingFeed: build.query<TrendingData, void>({
       query: () => ({
         url: "/api/podcast-service/api/misc/feed/podcast-contents/trending",
+        method: "GET",
+        authMode: "hybrid",
+      }),
+    }),
+    getCategoryFeed: build.query<
+      CategoryFeedDataFromAPI,
+      { PodcastCategoryId: string }
+    >({
+      query: ({ PodcastCategoryId }) => ({
+        url: `/api/podcast-service/api/misc/feed/podcast-contents/podcast-categories/${PodcastCategoryId}`,
         method: "GET",
         authMode: "hybrid",
       }),

@@ -57,6 +57,18 @@ const fileApi = appApi.injectEndpoints({
         authMode: "public",
       }),
     }),
+    // ---------------------------------------
+    // Category
+    getCategoryPublicSource: build.query<
+      { FileUrl: string },
+      { FileKey: string }
+    >({
+      query: ({ FileKey }) => ({
+        url: `/api/podcast-service/api/categories/podcast-categories/get-file-url/${FileKey}`,
+        method: "GET",
+        authMode: "public",
+      }),
+    }),
   }),
 });
 
@@ -66,6 +78,7 @@ export const {
   useGetPodcastBuddyCommitmentFileQuery,
   useGetBookingPublicSourceQuery,
   useGetPodcastPublicSourceQuery,
+  useGetCategoryPublicSourceQuery,
 } = fileApi;
 
 export default fileApi;

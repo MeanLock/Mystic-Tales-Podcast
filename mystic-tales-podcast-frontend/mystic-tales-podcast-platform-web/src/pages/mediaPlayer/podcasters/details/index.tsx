@@ -449,10 +449,7 @@ const PodcasterDetailsPage = () => {
                   </LiquidButton>
                 ) : (
                   <LiquidButton
-                    // onClick={() => handleUnfollowPodcaster()}
-                    onClick={() =>
-                      dispatch(setError({ message: "ngu", autoClose: 5 }))
-                    }
+                    onClick={() => handleUnfollowPodcaster()}
                     variant="minimal"
                   >
                     <p>Followed</p>

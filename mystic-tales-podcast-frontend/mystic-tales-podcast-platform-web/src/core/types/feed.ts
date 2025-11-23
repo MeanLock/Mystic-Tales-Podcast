@@ -285,3 +285,55 @@ export type PopularEpisodes = {
 export type PopularEpisodesUI = {
   EpisodeList: EpisodeUI[];
 };
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+
+// CATEGORY FEED TYPES
+export type CategoryFeedDataFromAPI = {
+  TopChannels: {
+    ChannelList: ChannelFromAPI[];
+  };
+  TopShows: {
+    ShowList: ShowFromAPI[];
+  };
+  TopEpisodes: {
+    EpisodeList: EpisodeFromAPI[];
+  };
+  HotShows: {
+    ShowList: ShowFromAPI[];
+  };
+  SubCategorySections: {
+    PodcastSubCategory: {
+      Id: number;
+      Name: string;
+      PodcastCategoryId: number;
+    };
+    ShowList: ShowFromAPI[];
+  }[];
+};
+
+export type CategoryFeedDataUI = {
+  TopChannels: {
+    ChannelList: ChannelUI[];
+  };
+  TopShows: {
+    ShowList: ShowUI[];
+  };
+  TopEpisodes: {
+    EpisodeList: EpisodeUI[];
+  };
+  HotShows: {
+    ShowList: ShowUI[];
+  };
+  SubCategorySections: {
+    PodcastSubCategory: {
+      Id: number;
+      Name: string;
+      PodcastCategoryId: number;
+    };
+    ShowList: ShowUI[];
+  }[];
+};
