@@ -9,11 +9,11 @@ public partial class BookingRequirement
 
     public int BookingId { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
-    public string Description { get; set; }
+    public string Description { get; set; } = null!;
 
-    public string RequirementDocumentFileKey { get; set; }
+    public string RequirementDocumentFileKey { get; set; } = null!;
 
     public int Order { get; set; }
 
@@ -21,9 +21,9 @@ public partial class BookingRequirement
 
     public Guid PodcastBookingToneId { get; set; }
 
-    public virtual Booking Booking { get; set; }
+    public virtual Booking Booking { get; set; } = null!;
 
     public virtual ICollection<BookingPodcastTrack> BookingPodcastTracks { get; set; } = new List<BookingPodcastTrack>();
 
-    public virtual PodcastBookingTone PodcastBookingTone { get; set; }
+    public virtual PodcastBookingTone PodcastBookingTone { get; set; } = null!;
 }

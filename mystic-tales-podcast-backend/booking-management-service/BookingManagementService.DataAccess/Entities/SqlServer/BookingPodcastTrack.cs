@@ -11,7 +11,7 @@ public partial class BookingPodcastTrack
 
     public Guid BookingProducingRequestId { get; set; }
 
-    public string AudioFileKey { get; set; }
+    public string AudioFileKey { get; set; } = null!;
 
     public double AudioFileSize { get; set; }
 
@@ -23,13 +23,13 @@ public partial class BookingPodcastTrack
 
     public Guid? AudioEncryptionKeyId { get; set; }
 
-    public string AudioEncryptionKeyFileKey { get; set; }
+    public string? AudioEncryptionKeyFileKey { get; set; }
 
-    public virtual Booking Booking { get; set; }
+    public virtual Booking Booking { get; set; } = null!;
 
     public virtual ICollection<BookingPodcastTrackListenSession> BookingPodcastTrackListenSessions { get; set; } = new List<BookingPodcastTrackListenSession>();
 
-    public virtual BookingProducingRequest BookingProducingRequest { get; set; }
+    public virtual BookingProducingRequest BookingProducingRequest { get; set; } = null!;
 
     public virtual ICollection<BookingProducingRequestPodcastTrackToEdit> BookingProducingRequestPodcastTrackToEdits { get; set; } = new List<BookingProducingRequestPodcastTrackToEdit>();
 

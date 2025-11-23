@@ -11,5 +11,6 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
         public int AccountId { get; set; }
         public Guid BookingProducingRequestId { get; set; }
         public bool IsAccepted { get; set; }
+        public string? RejectReason { get; set; }
     }
 }

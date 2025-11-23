@@ -28,5 +28,6 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking.Details
         public DateTime UpdatedAt { get; set; }
         public BookingStatusResponseDTO CurrentStatus { get; set; }
         public List<BookingStatusTrackingListItemResponseDTO> StatusTracking { get; set; }
+        public List<BookingPodcastTrackListItemResponseDTO> LastestBookingPodcastTracks { get; set; } = new List<BookingPodcastTrackListItemResponseDTO>();
     }
 }

@@ -13,7 +13,7 @@ public partial class BookingStatusTracking
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual Booking Booking { get; set; }
+    public virtual Booking Booking { get; set; } = null!;
 
-    public virtual BookingStatus BookingStatus { get; set; }
+    public virtual BookingStatus BookingStatus { get; set; } = null!;
 }

@@ -12,6 +12,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.AgreeBookingNegotitation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelPodcasterBookingsTerminatePodcasterForce;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteAllUserBookingProducingListenSessions;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
@@ -207,6 +208,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .ThenInclude(br => br.PodcastBookingTone)
                         .ThenInclude(bt => bt.PodcastBookingToneCategory)
                     .Include(b => b.BookingProducingRequests)
+                        .ThenInclude(bp => bp.BookingPodcastTracks)
                     .Include(b => b.BookingStatusTrackings)
                         .ThenInclude(bst => bst.BookingStatus));
 
@@ -233,6 +235,24 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 var latestStatus = booking.BookingStatusTrackings?
                     .OrderByDescending(bst => bst.CreatedAt)
                     .FirstOrDefault();
+
+                var lastestProducingRequest = booking.BookingProducingRequests?.Where(bp => bp.FinishedAt != null).OrderByDescending(bp => bp.CreatedAt).FirstOrDefault();
+
+                var lastestBookingPodcastTracks = new List<BookingPodcastTrackListItemResponseDTO>();
+                if(lastestProducingRequest != null)
+                {
+                    lastestBookingPodcastTracks = lastestProducingRequest.BookingPodcastTracks.Select(bpt => new BookingPodcastTrackListItemResponseDTO
+                    {
+                        Id = bpt.Id,
+                        BookingId = bpt.BookingId,
+                        BookingRequirementId = bpt.BookingRequirementId,
+                        BookingProducingRequestId = bpt.BookingProducingRequestId,
+                        AudioFileKey = bpt.AudioFileKey,
+                        AudioFileSize = bpt.AudioFileSize,
+                        AudioLength = bpt.AudioLength,
+                        RemainingPreviewListenSlot = bpt.RemainingPreviewListenSlot
+                    }).ToList();
+                }
 
                 return new BookingDetailResponseDTO
                 {
@@ -292,6 +312,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Note = prod.Note,
                         Deadline = prod.Deadline,
                         DeadlineDays = prod.DeadlineDays,
+                        RejectReason = prod.RejectReason,
                         IsAccepted = prod.IsAccepted,
                         FinishedAt = prod.FinishedAt,
                         CreatedAt = prod.CreatedAt
@@ -307,7 +328,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         BookingId = bst.BookingId,
                         BookingStatusId = bst.BookingStatusId,
                         CreatedAt = bst.CreatedAt
-                    }).OrderByDescending(bst => bst.CreatedAt).ToList() ?? new List<BookingStatusTrackingListItemResponseDTO>()
+                    }).OrderByDescending(bst => bst.CreatedAt).ToList() ?? new List<BookingStatusTrackingListItemResponseDTO>(),
+                    LastestBookingPodcastTracks = lastestBookingPodcastTracks
                 };
             }
             catch (Exception ex)
@@ -2289,7 +2311,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .Where(b => b.Id == bookingId)
                         .FirstOrDefaultAsync();
 
-
                     if (booking == null)
                     {
                         throw new HttpRequestException("Booking with id " + bookingId + " does not exist");
@@ -2325,20 +2346,23 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     if (accountId != booking.PodcastBuddyId)
                     {
-                        if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
+                        if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing && currentBookingStatusId != (int)BookingStatusEnum.Completed)
                         {
-                            throw new HttpRequestException("Booking with id " + bookingId + " is not in Track Previewing status");
+                            throw new HttpRequestException("Booking with id " + bookingId + " is not in a listenable status");
                         }
                         if (currentBookingProducingRequest.Id.Equals(bookingPodcastTrack.BookingProducingRequestId) == false)
                         {
                             throw new HttpRequestException("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
                         }
-                        if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                        if(currentBookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
                         {
-                            throw new HttpRequestException("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
+                            if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                            {
+                                throw new HttpRequestException("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
+                            }
+                            bookingPodcastTrack.RemainingPreviewListenSlot = bookingPodcastTrack.RemainingPreviewListenSlot - 1;
+                            await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                         }
-                        bookingPodcastTrack.RemainingPreviewListenSlot = bookingPodcastTrack.RemainingPreviewListenSlot - 1;
-                        await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                     }
 
                     if (sourceType != CustomerListenSessionProcedureSourceDetailTypeEnum.BookingProducingTracks)
@@ -2385,22 +2409,26 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     List<ListenSessionProcedureListenObjectQueueItem> listenObjectSequential = new List<ListenSessionProcedureListenObjectQueueItem>();
                     List<ListenSessionProcedureListenObjectQueueItem> listenObjectRandom = new List<ListenSessionProcedureListenObjectQueueItem>();
 
-                    foreach (var track in currentBookingProducingRequest.BookingPodcastTracks)
+                    var count = 0;
+                    foreach (var track in currentBookingProducingRequest.BookingPodcastTracks.OrderBy(bp => bp.BookingRequirement.Order))
                     {
+                        count += 1;
                         var isListenable = true;
-                        if (track.RemainingPreviewListenSlot <= 0)
+                        if(currentBookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
                         {
-                            isListenable = false;
+                            if (track.RemainingPreviewListenSlot <= 0)
+                            {
+                                isListenable = false;
+                            }
                         }
                         var listenObjectItem = new ListenSessionProcedureListenObjectQueueItem
                         {
                             ListenObjectId = track.Id,
-                            Order = track.BookingRequirement.Order,
+                            Order = count,
                             IsListenable = isListenable
                         };
                         listenObjectSequential.Add(listenObjectItem);
                         listenObjectRandom.Add(listenObjectItem);
-
                     }
                     var random = new Random();
                     listenObjectRandom = listenObjectRandom.OrderBy(x => random.Next()).ToList();
@@ -2778,6 +2806,73 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
+        public async Task CompleteAllUserBookingProducingListenSessionsAsync(CompleteAllUserBookingProducingListenSessionsParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    if (parameter.IsBookingProducingListenSessionCompleted)
+                    {
+                        var bookingListenSessions = await _bookingPodcastTrackListenSessionGenericRepository.FindAll(
+                            predicate: bpts => bpts.AccountId == parameter.AccountId && !bpts.IsCompleted
+                        ).ToListAsync();
+                        foreach (var session in bookingListenSessions)
+                        {
+                            session.IsCompleted = true;
+                            await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                        }
+
+                        var procedure = await _customerListenSessionProcedureCachingService.GetActiveProcedureByCustomerIdAsync(parameter.AccountId);
+                        if(procedure != null)
+                        {
+                            if (procedure.SourceDetail.Type == CustomerListenSessionProcedureSourceDetailTypeEnum.BookingProducingTracks.ToString() && !procedure.IsCompleted)
+                            {
+                                await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(parameter.AccountId, procedure.Id, true);
+                            }
+                        }
+                    }
+
+                    await transaction.CommitAsync();
+                    
+                    var newResponseData = command.RequestData;
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Successfully Complete All User Booking Producing Listen Sessions for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Complete All User Booking Producing Listen Sessions for AccountId: {AccountId}", parameter.AccountId);
+                    var newResponseData = new JObject
+                    {
+                        { "ErrorMessage", "Complete All User Booking Producing Listen Sessions failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogError("Complete All User Booking Producing Listen Sessions failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
         private async Task<bool> CheckListenerCanListenToTrackAsync(int accountId, Guid podcastTrackId)
         {
             try
@@ -2790,18 +2885,22 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .ThenInclude(bpr => bpr.BookingStatusTrackings)
                     ).FirstOrDefaultAsync();
 
-                if(bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                var producingRequest = bookingPodcastTrack.BookingProducingRequest;
+                var booking = bookingPodcastTrack.BookingProducingRequest.Booking;
+                var bookingStatus = booking.BookingStatusTrackings
+                    .OrderByDescending(bst => bst.CreatedAt)
+                    .FirstOrDefault().BookingStatusId;
+                
+                if (bookingStatus != (int)BookingStatusEnum.TrackPreviewing && bookingStatus != (int)BookingStatusEnum.Completed)
                 {
                     return false;
                 }
-                var producingRequest =  bookingPodcastTrack.BookingProducingRequest;
-                var booking = bookingPodcastTrack.BookingProducingRequest.Booking;
-                if(booking.BookingStatusTrackings
-                    .OrderByDescending(bst => bst.CreatedAt)
-                    .FirstOrDefault()
-                    .BookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
+                if(bookingStatus == (int)BookingStatusEnum.TrackPreviewing)
                 {
-                    return false;
+                    if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                    {
+                        return false;
+                    }
                 }
                 var currentBookingProducingRequest = booking.BookingProducingRequests
                         .Where(bpr => bpr.FinishedAt != null)

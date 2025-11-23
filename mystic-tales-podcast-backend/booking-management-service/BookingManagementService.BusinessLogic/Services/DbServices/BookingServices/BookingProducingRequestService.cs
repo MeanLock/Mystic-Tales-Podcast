@@ -143,6 +143,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     DeadlineDays = bookingProducingRequest.DeadlineDays,
                     IsAccepted = bookingProducingRequest.IsAccepted,
                     FinishedAt = bookingProducingRequest.FinishedAt,
+                    RejectReason = bookingProducingRequest.RejectReason,
                     CreatedAt = bookingProducingRequest.CreatedAt,
                     BookingPodcastTracks = bookingProducingRequest.BookingPodcastTracks?.Select(nego => new BookingPodcastTrackListItemResponseDTO
                     {
@@ -695,6 +696,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         }
                         else
                         {
+                            if(parameter.RejectReason == null || parameter.RejectReason == "")
+                            {
+                                throw new Exception("Reject reason is required when rejecting producing request");
+                            }
+                            bookingProducingRequest.RejectReason = parameter.RejectReason;
+                            await _bookingProducingRequestGenericRepository.UpdateAsync(bookingProducingRequest.Id, bookingProducingRequest);
                             await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                             {
                                 Id = Guid.NewGuid(),
@@ -706,18 +713,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
                     else
                     {
-                        await transaction.RollbackAsync();
                         throw new Exception("Current booking status is not valid for agreeing to producing");
                     }
 
                     await transaction.CommitAsync();
 
-                    var newResponseData = new JObject
-                    {
-                        { "BookingProducingRequestId", bookingProducingRequestId},
-                        { "IsAccepted", isAccepted },
-                        { "UpdatedAt", _dateHelper.GetNowByAppTimeZone() }
-                    };
+                    var newResponseData = command.RequestData;
                     var newMessageName = messageName + ".success";
                     var SagaCommandMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.BookingManagementDomain,

@@ -6,6 +6,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingManual;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelBookingProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CancelPodcasterBookingsTerminatePodcasterForce;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteAllUserBookingProducingListenSessions;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CompleteBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
@@ -302,6 +303,20 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "update-booking-listen-session-duration.failed"
+            );
+        }
+        [MessageHandler("complete-all-user-booking-producing-listen-sessions", SAGA_TOPIC)]
+        public async Task HandleCompleteAllUserBookingProducingListenSessionsAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<CompleteAllUserBookingProducingListenSessionsParameterDTO>();
+                    await _bookingService.CompleteAllUserBookingProducingListenSessionsAsync(parameter, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "complete-all-user-booking-producing-listen-sessions.failed"
             );
         }
     }

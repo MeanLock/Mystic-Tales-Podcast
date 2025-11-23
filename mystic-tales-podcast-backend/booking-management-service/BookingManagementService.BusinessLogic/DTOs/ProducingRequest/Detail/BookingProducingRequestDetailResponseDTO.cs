@@ -16,6 +16,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.ProducingRequest.Detail
         public DateTime? Deadline { get; set; }
         public int? DeadlineDays { get; set; }
         public bool? IsAccepted { get; set; }
+        public string RejectReason { get; set; }
         public DateTime? FinishedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public List<BookingPodcastTrackListItemResponseDTO> BookingPodcastTracks { get; set; } = new List<BookingPodcastTrackListItemResponseDTO>();
