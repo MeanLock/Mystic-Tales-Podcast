@@ -463,10 +463,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         public async Task<IActionResult> ServiceQueryGetPodcastSubscriptions([FromRoute] int accountId, [FromBody] UserPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO request)
         {
             var podcastSubscriptions = await _podcastSubscriptionService.GetPodcastSubscriptionsByAccountIdAsync(accountId, request.EpisodeBaseSourceInfoList);
-            return Ok(new
-            {
-                EpisodeBaseBenefitList = podcastSubscriptions
-            });
+            return Ok(podcastSubscriptions);
         }
     }
 }
