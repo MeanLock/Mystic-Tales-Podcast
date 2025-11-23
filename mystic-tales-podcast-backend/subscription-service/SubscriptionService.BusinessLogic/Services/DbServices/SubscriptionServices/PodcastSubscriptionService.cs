@@ -2632,7 +2632,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         Description = ps.Description,
                         PodcastShowId = ps.PodcastShowId,
                         PodcastChannelId = ps.PodcastChannelId,
-                        IsActive = ps.DeletedAt == null,
+                        IsActive = ps.IsActive,
                         CurrentVersion = ps.CurrentVersion,
                         DeletedAt = ps.DeletedAt,
                         CreatedAt = ps.CreatedAt,
@@ -2717,6 +2717,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     query = query.Where(ps => ps.PodcastShowId == podcastShowId);
                 }
                 var result = await query
+                        .Where(ps => ps.IsActive && ps.DeletedAt == null)
                         .Select(ps => new PodcastSubscriptionDetailResponseDTO
                         {
                             Id = ps.Id,
@@ -2724,7 +2725,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             Description = ps.Description,
                             PodcastShowId = ps.PodcastShowId,
                             PodcastChannelId = ps.PodcastChannelId,
-                            IsActive = ps.DeletedAt == null,
+                            IsActive = ps.IsActive,
                             CurrentVersion = ps.CurrentVersion,
                             DeletedAt = ps.DeletedAt,
                             CreatedAt = ps.CreatedAt,
