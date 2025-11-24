@@ -51,6 +51,7 @@ export type PlayerControl = {
   playStatus: "stop" | "pause" | "play" | "loading";
   nextMode: "Sequential" | "Random";
   sourceType: ProcedureSourceDetailType | null;
+  isNextSessionNull: boolean;
   audioId: string | null;
   isAutoPlay: boolean;
   volume: number;

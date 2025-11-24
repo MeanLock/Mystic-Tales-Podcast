@@ -34,7 +34,7 @@ const channelApi = appApi.injectEndpoints({
       query: ({ ChannelId }) => ({
         url: `/api/podcast-service/api/channels/${ChannelId}`,
         method: "GET",
-        authMode: "public",
+        authMode: "hybrid",
       }),
     }),
     getActiveChannelSubscription: build.query<
@@ -47,6 +47,54 @@ const channelApi = appApi.injectEndpoints({
         authMode: "hybrid",
       }),
     }),
+
+    followChannel: build.mutation<
+      { Message: string },
+      { PodcastChannelId: string }
+    >({
+      async queryFn({ PodcastChannelId }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/podcast-service/api/channels/${PodcastChannelId}/favorite/true`,
+                method: "POST",
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as any };
+      },
+    }),
+
+    unFollowChannel: build.mutation<
+      { Message: string },
+      { PodcastChannelId: string }
+    >({
+      async queryFn({ PodcastChannelId }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/podcast-service/api/channels/${PodcastChannelId}/favorite/false`,
+                method: "POST",
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as any };
+      },
+    }),
   }),
 });
 
@@ -55,4 +103,6 @@ export const {
   useGetChannelListByQueryKeyQuery,
   useGetChannelDetailsQuery,
   useGetActiveChannelSubscriptionQuery,
+  useFollowChannelMutation,
+  useUnFollowChannelMutation,
 } = channelApi;

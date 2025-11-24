@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import { FaBackward } from "react-icons/fa";
 import { FaForward } from "react-icons/fa";
 
@@ -13,9 +11,11 @@ import type { RootState } from "@/redux/store";
 import {
   pauseAudio,
   playAudio,
+  setUIIsAutoPlay,
+  setUIPlayOrderMode,
   setVolume,
 } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import { useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Popover,
   PopoverContent,
@@ -26,12 +26,19 @@ import { FaVolumeHigh, FaVolumeLow, FaVolumeXmark } from "react-icons/fa6";
 import { Slider } from "@/components/ui/slider";
 import { getAudioEngine } from "@/core/services/player/playerBridge";
 import { useAudioProgress } from "@/core/services/player/useAudioPress";
+import { Switch } from "@/components/ui/switch";
+import { Repeat, Shuffle } from "lucide-react";
+import { useUpdatePlayModeMutation } from "@/core/services/player/player.service";
+import { setError } from "@/redux/slices/errorSlice/errorSlice";
 
 const MediaPlayerControl = () => {
   // REDUX
   const player = useSelector((state: RootState) => state.player);
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
+
+  // MUTATIONS
+  const [updatePlayMode] = useUpdatePlayModeMutation();
 
   // AUDIO ENGINE & PROGRESS
   const engine = getAudioEngine();
@@ -42,7 +49,7 @@ const MediaPlayerControl = () => {
   const [volume, setVolumeState] = useState<number>(player.playMode.volume);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekPreview, setSeekPreview] = useState<number | null>(null);
-
+  const [isInitialized, setIsInitialized] = useState(false);
   const [isVolumeModelOpen, setIsVolumeModelOpen] = useState(false);
 
   const effectiveTime = isSeeking && seekPreview != null ? seekPreview : t;
@@ -50,7 +57,21 @@ const MediaPlayerControl = () => {
 
   const percent =
     effectiveDuration > 0 ? (effectiveTime / effectiveDuration) * 100 : 0;
+
   // EFFECTS
+  // Khởi tạo ban đầu từ listenSessionProcedure, sau đó theo playMode
+  useEffect(() => {
+    if (!isInitialized && player.listenSessionProcedure) {
+      // Chỉ set lần đầu từ listenSessionProcedure
+      dispatch(setUIIsAutoPlay(player.listenSessionProcedure.IsAutoPlay));
+      dispatch(setUIPlayOrderMode(player.listenSessionProcedure.PlayOrderMode));
+      setIsInitialized(true);
+    }
+  }, [player.listenSessionProcedure, isInitialized, dispatch]);
+
+  // Lấy giá trị từ playMode (Redux state)
+  const isAutoPlay = player.playMode.isAutoPlay;
+  const playOrderMode = player.playMode.nextMode;
 
   // FUNCTIONS
   const onProgressMouse = (
@@ -103,6 +124,113 @@ const MediaPlayerControl = () => {
   const handleSeekForward = () => {
     const newTime = Math.min(effectiveDuration, effectiveTime + 10);
     engine.seek(newTime);
+  };
+
+  const handleNextAudio = () => {
+    engine.next?.();
+  };
+
+  const handlePreviousAudio = () => {
+    engine.previous?.();
+  };
+
+  // Kiểm tra xem có nên disable next/previous không
+  const isNavigationDisabled = useMemo(() => {
+    if (!player.listenSessionProcedure) return true;
+
+    // Nếu isNextSessionNull là true, disable
+    if (player.playMode.isNextSessionNull) return true;
+
+    if (!player.listenSession) return true;
+
+    // Lấy playOrder dựa trên playMode.listenSessionProcedure (Redux state)
+    const playOrder =
+      player.listenSessionProcedure.PlayOrderMode === "Sequential"
+        ? player.listenSessionProcedure.ListenObjectsSequentialOrder
+        : player.listenSessionProcedure.ListenObjectsRandomOrder;
+
+    console.log("PlayOrder for disable check:", playOrder);
+    console.log("Using nextMode:", player.listenSessionProcedure.PlayOrderMode);
+
+    // Đếm số item IsListenable
+    const listenableCount =
+      playOrder?.filter((item) => item.IsListenable).length || 0;
+
+    console.log("Listenable count:", listenableCount);
+
+    // Disable nếu có <= 1 item
+    return listenableCount <= 1;
+  }, [player.listenSessionProcedure]);
+
+  const handleChangeOrderMode = async (mode: "Sequential" | "Random") => {
+    if (!player.listenSessionProcedure?.Id) {
+      dispatch(
+        setError({
+          message: "No active session to update play mode",
+          autoClose: 5,
+        })
+      );
+      return;
+    }
+
+    // Lưu giá trị cũ để revert nếu cần
+    const previousMode = playOrderMode;
+
+    // Optimistic UI update
+    dispatch(setUIPlayOrderMode(mode));
+    try {
+      await updatePlayMode({
+        PlayOrderMode: mode,
+        IsAutoPlay: isAutoPlay,
+        CustomerListenSessionProcedureId: player.listenSessionProcedure.Id,
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to update play order mode:", error);
+      // Revert on error
+      dispatch(setUIPlayOrderMode(previousMode));
+      dispatch(
+        setError({
+          message: "Failed to update play order mode. Please try again.",
+          autoClose: 5,
+        })
+      );
+    }
+  };
+
+  const handleChangeAutoPlay = async (checked: boolean) => {
+    if (!player.listenSessionProcedure?.Id) {
+      dispatch(
+        setError({
+          message: "No active session to update autoplay",
+          autoClose: 5,
+        })
+      );
+      return;
+    }
+
+    // Lưu giá trị cũ để revert nếu cần
+    const previousAutoPlay = isAutoPlay;
+
+    // Optimistic UI update
+    dispatch(setUIIsAutoPlay(checked));
+
+    try {
+      await updatePlayMode({
+        PlayOrderMode: playOrderMode,
+        IsAutoPlay: checked,
+        CustomerListenSessionProcedureId: player.listenSessionProcedure.Id,
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to update autoplay mode:", error);
+      // Revert on error
+      dispatch(setUIIsAutoPlay(previousAutoPlay));
+      dispatch(
+        setError({
+          message: "Failed to update autoplay mode. Please try again.",
+          autoClose: 5,
+        })
+      );
+    }
   };
 
   if (!user) {
@@ -175,9 +303,16 @@ const MediaPlayerControl = () => {
       </div>
 
       <div className="flex items-center ml-20 gap-5">
-        {/* <div className="text-white hover:text-mystic-green cursor-pointer">
+        <div
+          onClick={isNavigationDisabled ? undefined : handlePreviousAudio}
+          className={`${
+            isNavigationDisabled
+              ? "text-gray-500 cursor-not-allowed"
+              : "text-white hover:text-mystic-green cursor-pointer"
+          }`}
+        >
           <FaBackward size={20} />
-        </div> */}
+        </div>
         <div
           onClick={handleSeekBackward}
           className="text-white hover:text-mystic-green cursor-pointer"
@@ -204,6 +339,16 @@ const MediaPlayerControl = () => {
           className="text-white hover:text-mystic-green cursor-pointer"
         >
           <MdOutlineForward10 size={20} />
+        </div>
+        <div
+          onClick={isNavigationDisabled ? undefined : handleNextAudio}
+          className={`${
+            isNavigationDisabled
+              ? "text-gray-500 cursor-not-allowed"
+              : "text-white hover:text-mystic-green cursor-pointer"
+          }`}
+        >
+          <FaForward size={20} />
         </div>
       </div>
 
@@ -251,6 +396,58 @@ const MediaPlayerControl = () => {
           >
             {formatAudioLengthSmart(effectiveDuration)}
           </p>
+        </div>
+      </div>
+
+      {/* Listen Mode Management */}
+      <div className="flex items-center justify-end gap-3 p-2 ml-7">
+        {/* IsAutoPlay */}
+        {!isNavigationDisabled && (
+          <div className="flex items-center space-x-2">
+            {isAutoPlay ? (
+              <p className="text-mystic-green font-poppins font-bold text-xs">
+                Autoplay
+              </p>
+            ) : (
+              <p className="text-[#D9D9D9] font-poppins font-bold text-xs">
+                Autoplay
+              </p>
+            )}
+            <Switch
+              checked={isAutoPlay}
+              onCheckedChange={handleChangeAutoPlay}
+              id="is-auto-play-mode"
+              className="
+          data-[state=checked]:bg-[#aee339]   /* màu nền khi bật */
+          data-[state=unchecked]:bg-[#d9d9d9] /* tuỳ chọn: màu khi tắt */
+          "
+            />
+          </div>
+        )}
+
+        {/* Sequential/Random */}
+        <div className="flex items-center justify-end mx-3 gap-3">
+          {/* Herre */}
+          <div
+            onClick={() => handleChangeOrderMode("Random")}
+            className={`p-2 transition-all duration-500 hover:scale-110 cursor-pointer rounded-md text-[#D9D9D9] flex items-center justify-center ${
+              playOrderMode === "Random"
+                ? "text-white bg-white/20"
+                : "bg-transparent hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <Shuffle size={15} />
+          </div>
+          <div
+            onClick={() => handleChangeOrderMode("Sequential")}
+            className={`p-2 transition-all duration-500 hover:scale-110 cursor-pointer rounded-md text-[#D9D9D9] flex items-center justify-center ${
+              playOrderMode === "Sequential"
+                ? "text-white bg-white/20"
+                : "bg-transparent hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <Repeat size={15} />
+          </div>
         </div>
       </div>
 

@@ -8,7 +8,12 @@ import type { ShowUI } from "@/core/types/show";
 import Autoplay from "embla-carousel-autoplay";
 import { useEffect, useState } from "react";
 import { IoIosArrowBack, IoIosMore } from "react-icons/io";
-import { IoPaperPlane } from "react-icons/io5";
+import {
+  IoHeart,
+  IoHeartOutline,
+  IoHeartSharp,
+  IoPaperPlane,
+} from "react-icons/io5";
 
 import {
   Dialog,
@@ -27,6 +32,8 @@ import ShowCard from "./components/ShowCard";
 import {
   useGetChannelDetailsQuery,
   useGetActiveChannelSubscriptionQuery,
+  useFollowChannelMutation,
+  useUnFollowChannelMutation,
 } from "@/core/services/channel/channel.service";
 import {
   useGetCustomerRegistrationInfoFromChannelQuery,
@@ -49,6 +56,45 @@ import type {
 } from "@/core/types/subscription";
 
 const ACCENT = "#aee339";
+
+export function renderDescriptionHTML(description: string | null) {
+  if (!description) return "";
+
+  // --- Tách link ---
+  const linkRegex = /\$-\[link\]\$-([\s\S]*?)\$-\[link\]\$-/;
+  const linkMatch = description.match(linkRegex);
+  const link = linkMatch ? linkMatch[1].trim() : null;
+
+  // --- Tách script ---
+  const scriptRegex = /\$-\[script\]\$-([\s\S]*?)\$-\[script\]\$-/;
+  const scriptMatch = description.match(scriptRegex);
+  const scriptContent = scriptMatch ? scriptMatch[1].trim() : null;
+
+  // --- Loại bỏ các phần đặc biệt khỏi phần mô tả còn lại ---
+  let cleanDescription = description
+    .replace(linkRegex, "")
+    .replace(scriptRegex, "")
+    .trim();
+
+  // --- Tạo HTML ---
+  let html = `<p>${cleanDescription}</p>`;
+
+  if (link) {
+    html += `
+    <p><strong>Link</strong>: <a href="${link}" target="_blank" rel="noopener noreferrer">${link}</a></p>`;
+  }
+
+  if (scriptContent) {
+    html += `
+    <p><strong>Script</strong>:</p>
+    <div style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background-color: #f9f9f9;">
+      ${scriptContent}
+    </div>
+    `;
+  }
+
+  return html.trim();
+}
 
 const ChannelFileConfig: FileResolveConfig[] = [
   {
@@ -116,1020 +162,6 @@ type ShowMaps = {
   CategoryId: number;
   Name: string;
   Shows: ShowUI[];
-};
-
-const mockChannelDetailsData: ChannelDetailsUI = {
-  Channel: {
-    Id: "uuid",
-    Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ",
-    Description:
-      "Bạn từng nhìn lên bầu trời và tự hỏi: “Ngoài kia có ai đang nhìn lại mình không? “Câu chuyện về vũ trụ” đưa bạn bay qua những dải ngân hà, xuyên qua thời gian và không gian để lắng nghe những câu chuyện kỳ thú về nguồn gốc, năng lượng và tương lai của vũ trụ — bằng giọng kể sinh động, dễ hiểu và đầy cảm xúc.",
-    BackgroundImageUrl: "",
-    ImageUrl:
-      "https://i.pinimg.com/736x/ca/ea/ae/caeaaedb6b6a54ed402ed3ada4ade457.jpg",
-    TotalFavorite: 17456,
-    ListenCount: 2001224,
-    ShowCount: 8,
-    Podcaster: {
-      Id: 1,
-      FullName: "SAMURICE",
-      Email: "samugao@gmail.com",
-      ImageUrl:
-        "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-    },
-    PodcastCategory: {
-      Id: 1,
-      Name: "Science",
-    },
-    PodcastSubCategory: {
-      Id: 2,
-      Name: "Space",
-      PodcastCategoryId: 1,
-    },
-    Hashtags: [
-      {
-        Id: 1,
-        Name: "#Ben_Ngoai_Vu_Tru",
-      },
-      {
-        Id: 2,
-        Name: "#Thien_Ha",
-      },
-      {
-        Id: 3,
-        Name: "#Space_Knowledge",
-      },
-      {
-        Id: 4,
-        Name: "#Alien",
-      },
-    ],
-    CreatedAt: "2023-11-18T05:21:15.276Z",
-    UpdatedAt: "2025-11-02T05:21:15.276Z",
-    CurrentStatus: {
-      Id: 1,
-      Name: "Publish",
-    },
-    PodcastSubscriptionList: [
-      {
-        Id: 1,
-        Name: "Gói Phi Hành Gia 1",
-        Description:
-          "Đăng ký ngay để lên chuyến tàu khám phá các câu chuyện ngoài vũ trụ cùng SAMURICE nhé!",
-        PodcastChannelId: "uuid",
-        PodcastShowId: null,
-        IsActive: false,
-        CurrentVersion: 1,
-        DeletedAt: null,
-        CreatedAt: "2023-11-19T05:21:15.276Z",
-        UpdatedAt: "2023-12-19T05:21:15.276Z",
-        PodcastSubscriptionCycleTypePriceList: [
-          {
-            PodcastSubscriptionId: 1,
-            SubscriptionCycleType: {
-              Id: 1,
-              Name: "Daily",
-            },
-            Version: 1,
-            Price: 10000,
-            CreatedAt: "2023-11-19T05:21:15.276Z",
-            UpdatedAt: "2023-12-19T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            SubscriptionCycleType: {
-              Id: 1,
-              Name: "Monthly",
-            },
-            Version: 1,
-            Price: 250000,
-            CreatedAt: "2023-11-19T05:21:15.276Z",
-            UpdatedAt: "2023-12-19T05:21:15.276Z",
-          },
-        ],
-        PodcastSubscriptionBenefitMappingList: [
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 1,
-              Name: "Unlimited Listen Count",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 2,
-              Name: "Show for Subscriber-Only",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 3,
-              Name: "Episode for Subscriber-Only",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 4,
-              Name: "Early Access",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 5,
-              Name: "Archive Access",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 6,
-              Name: "Bonus Episodes",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 1,
-              Name: "Unlimited Listen Count",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 2,
-              Name: "Show for Subscriber-Only",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 3,
-              Name: "Episode for Subscriber-Only",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 4,
-              Name: "Early Access",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 5,
-              Name: "Archive Access",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 1,
-              Name: "Unlimited Listen Count",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 2,
-              Name: "Show for Subscriber-Only",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 3,
-              Name: "Episode for Subscriber-Only",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 4,
-              Name: "Early Access",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 5,
-              Name: "Archive Access",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 6,
-              Name: "Bonus Episodes",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-        ],
-      },
-      {
-        Id: 2,
-        Name: "Trở thành nhà thám hiểm",
-        Description:
-          "Đăng ký ngay để lên chuyến tàu khám phá các câu chuyện ngoài vũ trụ cùng SAMURICE nhé!",
-        PodcastChannelId: "uuid",
-        PodcastShowId: null,
-        IsActive: true,
-        CurrentVersion: 2,
-        DeletedAt: null,
-        CreatedAt: "2024-05-20T05:21:15.276Z",
-        UpdatedAt: "2024-12-20T05:21:15.276Z",
-        PodcastSubscriptionCycleTypePriceList: [
-          {
-            PodcastSubscriptionId: 1,
-            SubscriptionCycleType: {
-              Id: 1,
-              Name: "Daily",
-            },
-            Version: 1,
-            Price: 10000,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            SubscriptionCycleType: {
-              Id: 1,
-              Name: "Monthly",
-            },
-            Version: 1,
-            Price: 250000,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            SubscriptionCycleType: {
-              Id: 1,
-              Name: "Daily",
-            },
-            Version: 2,
-            Price: 12000,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            SubscriptionCycleType: {
-              Id: 2,
-              Name: "Monthly",
-            },
-            Version: 2,
-            Price: 260000,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            SubscriptionCycleType: {
-              Id: 3,
-              Name: "Yearly",
-            },
-            Version: 2,
-            Price: 1000000,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-        ],
-        PodcastSubscriptionBenefitMappingList: [
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 1,
-              Name: "Unlimited Listen Count",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 2,
-              Name: "Show for Subscriber-Only",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 3,
-              Name: "Episode for Subscriber-Only",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 4,
-              Name: "Early Access",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 5,
-              Name: "Archive Access",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 1,
-            PodcastSubscriptionBenefit: {
-              Id: 6,
-              Name: "Bonus Episodes",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 1,
-              Name: "Unlimited Listen Count",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 2,
-              Name: "Show for Subscriber-Only",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 3,
-              Name: "Episode for Subscriber-Only",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 4,
-              Name: "Early Access",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 5,
-              Name: "Archive Access",
-            },
-            Version: 1,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 1,
-              Name: "Unlimited Listen Count",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 2,
-              Name: "Show for Subscriber-Only",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 3,
-              Name: "Episode for Subscriber-Only",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 4,
-              Name: "Early Access",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 5,
-              Name: "Archive Access",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-          {
-            PodcastSubscriptionId: 2,
-            PodcastSubscriptionBenefit: {
-              Id: 6,
-              Name: "Bonus Episodes",
-            },
-            Version: 2,
-            CreatedAt: "2024-05-20T05:21:15.276Z",
-            UpdatedAt: "2024-12-20T05:21:15.276Z",
-          },
-        ],
-      },
-    ],
-    ShowList: [
-      {
-        Id: "uuid-show-1",
-        Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ SEASON 1 | SAMURICE",
-        Description: "",
-        Language: "Vietnamese",
-        ReleaseDate: "2023-11-18T05:21:15.276Z",
-        IsReleased: true,
-        Copyright: "© 036563",
-        UploadFrequency: "2 times/week",
-        RatingCount: 15000,
-        AverageRating: 4.9,
-        ImageUrl:
-          "https://i.pinimg.com/736x/32/07/45/320745d19b18177bacb279a6e7ff7c30.jpg",
-        TrailerAudioFileKey: "",
-        TotalFollow: 1500,
-        ListenCount: 2400,
-        EpisodeCount: 62,
-        Podcaster: {
-          Id: 1,
-          FullName: "SAMURICE",
-          Email: "samugao@gmail.com",
-          ImageUrl:
-            "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-        },
-        PodcastCategory: {
-          Id: 1,
-          Name: "Science",
-        },
-        PodcastSubCategory: {
-          Id: 1,
-          Name: "Space",
-          PodcastCategoryId: 1,
-        },
-        PodcastShowSubscriptionType: {
-          Id: 2,
-          Name: "Subscriber-Only",
-        },
-        PodcastChannel: {
-          Id: "",
-          Name: "",
-          ImageUrl: "",
-        },
-        Hashtags: [
-          {
-            Id: 0,
-            Name: "",
-          },
-        ],
-        TakenDownReason: "",
-        CreatedAt: "",
-        UpdatedAt: "",
-        CurrentStatus: {
-          Id: 3,
-          Name: "Published",
-        },
-      },
-      {
-        Id: "uuid-show-2",
-        Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ SEASON 2 | SAMURICE",
-        Description: "",
-        Language: "Vietnamese",
-        ReleaseDate: "2023-12-18T05:21:15.276Z",
-        IsReleased: true,
-        Copyright: "© 036563",
-        UploadFrequency: "2 times/week",
-        RatingCount: 15000,
-        AverageRating: 4.9,
-        ImageUrl:
-          "https://i.pinimg.com/1200x/d4/aa/b8/d4aab8e755be5dcd25da197f97d5d624.jpg",
-        TrailerAudioFileKey: "",
-        TotalFollow: 1500,
-        ListenCount: 2400,
-        EpisodeCount: 62,
-        Podcaster: {
-          Id: 1,
-          FullName: "SAMURICE",
-          Email: "samugao@gmail.com",
-          ImageUrl:
-            "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-        },
-        PodcastCategory: {
-          Id: 1,
-          Name: "Science",
-        },
-        PodcastSubCategory: {
-          Id: 1,
-          Name: "Space",
-          PodcastCategoryId: 1,
-        },
-        PodcastShowSubscriptionType: {
-          Id: 2,
-          Name: "Subscriber-Only",
-        },
-        PodcastChannel: {
-          Id: "",
-          Name: "",
-          ImageUrl: "",
-        },
-        Hashtags: [
-          {
-            Id: 0,
-            Name: "",
-          },
-        ],
-        TakenDownReason: "",
-        CreatedAt: "",
-        UpdatedAt: "",
-        CurrentStatus: {
-          Id: 3,
-          Name: "Published",
-        },
-      },
-      {
-        Id: "uuid-show-3",
-        Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ SEASON 3 | SAMURICE",
-        Description: "",
-        Language: "Vietnamese",
-        ReleaseDate: "2024-01-18T05:21:15.276Z",
-        IsReleased: true,
-        Copyright: "© 036563",
-        UploadFrequency: "2 times/week",
-        RatingCount: 15000,
-        AverageRating: 4.9,
-        ImageUrl:
-          "https://i.pinimg.com/736x/3f/1c/fe/3f1cfe72ff35d1519075fc75897ff3bc.jpg",
-        TrailerAudioFileKey: "",
-        TotalFollow: 1500,
-        ListenCount: 2400,
-        EpisodeCount: 62,
-        Podcaster: {
-          Id: 1,
-          FullName: "SAMURICE",
-          Email: "samugao@gmail.com",
-          ImageUrl:
-            "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-        },
-        PodcastCategory: {
-          Id: 1,
-          Name: "Science",
-        },
-        PodcastSubCategory: {
-          Id: 1,
-          Name: "Space",
-          PodcastCategoryId: 1,
-        },
-        PodcastShowSubscriptionType: {
-          Id: 2,
-          Name: "Subscriber-Only",
-        },
-        PodcastChannel: {
-          Id: "",
-          Name: "",
-          ImageUrl: "",
-        },
-        Hashtags: [
-          {
-            Id: 0,
-            Name: "",
-          },
-        ],
-        TakenDownReason: "",
-        CreatedAt: "",
-        UpdatedAt: "",
-        CurrentStatus: {
-          Id: 3,
-          Name: "Published",
-        },
-      },
-      {
-        Id: "uuid-show-2.5",
-        Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ SEASON 2.5 | SAMURICE",
-        Description: "",
-        Language: "Vietnamese",
-        ReleaseDate: "2023-11-18T05:21:15.276Z",
-        IsReleased: true,
-        Copyright: "© 036563",
-        UploadFrequency: "2 times/week",
-        RatingCount: 15000,
-        AverageRating: 4.9,
-        ImageUrl:
-          "https://i.pinimg.com/736x/32/07/45/320745d19b18177bacb279a6e7ff7c30.jpg",
-        TrailerAudioFileKey: "",
-        TotalFollow: 1500,
-        ListenCount: 2400,
-        EpisodeCount: 62,
-        Podcaster: {
-          Id: 1,
-          FullName: "SAMURICE",
-          Email: "samugao@gmail.com",
-          ImageUrl:
-            "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-        },
-        PodcastCategory: {
-          Id: 1,
-          Name: "Science",
-        },
-        PodcastSubCategory: {
-          Id: 1,
-          Name: "Space",
-          PodcastCategoryId: 1,
-        },
-        PodcastShowSubscriptionType: {
-          Id: 2,
-          Name: "Subscriber-Only",
-        },
-        PodcastChannel: {
-          Id: "",
-          Name: "",
-          ImageUrl: "",
-        },
-        Hashtags: [
-          {
-            Id: 0,
-            Name: "",
-          },
-        ],
-        TakenDownReason: "",
-        CreatedAt: "",
-        UpdatedAt: "",
-        CurrentStatus: {
-          Id: 2,
-          Name: "Ready To Release",
-        },
-      },
-      {
-        Id: "uuid-show-4",
-        Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ SEASON 4 | SAMURICE",
-        Description: "",
-        Language: "Vietnamese",
-        ReleaseDate: "2024-02-18T05:21:15.276Z",
-        IsReleased: true,
-        Copyright: "© 036563",
-        UploadFrequency: "2 times/week",
-        RatingCount: 15000,
-        AverageRating: 4.9,
-        ImageUrl:
-          "https://i.pinimg.com/736x/b4/8b/88/b48b88ae6c1d82ed53aad07d6d07fcef.jpg",
-        TrailerAudioFileKey: "",
-        TotalFollow: 1500,
-        ListenCount: 2400,
-        EpisodeCount: 62,
-        Podcaster: {
-          Id: 1,
-          FullName: "SAMURICE",
-          Email: "samugao@gmail.com",
-          ImageUrl:
-            "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-        },
-        PodcastCategory: {
-          Id: 1,
-          Name: "Science",
-        },
-        PodcastSubCategory: {
-          Id: 1,
-          Name: "Space",
-          PodcastCategoryId: 1,
-        },
-        PodcastShowSubscriptionType: {
-          Id: 2,
-          Name: "Subscriber-Only",
-        },
-        PodcastChannel: {
-          Id: "",
-          Name: "",
-          ImageUrl: "",
-        },
-        Hashtags: [
-          {
-            Id: 0,
-            Name: "",
-          },
-        ],
-        TakenDownReason: "",
-        CreatedAt: "",
-        UpdatedAt: "",
-        CurrentStatus: {
-          Id: 3,
-          Name: "Published",
-        },
-      },
-      {
-        Id: "uuid-show-5",
-        Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ SEASON 5 | SAMURICE",
-        Description: "",
-        Language: "Vietnamese",
-        ReleaseDate: "2024-04-18T05:21:15.276Z",
-        IsReleased: true,
-        Copyright: "© 036563",
-        UploadFrequency: "2 times/week",
-        RatingCount: 15000,
-        AverageRating: 4.9,
-        ImageUrl:
-          "https://i.pinimg.com/736x/aa/45/d2/aa45d2009244b72ced03a261f5202207.jpg",
-        TrailerAudioFileKey: "",
-        TotalFollow: 1500,
-        ListenCount: 2400,
-        EpisodeCount: 62,
-        Podcaster: {
-          Id: 1,
-          FullName: "SAMURICE",
-          Email: "samugao@gmail.com",
-          ImageUrl:
-            "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-        },
-        PodcastCategory: {
-          Id: 1,
-          Name: "Science",
-        },
-        PodcastSubCategory: {
-          Id: 1,
-          Name: "Space",
-          PodcastCategoryId: 1,
-        },
-        PodcastShowSubscriptionType: {
-          Id: 2,
-          Name: "Subscriber-Only",
-        },
-        PodcastChannel: {
-          Id: "",
-          Name: "",
-          ImageUrl: "",
-        },
-        Hashtags: [
-          {
-            Id: 0,
-            Name: "",
-          },
-        ],
-        TakenDownReason: "",
-        CreatedAt: "",
-        UpdatedAt: "",
-        CurrentStatus: {
-          Id: 3,
-          Name: "Published",
-        },
-      },
-      {
-        Id: "uuid-show-6",
-        Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ SEASON 6 | SAMURICE",
-        Description: "",
-        Language: "Vietnamese",
-        ReleaseDate: "2024-05-18T05:21:15.276Z",
-        IsReleased: true,
-        Copyright: "© 036563",
-        UploadFrequency: "2 times/week",
-        RatingCount: 15000,
-        AverageRating: 4.9,
-        ImageUrl:
-          "https://i.pinimg.com/736x/5b/a4/7c/5ba47c37f30be28690432cc79a9222e5.jpg",
-        TrailerAudioFileKey: "",
-        TotalFollow: 1500,
-        ListenCount: 2400,
-        EpisodeCount: 62,
-        Podcaster: {
-          Id: 1,
-          FullName: "SAMURICE",
-          Email: "samugao@gmail.com",
-          ImageUrl:
-            "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-        },
-        PodcastCategory: {
-          Id: 1,
-          Name: "Science",
-        },
-        PodcastSubCategory: {
-          Id: 1,
-          Name: "Space",
-          PodcastCategoryId: 1,
-        },
-        PodcastShowSubscriptionType: {
-          Id: 2,
-          Name: "Subscriber-Only",
-        },
-        PodcastChannel: {
-          Id: "",
-          Name: "",
-          ImageUrl: "",
-        },
-        Hashtags: [
-          {
-            Id: 0,
-            Name: "",
-          },
-        ],
-        TakenDownReason: "",
-        CreatedAt: "",
-        UpdatedAt: "",
-        CurrentStatus: {
-          Id: 3,
-          Name: "Published",
-        },
-      },
-      {
-        Id: "uuid-show-7",
-        Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ SEASON 7 | SAMURICE",
-        Description: "",
-        Language: "Vietnamese",
-        ReleaseDate: "2024-06-18T05:21:15.276Z",
-        IsReleased: true,
-        Copyright: "© 036563",
-        UploadFrequency: "2 times/week",
-        RatingCount: 15000,
-        AverageRating: 4.9,
-        ImageUrl:
-          "https://i.pinimg.com/736x/5e/98/2a/5e982acca78006fc8d8af9be5996fb69.jpg",
-        TrailerAudioFileKey: "",
-        TotalFollow: 1500,
-        ListenCount: 2400,
-        EpisodeCount: 62,
-        Podcaster: {
-          Id: 1,
-          FullName: "SAMURICE",
-          Email: "samugao@gmail.com",
-          ImageUrl:
-            "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-        },
-        PodcastCategory: {
-          Id: 1,
-          Name: "Science",
-        },
-        PodcastSubCategory: {
-          Id: 1,
-          Name: "Space",
-          PodcastCategoryId: 1,
-        },
-        PodcastShowSubscriptionType: {
-          Id: 2,
-          Name: "Subscriber-Only",
-        },
-        PodcastChannel: {
-          Id: "",
-          Name: "",
-          ImageUrl: "",
-        },
-        Hashtags: [
-          {
-            Id: 0,
-            Name: "",
-          },
-        ],
-        TakenDownReason: "",
-        CreatedAt: "",
-        UpdatedAt: "",
-        CurrentStatus: {
-          Id: 3,
-          Name: "Published",
-        },
-      },
-      {
-        Id: "uuid-show-8",
-        Name: "CÂU CHUYỆN NGOÀI VŨ TRỤ SEASON 8 | SAMURICE",
-        Description: "",
-        Language: "Vietnamese",
-        ReleaseDate: "2024-07-18T05:21:15.276Z",
-        IsReleased: true,
-        Copyright: "© 036563",
-        UploadFrequency: "2 times/week",
-        RatingCount: 15000,
-        AverageRating: 4.9,
-        ImageUrl:
-          "https://i.pinimg.com/1200x/79/f7/2e/79f72efb8ac49baeff8014c9070631c0.jpg",
-        TrailerAudioFileKey: "",
-        TotalFollow: 1500,
-        ListenCount: 2400,
-        EpisodeCount: 62,
-        Podcaster: {
-          Id: 1,
-          FullName: "SAMURICE",
-          Email: "samugao@gmail.com",
-          ImageUrl:
-            "https://scontent.fsgn2-6.fna.fbcdn.net/v/t39.30808-6/542618171_24917648541194226_1925287616611657518_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=pRGBFRolJJUQ7kNvwFC9g0a&_nc_oc=AdlxEOucGKq3u5KN9F7yFLwojTH8Io_-jHjETj3E6MfE1luqv7NgMmZ-JeWJZVsAjI4&_nc_zt=23&_nc_ht=scontent.fsgn2-6.fna&_nc_gid=vq2j8yROhnMpJeqWL-gIPw&oh=00_Afi45ydaDlGDqq8xNjGWxky18gT_mjGou47tXwC448h1LQ&oe=690CC7E3",
-        },
-        PodcastCategory: {
-          Id: 1,
-          Name: "Science",
-        },
-        PodcastSubCategory: {
-          Id: 1,
-          Name: "Space",
-          PodcastCategoryId: 1,
-        },
-        PodcastShowSubscriptionType: {
-          Id: 2,
-          Name: "Subscriber-Only",
-        },
-        PodcastChannel: {
-          Id: "",
-          Name: "",
-          ImageUrl: "",
-        },
-        Hashtags: [
-          {
-            Id: 0,
-            Name: "",
-          },
-        ],
-        TakenDownReason: "",
-        CreatedAt: "",
-        UpdatedAt: "",
-        CurrentStatus: {
-          Id: 3,
-          Name: "Published",
-        },
-      },
-    ],
-  },
 };
 
 const RenderSubscriptionSection = ({
@@ -1218,6 +250,8 @@ const ChannelDetailsPage = () => {
   const [currentSubscription, setCurrentSubscription] =
     useState<SubscriptionDetails | null>(null);
 
+  const [isFollowed, setIsFollowed] = useState(false);
+
   // HOOKS
   const dispatch = useDispatch();
   // Lấy Channel Details
@@ -1250,11 +284,34 @@ const ChannelDetailsPage = () => {
   const [unsubscribePodcastSubscription] =
     useUnsubscribePodcastSubscriptionMutation();
 
+  // Mutation follow/unfollow channel
+  const [followChannel, { isLoading: isFollowChannelLoading }] =
+    useFollowChannelMutation();
+  const [unfollowChannel, { isLoading: isUnfollowChannelLoading }] =
+    useUnFollowChannelMutation();
+
   const navigate = useNavigate();
 
   useEffect(() => {
     const resolveData = async () => {
+      console.log("[CHANNEL DEBUG] Step 1: useEffect triggered");
+      console.log("[CHANNEL DEBUG] - id:", id);
+      console.log(
+        "[CHANNEL DEBUG] - isChannelDetailLoading:",
+        isChannelDetailLoading
+      );
+      console.log("[CHANNEL DEBUG] - user:", user);
+      console.log(
+        "[CHANNEL DEBUG] - isActiveSubscriptionLoading:",
+        isActiveSubscriptionLoading
+      );
+      console.log(
+        "[CHANNEL DEBUG] - isCustomerRegistrationInfoLoading:",
+        isCustomerRegistrationInfoLoading
+      );
+
       if (!id) {
+        console.log("[CHANNEL DEBUG] No ID found, navigating back");
         navigate("/media-player/channels");
         return;
       }
@@ -1267,25 +324,33 @@ const ChannelDetailsPage = () => {
       ) {
         return;
       }
-
       setIsFileResolving(true);
 
       // Check if user is subscribed
       setIsUserSubscribed(false);
-      if (user && customerRegistrationInfo && activeSubscriptionRaw) {
+      if (
+        user &&
+        customerRegistrationInfo &&
+        activeSubscriptionRaw &&
+        activeSubscriptionRaw.PodcastSubscription
+      ) {
         if (
           customerRegistrationInfo.PodcastSubscriptionRegistration
             ?.PodcastSubscriptionId ===
           activeSubscriptionRaw.PodcastSubscription.Id
         ) {
           setIsUserSubscribed(true);
+          console.log("[CHANNEL DEBUG] User is subscribed");
         }
       }
 
       if (!channelRaw) {
+        console.log("[CHANNEL DEBUG] No channelRaw data, stopping");
         setIsFileResolving(false);
         return;
       }
+
+      setIsFollowed(channelRaw?.Channel.IsFavoritedByCurrentUser || false);
 
       // Resolve Channel Files
       const { resolvedData: resolvedChannel } = await resolveFiles(
@@ -1326,11 +391,6 @@ const ChannelDetailsPage = () => {
         activeSubscriptionRaw?.PodcastSubscription as SubscriptionDetails
       );
       setShows(groupedShows);
-
-      console.log("[Channel]", data);
-      console.log("[Current Subscription]", activeSubscriptionRaw);
-      console.log("[Grouped Published Shows]", groupedShows);
-
       setIsFileResolving(false);
     };
 
@@ -1455,6 +515,42 @@ const ChannelDetailsPage = () => {
     }
   };
 
+  const handleFollow = async (follow: boolean) => {
+    setIsFollowed(follow);
+    // Call API to follow/unfollow channel here
+    if (follow) {
+      try {
+        await followChannel({ PodcastChannelId: id! }).unwrap();
+        // Refetch channel details to update follow status
+        await refetchActiveSubscription();
+        await refetchCustomerRegistrationInfo();
+      } catch (error) {
+        dispatch(
+          setError({
+            message: "Failed to follow the channel. Please try again.",
+            autoClose: 10,
+          })
+        );
+        setIsFollowed(false);
+      }
+    } else {
+      try {
+        await unfollowChannel({ PodcastChannelId: id! }).unwrap();
+        // Refetch channel details to update follow status
+        await refetchActiveSubscription();
+        await refetchCustomerRegistrationInfo();
+      } catch (error) {
+        dispatch(
+          setError({
+            message: "Failed to unfollow the channel. Please try again.",
+            autoClose: 10,
+          })
+        );
+        setIsFollowed(true);
+      }
+    }
+  };
+
   if (
     isChannelDetailLoading ||
     isFileResolving ||
@@ -1515,8 +611,13 @@ const ChannelDetailsPage = () => {
           <p className="text-white text-2xl font-bold mt-5">
             {channel?.Channel.Name.toUpperCase()}
           </p>
-          <div className="text-[#ababab] text-sm font-md w-1/3 overflow-ellipsis line-clamp-3 text-justify">
-            <p>{channel?.Channel.Description}</p>
+          <div className="text-[#d9d9d9] flex items-center justify-center text-sm font-md w-1/3 overflow-ellipsis line-clamp-3 text-justify">
+            <div
+              className="text-justify"
+              dangerouslySetInnerHTML={{
+                __html: renderDescriptionHTML(channel?.Channel.Description),
+              }}
+            />
           </div>
 
           <div className="text-xs flex items-center justify-center gap-2 text-[#d9d9d9] font-semibold overflow-ellipsis line-clamp-1">
@@ -1529,15 +630,35 @@ const ChannelDetailsPage = () => {
             </p>{" "}
             • <p>{channel?.Channel.ShowCount.toLocaleString()} shows</p>
           </div>
+
+          <div className="absolute w-10 h-10 z-20 top-7 right-0 flex items-center justify-center p-2 rounded-full bg-white/20">
+            {isFollowed ? (
+              <IoHeartSharp
+                size={20}
+                className="text-mystic-green cursor-pointer hover:scale-110 transition"
+                onClick={() => handleFollow(false)}
+              />
+            ) : (
+              <IoHeartOutline
+                size={20}
+                className="text-white cursor-pointer hover:scale-110 transition"
+                onClick={() => handleFollow(true)}
+              />
+            )}
+          </div>
         </div>
 
         {!isUserSubscribed ? (
-          <RenderSubscriptionSection
-            subscription={currentSubscription as SubscriptionDetails}
-            onOpen={() => setIsSubscriptionDialogOpen(true)}
-            isUserSubscribed={isUserSubscribed}
-            onCancel={handleCancelSubscription}
-          />
+          currentSubscription ? (
+            <RenderSubscriptionSection
+              subscription={currentSubscription as SubscriptionDetails}
+              onOpen={() => setIsSubscriptionDialogOpen(true)}
+              isUserSubscribed={isUserSubscribed}
+              onCancel={handleCancelSubscription}
+            />
+          ) : (
+            <div></div>
+          )
         ) : (
           // <div>
           //   <p>Subscribe đê</p>

@@ -8,6 +8,8 @@ type EngineImpl = {
   attachListeners: (l: any) => void;
   detachListeners: () => void;
   getCurrentTrackId: () => string | null;
+  next?: () => void;
+  previous?: () => void;
 };
 
 let impl: EngineImpl | null = null;
@@ -31,7 +33,9 @@ export function getAudioEngine() {
     attachListeners: (l: any) => impl?.attachListeners(l),
     detachListeners: () => impl?.detachListeners(),
     getCurrentTrackId: () => impl?.getCurrentTrackId() ?? null,
-  } as EngineImpl;
+    next: () => impl?.next?.(),
+    previous: () => impl?.previous?.(),
+  };
 }
 
 export default getAudioEngine;

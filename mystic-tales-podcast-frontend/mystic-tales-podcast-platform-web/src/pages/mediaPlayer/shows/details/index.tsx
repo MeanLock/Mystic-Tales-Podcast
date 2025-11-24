@@ -655,20 +655,6 @@ const ShowDetailsPage = () => {
 
       {/* Episodes Section */}
       <div>
-        <div className="w-full flex items-center gap-10">
-          <LiquidButton onClick={() => handleMode("a")} variant="minimal">
-            <p>Set Sequential</p>
-          </LiquidButton>
-          <LiquidButton onClick={() => handleMode("b")} variant="minimal">
-            <p>Set Random</p>
-          </LiquidButton>
-          <LiquidButton onClick={() => handleMode("c")} variant="minimal">
-            <p>Set Is AutoPlay True</p>
-          </LiquidButton>
-          <LiquidButton onClick={() => handleMode("d")} variant="minimal">
-            <p>Set Is AutoPlay False</p>
-          </LiquidButton>
-        </div>
         <h2 className="text-2xl font-medium mb-8 mt-12 px-12 ">Episodes</h2>
         <div className="space-y-10 px-3">
           {show.EpisodeList.map((episode) => (

@@ -1,21 +1,10 @@
 import { appApi } from "@/core/api/appApi";
-import type { ApiErrorModel, AuthMode } from "@/core/types";
+import type { ApiErrorModel } from "@/core/types";
 import type {
-  ListenSession,
   ListenSessionBookingTracks,
   ListenSessionEpisodes,
   ListenSessionProcedure,
 } from "@/core/types/audio";
-
-interface ListenAudioResponse {
-  Token: string;
-  PlaylistFileKey: string;
-  PodcastEpisode: {
-    Id: string;
-    Name: string;
-    MainImageFileKey: string;
-  };
-}
 
 type CurrentPodcastSubscriptionRegistrationBenefit = {
   Id: number;
@@ -86,13 +75,87 @@ export const playerApi = appApi.injectEndpoints({
       }),
     }),
 
+    // Navigate listen to next/previous episode in procedure
+    navigateEpisodeInProcedure: build.mutation<
+      {
+        ListenSession: ListenSessionEpisodes | null;
+        ListenSessionProcedure: ListenSessionProcedure;
+      },
+      {
+        ListenSessionNavigateType: "Next" | "Previous";
+        ListenSessionId: string;
+        ListenSessionProcedureId: string;
+        CurrentPodcastSubscriptionRegistrationBenefitList:
+          | CurrentPodcastSubscriptionRegistrationBenefit[]
+          | null;
+      }
+    >({
+      query: ({
+        ListenSessionNavigateType,
+        ListenSessionId,
+        ListenSessionProcedureId,
+        CurrentPodcastSubscriptionRegistrationBenefitList,
+      }) => ({
+        url: `/api/podcast-service/api/episodes/listen-sessions/navigate?listen_session_navigate_type=${ListenSessionNavigateType}`,
+        method: "POST",
+        authMode: "required",
+        body: {
+          CurrentListenSession: {
+            ListenSessionId,
+            ListenSessionProcedureId,
+          },
+          CurrentPodcastSubscriptionRegistrationBenefitList,
+        },
+        headers: {
+          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
+        },
+      }),
+    }),
+
+    // Navigate listen to next/previous booking tracks in procedure
+    navigateBookingTrackInProcedure: build.mutation<
+      {
+        ListenSession: ListenSessionBookingTracks | null;
+        ListenSessionProcedure: ListenSessionProcedure;
+      },
+      {
+        ListenSessionNavigateType: "Next" | "Previous";
+        ListenSessionId: string;
+        ListenSessionProcedureId: string;
+        CurrentPodcastSubscriptionRegistrationBenefitList:
+          | CurrentPodcastSubscriptionRegistrationBenefit[]
+          | null;
+      }
+    >({
+      query: ({
+        ListenSessionNavigateType,
+        ListenSessionId,
+        ListenSessionProcedureId,
+      }) => ({
+        url: `/api/booking-management-service/api/bookings/listen-sessions/navigate?listen_session_navigate_type=${ListenSessionNavigateType}`,
+        method: "POST",
+        authMode: "required",
+        body: {
+          CurrentListenSession: {
+            ListenSessionId,
+            ListenSessionProcedureId,
+          },
+        },
+        headers: {
+          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
+        },
+      }),
+    }),
+
     // Update episode listen session last duration seconds
     updateEpisodeLastDuration: build.mutation<
       { Message: string },
       {
         PodcastEpisodeListenSessionId: string;
         LastListenDurationSeconds: number;
-        CurrentPodcastSubscriptionRegistrationBenefitList: CurrentPodcastSubscriptionRegistrationBenefit[];
+        CurrentPodcastSubscriptionRegistrationBenefitList:
+          | CurrentPodcastSubscriptionRegistrationBenefit[]
+          | null;
       }
     >({
       async queryFn(
@@ -208,6 +271,40 @@ export const playerApi = appApi.injectEndpoints({
         },
       }),
     }),
+
+    getEpisodeLatestSession: build.query<
+      {
+        ListenSession: ListenSessionEpisodes | null;
+        ListenSessionProcedure: ListenSessionProcedure | null;
+      },
+      void
+    >({
+      query: () => ({
+        url: `/api/podcast-service/api/episodes/listen-sessions/latest`,
+        method: "GET",
+        authMode: "required",
+        headers: {
+          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
+        },
+      }),
+    }),
+
+    getBookingLatestSession: build.query<
+      {
+        ListenSession: ListenSessionBookingTracks | null;
+        ListenSessionProcedure: ListenSessionProcedure | null;
+      },
+      void
+    >({
+      query: () => ({
+        url: `/api/booking-management-service/api/bookings/listen-sessions/latest`,
+        method: "GET",
+        authMode: "required",
+        headers: {
+          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
+        },
+      }),
+    }),
   }),
 });
 
@@ -218,4 +315,8 @@ export const {
   useUpdateEpisodeLastDurationMutation,
   useUpdateBookingTrackLastDurationMutation,
   useUpdatePlayModeMutation,
+  useNavigateBookingTrackInProcedureMutation,
+  useNavigateEpisodeInProcedureMutation,
+  useGetBookingLatestSessionQuery,
+  useGetEpisodeLatestSessionQuery,
 } = playerApi;

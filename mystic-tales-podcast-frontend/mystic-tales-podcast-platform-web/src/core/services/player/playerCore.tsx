@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
 import {
@@ -7,15 +7,22 @@ import {
   getAudioEngine,
 } from "./playerBridge";
 import {
+  playAudio,
   pauseAudio,
-  nextAudio,
   setListenSession,
   setListenSessionProcedure,
   setCurrentAudio,
+  setIsNextSessionNull,
+  setUIIsAutoPlay,
+  setUIPlayOrderMode,
 } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import {
   useListenToEpisodeMutation,
   useListenToBookingTrackMutation,
+  useUpdateEpisodeLastDurationMutation,
+  useUpdateBookingTrackLastDurationMutation,
+  useNavigateEpisodeInProcedureMutation,
+  useNavigateBookingTrackInProcedureMutation,
 } from "./player.service";
 import { useGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import { BASE_URL } from "@/core/api/appApi";
@@ -35,10 +42,20 @@ export default function PlayerCore() {
   const hlsRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const listenersRef = useRef<any>({});
+  const playingIntervalRef = useRef<number | null>(null);
+  const isAutoPlayRef = useRef<boolean>(false);
+  const getLatestPlayerState = useRef<() => RootState["player"]>(() => ({
+    playMode,
+    listenSession,
+    listenSessionProcedure,
+    currentAudio: null,
+  }));
 
   // RTK Query hooks
   const [listenToEpisode] = useListenToEpisodeMutation();
   const [listenToBookingTrack] = useListenToBookingTrackMutation();
+  const [navigateEpisode] = useNavigateEpisodeInProcedureMutation();
+  const [navigateBookingTrack] = useNavigateBookingTrackInProcedureMutation();
 
   // Get subscription benefits only when playing SpecifyShowEpisodes
   const shouldFetchBenefits =
@@ -49,6 +66,215 @@ export default function PlayerCore() {
       { PodcastEpisodeId: playMode.audioId! },
       { skip: !shouldFetchBenefits }
     );
+
+  // Mutation hooks for update last duration
+  const [updateLastDurationEpisode] = useUpdateEpisodeLastDurationMutation();
+  const [updateLastDurationBookingTrack] =
+    useUpdateBookingTrackLastDurationMutation();
+
+  // Cache nhẹ: nhớ lại playlistUrl/token cho audio Id đang phát (trong 1 session)
+  const lastLoadedIdRef = useRef<string | null>(null);
+  const isLoadingRef = useRef<boolean>(false);
+  const pendingSeekRef = useRef<number | null>(null);
+
+  // Sync player state to ref để tránh closure issue
+  useEffect(() => {
+    getLatestPlayerState.current = () => ({
+      playMode,
+      listenSession,
+      listenSessionProcedure,
+      currentAudio: null,
+    });
+    isAutoPlayRef.current = playMode.isAutoPlay;
+  }, [playMode, listenSession, listenSessionProcedure]);
+
+  // Hàm update last duration - dùng chung cho cả interval và seek
+  const updateLastDuration = useCallback(async () => {
+    if (!listenSession || !listenSessionProcedure || !audioRef.current) {
+      return;
+    }
+
+    const currentTime = Math.floor(audioRef.current.currentTime || 0);
+    const sourceType = listenSessionProcedure.SourceDetail.Type;
+
+    try {
+      if (sourceType === "SpecifyShowEpisodes") {
+        const benefitsList = benefitsData
+          ? benefitsData.CurrentPodcastSubscriptionRegistrationBenefitList
+          : [];
+
+        await updateLastDurationEpisode({
+          LastListenDurationSeconds: currentTime,
+          PodcastEpisodeListenSessionId: (
+            listenSession as ListenSessionEpisodes
+          ).PodcastEpisodeListenSession.Id,
+          CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
+        }).unwrap();
+      } else if (sourceType === "SavedEpisodes") {
+        await updateLastDurationEpisode({
+          LastListenDurationSeconds: currentTime,
+          PodcastEpisodeListenSessionId: (
+            listenSession as ListenSessionEpisodes
+          ).PodcastEpisodeListenSession.Id,
+          CurrentPodcastSubscriptionRegistrationBenefitList: null,
+        }).unwrap();
+      } else if (sourceType === "BookingProducingTracks") {
+        await updateLastDurationBookingTrack({
+          LastListenDurationSeconds: currentTime,
+          BookingPodcastTrackListenSessionId: (
+            listenSession as ListenSessionBookingTracks
+          ).BookingPodcastTrackListenSession.Id,
+        }).unwrap();
+      }
+    } catch (error) {
+      console.error("Error updating last duration:", error);
+    }
+  }, [
+    listenSession,
+    listenSessionProcedure,
+    benefitsData,
+    updateLastDurationEpisode,
+    updateLastDurationBookingTrack,
+  ]);
+
+  // Hàm navigate để handle next/previous
+  const handleNavigate = useCallback(
+    async (navigateType: "Next" | "Previous") => {
+      // Lấy state mới nhất từ ref để tránh closure
+      const currentState = getLatestPlayerState.current();
+      const currentListenSession = currentState.listenSession;
+      const currentListenSessionProcedure = currentState.listenSessionProcedure;
+
+      if (!currentListenSession || !currentListenSessionProcedure) {
+        console.error("No listen session or procedure found");
+        return;
+      }
+
+      try {
+        const sourceType = currentListenSessionProcedure.SourceDetail.Type;
+
+        if (
+          sourceType === "SpecifyShowEpisodes" ||
+          sourceType === "SavedEpisodes"
+        ) {
+          // Navigate cho Episodes
+          const episodeSession = currentListenSession as ListenSessionEpisodes;
+
+          // Lấy benefits list nếu là SpecifyShowEpisodes
+          const benefitsList =
+            sourceType === "SpecifyShowEpisodes" && benefitsData
+              ? benefitsData.CurrentPodcastSubscriptionRegistrationBenefitList
+              : null;
+
+          const response = await navigateEpisode({
+            ListenSessionNavigateType: navigateType,
+            ListenSessionId: episodeSession.PodcastEpisodeListenSession.Id,
+            ListenSessionProcedureId: currentListenSessionProcedure.Id,
+            CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
+          }).unwrap();
+
+          dispatch(setListenSessionProcedure(response.ListenSessionProcedure));
+          // Cập nhật Redux state với session mới
+          if (response.ListenSession) {
+            dispatch(setListenSession(response.ListenSession));
+
+            // Extract và set current audio
+            console.log("Response ListenSession:", response);
+            const newEpisodeSession =
+              response.ListenSession as ListenSessionEpisodes;
+            console.log("New Episode Session Episode Id:", newEpisodeSession);
+            if (!newEpisodeSession.PodcastEpisode.Id) {
+              alert("Đéo có");
+            }
+            const currentAudioData = {
+              Id: newEpisodeSession.PodcastEpisode.Id,
+              Name: newEpisodeSession.PodcastEpisode.Name,
+              ImageUrl: newEpisodeSession.PodcastEpisode.MainImageFileKey || "",
+              PodcasterName: newEpisodeSession.Podcaster.FullName || "Unknown",
+              AudioLength:
+                newEpisodeSession.PodcastEpisodeListenSession
+                  .LastListenDurationSeconds || 0,
+            };
+            dispatch(setCurrentAudio(currentAudioData));
+
+            // Reset currentTrackId để force reload audio mới
+            if (engineRef.current) {
+              engineRef.current.currentTrackId = null;
+            }
+
+            // Trigger play với audio mới
+            dispatch(
+              playAudio({
+                sourceType: sourceType,
+                audioId: newEpisodeSession.PodcastEpisode.Id,
+              })
+            );
+          } else {
+            // Không còn bài nào để navigate
+            console.log("No more tracks to navigate");
+            dispatch(setIsNextSessionNull(true));
+            dispatch(pauseAudio());
+          }
+        } else if (sourceType === "BookingProducingTracks") {
+          // Navigate cho Booking Tracks
+          const bookingSession =
+            currentListenSession as ListenSessionBookingTracks;
+
+          const response = await navigateBookingTrack({
+            ListenSessionNavigateType: navigateType,
+            ListenSessionId: bookingSession.BookingPodcastTrackListenSession.Id,
+            ListenSessionProcedureId: currentListenSessionProcedure.Id,
+            CurrentPodcastSubscriptionRegistrationBenefitList: null,
+          }).unwrap();
+
+          // Cập nhật Redux state với session mới
+          if (response.ListenSession) {
+            dispatch(setListenSession(response.ListenSession));
+            dispatch(
+              setListenSessionProcedure(response.ListenSessionProcedure)
+            );
+
+            // Extract và set current audio
+            const newBookingSession =
+              response.ListenSession as ListenSessionBookingTracks;
+            const currentAudioData = {
+              Id: newBookingSession.BookingPodcastTrack.Id,
+              Name: newBookingSession.BookingPodcastTrack
+                .BookingRequirementName,
+              ImageUrl: "",
+              PodcasterName: "Booking Track",
+              AudioLength:
+                newBookingSession.BookingPodcastTrackListenSession
+                  .LastListenDurationSeconds || 0,
+            };
+            dispatch(setCurrentAudio(currentAudioData));
+
+            // Reset currentTrackId để force reload audio mới
+            if (engineRef.current) {
+              engineRef.current.currentTrackId = null;
+            }
+
+            // Trigger play với audio mới
+            dispatch(
+              playAudio({
+                sourceType: "BookingProducingTracks",
+                audioId: newBookingSession.BookingPodcastTrack.Id,
+              })
+            );
+          } else {
+            // Không còn track nào để navigate
+            console.log("No more tracks to navigate");
+            dispatch(setIsNextSessionNull(true));
+            dispatch(pauseAudio());
+          }
+        }
+      } catch (error) {
+        console.error("Error navigating:", error);
+        dispatch(pauseAudio());
+      }
+    },
+    [benefitsData, navigateEpisode, navigateBookingTrack, dispatch]
+  );
 
   // HLS Task update
   // Attach listeners (time/duration/end)
@@ -62,7 +288,11 @@ export default function PlayerCore() {
       },
       pause: () => audioRef.current?.pause(),
       seek: (s: number) => {
-        if (audioRef.current) audioRef.current.currentTime = Math.max(0, s);
+        if (audioRef.current) {
+          audioRef.current.currentTime = Math.max(0, s);
+          // Cập nhật last duration ngay khi user seek
+          updateLastDuration();
+        }
       },
       setVolume: (v: number) => {
         if (audioRef.current)
@@ -77,16 +307,14 @@ export default function PlayerCore() {
         listenersRef.current = {};
       },
       getCurrentTrackId: () => engineRef.current?.currentTrackId ?? null,
+      next: () => handleNavigate("Next"),
+      previous: () => handleNavigate("Previous"),
     });
 
     return () => {
       unregisterPlayerImpl();
     };
-  }, [dispatch]);
-
-  // Cache nhẹ: nhớ lại playlistUrl/token cho audio Id đang phát (trong 1 session)
-  const lastLoadedIdRef = useRef<string | null>(null);
-  const isLoadingRef = useRef<boolean>(false);
+  }, [dispatch, handleNavigate, updateLastDuration]);
 
   // Khi có yêu cầu play audio mới
   useEffect(() => {
@@ -102,73 +330,137 @@ export default function PlayerCore() {
         return;
       }
 
-      // Nếu engine đã load đúng track này rồi -> resume play
-      if (engine.getCurrentTrackId() === playMode.audioId && listenSession) {
+      // Nếu đang loading, tránh đúp
+      if (isLoadingRef.current) return;
+
+      // Check xem đã load track này chưa
+      if (
+        lastLoadedIdRef.current === playMode.audioId &&
+        engineRef.current?.currentTrackId === playMode.audioId
+      ) {
+        // Đã load rồi, chỉ cần resume play
         try {
-          await engine.play();
+          await audioRef.current?.play();
         } catch {}
         return;
       }
 
-      // Nếu đang loading, tránh đúp
-      if (isLoadingRef.current) return;
-
       isLoadingRef.current = true;
       try {
-        // 1) Gọi RTK Query để lấy listenSession
-        let listenResult;
+        // 1) Check xem listenSession hiện tại có khớp với audioId không
+        let listenResult = listenSession;
         const sourceType = playMode.sourceType;
         const audioId = playMode.audioId;
 
-        if (
-          sourceType === "SpecifyShowEpisodes" ||
-          sourceType === "SavedEpisodes"
-        ) {
-          // Lấy benefits list để truyền vào API
-          const benefitsList =
-            sourceType === "SpecifyShowEpisodes" && benefitsData
-              ? benefitsData.CurrentPodcastSubscriptionRegistrationBenefitList
-              : [];
-
-          console.log("Benefits List to send:", benefitsList);
-          console.log("Benefits Data:", benefitsData);
-
-          // Gọi listenToEpisode
-          const response = await listenToEpisode({
-            PodcastEpisodeId: audioId,
-            SourceType: sourceType,
-            CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
-          }).unwrap();
-
-          listenResult = response.ListenSession as ListenSessionEpisodes;
-          dispatch(setListenSession(listenResult));
-          dispatch(setListenSessionProcedure(response.ListenSessionProcedure));
-        } else if (sourceType === "BookingProducingTracks") {
-          // Gọi listenToBookingTrack
-          // Cần lấy BookingId từ listenSessionProcedure nếu có
-          if (!listenSessionProcedure) {
-            console.error("No listenSessionProcedure found for booking");
-            dispatch(pauseAudio());
-            return;
+        // Kiểm tra xem listenSession có match với audioId không
+        let needNewSession = true;
+        if (listenSession) {
+          if (
+            (sourceType === "SpecifyShowEpisodes" ||
+              sourceType === "SavedEpisodes") &&
+            "PodcastEpisode" in listenSession
+          ) {
+            const episodeSession = listenSession as ListenSessionEpisodes;
+            if (episodeSession.PodcastEpisode.Id === audioId) {
+              needNewSession = false;
+            }
+          } else if (
+            sourceType === "BookingProducingTracks" &&
+            "BookingPodcastTrack" in listenSession
+          ) {
+            const bookingSession = listenSession as ListenSessionBookingTracks;
+            if (bookingSession.BookingPodcastTrack.Id === audioId) {
+              needNewSession = false;
+            }
           }
+        }
 
-          const bookingId =
-            listenSessionProcedure.SourceDetail.Booking
-              ?.BookingProducingRequestId;
-          if (!bookingId) {
-            console.error("No BookingId found");
-            dispatch(pauseAudio());
-            return;
+        // Nếu cần session mới, gọi API
+        if (needNewSession) {
+          if (
+            sourceType === "SpecifyShowEpisodes" ||
+            sourceType === "SavedEpisodes"
+          ) {
+            // Lấy benefits list để truyền vào API
+            const benefitsList =
+              sourceType === "SpecifyShowEpisodes" && benefitsData
+                ? benefitsData.CurrentPodcastSubscriptionRegistrationBenefitList
+                : [];
+
+            console.log("Benefits List to send:", benefitsList);
+            console.log("Benefits Data:", benefitsData);
+
+            // Gọi listenToEpisode
+            const response = await listenToEpisode({
+              PodcastEpisodeId: audioId,
+              SourceType: sourceType,
+              CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
+            }).unwrap();
+
+            listenResult = response.ListenSession as ListenSessionEpisodes;
+
+            dispatch(
+              setUIIsAutoPlay(
+                response.ListenSessionProcedure
+                  ? response.ListenSessionProcedure.IsAutoPlay
+                  : false
+              )
+            );
+            dispatch(
+              setUIPlayOrderMode(
+                response.ListenSessionProcedure
+                  ? response.ListenSessionProcedure.PlayOrderMode
+                  : "Sequential"
+              )
+            );
+
+            dispatch(setListenSession(listenResult));
+            dispatch(
+              setListenSessionProcedure(response.ListenSessionProcedure)
+            );
+          } else if (sourceType === "BookingProducingTracks") {
+            // Gọi listenToBookingTrack
+            // Cần lấy BookingId từ listenSessionProcedure nếu có
+            if (!listenSessionProcedure) {
+              console.error("No listenSessionProcedure found for booking");
+              dispatch(pauseAudio());
+              return;
+            }
+
+            const bookingId =
+              listenSessionProcedure.SourceDetail.Booking
+                ?.BookingProducingRequestId;
+            if (!bookingId) {
+              console.error("No BookingId found");
+              dispatch(pauseAudio());
+              return;
+            }
+
+            const response = await listenToBookingTrack({
+              BookingId: bookingId,
+              BookingPodcastTrackId: audioId,
+            }).unwrap();
+
+            listenResult = response.ListenSession as ListenSessionBookingTracks;
+            dispatch(setListenSession(listenResult));
+            dispatch(
+              setListenSessionProcedure(response.ListenSessionProcedure)
+            );
+            dispatch(
+              setUIIsAutoPlay(
+                response.ListenSessionProcedure
+                  ? response.ListenSessionProcedure.IsAutoPlay
+                  : false
+              )
+            );
+            dispatch(
+              setUIPlayOrderMode(
+                response.ListenSessionProcedure
+                  ? response.ListenSessionProcedure.PlayOrderMode
+                  : "Sequential"
+              )
+            );
           }
-
-          const response = await listenToBookingTrack({
-            BookingId: bookingId,
-            BookingPodcastTrackId: audioId,
-          }).unwrap();
-
-          listenResult = response.ListenSession as ListenSessionBookingTracks;
-          dispatch(setListenSession(listenResult));
-          dispatch(setListenSessionProcedure(response.ListenSessionProcedure));
         }
 
         if (!listenResult) {
@@ -226,12 +518,93 @@ export default function PlayerCore() {
           // attach listeners to propagate to registered consumers
           a.addEventListener("loadedmetadata", () => {
             listenersRef.current.duration?.(a.duration || 0);
+
+            // Seek đến vị trí LastListenDurationSeconds nếu có
+            if (pendingSeekRef.current !== null && pendingSeekRef.current > 0) {
+              const seekTo = pendingSeekRef.current;
+              pendingSeekRef.current = null; // Clear pending seek
+
+              console.log("[LOADEDMETADATA] Seeking to:", seekTo);
+              // Seek tới vị trí
+              a.currentTime = seekTo;
+
+              // Pause lại và đợi user nhấn play
+              console.log(
+                "[LOADEDMETADATA] Audio ready at position, waiting for user to play..."
+              );
+              dispatch(pauseAudio());
+            }
           });
           a.addEventListener("timeupdate", () => {
             listenersRef.current.timeupdate?.(a.currentTime || 0);
           });
           a.addEventListener("ended", () => {
-            dispatch(nextAudio());
+            // Kiểm tra xem có nên tự động next không
+            // Check cả 2 sources:
+            // 1. playMode.isAutoPlay (Redux UI state - để hoạt động ngay khi user toggle)
+            // 2. listenSessionProcedure.IsAutoPlay (từ server - giá trị đã lưu)
+            console.log("[ENDED EVENT] Audio ended, checking autoplay...");
+            console.log(
+              "[ENDED EVENT] playMode.isAutoPlay:",
+              playMode.isAutoPlay
+            );
+            console.log(
+              "[ENDED EVENT] isAutoPlayRef.current:",
+              isAutoPlayRef.current
+            );
+            console.log(
+              "[ENDED EVENT] listenSessionProcedure.IsAutoPlay:",
+              listenSessionProcedure?.IsAutoPlay
+            );
+
+            // Ưu tiên playMode.isAutoPlay (UI state) để hoạt động ngay
+            const shouldAutoPlay = playMode.isAutoPlay || isAutoPlayRef.current;
+
+            if (
+              shouldAutoPlay &&
+              listenSession &&
+              !playMode.isNextSessionNull &&
+              listenSessionProcedure
+            ) {
+              const playOrder =
+                playMode.nextMode === "Sequential"
+                  ? listenSessionProcedure.ListenObjectsSequentialOrder
+                  : listenSessionProcedure.ListenObjectsRandomOrder;
+
+              const listenableCount =
+                playOrder?.filter((item) => item.IsListenable).length || 0;
+
+              if (listenableCount > 1) {
+                console.log("[ENDED EVENT] Auto-playing next track...");
+                handleNavigate("Next");
+              } else {
+                console.log(
+                  "[ENDED EVENT] Not enough listenable tracks (count:",
+                  listenableCount,
+                  ")"
+                );
+                dispatch(pauseAudio());
+              }
+            } else {
+              // Console log ra để xem cái gì làm sai điều kiện
+              console.log("Is Autoplay:", isAutoPlayRef.current);
+              console.log(
+                "[ENDED EVENT] listenSession:",
+                listenSession ? "exists" : "null"
+              );
+              console.log(
+                "[ENDED EVENT] isNextSessionNull:",
+                playMode.isNextSessionNull
+              );
+              console.log(
+                "[ENDED EVENT] listenSessionProcedure:",
+                listenSessionProcedure ? "exists" : "null"
+              );
+              console.log(
+                "[ENDED EVENT] Auto-play disabled or no session available"
+              );
+              dispatch(pauseAudio());
+            }
             listenersRef.current.ended?.();
           });
         }
@@ -425,6 +798,20 @@ export default function PlayerCore() {
         // set current track id for bridge
         engineRef.current = { currentTrackId: audioId };
 
+        // Lưu lastDuration vào ref để seek sau khi loadedmetadata
+        const lastDuration =
+          sourceType === "SpecifyShowEpisodes" || sourceType === "SavedEpisodes"
+            ? (listenResult as ListenSessionEpisodes)
+                .PodcastEpisodeListenSession.LastListenDurationSeconds || 0
+            : sourceType === "BookingProducingTracks"
+            ? (listenResult as ListenSessionBookingTracks)
+                .BookingPodcastTrackListenSession.LastListenDurationSeconds || 0
+            : 0;
+
+        if (lastDuration > 0) {
+          pendingSeekRef.current = lastDuration;
+        }
+
         // 4) play
         try {
           await audioRef.current?.play();
@@ -463,6 +850,43 @@ export default function PlayerCore() {
     const engine = getAudioEngine();
     engine.setVolume((playMode.volume ?? 100) / 100);
   }, [playMode.volume]);
+
+  // Cập nhật last-duration tự động mỗi 5 giây khi đang play
+  useEffect(() => {
+    if (
+      playMode.playStatus === "play" &&
+      listenSession &&
+      listenSessionProcedure
+    ) {
+      // Clear interval cũ nếu có
+      if (playingIntervalRef.current) {
+        clearInterval(playingIntervalRef.current);
+      }
+
+      // Tạo interval mới - gọi updateLastDuration mỗi 5 giây
+      playingIntervalRef.current = window.setInterval(() => {
+        updateLastDuration();
+      }, 5000);
+    } else {
+      // Clear interval khi pause/stop
+      if (playingIntervalRef.current) {
+        clearInterval(playingIntervalRef.current);
+        playingIntervalRef.current = null;
+      }
+    }
+
+    // Cleanup khi component unmount
+    return () => {
+      if (playingIntervalRef.current) {
+        clearInterval(playingIntervalRef.current);
+      }
+    };
+  }, [
+    playMode.playStatus,
+    listenSession,
+    listenSessionProcedure,
+    updateLastDuration,
+  ]);
 
   return null;
 }

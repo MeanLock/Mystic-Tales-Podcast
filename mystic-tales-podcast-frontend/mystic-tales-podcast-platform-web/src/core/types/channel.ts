@@ -192,6 +192,7 @@ export type ChannelDetailsFromApi = {
         Name: string;
       };
     }[];
+    IsFavoritedByCurrentUser: boolean;
   };
 };
 
@@ -317,5 +318,6 @@ export type ChannelDetailsUI = {
         Name: string;
       };
     }[];
+    IsFavoritedByCurrentUser: boolean;
   };
 };

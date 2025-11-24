@@ -17,6 +17,7 @@ const initialState: MediaPlayerSlice = {
   playMode: {
     playStatus: "stop",
     isAutoPlay: false,
+    isNextSessionNull: false,
     nextMode: "Sequential",
     sourceType: null,
     audioId: null,
@@ -78,6 +79,18 @@ const mediaPlayerSlice = createSlice({
     nextAudio: () => {
       // This reducer is just a placeholder to trigger next audio logic in middleware
     },
+    setIsNextSessionNull: (state, action: PayloadAction<boolean>) => {
+      state.playMode.isNextSessionNull = action.payload;
+    },
+    setUIIsAutoPlay: (state, action: PayloadAction<boolean>) => {
+      state.playMode.isAutoPlay = action.payload;
+    },
+    setUIPlayOrderMode: (
+      state,
+      action: PayloadAction<"Sequential" | "Random">
+    ) => {
+      state.playMode.nextMode = action.payload;
+    },
   },
 });
 
@@ -91,6 +104,9 @@ export const {
   setVolume,
   setNextMode,
   nextAudio,
+  setIsNextSessionNull,
+  setUIIsAutoPlay,
+  setUIPlayOrderMode
 } = mediaPlayerSlice.actions;
 
 export default mediaPlayerSlice.reducer;
