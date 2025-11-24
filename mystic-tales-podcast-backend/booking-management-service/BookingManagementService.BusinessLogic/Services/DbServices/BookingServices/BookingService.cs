@@ -1926,10 +1926,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new HttpRequestException("AccountId: " + parameter.AccountId + " is not a verified podcaster");
                     }
 
-                    //if (parameter.PodcastToneIds == null || parameter.PodcastToneIds.Count == 0)
-                    //{
-                    //    throw new HttpRequestException("PodcastToneIds cannot be null or empty");
-                    //}
+                    if ((parameter.PodcastToneIds == null || parameter.PodcastToneIds.Count == 0) && parameter.IsBuddy)
+                    {
+                        throw new HttpRequestException("PodcastToneIds cannot be null or empty");
+                    }
 
                     var existingBookingPodcastTones = await _podcastBuddyBookingToneGenericRepository.FindAll(
                         predicate: bpt => bpt.PodcasterId == parameter.AccountId

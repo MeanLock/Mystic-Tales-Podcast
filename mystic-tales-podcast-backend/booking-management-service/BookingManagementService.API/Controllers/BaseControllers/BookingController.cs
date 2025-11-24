@@ -574,8 +574,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
             return File(fileData, "video/MP2T");
         }
-        [HttpPost("podcast-booking-tone")]
-        public async Task<IActionResult> CreatePodcastBookingTone([FromBody] PodcasterBookingToneApplyRequestDTO request)
+        [HttpPost("podcast-booking-tone/me/{isBuddy}")]
+        public async Task<IActionResult> CreatePodcastBookingTone(
+            [FromRoute] bool isBuddy,
+            [FromBody] PodcasterBookingToneApplyRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
@@ -587,6 +589,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "AccountId", accountId },
+                { "IsBuddy", isBuddy },
                 { "PodcastToneIds", JArray.FromObject(request.PodcasterBookingToneApplyInfo) }
             };
 

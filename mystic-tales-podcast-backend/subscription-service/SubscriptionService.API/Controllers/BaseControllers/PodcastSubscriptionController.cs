@@ -167,7 +167,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             if (isPodcaster)
             {
                 var isValid = await _podcastSubscriptionService.ValidatePodcastSubscriptionAccess(accountId, PodcastSubscriptionId);
-                if (isValid == null)
+                if (!isValid)
                 {
                     return Forbid($"The Logged In Account is unauthorized to access Podcast Subscription Id: {PodcastSubscriptionId}");
                 }
