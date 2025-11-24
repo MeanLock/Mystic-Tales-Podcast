@@ -539,7 +539,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            if (!account.HasVerifiedPodcasterProfile)
+            if (!account.HasVerifiedPodcasterProfile || !account.PodcasterProfileIsBuddy)
             {
                 throw new HttpRequestException("Only verified podcasters can create podcast booking tones.");
             }
@@ -792,6 +792,70 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var listenSession = await _bookingService.NavigateBookingPodcastTrackListenSessionAsync(account.Id, deviceInfo, request.CurrentListenSession.ListenSessionId, request.CurrentListenSession.ListenSessionProcedureId, listen_session_navigate_type);
             return Ok(listenSession);
+        }
+        [HttpPost("{BookingId}/deposit")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> PayDepositToBooking([FromRoute] int BookingId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            //var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
+            //if (!isValid)
+            //{
+            //    throw new UnauthorizedAccessException("You are not authorized to pay deposit for this booking.");
+            //}
+            var requestData = new JObject
+            {
+                { "AccountId", accountId },
+                { "BookingId", BookingId }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "booking-deposit-payment-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate booking deposit payment process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
+        [HttpPost("{BookingId}/pay-the-rest")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> PayTheRestToBooking([FromRoute] int BookingId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            //var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
+            //if (!isValid)
+            //{
+            //    throw new UnauthorizedAccessException("You are not authorized to pay deposit for this booking.");
+            //}
+            var requestData = new JObject
+            {
+                { "AccountId", accountId },
+                { "BookingId", BookingId }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "booking-pay-the-rest-payment-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate booking pay the rest payment process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
         }
     }
 }

@@ -6219,6 +6219,70 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  booking-deposit-payment-flow:
+    topic: "booking-management-domain"
+    handler-service: "BookingService"
+    description: "Handles booking deposit payments."
+    save-files: ""
+    steps:
+      - name: "process-booking-deposit-payment"
+        topic: "booking-management-domain"
+        handler-service: "BookingService"
+        description: "Processes booking deposit payments."
+        parameters:
+          - AccountId
+          - BookingId
+        next-request-data:
+          - AccountId
+          - BookingId
+        response-data:
+          - AccountId
+          - BookingId
+        onSuccess:
+          emit: "process-booking-deposit-payment.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "process-booking-deposit-payment.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
+  booking-pay-the-rest-payment-flow:
+    topic: "booking-management-domain"
+    handler-service: "BookingService"
+    description: "Handles booking pay-the-rest payments."
+    save-files: ""
+    steps: 
+      - name: "process-booking-pay-the-rest-payment"
+        topic: "booking-management-domain"
+        handler-service: "BookingService"
+        description: "Processes booking pay-the-rest payments."
+        parameters:
+          - AccountId
+          - BookingId
+        next-request-data:
+          - AccountId
+          - BookingId
+        response-data:
+          - AccountId
+          - BookingId
+        onSuccess:
+          emit: "process-booking-pay-the-rest-payment.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "process-booking-pay-the-rest-payment.failed"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   podcast-subscription-creation-flow:
     topic: "subscription-management-domain"
     handle-service: "SagaOrchestratorService"
@@ -6955,7 +7019,7 @@ flows:
           nextSteps: []
           nextFlows: []
 
-  booking-deposit-payment-flow:
+  booking-transaction-deposit-payment-flow:
     topic: "payment-processing-domain"
     handle-service: "SagaOrchestratorService"
     description: "Thanh toán đặt cọc"

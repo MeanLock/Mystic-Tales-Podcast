@@ -12,6 +12,8 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateProducingRequest;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingDealing;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingDepositPayment;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingPayTheRestPayment;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
@@ -317,6 +319,34 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "complete-all-user-booking-producing-listen-sessions.failed"
+            );
+        }
+        [MessageHandler("process-booking-deposit-payment",SAGA_TOPIC)]
+        public async Task HandlerProcessBookingDepositPaymentAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<ProcessBookingDepositPaymentParameterDTO>();
+                    await _bookingService.ProcessBookingDepositPaymentAsync(parameter, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "process-booking-deposit-payment.failed"
+            );
+        }
+        [MessageHandler("process-booking-pay-the-rest-payment",SAGA_TOPIC)]
+        public async Task HandleProcessBookingPayTheRestPaymentAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<ProcessBookingPayTheRestPaymentParameterDTO>();
+                    await _bookingService.ProcessBookingPayTheRestPaymentAsync(parameter, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "process-booking-pay-the-rest-payment.failed"
             );
         }
     }

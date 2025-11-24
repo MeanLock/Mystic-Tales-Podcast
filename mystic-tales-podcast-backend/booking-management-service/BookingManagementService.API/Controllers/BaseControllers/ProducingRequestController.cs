@@ -251,7 +251,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         public async Task<IActionResult> BookingProducingRequestAcceptance(
             [FromRoute] Guid BookingProducingRequestId,
             [FromRoute] bool isAccepted,
-            [FromRoute] BookingProducingRequestAcceptanceRequestDTO request)
+            [FromBody] BookingProducingRequestAcceptanceRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             if (account == null)
@@ -269,7 +269,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "AccountId", accountId },
                 { "BookingProducingRequestId", BookingProducingRequestId },
                 { "IsAccepted", isAccepted },
-                { "RejectReason", request.RejectReason ?? string.Empty }
+                { "RejectReason", request.RejectReason}
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,

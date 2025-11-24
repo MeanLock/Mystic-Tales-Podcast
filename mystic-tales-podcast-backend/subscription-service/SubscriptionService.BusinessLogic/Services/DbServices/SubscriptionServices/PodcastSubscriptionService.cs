@@ -95,7 +95,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     Description = ps.Description,
                     PodcastShowId = ps.PodcastShowId,
                     PodcastChannelId = ps.PodcastChannelId,
-                    IsActive = ps.DeletedAt == null,
+                    IsActive = ps.IsActive,
                     CurrentVersion = ps.CurrentVersion,
                     DeletedAt = ps.DeletedAt,
                     CreatedAt = ps.CreatedAt,
@@ -120,7 +120,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     Description = ps.Description,
                     PodcastShowId = ps.PodcastShowId,
                     PodcastChannelId = ps.PodcastChannelId,
-                    IsActive = ps.DeletedAt == null,
+                    IsActive = ps.IsActive,
                     CurrentVersion = ps.CurrentVersion,
                     DeletedAt = ps.DeletedAt,
                     CreatedAt = ps.CreatedAt,
@@ -157,8 +157,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to create PodcastSubscription for PodcastShow with Id: {parameter.PodcastShowId}");
                         }
-                        var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
-                            .FirstOrDefaultAsync(ps => ps.PodcastShowId == parameter.PodcastShowId && ps.DeletedAt == null);
+                        //var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                        //    .FirstOrDefaultAsync(ps => ps.PodcastShowId == parameter.PodcastShowId && ps.DeletedAt == null);
                         //if (existPodcastSubscription != null)
                         //{
                         //    throw new Exception($"A Podcast Subscription already exists for PodcastShow Id: {parameter.PodcastShowId}");
@@ -176,8 +176,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             throw new($"The Logged In Account is unauthorized to create PodcastSubscription for PodcastChanne; with Id: {parameter.PodcastChannelId}");
                         }
-                        var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
-                            .FirstOrDefaultAsync(ps => ps.PodcastChannelId == parameter.PodcastChannelId && ps.DeletedAt == null);
+                        //var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
+                        //    .FirstOrDefaultAsync(ps => ps.PodcastChannelId == parameter.PodcastChannelId && ps.DeletedAt == null);
                         //if (existPodcastSubscription != null)
                         //{
                         //    throw new Exception($"An Active Podcast Subscription already exists for PodcastChannel Id: {parameter.PodcastChannelId}");
@@ -379,7 +379,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 Description = podcastSubscription.Description,
                 PodcastShowId = podcastSubscription.PodcastShowId,
                 PodcastChannelId = podcastSubscription.PodcastChannelId,
-                IsActive = podcastSubscription.DeletedAt == null,
+                IsActive = podcastSubscription.IsActive,
                 CurrentVersion = podcastSubscription.CurrentVersion,
                 DeletedAt = podcastSubscription.DeletedAt,
                 CreatedAt = podcastSubscription.CreatedAt,

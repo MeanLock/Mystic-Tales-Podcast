@@ -17,6 +17,8 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.CreateBookingNegotiation;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingDealing;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingDepositPayment;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingPayTheRestPayment;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateBookingListenSessionDuration;
@@ -824,7 +826,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 var newRequestData = new JObject
                                 {
                                     { "BookingId", booking.Id },
-                                    { "Profit", booking.Price * (decimal)profitRate },
+                                    { "Profit", booking.Price * (decimal) profitRate  },
                                     { "Amount", Amount },
                                     { "AccountId", parameter.AccountId },
                                     { "PodcasterId", booking.PodcastBuddyId },
@@ -840,7 +842,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             }
                             else
                             {
-                                var Amount = booking.Price * (decimal)depositRate;
+                                var Amount = booking.Price * (decimal)depositRate ;
                                 var refundMessageName = "booking-refund-flow";
                                 var newRequestData = new JObject
                                 {
@@ -1688,7 +1690,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 var systemConfig = await GetActiveSystemConfigProfile();
                                 var profitRate = systemConfig.BookingConfig.ProfitRate;
                                 var depositRate = systemConfig.BookingConfig.DepositRate;
-                                var Amount = b.Price * (decimal)depositRate;
+                                var Amount = b.Price * (decimal)depositRate ;
                                 var newRequestData = new JObject
                                 {
                                     { "BookingId", b.Id },
@@ -1782,10 +1784,37 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             await _bookingGenericRepository.UpdateAsync(b.Id, b);
                             if (currentStatus >= (int)BookingStatusEnum.Producing)
                             {
+                                // Complete all listen session of lastest producing request
+                                var producingRequest = await _bookingProducingRequestGenericRepository.FindAll(
+                                    includeFunc: function => function
+                                    .Include(pr => pr.BookingPodcastTracks))
+                                    .Where(bpr => bpr.BookingId == b.Id)
+                                    .OrderByDescending(bpr => bpr.CreatedAt)
+                                    .FirstOrDefaultAsync();
+
+                                var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                                    .Where(ls => !ls.IsCompleted && producingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == b.AccountId)
+                                    .ToListAsync();
+                                foreach (var session in listenSession)
+                                {
+                                    session.IsCompleted = true;
+                                    await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                                }
+
+                                // Complete all customer listen session procedure of the producing request in cache
+                                var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(b.AccountId);
+                                foreach (var procedure in customerListenSessionCacheKey.Values)
+                                {
+                                    if (!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                                    {
+                                        await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(b.AccountId, procedure.Id, true);
+                                    }
+                                }
+
                                 var systemConfig = await GetActiveSystemConfigProfile();
                                 var profitRate = systemConfig.BookingConfig.ProfitRate;
                                 var depositRate = systemConfig.BookingConfig.DepositRate;
-                                var Amount = b.Price * (decimal)depositRate;
+                                var Amount = b.Price * (decimal)depositRate ;
                                 var newRequestData = new JObject
                                 {
                                     { "BookingId", b.Id },
@@ -1959,7 +1988,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         if (booking.Price.HasValue)
                         {
-                            var Amount = booking.Price * (decimal)depositRate - booking.Price * (decimal)profitRate;
+                            var Amount = booking.Price * (decimal)depositRate  - booking.Price * (decimal)profitRate ;
                             var compensationMessageName = "booking-deposit-compenstation-flow";
                             var newRequestData = new JObject
                             {
@@ -2036,7 +2065,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         if (booking.Price.HasValue)
                         {
-                            var Amount = booking.Price * (decimal)depositRate;
+                            var Amount = booking.Price * (decimal)depositRate ;
                             var newRequestData = new JObject
                             {
                                 { "BookingId", booking.Id },
@@ -2302,7 +2331,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             {
                 try
                 {
-                    // xử lí logic validate + từ lượt nghe + trả BookingTrackListenResponseDTO + gì gì đó 
                     var booking = await _bookingGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(b => b.BookingStatusTrackings)
@@ -2345,6 +2373,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new HttpRequestException("You are not allowed to listen to this track");
                     }
 
+                    // Check điều kiện nghe và trừ preview
                     if (accountId != booking.PodcastBuddyId)
                     {
                         if (currentBookingStatusId != (int)BookingStatusEnum.TrackPreviewing && currentBookingStatusId != (int)BookingStatusEnum.Completed)
@@ -2407,9 +2436,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     // Create new procedure
-                    List<ListenSessionProcedureListenObjectQueueItem> listenObjectSequential = new List<ListenSessionProcedureListenObjectQueueItem>();
-                    List<ListenSessionProcedureListenObjectQueueItem> listenObjectRandom = new List<ListenSessionProcedureListenObjectQueueItem>();
-
                     List<ListenSessionProcedureListenObjectQueueItem> listenObjectSequential = new List<ListenSessionProcedureListenObjectQueueItem>();
                     List<ListenSessionProcedureListenObjectQueueItem> listenObjectRandom = new List<ListenSessionProcedureListenObjectQueueItem>();
 
@@ -2643,6 +2669,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 )
                 .OrderByDescending(bpts => bpts.CreatedAt)
                 .FirstOrDefaultAsync();
+
                 if (bookingPodcastTrackListenSession == null)
                 {
                     return new BookingListenSessionResponseDTO
@@ -2660,6 +2687,22 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             .Include(b => b.BookingStatusTrackings)
                             .Include(b => b.BookingProducingRequests)
                     ).FirstOrDefaultAsync();
+
+                    var currentStatus = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault()
+                        .BookingStatusId;
+
+                    // Check điều kiện nghe
+                    if (currentStatus != (int)BookingStatusEnum.TrackPreviewing && currentStatus != (int)BookingStatusEnum.Completed)
+                    {
+                        return new BookingListenSessionResponseDTO
+                        {
+                            ListenSession = null,
+                            ListenSessionProcedure = null
+                        };
+                    }
+
                     var playlistFileKey = FilePathHelper.CombinePaths(
                                         _filePathConfig.BOOKING_FILE_PATH,
                                         booking.Id.ToString(),
@@ -2694,6 +2737,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 : null,
                         PlaylistFileKey = playlistFileKey
                     };
+                    // Refresh procedure queues
                     var listenSessionProcedure = await _customerListenSessionProcedureCachingService.GetActiveProcedureByCustomerIdAsync(accountId);
                     listenSessionProcedure.ListenObjectsSequentialOrder = await RefreshSequentialOrderQueue(listenSessionProcedure.ListenObjectsSequentialOrder);
                     listenSessionProcedure.ListenObjectsRandomOrder = await RefreshRandomOrderQueue(listenSessionProcedure.ListenObjectsRandomOrder);
@@ -2733,12 +2777,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("BookingPodcastTrackListenSession not found for Id: " + parameter.BookingPodcastTrackListenSessionId);
                     }
 
-                    var check = await CheckListenerCanListenToTrackAsync(parameter.ListenerId, bookingPodcastTrackListenSession.BookingPodcastTrack.Id);
+                    var check = await CheckListenerCanListenToTrackIgnorePreviewingAsync(parameter.ListenerId, bookingPodcastTrackListenSession.BookingPodcastTrack.Id);
                     if(check == false)
                     {
                         bookingPodcastTrackListenSession.IsCompleted = true;
                         await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bookingPodcastTrackListenSession.Id, bookingPodcastTrackListenSession);
-                        throw new Exception("Listener is not allowed to listen to this track for BookingPodcastTrackListenSessionId: " + parameter.BookingPodcastTrackListenSessionId);
+                        throw new Exception("This audio track is no longer eligible for listening");
                     }
 
                     var lastestListenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll(
@@ -2825,10 +2869,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(accountId);
                             await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(accountId, procedureId, false);
-                            nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable && o.Order > currentListenObj.Order).FirstOrDefault();
-                            if(nextListenObj == null)
+                            if(navigateType == ListenSessionNavigateTypeEnum.Next)
                             {
-                                nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable && o.Order > currentListenObj.Order).FirstOrDefault();
+                                if (nextListenObj == null)
+                                {
+                                    nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                }
+                            }
+                            else if(navigateType == ListenSessionNavigateTypeEnum.Previous)
+                            {
+                                nextListenObj = procedure.ListenObjectsSequentialOrder.OrderByDescending(o => o.Order).Where(o => o.IsListenable && o.Order < currentListenObj.Order).FirstOrDefault();
+                                if (nextListenObj == null)
+                                {
+                                    nextListenObj = procedure.ListenObjectsSequentialOrder.OrderByDescending(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                }
                             }
                         }
                         else if(procedure.ListenObjectsSequentialOrder.Count(o => o.IsListenable) == 1)
@@ -2837,10 +2892,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             {
                                 await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(accountId);
                                 await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(accountId, procedureId, false);
-                                nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable && o.Order > currentListenObj.Order).FirstOrDefault();
-                                if (nextListenObj == null)
+                                if (navigateType == ListenSessionNavigateTypeEnum.Next)
                                 {
-                                    nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                    nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable && o.Order > currentListenObj.Order).FirstOrDefault();
+                                    if (nextListenObj == null)
+                                    {
+                                        nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                    }
+                                }
+                                else if (navigateType == ListenSessionNavigateTypeEnum.Previous)
+                                {
+                                    nextListenObj = procedure.ListenObjectsSequentialOrder.OrderByDescending(o => o.Order).Where(o => o.IsListenable && o.Order < currentListenObj.Order).FirstOrDefault();
+                                    if (nextListenObj == null)
+                                    {
+                                        nextListenObj = procedure.ListenObjectsSequentialOrder.OrderByDescending(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                    }
                                 }
                             }
                         }
@@ -2857,10 +2923,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(accountId);
                             await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(accountId, procedureId, false);
-                            nextListenObj = procedure.ListenObjectsRandomOrder.OrderBy(o => o.Order).Where(o => o.IsListenable && o.Order > currentListenObj.Order).FirstOrDefault();
-                            if (nextListenObj == null)
+                            if (navigateType == ListenSessionNavigateTypeEnum.Next)
                             {
-                                nextListenObj = procedure.ListenObjectsRandomOrder.OrderBy(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                nextListenObj = procedure.ListenObjectsRandomOrder.OrderBy(o => o.Order).Where(o => o.IsListenable && o.Order > currentListenObj.Order).FirstOrDefault();
+                                if (nextListenObj == null)
+                                {
+                                    nextListenObj = procedure.ListenObjectsRandomOrder.OrderBy(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                }
+                            }
+                            else if (navigateType == ListenSessionNavigateTypeEnum.Previous)
+                            {
+                                nextListenObj = procedure.ListenObjectsRandomOrder.OrderByDescending(o => o.Order).Where(o => o.IsListenable && o.Order < currentListenObj.Order).FirstOrDefault();
+                                if (nextListenObj == null)
+                                {
+                                    nextListenObj = procedure.ListenObjectsRandomOrder.OrderByDescending(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                }
                             }
                         }
                         else if (procedure.ListenObjectsRandomOrder.Count(o => o.IsListenable) == 1)
@@ -2869,10 +2946,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             {
                                 await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(accountId);
                                 await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(accountId, procedureId, false);
-                                nextListenObj = procedure.ListenObjectsRandomOrder.OrderBy(o => o.Order).Where(o => o.IsListenable && o.Order > currentListenObj.Order).FirstOrDefault();
-                                if (nextListenObj == null)
+                                if (navigateType == ListenSessionNavigateTypeEnum.Next)
                                 {
-                                    nextListenObj = procedure.ListenObjectsRandomOrder.OrderBy(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                    nextListenObj = procedure.ListenObjectsRandomOrder.OrderBy(o => o.Order).Where(o => o.IsListenable && o.Order > currentListenObj.Order).FirstOrDefault();
+                                    if (nextListenObj == null)
+                                    {
+                                        nextListenObj = procedure.ListenObjectsRandomOrder.OrderBy(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                    }
+                                }
+                                else if (navigateType == ListenSessionNavigateTypeEnum.Previous)
+                                {
+                                    nextListenObj = procedure.ListenObjectsRandomOrder.OrderByDescending(o => o.Order).Where(o => o.IsListenable && o.Order < currentListenObj.Order).FirstOrDefault();
+                                    if (nextListenObj == null)
+                                    {
+                                        nextListenObj = procedure.ListenObjectsRandomOrder.OrderByDescending(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
+                                    }
                                 }
                             }
                         }
@@ -2894,6 +2982,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
                     else
                     {
+                        // Complete all existing listen session
+                        var existingListenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                            .Where(bptls => bptls.AccountId == accountId && !bptls.IsCompleted)
+                            .ToListAsync();
+                        foreach (var bptls in existingListenSession)
+                        {
+                            bptls.IsCompleted = true;
+                            await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bptls.Id, bptls);
+                        }
+
                         var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindByIdAsync(nextListenObj.ListenObjectId);
                         var newListenSession = new BookingPodcastTrackListenSession
                         {
@@ -2950,15 +3048,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             ListenSession = bookingListenSession,
                             ListenSessionProcedure = procedure
                         };
-
-                        var existingListenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
-                            .Where(bptls => bptls.AccountId == accountId)
-                            .ToListAsync();
-                        foreach(var bptls in existingListenSession)
-                        {
-                            bptls.IsCompleted = true;
-                            await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bptls.Id, bptls);
-                        }
 
                         var requestData = new JObject
                         {
@@ -3114,6 +3203,218 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .OrderByDescending(bpr => bpr.CreatedAt)
                         .FirstOrDefault();
                 if(currentBookingProducingRequest != null)
+                    if (producingRequest.Id != currentBookingProducingRequest.Id)
+                        return false;
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while checking if listener can listen to track");
+                return false;
+            }
+        }
+        public async Task ProcessBookingDepositPaymentAsync(ProcessBookingDepositPaymentParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
+                        id: parameter.BookingId,
+                        includeFunc: b => b
+                            .Include(b => b.BookingStatusTrackings)
+                    );
+                    if(booking == null)
+                    {
+                        throw new Exception("Booking not found for Id: " + parameter.BookingId);
+                    }
+                    var currentBookingStatus = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault().BookingStatusId;
+                    if(currentBookingStatus != (int)BookingStatusEnum.QuotationDealing)
+                    {
+                        throw new Exception("Booking is not in QuotationDealing status, cannot process deposit payment");
+                    }
+
+                    if(booking.AccountId != parameter.AccountId)
+                    {
+                        throw new Exception("Booking does not belong to the account, cannot process deposit payment");
+                    }
+
+                    var config = await GetActiveSystemConfigProfile();
+                    var depositRate = config.BookingConfig.DepositRate;
+                    var depositAmount = booking.Price * (decimal)depositRate ;
+
+                    var paymentRequestData = new JObject
+                    {
+                        { "BookingId", parameter.BookingId },
+                        { "AccountId", parameter.AccountId },
+                        { "Amount", depositAmount },
+                        { "TransactionTypeId", (int)TransactionTypeEnum.BookingDeposit }
+                    };
+                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: paymentRequestData,
+                        sagaInstanceId: null,
+                        messageName: "booking-transaction-deposit-payment-flow");
+                    var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Successfully Processing booking deposit payment for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Processing booking deposit payment for AccountId: {AccountId}", parameter.AccountId);
+                    var newResponseData = new JObject
+                    {
+                        { "ErrorMessage", "Processing booking deposit payment failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogError("Processing booking deposit payment failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
+        public async Task ProcessBookingPayTheRestPaymentAsync(ProcessBookingPayTheRestPaymentParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
+                        id: parameter.BookingId,
+                        includeFunc: b => b
+                            .Include(b => b.BookingStatusTrackings)
+                    );
+                    if (booking == null)
+                    {
+                        throw new Exception("Booking not found for Id: " + parameter.BookingId);
+                    }
+                    var currentBookingStatus = booking.BookingStatusTrackings
+                        .OrderByDescending(bst => bst.CreatedAt)
+                        .FirstOrDefault().BookingStatusId;
+                    if (currentBookingStatus != (int)BookingStatusEnum.TrackPreviewing)
+                    {
+                        throw new Exception("Booking is not in TrackPreviewing status, cannot process deposit payment");
+                    }
+
+                    if (booking.AccountId != parameter.AccountId)
+                    {
+                        throw new Exception("Booking does not belong to the account, cannot process deposit payment");
+                    }
+
+                    var config = await GetActiveSystemConfigProfile();
+                    var depositRate = config.BookingConfig.DepositRate;
+                    var depositAmount = booking.Price * (decimal)depositRate;
+                    var payTheRestAmount = booking.Price - depositAmount;
+
+                    var paymentRequestData = new JObject
+                    {
+                        { "BookingId", parameter.BookingId },
+                        { "AccountId", parameter.AccountId },
+                        { "PodcasterId", booking.PodcastBuddyId },
+                        { "Amount", payTheRestAmount },
+                        { "TransactionTypeId", (int)TransactionTypeEnum.BookingPayTheRest }
+                    };
+                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                        requestData: paymentRequestData,
+                        sagaInstanceId: null,
+                        messageName: "booking-final-payment-flow");
+                    var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Successfully Processing booking pay the rest payment for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Processing booking pay the rest payment for AccountId: {AccountId}", parameter.AccountId);
+                    var newResponseData = new JObject
+                    {
+                        { "ErrorMessage", "Processing booking pay the rest payment failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogError("Processing booking pay the rest payment failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
+        private async Task<bool> CheckListenerCanListenToTrackIgnorePreviewingAsync(int accountId, Guid podcastTrackId)
+        {
+            try
+            {
+                var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindAll(
+                        predicate: bpt => bpt.Id == podcastTrackId,
+                        includeFunc: bpt => bpt.Include(b => b.BookingRequirement)
+                        .Include(b => b.BookingProducingRequest)
+                        .ThenInclude(bpr => bpr.Booking)
+                        .ThenInclude(bpr => bpr.BookingStatusTrackings)
+                    ).FirstOrDefaultAsync();
+
+                var producingRequest = bookingPodcastTrack.BookingProducingRequest;
+                var booking = bookingPodcastTrack.BookingProducingRequest.Booking;
+                var bookingStatus = booking.BookingStatusTrackings
+                    .OrderByDescending(bst => bst.CreatedAt)
+                    .FirstOrDefault().BookingStatusId;
+
+                if (bookingStatus != (int)BookingStatusEnum.TrackPreviewing && bookingStatus != (int)BookingStatusEnum.Completed)
+                {
+                    return false;
+                }
+                var currentBookingProducingRequest = booking.BookingProducingRequests
+                        .Where(bpr => bpr.FinishedAt != null)
+                        .OrderByDescending(bpr => bpr.CreatedAt)
+                        .FirstOrDefault();
+                if (currentBookingProducingRequest != null)
                     if (producingRequest.Id != currentBookingProducingRequest.Id)
                         return false;
 
