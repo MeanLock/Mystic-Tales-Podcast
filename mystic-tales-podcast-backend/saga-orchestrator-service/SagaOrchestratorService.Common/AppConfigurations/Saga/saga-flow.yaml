@@ -358,18 +358,21 @@ flows:
           - Description
           - PricePerBookingWord
           - BuddyAudioFileKey
+          - IsBuddy
         next-request-data:
           - AccountId
           - Name
           - Description
           - PricePerBookingWord
           - BuddyAudioFileKey
+          - IsBuddy
         response-data:
           - AccountId
           - Name
           - Description
           - PricePerBookingWord
           - BuddyAudioFileKey
+          - IsBuddy
         onSuccess:
           emit: "update-podcaster-profile.success"
           topic: "user-management-domain"
