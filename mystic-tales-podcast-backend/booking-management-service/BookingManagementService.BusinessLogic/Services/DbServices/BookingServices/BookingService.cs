@@ -2390,7 +2390,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .BookingStatusId;
 
                     var currentBookingProducingRequest = booking.BookingProducingRequests
-                        .OrderByDescending(bpr => bpr.CreatedAt && bpr.FinishedAt != null)
+                        .Where(bpr => bpr.FinishedAt != null)
+                        .OrderByDescending(bpr => bpr.CreatedAt)
                         .FirstOrDefault();
 
                     var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindAll(
