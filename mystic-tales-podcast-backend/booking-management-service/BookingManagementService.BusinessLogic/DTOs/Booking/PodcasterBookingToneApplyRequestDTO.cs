@@ -8,10 +8,6 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking
 {
     public class PodcasterBookingToneApplyRequestDTO
     {
-        public PodcasterBookingToneApplyDTO PodcasterBookingToneApplyInfo { get; set; }
-    }
-    public class PodcasterBookingToneApplyDTO
-    {
-        public List<Guid> PodcastBookingToneIds { get; set; }
+        public List<Guid> PodcasterBookingToneApplyInfo { get; set; }
     }
 }

@@ -20,6 +20,6 @@ namespace BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManage
         public string Description { get; set; }
         public int Order { get; set; }
         public Guid PodcastBookingToneId { get; set; }
-        public string RequirementDocumentFileKey { get; set; }
+        public string? RequirementDocumentFileKey { get; set; }
     }
 }

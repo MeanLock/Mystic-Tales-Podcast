@@ -133,7 +133,8 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var requirementSubmission = JArray.FromObject(bookingCreateInfo.BookingRequirementInfo);
             var requirementDocumentSubmission = new List<JObject>();
 
-            // Process all audio files and prepare track submission items
+            // First, process uploaded files and map them to requirements
+            var fileKeysByOrder = new Dictionary<int, string>();
             foreach (var requirementFile in request.BookingRequirementFiles)
             {
                 string newRequirementFileName = $"{Guid.NewGuid()}_{requirementFile.FileName}";
@@ -146,14 +147,37 @@ namespace BookingManagementService.API.Controllers.BaseControllers
 
                 var requirementDocumentFileKey = FilePathHelper.CombinePaths(_filePathConfig.BOOKING_TEMP_FILE_PATH, newRequirementFileName);
 
-                var matchingRequirement = requirementSubmission
-                    .FirstOrDefault(re => re["Order"] != null && re["Order"].ToString().Equals(System.IO.Path.GetFileNameWithoutExtension(requirementFile.FileName), StringComparison.OrdinalIgnoreCase));
-
-                if (matchingRequirement != null)
+                // Extract order from filename (assuming the filename starts with the order number)
+                var fileNameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(requirementFile.FileName);
+                if (int.TryParse(fileNameWithoutExtension, out int order))
                 {
-                    matchingRequirement["RequirementDocumentFileKey"] = requirementDocumentFileKey;
-                    requirementDocumentSubmission.Add((JObject)matchingRequirement);
+                    fileKeysByOrder[order] = requirementDocumentFileKey;
                 }
+            }
+
+            // Process all requirements (with or without files)
+            foreach (var requirement in requirementSubmission)
+            {
+                var requirementCopy = (JObject)requirement.DeepClone();
+
+                if (requirement["Order"] != null && int.TryParse(requirement["Order"].ToString(), out int order))
+                {
+                    // Check if this requirement has an associated file
+                    if (fileKeysByOrder.TryGetValue(order, out string fileKey))
+                    {
+                        requirementCopy["RequirementDocumentFileKey"] = fileKey;
+                    }
+                    else
+                    {
+                        requirementCopy["RequirementDocumentFileKey"] = null;
+                    }
+                }
+                else
+                {
+                    requirementCopy["RequirementDocumentFileKey"] = null;
+                }
+
+                requirementDocumentSubmission.Add(requirementCopy);
             }
 
             var requestData = new JObject
@@ -186,6 +210,22 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         public async Task<IActionResult> GetPodcastBookingTones()
         {
             var result = await _bookingService.GetAllPodcastBookingTonesAsync();
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No podcast booking tones found.");
+            //}
+            return Ok(new
+            {
+                PodcastBookingToneList = result
+            });
+        }
+        [HttpGet("podcast-booking-tone/me")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetPodcasterPodcastBookingTones()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var result = await _bookingService.GetPodcasterPodcastBookingTonesAsync(accountId);
             //if (result == null || !result.Any())
             //{
             //    return NotFound("No podcast booking tones found.");
@@ -547,7 +587,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var requestData = new JObject
             {
                 { "AccountId", accountId },
-                { "PodcastToneIds", JArray.FromObject(request.PodcasterBookingToneApplyInfo.PodcastBookingToneIds) }
+                { "PodcastToneIds", JArray.FromObject(request.PodcasterBookingToneApplyInfo) }
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
