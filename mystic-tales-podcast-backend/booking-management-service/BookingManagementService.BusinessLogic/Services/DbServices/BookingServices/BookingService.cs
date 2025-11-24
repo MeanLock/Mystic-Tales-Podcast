@@ -2648,6 +2648,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .BookingStatusId;
 
                     var currentBookingProducingRequest = booking.BookingProducingRequests
+                        .Where(bpr => bpr.FinishedAt != null)
                         .OrderByDescending(bpr => bpr.CreatedAt)
                         .FirstOrDefault();
 
@@ -2669,7 +2670,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         if (currentBookingProducingRequest.Id.Equals(bookingPodcastTrack.BookingProducingRequestId) == false)
                         {
-                            throw new Exception("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
+                            throw new Exception("Podcast track with id " + podcastTrackId + " does not belong to the lastest producing request of booking with id " + bookingId);
                         }
 
                         if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
