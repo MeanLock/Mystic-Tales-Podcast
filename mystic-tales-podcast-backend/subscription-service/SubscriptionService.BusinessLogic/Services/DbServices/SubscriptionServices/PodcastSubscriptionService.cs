@@ -148,8 +148,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var podcastSubscription = new PodcastSubscription();
                     //var cycleTypePrices = new List<PodcastSubscriptionCycleTypePrice>();
                     //var benefitMappings = new List<PodcastSubscriptionBenefitMapping>();
-                    var show = new JObject();
-                    var channel = new JObject();
+                    PodcastShowDTO? show = null;
+                    PodcastChannelDTO? channel = null;
                     if (parameter.PodcastShowId != null)
                     {
                         show = await GetPodcastShowWithAccountId(parameter.AccountId, parameter.PodcastShowId.Value);
@@ -442,8 +442,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         throw new Exception($"No Active Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
                     }
 
-                    var show = new JObject();
-                    var channel = new JObject();
+                    PodcastShowDTO? show = null;
+                    PodcastChannelDTO? channel = null;
                     if (existPodcastSubscription.PodcastShowId != null)
                     {
                         show = await GetPodcastShowWithAccountId(parameter.AccountId, existPodcastSubscription.PodcastShowId.Value);
@@ -599,8 +599,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var existPodcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
                         .FirstOrDefaultAsync(ps => ps.Id == parameter.PodcastSubscriptionId && ps.DeletedAt == null);
-                    var show = new JObject();
-                    var channel = new JObject();
+                    PodcastShowDTO? show = null;
+                    PodcastChannelDTO? channel = null;
                     if (existPodcastSubscription == null)
                     {
                         _logger.LogWarning("No Active Podcast Subscription exists for PodcastSubscription Id: {PodcastSubscriptionId}", parameter.PodcastSubscriptionId);
@@ -1095,8 +1095,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         throw new Exception($"No Inactive Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
                     }
-                    var show = new JObject();
-                    var channel = new JObject();
+                    PodcastShowDTO? show = null;
+                    PodcastChannelDTO? channel = null;
                     if (podcastSubscription.PodcastShowId != null)
                     {
                         show = await GetPodcastShowWithAccountId(parameter.AccountId, podcastSubscription.PodcastShowId.Value);
@@ -1124,16 +1124,16 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         //}
                     }
 
-                    //if (show.Count > 0 && show.HasValues)
-                    //{
-                    //    var result = await _podcastSubscriptionGenericRepository.FindAll().
-                    //        Where(ps => ps.PodcastChannelId.Equals(show["PodcastChannelId"]) && ps.IsActive == true && ps.DeletedAt == null)
-                    //        .FirstOrDefaultAsync();
-                    //    if(result != null)
-                    //    {
-                    //        throw new Exception($"An Active Channel Podcast Subscription exists for PodcastShow Id: {podcastSubscription.PodcastShowId}");
-                    //    }
-                    //}
+                    if (show != null && show.PodcastChannelId != null)
+                    {
+                        var result = await _podcastSubscriptionGenericRepository.FindAll().
+                            Where(ps => ps.PodcastChannelId.Equals(show.PodcastChannelId) && ps.IsActive == true && ps.DeletedAt == null)
+                            .FirstOrDefaultAsync();
+                        if (result != null)
+                        {
+                            throw new Exception($"An Active Channel Podcast Subscription exists for PodcastShow Id: {podcastSubscription.PodcastShowId}");
+                        }
+                    }
 
                     var existingActivePodcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll()
                         .Where(ps => ps.IsActive)
@@ -2564,7 +2564,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 .FirstOrDefaultAsync();
             return podcastSubscriptionRegistration != null;
         }
-        public async Task<JObject?> ValidatePodcastSubscriptionAccess(int accountId, int PodcastSubscriptionId)
+        public async Task<bool> ValidatePodcastSubscriptionAccess(int accountId, int PodcastSubscriptionId)
         {
             var podcastShowOrChannelIds = await _podcastSubscriptionGenericRepository.FindAll()
                 .Where(ps => ps.Id == PodcastSubscriptionId)
@@ -2572,17 +2572,28 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 .FirstOrDefaultAsync();
 
             if (podcastShowOrChannelIds == null)
-                return null;
+                return false;
 
             if (podcastShowOrChannelIds.PodcastShowId.HasValue)
-                return await GetPodcastShowWithAccountId(accountId, podcastShowOrChannelIds.PodcastShowId.Value);
-
+            {
+                var result = await GetPodcastShowWithAccountId(accountId, podcastShowOrChannelIds.PodcastShowId.Value);
+                if(result != null)
+                {
+                    return true;
+                }
+            }
             if (podcastShowOrChannelIds.PodcastChannelId.HasValue)
-                return await GetPodcastChannelWithAccountId(accountId, podcastShowOrChannelIds.PodcastChannelId.Value);
+            {
+                var result = await GetPodcastChannelWithAccountId(accountId, podcastShowOrChannelIds.PodcastChannelId.Value);
+                if (result != null)
+                {
+                    return true;
+                }
+            }
 
-            return null;
+            return false;
         }
-        public async Task<JObject?> GetPodcastShowWithAccountId(int accountId, Guid podcastShowId)
+        public async Task<PodcastShowDTO?> GetPodcastShowWithAccountId(int accountId, Guid podcastShowId)
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -2607,9 +2618,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            return result.Results?["podcastShowOfAccount"] is JArray podcastShowArray && podcastShowArray.Count > 0
+            var realResult = result.Results?["podcastShowOfAccount"] is JArray podcastShowArray && podcastShowArray.Count > 0
                 ? podcastShowArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
         }
         public async Task<PodcastSubscriptionDetailResponseDTO> GetActivePodcastSubscriptionByPodcastChannelIdAsync(Guid podcastChannelId, int? accountId)
         {
@@ -3104,7 +3116,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while retrieving Podcast Subscriptions for AccountId: {accountId}. Error: {ex.Message}");
             }
         }
-        public async Task<JObject?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
+        public async Task<PodcastChannelDTO?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -3128,10 +3140,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
-
-            return result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+            var realResult = result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
                 ? podcastChannelArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
         }
         private async Task<(bool isValid, string errorMessage)> ValidateEpisode(Guid podcastEpisodeId)
         {
