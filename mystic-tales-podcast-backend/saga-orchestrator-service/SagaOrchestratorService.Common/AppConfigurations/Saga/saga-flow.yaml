@@ -6374,6 +6374,41 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  podcast-subscription-registration-accept-newest-version-flow:
+    topic: "subscription-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Chấp nhập chuyển sang gói version mới ở kì tiếp theo"
+    save-file: ""
+    steps:
+      - name: "accept-podcast-subscription-newest-version"
+        topic: "subscription-management-domain"
+        handle-service: "PodcastService"
+        description: "Kích hoạt gói đăng ký podcast"
+        parameters:
+          - AccountId
+          - PodcastSubscriptionRegistrationId
+          - IsAccepted
+        next-request-data:
+          - AccountId
+          - PodcastSubscriptionRegistrationId
+          - IsAccepted
+        response-data:
+          - AccountId
+          - PodcastSubscriptionRegistrationId
+          - IsAccepted
+        onSuccess:
+          emit: "accept-podcast-subscription-newest-version.success"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "accept-podcast-subscription-newest-version.failed"
+          topic: "subscription-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   podcast-subscription-activation-flow:
     topic: "subscription-management-domain"
     handle-service: "SagaOrchestratorService"

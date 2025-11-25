@@ -2,10 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
-using ModerationService.BusinessLogic.DTOs.Podcast;
 using Newtonsoft.Json.Linq;
+using SubscriptionService.BusinessLogic.DTOs.Account;
 using SubscriptionService.BusinessLogic.DTOs.Cache;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CAcceptPodcastSubscriptionNewestVersion;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelChannelSubscriptionChannelDeletionForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelChannelSubscriptionUnpublishChannelForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcasterChannelsSubscriptionTerminatePodcasterForce;
@@ -33,14 +34,18 @@ using SubscriptionService.BusinessLogic.Enums.Subscription;
 using SubscriptionService.BusinessLogic.Enums.Transaction;
 using SubscriptionService.BusinessLogic.Helpers.DateHelpers;
 using SubscriptionService.BusinessLogic.Models.CrossService;
+using SubscriptionService.BusinessLogic.Models.Mail;
 using SubscriptionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using SubscriptionService.BusinessLogic.Services.DbServices.MiscServices;
 using SubscriptionService.BusinessLogic.Services.MessagingServices.interfaces;
 using SubscriptionService.DataAccess.Data;
+using SubscriptionService.DataAccess.Entities;
 using SubscriptionService.DataAccess.Entities.SqlServer;
 using SubscriptionService.DataAccess.Repositories.interfaces;
 using SubscriptionService.Infrastructure.Models.Kafka;
 using SubscriptionService.Infrastructure.Services.Kafka;
+using System.Security.Principal;
+using System.Threading.Channels;
 
 namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices
 {
@@ -532,6 +537,51 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         //}
                     }
 
+                    var updatedSubscription = new PodcastSubscriptionListItemResponseDTO
+                    {
+                        Id = podcastSubscription.Id,
+                        Name = podcastSubscription.Name,
+                        Description = podcastSubscription.Description,
+                        PodcastShowId = podcastSubscription.PodcastShowId,
+                        PodcastChannelId = podcastSubscription.PodcastChannelId,
+                        IsActive = podcastSubscription.IsActive,
+                        CurrentVersion = podcastSubscription.CurrentVersion,
+                        DeletedAt = podcastSubscription.DeletedAt,
+                        CreatedAt = podcastSubscription.CreatedAt,
+                        UpdatedAt = podcastSubscription.UpdatedAt
+                    };
+                    var updateMappingList = await _podcastSubscriptionBenefitMappingGenericRepository.FindAll()
+                        .Where(bm => bm.PodcastSubscriptionId == podcastSubscription.Id && bm.Version == podcastSubscription.CurrentVersion)
+                        .Select(bm => new PodcastSubscriptionBenefitMappingListItemResponseDTO
+                        {
+                            PodcastSubscriptionId = bm.PodcastSubscriptionId,
+                            PodcastSubscriptionBenefit = new PodcastSubscriptionBenefitDTO
+                            {
+                                Id = bm.PodcastSubscriptionBenefit.Id,
+                                Name = bm.PodcastSubscriptionBenefit.Name
+                            },
+                            Version = bm.Version,
+                            CreatedAt = bm.CreatedAt,
+                            UpdatedAt = bm.UpdatedAt
+                        })
+                        .ToListAsync();
+                    var updateCycleList = await _podcastSubscriptionCycleTypePriceGenericRepository.FindAll()
+                        .Where(ctp => ctp.PodcastSubscriptionId == podcastSubscription.Id && ctp.Version == podcastSubscription.CurrentVersion)
+                        .Select(ctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
+                        {
+                            PodcastSubscriptionId = ctp.PodcastSubscriptionId,
+                            SubscriptionCycleType = new SubscriptionCycleTypeDTO
+                            {
+                                Id = ctp.SubscriptionCycleType.Id,
+                                Name = ctp.SubscriptionCycleType.Name
+                            },
+                            Version = ctp.Version,
+                            Price = ctp.Price,
+                            CreatedAt = ctp.CreatedAt,
+                            UpdatedAt = ctp.UpdatedAt
+                        })
+                        .ToListAsync();
+
                     var updateRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                         .Where(sr => sr.PodcastSubscriptionId == parameter.PodcastSubscriptionId && sr.CancelledAt == null)
                         .ToListAsync();
@@ -540,7 +590,33 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         registration.IsAcceptNewestVersionSwitch = false;
                         registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+
+                        var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                        var newVersionMailSendingRequestData = JObject.FromObject(new
+                        {
+                            SendSubscriptionServiceEmailInfo = new
+                            {
+                                MailTypeName = "PodcastSubscriptionNewVersion",
+                                ToEmail = account.Email,
+                                MailObject = new PodcastSubscriptionNewVersionMailViewModel
+                                {
+                                    CustomerFullName = account.FullName,
+                                    PodcastSubscription = updatedSubscription,
+                                    PodcastSubscriptionCycleTypePriceList = updateCycleList,
+                                    PodcastSubscriptionBenefitList = updateMappingList,
+                                    CreatedDate = _dateHelper.GetNowByAppTimeZone()
+                                }
+                            }
+                        });
+                        var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                            requestData: newVersionMailSendingRequestData,
+                            sagaInstanceId: null,
+                            messageName: "subscription-service-mail-sending-flow");
+                        await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
                         await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+                        
                     }
 
                     await transaction.CommitAsync();
@@ -745,6 +821,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         throw new Exception($"No Active Podcast Subscription exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId}");
                     }
 
+                    var account = await _accountCachingService.GetAccountStatusCacheById(parameter.AccountId);
+
                     if (podcastSubscription.PodcastShowId != null)
                     {
                         var showValidation = await ValidateShow(podcastSubscription.PodcastShowId.Value);
@@ -797,6 +875,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                         .Select(psc => psc.IncomeTakenDelayDays)
                                         .FirstOrDefault();
 
+                                    decimal refundAmount = 0;
                                     if (podcastSubscriptionRegistration.LastPaidAt.AddDays((double)incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
                                     {
                                         podcastSubscriptionRegistration.IsIncomeTaken = true;
@@ -831,7 +910,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                             .Where(ptcp => ptcp.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
                                             .Select(ptcp => ptcp.Price)
                                             .FirstOrDefault();
-
+                                        refundAmount = originalPrice;
                                         var transactionRequestData = new JObject
                                         {
                                             { "PodcastSubscriptionRegistrationId", podcastSubscriptionRegistration.Id },
@@ -847,6 +926,27 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                             messageName: "podcast-subscription-refund-flow");
                                         await _messagingService.SendSagaMessageAsync(transactionMessage, null);
                                     }
+                                    
+                                    var duplicateMailSendingRequestData = JObject.FromObject(new
+                                    {
+                                        SendSubscriptionServiceEmailInfo = new
+                                        {
+                                            MailTypeName = "PodcastSubscriptionDuplicate",
+                                            ToEmail = account.Email,
+                                            MailObject = new PodcastSubscriptionDuplicateMailViewModel
+                                            {
+                                                CustomerFullName = account.FullName,
+                                                RefundAmount = refundAmount,
+                                                CancelledDate = _dateHelper.GetNowByAppTimeZone()
+                                            }
+                                        }
+                                    });
+                                    var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                        requestData: duplicateMailSendingRequestData,
+                                        sagaInstanceId: null,
+                                        messageName: "subscription-service-mail-sending-flow");
+                                    await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
 
                                     podcastSubscriptionRegistration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
                                     await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(podcastSubscriptionRegistration.Id, podcastSubscriptionRegistration);
@@ -900,6 +1000,27 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         sagaInstanceId: null,
                         messageName: "podcast-subscription-payment-flow");
                     await _messagingService.SendSagaMessageAsync(transactionMessage2, null);
+
+                    var registrationMailSendingRequestData = JObject.FromObject(new
+                    {
+                        SendSubscriptionServiceEmailInfo = new
+                        {
+                            MailTypeName = "PodcastSubscriptionRegistration",
+                            ToEmail = account.Email,
+                            MailObject = new PodcastSubscriptionRegistrationMailViewModel
+                            {
+                                CustomerFullName = account.FullName,
+                                Price = originalPrice2,
+                                CreatedDate = _dateHelper.GetNowByAppTimeZone()
+                            }
+                        }
+                    });
+                    var customerMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                        requestData: registrationMailSendingRequestData,
+                        sagaInstanceId: null,
+                        messageName: "subscription-service-mail-sending-flow");
+                    await _messagingService.SendSagaMessageAsync(customerMailSendingFlow2);
 
                     await transaction.CommitAsync();
                     var newResponseData = new JObject
@@ -1134,45 +1255,79 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             throw new Exception($"An Active Channel Podcast Subscription exists for PodcastShow Id: {podcastSubscription.PodcastShowId}");
                         }
                     }
-
-                    var existingActivePodcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll()
-                        .Where(ps => ps.IsActive)
-                        .ToListAsync();
-                    foreach (var existingSubscription in existingActivePodcastSubscriptions)
+                    var existingActivePodcastSubscriptions = new List<PodcastSubscription>();
+                    if(podcastSubscription.PodcastShowId != null)
                     {
-                        existingSubscription.IsActive = false;
-                        existingSubscription.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                        await _podcastSubscriptionGenericRepository.UpdateAsync(existingSubscription.Id, existingSubscription);
-
-                        var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                            .Where(sr => sr.PodcastSubscriptionId == existingSubscription.Id && sr.CancelledAt == null)
+                        existingActivePodcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll()
+                            .Where(ps => ps.IsActive && ps.PodcastShowId == podcastSubscription.PodcastShowId)
                             .ToListAsync();
-                        foreach (var registration in subscriptionRegistrations)
-                        {
-                            if (!registration.IsIncomeTaken)
-                            {
-                                var amount = existingSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
-                                    .Select(ptcp => ptcp.Price)
-                                    .FirstOrDefault();
-                                var tempRequestData = new JObject
-                            {
-                                { "PodcastSubscriptionRegistrationId", registration.Id },
-                                { "Profit", null },
-                                { "AccountId", registration.AccountId },
-                                { "Amount", amount },
-                                { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
-                            };
-                                var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                    requestData: tempRequestData,
-                                    sagaInstanceId: null,
-                                    messageName: "podcast-subscription-refund-flow");
-                                await _messagingService.SendSagaMessageAsync(refundMessage, null);
-                            }
-                            await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
-                        }
+                    } else if(podcastSubscription.PodcastChannelId != null)
+                    {
+                        existingActivePodcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll()
+                            .Where(ps => ps.IsActive && ps.PodcastChannelId == podcastSubscription.PodcastChannelId)
+                            .ToListAsync();
                     }
+
+                        foreach (var existingSubscription in existingActivePodcastSubscriptions)
+                        {
+                            existingSubscription.IsActive = false;
+                            existingSubscription.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastSubscriptionGenericRepository.UpdateAsync(existingSubscription.Id, existingSubscription);
+
+                            var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                                .Where(sr => sr.PodcastSubscriptionId == existingSubscription.Id && sr.CancelledAt == null)
+                                .ToListAsync();
+                            foreach (var registration in subscriptionRegistrations)
+                            {
+                                var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                                decimal refundAmount = 0;
+                                if (!registration.IsIncomeTaken)
+                                {
+                                    var amount = existingSubscription.PodcastSubscriptionCycleTypePrices
+                                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                        .Select(ptcp => ptcp.Price)
+                                        .FirstOrDefault();
+                                    refundAmount = amount;
+                                    var tempRequestData = new JObject
+                                {
+                                    { "PodcastSubscriptionRegistrationId", registration.Id },
+                                    { "Profit", null },
+                                    { "AccountId", registration.AccountId },
+                                    { "Amount", amount },
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
+                                };
+                                    var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                        requestData: tempRequestData,
+                                        sagaInstanceId: null,
+                                        messageName: "podcast-subscription-refund-flow");
+                                    await _messagingService.SendSagaMessageAsync(refundMessage, null);
+                                }
+
+                                var inactiveMailSendingRequestData = JObject.FromObject(new
+                                {
+                                    SendSubscriptionServiceEmailInfo = new
+                                    {
+                                        MailTypeName = "PodcastSubscriptionInactive",
+                                        ToEmail = account.Email,
+                                        MailObject = new PodcastSubscriptionInactiveMailViewModel
+                                        {
+                                            RefundAmount = refundAmount,
+                                            CustomerFullName = account.FullName,
+                                            CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                        }
+                                    }
+                                });
+                                var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                    requestData: inactiveMailSendingRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "subscription-service-mail-sending-flow");
+                                await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                                await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+                            }
+                        }
 
                     podcastSubscription.IsActive = true;
                     podcastSubscription.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
@@ -1270,12 +1425,15 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .ToListAsync();
                     foreach (var registration in subscriptionRegistrations)
                     {
+                        var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                        decimal refundAmount = 0;
                         if (!registration.IsIncomeTaken)
                         {
                             var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                 .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                 .Select(ptcp => ptcp.Price)
                                 .FirstOrDefault();
+                            refundAmount = amount;
                             var tempRequestData = new JObject
                             {
                                 { "PodcastSubscriptionRegistrationId", registration.Id },
@@ -1291,6 +1449,28 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 messageName: "podcast-subscription-refund-flow");
                             await _messagingService.SendSagaMessageAsync(refundMessage, null);
                         }
+
+                        var inactiveMailSendingRequestData = JObject.FromObject(new
+                        {
+                            SendSubscriptionServiceEmailInfo = new
+                            {
+                                MailTypeName = "PodcastSubscriptionInactive",
+                                ToEmail = account.Email,
+                                MailObject = new PodcastSubscriptionInactiveMailViewModel
+                                {
+                                    RefundAmount = refundAmount,
+                                    CustomerFullName = account.FullName,
+                                    CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                }
+                            }
+                        });
+                        var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                            requestData: inactiveMailSendingRequestData,
+                            sagaInstanceId: null,
+                            messageName: "subscription-service-mail-sending-flow");
+                        await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
                         await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
                     }
 
@@ -1358,6 +1538,9 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         throw new Exception($"The Logged In Account is unauthorized to cancel Podcast Subscription Registration with Id: {parameter.PodcastSubscriptionRegistrationId}");
                     }
+
+                    var account = await _accountCachingService.GetAccountStatusCacheById(parameter.AccountId);
+
                     var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                         .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
                         .Where(ps => ps.Id == podcastSubscriptionRegistration.PodcastSubscriptionId && ps.DeletedAt == null)
@@ -1373,6 +1556,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .Select(psc => psc.IncomeTakenDelayDays)
                         .FirstOrDefault();
 
+                    decimal refundAmount = 0;
                     if (podcastSubscriptionRegistration.LastPaidAt.AddDays((double)incomeTakenDelayDays) < _dateHelper.GetNowByAppTimeZone())
                     {
                         podcastSubscriptionRegistration.IsIncomeTaken = true;
@@ -1407,7 +1591,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             .Where(ptcp => ptcp.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
                             .Select(ptcp => ptcp.Price)
                             .FirstOrDefault();
-
+                        refundAmount = originalPrice;
                         var transactionRequestData = new JObject
                         {
                             { "PodcastSubscriptionRegistrationId", podcastSubscriptionRegistration.Id },
@@ -1426,6 +1610,28 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
                     podcastSubscriptionRegistration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
                     var registrationResult = await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(podcastSubscriptionRegistration.Id, podcastSubscriptionRegistration);
+
+                    var cancelRegistrationMailSendingRequestData = JObject.FromObject(new
+                    {
+                        SendSubscriptionServiceEmailInfo = new
+                        {
+                            MailTypeName = "PodcastSubscriptionRegistrationCancel",
+                            ToEmail = account.Email,
+                            MailObject = new PodcastSubscriptionRegistrationCancelMailViewModel
+                            {
+                                RefundAmount = refundAmount,
+                                CustomerFullName = account.FullName,
+                                CancelledDate = registrationResult.CancelledAt ?? _dateHelper.GetNowByAppTimeZone(),
+                            }
+                        }
+                    });
+                    var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                        requestData: cancelRegistrationMailSendingRequestData,
+                        sagaInstanceId: null,
+                        messageName: "subscription-service-mail-sending-flow");
+                    await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
                     await transaction.CommitAsync();
 
                     var newResponseData = new JObject
@@ -1506,12 +1712,15 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             .ToListAsync();
                     foreach (var registration in subscriptionRegistrations)
                     {
+                        var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                        decimal refundAmount = 0;
                         if (!registration.IsIncomeTaken)
                         {
                             var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                 .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                 .Select(ptcp => ptcp.Price)
                                 .FirstOrDefault();
+                            refundAmount = amount;
                             var tempRequestData = new JObject
                                 {
                                     { "PodcastSubscriptionRegistrationId", registration.Id },
@@ -1527,6 +1736,28 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 messageName: "podcast-subscription-refund-flow");
                             await _messagingService.SendSagaMessageAsync(refundMessage, null);
                         }
+
+                        var cancelMailSendingRequestData = JObject.FromObject(new
+                        {
+                            SendSubscriptionServiceEmailInfo = new
+                            {
+                                MailTypeName = "PodcastSubscriptionCancel",
+                                ToEmail = account.Email,
+                                MailObject = new PodcastSubscriptionCancelMailViewModel
+                                {
+                                    RefundAmount = refundAmount,
+                                    CustomerFullName = account.FullName,
+                                    CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                }
+                            }
+                        });
+                        var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                            requestData: cancelMailSendingRequestData,
+                            sagaInstanceId: null,
+                            messageName: "subscription-service-mail-sending-flow");
+                        await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
                         await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
                     }
 
@@ -2339,24 +2570,79 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .ToListAsync();
                     foreach (var registration in registrationsList)
                     {
+                        var account = await GetAccount(registration.AccountId.Value);
                         if (registration.IsAcceptNewestVersionSwitch == null)
                         {
                             var podcastSubscription = await _podcastSubscriptionGenericRepository.FindAll()
                                 .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
                                 .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
                                 .FirstOrDefaultAsync();
+                            var price = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
+                                    && ptcp.Version == registration.CurrentVersion)
+                                    .Select(ptcp => ptcp.Price)
+                                    .FirstOrDefault();
+
+                            if (account.Balance - price <= 0)
+                            {
+                                registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                                await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+
+                                var registrationRenewalFailureMailSendingRequestData = JObject.FromObject(new
+                                {
+                                    SendSubscriptionServiceEmailInfo = new
+                                    {
+                                        MailTypeName = "PodcastSubscriptionRegistrationRenewalFailure",
+                                        ToEmail = account.Email,
+                                        MailObject = new PodcastSubscriptionRegistrationRenewalFailureMailViewModel
+                                        {
+                                            CustomerFullName = account.FullName,
+                                            Price = price,
+                                            UpdatedDate = _dateHelper.GetNowByAppTimeZone(),
+                                        }
+                                    }
+                                });
+                                var customerMailSendingFlow1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                    requestData: registrationRenewalFailureMailSendingRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "subscription-service-mail-sending-flow");
+                                await _messagingService.SendSagaMessageAsync(customerMailSendingFlow1);
+
+                                continue;
+                            }
+                            
                             registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+
+                            var registrationRenewalSuccessMailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendSubscriptionServiceEmailInfo = new
+                                {
+                                    MailTypeName = "PodcastSubscriptionRegistrationRenewalSuccess",
+                                    ToEmail = account.Email,
+                                    MailObject = new PodcastSubscriptionRegistrationRenewalSuccessMailViewModel
+                                    {
+                                        CustomerFullName = account.FullName,
+                                        Price = price,
+                                        UpdatedDate = _dateHelper.GetNowByAppTimeZone(),
+                                    }
+                                }
+                            });
+                            var customerMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                requestData: registrationRenewalSuccessMailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "subscription-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(customerMailSendingFlow2);
+
                             var renewalRequestData = new JObject
                             {
                                 { "PodcastSubscriptionRegistrationId", registration.Id },
                                 { "Profit", null },
                                 { "AccountId", registration.AccountId },
                                 { "PodcasterId", null },
-                                { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
-                                    && ptcp.Version == registration.CurrentVersion)
-                                    .Select(ptcp => ptcp.Price)
-                                    .FirstOrDefault() },
+                                { "Amount", price},
                                 { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
                             };
                             var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -2372,19 +2658,52 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
                                 .Where(ps => ps.Id == registration.PodcastSubscriptionId && ps.DeletedAt == null && ps.IsActive)
                                 .FirstOrDefaultAsync();
+                            var price = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
+                                    && ptcp.Version == registration.CurrentVersion)
+                                    .Select(ptcp => ptcp.Price)
+                                    .FirstOrDefault();
+
+                            if (account.Balance - price <= 0)
+                            {
+                                registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                                await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+
+                                var registrationRenewalFailureMailSendingRequestData = JObject.FromObject(new
+                                {
+                                    SendSubscriptionServiceEmailInfo = new
+                                    {
+                                        MailTypeName = "PodcastSubscriptionRegistrationRenewalFailure",
+                                        ToEmail = account.Email,
+                                        MailObject = new PodcastSubscriptionRegistrationRenewalFailureMailViewModel
+                                        {
+                                            CustomerFullName = account.FullName,
+                                            Price = price,
+                                            UpdatedDate = _dateHelper.GetNowByAppTimeZone(),
+                                        }
+                                    }
+                                });
+                                var customerMailSendingFlow1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                    requestData: registrationRenewalFailureMailSendingRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "subscription-service-mail-sending-flow");
+                                await _messagingService.SendSagaMessageAsync(customerMailSendingFlow1);
+
+                                continue;
+                            }
                             registration.CurrentVersion = podcastSubscription.CurrentVersion;
                             registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
+
+                            await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+
                             var renewalRequestData = new JObject
                             {
                                 { "PodcastSubscriptionRegistrationId", registration.Id },
                                 { "Profit", null },
                                 { "AccountId", registration.AccountId },
                                 { "PodcasterId", null },
-                                { "Amount", podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
-                                    && ptcp.Version == podcastSubscription.CurrentVersion)
-                                    .Select(ptcp => ptcp.Price)
-                                    .FirstOrDefault() },
+                                { "Amount", price },
                                 { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment }
                             };
                             var renewalMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -2393,10 +2712,54 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 sagaInstanceId: null,
                                 messageName: "podcast-subscription-payment-flow");
                             await _messagingService.SendSagaMessageAsync(renewalMessage, null);
+
+                            var registrationRenewalSuccessMailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendSubscriptionServiceEmailInfo = new
+                                {
+                                    MailTypeName = "PodcastSubscriptionRegistrationRenewalSuccess",
+                                    ToEmail = account.Email,
+                                    MailObject = new PodcastSubscriptionRegistrationRenewalSuccessMailViewModel
+                                    {
+                                        CustomerFullName = account.FullName,
+                                        Price = price,
+                                        UpdatedDate = _dateHelper.GetNowByAppTimeZone(),
+                                    }
+                                }
+                            });
+                            var customerMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                requestData: registrationRenewalSuccessMailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "subscription-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(customerMailSendingFlow2);
+
                         }
                         if (registration.IsAcceptNewestVersionSwitch == false)
                         {
+                            var registrationCancelMailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendSubscriptionServiceEmailInfo = new
+                                {
+                                    MailTypeName = "PodcastSubscriptionRegistrationCancel",
+                                    ToEmail = account.Email,
+                                    MailObject = new PodcastSubscriptionRegistrationCancelMailViewModel
+                                    {
+                                        CustomerFullName = account.FullName,
+                                        RefundAmount = null,
+                                        CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                    }
+                                }
+                            });
+                            var customerMailSendingFlow1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                requestData: registrationCancelMailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "subscription-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(customerMailSendingFlow1);
+
                             registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                         }
                     }
 
@@ -2466,12 +2829,15 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             {
                                 if(registration.AccountId == channelRegistration.AccountId)
                                 {
+                                    var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                                    decimal refundAmount = 0;
                                     if (!registration.IsIncomeTaken)
                                     {
                                         var amount = showPodcastSubscription.PodcastSubscriptionCycleTypePrices
                                             .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                             .Select(ptcp => ptcp.Price)
                                             .FirstOrDefault();
+                                        refundAmount = amount;
                                         var tempRequestData = new JObject
                                         {
                                             { "PodcastSubscriptionRegistrationId", registration.Id },
@@ -2487,6 +2853,28 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                             messageName: "podcast-subscription-refund-flow");
                                         await _messagingService.SendSagaMessageAsync(refundMessage, null);
                                     }
+
+                                    var duplicateMailSendingRequestData = JObject.FromObject(new
+                                    {
+                                        SendSubscriptionServiceEmailInfo = new
+                                        {
+                                            MailTypeName = "PodcastSubscriptionDuplicate",
+                                            ToEmail = account.Email,
+                                            MailObject = new PodcastSubscriptionDuplicateMailViewModel
+                                            {
+                                                RefundAmount = refundAmount,
+                                                CustomerFullName = account.FullName,
+                                                CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                            }
+                                        }
+                                    });
+                                    var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                        requestData: duplicateMailSendingRequestData,
+                                        sagaInstanceId: null,
+                                        messageName: "subscription-service-mail-sending-flow");
+                                    await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
                                     await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
                                 }
                             }
@@ -2526,102 +2914,72 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 }
             }
         }
-        private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
+        public async Task AcceptPodcastSubscriptionNewestVersionAsync(AcceptPodcastSubscriptionNewestVersionParameterDTO parameter, SagaCommandMessage command)
         {
-            var batchRequest = new BatchQueryRequest
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
-                Queries = new List<BatchQueryItem>
-            {
-                new BatchQueryItem
+                try
                 {
-                    Key = "activeSystemConfigProfile",
-                    QueryType = "findall",
-                    EntityType = "SystemConfigProfile",
-                        Parameters = JObject.FromObject(new
-                        {
-                            where = new
-                            {
-                                IsActive = true
-                            },
-                            include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
 
-                        }),
-                    Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
-                }
-            }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
-
-            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
-        }
-        public async Task<bool> ValidatePodcastSubscriptionRegistration(int accountId, Guid PodcastSubscriptionRegistrationId)
-        {
-            var podcastSubscriptionRegistration = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                .Where(psr => psr.Id == PodcastSubscriptionRegistrationId && psr.AccountId == accountId)
-                .FirstOrDefaultAsync();
-            return podcastSubscriptionRegistration != null;
-        }
-        public async Task<bool> ValidatePodcastSubscriptionAccess(int accountId, int PodcastSubscriptionId)
-        {
-            var podcastShowOrChannelIds = await _podcastSubscriptionGenericRepository.FindAll()
-                .Where(ps => ps.Id == PodcastSubscriptionId)
-                .Select(ps => new { ps.PodcastShowId, ps.PodcastChannelId })
-                .FirstOrDefaultAsync();
-
-            if (podcastShowOrChannelIds == null)
-                return false;
-
-            if (podcastShowOrChannelIds.PodcastShowId.HasValue)
-            {
-                var result = await GetPodcastShowWithAccountId(accountId, podcastShowOrChannelIds.PodcastShowId.Value);
-                if(result != null)
-                {
-                    return true;
-                }
-            }
-            if (podcastShowOrChannelIds.PodcastChannelId.HasValue)
-            {
-                var result = await GetPodcastChannelWithAccountId(accountId, podcastShowOrChannelIds.PodcastChannelId.Value);
-                if (result != null)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-        public async Task<PodcastShowDTO?> GetPodcastShowWithAccountId(int accountId, Guid podcastShowId)
-        {
-            var batchRequest = new BatchQueryRequest
-            {
-                Queries = new List<BatchQueryItem>
+                    if(!await ValidatePodcastSubscriptionRegistration(parameter.AccountId, parameter.PodcastSubscriptionRegistrationId))
                     {
-                        new BatchQueryItem
-                        {
-                            Key = "podcastShowOfAccount",
-                            QueryType = "findall",
-                            EntityType = "PodcastShow",
-                            Parameters = JObject.FromObject(new
-                            {
-                                where = new
-                                {
-                                    Id = podcastShowId,
-                                    PodcasterId = accountId
-                                },
-                                include = "PodcastShowStatusTrackings"
-                            })
-                        }
+                        throw new Exception("Podcast Subscription Registration is not found for the account");
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShowOfAccount"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
+                    var registration = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                            .Where(psr => psr.Id == parameter.PodcastSubscriptionRegistrationId)
+                            .FirstOrDefaultAsync();
+                    var subscription = await _podcastSubscriptionGenericRepository.FindAll()
+                            .Where(ps => ps.Id == registration.PodcastSubscriptionId)
+                            .FirstOrDefaultAsync();
+                    if(registration.CurrentVersion == subscription.CurrentVersion)
+                    {
+                        throw new Exception("Podcast Subscription Registration is already at the newest version");
+                    }
+
+                    if (parameter.IsAccepted)
+                    {
+                        registration.IsAcceptNewestVersionSwitch = true;
+                        registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+                    }
+                    await transaction.CommitAsync();
+
+                    var newResponseData = command.RequestData;
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: sagaId,
+                        flowName: flowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+                    _logger.LogInformation("Successfully Accept Podcast Subscription Newest Version for Saga Id: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Accept Podcast Subscription Newest Version for SagaId: {SagaId}", command.SagaInstanceId);
+                    var newResponseData = new JObject{
+                        { "ErrorMessage", "Accept Podcast Subscription Newest Version failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Accept Podcast Subscription Newest Version failed for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+            }
         }
         public async Task<PodcastSubscriptionDetailResponseDTO> GetActivePodcastSubscriptionByPodcastChannelIdAsync(Guid podcastChannelId, int? accountId)
         {
@@ -3116,6 +3474,189 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while retrieving Podcast Subscriptions for AccountId: {accountId}. Error: {ex.Message}");
             }
         }
+        public async Task<List<PodcastSubscriptionRegistrationListItemResponseDTO>> GetAllPodcastSubscriptionRegistrationsByAccountIdAsync(AccountStatusCache account)
+        {
+            try
+            {
+                var result = new List<PodcastSubscriptionRegistrationListItemResponseDTO>();
+                return result = await _podcastSubscriptionRegistrationGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(psr => psr.SubscriptionCycleType))
+                    .Where(psr => psr.AccountId == account.Id)
+                    .Select(psr => new PodcastSubscriptionRegistrationListItemResponseDTO
+                    {
+                        Id = psr.Id,
+                        Account = new AccountSnippetResponseDTO
+                            {
+                                Id = account.Id,
+                                Email = account.Email,
+                                FullName =  account.FullName,
+                                MainImageFileKey = account.MainImageFileKey
+                        },
+                        PodcastSubscriptionId = psr.PodcastSubscriptionId,
+                        SubscriptionCycleType = psr.SubscriptionCycleType == null
+                            ? null
+                            : new SubscriptionCycleTypeDTO
+                            {
+                                Id = psr.SubscriptionCycleType.Id,
+                                Name = psr.SubscriptionCycleType.Name
+                            },
+                        CurrentVersion = psr.CurrentVersion,
+                        IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
+                        IsIncomeTaken = psr.IsIncomeTaken,
+                        LastPaidAt = psr.LastPaidAt,
+                        CancelledAt = psr.CancelledAt,
+                        CreatedAt = psr.CreatedAt,
+                        UpdatedAt = psr.UpdatedAt
+                    })
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetAllPodcastSubscriptionRegistrationsByAccountIdAsync for AccountId: {AccountId}", account.Id);
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription Registrations for AccountId: {account.Id}. Error: {ex.Message}");
+            }
+        }
+        public async Task<SubscribedContentResponseDTO> GetSubscribedContentByAccountIdAsync(int accountId)
+        {
+            try
+            {
+                var channelList = new List<PodcastChannelSubscribedContentResponseDTO>();
+                var showList = new List<PodcastShowSubscribedContentResponseDTO>();
+                var registrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(psr => psr.PodcastSubscription))
+                    .Where(psr => psr.AccountId == accountId && psr.CancelledAt == null)
+                    .ToListAsync();
+                foreach (var registration in registrations)
+                {
+                    if(registration.PodcastSubscription.PodcastChannelId != null)
+                    {
+                        var channel = await GetSubscribedPodcastChannel(registration.PodcastSubscription.PodcastChannelId.Value);
+                        if(channel != null)
+                        {
+                            //Console.WriteLine("Found subscribed channel: " + JObject.FromObject(channel));
+                            var podcaster = await _accountCachingService.GetAccountStatusCacheById(channel.PodcasterId);
+                            channelList.Add(new PodcastChannelSubscribedContentResponseDTO
+                            {
+                                Id = channel.Id,
+                                Name = channel.Name,
+                                Description = channel.Description,
+                                MainImageFileKey = channel.MainImageFileKey,
+                                BackgroundImageFileKey = channel.BackgroundImageFileKey,
+                                PodcastCategory = channel.PodcastCategory != null ? new PodcastCategoryDTO
+                                {
+                                    Id = channel.PodcastCategory.Id,
+                                    Name = channel.PodcastCategory.Name,
+                                    MainImageFileKey = channel.PodcastCategory.MainImageFileKey
+                                } : null,
+                                PodcastSubCategory = channel.PodcastSubCategory != null ? new PodcastSubCategoryDTO
+                                {
+                                    Id = channel.PodcastSubCategory.Id,
+                                    Name = channel.PodcastSubCategory.Name,
+                                    PodcastCategoryId = channel.PodcastSubCategory.PodcastCategoryId
+                                } : null,
+                                CurrentStatus = channel.PodcastChannelStatusTrackings.OrderByDescending(channelt => channelt.CreatedAt).Select(channelt => new PodcastStatusDTO
+                                {
+                                    Id = channelt.PodcastChannelStatusId,
+                                    Name = ((PodcastChannelStatusEnum)channelt.PodcastChannelStatusId).ToString()
+                                }).FirstOrDefault()!,
+                                Hashtags = channel.Hashtags != null ? channel.Hashtags.Select(channelh => new HashtagDTO
+                                {
+                                    Id = channelh.Id,
+                                    Name = channelh.Name 
+                                }).ToList() : null,
+                                TotalFavorite = channel.TotalFavorite,
+                                ListenCount = channel.ListenCount,
+                                ShowCount = channel.PodcastShows != null ? channel.PodcastShows.Count(ps => ps.DeletedAt == null) : 0,
+                                Podcaster = new AccountSnippetResponseDTO
+                                {
+                                    Id = podcaster.Id,
+                                    FullName = podcaster.FullName,
+                                    Email = podcaster.Email,
+                                    MainImageFileKey = podcaster.MainImageFileKey
+                                },
+                                CreatedAt = channel.CreatedAt,
+                                UpdatedAt = channel.UpdatedAt
+                            });
+                        }
+                    } else if(registration.PodcastSubscription.PodcastShowId != null)
+                    {
+                        var show = await GetSubscribedPodcastShow(registration.PodcastSubscription.PodcastShowId.Value);
+                        if(show != null)
+                        {
+                            var podcaster = await _accountCachingService.GetAccountStatusCacheById(show.PodcasterId);
+                            showList.Add(new PodcastShowSubscribedContentResponseDTO
+                            {
+                                Id = show.Id,
+                                Name = show.Name,
+                                Description = show.Description,
+                                MainImageFileKey = show.MainImageFileKey,
+                                TrailerAudioFileKey = show.TrailerAudioFileKey,
+                                TotalFollow = show.TotalFollow,
+                                ListenCount = show.ListenCount,
+                                AverageRating = show.AverageRating,
+                                RatingCount = show.RatingCount,
+                                Copyright = show.Copyright,
+                                IsReleased = show.IsReleased,
+                                Language = show.Language,
+                                EpisodeCount = show.PodcastEpisodes.Count(pe => pe.DeletedAt == null),
+                                PodcastCategory = show.PodcastCategory != null ? new PodcastCategoryDTO
+                                {
+                                    Id = show.PodcastCategory.Id,
+                                    Name = show.PodcastCategory.Name,
+                                    MainImageFileKey = show.PodcastCategory.MainImageFileKey
+                                } : null,
+                                PodcastSubCategory = show.PodcastSubCategory != null ? new PodcastSubCategoryDTO
+                                {
+                                    Id = show.PodcastSubCategory.Id,
+                                    Name = show.PodcastSubCategory.Name,
+                                    PodcastCategoryId = show.PodcastSubCategory.PodcastCategoryId
+                                } : null,
+                                PodcastChannel = show.PodcastChannel != null ? new PodcastChannelSnippetResponseDTO
+                                {
+                                    Id = show.PodcastChannel.Id,
+                                    Name = show.PodcastChannel.Name,
+                                    Description = show.PodcastChannel.Description,
+                                    MainImageFileKey = show.PodcastChannel.MainImageFileKey
+                                } : null,
+                                PodcastShowSubscriptionType = show.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
+                                {
+                                    Id = show.PodcastShowSubscriptionType.Id,
+                                    Name = show.PodcastShowSubscriptionType.Name
+                                } : null,
+                                Podcaster = null,
+                                ReleaseDate = show.ReleaseDate,
+                                TakenDownReason = show.TakenDownReason,
+                                UploadFrequency = show.UploadFrequency,
+                                Hashtags = show.Hashtags != null ? show.Hashtags.Select(showh => new HashtagDTO
+                                {
+                                    Id = showh.Id,
+                                    Name = showh.Name
+                                }).ToList() : null,
+                                CreatedAt = show.CreatedAt,
+                                UpdatedAt = show.UpdatedAt,
+                                CurrentStatus = show.PodcastShowStatusTrackings.OrderByDescending(showt => showt.CreatedAt).Select(showt => new PodcastStatusDTO
+                                {
+                                    Id = showt.PodcastShowStatusId,
+                                    Name = ((PodcastShowStatusEnum)showt.PodcastShowStatusId).ToString()
+                                }).FirstOrDefault()!
+                            });
+                        }
+                    }
+                }
+                return new SubscribedContentResponseDTO
+                {
+                    PodcastChannelList = channelList.DistinctBy(c => c.Id).ToList(),
+                    PodcastShowList = showList.DistinctBy(s => s.Id).ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetSubscribedContentByAccountIdAsync for AccountId: {AccountId}", accountId);
+                throw new HttpRequestException($"Error while retrieving Subscribed Content for AccountId: {accountId}. Error: {ex.Message}");
+            }
+        }
         public async Task<PodcastChannelDTO?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
         {
             var batchRequest = new BatchQueryRequest
@@ -3271,6 +3812,42 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 : null;
             return realResult != null ? realResult.ToObject<PodcastEpisodeDTO>() : null;
         }
+        public async Task<AccountDTO?> GetAccount(int accountId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                    {
+                        Key = "account",
+                        QueryType = "findbyid",
+                        EntityType = "Account",
+                        Parameters = JObject.FromObject(new
+                        {
+                            id = accountId
+                        }),
+                        Fields = new[] {
+                            "Id",
+                            "Email",
+                            "Password",
+                            "RoleId",
+                            "FullName",
+                            "Dob",
+                            "Gender",
+                            "Address",
+                            "Phone",
+                            "Balance"
+                        }
+                    }
+                }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+
+            if (result.Results["account"] == null) return null;
+
+            return (result.Results["account"] as JObject).ToObject<AccountDTO>();
+        }
         public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
         {
             var batchRequest = new BatchQueryRequest
@@ -3330,6 +3907,65 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             //Console.WriteLine("Real Result: " + realResult);
             return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
         }
+        public async Task<PodcastChannelSubscribedDTO?> GetSubscribedPodcastChannel(Guid podcastChannelId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastChannel",
+                            QueryType = "findall",
+                            EntityType = "PodcastChannel",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastChannelId
+                                },
+                                include = "PodcastChannelStatusTrackings, PodcastChannelHashtags, PodcastCategory, PodcastSubCategory, PodcastShows"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                ? podcastChannelArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<PodcastChannelSubscribedDTO>() : null;
+        }
+        public async Task<PodcastShowSubscribedDTO?> GetSubscribedPodcastShow(Guid podcastShowId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastShowId
+                                },
+                                include = "PodcastShowStatusTrackings, PodcastShowHashtags, PodcastCategory, PodcastSubCategory, PodcastShowSubscriptionType, PodcastChannel, PodcastEpisodes"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                ? podcastShowArray.First as JObject
+                : null;
+            //Console.WriteLine("Real Result: " + realResult);
+            return realResult != null ? realResult.ToObject<PodcastShowSubscribedDTO>() : null;
+        }
         public async Task<List<PodcastShowDTO>> GetPodcastShowByPodcastChannelId(Guid podcastChannelId)
         {
             var batchRequest = new BatchQueryRequest
@@ -3386,6 +4022,103 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             return result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
                 ? podcastChannelArray.ToObject<List<PodcastChannelDTO>>()
                 : null;
+        }
+        private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+            {
+                new BatchQueryItem
+                {
+                    Key = "activeSystemConfigProfile",
+                    QueryType = "findall",
+                    EntityType = "SystemConfigProfile",
+                        Parameters = JObject.FromObject(new
+                        {
+                            where = new
+                            {
+                                IsActive = true
+                            },
+                            include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+
+                        }),
+                    Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
+                }
+            }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+
+            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                ? configArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
+        }
+        public async Task<bool> ValidatePodcastSubscriptionRegistration(int accountId, Guid PodcastSubscriptionRegistrationId)
+        {
+            var podcastSubscriptionRegistration = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                .Where(psr => psr.Id == PodcastSubscriptionRegistrationId && psr.AccountId == accountId)
+                .FirstOrDefaultAsync();
+            return podcastSubscriptionRegistration != null;
+        }
+        public async Task<bool> ValidatePodcastSubscriptionAccess(int accountId, int PodcastSubscriptionId)
+        {
+            var podcastShowOrChannelIds = await _podcastSubscriptionGenericRepository.FindAll()
+                .Where(ps => ps.Id == PodcastSubscriptionId)
+                .Select(ps => new { ps.PodcastShowId, ps.PodcastChannelId })
+                .FirstOrDefaultAsync();
+
+            if (podcastShowOrChannelIds == null)
+                return false;
+
+            if (podcastShowOrChannelIds.PodcastShowId.HasValue)
+            {
+                var result = await GetPodcastShowWithAccountId(accountId, podcastShowOrChannelIds.PodcastShowId.Value);
+                if (result != null)
+                {
+                    return true;
+                }
+            }
+            if (podcastShowOrChannelIds.PodcastChannelId.HasValue)
+            {
+                var result = await GetPodcastChannelWithAccountId(accountId, podcastShowOrChannelIds.PodcastChannelId.Value);
+                if (result != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        public async Task<PodcastShowDTO?> GetPodcastShowWithAccountId(int accountId, Guid podcastShowId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShowOfAccount",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastShowId,
+                                    PodcasterId = accountId
+                                },
+                                include = "PodcastShowStatusTrackings"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastShowOfAccount"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                ? podcastShowArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
         }
     }
 }

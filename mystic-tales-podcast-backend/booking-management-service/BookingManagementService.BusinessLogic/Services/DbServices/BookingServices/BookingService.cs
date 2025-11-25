@@ -3031,6 +3031,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         }
 
                         var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindByIdAsync(nextListenObj.ListenObjectId);
+                        bookingPodcastTrack.RemainingPreviewListenSlot -= 1;
+                        await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                         var newListenSession = new BookingPodcastTrackListenSession
                         {
                             AccountId = accountId,

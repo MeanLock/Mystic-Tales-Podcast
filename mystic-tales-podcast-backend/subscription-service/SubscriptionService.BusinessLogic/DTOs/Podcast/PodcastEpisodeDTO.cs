@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ModerationService.BusinessLogic.DTOs.Podcast
+namespace SubscriptionService.BusinessLogic.DTOs.Podcast
 {
     public class PodcastEpisodeDTO
     {

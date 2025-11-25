@@ -465,5 +465,54 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             var podcastSubscriptions = await _podcastSubscriptionService.GetPodcastSubscriptionsByAccountIdAsync(accountId, request.EpisodeBaseSourceInfoList);
             return Ok(podcastSubscriptions);
         }
+        [HttpGet("podcast-subscriptions-registrations/me")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetMyPodcastSubscriptionRegistrations()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var podcastSubscriptionsRegistrations = await _podcastSubscriptionService.GetAllPodcastSubscriptionRegistrationsByAccountIdAsync(account);
+            return Ok(new
+            {
+                PodcastSubscriptionRegistrationList = podcastSubscriptionsRegistrations
+            });
+        }
+        [HttpGet("subscribed-content")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetSubscribedContent()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var subscribedContent = await _podcastSubscriptionService.GetSubscribedContentByAccountIdAsync(accountId);
+            return Ok(subscribedContent);
+        }
+        [HttpPost("podcast-subscription-registrations/{PodcastSubscriptionRegistrationId}/accept-newest-version/{IsAccepted}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> AcceptNewestPodcastSubscriptionVersion(
+            [FromRoute] Guid PodcastSubscriptionRegistrationId,
+            [FromRoute] bool IsAccepted)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var requestData = new JObject   
+            {
+                { "AccountId", accountId },
+                { "PodcastSubscriptionRegistrationId", PodcastSubscriptionRegistrationId },
+                { "IsAccepted", IsAccepted }
+            };
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                topic: SAGA_TOPIC,
+                requestData: requestData,
+                sagaInstanceId: null,
+                messageName: "podcast-subscription-registration-accept-newest-version-flow");
+            var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            if (!result)
+            {
+                return StatusCode(500, "Failed to initiate podcast subscription newest version acceptance process.");
+            }
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            });
+        }
     }
 }

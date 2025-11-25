@@ -10,7 +10,6 @@ namespace SubscriptionService.BusinessLogic.Models.Mail
     {
         public string CustomerFullName { get; set; }
         public decimal? RefundAmount { get; set; }
-        public decimal? NewBalance { get; set; }
         public DateTime CancelledDate { get; set; }
     }
 }

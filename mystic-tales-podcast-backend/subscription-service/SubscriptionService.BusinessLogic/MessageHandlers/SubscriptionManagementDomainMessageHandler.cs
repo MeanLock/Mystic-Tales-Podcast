@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using SubscriptionService.BusinessLogic.Attributes;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
+using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CAcceptPodcastSubscriptionNewestVersion;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelChannelSubscriptionChannelDeletionForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelChannelSubscriptionUnpublishChannelForce;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CancelPodcasterChannelsSubscriptionTerminatePodcasterForce;
@@ -43,12 +44,17 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
         private const string SAGA_TOPIC = KafkaTopicEnum.SubscriptionManagementDomain;
         public SubscriptionManagementDomainMessageHandler(
             IMessagingService messagingService,
+            IMailPropertiesConfig mailPropertiesConfig,
+            MailOperationService mailOperationService,
             KafkaProducerService kafkaProducerService,
             ILogger<SubscriptionManagementDomainMessageHandler> logger,
             PodcastSubscriptionService podcastSubscriptionService,
             MemberSubscriptionService memberSubscriptionService) : base(messagingService, kafkaProducerService, logger)
         {
             _logger = logger;
+            _mailPropertiesConfig = mailPropertiesConfig;
+            _mailOperationService = mailOperationService;
+            _kafkaProducerService = kafkaProducerService;
             _podcastSubscriptionService = podcastSubscriptionService;
             _memberSubscriptionService = memberSubscriptionService;
         }
@@ -331,6 +337,21 @@ namespace SubscriptionService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "send-subscription-service-email.failed"
+            );
+        }
+        [MessageHandler("accept-podcast-subscription-newest-version", SAGA_TOPIC)]
+        public async Task HandleAcceptPodcastSubscriptionNewestVersionAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<AcceptPodcastSubscriptionNewestVersionParameterDTO>();
+                    await _podcastSubscriptionService.AcceptPodcastSubscriptionNewestVersionAsync(parameter, command);
+                    _logger.LogInformation("Handled accept-podcast-subscription-newest-versio command for SagaId: {SagaId}", command.SagaInstanceId);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "accept-podcast-subscription-newest-version.failed"
             );
         }
     }
