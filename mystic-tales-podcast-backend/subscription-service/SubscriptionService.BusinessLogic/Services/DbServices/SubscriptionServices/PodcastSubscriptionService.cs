@@ -2519,7 +2519,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 var temp = await GetPodcastShow(podcastSubscription.PodcastShowId.Value);
                                 podcasterId = temp.PodcasterId;
                             }
-                            int incomeTakenDelayDays = config.IncomeTakenDelayDays;
+                            //int incomeTakenDelayDays = config.IncomeTakenDelayDays;
+                            int incomeTakenDelayDays = 1;
                             decimal profitRate = (decimal)config.ProfitRate;
                             var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                         .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
@@ -3588,6 +3589,69 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 CreatedAt = channel.CreatedAt,
                                 UpdatedAt = channel.UpdatedAt
                             });
+                            foreach(var showId in channel.PodcastShows)
+                            {
+                                var show = await GetSubscribedPodcastShow(showId.Id);
+                                if (show != null)
+                                {
+                                    showList.Add(new PodcastShowSubscribedContentResponseDTO
+                                    {
+                                        Id = show.Id,
+                                        Name = show.Name,
+                                        Description = show.Description,
+                                        MainImageFileKey = show.MainImageFileKey,
+                                        TrailerAudioFileKey = show.TrailerAudioFileKey,
+                                        TotalFollow = show.TotalFollow,
+                                        ListenCount = show.ListenCount,
+                                        AverageRating = show.AverageRating,
+                                        RatingCount = show.RatingCount,
+                                        Copyright = show.Copyright,
+                                        IsReleased = show.IsReleased,
+                                        Language = show.Language,
+                                        EpisodeCount = show.PodcastEpisodes.Count(pe => pe.DeletedAt == null),
+                                        PodcastCategory = show.PodcastCategory != null ? new PodcastCategoryDTO
+                                        {
+                                            Id = show.PodcastCategory.Id,
+                                            Name = show.PodcastCategory.Name,
+                                            MainImageFileKey = show.PodcastCategory.MainImageFileKey
+                                        } : null,
+                                        PodcastSubCategory = show.PodcastSubCategory != null ? new PodcastSubCategoryDTO
+                                        {
+                                            Id = show.PodcastSubCategory.Id,
+                                            Name = show.PodcastSubCategory.Name,
+                                            PodcastCategoryId = show.PodcastSubCategory.PodcastCategoryId
+                                        } : null,
+                                        PodcastChannel = show.PodcastChannel != null ? new PodcastChannelSnippetResponseDTO
+                                        {
+                                            Id = show.PodcastChannel.Id,
+                                            Name = show.PodcastChannel.Name,
+                                            Description = show.PodcastChannel.Description,
+                                            MainImageFileKey = show.PodcastChannel.MainImageFileKey
+                                        } : null,
+                                        PodcastShowSubscriptionType = show.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
+                                        {
+                                            Id = show.PodcastShowSubscriptionType.Id,
+                                            Name = show.PodcastShowSubscriptionType.Name
+                                        } : null,
+                                        Podcaster = null,
+                                        ReleaseDate = show.ReleaseDate,
+                                        TakenDownReason = show.TakenDownReason,
+                                        UploadFrequency = show.UploadFrequency,
+                                        Hashtags = show.Hashtags != null ? show.Hashtags.Select(showh => new HashtagDTO
+                                        {
+                                            Id = showh.Id,
+                                            Name = showh.Name
+                                        }).ToList() : null,
+                                        CreatedAt = show.CreatedAt,
+                                        UpdatedAt = show.UpdatedAt,
+                                        CurrentStatus = show.PodcastShowStatusTrackings.OrderByDescending(showt => showt.CreatedAt).Select(showt => new PodcastStatusDTO
+                                        {
+                                            Id = showt.PodcastShowStatusId,
+                                            Name = ((PodcastShowStatusEnum)showt.PodcastShowStatusId).ToString()
+                                        }).FirstOrDefault()!
+                                    });
+                                }
+                            }
                         }
                     } else if(registration.PodcastSubscription.PodcastShowId != null)
                     {
@@ -3699,7 +3763,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     .Sum(item => item.Amount);
                 var threeMonthAgoRegistrations = subscriptions
                     .SelectMany(ps => ps.PodcastSubscriptionRegistrations)
-                    .Where(psr => psr.LastPaidAt >= _dateHelper.GetNowByAppTimeZone().AddMonths(-3) && psr.IsIncomeTaken);
+                    .Where(psr => psr.LastPaidAt >= _dateHelper.GetNowByAppTimeZone().AddMonths(-3));
                 foreach (var registration in threeMonthAgoRegistrations)
                 {
                     var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
@@ -3733,7 +3797,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     foreach (var registration in registrations)
                     {
                         var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                        dailyAmount += transactions.Sum(t => t.Amount);
+                        dailyAmount += transactions.Where(t => DateOnly.FromDateTime(t.CreatedAt) == date).Sum(t => t.Amount);
                     }
                     result.Last30DayList.Add(new PodcastSubscriptionLast30DashboardListItemResponseDTO
                     {
@@ -3746,11 +3810,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     .Sum(item => item.Amount);
                 var threeMonthAgoRegistrations = subscriptions
                     .SelectMany(ps => ps.PodcastSubscriptionRegistrations)
-                    .Where(psr => psr.LastPaidAt >= _dateHelper.GetNowByAppTimeZone().AddMonths(-3) && psr.IsIncomeTaken);
+                    .Where(psr => psr.LastPaidAt >= _dateHelper.GetNowByAppTimeZone().AddMonths(-3));
                 foreach (var registration in threeMonthAgoRegistrations)
                 {
                     var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                    result.Last3MonthTotalAmount += transactions.Sum(t => t.Amount);
+                    result.Last3MonthTotalAmount += transactions.Where(t => DateOnly.FromDateTime(t.CreatedAt) >= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddMonths(-3))).Sum(t => t.Amount);
                 }
                 return result;
             }
