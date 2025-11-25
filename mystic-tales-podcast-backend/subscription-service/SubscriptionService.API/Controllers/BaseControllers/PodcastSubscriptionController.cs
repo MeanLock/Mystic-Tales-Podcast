@@ -493,7 +493,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var requestData = new JObject   
+            var requestData = new JObject
             {
                 { "AccountId", accountId },
                 { "PodcastSubscriptionRegistrationId", PodcastSubscriptionRegistrationId },
@@ -513,6 +513,34 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             {
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
+        }
+        [HttpGet("channels/{PodcastChannelId}/dashboard")]
+        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionDashboardByPodcastChannelId([FromRoute] Guid PodcastChannelId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var isValid = await _podcastSubscriptionService.GetPodcastChannelWithAccountId(accountId, PodcastChannelId);
+            if (isValid == null)
+            {
+                return Forbid($"The Logged In Account is unauthorized to access Podcast Channel Id: {PodcastChannelId}");
+            }
+            var podcastSubscriptionDashboard = await _podcastSubscriptionService.GetPodcastSubscriptionDashboardByPodcastChannelIdAsync(PodcastChannelId);
+            return Ok(podcastSubscriptionDashboard);
+        }
+        [HttpGet("shows/{PodcastShowId}/dashboard")]
+        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionDashboardByPodcastShowlId([FromRoute] Guid PodcastShowId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var isValid = await _podcastSubscriptionService.GetPodcastShowWithAccountId(accountId, PodcastShowId);
+            if (isValid == null)
+            {
+                return Forbid($"The Logged In Account is unauthorized to access Podcast Show Id: {PodcastShowId}");
+            }
+            var podcastSubscriptionDashboard = await _podcastSubscriptionService.GetPodcastSubscriptionDashboardByPodcastShowIdAsync(PodcastShowId);
+            return Ok(podcastSubscriptionDashboard);
         }
     }
 }

@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompletePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransactionRollback;
+using TransactionService.BusinessLogic.DTOs.Podcast;
+using TransactionService.BusinessLogic.DTOs.PodcastSubscription;
 using TransactionService.BusinessLogic.DTOs.SystemConfiguration;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Enums.Transaction;
@@ -373,6 +375,94 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 ? configArray.First as JObject
                 : null;
             return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
+        }
+        public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastChannel",
+                            QueryType = "findall",
+                            EntityType = "PodcastChannel",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastChannelId
+                                },
+                                include = "PodcastChannelStatusTrackings"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                ? podcastChannelArray.First as JObject
+                : null;
+            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
+        }
+        public async Task<PodcastShowDTO?> GetPodcastShow(Guid podcastShowId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastShowId
+                                },
+                                include = "PodcastShowStatusTrackings"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                ? podcastShowArray.First as JObject
+                : null;
+            //Console.WriteLine("Real Result: " + realResult);
+            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
+        }
+        public async Task<List<PodcastSubscriptionDTO>?> GetPodcastSubscriptionByShowId(Guid podcastShowId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastSubscription",
+                            QueryType = "findall",
+                            EntityType = "PodcastSubscription",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    PodcastShowId = podcastShowId
+                                },
+                                include = "PodcastSubscriptionRegistrations"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", batchRequest);
+
+            return result.Results?["podcastSubscription"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                ? podcastShowArray.ToObject<List<PodcastSubscriptionDTO>>()
+                : null;
+            //Console.WriteLine("Real Result: " + realResult);
         }
     }
 }

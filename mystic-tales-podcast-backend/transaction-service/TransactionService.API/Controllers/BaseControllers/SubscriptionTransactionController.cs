@@ -75,5 +75,19 @@ namespace TransactionService.API.Controllers.BaseControllers
                 MemberSubscriptionTransactionList = result
             });
         }
+        //[HttpGet("podcast-subscriptions/channels/{PodcastChannelId}/dashboard")]
+        //[Authorize (Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        //public async Task<IActionResult> GetPodcastSubscriptionDashboardByPodcastChannelId([FromRoute] Guid PodcastChannelId)
+        //{
+        //    var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+        //    var accountId = account.Id;
+        //    var isValid = await _podcastSubscriptionService.GetPodcastChannel(PodcastChannelId);
+        //    if (isValid == null || isValid.PodcasterId != accountId)
+        //    {
+        //        return Forbid($"You are not authorize to see the dashboard of Podcast Channel Id: {PodcastChannelId}");
+        //    }
+        //    var result = await _podcastSubscriptionService.GetPodcastSubscriptionDashboardByPodcastChannelId(PodcastChannelId);
+        //    return Ok(result);
+        //}
     }
 }

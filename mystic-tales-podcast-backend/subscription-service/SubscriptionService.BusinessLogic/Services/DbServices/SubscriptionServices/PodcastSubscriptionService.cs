@@ -25,9 +25,11 @@ using SubscriptionService.BusinessLogic.DTOs.Podcast;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.Details;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems;
+using SubscriptionService.BusinessLogic.DTOs.PodcastSubscriptionTransaction;
 using SubscriptionService.BusinessLogic.DTOs.Snippet;
 using SubscriptionService.BusinessLogic.DTOs.Subscription;
 using SubscriptionService.BusinessLogic.DTOs.SystemConfiguration;
+using SubscriptionService.BusinessLogic.DTOs.Transaction;
 using SubscriptionService.BusinessLogic.Enums.Kafka;
 using SubscriptionService.BusinessLogic.Enums.Podcast;
 using SubscriptionService.BusinessLogic.Enums.Subscription;
@@ -46,6 +48,7 @@ using SubscriptionService.Infrastructure.Models.Kafka;
 using SubscriptionService.Infrastructure.Services.Kafka;
 using System.Security.Principal;
 using System.Threading.Channels;
+using System.Transactions;
 
 namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices
 {
@@ -2947,7 +2950,13 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                         await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                     }
-                    await transaction.CommitAsync();
+                    else
+                    {
+                        registration.IsAcceptNewestVersionSwitch = false;
+                        registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
+                    }
+                        await transaction.CommitAsync();
 
                     var newResponseData = command.RequestData;
                     var newMessageName = command.MessageName + ".success";
@@ -3657,6 +3666,100 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while retrieving Subscribed Content for AccountId: {accountId}. Error: {ex.Message}");
             }
         }
+        public async Task<PodcastSubscriptionDashboardResponseDTO> GetPodcastSubscriptionDashboardByPodcastChannelIdAsync(Guid podcastChannelId)
+        {
+            try
+            {
+                var result = new PodcastSubscriptionDashboardResponseDTO();
+                var subscriptions = await _podcastSubscriptionGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(ps => ps.PodcastSubscriptionRegistrations))
+                    .Where(ps => ps.PodcastChannelId == podcastChannelId)
+                    .ToListAsync();
+                for(int i = 30; i >= 0; i--)
+                {
+                    var date = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()).AddDays(-i);
+                    var registrations = subscriptions
+                        .SelectMany(ps => ps.PodcastSubscriptionRegistrations)
+                        .Where(psr => DateOnly.FromDateTime(psr.LastPaidAt) == date && psr.IsIncomeTaken);
+                    decimal dailyAmount = 0;
+                    foreach (var registration in registrations)
+                    {
+                        var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                        dailyAmount += transactions.Sum(t => t.Amount);
+                    }
+                    result.Last30DayList.Add(new PodcastSubscriptionLast30DashboardListItemResponseDTO
+                    {
+                        Date = date,
+                        Amount = dailyAmount
+                    });
+                }
+                result.LastMonthTotalAmount = result.Last30DayList
+                    .Where(item => item.Date >= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()).AddDays(-30))
+                    .Sum(item => item.Amount);
+                var threeMonthAgoRegistrations = subscriptions
+                    .SelectMany(ps => ps.PodcastSubscriptionRegistrations)
+                    .Where(psr => psr.LastPaidAt >= _dateHelper.GetNowByAppTimeZone().AddMonths(-3) && psr.IsIncomeTaken);
+                foreach (var registration in threeMonthAgoRegistrations)
+                {
+                    var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                    result.Last3MonthTotalAmount += transactions.Sum(t => t.Amount);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetPodcastSubscriptionDashboardByPodcastChannelIdAsync for PodcastChannelId: {PodcastChannelId}", podcastChannelId);
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription Dashboard for PodcastChannelId: {podcastChannelId}. Error: {ex.Message}");
+            }
+        }
+        public async Task<PodcastSubscriptionDashboardResponseDTO> GetPodcastSubscriptionDashboardByPodcastShowIdAsync(Guid podcastShowId)
+        {
+            try
+            {
+                var result = new PodcastSubscriptionDashboardResponseDTO();
+                var subscriptions = await _podcastSubscriptionGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(ps => ps.PodcastSubscriptionRegistrations))
+                    .Where(ps => ps.PodcastShowId == podcastShowId)
+                    .ToListAsync();
+                for (int i = 30; i >= 0; i--)
+                {
+                    var date = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()).AddDays(-i);
+                    var registrations = subscriptions
+                        .SelectMany(ps => ps.PodcastSubscriptionRegistrations)
+                        .Where(psr => DateOnly.FromDateTime(psr.LastPaidAt) == date && psr.IsIncomeTaken);
+                    decimal dailyAmount = 0;
+                    foreach (var registration in registrations)
+                    {
+                        var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                        dailyAmount += transactions.Sum(t => t.Amount);
+                    }
+                    result.Last30DayList.Add(new PodcastSubscriptionLast30DashboardListItemResponseDTO
+                    {
+                        Date = date,
+                        Amount = dailyAmount
+                    });
+                }
+                result.LastMonthTotalAmount = result.Last30DayList
+                    .Where(item => item.Date >= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()).AddDays(-30))
+                    .Sum(item => item.Amount);
+                var threeMonthAgoRegistrations = subscriptions
+                    .SelectMany(ps => ps.PodcastSubscriptionRegistrations)
+                    .Where(psr => psr.LastPaidAt >= _dateHelper.GetNowByAppTimeZone().AddMonths(-3) && psr.IsIncomeTaken);
+                foreach (var registration in threeMonthAgoRegistrations)
+                {
+                    var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                    result.Last3MonthTotalAmount += transactions.Sum(t => t.Amount);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetPodcastSubscriptionDashboardByPodcastChannelIdAsync for PodcastShowId: {PodcastShowId}", podcastShowId);
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription Dashboard for PodcastShowId: {podcastShowId}. Error: {ex.Message}");
+            }
+        }
         public async Task<PodcastChannelDTO?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
         {
             var batchRequest = new BatchQueryRequest
@@ -4021,6 +4124,35 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
             return result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
                 ? podcastChannelArray.ToObject<List<PodcastChannelDTO>>()
+                : null;
+        }
+        public async Task<List<PodcastSubscriptionTransactionDTO>?> GetPodcastSubscriptionTransactionByRegistrationId(Guid registrationId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastSubscriptionTransaction",
+                            QueryType = "findall",
+                            EntityType = "PodcastSubscriptionTransaction",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    PodcastSubscriptionRegistrationId = registrationId,
+                                    TransactionTypeId =(int)TransactionTypeEnum.PodcasterSubscriptionIncome,
+                                    TransactionStatusId = (int)TransactionStatusEnum.Success
+                                }
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
+
+            return result.Results?["podcastSubscriptionTransaction"] is JArray podcastSubscriptionTransactionArray && podcastSubscriptionTransactionArray.Count > 0
+                ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionDTO>>()
                 : null;
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
