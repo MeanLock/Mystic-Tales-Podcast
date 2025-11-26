@@ -18,11 +18,14 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPaymentRollback;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateAccountBalanceTransactionRollback;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateWithdrawalRequest;
+using TransactionService.BusinessLogic.DTOs.Snippet;
 using TransactionService.BusinessLogic.DTOs.Transaction;
+using TransactionService.BusinessLogic.Enums.Account;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
 using TransactionService.BusinessLogic.Helpers.FileHelpers;
+using TransactionService.BusinessLogic.Services.DbServices.MiscServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
 using TransactionService.Common.AppConfigurations.BusinessSetting.interfaces;
 using TransactionService.Common.AppConfigurations.FilePath.interfaces;
@@ -48,6 +51,8 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
         private readonly FileIOHelper _fileIOHelper;
         private readonly IPayosConfig _payosConfig;
 
+        private readonly AccountCachingService _accountCachingService;
+
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
         private readonly DateHelper _dateHelper;
@@ -60,6 +65,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
             IPayosConfig payosConfig,
+            AccountCachingService accountCachingService,
             KafkaProducerService kafkaProducerService,
             IMessagingService messagingService,
             DateHelper dateHelper)
@@ -72,6 +78,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
             _payosConfig = payosConfig;
+            _accountCachingService = accountCachingService;
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
             _dateHelper = dateHelper;
@@ -429,7 +436,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         accountBalanceWithdrawalRequest.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
 
                         var folderPath = _filePathConfig.ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_FILE_PATH + "\\" + accountBalanceWithdrawalRequest.Id;
-                        if (parameter.ImageFileKey != null && parameter.ImageFileKey != "")
+                        if (parameter.ImageFileKey == null || parameter.ImageFileKey == "")
                         {
                             throw new Exception("Image file key is required.");
                         }
@@ -439,21 +446,24 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                         accountBalanceWithdrawalRequest.TransferReceiptImageFileKey = newImageFileKey;
                         await _accountBalanceWithdrawalRequestGenericRepository.UpdateAsync(accountBalanceWithdrawalRequest.Id, accountBalanceWithdrawalRequest);
 
-                        var subtractAccountBalanceRequest = new JObject
-                        {
-                            { "AccountId", accountBalanceWithdrawalRequest.AccountId },
-                            { "Amount", accountBalanceWithdrawalRequest.Amount }
-                        };
-                        var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.PaymentProcessingDomain,
-                            requestData: subtractAccountBalanceRequest,
-                            messageName: "account-balance-subtraction-flow",
-                            sagaInstanceId: sagaId);
-                        await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, sagaId.ToString());
-                        _logger.LogInformation("Started account balance subtraction flow for Account Balance Withdrawal Request Id: {AccountBalanceWithdrawalRequestId}", accountBalanceWithdrawalRequest.Id);
+                        //var subtractAccountBalanceRequest = new JObject
+                        //{
+                        //    { "AccountId", accountBalanceWithdrawalRequest.AccountId },
+                        //    { "Amount", accountBalanceWithdrawalRequest.Amount }
+                        //};
+                        //var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        //    topic: KafkaTopicEnum.UserManagementDomain,
+                        //    requestData: subtractAccountBalanceRequest,
+                        //    messageName: "account-balance-subtraction-flow",
+                        //    sagaInstanceId: sagaId);
+                        //await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, sagaId.ToString());
+                        //_logger.LogInformation("Started account balance subtraction flow for Account Balance Withdrawal Request Id: {AccountBalanceWithdrawalRequestId}", accountBalanceWithdrawalRequest.Id);
                     }
 
                     await transaction.CommitAsync();
+                    var newRequestData = command.RequestData;
+                    newRequestData["AccountId"] = accountBalanceWithdrawalRequest.AccountId;
+                    newRequestData["Amount"] = parameter.IsReject ? 0 : accountBalanceWithdrawalRequest.Amount;
                     var newResponseData = command.RequestData;
                     newResponseData["UpdatedAt"] = accountBalanceWithdrawalRequest.UpdatedAt;
                     var newMessageName = messageName + ".success";
@@ -581,25 +591,41 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 }
             }
         }
-        public async Task<List<AccountBalanceWithdrawalRequestListItemResponseDTO>> GetAccountBalanceWithdrawalRequestsAsync(int accountId)
+        public async Task<List<AccountBalanceWithdrawalRequestListItemResponseDTO>> GetAccountBalanceWithdrawalRequestsAsync(int accountId, int roleId)
         {
             try
             {
-                return await _accountBalanceWithdrawalRequestGenericRepository.FindAll()
-                    .Where(abwr => abwr.AccountId == accountId)
+                var query = await _accountBalanceWithdrawalRequestGenericRepository.FindAll()
                     .OrderByDescending(abwr => abwr.CreatedAt)
-                    .Select(a => new AccountBalanceWithdrawalRequestListItemResponseDTO
-                    {
-                        Id = a.Id,
-                        Amount = a.Amount,
-                        TransferReceiptImageFileKey = a.TransferReceiptImageFileKey,
-                        IsRejected = a.IsRejected,
-                        RejectReason = a.RejectReason,
-                        CompletedAt = a.CompletedAt,
-                        CreatedAt = a.CreatedAt,
-                        UpdatedAt = a.UpdatedAt
-                    })
                     .ToListAsync();
+
+                if(roleId != (int)RoleEnum.Admin)
+                {
+                    query = query.Where(abwr => abwr.AccountId == accountId).ToList();
+                }
+
+                return (await Task.WhenAll(query.Select(async ab =>
+                {
+                    var account = await _accountCachingService.GetAccountStatusCacheById(ab.AccountId);
+                    return new AccountBalanceWithdrawalRequestListItemResponseDTO
+                    {
+                        Id =  ab.Id,
+                        Account = new AccountSnippetResponseDTO
+                        {
+                            Id = account.Id,
+                            FullName = account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        },
+                        Amount = ab.Amount,
+                        TransferReceiptImageFileKey = ab.TransferReceiptImageFileKey,
+                        RejectReason = ab.RejectReason,
+                        IsRejected = ab.IsRejected,
+                        CompletedAt = ab.CompletedAt,
+                        CreatedAt = ab.CreatedAt,
+                        UpdatedAt = ab.UpdatedAt
+                    };
+                }))).ToList();
             }
             catch (Exception ex)
             {

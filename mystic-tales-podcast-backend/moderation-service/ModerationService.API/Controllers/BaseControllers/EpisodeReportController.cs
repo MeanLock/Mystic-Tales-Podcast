@@ -68,7 +68,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 topic: SAGA_TOPIC,
                 requestData: requestData,
                 sagaInstanceId: null,
-                messageName: "Episode-report-submission-flow");
+                messageName: "episode-report-submission-flow");
             var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             if (!result)
             {
@@ -126,7 +126,8 @@ namespace ModerationService.API.Controllers.BaseControllers
             {
                 { "AccountId", accountId },
                 { "IsResolved", IsResolved },
-                { "IsTakenEffect", true }
+                { "IsTakenEffect", true },
+                { "PodcastEpisodeReportReviewSessionId", PodcastEpisodeReportReviewSessionId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,

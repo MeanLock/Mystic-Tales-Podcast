@@ -183,7 +183,7 @@ namespace ModerationService.BusinessLogic.MessageHandlers
                failedEmitMessage: "cancel-dmca-accusation-report.failed"
            );
         }
-        [MessageHandler("dismiss-other-episode-dmca-dmca-remove-episode-forced", SAGA_TOPIC)]
+        [MessageHandler("dismiss-other-episode-dmca-dmca-remove-episode-force", SAGA_TOPIC)]
         public async Task HandleDismissOtherEpisodeDMCA_DMCARemoveEpisodeForcedAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -192,10 +192,10 @@ namespace ModerationService.BusinessLogic.MessageHandlers
                {
                    var parameter = command.RequestData.ToObject<DismissOtherEpisodeDMCADMCARemoveEpisodeForcedParameterDTO>();
                    await _dmcaAccusationService.DismissOtherEpisodeDMCADMCARemoveEpisodeForcedAsync(parameter, command);
-                   _logger.LogInformation("Handled dismiss-other-episode-dmca-dmca-remove-episode-forced command for SagaId: {SagaId}", command.SagaInstanceId);
+                   _logger.LogInformation("Handled dismiss-other-episode-dmca-dmca-remove-episode-force command for SagaId: {SagaId}", command.SagaInstanceId);
                },
                responseTopic: SAGA_TOPIC,
-               failedEmitMessage: "dismiss-other-episode-dmca-dmca-remove-episode-forced.failed"
+               failedEmitMessage: "dismiss-other-episode-dmca-dmca-remove-episode-force.failed"
            );
         }
         [MessageHandler("dismiss-episode-dmca-unpublish-episode-force", SAGA_TOPIC)]

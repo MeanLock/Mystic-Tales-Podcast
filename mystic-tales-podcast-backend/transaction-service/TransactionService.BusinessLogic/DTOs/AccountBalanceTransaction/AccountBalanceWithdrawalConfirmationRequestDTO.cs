@@ -9,11 +9,11 @@ namespace TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction
 {
     public class AccountBalanceWithdrawalConfirmationRequestDTO
     {
-        public IFormFile TransferReceiptImageFile { get; set; }
-        public AccountBalanceWithdrawalRequestInfoDTO AccountBalanceWithdrawalRequestInfo { get; set; }
+        public IFormFile? TransferReceiptImageFile { get; set; }
+        public string AccountBalanceWithdrawalRequestInfo { get; set; }
     }
     public class AccountBalanceWithdrawalRequestInfoDTO
     {
-        public string RejectedReason { get; set; }
+        public string? RejectedReason { get; set; }
     }
 }

@@ -1187,7 +1187,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     CancelledAt = psr.CancelledAt,
                     CreatedAt = psr.CreatedAt,
                     UpdatedAt = psr.UpdatedAt,
-                    PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                    PodcastSubscriptionBenefitList = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                        .Where(bm => bm.Version == psr.CurrentVersion)
                         .Select(bm => new PodcastSubscriptionBenefitDTO
                         {
                             Id = bm.PodcastSubscriptionBenefit.Id,
@@ -2491,10 +2492,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
                     var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                         .Where(psr => !psr.IsIncomeTaken
-                            && psr.IsAcceptNewestVersionSwitch == null
-                            && psr.CancelledAt != null
-                            && psr.LastPaidAt.AddDays(30) > _dateHelper.GetNowByAppTimeZone())
+                            && psr.CancelledAt == null)
                         .ToListAsync();
+
+                    //Console.WriteLine($"Found {registrationsList.Count} podcast subscription registrations for income release.");
+                    //Console.WriteLine($"Registrations List: {JArray.FromObject(registrationsList)}");
 
                     foreach (var registration in registrationsList)
                     {
@@ -2520,7 +2522,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 podcasterId = temp.PodcasterId;
                             }
                             //int incomeTakenDelayDays = config.IncomeTakenDelayDays;
-                            int incomeTakenDelayDays = 1;
+                            int incomeTakenDelayDays = 0;
                             decimal profitRate = (decimal)config.ProfitRate;
                             var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                         .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
@@ -3074,9 +3076,17 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             try
             {
                 var show = await GetPodcastShow(podcastShowId);
-                var temp = await _podcastSubscriptionGenericRepository.FindAll()
+                if(show == null)
+                {
+                    throw new HttpRequestException("Podcast show not found");
+                }
+                PodcastSubscription? temp = null;
+                if(show.PodcastChannelId != null)
+                {
+                    temp = await _podcastSubscriptionGenericRepository.FindAll()
                     .Where(ps => ps.PodcastChannelId == show.PodcastChannelId && ps.IsActive && ps.DeletedAt == null)
                     .FirstOrDefaultAsync();
+                }
 
                 var query = _podcastSubscriptionGenericRepository.FindAll(
                     includeFunc: ps => ps
@@ -3199,7 +3209,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             CancelledAt = psr.CancelledAt,
                             CreatedAt = psr.CreatedAt,
                             UpdatedAt = psr.UpdatedAt,
-                            PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                            PodcastSubscriptionBenefitList = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
                                 .Where(psb => psb.Version == psr.CurrentVersion)
                                 .Select(bm => new PodcastSubscriptionBenefitDTO
                                 {
@@ -3237,7 +3247,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     CancelledAt = psr.CancelledAt,
                                     CreatedAt = psr.CreatedAt,
                                     UpdatedAt = psr.UpdatedAt,
-                                    PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                                    PodcastSubscriptionBenefitList = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
                                         .Where(psb => psb.Version == psr.CurrentVersion)
                                         .Select(bm => new PodcastSubscriptionBenefitDTO
                                         {
@@ -3285,7 +3295,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         CancelledAt = psr.CancelledAt,
                         CreatedAt = psr.CreatedAt,
                         UpdatedAt = psr.UpdatedAt,
-                        PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                        PodcastSubscriptionBenefitList = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
                             .Where(psb => psb.Version == psr.CurrentVersion)
                             .Select(bm => new PodcastSubscriptionBenefitDTO
                             {
@@ -3333,7 +3343,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         CancelledAt = psr.CancelledAt,
                         CreatedAt = psr.CreatedAt,
                         UpdatedAt = psr.UpdatedAt,
-                        PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                        PodcastSubscriptionBenefitList = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
                             .Where(psb => psb.Version == psr.CurrentVersion)
                             .Select(bm => new PodcastSubscriptionBenefitDTO
                             {
@@ -3367,7 +3377,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 CancelledAt = psr.CancelledAt,
                                 CreatedAt = psr.CreatedAt,
                                 UpdatedAt = psr.UpdatedAt,
-                                PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                                PodcastSubscriptionBenefitList = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
                                     .Where(psb => psb.Version == psr.CurrentVersion)
                                     .Select(bm => new PodcastSubscriptionBenefitDTO
                                     {
@@ -3403,7 +3413,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             CancelledAt = psr.CancelledAt,
                             CreatedAt = psr.CreatedAt,
                             UpdatedAt = psr.UpdatedAt,
-                            PodcastSubscriptionBenefit = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
+                            PodcastSubscriptionBenefitList = psr.PodcastSubscription.PodcastSubscriptionBenefitMappings
                                 .Where(psb => psb.Version == psr.CurrentVersion)
                                 .Select(bm => new PodcastSubscriptionBenefitDTO
                                 {
@@ -3484,24 +3494,39 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while retrieving Podcast Subscriptions for AccountId: {accountId}. Error: {ex.Message}");
             }
         }
-        public async Task<List<PodcastSubscriptionRegistrationListItemResponseDTO>> GetAllPodcastSubscriptionRegistrationsByAccountIdAsync(AccountStatusCache account)
+        public async Task<List<PodcastSubscriptionRegistrationMeListItemResponseDTO>> GetAllPodcastSubscriptionRegistrationsByAccountIdAsync(AccountStatusCache account)
         {
             try
             {
-                var result = new List<PodcastSubscriptionRegistrationListItemResponseDTO>();
-                return result = await _podcastSubscriptionRegistrationGenericRepository.FindAll(
+                var result = new List<PodcastSubscriptionRegistrationMeListItemResponseDTO>();
+                var query = await _podcastSubscriptionRegistrationGenericRepository.FindAll(
                     includeFunc: function => function
+                    .Include(psr => psr.PodcastSubscription)
+                    .ThenInclude(psrct => psrct.PodcastSubscriptionCycleTypePrices)
                     .Include(psr => psr.SubscriptionCycleType))
-                    .Where(psr => psr.AccountId == account.Id)
-                    .Select(psr => new PodcastSubscriptionRegistrationListItemResponseDTO
+                    .Where(psr => psr.AccountId == account.Id && psr.CancelledAt == null)
+                    .ToListAsync();
+                return result = (await Task.WhenAll(query.Select(async psr =>
+                {
+                    PodcastChannelDTO? channel = null;
+                    PodcastShowDTO? show = null;
+                    if(psr.PodcastSubscription.PodcastChannelId != null)
+                    {
+                        channel = await GetPodcastChannel(psr.PodcastSubscription.PodcastChannelId.Value);
+                    }
+                    if (psr.PodcastSubscription.PodcastShowId != null)
+                    {
+                        show = await GetPodcastShow(psr.PodcastSubscription.PodcastShowId.Value);
+                    }
+                    return new PodcastSubscriptionRegistrationMeListItemResponseDTO
                     {
                         Id = psr.Id,
                         Account = new AccountSnippetResponseDTO
-                            {
-                                Id = account.Id,
-                                Email = account.Email,
-                                FullName =  account.FullName,
-                                MainImageFileKey = account.MainImageFileKey
+                        {
+                            Id = account.Id,
+                            Email = account.Email,
+                            FullName = account.FullName,
+                            MainImageFileKey = account.MainImageFileKey
                         },
                         PodcastSubscriptionId = psr.PodcastSubscriptionId,
                         SubscriptionCycleType = psr.SubscriptionCycleType == null
@@ -3511,6 +3536,26 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 Id = psr.SubscriptionCycleType.Id,
                                 Name = psr.SubscriptionCycleType.Name
                             },
+                        Price = psr.PodcastSubscription.PodcastSubscriptionCycleTypePrices
+                            .Where(pctp => pctp.SubscriptionCycleTypeId == psr.SubscriptionCycleTypeId && pctp.Version == psr.CurrentVersion)
+                            .Select(pctp => pctp.Price)
+                            .FirstOrDefault(),
+                        PodcastChannel = channel != null ? new PodcastChannelSnippetResponseDTO
+                        {
+                            Id = channel.Id,
+                            Name = channel.Name,
+                            Description = channel.Description,
+                            MainImageFileKey = channel.MainImageFileKey
+                        } : null ,
+                        PodcastShow = show != null ? new PodcastShowSnippetResponseDTO
+                        {
+                            Id = show.Id,
+                            Name = show.Name,
+                            Description = show.Description,
+                            MainImageFileKey = show.MainImageFileKey,
+                            IsReleased = show.IsReleased,
+                            ReleaseDate = show.ReleaseDate
+                        } : null,
                         CurrentVersion = psr.CurrentVersion,
                         IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
                         IsIncomeTaken = psr.IsIncomeTaken,
@@ -3518,8 +3563,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         CancelledAt = psr.CancelledAt,
                         CreatedAt = psr.CreatedAt,
                         UpdatedAt = psr.UpdatedAt
-                    })
-                    .ToListAsync();
+                    };
+                }))).ToList();
             }
             catch (Exception ex)
             {
@@ -3734,7 +3779,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         {
             try
             {
+                var config = await GetActiveSystemConfigProfile();
+                //int incomeReleaseDelayDay = config.PodcastSubscriptionConfigs.FirstOrDefault()?.IncomeTakenDelayDays ?? 7;
+                int incomeReleaseDelayDay = 0;
                 var result = new PodcastSubscriptionDashboardResponseDTO();
+                result.Last30DayList = new List<PodcastSubscriptionLast30DashboardListItemResponseDTO>();
                 var subscriptions = await _podcastSubscriptionGenericRepository.FindAll(
                     includeFunc: function => function
                     .Include(ps => ps.PodcastSubscriptionRegistrations))
@@ -3743,14 +3792,22 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 for(int i = 30; i >= 0; i--)
                 {
                     var date = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()).AddDays(-i);
+                    Console.WriteLine("Calculating for date: " + date);
                     var registrations = subscriptions
                         .SelectMany(ps => ps.PodcastSubscriptionRegistrations)
                         .Where(psr => DateOnly.FromDateTime(psr.LastPaidAt) == date && psr.IsIncomeTaken);
+                    Console.WriteLine("Found registrations count: " + registrations.Count());
+                    Console.WriteLine("Registrations: " + JArray.FromObject(registrations.Select(r => r.Id)));
                     decimal dailyAmount = 0;
                     foreach (var registration in registrations)
                     {
                         var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                        dailyAmount += transactions.Sum(t => t.Amount);
+                        if (transactions != null)
+                        {
+                            dailyAmount += transactions.Where(t => DateOnly.FromDateTime(t.CreatedAt).AddDays(-incomeReleaseDelayDay) >= date).Sum(t => t.Amount);
+                            Console.WriteLine(date + " - Registration ID: " + registration.Id + " - Daily Amount after adding: " + dailyAmount);
+                        }
+                            
                     }
                     result.Last30DayList.Add(new PodcastSubscriptionLast30DashboardListItemResponseDTO
                     {
@@ -3767,7 +3824,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 foreach (var registration in threeMonthAgoRegistrations)
                 {
                     var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                    result.Last3MonthTotalAmount += transactions.Sum(t => t.Amount);
+                    if (transactions != null)
+                        result.Last3MonthTotalAmount += transactions.Where(t => DateOnly.FromDateTime(t.CreatedAt) >= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddMonths(-3))).Sum(t => t.Amount);
                 }
                 return result;
             }
@@ -3781,7 +3839,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         {
             try
             {
+                var config = await GetActiveSystemConfigProfile();
+                //int incomeReleaseDelayDay = config.PodcastSubscriptionConfigs.FirstOrDefault()?.IncomeTakenDelayDays ?? 7;
+                int incomeReleaseDelayDay = 0;
                 var result = new PodcastSubscriptionDashboardResponseDTO();
+                result.Last30DayList = new List<PodcastSubscriptionLast30DashboardListItemResponseDTO>();
                 var subscriptions = await _podcastSubscriptionGenericRepository.FindAll(
                     includeFunc: function => function
                     .Include(ps => ps.PodcastSubscriptionRegistrations))
@@ -3790,14 +3852,18 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 for (int i = 30; i >= 0; i--)
                 {
                     var date = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone()).AddDays(-i);
+                    Console.WriteLine("Calculating for date: " + date);
                     var registrations = subscriptions
                         .SelectMany(ps => ps.PodcastSubscriptionRegistrations)
                         .Where(psr => DateOnly.FromDateTime(psr.LastPaidAt) == date && psr.IsIncomeTaken);
+                    Console.WriteLine("Found registrations count: " + registrations.Count());
+                    //Console.WriteLine($"Registrations: {JArray.FromObject(registrations)}");
                     decimal dailyAmount = 0;
                     foreach (var registration in registrations)
                     {
                         var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                        dailyAmount += transactions.Where(t => DateOnly.FromDateTime(t.CreatedAt) == date).Sum(t => t.Amount);
+                        if(transactions != null)
+                            dailyAmount += transactions.Where(t => DateOnly.FromDateTime(t.CreatedAt).AddDays(-incomeReleaseDelayDay) >= date).Sum(t => t.Amount);
                     }
                     result.Last30DayList.Add(new PodcastSubscriptionLast30DashboardListItemResponseDTO
                     {
@@ -3814,7 +3880,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 foreach (var registration in threeMonthAgoRegistrations)
                 {
                     var transactions = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                    result.Last3MonthTotalAmount += transactions.Where(t => DateOnly.FromDateTime(t.CreatedAt) >= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddMonths(-3))).Sum(t => t.Amount);
+                    if(transactions != null)
+                        result.Last3MonthTotalAmount += transactions.Where(t => DateOnly.FromDateTime(t.CreatedAt) >= DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddMonths(-3))).Sum(t => t.Amount);
                 }
                 return result;
             }

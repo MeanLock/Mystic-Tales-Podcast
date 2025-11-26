@@ -405,14 +405,15 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
 
-            var isValid = await _bookingService.ValidateBookingPodcasterAsync(BookingId, accountId);
-            if (!isValid)
-            {
-                throw new UnauthorizedAccessException("You are not authorized to reject this booking.");
-            }
+            //var isValid = await _bookingService.ValidateBookingPodcasterAsync(BookingId, accountId);
+            //if (!isValid)
+            //{
+            //    throw new UnauthorizedAccessException("You are not authorized to reject this booking.");
+            //}
 
             var requestData = new JObject
             {
+                { "AccountId", accountId },
                 { "BookingId", BookingId }
             };
 
@@ -440,17 +441,17 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
 
-            var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
-            if (!isValid)
-            {
-                throw new UnauthorizedAccessException("You are not authorized to cancel this booking.");
-            }
+            //var isValid = await _bookingService.ValidateBookingAccountAsync(BookingId, accountId);
+            //if (!isValid)
+            //{
+            //    throw new UnauthorizedAccessException("You are not authorized to cancel this booking.");
+            //}
 
             var requestData = new JObject
             {
                 { "AccountId", accountId },
                 { "BookingId", BookingId },
-                { "BookingManualCancelledReason", request.BookingCancelInfo.BookingManualCancelledReason }
+                { "BookingManualCancelledReason", request.BookingCancelledReason }
             };
 
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(

@@ -485,7 +485,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             var subscribedContent = await _podcastSubscriptionService.GetSubscribedContentByAccountIdAsync(accountId);
             return Ok(subscribedContent);
         }
-        [HttpPost("podcast-subscription-registrations/{PodcastSubscriptionRegistrationId}/accept-newest-version/{IsAccepted}")]
+        [HttpPut("podcast-subscriptions-registrations/{PodcastSubscriptionRegistrationId}/accept-newest-version/{IsAccepted}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> AcceptNewestPodcastSubscriptionVersion(
             [FromRoute] Guid PodcastSubscriptionRegistrationId,

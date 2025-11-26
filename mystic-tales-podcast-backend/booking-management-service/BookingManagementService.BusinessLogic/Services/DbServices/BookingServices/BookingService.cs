@@ -154,6 +154,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 {
                     var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    AccountStatusCache? assignedStaff = null;
+                    if (booking.AssignedStaffId != null)
+                    {
+                        var staffAccount = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                    }
                     result.Add(new BookingListItemResponseDTO
                     {
                         Id = booking.Id,
@@ -173,6 +178,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
+                        AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
+                        {
+                            Id = assignedStaff.Id,
+                            FullName = assignedStaff.FullName,
+                            Email = assignedStaff.Email,
+                            MainImageFileKey = assignedStaff.MainImageFileKey
+                        } : null,
+                        DeadlineDays = booking.DeadlineDays,
                         Price = booking.Price,
                         Deadline = booking.Deadline,
                         DemoAudioFileKey = booking.DemoAudioFileKey,
@@ -229,6 +242,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                 var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
                 var podcastBuddy = await GetPodcaster(booking.PodcastBuddyId);
+                AccountStatusCache? assignedStaff = null;
+                if(booking.AssignedStaffId != null)
+                {
+                    assignedStaff =  await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                }
 
                 if (podcastBuddy == null)
                 {
@@ -277,6 +295,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         MainImageFileKey = podcastBuddy.MainImageFileKey,
                         PriceBookingPerWord = podcastBuddy.PodcasterProfile?.PricePerBookingWord ?? 0
                     },
+                    AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
+                    {
+                        Id = assignedStaff.Id,
+                        FullName = assignedStaff.FullName,
+                        Email = assignedStaff.Email,
+                        MainImageFileKey = assignedStaff.MainImageFileKey
+                    } : null,
                     Price = booking.Price,
                     Deadline = booking.Deadline,
                     DeadlineDays = booking.DeadlineDays,
@@ -543,6 +568,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 {
                     var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    AccountStatusCache? assignedStaff = null;
+                    if (booking.AssignedStaffId != null)
+                    {
+                        var staffAccount = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                    }
                     result.Add(new BookingListItemResponseDTO
                     {
                         Id = booking.Id,
@@ -562,6 +592,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
+                        AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
+                        {
+                            Id = assignedStaff.Id,
+                            FullName = assignedStaff.FullName,
+                            Email = assignedStaff.Email,
+                            MainImageFileKey = assignedStaff.MainImageFileKey
+                        } : null,
+                        DeadlineDays = booking.DeadlineDays,
                         Price = booking.Price,
                         Deadline = booking.Deadline,
                         DemoAudioFileKey = booking.DemoAudioFileKey,
@@ -607,6 +645,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 {
                     var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    AccountStatusCache? assignedStaff = null;
+                    if (booking.AssignedStaffId != null)
+                    {
+                        var staffAccount = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                    }
                     result.Add(new BookingListItemResponseDTO
                     {
                         Id = booking.Id,
@@ -626,6 +669,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
+                        AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
+                        {
+                            Id = assignedStaff.Id,
+                            FullName = assignedStaff.FullName,
+                            Email = assignedStaff.Email,
+                            MainImageFileKey = assignedStaff.MainImageFileKey
+                        } : null,
                         Price = booking.Price,
                         Deadline = booking.Deadline,
                         DeadlineDays = booking.DeadlineDays,
@@ -746,16 +796,30 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception($"Booking with ID {bookingId} not found");
                     }
 
-                    var newBookingStatusTracking = new BookingStatusTracking
+                    var isValid = await ValidateBookingPodcasterAsync(bookingId, parameter.AccountId);
+                    if (!isValid)
                     {
-                        Id = Guid.NewGuid(),
-                        BookingId = bookingId,
-                        BookingStatusId = (int)BookingStatusEnum.QuotationRejected,
-                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
-                    };
-                    await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
-                    booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                    await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+                        throw new Exception("You are not authorized to reject this booking.");
+                    }
+
+                    var currentStatus = booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
+                    if(currentStatus < (int)BookingStatusEnum.QuotationRejected)
+                    {
+                        var newBookingStatusTracking = new BookingStatusTracking
+                        {
+                            Id = Guid.NewGuid(),
+                            BookingId = bookingId,
+                            BookingStatusId = (int)BookingStatusEnum.QuotationRejected,
+                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                        };
+                        await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+                        booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                        await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
+                    }
+                    else
+                    {
+                        throw new Exception("Booking is not in a valid status to be rejected");
+                    }
 
                     await transaction.CommitAsync();
 
@@ -817,17 +881,34 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             .Include(b => b.BookingStatusTrackings)
                             .Include(b => b.BookingProducingRequests)
                     );
-                    if (booking != null && booking.Price.HasValue)
+
+                    var isValid = await ValidateBookingAccountAsync(booking.Id, parameter.AccountId);
+                    if (!isValid)
                     {
+                        throw new Exception("You are not authorized to cancel this booking.");
+                    }
+
+                    if (booking != null)
+                    {
+                        var currentStatus = booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
                         var newBookingStatusId = 0;
-                        if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId < (int)BookingStatusEnum.Producing)
+                        if (currentStatus < (int)BookingStatusEnum.QuotationRejected)
                         {
-                            newBookingStatusId = (int)BookingStatusEnum.QuotationCancelled;
+                            if(parameter.AccountId == booking.AccountId)
+                                newBookingStatusId = (int)BookingStatusEnum.QuotationCancelled;
+                            else if(parameter.AccountId == booking.PodcastBuddyId)
+                                newBookingStatusId = (int)BookingStatusEnum.QuotationRejected;
+                            else
+                                throw new Exception("Only customer or podcast buddy can manually cancel booking in Quotation status");
                         }
-                        else if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Producing)
+                        else if (currentStatus == (int)BookingStatusEnum.Producing)
                         {
+                            if(booking.AccountId != parameter.AccountId)
+                                throw new Exception("Only customer can manually cancel booking in Producing status");
                             if (booking.BookingProducingRequests.Count() == 1 && booking.BookingProducingRequests.Select(b => b.Deadline).FirstOrDefault() <= _dateHelper.GetNowByAppTimeZone())
                                 newBookingStatusId = (int)BookingStatusEnum.CancelledManually;
+                            else
+                                throw new Exception("Cannot manually cancel booking in Producing. Condition not met (The first producing request and pass deadline)");
                         }
                         else
                         {
@@ -849,6 +930,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         if (newBookingStatusId == (int)BookingStatusEnum.CancelledManually)
                         {
+                            if(booking.Price == null)
+                                throw new Exception("Booking Price is null, cannot process refund");
                             var profitRate = systemConfig.BookingConfig.ProfitRate;
                             var depositRate = systemConfig.BookingConfig.DepositRate;
 
@@ -896,6 +979,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             }
                         }
 
+                        await transaction.CommitAsync();
+
                         var newResponseData = new JObject
                         {
                             { "BookingId", booking.Id },
@@ -915,8 +1000,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
                     else
                     {
-                        _logger.LogError("Booking not found or Price is null for SagaId: {SagaId}", command.SagaInstanceId);
-                        throw new HttpRequestException("Booking not found or invalid pricing information");
+                        //_logger.LogError("Booking not found or Price is null for SagaId: {SagaId}", command.SagaInstanceId);
+                        throw new HttpRequestException("Booking not found");
                     }
                 }
                 catch (Exception ex)
@@ -2156,6 +2241,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 {
                     var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    AccountStatusCache? assignedStaff = null;
+                    if(booking.AssignedStaffId.HasValue)
+                    {
+                        assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                    }
                     result.Add(new BookingListItemResponseDTO
                     {
                         Id = booking.Id,
@@ -2175,6 +2265,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
+                        AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
+                        {
+                            Id = assignedStaff.Id,
+                            FullName = assignedStaff.FullName,
+                            Email = assignedStaff.Email,
+                            MainImageFileKey = assignedStaff.MainImageFileKey
+                        } : null,
                         Price = booking.Price,
                         Deadline = booking.Deadline,
                         DeadlineDays = booking.DeadlineDays,
@@ -2229,6 +2326,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                 var account = await GetPodcaster(booking.AccountId);
                 var podcaster = await GetPodcaster(booking.PodcastBuddyId);
+                AccountStatusCache? assignedStaff = null;
+                if(booking.AssignedStaffId.HasValue)
+                {
+                    assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                }
                 return new BookingResultDetailResponseDTO
                 {
                     Id = booking.Id,
@@ -2248,6 +2350,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Email = podcaster.Email,
                         MainImageFileKey = podcaster.MainImageFileKey
                     },
+                    AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
+                    {
+                        Id = assignedStaff.Id,
+                        FullName = assignedStaff.FullName,
+                        Email = assignedStaff.Email,
+                        MainImageFileKey = assignedStaff.MainImageFileKey
+                    } : null,
                     Deadline = booking.Deadline,
                     DeadlineDays = booking.DeadlineDays,
                     Price = booking.Price,

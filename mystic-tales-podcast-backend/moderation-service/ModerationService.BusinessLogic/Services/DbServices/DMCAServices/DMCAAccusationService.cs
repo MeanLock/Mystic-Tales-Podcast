@@ -1617,7 +1617,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     string description = reason.GetDescription();
 
                     var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
-                        .Where(da => da.PodcastEpisodeId == parameter.PodcastEpisodeId)
+                        .Where(da => da.PodcastEpisodeId == parameter.PodcastEpisodeId &&
+                        da.ResolvedAt == null)
                         .ToListAsync();
 
                     if (dmcaList.Count != 0)
@@ -3538,7 +3539,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                             foreach (var episodeId in episodeIdList)
                             {
-
                                 var dmcaList = await _dmcaAccusationGenericRepository.FindAll()
                                     .Where(da => da.PodcastEpisodeId == episodeId
                                     && da.ResolvedAt == null)

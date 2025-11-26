@@ -12,6 +12,6 @@ namespace ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.Details
         public bool? IsResolved { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public List<PodcastBuddyReportListItemResponseDTO> BuddyReportList { get; set; }
+        public List<PodcastBuddyReportListItemResponseDTO>? BuddyReportList { get; set; }
     }
 }

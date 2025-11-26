@@ -8,10 +8,10 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking
 {
     public class BookingCancelRequestDTO
     {
-        public BookingManualCancelledReasonDTO BookingCancelInfo { get; set; }
+        public string BookingCancelledReason { get; set; }
     }
-    public class BookingManualCancelledReasonDTO 
-    {
-        public string BookingManualCancelledReason { get; set; }
-    }
+    //public class BookingManualCancelledReasonDTO 
+    //{
+    //    public string BookingManualCancelledReason { get; set; }
+    //}
 }

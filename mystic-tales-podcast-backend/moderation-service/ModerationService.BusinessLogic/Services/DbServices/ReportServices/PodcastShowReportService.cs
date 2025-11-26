@@ -14,6 +14,7 @@ using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport.Details;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport.ListItems;
 using ModerationService.BusinessLogic.DTOs.Snippet;
+using ModerationService.BusinessLogic.DTOs.SystemConfiguration;
 using ModerationService.BusinessLogic.Enums.Account;
 using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Enums.Podcast;
@@ -117,7 +118,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching all podcast show reports");
-                throw new HttpRequestException("Retrieve Show report failed. Error: "+ ex.StackTrace);
+                throw new HttpRequestException("Retrieve Show report failed. Error: "+ ex.Message);
             }
         }
         public async Task CreatePodcastShowReportAsync(CreateShowReportParameterDTO parameter, SagaCommandMessage command)
@@ -153,20 +154,26 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var existingShowReport = await _podcastShowReportGenericRepository.FindAll()
                         .Where(br => br.PodcastShowId == parameter.PodcastShowId && br.ResolvedAt == null)
                         .ToListAsync();
-                    if (existingShowReport.Count() >= systemConfig["ReviewSessionConfig"].Value<int>("PodcastShowUnResolvedReportStreak"))
+                    var existingShowReportReviewSession = await _podcastShowReportReviewSessionGenericRepository.FindAll()
+                        .Where(bsrrs => bsrrs.PodcastShowId == parameter.PodcastShowId && bsrrs.IsResolved == null)
+                        .ToListAsync();
+                    if(existingShowReportReviewSession.Count() == 0 || existingShowReportReviewSession == null)
                     {
-                        var staffList = await GetStaffList();
-                        var randomStaff = await GetRandomItemFromJArray(staffList);
-
-                        var newShowReportReviewSession = new PodcastShowReportReviewSession()
+                        if (existingShowReport.Count() >= systemConfig.ReviewSessionConfig.PodcastShowUnResolvedReportStreak)
                         {
-                            AssignedStaff = randomStaff,
-                            PodcastShowId = ShowReport.PodcastShowId,
-                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
-                            UpdatedAt = _dateHelper.GetNowByAppTimeZone()
-                        };
+                            var staffList = await GetStaffList();
+                            var randomStaff = await GetRandomItemFromJArray(staffList);
 
-                        var ShowReportReviewSession = await _podcastShowReportReviewSessionGenericRepository.CreateAsync(newShowReportReviewSession);
+                            var newShowReportReviewSession = new PodcastShowReportReviewSession()
+                            {
+                                AssignedStaff = randomStaff,
+                                PodcastShowId = ShowReport.PodcastShowId,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+
+                            var ShowReportReviewSession = await _podcastShowReportReviewSessionGenericRepository.CreateAsync(newShowReportReviewSession);
+                        }
                     }
 
                     await transaction.CommitAsync();
@@ -227,7 +234,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching podcast show report types");
-                throw new HttpRequestException("Retrieve Show report types failed. Error: " + ex.StackTrace);
+                throw new HttpRequestException("Retrieve Show report types failed. Error: " + ex.Message);
             }
         }
         public async Task<List<PodcastShowReportReviewSessionListItemResponseDTO>> GetShowReportReviewSessionAsync(int? staffId, int roleId)
@@ -241,7 +248,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 {
                     query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
                 }
-                var podcastShowReportReviewSession = (await Task.WhenAll(query.Select(async pbrrs =>
+                var podcastShowReportReviewSession = (await Task.WhenAll(query.OrderByDescending(pbrrs => pbrrs.CreatedAt).Select(async pbrrs =>
                 {
                     var show = await GetPodcastShow(pbrrs.PodcastShowId);
                     var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
@@ -274,7 +281,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching podcast show report review sessions");
-                throw new HttpRequestException("Retrieve Show report review sessions failed. Error: " + ex.StackTrace);
+                throw new HttpRequestException("Retrieve Show report review sessions failed. Error: " + ex.Message);
             }
         }
         public async Task<PodcastShowReportReviewSessionDetailResponseDTO> GetShowReportReviewSessionByIdAsync(Guid id)
@@ -345,7 +352,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     IsResolved = pbrrs.IsResolved,
                     CreatedAt = pbrrs.CreatedAt,
                     UpdatedAt = pbrrs.UpdatedAt,
-                    ShowReportList = podcastShowReport
+                    ShowReportList = pbrrs.IsResolved != null ? null : podcastShowReport
                 };
 
 
@@ -353,7 +360,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching podcast show report review session by id");
-                throw new HttpRequestException("Retrieve Show report review session by id failed. Error: " + ex.StackTrace);
+                throw new HttpRequestException("Retrieve Show report review session by id failed. Error: " + ex.Message);
             }
         }
         public async Task ResolveShowReportReviewSessionAsync(ResolveShowReportParameterDTO parameter, SagaCommandMessage command)
@@ -402,7 +409,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                 topic: KafkaTopicEnum.ContentManagementDomain,
                                 requestData: resolveRequestData,
                                 sagaInstanceId: null,
-                                messageName: "show-remove-flow");
+                                messageName: "dmca-remove-show-flow");
                             await _messagingService.SendSagaMessageAsync(resolveReportMessage, null);
                         }  
                     }
@@ -1095,7 +1102,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 ? staffListArray as JArray
                 : null;
         }
-        private async Task<JObject?> GetActiveSystemConfigProfile()
+        private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -1121,9 +1128,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
                 ? configArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
         private async Task<int> GetRandomItemFromJArray(JArray? array)
         {

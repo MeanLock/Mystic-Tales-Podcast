@@ -129,7 +129,8 @@ namespace ModerationService.API.Controllers.BaseControllers
             {
                 { "AccountId", accountId },
                 { "IsResolved", IsResolved },
-                { "IsTakenEffect", true }
+                { "IsTakenEffect", true },
+                { "PodcastShowReportReviewSessionId", PodcastShowReportReviewSessionId }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,

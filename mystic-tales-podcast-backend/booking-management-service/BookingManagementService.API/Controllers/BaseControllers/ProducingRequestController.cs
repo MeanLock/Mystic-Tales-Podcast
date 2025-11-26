@@ -13,6 +13,7 @@ using BookingManagementService.BusinessLogic.Services.MessagingServices.interfac
 using BookingManagementService.Common.AppConfigurations.BusinessSetting.interfaces;
 using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 using BookingManagementService.DataAccess.Entities.SqlServer;
+using BookingManagementService.Infrastructure.Helpers.AudioHelpers;
 using BookingManagementService.Infrastructure.Models.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Services.Audio.AcoustID;
 using BookingManagementService.Infrastructure.Services.Kafka;
@@ -20,6 +21,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.IO;
 
 namespace BookingManagementService.API.Controllers.BaseControllers
 {
@@ -157,24 +159,26 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             {
                 string newTrackAudioFileName = $"{Guid.NewGuid()}_{audioFile.FileName}";
                 Console.WriteLine($"Generated new audio file name: {newTrackAudioFileName}");
-                AcoustIDAudioFingerprintGeneratedResult? audioMetadata = null;
+                //AcoustIDAudioFingerprintGeneratedResult? audioMetadata = null;
 
+                int audioLengthSeconds;
                 using (var memoryStream = audioFile.OpenReadStream())
                 {
-                    try
-                    {
-                        audioMetadata = await _audioFingerprintGenerator.GenerateFingerprintAsync(memoryStream);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log the error but continue with default metadata
-                        _logger.LogError(ex, "Failed to generate audio fingerprint for file: {FileName}", audioFile.FileName);
-                        audioMetadata = new AcoustIDAudioFingerprintGeneratedResult
-                        {
-                            Duration = 0,
-                            FingerprintData = string.Empty
-                        };
-                    }
+                    audioLengthSeconds = (int)await FFmpegCoreHelper.GetAudioDurationSecondsFromStreamAsync(memoryStream);
+                    //try
+                    //{
+                    //    audioMetadata = await _audioFingerprintGenerator.GenerateFingerprintAsync(memoryStream);
+                    //}
+                    //catch (Exception ex)
+                    //{
+                    //    // Log the error but continue with default metadata
+                    //    _logger.LogError(ex, "Failed to generate audio fingerprint for file: {FileName}", audioFile.FileName);
+                    //    audioMetadata = new AcoustIDAudioFingerprintGeneratedResult
+                    //    {
+                    //        Duration = 0,
+                    //        FingerprintData = string.Empty
+                    //    };
+                    //}
 
                     // Upload the file first
                     await _fileIOHelper.UploadBinaryFileWithStreamAsync(memoryStream, _filePathConfig.BOOKING_TEMP_FILE_PATH, newTrackAudioFileName);
@@ -197,7 +201,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                     { "Id", System.IO.Path.GetFileNameWithoutExtension(audioFile.FileName) },
                     { "AudioFileKey", trackAudioFileKey },
                     { "AudioFileSize", audioFile.Length },
-                    { "AudioLength", (int)(audioMetadata?.Duration ?? 0) }
+                    { "AudioLength", audioLengthSeconds }
                 });
             }
 

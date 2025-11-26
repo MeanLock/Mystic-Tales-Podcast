@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Client;
 using Net.payOS.Types;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TransactionService.API.Filters.ExceptionFilters;
 using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction;
@@ -183,30 +184,39 @@ namespace TransactionService.API.Controllers.BaseControllers
         public async Task<IActionResult> ConfirmBalanceWithdrawalRequest(
             [FromRoute] bool IsReject,
             [FromRoute] Guid AccountBalanceWithdrawalRequestId,
-            [FromBody] AccountBalanceWithdrawalConfirmationRequestDTO request)
+            [FromForm] AccountBalanceWithdrawalConfirmationRequestDTO request)
         {
-            var isValidFile = _fileValidationConfig.IsValidFile("AccountBalanceWithdrawalRequest.transferReceiptImageFileKey", request.TransferReceiptImageFile.FileName, request.TransferReceiptImageFile.Length, request.TransferReceiptImageFile.ContentType);
-            if (!isValidFile)
+            string? imageFileKey = null;
+            var rejectReason = JsonConvert.DeserializeObject<AccountBalanceWithdrawalRequestInfoDTO>(request.AccountBalanceWithdrawalRequestInfo);
+            if (!IsReject && request.TransferReceiptImageFile == null)
             {
-                return BadRequest("Invalid upload file.");
+                return BadRequest("Transfer receipt image file is required for confirmation.");
             }
+            if (request.TransferReceiptImageFile != null && !IsReject)
+            {
+                var isValidFile = _fileValidationConfig.IsValidFile("AccountBalanceWithdrawalRequest.transferReceiptImageFileKey", request.TransferReceiptImageFile.FileName, request.TransferReceiptImageFile.Length, request.TransferReceiptImageFile.ContentType);
+                if (!isValidFile)
+                {
+                    return BadRequest("Invalid upload file.");
+                }
 
-            string newImageFileName = $"{Guid.NewGuid()}_{request.TransferReceiptImageFile.FileName}";
-            using (var stream = request.TransferReceiptImageFile.OpenReadStream())
-            {
-                await _fileIOHelper.UploadBinaryFileWithStreamAsync(
-                                    stream,
-                                    _filePathConfig.ACCOUNT_TEMP_FILE_PATH,
-                                    newImageFileName
-                                );
+                string newImageFileName = $"{Guid.NewGuid()}_{request.TransferReceiptImageFile.FileName}";
+                using (var stream = request.TransferReceiptImageFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(
+                                        stream,
+                                        _filePathConfig.ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_TEMP_FILE_PATH,
+                                        newImageFileName
+                                    );
+                }
+                imageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_TEMP_FILE_PATH, newImageFileName);
             }
-            var imageFileKey = FilePathHelper.CombinePaths(_filePathConfig.ACCOUNT_BALANCE_WITHDRAWAL_REQUEST_TEMP_FILE_PATH, newImageFileName);
 
             var requestData = new JObject
             {
                 { "AccountBalanceWithdrawalRequestId", AccountBalanceWithdrawalRequestId },
                 { "ImageFileKey", imageFileKey },
-                { "RejectedReason", request.AccountBalanceWithdrawalRequestInfo.RejectedReason ?? string.Empty },
+                { "RejectedReason", rejectReason.RejectedReason ?? string.Empty },
                 { "IsReject", IsReject }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -258,8 +268,9 @@ namespace TransactionService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
+            var roleId = account.RoleId;
 
-            var withdrawalRequests = await _accountBalanceTransactionService.GetAccountBalanceWithdrawalRequestsAsync(accountId);
+            var withdrawalRequests = await _accountBalanceTransactionService.GetAccountBalanceWithdrawalRequestsAsync(accountId, roleId);
             return Ok(
                 new
                 {

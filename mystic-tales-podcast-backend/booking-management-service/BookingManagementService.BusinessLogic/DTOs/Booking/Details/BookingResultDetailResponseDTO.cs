@@ -16,6 +16,7 @@ namespace BookingManagementService.BusinessLogic.DTOs.Booking.Details
         public string Description { get; set; } = null!;
         public AccountSnippetResponseDTO Account { get; set; }
         public PodcastBuddySnippetResponseDTO PodcastBuddy { get; set; }
+        public AccountSnippetResponseDTO? AssignedStaff { get; set; }
         public decimal? Price { get; set; }
         public DateOnly? Deadline { get; set; }
         public int? DeadlineDays { get; set; }

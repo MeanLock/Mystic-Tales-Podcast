@@ -12,6 +12,7 @@ using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport.ListItems;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport.Details;
 using ModerationService.BusinessLogic.DTOs.PodcastShowReport.ListItems;
 using ModerationService.BusinessLogic.DTOs.Snippet;
+using ModerationService.BusinessLogic.DTOs.SystemConfiguration;
 using ModerationService.BusinessLogic.Enums.Account;
 using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Helpers.DateHelpers;
@@ -121,7 +122,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching podcast buddy reports");
-                throw new HttpRequestException("Retreive Buddy report failed. Error: " + ex.StackTrace);
+                throw new HttpRequestException("Retreive Buddy report failed. Error: " + ex.Message);
             }
         }
         public async Task CreatePodcastBuddyReportAsync(CreatePodcastBuddyReportParameterDTO parameter, SagaCommandMessage command)
@@ -157,21 +158,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var existingBuddyReport = await _podcastBuddyReportGenericRepository.FindAll()
                         .Where(br => br.PodcastBuddyId == parameter.PodcastBuddyId && br.ResolvedAt == null)
                         .ToListAsync();
-                    if (existingBuddyReport.Count() >= systemConfig["ReviewSessionConfig"].Value<int>("PodcastBuddyUnResolvedReportStreak"))
+                    var existingBuddyReportReviewSession = await _podcastBuddyReportReviewSessionGenericRepository.FindAll()
+                        .Where(brs => brs.PodcastBuddyId == parameter.PodcastBuddyId && brs.IsResolved == null)
+                        .ToListAsync();
+                    if(existingBuddyReportReviewSession.Count() == 0 || existingBuddyReportReviewSession == null)
                     {
-                        var staffList = await GetStaffList();
-                        var randomStaff = await GetRandomItemFromJArray(staffList);
-
-                        var newBuddyReportReviewSession = new PodcastBuddyReportReviewSession()
+                        if (existingBuddyReport.Count() >= systemConfig.ReviewSessionConfig.PodcastBuddyUnResolvedReportStreak)
                         {
-                            AssignedStaff = randomStaff,
-                            PodcastBuddyId = buddyReport.PodcastBuddyId,
-                            IsResolved = null,
-                            CreatedAt = _dateHelper.GetNowByAppTimeZone(),
-                            UpdatedAt = _dateHelper.GetNowByAppTimeZone()
-                        };
+                            var staffList = await GetStaffList();
+                            var randomStaff = await GetRandomItemFromJArray(staffList);
 
-                        var buddyReportReviewSession = await _podcastBuddyReportReviewSessionGenericRepository.CreateAsync(newBuddyReportReviewSession);
+                            var newBuddyReportReviewSession = new PodcastBuddyReportReviewSession()
+                            {
+                                AssignedStaff = randomStaff,
+                                PodcastBuddyId = buddyReport.PodcastBuddyId,
+                                IsResolved = null,
+                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                UpdatedAt = _dateHelper.GetNowByAppTimeZone()
+                            };
+
+                            var buddyReportReviewSession = await _podcastBuddyReportReviewSessionGenericRepository.CreateAsync(newBuddyReportReviewSession);
+                        }
                     }
 
                     await transaction.CommitAsync();
@@ -230,7 +237,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching podcast buddy report type review sessions");
-                throw new HttpRequestException("Retreive Buddy report type failed. Error: " + ex.StackTrace);
+                throw new HttpRequestException("Retreive Buddy report type failed. Error: " + ex.Message);
 
             }
         }
@@ -245,7 +252,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 {
                     query = query.Where(pbrrs => pbrrs.AssignedStaff == staffId).ToList();
                 }
-                var podcastBuddyReportReviewSession = (await Task.WhenAll(query.Select(async pbrrs =>
+                var podcastBuddyReportReviewSession = (await Task.WhenAll(query.OrderByDescending(pbrrs => pbrrs.CreatedAt).Select(async pbrrs =>
                 {
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(pbrrs.PodcastBuddyId);
                     var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
@@ -277,7 +284,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching podcast buddy report review sessions");
-                throw new HttpRequestException("Retreive Buddy report failed. Error: " + ex.StackTrace);
+                throw new HttpRequestException("Retreive Buddy report failed. Error: " + ex.Message);
             }
         }
         public async Task<PodcastBuddyReportReviewSessionDetailResponseDTO> GetBuddyReportReviewSessionByIdAsync(Guid id)
@@ -287,6 +294,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 var pbrrs = await _podcastBuddyReportReviewSessionGenericRepository.FindByIdAsync(id);
                 if (pbrrs == null)
                     return null;
+
+                //if (pbrrs.IsResolved != null)
+                //    throw new Exception("This buddy report review session has been resolved already");
 
                 var query = await _podcastBuddyReportGenericRepository.FindAll(
                     predicate: null,
@@ -351,13 +361,13 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     IsResolved = pbrrs.IsResolved,
                     CreatedAt = pbrrs.CreatedAt,
                     UpdatedAt = pbrrs.UpdatedAt,
-                    BuddyReportList = podcastBuddyReport
+                    BuddyReportList = pbrrs.IsResolved != null ? null : podcastBuddyReport
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching podcast buddy report review session by id");
-                throw new HttpRequestException("Retreive Buddy report review session failed. Error: " + ex.StackTrace);
+                throw new HttpRequestException("Retreive Buddy report review session failed. Error: " + ex.Message);
             }
         }
         public async Task ResolvePodcastBuddyReportReviewSessionAsync(ResolvePodcastBuddyReportParameterDTO parameter, SagaCommandMessage command)
@@ -533,7 +543,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 ? staffListArray as JArray
                 : null;
         }
-        private async Task<JObject?> GetActiveSystemConfigProfile()
+        private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
             var batchRequest = new BatchQueryRequest
             {
@@ -559,9 +569,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
                 ? configArray.First as JObject
                 : null;
+            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
         private async Task<int> GetRandomItemFromJArray(JArray? array)
         {
