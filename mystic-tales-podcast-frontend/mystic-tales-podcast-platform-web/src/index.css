@@ -171,6 +171,16 @@ h1 {
       transform: translateX(100vw);
     }
   }
+  @keyframes rotate-spinner {
+    from {
+      transform: rotate(0deg);
+      transform-origin: center;
+    }
+    to {
+      transform: rotate(360deg);
+      transform-origin: center;
+    }
+  }
 }
 
 .dark {

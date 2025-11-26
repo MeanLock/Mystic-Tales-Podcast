@@ -23,6 +23,8 @@ import { useNavigate } from "react-router-dom";
 import type {
   BaseOnYourTaste,
   BaseOnYourTasteUI,
+  ContinueListening,
+  ContinueListeningUI,
   DiscoveryDataFileResolved,
   HotThisWeek,
   HotThisWeekUI,
@@ -158,6 +160,19 @@ const randomCategoryFileConfig: FileResolveConfig[] = [
   },
 ];
 
+const continueListeningFileConfig: FileResolveConfig[] = [
+  {
+    type: "PodcastPublic",
+    path: "ListenSessionList[].Episode.MainImageFileKey",
+    output: "ListenSessionList[].Episode.ImageUrl",
+  },
+  {
+    type: "AccountPublic",
+    path: "ListenSessionList[].Podcaster.MainImageFileKey",
+    output: "ListenSessionList[].Podcaster.ImageUrl",
+  },
+];
+
 const DiscoveryPage = () => {
   // STATES
   const [isLoading, setIsLoading] = useState(false);
@@ -189,6 +204,10 @@ const DiscoveryPage = () => {
   // Random Category Data
   const [randomCategory, setRandomCategory] = useState<
     RandomCategoryUI | RandomCategory | null
+  >(null);
+  // Continue Listening Data
+  const [continueListening, setContinueListening] = useState<
+    ContinueListeningUI | ContinueListening | null
   >(null);
 
   // HOOKS
@@ -266,6 +285,15 @@ const DiscoveryPage = () => {
           );
           setRandomCategory(resolvedData as unknown as RandomCategoryUI);
         }
+
+        // ContinueListening
+        if (discoveryData.ContinueListening) {
+          const { resolvedData } = await resolveFiles<ContinueListening>(
+            discoveryData.ContinueListening,
+            continueListeningFileConfig
+          );
+          setContinueListening(resolvedData as unknown as ContinueListeningUI);
+        }
       } catch (error) {
         console.error("Failed to resolve discovery data files:", error);
         // fallback
@@ -328,7 +356,7 @@ const DiscoveryPage = () => {
           </div>
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
             <p className="font-poppins font-semibold text-mystic-green text-lg hover:underline">
-              You Might Like It
+              Base On What You Listened
             </p>
             <GrFormNext color="#aae339" size={25} />
           </div>
@@ -375,6 +403,75 @@ const DiscoveryPage = () => {
                   >
                     <div className="p-1">
                       <YouMightLikeItCard card={card as ShowUI} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          )}
+        </div>
+      )}
+
+      {/* Continue Listening */}
+      {continueListening && continueListening.ListenSessionList.length > 0 && (
+        <div className="w-full flex flex-col gap-4 py-5">
+          <div className="hidden md:inline-flex w-full items-center justify-between">
+            <p className="font-poppins text-white text-4xl font-bold">
+              <span className="text-mystic-green">Continue </span>Listening
+            </p>
+            <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
+              See all
+            </p>
+          </div>
+          <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
+            <p className="font-poppins font-semibold text-mystic-green text-lg hover:underline">
+              Continue Listening
+            </p>
+            <GrFormNext color="#aae339" size={25} />
+          </div>
+
+          {isDiscoveryLoading ? (
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent>
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <CarouselItem
+                    key={index}
+                    className="basis-1/2 md:basis-1/3 lg:basis-1/5"
+                  >
+                    <div className="p-1">
+                      <Skeleton className="w-full h-full aspect-square rounded-lg" />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          ) : (
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[
+                Autoplay({
+                  delay: 2000,
+                }),
+              ]}
+              className="w-full"
+            >
+              <CarouselContent>
+                {continueListening?.ListenSessionList.map((card, index) => (
+                  <CarouselItem
+                    key={index}
+                    className="basis-1/2 md:basis-1/3 lg:basis-1/5"
+                  >
+                    <div className="p-1">
+                      <EpisodeCard listenSession={card as any} />
                     </div>
                   </CarouselItem>
                 ))}
@@ -538,7 +635,7 @@ const DiscoveryPage = () => {
 
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
             <p className="font-poppins font-semibold text-white text-md hover:underline">
-              <span className="text-mystic-green">Highly Rated</span> Shows
+              <span className="text-mystic-green">Hot</span> Channels
             </p>
             <GrFormNext color="#fff" size={25} />
           </div>
@@ -682,8 +779,7 @@ const DiscoveryPage = () => {
 
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
             <p className="font-poppins font-semibold text-white text-md hover:underline">
-              <span className="text-mystic-green">Base On</span> What You Have
-              Listened
+              <span className="text-mystic-green">Top</span> Podcasters Listened
             </p>
             <GrFormNext color="#fff" size={25} />
           </div>
@@ -755,8 +851,7 @@ const DiscoveryPage = () => {
 
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
             <p className="font-poppins font-semibold text-white text-md hover:underline">
-              <span className="text-mystic-green">Base On</span> What You Have
-              Listened
+              <span className="text-mystic-green">Talented</span> Rookies
             </p>
             <GrFormNext color="#fff" size={25} />
           </div>
@@ -830,8 +925,9 @@ const DiscoveryPage = () => {
 
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
             <p className="font-poppins font-semibold text-white text-md hover:underline">
-              <span className="text-mystic-green">Base On</span> What You Have
-              Listened
+              <span className="text-mystic-green">
+                {topSubcategory.PodcastSubCategory.Name}
+              </span>
             </p>
             <GrFormNext color="#fff" size={25} />
           </div>
@@ -905,8 +1001,9 @@ const DiscoveryPage = () => {
 
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
             <p className="font-poppins font-semibold text-white text-md hover:underline">
-              <span className="text-mystic-green">Base On</span> What You Have
-              Listened
+              <span className="text-mystic-green">
+                {randomCategory.PodcastCategory.Name}
+              </span>
             </p>
             <GrFormNext color="#fff" size={25} />
           </div>

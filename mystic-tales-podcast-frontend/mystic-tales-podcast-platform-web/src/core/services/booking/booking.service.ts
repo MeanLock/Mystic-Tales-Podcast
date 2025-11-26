@@ -1,11 +1,15 @@
-
-
 import { appApi } from "@/core/api/appApi";
 import type {
   BookingDetailsFromAPI,
   BookingFromAPI,
   BookingProducingRequestDetails,
+  PodcastBuddyFromAPI,
+  PodcastBuddyUI,
 } from "@/core/types/booking";
+import type {
+  PodcasterProfile,
+  PodcasterReviewAPI,
+} from "@/core/types/podcaster";
 
 export type CreateBookingPayload = {
   BookingCreateInfo: {
@@ -73,7 +77,7 @@ export const bookingApi = appApi.injectEndpoints({
           .dispatch(
             appApi.endpoints.kickoffThenWait.initiate({
               kickoff: {
-                url: `/api/transaction-service/api/booking-transactions/${BookingId}/deposit`,
+                url: `/api/booking-management-service/api/bookings/${BookingId}/deposit`,
                 method: "POST",
                 body: { Amount },
                 authMode: "required",
@@ -107,7 +111,10 @@ export const bookingApi = appApi.injectEndpoints({
         BookingPodcastTrackIds: string[];
       }
     >({
-      async queryFn({ BookingId, Note, DeadlineDayCount, BookingPodcastTrackIds }, api) {
+      async queryFn(
+        { BookingId, Note, DeadlineDayCount, BookingPodcastTrackIds },
+        api
+      ) {
         const result = await api
           .dispatch(
             appApi.endpoints.kickoffThenWait.initiate({
@@ -133,6 +140,78 @@ export const bookingApi = appApi.injectEndpoints({
         return { data: result.data as any };
       },
     }),
+
+    cancelBookingManually: build.mutation<
+      { Message: string },
+      { BookingId: number; CancelReason: string }
+    >({
+      async queryFn({ BookingId, CancelReason }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/booking-management-service/api/bookings/${BookingId}/cancel`,
+                method: "PUT",
+                body: {
+                  BookingCancelledReason: CancelReason,
+                },
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result.data as any };
+      },
+    }),
+
+    createCancelBookingRequest: build.mutation<
+      { Message: string },
+      { BookingId: number; CancelReason: string }
+    >({
+      async queryFn({ BookingId, CancelReason }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/booking-management-service/api/bookings/${BookingId}/cancel-request`,
+                method: "POST",
+                body: {
+                  BookingCancelInfo: {
+                    BookingManualCancelledReason: CancelReason,
+                  },
+                },
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result.data as any };
+      },
+    }),
+
+    getPodcastBuddies: build.query<
+      {
+        PodcastBuddyList: {
+          PodcastBuddyProfile: PodcasterProfile;
+          ReviewList: PodcasterReviewAPI[];
+        }[];
+      },
+      void
+    >({
+      query: () => ({
+        url: "/api/booking-management-service/api/podcast-buddies/available-me",
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
@@ -144,4 +223,6 @@ export const {
   useConfirmAndDepositMutation,
   useGetBookingProducingRequestDetailsQuery,
   useSendNewEditRequestMutation,
+  useCancelBookingManuallyMutation,
+  useCreateCancelBookingRequestMutation,
 } = bookingApi;

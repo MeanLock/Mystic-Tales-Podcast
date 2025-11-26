@@ -1,8 +1,8 @@
 .loading-bar {
   width: 4px;
-  height: 3px;
+  height: 8px;
   margin: 0 1px;
-  background-color: #aee339;
+  background-color: white;
   border-radius: 2px;
   animation: loading-wave-animation 1s ease-in-out infinite;
 }
@@ -21,14 +21,14 @@
 
 @keyframes loading-wave-animation {
   0% {
-    height: 3px;
+    height: 8px;
   }
 
   50% {
-    height: 7px;
+    height: 15px;
   }
 
   100% {
-    height: 3px;
+    height: 8px;
   }
 }

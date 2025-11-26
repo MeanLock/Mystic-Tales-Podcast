@@ -32,8 +32,8 @@ import ShowCard from "./components/ShowCard";
 import {
   useGetChannelDetailsQuery,
   useGetActiveChannelSubscriptionQuery,
-  useFollowChannelMutation,
-  useUnFollowChannelMutation,
+  useFavoriteChannelMutation,
+  useUnfavoriteChannelMutation,
 } from "@/core/services/channel/channel.service";
 import {
   useGetCustomerRegistrationInfoFromChannelQuery,
@@ -285,10 +285,10 @@ const ChannelDetailsPage = () => {
     useUnsubscribePodcastSubscriptionMutation();
 
   // Mutation follow/unfollow channel
-  const [followChannel, { isLoading: isFollowChannelLoading }] =
-    useFollowChannelMutation();
-  const [unfollowChannel, { isLoading: isUnfollowChannelLoading }] =
-    useUnFollowChannelMutation();
+  const [favoriteChannel, { isLoading: isFavoriteChannelLoading }] =
+    useFavoriteChannelMutation();
+  const [unfavoriteChannel, { isLoading: isUnfavoriteChannelLoading }] =
+    useUnfavoriteChannelMutation();
 
   const navigate = useNavigate();
 
@@ -520,7 +520,7 @@ const ChannelDetailsPage = () => {
     // Call API to follow/unfollow channel here
     if (follow) {
       try {
-        await followChannel({ PodcastChannelId: id! }).unwrap();
+        await favoriteChannel({ PodcastChannelId: id! }).unwrap();
         // Refetch channel details to update follow status
         await refetchActiveSubscription();
         await refetchCustomerRegistrationInfo();
@@ -535,7 +535,7 @@ const ChannelDetailsPage = () => {
       }
     } else {
       try {
-        await unfollowChannel({ PodcastChannelId: id! }).unwrap();
+        await unfavoriteChannel({ PodcastChannelId: id! }).unwrap();
         // Refetch channel details to update follow status
         await refetchActiveSubscription();
         await refetchCustomerRegistrationInfo();

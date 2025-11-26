@@ -33,6 +33,7 @@ export type ContinueListening = {
       Name: string;
       MainImageFileKey: string;
       ReleaseDate: string;
+      AudioLength: number;
       IsReleased: boolean;
     };
     Podcaster: {
@@ -55,6 +56,7 @@ export type ContinueListeningUI = {
       Name: string;
       ImageUrl: string;
       ReleaseDate: string;
+      AudioLength: number;
       IsReleased: boolean;
     };
     Podcaster: {
@@ -293,47 +295,50 @@ export type PopularEpisodesUI = {
 
 // CATEGORY FEED TYPES
 export type CategoryFeedDataFromAPI = {
-  TopChannels: {
-    ChannelList: ChannelFromAPI[];
+  PodcastCategory: {
+    Id: number;
+    Name: string;
+    MainImageFileKey: string;
   };
-  TopShows: {
-    ShowList: ShowFromAPI[];
+  TopChannels: ChannelFromAPI[];
+  TopShows: ShowFromAPI[];
+  TopEpisodes: EpisodeFromAPI[];
+  HotShows: ShowFromAPI[];
+  SubCategorySections: SubCategoriesFromAPI[];
+};
+
+export type SubCategoriesFromAPI = {
+  PodcastSubCategory: {
+    Id: number;
+    Name: string;
+    PodcastCategoryId: number;
   };
-  TopEpisodes: {
-    EpisodeList: EpisodeFromAPI[];
-  };
-  HotShows: {
-    ShowList: ShowFromAPI[];
-  };
-  SubCategorySections: {
-    PodcastSubCategory: {
-      Id: number;
-      Name: string;
-      PodcastCategoryId: number;
-    };
-    ShowList: ShowFromAPI[];
-  }[];
+  ShowList: ShowFromAPI[];
 };
 
 export type CategoryFeedDataUI = {
-  TopChannels: {
-    ChannelList: ChannelUI[];
+  PodcastCategory: {
+    Id: number;
+    Name: string;
+    MainImageFileKey: string;
   };
-  TopShows: {
-    ShowList: ShowUI[];
-  };
-  TopEpisodes: {
-    EpisodeList: EpisodeUI[];
-  };
-  HotShows: {
-    ShowList: ShowUI[];
-  };
-  SubCategorySections: {
-    PodcastSubCategory: {
-      Id: number;
-      Name: string;
-      PodcastCategoryId: number;
-    };
-    ShowList: ShowUI[];
-  }[];
+  TopChannels: ChannelUI[];
+  TopShows: ShowUI[];
+  TopEpisodes: EpisodeUI[];
+  HotShows: ShowUI[];
+  SubCategorySections: SubCategoriesUI[];
 };
+
+export type SubCategoriesUI = {
+  PodcastSubCategory: {
+    Id: number;
+    Name: string;
+    PodcastCategoryId: number;
+  };
+  ShowList: ShowUI[];
+};
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------

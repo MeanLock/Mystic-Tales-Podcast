@@ -1,4 +1,5 @@
 import { appApi } from "@/core/api/appApi";
+import type { CategoryFeedDataFromAPI } from "@/core/types/feed";
 import type { PodcastCategoryWithImageFromAPI } from "@/core/types/podcastCategory";
 
 const categoryApi = appApi.injectEndpoints({
@@ -13,7 +14,17 @@ const categoryApi = appApi.injectEndpoints({
         authMode: "public",
       }),
     }),
+    getCategoryFeedData: build.query<
+      CategoryFeedDataFromAPI,
+      { PodcastCategoryId: number }
+    >({
+      query: ({ PodcastCategoryId }) => ({
+        url: `/api/podcast-service/api/misc/feed/podcast-contents/podcast-categories/${PodcastCategoryId}`,
+        method: "GET",
+        authMode: "hybrid",
+      }),
+    }),
   }),
 });
 
-export const { useGetCategoriesQuery } = categoryApi;
+export const { useGetCategoriesQuery, useGetCategoryFeedDataQuery } = categoryApi;

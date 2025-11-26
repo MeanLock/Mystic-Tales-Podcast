@@ -23,12 +23,14 @@ export const playerApi = appApi.injectEndpoints({
         PodcastEpisodeId: string;
         SourceType: "SpecifyShowEpisodes" | "SavedEpisodes";
         CurrentPodcastSubscriptionRegistrationBenefitList: CurrentPodcastSubscriptionRegistrationBenefit[];
+        continue_listen_session_id?: string;
       }
     >({
       query: ({
         PodcastEpisodeId,
         SourceType,
         CurrentPodcastSubscriptionRegistrationBenefitList,
+        continue_listen_session_id,
       }) => {
         const deviceToken =
           localStorage.getItem("device_info_token") ||
@@ -37,7 +39,11 @@ export const playerApi = appApi.injectEndpoints({
         console.log("DeviceToken:", deviceToken);
 
         return {
-          url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}/listen`,
+          url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}/listen${
+            continue_listen_session_id
+              ? `?continue_listen_session_id=${continue_listen_session_id}`
+              : ""
+          }`,
           method: "POST",
           authMode: "required" as const,
           body: {

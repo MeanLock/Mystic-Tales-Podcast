@@ -18,9 +18,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Check } from "lucide-react";
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 import {
+  useFollowShowMutation,
   useGetActiveShowSubscriptionQuery,
   useGetShowDetailsQuery,
   useRatingShowMutation,
+  useUnFollowShowMutation,
 } from "@/core/services/show/show.service";
 import {
   useGetCustomerRegistrationInfoFromShowQuery,
@@ -37,12 +39,17 @@ import type { RootState } from "@/redux/store";
 import { useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa6";
 import { FaPlay } from "react-icons/fa6";
-import { IoPlay } from "react-icons/io5";
+import { IoHeartOutline, IoHeartSharp, IoPause, IoPlay } from "react-icons/io5";
 import { LiaDizzy } from "react-icons/lia";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { playAudio } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
+import {
+  pauseAudio,
+  playAudio,
+} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import { useUpdatePlayModeMutation } from "@/core/services/player/player.service";
+import { set } from "lodash";
+import PlayingWave from "@/components/playingWave/PlayWave";
 
 const ShowFileConfig: FileResolveConfig[] = [
   {
@@ -160,6 +167,7 @@ const ShowDetailsPage = () => {
   const [currentSubscription, setCurrentSubscription] = useState<any | null>(
     null
   );
+  const [isFollowed, setIsFollowed] = useState(false);
 
   // HOOKS
   const user = useSelector((state: RootState) => state.auth.user);
@@ -197,6 +205,10 @@ const ShowDetailsPage = () => {
     { skip: !id }
   );
 
+  const [followShow, { isLoading: isFollowing }] = useFollowShowMutation();
+  const [unFollowShow, { isLoading: isUnFollowing }] =
+    useUnFollowShowMutation();
+
   useEffect(() => {
     const resolveData = async () => {
       if (!id) {
@@ -215,7 +227,7 @@ const ShowDetailsPage = () => {
       }
 
       setIsFileResolving(true);
-
+      setIsFollowed(showDetailsRaw.Show.IsFollowedByCurrentUser);
       // Check coi user đã subscribe channel này chưa
       if (
         customerRegistrationInfo &&
@@ -498,39 +510,37 @@ const ShowDetailsPage = () => {
     );
   };
 
-  const [updatePlayMode, { isLoading: isUpdatingPlayMode }] =
-    useUpdatePlayModeMutation();
   const player = useSelector((state: RootState) => state.player);
 
-  const handleMode = (mode: string) => {
-    if (!player.listenSessionProcedure) {
+  const handleFollow = async (follow: boolean) => {
+    if (!user) {
+      dispatch(
+        setError({
+          message: "You need to login first to follow a show!",
+          autoClose: 10,
+        })
+      );
       return;
-    } else {
-      if (mode === "a") {
-        updatePlayMode({
-          PlayOrderMode: "Sequential",
-          CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
-          IsAutoPlay: player.listenSessionProcedure.IsAutoPlay,
-        });
-      } else if (mode === "b") {
-        updatePlayMode({
-          PlayOrderMode: "Random",
-          CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
-          IsAutoPlay: player.listenSessionProcedure.IsAutoPlay,
-        });
-      } else if (mode === "c") {
-        updatePlayMode({
-          PlayOrderMode: player.listenSessionProcedure.PlayOrderMode,
-          CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
-          IsAutoPlay: false,
-        });
-      } else if (mode === "d") {
-        updatePlayMode({
-          PlayOrderMode: player.listenSessionProcedure.PlayOrderMode,
-          CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
-          IsAutoPlay: false,
-        });
+    }
+    try {
+      setIsFollowed(follow);
+      if (follow) {
+        await followShow({ PodcastShowId: id! }).unwrap();
+      } else {
+        await unFollowShow({ PodcastShowId: id! }).unwrap();
       }
+      // Refetch show details after follow/unfollow
+      await refetchShowDetails();
+    } catch (error) {
+      setIsFollowed(!follow);
+      dispatch(
+        setError({
+          message: `Error while ${
+            follow ? "following" : "unfollowing"
+          } show: ${error}`,
+          autoClose: 20,
+        })
+      );
     }
   };
 
@@ -650,6 +660,22 @@ const ShowDetailsPage = () => {
               )}
             </div>
           </div>
+
+          <div className="absolute w-10 h-10 z-20 top-12 right-12 flex items-center justify-center p-2 rounded-full bg-white/20">
+            {isFollowed ? (
+              <IoHeartSharp
+                size={20}
+                className="text-mystic-green cursor-pointer hover:scale-110 transition"
+                onClick={() => handleFollow(false)}
+              />
+            ) : (
+              <IoHeartOutline
+                size={20}
+                className="text-white cursor-pointer hover:scale-110 transition"
+                onClick={() => handleFollow(true)}
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -678,14 +704,37 @@ const ShowDetailsPage = () => {
                     `;
                   }}
                 />
-                <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
-                  <div
-                    onClick={() => handlePlayEpisode(episode.Id)}
-                    className="p-2  rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green "
-                  >
-                    <IoPlay size={25} color="#ffffff" />
+
+                {player.playMode.playStatus === "play" ? (
+                  player.currentAudio?.Id === episode.Id ? (
+                    <div className="absolute inset-0 flex bg-black/30 items-center justify-center">
+                      <div
+                        onClick={() => dispatch(pauseAudio())}
+                        className="p-3 rounded-full bg-mystic-green flex items-center justify-center hover:bg-mystic-green "
+                      >
+                        <PlayingWave />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
+                      <div
+                        onClick={() => handlePlayEpisode(episode.Id)}
+                        className="p-2  rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green "
+                      >
+                        <IoPlay size={25} color="#ffffff" />
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
+                    <div
+                      onClick={() => handlePlayEpisode(episode.Id)}
+                      className="p-2  rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green "
+                    >
+                      <IoPlay size={25} color="#ffffff" />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
               <div className="flex-1 flex items-center justify-between gap-20">
                 <div className="flex-1 min-w-0">
@@ -697,9 +746,15 @@ const ShowDetailsPage = () => {
                       <h4 className="font-bold text-lg text-white mb-2 leading-tight">
                         {episode.Name}
                       </h4>
-                      <p className="text-white font-light text-sm line-clamp-2 leading-relaxed">
+                      {/* <p className="text-white font-light text-sm line-clamp-2 leading-relaxed">
                         {episode.Description}
-                      </p>
+                      </p> */}
+                      <div
+                        className="text-white font-light text-sm line-clamp-2 leading-relaxed"
+                        dangerouslySetInnerHTML={{
+                          __html: renderDescriptionHTML(episode.Description),
+                        }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -707,7 +762,7 @@ const ShowDetailsPage = () => {
                 <p className="text-white font-bold text-sm">
                   {formatDuration(episode.AudioLength)}
                 </p>
-                <button className="text-[#d9d9d9] text-mystic-green cursor-pointer">
+                <button className=" text-mystic-green cursor-pointer">
                   <svg
                     className="w-5 h-5"
                     fill="currentColor"

@@ -48,7 +48,7 @@ const channelApi = appApi.injectEndpoints({
       }),
     }),
 
-    followChannel: build.mutation<
+    favoriteChannel: build.mutation<
       { Message: string },
       { PodcastChannelId: string }
     >({
@@ -72,7 +72,7 @@ const channelApi = appApi.injectEndpoints({
       },
     }),
 
-    unFollowChannel: build.mutation<
+    unfavoriteChannel: build.mutation<
       { Message: string },
       { PodcastChannelId: string }
     >({
@@ -95,6 +95,19 @@ const channelApi = appApi.injectEndpoints({
         return { data: result as any };
       },
     }),
+
+    getFavoritedChannels: build.query<
+      {
+        ChannelList: ChannelFromAPI[];
+      },
+      void
+    >({
+      query: () => ({
+        url: `/api/podcast-service/api/channels/favorited`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
@@ -103,6 +116,7 @@ export const {
   useGetChannelListByQueryKeyQuery,
   useGetChannelDetailsQuery,
   useGetActiveChannelSubscriptionQuery,
-  useFollowChannelMutation,
-  useUnFollowChannelMutation,
+  useFavoriteChannelMutation,
+  useUnfavoriteChannelMutation,
+  useGetFavoritedChannelsQuery
 } = channelApi;

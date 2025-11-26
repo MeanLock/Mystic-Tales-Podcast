@@ -1,6 +1,9 @@
 import Loading from "@/components/loading";
 
-import type { BookingDetailsFromAPI } from "@/core/types/booking";
+import type {
+  BookingDetailsFromAPI,
+  BookingDetailsUI,
+} from "@/core/types/booking";
 import { skipToken } from "@reduxjs/toolkit/query";
 import { useEffect, useState } from "react";
 import { IoIosArrowBack } from "react-icons/io";
@@ -11,7 +14,9 @@ import { TbCoinFilled } from "react-icons/tb";
 import RequirementCard from "./components/RequirementCard";
 import RequirementCardWithWordCount from "./components/RequirementCardWithWordCounts";
 import {
+  useCancelBookingManuallyMutation,
   useConfirmAndDepositMutation,
+  useCreateCancelBookingRequestMutation,
   useGetBookingDetailQuery,
   useGetBookingProducingRequestDetailsQuery,
   useSendNewEditRequestMutation,
@@ -24,13 +29,25 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
 import {
   resolveFiles,
   type FileResolveConfig,
 } from "@/core/utils/fileResolver.util";
 import { IoPlay } from "react-icons/io5";
+import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { setError } from "@/redux/slices/errorSlice/errorSlice";
+import { Track } from "@radix-ui/react-slider";
+import { playAudio } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 
 export function renderDescriptionHTML(description: string | null) {
   if (!description) return "";
@@ -79,18 +96,10 @@ const fileConfig: FileResolveConfig[] = [
   },
 ];
 
-// Config cho requirements - sẽ được apply cho từng item trong array
-const requirementFileConfig: FileResolveConfig[] = [
-  {
-    path: "RequirementDocumentFileKey",
-    type: "BookingPublic",
-    output: "RequirementDocumentFileUrl",
-  },
-];
-
 const BookingDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const user = useSelector((state: RootState) => state.auth.user);
+  const player = useSelector((state: RootState) => state.player);
 
   // STATES
   const [viewMode, setViewMode] = useState<string>("informations");
@@ -107,6 +116,15 @@ const BookingDetailsPage = () => {
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>([]);
   const [editNote, setEditNote] = useState("");
   const [deadlineDayCount, setDeadlineDayCount] = useState<number>(1);
+  const [
+    isCancelBookingConfirmationDialogOpen,
+    setIsCancelBookingConfirmationDialogOpen,
+  ] = useState(false);
+  // Cancel booking states
+  const [cancelDescription, setCancelDescription] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const [customCancelReason, setCustomCancelReason] = useState("");
+  const [cancelType, setCancelType] = useState<1 | 2>(1);
 
   // HOOKS
   const navigate = useNavigate();
@@ -142,6 +160,10 @@ const BookingDetailsPage = () => {
   const [sendNewEditRequest, { isLoading: isSendingEditRequest }] =
     useSendNewEditRequestMutation();
 
+  const [cancelManuallyBooking] = useCancelBookingManuallyMutation();
+  const [createCancelBookingRequest] = useCreateCancelBookingRequestMutation();
+
+  // LẤY CHI TIẾT PRODUCING REQUEST NẾU CẦN
   const { data: producingRequestDetails, isLoading: isLoadingRequestDetails } =
     useGetBookingProducingRequestDetailsQuery(
       selectedProducingRequestId
@@ -292,6 +314,118 @@ const BookingDetailsPage = () => {
     }
   };
 
+  const handleCancelBooking = () => {
+    // Check điều kiện hủy booking
+    let description = "";
+
+    if (!booking || !booking.Booking) {
+      return;
+    }
+
+    const bookingData = booking.Booking;
+    const statusId = bookingData.CurrentStatus.Id;
+
+    // Status 1-4: Quotation stages - no penalty
+    if (statusId >= 1 && statusId <= 4) {
+      setCancelType(1);
+      description = "You will not be charged any penalty fee.";
+    }
+    // Status 5+: Producing stages
+    else if (statusId >= 5) {
+      // Nếu chỉ có 1 producing request
+      if (bookingData.BookingProducingRequestList.length === 1) {
+        // Check xem Podcast Buddy có trễ deadline không
+        const deadlineString =
+          bookingData.BookingProducingRequestList[0].Deadline;
+        const deadlineDate = new Date(deadlineString);
+        const today = new Date();
+
+        if (today > deadlineDate) {
+          // Podcast Buddy trễ deadline -> cancel type 1, không phạt
+          description =
+            "Seems like Podcast Buddy is late on delivering your request. You will be returned 100% of the booking deposit.";
+          setCancelType(1);
+        } else {
+          // Chưa trễ deadline nhưng đang producing -> cần review
+          description =
+            "We will review your cancel request and decide the penalty fee based on the progress of your booking.";
+          setCancelType(2);
+        }
+      }
+      // Có nhiều hơn 1 producing request -> phức tạp, cần review
+      else if (bookingData.BookingProducingRequestList.length > 1) {
+        description =
+          "We will review your cancel request and decide the penalty fee based on the progress of your booking.";
+        setCancelType(2);
+      }
+      // Không có producing request nào nhưng status >= 5 -> cho cancel type 1
+      else {
+        description = "You will not be charged any penalty fee.";
+        setCancelType(1);
+      }
+    }
+    // Các status khác (8-12: các status cancel/complete) -> không cho cancel
+    else {
+      description = "This booking cannot be cancelled at this stage.";
+      setCancelType(1);
+    }
+
+    setCancelDescription(description);
+    setIsCancelBookingConfirmationDialogOpen(true);
+  };
+
+  const handleSetCancelReason = (value: string) => {
+    setCancelReason(value);
+  };
+
+  const dispatch = useDispatch();
+
+  const handleConfirmCancelBooking = async () => {
+    let finalCancelReason = cancelReason;
+    if (cancelReason === "other") {
+      finalCancelReason = customCancelReason;
+    }
+    // Gọi API hủy booking ở đây, truyền vào cancelReason
+    try {
+      if (cancelType === 1) {
+        await cancelManuallyBooking({
+          BookingId: booking!.Booking.Id,
+          CancelReason: finalCancelReason,
+        }).unwrap();
+      } else if (cancelType === 2) {
+        await createCancelBookingRequest({
+          BookingId: booking!.Booking.Id,
+          CancelReason: finalCancelReason,
+        }).unwrap();
+      }
+      // Sau khi hủy xong thì đóng dialog và refetch lại booking
+      setIsCancelBookingConfirmationDialogOpen(false);
+      await refetch();
+    } catch (error) {
+      dispatch(
+        setError({
+          message: error as string,
+          autoClose: 10,
+        })
+      );
+    }
+  };
+
+  const handlePlayBookingPodcastTrack = (trackId: string) => {
+    alert("Playing track ID: " + trackId);
+    if (!booking) {
+      return;
+    } else {
+      dispatch(
+        playAudio({
+          audioId: trackId,
+          sourceType: "BookingProducingTracks",
+          bookingId: booking!.Booking.Id,
+        })
+      );
+    }
+  };
+
   // LOADING STATE
   if (isLoading || isResolvingFiles) {
     return (
@@ -353,41 +487,58 @@ const BookingDetailsPage = () => {
             />
           </div>
 
-          <div className="w-full flex items-center gap-5 pt-5 pb-3">
-            <div
-              onClick={() => setViewMode("informations")}
-              className={`transition-all duration-500 ease-out hover:-translate-y-1 cursor-pointer rounded-full px-5 py-2 border-2 ${
-                viewMode === "informations"
-                  ? "border-mystic-green bg-mystic-green/20 "
-                  : "border-[#d9d9d9] bg-[#d9d9d9]/20"
-              }`}
-            >
-              <p className="font-bold text-white">Informations</p>
+          <div className="w-full flex items-center pt-5 pb-3 justify-between">
+            <div className="flex items-center gap-5 ">
+              <div
+                onClick={() => setViewMode("informations")}
+                className={`transition-all duration-500 ease-out hover:-translate-y-1 cursor-pointer rounded-full px-5 py-2 border-2 ${
+                  viewMode === "informations"
+                    ? "border-mystic-green bg-mystic-green/20 "
+                    : "border-[#d9d9d9] bg-[#d9d9d9]/20"
+                }`}
+              >
+                <p className="font-bold text-white">Informations</p>
+              </div>
+              {booking.Booking.CurrentStatus.Id === 2 && (
+                <div
+                  onClick={() => setViewMode("dealing")}
+                  className={`transition-all duration-500 ease-out hover:-translate-y-1 cursor-pointer rounded-full px-5 py-2 border-2 ${
+                    viewMode === "dealing"
+                      ? "border-mystic-green bg-mystic-green/20 "
+                      : "border-[#d9d9d9] bg-[#d9d9d9]/20"
+                  }`}
+                >
+                  <p className="font-bold text-white">Quotation Dealing</p>
+                </div>
+              )}
+              {booking.Booking.CurrentStatus.Id >= 5 && (
+                <div
+                  onClick={() => setViewMode("producingRequest")}
+                  className={`transition-all duration-500 ease-out hover:-translate-y-1 cursor-pointer rounded-full px-5 py-2 border-2 ${
+                    viewMode === "producingRequest"
+                      ? "border-mystic-green bg-mystic-green/20 "
+                      : "border-[#d9d9d9] bg-[#d9d9d9]/20"
+                  }`}
+                >
+                  <p className="font-bold text-white">Producing Requests</p>
+                </div>
+              )}
             </div>
-            {booking.Booking.CurrentStatus.Id === 2 && (
-              <div
-                onClick={() => setViewMode("dealing")}
-                className={`transition-all duration-500 ease-out hover:-translate-y-1 cursor-pointer rounded-full px-5 py-2 border-2 ${
-                  viewMode === "dealing"
-                    ? "border-mystic-green bg-mystic-green/20 "
-                    : "border-[#d9d9d9] bg-[#d9d9d9]/20"
-                }`}
-              >
-                <p className="font-bold text-white">Quotation Dealing</p>
-              </div>
-            )}
-            {booking.Booking.CurrentStatus.Id >= 5 && (
-              <div
-                onClick={() => setViewMode("producingRequest")}
-                className={`transition-all duration-500 ease-out hover:-translate-y-1 cursor-pointer rounded-full px-5 py-2 border-2 ${
-                  viewMode === "producingRequest"
-                    ? "border-mystic-green bg-mystic-green/20 "
-                    : "border-[#d9d9d9] bg-[#d9d9d9]/20"
-                }`}
-              >
-                <p className="font-bold text-white">Producing Requests</p>
-              </div>
-            )}
+            <div className="flex-1 flex items-center justify-end">
+              {booking.Booking.CurrentStatus.Id !== 4 &&
+                booking.Booking.CurrentStatus.Id !== 8 &&
+                booking.Booking.CurrentStatus.Id !== 9 &&
+                booking.Booking.CurrentStatus.Id !== 10 &&
+                booking.Booking.CurrentStatus.Id !== 11 &&
+                booking.Booking.CurrentStatus.Id !== 12 && (
+                  <LiquidButton
+                    onClick={() => handleCancelBooking()}
+                    variant="danger"
+                  >
+                    <p>Cancel</p>
+                  </LiquidButton>
+                )}
+            </div>
           </div>
 
           {/* Informations Mode */}
@@ -867,7 +1018,12 @@ const BookingDetailsPage = () => {
                                 </div>
                                 {track.RemainingPreviewListenSlot > 0 && (
                                   <div className="flex items-center justify-end">
-                                    <div className="px-3 py-2 rounded-full flex items-center justify-center bg-mystic-green text-black font-bold transition-all duration-500 ease-out hover:-translate-y-1 gap-2 cursor-pointer">
+                                    <div
+                                      onClick={() =>
+                                        handlePlayBookingPodcastTrack(track.Id)
+                                      }
+                                      className="px-3 py-2 rounded-full flex items-center justify-center bg-mystic-green text-black font-bold transition-all duration-500 ease-out hover:-translate-y-1 gap-2 cursor-pointer"
+                                    >
                                       <IoPlay />
                                       <p>Play Track</p>
                                     </div>
@@ -1080,6 +1236,7 @@ const BookingDetailsPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
         {/* ----- ALERT BÁO KHÔNG ĐỦ TIỀN ----- */}
         <Dialog open={isTopUpDialogOpen} onOpenChange={setIsTopUpDialogOpen}>
           <DialogContent className="bg-black/50 backdrop-blur-sm text-white border border-white/10">
@@ -1133,6 +1290,71 @@ const BookingDetailsPage = () => {
                 className="px-4 py-2 rounded-md bg-mystic-green text-sm font-semibold text-black hover:bg-mystic-green/90 transition"
               >
                 Top Up
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* DIALOG XÁC NHẬN CANCEL */}
+        <Dialog
+          open={isCancelBookingConfirmationDialogOpen}
+          onOpenChange={setIsCancelBookingConfirmationDialogOpen}
+        >
+          <DialogContent className="z-[9999] bg-black/50 backdrop-blur-sm text-white border border-white/10">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold">
+                Are You Sure You Want to Cancel This Booking?
+              </DialogTitle>
+              <DialogDescription className="text-slate-300">
+                {cancelDescription}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="flex flex-col py-2 gap-5 border-t-[1px] border-mystic-green">
+              <p className="text-[#D9D9D9] text-lg font-bold">
+                Please Choose Cancel Reason To Submit
+              </p>
+              {/* Select or Choose Other to submit cancel reason by customer */}
+              <Select
+                value={cancelReason || undefined}
+                onValueChange={handleSetCancelReason}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+
+                <SelectContent className="z-[9999]">
+                  <SelectItem value="news">News</SelectItem>
+                  <SelectItem value="music">Music</SelectItem>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="other">Other…</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {cancelReason === "other" && (
+                <Input
+                  value={customCancelReason}
+                  onChange={(e) => setCustomCancelReason(e.target.value)}
+                  placeholder="Enter your own category"
+                  className="bg-slate-900/40 border-slate-700/60"
+                />
+              )}
+            </div>
+
+            <DialogFooter className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCancelBookingConfirmationDialogOpen(false)}
+                className="px-4 py-2 rounded-md border border-slate-600 text-sm text-slate-200 hover:bg-slate-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancelBooking}
+                className="px-4 py-2 rounded-md bg-red-500 text-sm font-semibold text-white hover:bg-red-600 transition"
+              >
+                Confirm Cancel
               </button>
             </DialogFooter>
           </DialogContent>

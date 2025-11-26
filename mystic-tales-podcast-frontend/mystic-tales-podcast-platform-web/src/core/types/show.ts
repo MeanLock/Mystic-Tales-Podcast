@@ -120,6 +120,7 @@ export type ShowDetailsFromAPI = {
   TotalFollow: number;
   ListenCount: number;
   EpisodeCount: number;
+  IsFollowedByCurrentUser: boolean;
   Podcaster: {
     Id: number;
     FullName: string;
@@ -259,6 +260,7 @@ export type ShowDetailsUI = {
   TotalFollow: number;
   ListenCount: number;
   EpisodeCount: number;
+  IsFollowedByCurrentUser: boolean;
   Podcaster: {
     Id: number;
     FullName: string;

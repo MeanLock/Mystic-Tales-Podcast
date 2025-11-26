@@ -30,6 +30,8 @@ import { Switch } from "@/components/ui/switch";
 import { Repeat, Shuffle } from "lucide-react";
 import { useUpdatePlayModeMutation } from "@/core/services/player/player.service";
 import { setError } from "@/redux/slices/errorSlice/errorSlice";
+import ResolvedImage from "./ResolvedImage";
+
 
 const MediaPlayerControl = () => {
   // REDUX
@@ -287,10 +289,9 @@ const MediaPlayerControl = () => {
   return (
     <div className="w-full h-full flex items-center px-5">
       <div className="flex items-center gap-3">
-        <img
-          src={player.currentAudio.ImageUrl}
-          className="w-12 h-12 aspect-square rounded-md shadow-md"
-          alt={player.currentAudio.Name}
+        <ResolvedImage
+          MainImageFileKey={player.currentAudio.MainImageFileKey}
+          Name={player.currentAudio.Name}
         />
         <div className="flex flex-col items-start justify-center w-[200px] overflow-ellipsis">
           <p className="text-white font-semibold line-clamp-1">
@@ -319,7 +320,32 @@ const MediaPlayerControl = () => {
         >
           <MdOutlineReplay10 size={20} />
         </div>
-        {player.playMode.playStatus === "pause" ? (
+        {player.isBuffering ? (
+          <div className="text-white flex items-center justify-center">
+            <svg
+              className="h-[45px] w-[45px] text-white animate-[rotate-spinner_1s_linear_infinite]"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                className="opacity-80"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth="2" // giảm xuống 1.5 hoặc 1 nếu muốn mỏng nữa
+                d="M12 2a10 10 0 0 1 10 10" // một cung tròn từ trên xuống bên phải
+              />
+            </svg>
+          </div>
+        ) : player.playMode.playStatus === "pause" ? (
           <div
             onClick={handlePlayAudio}
             className="text-white hover:text-mystic-green cursor-pointer"

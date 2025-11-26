@@ -11,6 +11,10 @@ interface MediaPlayerSlice {
   currentAudio: CurrentAudioUI;
   listenSession: ListenSession;
   listenSessionProcedure: ListenSessionProcedure;
+  bookingId: number | null;
+  seekTo: number | null;
+  continue_listen_session_id: string | null;
+  isBuffering: boolean;
 }
 
 const initialState: MediaPlayerSlice = {
@@ -26,6 +30,10 @@ const initialState: MediaPlayerSlice = {
   currentAudio: null,
   listenSession: null,
   listenSessionProcedure: null,
+  bookingId: null,
+  seekTo: null,
+  continue_listen_session_id: null,
+  isBuffering: false,
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -56,19 +64,30 @@ const mediaPlayerSlice = createSlice({
           | "SavedEpisodes"
           | "BookingProducingTracks";
         audioId: string;
+        bookingId?: number;
+        seekTo?: number;
+        continue_listen_session_id?: string;
       } | null>
     ) => {
       state.playMode.playStatus = "play";
       if (action.payload) {
         state.playMode.sourceType = action.payload.sourceType;
         state.playMode.audioId = action.payload.audioId;
+        state.seekTo = action.payload.seekTo ?? null;
+        state.continue_listen_session_id =
+          action.payload.continue_listen_session_id ?? null;
+        state.bookingId = action.payload.bookingId ?? null;
       }
     },
     pauseAudio: (state) => {
       state.playMode.playStatus = "pause";
+      state.seekTo = null;
+      state.continue_listen_session_id = null;
     },
     stopAudio: (state) => {
       state.playMode.playStatus = "stop";
+      state.seekTo = null;
+      state.continue_listen_session_id = null;
     },
     setVolume: (state, action: PayloadAction<number>) => {
       state.playMode.volume = clamp(action.payload, 0, 100);
@@ -91,6 +110,9 @@ const mediaPlayerSlice = createSlice({
     ) => {
       state.playMode.nextMode = action.payload;
     },
+    setBuffering: (state, action: PayloadAction<boolean>) => {
+      state.isBuffering = action.payload;
+    },
   },
 });
 
@@ -106,7 +128,8 @@ export const {
   nextAudio,
   setIsNextSessionNull,
   setUIIsAutoPlay,
-  setUIPlayOrderMode
+  setUIPlayOrderMode,
+  setBuffering,
 } = mediaPlayerSlice.actions;
 
 export default mediaPlayerSlice.reducer;

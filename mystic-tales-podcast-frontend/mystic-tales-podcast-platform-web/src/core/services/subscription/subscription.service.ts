@@ -1,6 +1,10 @@
 import { appApi } from "@/core/api/appApi";
+import type { ChannelFromAPI } from "@/core/types/channel";
+import type { ShowFromAPI } from "@/core/types/show";
 import type {
   PodcastSubscriptionRegistration,
+  PodcastSubscriptionRegistrationDetails,
+  PodcastSubscriptionRegistrationFromAPI,
   SubscriptionDetails,
 } from "@/core/types/subscription";
 import { url } from "zod";
@@ -101,7 +105,7 @@ const subscriptionApi = appApi.injectEndpoints({
       void
     >({
       query: () => ({
-        url: `/api/subscription-service/api/podcast-subscriptions/shows/podcast-subscription-registrations`,
+        url: `/api/subscription-service/api/podcast-subscriptions/shows/podcast-subscriptions-registrations`,
         method: "GET",
         authMode: "required",
       }),
@@ -165,6 +169,93 @@ const subscriptionApi = appApi.injectEndpoints({
         };
       },
     }),
+
+    getSubscribedContents: build.query<
+      {
+        PodcastChannelList: ChannelFromAPI[];
+        PodcastShowList: ShowFromAPI[];
+      },
+      void
+    >({
+      query: () => ({
+        url: `/api/subscription-service/api/podcast-subscriptions/subscribed-content`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
+
+    getCustomerRegistrations: build.query<
+      {
+        PodcastSubscriptionRegistrationList: PodcastSubscriptionRegistrationFromAPI[];
+      },
+      void
+    >({
+      query: () => ({
+        url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscriptions-registrations/me`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
+    cancelSubscriptionRegistration: build.mutation<
+      { Message: string },
+      { PodcastSubscriptionRegistrationId: string }
+    >({
+      async queryFn({ PodcastSubscriptionRegistrationId }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscriptions-registrations/${PodcastSubscriptionRegistrationId}/cancel`,
+                method: "PUT",
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as { Message: string } };
+      },
+    }),
+
+    makeDecisionOnAcceptingNewestVersion: build.mutation<
+      { Message: string },
+      { PodcastSubscriptionRegistrationId: string; IsAccepted: boolean }
+    >({
+      async queryFn({ PodcastSubscriptionRegistrationId, IsAccepted }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscriptions-registrations/${PodcastSubscriptionRegistrationId}/accept-newest-version/${IsAccepted}`,
+                method: "PUT",
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as { Message: string } };
+      },
+    }),
+
+    getRegistrationDetails: build.query<
+      {
+        PodcastSubscriptionRegistration: PodcastSubscriptionRegistrationDetails;
+      },
+      { PodcastSubscriptionRegistrationId: string }
+    >({
+      query: ({ PodcastSubscriptionRegistrationId }) => ({
+        url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscriptions-registrations/${PodcastSubscriptionRegistrationId}`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
@@ -175,4 +266,9 @@ export const {
   useGetCustomerRegistrationInfoFromChannelQuery,
   useGetCustomerRegistrationInfoFromShowQuery,
   useGetSubscriptionBenefitsMapListFromEpisodeIdQuery,
+  useGetSubscribedContentsQuery,
+  useGetCustomerRegistrationsQuery,
+  useCancelSubscriptionRegistrationMutation,
+  useMakeDecisionOnAcceptingNewestVersionMutation,
+  useGetRegistrationDetailsQuery,
 } = subscriptionApi;

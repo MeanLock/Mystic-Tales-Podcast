@@ -2,6 +2,7 @@ import { IoPlay } from "react-icons/io5";
 import { IoIosMore } from "react-icons/io";
 import type { EpisodeUI } from "@/core/types/episode";
 import { useNavigate } from "react-router-dom";
+import { renderDescriptionHTML } from "../../channels/details";
 
 const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   const getTimeRange = (releaseDate: string) => {
@@ -67,7 +68,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
         "
       />
 
-      <div className="absolute bottom-0 z-10 p-5 flex flex-col items-start justify-between gap-3">
+      <div className="absolute w-full bottom-0 z-10 p-5 flex flex-col items-start justify-between gap-3">
         <div className="w-full flex items-center justify-start">
           <img
             src={episode.PodcastShow.ImageUrl}
@@ -82,9 +83,15 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
           <p className="text-white font-bold text-xl line-clamp-1">
             {episode.Name}
           </p>
-          <p className="text-gray-100 line-clamp-1 text-xs">
+          {/* <p className="text-gray-100 line-clamp-1 text-xs">
             {episode.Description}
-          </p>
+          </p> */}
+          <div
+            className="text-gray-100 line-clamp-3 text-xs"
+            dangerouslySetInnerHTML={{
+              __html: renderDescriptionHTML(episode.Description),
+            }}
+          />
         </div>
         <div className="w-full flex items-center justify-between">
           <div className="px-5 py-1 gap-1 bg-white rounded-xl flex items-center justify-center">

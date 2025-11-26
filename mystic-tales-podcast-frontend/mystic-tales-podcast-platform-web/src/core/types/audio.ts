@@ -13,7 +13,7 @@ export type CurrentAudioFromApi = {
 export type CurrentAudioUI = {
   Id: string;
   Name: string;
-  ImageUrl: string;
+  MainImageFileKey: string;
   PodcasterName: string;
   AudioLength: number; // giây
 } | null;
@@ -69,6 +69,7 @@ export type ListenSessionEpisodes = {
     Name: string;
     Description: string;
     MainImageFileKey: string;
+    AudioLength: number;
     ReleaseDate: string;
     IsReleased: boolean;
   };

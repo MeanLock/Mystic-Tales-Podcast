@@ -100,6 +100,8 @@ const transactionApi = appApi.injectEndpoints({
         authMode: "required",
       }),
     }),
+
+    
   }),
 });
 
@@ -107,4 +109,5 @@ export const {
   useCreatePaymentLinkMutation,
   useCreateWithdrawRequestMutation,
   useGetTransactionHistoryQuery,
+
 } = transactionApi;

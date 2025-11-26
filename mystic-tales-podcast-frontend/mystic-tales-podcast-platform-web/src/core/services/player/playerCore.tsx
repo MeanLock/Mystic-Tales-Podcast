@@ -15,6 +15,7 @@ import {
   setIsNextSessionNull,
   setUIIsAutoPlay,
   setUIPlayOrderMode,
+  setBuffering,
 } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import {
   useListenToEpisodeMutation,
@@ -34,9 +35,14 @@ import type {
 
 export default function PlayerCore() {
   const dispatch = useDispatch();
-  const { playMode, listenSession, listenSessionProcedure } = useSelector(
-    (s: RootState) => s.player
-  );
+  const {
+    playMode,
+    listenSession,
+    listenSessionProcedure,
+    seekTo,
+    continue_listen_session_id,
+    bookingId,
+  } = useSelector((s: RootState) => s.player);
 
   const engineRef = useRef<any>(null);
   const hlsRef = useRef<any>(null);
@@ -49,6 +55,10 @@ export default function PlayerCore() {
     listenSession,
     listenSessionProcedure,
     currentAudio: null,
+    seekTo: null,
+    continue_listen_session_id: null,
+    bookingId: null,
+    isBuffering: false,
   }));
 
   // RTK Query hooks
@@ -76,6 +86,7 @@ export default function PlayerCore() {
   const lastLoadedIdRef = useRef<string | null>(null);
   const isLoadingRef = useRef<boolean>(false);
   const pendingSeekRef = useRef<number | null>(null);
+  const hasLoadedFirstSegmentRef = useRef<boolean>(false);
 
   // Sync player state to ref để tránh closure issue
   useEffect(() => {
@@ -84,9 +95,20 @@ export default function PlayerCore() {
       listenSession,
       listenSessionProcedure,
       currentAudio: null,
+      continue_listen_session_id: continue_listen_session_id,
+      seekTo: seekTo,
+      bookingId: bookingId,
+      isBuffering: false,
     });
     isAutoPlayRef.current = playMode.isAutoPlay;
-  }, [playMode, listenSession, listenSessionProcedure]);
+  }, [
+    playMode,
+    listenSession,
+    listenSessionProcedure,
+    continue_listen_session_id,
+    seekTo,
+    bookingId,
+  ]);
 
   // Hàm update last duration - dùng chung cho cả interval và seek
   const updateLastDuration = useCallback(async () => {
@@ -189,7 +211,8 @@ export default function PlayerCore() {
             const currentAudioData = {
               Id: newEpisodeSession.PodcastEpisode.Id,
               Name: newEpisodeSession.PodcastEpisode.Name,
-              ImageUrl: newEpisodeSession.PodcastEpisode.MainImageFileKey || "",
+              MainImageFileKey:
+                newEpisodeSession.PodcastEpisode.MainImageFileKey || "",
               PodcasterName: newEpisodeSession.Podcaster.FullName || "Unknown",
               AudioLength:
                 newEpisodeSession.PodcastEpisodeListenSession
@@ -241,7 +264,7 @@ export default function PlayerCore() {
               Id: newBookingSession.BookingPodcastTrack.Id,
               Name: newBookingSession.BookingPodcastTrack
                 .BookingRequirementName,
-              ImageUrl: "",
+              MainImageFileKey: "",
               PodcasterName: "Booking Track",
               AudioLength:
                 newBookingSession.BookingPodcastTrackListenSession
@@ -395,6 +418,8 @@ export default function PlayerCore() {
               PodcastEpisodeId: audioId,
               SourceType: sourceType,
               CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
+              continue_listen_session_id:
+                continue_listen_session_id || undefined,
             }).unwrap();
 
             listenResult = response.ListenSession as ListenSessionEpisodes;
@@ -420,24 +445,15 @@ export default function PlayerCore() {
             );
           } else if (sourceType === "BookingProducingTracks") {
             // Gọi listenToBookingTrack
-            // Cần lấy BookingId từ listenSessionProcedure nếu có
-            if (!listenSessionProcedure) {
-              console.error("No listenSessionProcedure found for booking");
-              dispatch(pauseAudio());
-              return;
-            }
-
-            const bookingId =
-              listenSessionProcedure.SourceDetail.Booking
-                ?.BookingProducingRequestId;
+            // Lấy BookingId từ Redux state
             if (!bookingId) {
-              console.error("No BookingId found");
+              console.error("No BookingId found in Redux state");
               dispatch(pauseAudio());
               return;
             }
 
             const response = await listenToBookingTrack({
-              BookingId: bookingId,
+              BookingId: bookingId.toString(),
               BookingPodcastTrackId: audioId,
             }).unwrap();
 
@@ -479,7 +495,8 @@ export default function PlayerCore() {
           currentAudioData = {
             Id: episodeSession.PodcastEpisode.Id,
             Name: episodeSession.PodcastEpisode.Name,
-            ImageUrl: episodeSession.PodcastEpisode.MainImageFileKey || "", // Will be resolved later if needed
+            MainImageFileKey:
+              episodeSession.PodcastEpisode.MainImageFileKey || "", // Will be resolved later if needed
             PodcasterName: episodeSession.Podcaster.FullName || "Unknown",
             AudioLength:
               episodeSession.PodcastEpisodeListenSession
@@ -490,7 +507,7 @@ export default function PlayerCore() {
           currentAudioData = {
             Id: bookingSession.BookingPodcastTrack.Id,
             Name: bookingSession.BookingPodcastTrack.BookingRequirementName,
-            ImageUrl: "", // Booking tracks don't have images in current type
+            MainImageFileKey: "", // Booking tracks don't have images in current type
             PodcasterName: "Booking Track",
             AudioLength:
               bookingSession.BookingPodcastTrackListenSession
@@ -529,15 +546,45 @@ export default function PlayerCore() {
               a.currentTime = seekTo;
 
               // Pause lại và đợi user nhấn play
-              console.log(
-                "[LOADEDMETADATA] Audio ready at position, waiting for user to play..."
-              );
               dispatch(pauseAudio());
             }
           });
           a.addEventListener("timeupdate", () => {
             listenersRef.current.timeupdate?.(a.currentTime || 0);
           });
+
+          // Buffering events for HTML5 audio - chỉ cho lần đầu
+          a.addEventListener("loadstart", () => {
+            // Reset flag khi bắt đầu load audio mới
+            hasLoadedFirstSegmentRef.current = false;
+          });
+
+          a.addEventListener("waiting", () => {
+            // Chỉ set buffering cho lần đầu
+            if (!hasLoadedFirstSegmentRef.current) {
+              console.log("[AUDIO] Waiting for data - Buffering started");
+              dispatch(setBuffering(true));
+            }
+          });
+
+          a.addEventListener("canplay", () => {
+            // Chỉ set buffering ended cho lần đầu
+            if (!hasLoadedFirstSegmentRef.current) {
+              console.log("[AUDIO] Can play - Buffering ended");
+              dispatch(setBuffering(false));
+              hasLoadedFirstSegmentRef.current = true;
+            }
+          });
+
+          a.addEventListener("playing", () => {
+            // Đảm bảo tắt buffering khi đang play
+            if (!hasLoadedFirstSegmentRef.current) {
+              console.log("[AUDIO] Playing - Buffering ended");
+              dispatch(setBuffering(false));
+              hasLoadedFirstSegmentRef.current = true;
+            }
+          });
+
           a.addEventListener("ended", () => {
             // Kiểm tra xem có nên tự động next không
             // Check cả 2 sources:
@@ -699,6 +746,52 @@ export default function PlayerCore() {
               h.loadSource(`${playlistUrl}?t=${Date.now()}`);
               h.attachMedia(audioRef.current!);
               hlsRef.current = h;
+
+              // HLS Event Listeners for buffering control (EPISODES)
+              h.on(Hls.Events.MANIFEST_PARSED, () => {
+                console.log("[HLS] Manifest parsed");
+                // Reset flag khi load audio mới
+                hasLoadedFirstSegmentRef.current = false;
+              });
+
+              h.on(Hls.Events.FRAG_LOADING, () => {
+                // Chỉ set buffering cho segment đầu tiên
+                if (!hasLoadedFirstSegmentRef.current) {
+                  console.log(
+                    "[HLS] First fragment loading - Buffering started"
+                  );
+                  dispatch(setBuffering(true));
+                }
+              });
+
+              h.on(Hls.Events.FRAG_LOADED, () => {
+                // Chỉ set buffering ended cho segment đầu tiên
+                if (!hasLoadedFirstSegmentRef.current) {
+                  console.log("[HLS] First fragment loaded - Buffering ended");
+                  dispatch(setBuffering(false));
+                  hasLoadedFirstSegmentRef.current = true;
+                }
+              });
+
+              h.on(Hls.Events.ERROR, (_, data) => {
+                console.error("[HLS] Error:", data);
+                if (data.fatal) {
+                  dispatch(setBuffering(false));
+                  switch (data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                      console.error("[HLS] Fatal network error");
+                      h.startLoad();
+                      break;
+                    case Hls.ErrorTypes.MEDIA_ERROR:
+                      console.error("[HLS] Fatal media error");
+                      h.recoverMediaError();
+                      break;
+                    default:
+                      console.error("[HLS] Fatal error, cannot recover");
+                      break;
+                  }
+                }
+              });
             } else if (
               audioRef.current.canPlayType("application/vnd.apple.mpegurl")
             ) {
@@ -745,9 +838,7 @@ export default function PlayerCore() {
                     // Handle segment requests (.ts files)
                     // URL: /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/hls-segment/get-file-data/{FileKey}
                     else if (u.includes(".ts")) {
-                      const idx = url.lastIndexOf(
-                        "main_files/BookingPodcastTracks/"
-                      );
+                      const idx = url.lastIndexOf("main_files/Bookings/");
                       if (idx !== -1) {
                         const segmentFileKey = url.substring(idx);
                         // NOTE: SỬA LẠI VỚI NGROK KHÔNG CÓ / Ở CUỐI
@@ -776,6 +867,52 @@ export default function PlayerCore() {
               h.loadSource(`${playlistUrl}?t=${Date.now()}`);
               h.attachMedia(audioRef.current!);
               hlsRef.current = h;
+
+              // HLS Event Listeners for buffering control (BOOKING TRACKS)
+              h.on(Hls.Events.MANIFEST_PARSED, () => {
+                console.log("[HLS] Manifest parsed");
+                // Reset flag khi load audio mới
+                hasLoadedFirstSegmentRef.current = false;
+              });
+
+              h.on(Hls.Events.FRAG_LOADING, () => {
+                // Chỉ set buffering cho segment đầu tiên
+                if (!hasLoadedFirstSegmentRef.current) {
+                  console.log(
+                    "[HLS] First fragment loading - Buffering started"
+                  );
+                  dispatch(setBuffering(true));
+                }
+              });
+
+              h.on(Hls.Events.FRAG_LOADED, () => {
+                // Chỉ set buffering ended cho segment đầu tiên
+                if (!hasLoadedFirstSegmentRef.current) {
+                  console.log("[HLS] First fragment loaded - Buffering ended");
+                  dispatch(setBuffering(false));
+                  hasLoadedFirstSegmentRef.current = true;
+                }
+              });
+
+              h.on(Hls.Events.ERROR, (_, data) => {
+                console.error("[HLS] Error:", data);
+                if (data.fatal) {
+                  dispatch(setBuffering(false));
+                  switch (data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                      console.error("[HLS] Fatal network error");
+                      h.startLoad();
+                      break;
+                    case Hls.ErrorTypes.MEDIA_ERROR:
+                      console.error("[HLS] Fatal media error");
+                      h.recoverMediaError();
+                      break;
+                    default:
+                      console.error("[HLS] Fatal error, cannot recover");
+                      break;
+                  }
+                }
+              });
             } else if (
               audioRef.current.canPlayType("application/vnd.apple.mpegurl")
             ) {
@@ -798,18 +935,29 @@ export default function PlayerCore() {
         // set current track id for bridge
         engineRef.current = { currentTrackId: audioId };
 
-        // Lưu lastDuration vào ref để seek sau khi loadedmetadata
-        const lastDuration =
-          sourceType === "SpecifyShowEpisodes" || sourceType === "SavedEpisodes"
-            ? (listenResult as ListenSessionEpisodes)
-                .PodcastEpisodeListenSession.LastListenDurationSeconds || 0
-            : sourceType === "BookingProducingTracks"
-            ? (listenResult as ListenSessionBookingTracks)
-                .BookingPodcastTrackListenSession.LastListenDurationSeconds || 0
-            : 0;
+        // Lưu seekTo hoặc lastDuration vào ref để seek sau khi loadedmetadata
+        let targetSeekPosition = 0;
 
-        if (lastDuration > 0) {
-          pendingSeekRef.current = lastDuration;
+        if (seekTo !== null && seekTo !== undefined) {
+          // Nếu có seekTo từ Redux, ưu tiên dùng seekTo
+          targetSeekPosition = seekTo;
+        } else {
+          // Nếu không có seekTo, dùng lastDuration từ session
+          const lastDuration =
+            sourceType === "SpecifyShowEpisodes" ||
+            sourceType === "SavedEpisodes"
+              ? (listenResult as ListenSessionEpisodes)
+                  .PodcastEpisodeListenSession.LastListenDurationSeconds || 0
+              : sourceType === "BookingProducingTracks"
+              ? (listenResult as ListenSessionBookingTracks)
+                  .BookingPodcastTrackListenSession.LastListenDurationSeconds ||
+                0
+              : 0;
+          targetSeekPosition = lastDuration;
+        }
+
+        if (targetSeekPosition > 0) {
+          pendingSeekRef.current = targetSeekPosition;
         }
 
         // 4) play
@@ -843,6 +991,9 @@ export default function PlayerCore() {
     listenToBookingTrack,
     isBenefitsLoading,
     benefitsData,
+    seekTo,
+    continue_listen_session_id,
+    bookingId,
   ]);
 
   // Volume (Redux 0..100 -> audio 0..1)

@@ -1,21 +1,41 @@
-import { IoPlay } from "react-icons/io5";
+import { IoPause, IoPlay } from "react-icons/io5";
 import { IoIosMore } from "react-icons/io";
-import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  playAudio,
+  pauseAudio,
+} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
+import type { RootState } from "@/redux/store";
+import PlayingWaveSmall from "@/components/playingWaveSmall/PlayWaveSmall";
+
 type EpisodeCardProps = {
-  episode: {
+  Episode: {
     Id: string;
     Name: string;
-    Description: string;
-    ReleaseDate: string; // ISO
-    MainFileKey: string;
-    AudioLength: number;
     ImageUrl: string;
-    Show: { Id: number; ImageUrl: string };
+    ReleaseDate: string;
+    AudioLength: number;
+    IsReleased: boolean;
+  };
+  Podcaster: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    ImageUrl: string;
+  };
+  PodcastEpisodeListenSession: {
+    Id: string;
+    LastListenDurationSeconds: number;
   };
 };
 
-const EpisodeCard = ({ episode }: { episode: EpisodeCardProps["episode"] }) => {
-  const navigate = useNavigate();
+const EpisodeCard = ({
+  listenSession,
+}: {
+  listenSession: EpisodeCardProps;
+}) => {
+  const dispatch = useDispatch();
+  const player = useSelector((state: RootState) => state.player);
 
   const getTimeRange = (releaseDate: string) => {
     const now = new Date();
@@ -32,29 +52,51 @@ const EpisodeCard = ({ episode }: { episode: EpisodeCardProps["episode"] }) => {
     }
   };
 
-  const formatAudioLength = (audioLength: number) => {
-    const hours = Math.floor(audioLength / 3600);
-    const minutes = Math.floor((audioLength % 3600) / 60);
-    const seconds = audioLength % 60;
+  const handlePlayPause = () => {
+    const isCurrentEpisode =
+      player.currentAudio?.Id === listenSession.Episode.Id;
+    const isPlaying = player.playMode.playStatus === "play";
 
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
+    if (isCurrentEpisode && isPlaying) {
+      // Nếu đang phát episode này, thì pause
+      dispatch(pauseAudio());
+    } else if (isCurrentEpisode && !isPlaying) {
+      // Nếu là episode này nhưng đang pause/stop, thì resume
+      dispatch(
+        playAudio({
+          audioId: listenSession.Episode.Id,
+          sourceType: "SpecifyShowEpisodes",
+        })
+      );
     } else {
-      return `${seconds}s`;
+      // Nếu là episode khác, thì continue playing từ vị trí đã lưu
+      dispatch(
+        playAudio({
+          audioId: listenSession.Episode.Id,
+          sourceType: "SpecifyShowEpisodes",
+          continue_listen_session_id:
+            listenSession.PodcastEpisodeListenSession.Id,
+          seekTo:
+            listenSession.PodcastEpisodeListenSession.LastListenDurationSeconds,
+        })
+      );
     }
   };
 
+  const isCurrentEpisode = player.currentAudio?.Id === listenSession.Episode.Id;
+  const isPlaying = player.playMode.playStatus === "play";
+
   return (
     <div
-      onClick={() => navigate(`/media-player/episodes/${episode.Id}`)}
-      style={{ backgroundImage: `url(${episode.ImageUrl})` }}
+      // onClick={() =>
+      //   navigate(`/media-player/episodes/${listenSession.Episode.Id}`)
+      // }
+      style={{ backgroundImage: `url(${listenSession.Episode.ImageUrl})` }}
       className="bg-cover w-full aspect-[3/4] rounded-xl relative transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >
       <div className="w-full aspect-square">
         <img
-          src={episode.ImageUrl}
+          src={listenSession.Episode.ImageUrl}
           className="w-full aspect-square object-cover rounded-t-xl"
         />
       </div>
@@ -78,30 +120,36 @@ const EpisodeCard = ({ episode }: { episode: EpisodeCardProps["episode"] }) => {
         "
       />
 
-      <div className="absolute bottom-0 z-10 p-5 flex flex-col items-start justify-between gap-3">
+      <div className="absolute w-full bottom-0 z-10 p-5 flex flex-col items-start justify-between gap-3">
         <div className="w-full flex items-center justify-start">
           <img
-            src={episode.Show.ImageUrl}
+            src={listenSession.Podcaster.ImageUrl}
             className="w-10 h-10 rounded-xl aspect-square object-cover shadow-sm"
           />
         </div>
 
         <div className="w-full">
           <p className="text-gray-300 text-xs">
-            {getTimeRange(episode.ReleaseDate)} AGO
+            {getTimeRange(listenSession.Episode.ReleaseDate)} AGO
           </p>
           <p className="text-white font-bold text-xl line-clamp-1">
-            {episode.Name}
-          </p>
-          <p className="text-gray-100 line-clamp-3 text-xs">
-            {episode.Description}
+            {listenSession.Episode.Name}
           </p>
         </div>
-        <div className="w-full flex items-center justify-between">
-          <div className="px-5 py-1 gap-1 bg-white rounded-xl flex items-center justify-center">
-            <IoPlay size={15} color="#333" />
-            <p className="font-poppins m-0 text-sm font-semibold text-[#333]">
-              {formatAudioLength(episode.AudioLength)}
+        <div className="w-full flex items-center  gap-2 justify-between">
+          <div
+            onClick={handlePlayPause}
+            className="gap-1 py-1 px-2 bg-white rounded-xl flex items-center justify-start cursor-pointer hover:bg-gray-100 transition-colors"
+          >
+            {isCurrentEpisode && isPlaying ? (
+              <div className="z-20 relative w-5 h-5 overflow-hidden flex items-center justify-center">
+                <IoPause className="h-5 w-5 text-black" />
+              </div>
+            ) : (
+              <IoPlay className="h-5 w-5 text-black" />
+            )}
+            <p className="font-poppins m-0 text-xs font-semibold text-[#333]">
+              {isCurrentEpisode && isPlaying ? "Pause" : "Continue Playing"}
             </p>
           </div>
           <div className="flex p-1 rounded-full bg-transparent items-center justify-center text-white hover:bg-gray-300/30">
@@ -114,13 +162,3 @@ const EpisodeCard = ({ episode }: { episode: EpisodeCardProps["episode"] }) => {
 };
 
 export default EpisodeCard;
-
-{
-  /* <div
-        className="
-          pointer-events-none absolute inset-0
-          backdrop-blur-[14px] backdrop-saturate-150
-          [mask-image:linear-gradient(to_top,black_52%,transparent_75%)]
-          "
-      /> */
-}

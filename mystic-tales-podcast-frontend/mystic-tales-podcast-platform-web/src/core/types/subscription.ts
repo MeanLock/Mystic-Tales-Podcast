@@ -1,3 +1,5 @@
+import type { n } from "node_modules/framer-motion/dist/types.d-BJcRxCew";
+
 export type SubscriptionDetails = {
   Id: number;
   Name: string;
@@ -90,11 +92,87 @@ export type PodcastSubscriptionRegistration = {
     Name: string;
   };
   CurrentVersion: number;
-  IsAcceptNewestVersionSwitch: boolean;
+  IsAcceptNewestVersionSwitch: boolean | null;
   IsIncomeTaken: boolean;
   LastPaidAt: string;
-  CancelledAt: string;
+  CancelledAt: string | null;
   CreatedAt: string;
   UpdatedAt: string;
 };
 
+export type PodcastSubscriptionRegistrationFromAPI = {
+  Id: string;
+  AccountId: string;
+  PodcastSubscriptionId: number;
+  SubscriptionCycleType: {
+    Id: number;
+    Name: string;
+  };
+  Price: number;
+  PodcastChannel: {
+    Id: string;
+    Name: string;
+    MainFileKey: string;
+  } | null;
+  PodcastShow: {
+    Id: string;
+    Name: string;
+    MainFileKey: string;
+  } | null;
+  CurrentVersion: number;
+  IsAcceptNewestVersionSwitch: boolean | null;
+  IsIncomeTaken: boolean;
+  LastPaidAt: string;
+  CancelledAt: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
+};
+
+export type PodcastSubscriptionRegistrationUI = {
+  Id: string;
+  AccountId: string;
+  PodcastSubscriptionId: number;
+  SubscriptionCycleType: {
+    Id: number;
+    Name: string;
+  };
+  Price: number;
+  PodcastChannel: {
+    Id: string;
+    Name: string;
+    ImageUrl: string;
+  } | null;
+  PodcastShow: {
+    Id: string;
+    Name: string;
+    ImageUrl: string;
+  } | null;
+  CurrentVersion: number;
+  IsAcceptNewestVersionSwitch: boolean | null;
+  IsIncomeTaken: boolean;
+  LastPaidAt: string;
+  CancelledAt: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
+};
+
+export type PodcastSubscriptionRegistrationDetails = {
+  Id: string;
+  AccountId: number;
+  PodcastSubscriptionId: number;
+  SubscriptionCycleType: {
+    Id: number;
+    Name: string;
+  };
+  CurrentVersion: number;
+  IsAcceptNewestVersionSwitch: boolean | null;
+  IsIncomeTaken: boolean;
+  LastPaidAt: string;
+  CancelledAt: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
+  PodcastSubscriptionBenefitList: {
+    Id: number;
+    Name: string;
+  }[];
+};

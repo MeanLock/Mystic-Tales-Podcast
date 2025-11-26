@@ -124,6 +124,7 @@ async function handleOnePath(
 /** Hỗ trợ path có [] cho array, ví dụ:
  *  - "ShowList[].MainImageFileKey"
  *  - "ShowList[].Podcaster.MainImageFileKey"
+ *  - "[].MainImageFileKey" (direct array)
  */
 async function applyConfigToData<T>(
   clone: T,
@@ -131,23 +132,31 @@ async function applyConfigToData<T>(
 ): Promise<void> {
   // Case có wildcard []
   if (conf.path.includes("[].")) {
-    const [arrayPath, restPath] = conf.path.split("[]."); // "ShowList", "MainImageFileKey"
-    const arr: any[] = _get(clone as any, arrayPath);
+    const [arrayPath, restPath] = conf.path.split("[]."); // "ShowList", "MainImageFileKey" hoặc "", "MainImageFileKey"
+
+    // Nếu arrayPath rỗng, nghĩa là data chính là array
+    const arr: any[] = arrayPath
+      ? _get(clone as any, arrayPath)
+      : (clone as any);
 
     if (!Array.isArray(arr)) {
       console.warn(
-        `[FileResolver] ⚠️ Expected array at "${arrayPath}" but got`,
+        `[FileResolver] ⚠️ Expected array at "${arrayPath || "root"}" but got`,
         arr
       );
       return;
     }
 
-    // Loop từng phần tử: ShowList[0], ShowList[1], ...
+    // Loop từng phần tử: ShowList[0], ShowList[1], ... hoặc [0], [1], ...
     for (let index = 0; index < arr.length; index++) {
       const itemPath =
         restPath && restPath.length > 0
-          ? `${arrayPath}[${index}].${restPath}`
-          : `${arrayPath}[${index}]`;
+          ? arrayPath
+            ? `${arrayPath}[${index}].${restPath}`
+            : `[${index}].${restPath}`
+          : arrayPath
+          ? `${arrayPath}[${index}]`
+          : `[${index}]`;
 
       const outputPath = conf.output.replace("[]", `[${index}]`);
 

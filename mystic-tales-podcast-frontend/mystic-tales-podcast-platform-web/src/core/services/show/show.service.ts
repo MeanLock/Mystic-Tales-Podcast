@@ -32,7 +32,7 @@ const showApi = appApi.injectEndpoints({
       query: ({ PodcastShowId }) => ({
         url: `/api/podcast-service/api/shows/${PodcastShowId}`,
         method: "GET",
-        authMode: "public",
+        authMode: "hybrid",
       }),
     }),
     getActiveShowSubscription: build.query<
@@ -80,6 +80,59 @@ const showApi = appApi.injectEndpoints({
         return { data: result as { Message: string } };
       },
     }),
+
+    followShow: build.mutation<{ Message: string }, { PodcastShowId: string }>({
+      async queryFn({ PodcastShowId }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/podcast-service/api/shows/${PodcastShowId}/follow/true`,
+                method: "POST",
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as { Message: string } };
+      },
+    }),
+
+    unFollowShow: build.mutation<
+      { Message: string },
+      { PodcastShowId: string }
+    >({
+      async queryFn({ PodcastShowId }, api) {
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/podcast-service/api/shows/${PodcastShowId}/follow/false`,
+                method: "POST",
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as { Message: string } };
+      },
+    }),
+
+    getFollowedShows: build.query<{ ShowList: ShowFromAPI[] }, void>({
+      query: () => ({
+        url: `/api/podcast-service/api/shows/followed`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
@@ -89,4 +142,7 @@ export const {
   useGetShowDetailsQuery,
   useGetActiveShowSubscriptionQuery,
   useRatingShowMutation,
+  useFollowShowMutation,
+  useUnFollowShowMutation,
+  useGetFollowedShowsQuery
 } = showApi;

@@ -254,8 +254,8 @@ const CreateBookingPage = () => {
       const result = await createBooking({
         createBookingFormData: formData,
       }).unwrap();
-      if (result.Message) {
-        alert(result.Message);
+      if (result) {
+        alert(result);
         navigate("media-player/management/bookings");
       }
     } catch (err: any) {
