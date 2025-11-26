@@ -953,28 +953,36 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var episodeIdList = parameter.DmcaDismissedEpisodeIds;
-                    if (episodeIdList != null && episodeIdList.Count > 0)
+                    var showList = await GetPodcastShowByPodcasterId(parameter.PodcasterId);
+                    
+                    if (showList != null && showList.Count > 0)
                     {
-                        foreach (var episodeId in episodeIdList)
+                        foreach(var show in showList)
                         {
-                            var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
-                            .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
-
-                            foreach (var session in podcastEpisodeReportReviewSessions)
+                            if(show.PodcastEpisodes == null || show.PodcastEpisodes.Count == 0)
                             {
-                                session.IsResolved = true;
-                                session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                                await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+                                continue;
+                            }
+                            foreach (var episodeId in show.PodcastEpisodes.Select(s => s.Id))
+                            {
+                                var podcastEpisodeReportReviewSessions = await _podcastEpisodeReportReviewSessionGenericRepository.FindAll()
+                                .Where(errs => errs.PodcastEpisodeId == episodeId && errs.IsResolved == null).ToListAsync();
 
-                                var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
-                                .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
-                                && pbr.ResolvedAt == null)
-                                .ToListAsync();
-                                foreach (var EpisodeReport in podcastEpisodeReportList)
+                                foreach (var session in podcastEpisodeReportReviewSessions)
                                 {
-                                    EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
-                                    await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                                    session.IsResolved = true;
+                                    session.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+                                    await _podcastEpisodeReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                                    var podcastEpisodeReportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                                    .Where(pbr => pbr.PodcastEpisodeId == session.PodcastEpisodeId
+                                    && pbr.ResolvedAt == null)
+                                    .ToListAsync();
+                                    foreach (var EpisodeReport in podcastEpisodeReportList)
+                                    {
+                                        EpisodeReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                        await _podcastEpisodeReportGenericRepository.UpdateAsync(EpisodeReport.Id, EpisodeReport);
+                                    }
                                 }
                             }
                         }
@@ -1315,6 +1323,35 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             Random rand = new Random();
             int randomIndex = rand.Next(leastAssignedStaffIds.Count);
             return leastAssignedStaffIds[randomIndex];
+        }
+        public async Task<List<PodcastShowWithEpisodeDTO>?> GetPodcastShowByPodcasterId(int podcasterId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    PodcasterId = podcasterId
+                                },
+                                include = "PodcastShowStatusTrackings, PodcastEpisodes"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                ? podcastShowArray
+                : null;
+            return realResult != null ? realResult.ToObject<List<PodcastShowWithEpisodeDTO>>() : null;
         }
     }
 }

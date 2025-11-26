@@ -1859,7 +1859,7 @@ flows:
         handle-service: "ModerationService"
         description: "Dismisses all episode DMCA accusations of the channel (only changes DMCA status)."
         parameters:
-          - DmcaDismissedShowIds
+          - PodcastChannelId
         next-request-data:
           - PodcastChannelId
           - DmcaDismissedShowIds
@@ -4275,8 +4275,6 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-
-
 
   episode-licenses-upload-flow:
     topic: "content-management-domain"

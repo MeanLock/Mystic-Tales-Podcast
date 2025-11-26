@@ -510,7 +510,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             return Ok(trackListenResponse);
         }
 
-        // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/hls-encryption-key/{KeyId}
+        // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/{BookingPodcastTrareckId}/hls-encryption-key/{KeyId}
         [HttpGet("{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/hls-encryption-key/{KeyId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetBookingPodcastTrackHlsEncryptionKeyFileUrl(int BookingId, Guid BookingPodcastTrackId, Guid KeyId)

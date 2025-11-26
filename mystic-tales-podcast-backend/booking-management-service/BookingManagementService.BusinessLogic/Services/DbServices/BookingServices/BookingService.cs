@@ -47,6 +47,7 @@ using BookingManagementService.Infrastructure.Configurations.Audio.Hls.interface
 using BookingManagementService.Infrastructure.Models.Kafka;
 using BookingManagementService.Infrastructure.Services.Kafka;
 using Duende.IdentityServer.Extensions;
+using GreenDonut;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
@@ -366,17 +367,17 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 throw new HttpRequestException($"Retrieving Booking failed. Error: {ex.Message}");
             }
         }
-        public async Task<List<PodcastBookingToneListItemResponseDTO>> GetPodcasterPodcastBookingTonesAsync(int accountId)
+        public async Task<List<PodcastBookingToneMeListItemResponseDTO>> GetPodcasterPodcastBookingTonesAsync(int accountId)
         {
             try
             {
-                List<PodcastBookingToneListItemResponseDTO> result = new List<PodcastBookingToneListItemResponseDTO>();
+                List<PodcastBookingToneMeListItemResponseDTO> result = new List<PodcastBookingToneMeListItemResponseDTO>();
                 var podcastBookingTones = await _podcastBuddyBookingToneGenericRepository.FindAll(
                     includeFunc: function => function
                     .Include(pb => pb.PodcastBookingTone)
                     .ThenInclude(pb => pb.PodcastBookingToneCategory))
                     .Where(pb => pb.PodcasterId == accountId)
-                    .Select(pb => new PodcastBookingToneListItemResponseDTO
+                    .Select(pb => new PodcastBookingToneMeListItemResponseDTO
                     {
                         Id = pb.PodcastBookingTone.Id,
                         Name = pb.PodcastBookingTone.Name,
@@ -709,10 +710,28 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         {
             try
             {
-                return await _podcastBookingToneGenericRepository.FindAll(
+                var result = new List<PodcastBookingToneListItemResponseDTO>();
+                var query = await _podcastBookingToneGenericRepository.FindAll(
                     includeFunc: function => function
                     .Include(pbt => pbt.PodcastBookingToneCategory))
-                    .Select(pbt => new PodcastBookingToneListItemResponseDTO
+                    .ToListAsync();
+                return result = (await Task.WhenAll(query.Select(async pbt =>
+                {
+                    var count = 0;
+                    var availablePodcasterCount = await _podcastBuddyBookingToneGenericRepository.FindAll()
+                        .Where(pbbt => pbbt.PodcastBookingToneId == pbt.Id)
+                        .Select(pbbt => pbbt.PodcasterId)
+                        .Distinct()
+                        .ToListAsync();
+                    foreach (var podcasterId in availablePodcasterCount)
+                    {
+                        var podcasterAccount = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
+                        if(podcasterAccount != null && podcasterAccount.HasVerifiedPodcasterProfile && podcasterAccount.PodcasterProfileIsBuddy && podcasterAccount.DeactivatedAt == null)
+                        {
+                            count++;
+                        }
+                    }
+                    return new PodcastBookingToneListItemResponseDTO
                     {
                         Id = pbt.Id,
                         Name = pbt.Name,
@@ -722,9 +741,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Id = pbt.PodcastBookingToneCategory.Id,
                             Name = pbt.PodcastBookingToneCategory.Name
                         },
+                        AvailablePodcasterCount = count,
                         CreatedAt = pbt.CreatedAt,
-                        DeletedAt = pbt.DeletedAt,
-                    }).ToListAsync();
+                        DeletedAt = pbt.DeletedAt
+                    };
+                }))).ToList();
 
             }
             catch (Exception ex)

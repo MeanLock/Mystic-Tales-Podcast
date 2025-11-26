@@ -8,6 +8,6 @@ namespace ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain
 {
     public class DismissPodcasterEpisodesDMCATerminatePodcasterForceParameterDTO
     {
-        public List<Guid>? DmcaDismissedShowIds { get; set; }
+        public int PodcasterId { get; set; }
     }
 }

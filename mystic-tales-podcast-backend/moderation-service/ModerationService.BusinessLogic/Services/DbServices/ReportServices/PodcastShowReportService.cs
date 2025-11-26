@@ -800,10 +800,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var showListIds = parameter.DmcaDismissedShowIds;
-                    if (showListIds != null && showListIds.Count > 0)
+                    var showList = await GetPodcastShowByPodcasterId(parameter.PodcasterId);
+                    if (showList != null && showList.Count > 0)
                     {
-                        foreach (var showId in showListIds)
+                        foreach (var showId in showList.Select(s => s.Id))
                         {
                             var podcastShowReportReviewSessions = await _podcastShowReportReviewSessionGenericRepository.FindAll()
                                 .Where(psrrs => psrrs.PodcastShowId == showId)
@@ -1162,6 +1162,35 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             Random rand = new Random();
             int randomIndex = rand.Next(leastAssignedStaffIds.Count);
             return leastAssignedStaffIds[randomIndex];
+        }
+        public async Task<List<PodcastShowWithEpisodeDTO>?> GetPodcastShowByPodcasterId(int podcasterId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShow",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    PodcasterId = podcasterId
+                                },
+                                include = "PodcastShowStatusTrackings, PodcastEpisodes"
+                            })
+                        }
+                    }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                ? podcastShowArray
+                : null;
+            return realResult != null ? realResult.ToObject<List<PodcastShowWithEpisodeDTO>>() : null;
         }
     }
 }

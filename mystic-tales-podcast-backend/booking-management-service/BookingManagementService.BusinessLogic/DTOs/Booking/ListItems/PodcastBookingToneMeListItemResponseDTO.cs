@@ -7,13 +7,12 @@ using System.Threading.Tasks;
 
 namespace BookingManagementService.BusinessLogic.DTOs.Booking.ListItems
 {
-    public class PodcastBookingToneListItemResponseDTO
+    public class PodcastBookingToneMeListItemResponseDTO
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public PodcastBookingToneCategoryDetailResponseDTO PodcastBookingToneCategory { get; set; }
-        public int AvailablePodcasterCount { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
     }

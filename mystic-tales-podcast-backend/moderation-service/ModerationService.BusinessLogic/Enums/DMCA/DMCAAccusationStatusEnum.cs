@@ -17,6 +17,7 @@ namespace ModerationService.BusinessLogic.Enums.DMCA
         ValidLawsuitProof = 7,
         PodcasterLawsuitWin = 8,
         AccuserLawsuitWin = 9,
-        Dismissed = 10
+        UnresolvedDismissed = 10,
+        DirectResolveDismissed = 11
     }
 }
