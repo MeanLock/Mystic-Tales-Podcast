@@ -84,6 +84,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 var podcastShowReport = (await Task.WhenAll(query.Select(async pbr =>
                 {
                     var show = await GetPodcastShow(pbr.PodcastShowId);
+                    if(show == null)
+                    {
+                        _logger.LogWarning("Unable to query Podcast show with ID {PodcastShowId}", pbr.PodcastShowId);
+                        return null;
+                    }
                     var account = await _accountCachingService.GetAccountStatusCacheById(pbr.AccountId);
                     return new PodcastShowReportListItemResponseDTO()
                     {
@@ -133,6 +138,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var responseData = command.LastStepResponseData;
 
                     var systemConfig = await GetActiveSystemConfigProfile();
+                    if(systemConfig == null)
+                    {
+                        throw new Exception("Unable to query system configuration");
+                    }
 
                     var validation = await ValidateShow(parameter.PodcastShowId);
                     if (!validation.isValid)
@@ -162,7 +171,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         if (existingShowReport.Count() >= systemConfig.ReviewSessionConfig.PodcastShowUnResolvedReportStreak)
                         {
                             var staffList = await GetStaffList();
-                            var randomStaff = await GetRandomItemFromJArray(staffList);
+                            if(staffList == null)
+                            {
+                                throw new HttpRequestException("Unable to query staff");
+                            }
+                            var randomStaff = await GetRandomStaffFromList(staffList);
 
                             var newShowReportReviewSession = new PodcastShowReportReviewSession()
                             {
@@ -228,8 +241,6 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         Name = brt.Name
                     })
                     .ToListAsync();
-
-
             }
             catch (Exception ex)
             {
@@ -251,6 +262,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 var podcastShowReportReviewSession = (await Task.WhenAll(query.OrderByDescending(pbrrs => pbrrs.CreatedAt).Select(async pbrrs =>
                 {
                     var show = await GetPodcastShow(pbrrs.PodcastShowId);
+                    if(show == null)
+                    {
+                        _logger.LogWarning("Unable to query Podcast show with ID {PodcastShowId}", pbrrs.PodcastShowId);
+                        return null;
+                    }
                     var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
                     return new PodcastShowReportReviewSessionListItemResponseDTO()
                     {
@@ -302,6 +318,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 var podcastShowReport = (await Task.WhenAll(query.Select(async pbr =>
                 {
                     var show = await GetPodcastShow(pbr.PodcastShowId);
+                    if(show == null)
+                    {
+                        _logger.LogWarning("Unable to query Podcast show with ID {PodcastShowId}", pbr.PodcastShowId);
+                        return null;
+                    }
                     var account = await _accountCachingService.GetAccountStatusCacheById(pbr.AccountId);
                     return new PodcastShowReportListItemResponseDTO()
                     {
@@ -331,6 +352,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 }))).ToList();
 
                 var show = await GetPodcastShow(pbrrs.PodcastShowId);
+                if(show == null)
+                {
+                    _logger.LogWarning("Unable to query Podcast show with ID {PodcastShowId}", pbrrs.PodcastShowId);
+                    return null;
+                }
                 var staff = await _accountCachingService.GetAccountStatusCacheById(pbrrs.AssignedStaff);
 
                 return new PodcastShowReportReviewSessionDetailResponseDTO()
@@ -732,27 +758,33 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var responseData = command.LastStepResponseData;
 
                     var showList = await GetPodcastShowByChannelId(parameter.PodcastChannelId);
-                    foreach (var show in showList)
+                    if (showList != null)
                     {
-                        var podcastShowReportReviewSessions = await _podcastShowReportReviewSessionGenericRepository.FindAll()
-                            .Where(psrrs => psrrs.PodcastShowId == show.Id)
-                            .ToListAsync();
-
-                        foreach (var session in podcastShowReportReviewSessions)
+                        foreach (var show in showList)
                         {
-                            session.IsResolved = true;
-                            await _podcastShowReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+                            var podcastShowReportReviewSessions = await _podcastShowReportReviewSessionGenericRepository.FindAll()
+                                .Where(psrrs => psrrs.PodcastShowId == show.Id)
+                                .ToListAsync();
 
-                            var podcastShowReportList = await _podcastShowReportGenericRepository.FindAll()
-                            .Where(pbr => pbr.PodcastShowId == session.PodcastShowId
-                            && pbr.ResolvedAt == null)
-                            .ToListAsync();
-                            foreach (var ShowReport in podcastShowReportList)
+                            foreach (var session in podcastShowReportReviewSessions)
                             {
-                                ShowReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
-                                await _podcastShowReportGenericRepository.UpdateAsync(ShowReport.Id, ShowReport);
+                                session.IsResolved = true;
+                                await _podcastShowReportReviewSessionGenericRepository.UpdateAsync(session.Id, session);
+
+                                var podcastShowReportList = await _podcastShowReportGenericRepository.FindAll()
+                                .Where(pbr => pbr.PodcastShowId == session.PodcastShowId
+                                && pbr.ResolvedAt == null)
+                                .ToListAsync();
+                                foreach (var ShowReport in podcastShowReportList)
+                                {
+                                    ShowReport.ResolvedAt = _dateHelper.GetNowByAppTimeZone();
+                                    await _podcastShowReportGenericRepository.UpdateAsync(ShowReport.Id, ShowReport);
+                                }
                             }
                         }
+                    } else
+                    {
+                        _logger.LogInformation("Unable to query Show for Podcast Channel Id: {PodcastChannelId}", parameter.PodcastChannelId);
                     }
 
                     await transaction.CommitAsync();
@@ -801,7 +833,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var responseData = command.LastStepResponseData;
 
                     var showList = await GetPodcastShowByPodcasterId(parameter.PodcasterId);
-                    if (showList != null && showList.Count > 0)
+                    if (showList != null)
                     {
                         foreach (var showId in showList.Select(s => s.Id))
                         {
@@ -825,6 +857,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                 }
                             }
                         }
+                    } else
+                    {
+                        _logger.LogInformation("Unable to query Show for Podcaster Id: {PodcasterId}", parameter.PodcasterId);
                     }
 
                     await transaction.CommitAsync();
@@ -960,9 +995,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         }
         public async Task<PodcastEpisodeDTO?> GetPodcastEpisode(Guid podcastEpisodeId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -979,48 +1016,63 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
-                ? podcastEpisodeArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastEpisodeDTO>() : null;
+                return result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
+                    ? podcastEpisodeArray.First.ToObject<PodcastEpisodeDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while fetching Podcast Episode with Id: {PodcastEpisodeId}", podcastEpisodeId);
+                throw new HttpRequestException("Query podcast episode with id failed. error: " + ex.Message);
+            }
         }
         public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
-                    {
-                        new BatchQueryItem
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                         {
-                            Key = "podcastChannel",
-                            QueryType = "findall",
-                            EntityType = "PodcastChannel",
-                            Parameters = JObject.FromObject(new
+                            new BatchQueryItem
                             {
-                                where = new
+                                Key = "podcastChannel",
+                                QueryType = "findall",
+                                EntityType = "PodcastChannel",
+                                Parameters = JObject.FromObject(new
                                 {
-                                    Id = podcastChannelId
-                                },
-                                include = "PodcastChannelStatusTrackings"
-                            })
+                                    where = new
+                                    {
+                                        Id = podcastChannelId
+                                    },
+                                    include = "PodcastChannelStatusTrackings"
+                                })
+                            }
                         }
-                    }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
-                ? podcastChannelArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
+                return result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                    ? podcastChannelArray.First.ToObject<PodcastChannelDTO>()
+                    : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while fetching Podcast Channel with Id: {PodcastChannelId}", podcastChannelId);
+                throw new HttpRequestException("Query podcast channel with id failed. error: " + ex.Message);
+            }
         }
         public async Task<PodcastShowDTO?> GetPodcastShow(Guid podcastShowId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -1037,19 +1089,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
+                return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                    ? podcastShowArray.First.ToObject<PodcastShowDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while fetching Podcast Show with Id: {PodcastShowId}", podcastShowId);
+                throw new HttpRequestException("Query podcast show with id failed. error: " + ex.Message);
+            }
         }
         public async Task<List<PodcastShowDTO>?> GetPodcastShowByChannelId(Guid podcastChannelid)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -1066,19 +1126,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray
-                : null;
-            return realResult != null ? realResult.ToObject<List<PodcastShowDTO>>() : null;
-        }
-        private async Task<JArray?> GetStaffList()
-        {
-            var batchRequest = new BatchQueryRequest
+                return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count >= 0
+                    ? podcastShowArray.ToObject<List<PodcastShowDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
             {
-                Queries = new List<BatchQueryItem>
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while fetching Podcast Show with Channel Id: {PodcastChannelId}", podcastChannelid);
+                throw new HttpRequestException("Query podcast show with channel id failed. error: " + ex.Message);
+            }
+        }
+        private async Task<List<AccountDTO>?> GetStaffList()
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -1092,15 +1160,22 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                         IsVerify = true,
                                         RoleId = (int)RoleEnum.Staff
                                     },
-                                })
+                                }),
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
 
-            return result.Results?["activeStaffList"] is JArray staffListArray && staffListArray.Count > 0
-                ? staffListArray as JArray
-                : null;
+                return result.Results?["activeStaffList"] is JArray staffListArray && staffListArray.Count >= 0
+                    ? staffListArray.ToObject<List<AccountDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n exception: " + ex.Message + "\n");
+                _logger.LogError(ex, "Error occurred while fetching staff list from User Service");
+                throw new HttpRequestException("Retreive Staff list failed. Error: " + ex.Message);
+            }
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
@@ -1128,12 +1203,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First as JObject
+            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                ? configArray.First.ToObject<SystemConfigProfileDTO>()
                 : null;
-            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
-        private async Task<int> GetRandomItemFromJArray(JArray? array)
+        private async Task<int> GetRandomStaffFromList(List<AccountDTO>? array)
         {
             //if (array == null || array.Count == 0)
             //    return null;
@@ -1146,7 +1220,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 .Select(pbrrs => pbrrs.AssignedStaff)
                 .ToListAsync();
 
-            List<AccountDTO> availableStaff = array.ToObject<List<AccountDTO>>();
+            List<AccountDTO> availableStaff = array;
             Dictionary<int, int> staffAssignmentCount = new Dictionary<int, int>();
             foreach (var staff in availableStaff)
             {
@@ -1165,9 +1239,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         }
         public async Task<List<PodcastShowWithEpisodeDTO>?> GetPodcastShowByPodcasterId(int podcasterId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -1184,13 +1260,19 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray
-                : null;
-            return realResult != null ? realResult.ToObject<List<PodcastShowWithEpisodeDTO>>() : null;
+                return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count >= 0
+                    ? podcastShowArray.ToObject<List<PodcastShowWithEpisodeDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while fetching Podcast Show with Podcaster Id: {PodcasterId}", podcasterId);
+                throw new HttpRequestException("Query podcast show with podcaster id failed. error: " + ex.Message);
+            }
         }
     }
 }

@@ -137,6 +137,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     var responseData = command.LastStepResponseData;
 
                     var systemConfig = await GetActiveSystemConfigProfile();
+                    if(systemConfig == null)
+                    {
+                        throw new Exception("Active system configuration profile not found");
+                    }
 
                     var podcaster = await ValidatePodcaster(parameter.PodcastBuddyId);
                     if (!podcaster.isValid)
@@ -166,7 +170,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         if (existingBuddyReport.Count() >= systemConfig.ReviewSessionConfig.PodcastBuddyUnResolvedReportStreak)
                         {
                             var staffList = await GetStaffList();
-                            var randomStaff = await GetRandomItemFromJArray(staffList);
+                            if(staffList == null)
+                            {
+                                throw new Exception("Unable to query staff");
+                            }
+                            var randomStaff = await GetRandomStaffFromList(staffList);
 
                             var newBuddyReportReviewSession = new PodcastBuddyReportReviewSession()
                             {
@@ -515,11 +523,13 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 }
             }
         }
-        private async Task<JArray?> GetStaffList()
+        private async Task<List<AccountDTO>?> GetStaffList()
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -536,12 +546,19 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                 }),
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
 
-            return result.Results?["activeStaffList"] is JArray staffListArray && staffListArray.Count > 0
-                ? staffListArray as JArray
-                : null;
+                return result.Results?["activeStaffList"] is JArray staffListArray && staffListArray.Count >= 0
+                    ? staffListArray.ToObject<List<AccountDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n exception: " + ex.Message + "\n");
+                _logger.LogError(ex, "Error occurred while fetching staff list from User Service");
+                throw new HttpRequestException("Retreive Staff list failed. Error: " + ex.Message);
+            }
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
@@ -569,12 +586,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First as JObject
+            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                ? configArray.First.ToObject<SystemConfigProfileDTO>()
                 : null;
-            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
         }
-        private async Task<int> GetRandomItemFromJArray(JArray? array)
+        private async Task<int> GetRandomStaffFromList(List<AccountDTO>? array)
         {
             //if (array == null || array.Count == 0)
             //    return null;
@@ -587,7 +603,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 .Select(pbrrs => pbrrs.AssignedStaff)
                 .ToListAsync();
 
-            List<AccountDTO> availableStaff = array.ToObject<List<AccountDTO>>();
+            List<AccountDTO> availableStaff = array;
             Dictionary<int, int> staffAssignmentCount = new Dictionary<int, int>();
             foreach (var staff in availableStaff)
             {
