@@ -2265,7 +2265,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             {
                 var query = _bookingGenericRepository.FindAll(
                     includeFunc: function => function
-                    .Include(b => b.BookingStatusTrackings));
+                    .Include(b => b.BookingStatusTrackings)
+                    .ThenInclude(bst => bst.BookingStatus));
                 if (isPodcaster)
                 {
                     query = query.Where(b => b.PodcastBuddyId == accountId);
@@ -2388,6 +2389,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 var booking = await _bookingGenericRepository.FindAll(
                     includeFunc: function => function
                     .Include(b => b.BookingStatusTrackings)
+                    .ThenInclude(bst => bst.BookingStatus)
                     .Include(b => b.BookingProducingRequests)
                         .ThenInclude(bpr => bpr.BookingPodcastTracks))
                     .Where(b => b.Id == bookingId)
