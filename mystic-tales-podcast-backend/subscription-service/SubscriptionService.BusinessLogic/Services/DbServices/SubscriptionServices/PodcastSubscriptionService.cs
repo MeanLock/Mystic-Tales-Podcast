@@ -2589,7 +2589,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while checking podcast subscription income");
+                    _logger.LogError(ex, "Error occurred while checking podcast subscription income, error: " + ex.Message);
                 }
             }
         }
@@ -2807,7 +2807,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while checking podcast subscription registration renewal");
+                    _logger.LogError(ex, "Error occurred while checking podcast subscription registration renewal, error: "+ ex.Message);
                 }
             }
         }

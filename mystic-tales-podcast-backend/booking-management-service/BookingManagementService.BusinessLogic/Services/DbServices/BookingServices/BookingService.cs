@@ -2175,7 +2175,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while checking booking track previewing responses timeout");
+                    _logger.LogError(ex, "Error occurred while checking booking track previewing responses timeout, error: " + ex.Message);
                 }
             }
         }
@@ -2255,7 +2255,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while checking booking producing requested response timeout");
+                    _logger.LogError(ex, "Error occurred while checking booking producing requested response timeout, error: " + ex.Message);
                 }
             }
         }
@@ -2344,7 +2344,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while getting completed bookings for AccountId: {AccountId}", accountId);
-                throw new HttpRequestException("Error occurred while retrieving completed booking");
+                throw new HttpRequestException("Error occurred while retrieving completed booking, error: " + ex.Message);
             }
         }
         public async Task<List<PodcastBuddySnippetResponseDTO>> GetPodcastersByBookingToneIdAsync(Guid podcastBookingToneId)
@@ -2379,7 +2379,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while getting podcasters for PodcastBookingToneId: {PodcastBookingToneId}", podcastBookingToneId);
-                throw new HttpRequestException("Error occurred while retrieving podcasters by booking tone");
+                throw new HttpRequestException("Error occurred while retrieving podcasters by booking tone, error: " + ex.Message);
             }
         }
         public async Task<BookingResultDetailResponseDTO> GetBookingResultByIdAsync(int bookingId, int accountId)
@@ -2408,7 +2408,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
 
                 var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
-                var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                var podcaster = await GetPodcaster(booking.PodcastBuddyId);
+                if (podcaster == null)
+                {
+                    throw new HttpRequestException($"Podcaster with ID {booking.PodcastBuddyId} not found");
+                }
                 AccountStatusCache? assignedStaff = null;
                 if(booking.AssignedStaffId.HasValue)
                 {
@@ -2431,7 +2435,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Id = podcaster.Id,
                         FullName = podcaster.FullName,
                         Email = podcaster.Email,
-                        MainImageFileKey = podcaster.MainImageFileKey
+                        MainImageFileKey = podcaster.MainImageFileKey,
+                        PriceBookingPerWord = podcaster.PodcasterProfile?.PricePerBookingWord
                     },
                     AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
                     {
@@ -2495,7 +2500,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while getting booking result for BookingId: {BookingId}", bookingId);
-                throw new HttpRequestException("Error occurred while retrieving booking result");
+                throw new HttpRequestException("Error occurred while retrieving booking result, error: " + ex.Message);
             }
         }
         private async Task<PodcasterDTO?> GetPodcaster(int accountId)
@@ -2531,7 +2536,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 _logger.LogError(ex, "Error occurred while querying podcaster for AccountId: {AccountId}", accountId);
-                throw new HttpRequestException("Error occurred while querying podcaster");
+                throw new HttpRequestException("Error occurred while querying podcaster, error: " + ex.Message);
             }
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
@@ -2569,7 +2574,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 _logger.LogError(ex, "Error occurred while querying active system config profile");
-                throw new HttpRequestException("Error occurred while querying active system config profile");
+                throw new HttpRequestException("Error occurred while querying active system config profile, error: " + ex.Message);
             }
         }
         public async Task<BookingListenSessionResponseDTO> GetTrackListenAsync(int bookingId, Guid podcastTrackId, int accountId, DeviceInfoDTO deviceInfo, CustomerListenSessionProcedureSourceDetailTypeEnum sourceType)
@@ -3002,7 +3007,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while getting latest booking podcast track listen session for AccountId: {AccountId}", accountId);
-                throw new HttpRequestException("Error occurred while retrieving listen session");
+                throw new HttpRequestException("Error occurred while retrieving listen session, error: " + ex.Message);
             }
         }
         public async Task UpdateBookingListenSessionDurationAsync(UpdateBookingListenSessionDurationParameterDTO parameter, SagaCommandMessage command)
@@ -3461,7 +3466,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while checking if listener can listen to track");
+                _logger.LogError(ex, "Error occurred while checking if listener can listen to track, error: " + ex.Message);
                 return false;
             }
         }
@@ -3708,7 +3713,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while refreshing sequential order queue");
-                throw new HttpRequestException("Error occurred while refreshing sequential order queue");
+                throw new HttpRequestException("Error occurred while refreshing sequential order queue, error: " + ex.Message);
             }
         }
         private async Task<List<ListenSessionProcedureListenObjectQueueItem>> RefreshRandomOrderQueue(List<ListenSessionProcedureListenObjectQueueItem> list)
@@ -3734,7 +3739,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while refreshing random order queue");
-                throw new HttpRequestException("Error occurred while refreshing random order queue");
+                throw new HttpRequestException("Error occurred while refreshing random order queue, error: " + ex.Message);
             }
         }
     }
