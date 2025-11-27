@@ -83,9 +83,19 @@ namespace ModerationService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("show-report-types")]
-        public async Task<IActionResult> GetShowReportType()
+        public async Task<IActionResult> GetAllShowReportType()
         {
-            var showReportTypeList = await _podcastShowReportService.GetPodcastShowReportTypeAsync();
+            var showReportTypeList = await _podcastShowReportService.GetAllPodcastShowReportTypeAsync();
+            return Ok(new
+            {
+                ShowReportTypeList = showReportTypeList
+            });
+        }
+        [HttpGet("shows/{PodcastShowId}/show-report-types")]
+        public async Task<IActionResult> GetShowReportType([FromRoute] Guid PodcastShowId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var showReportTypeList = await _podcastShowReportService.GetPodcastShowReportTypeAsync(account, PodcastShowId);
             return Ok(new
             {
                 ShowReportTypeList = showReportTypeList

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ModerationService.BusinessLogic.DTOs.Account;
+using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreateEpisodeReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelEpisodesReportNoEffectChannelDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelEpisodesReportNoEffectUnpublishChannelForce;
@@ -12,6 +13,7 @@ using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.R
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectShowDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveShowEpisodesReportNoEffectUnpublishShowForce;
 using ModerationService.BusinessLogic.DTOs.Podcast;
+using ModerationService.BusinessLogic.DTOs.PodcastBuddyReport;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport.Details;
 using ModerationService.BusinessLogic.DTOs.PodcastEpisodeReport.ListItems;
@@ -147,6 +149,18 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         throw new Exception(validation.errorMessage);
                     }
 
+                    var existingReport = await _podcastEpisodeReportGenericRepository.FindAll()
+                        .Where(br => br.PodcastEpisodeId == parameter.PodcastEpisodeId
+                            && br.AccountId == parameter.AccountId
+                            && br.PodcastEpisodeReportTypeId == parameter.PodcastEpisodeReportTypeId
+                            && br.ResolvedAt == null)
+                        .ToListAsync();
+
+                    if (existingReport.Count() > 0)
+                    {
+                        throw new Exception("Duplicate report detected for the same episode by the same account with the same report type");
+                    }
+
                     var newEpisodeReport = new PodcastEpisodeReport()
                     {
                         AccountId = parameter.AccountId,
@@ -224,19 +238,46 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 }
             }
         }
-        public async Task<List<PodcastEpisodeReportTypeDTO>> GetPodcastEpisodeReportTypeAsync()
+        public async Task<List<PodcastEpisodeReportTypeDTO>> GetAllPodcastEpisodeReportTypeAsync()
         {
             try
             {
-                return await _podcastEpisodeReportTypeGenericRepository.FindAll()
-                    .Select(brt => new PodcastEpisodeReportTypeDTO()
-                    {
-                        Id = brt.Id,
-                        Name = brt.Name
-                    })
+                var query = _podcastEpisodeReportTypeGenericRepository.FindAll();
+                return await query
+                .Select(brt => new PodcastEpisodeReportTypeDTO()
+                {
+                    Id = brt.Id,
+                    Name = brt.Name
+                })
+                .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving podcast episode report types");
+                throw new HttpRequestException("Retrieve Episode Report Types failed. Error: " + ex.Message);
+            }
+        }
+        public async Task<List<PodcastEpisodeReportTypeDTO>> GetPodcastEpisodeReportTypeAsync(AccountStatusCache? account, Guid podcastEpisodeId)
+        {
+            try
+            {
+                var query = _podcastEpisodeReportTypeGenericRepository.FindAll();
+                if (account != null)
+                {
+                    var reportList = await _podcastEpisodeReportGenericRepository.FindAll()
+                    .Where(r => r.AccountId == account.Id && r.ResolvedAt == null && r.PodcastEpisodeId == podcastEpisodeId)
+                    .Select(r => r.PodcastEpisodeReportTypeId)
+                    .Distinct()
                     .ToListAsync();
-
-
+                    query = query.Where(brt => !reportList.Contains(brt.Id));
+                }
+                return await query
+                .Select(brt => new PodcastEpisodeReportTypeDTO()
+                {
+                    Id = brt.Id,
+                    Name = brt.Name
+                })
+                .ToListAsync();
             }
             catch (Exception ex)
             {

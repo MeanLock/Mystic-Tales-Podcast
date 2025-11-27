@@ -94,9 +94,19 @@ namespace ModerationService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("buddy-report-types")]
-        public async Task<IActionResult> GetBuddyReportType()
+        public async Task<IActionResult> GetAllBuddyReportType()
         {
-            var buddyReportTypeList = await _podcastBuddyReportService.GetPodcastBuddyReportTypeAsync();
+            var buddyReportTypeList = await _podcastBuddyReportService.GetAllPodcastBuddyReportTypeAsync();
+            return Ok(new
+            {
+                BuddyReportTypeList = buddyReportTypeList
+            });
+        }
+        [HttpGet("podcast-buddy/{PodcastBuddyId}/buddy-report-types")]
+        public async Task<IActionResult> GetBuddyReportType([FromRoute] int PodcastBuddyId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var buddyReportTypeList = await _podcastBuddyReportService.GetPodcastBuddyReportTypeAsync(account, PodcastBuddyId);
             return Ok(new
             {
                 BuddyReportTypeList = buddyReportTypeList

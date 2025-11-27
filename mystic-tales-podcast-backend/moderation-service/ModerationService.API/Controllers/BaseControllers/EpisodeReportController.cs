@@ -80,9 +80,19 @@ namespace ModerationService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("episode-report-types")]
-        public async Task<IActionResult> GetEpisodeReportType()
+        public async Task<IActionResult> GetAllEpisodeReportType()
         {
-            var EpisodeReportTypeList = await _podcastEpisodeReportService.GetPodcastEpisodeReportTypeAsync();
+            var EpisodeReportTypeList = await _podcastEpisodeReportService.GetAllPodcastEpisodeReportTypeAsync();
+            return Ok(new
+            {
+                EpisodeReportTypeList = EpisodeReportTypeList
+            });
+        }
+        [HttpGet("episodes/{PodcastEpisodeId}/episode-report-types")]
+        public async Task<IActionResult> GetEpisodeReportType([FromRoute] Guid PodcastEpisodeId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var EpisodeReportTypeList = await _podcastEpisodeReportService.GetPodcastEpisodeReportTypeAsync(account, PodcastEpisodeId);
             return Ok(new
             {
                 EpisodeReportTypeList = EpisodeReportTypeList

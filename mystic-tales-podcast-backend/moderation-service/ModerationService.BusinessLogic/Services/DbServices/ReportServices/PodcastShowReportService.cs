@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ModerationService.BusinessLogic.DTOs.Account;
+using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreateShowReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelShowsReportNoEffectChannelDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelShowsReportNoEffectUnpublishChannelForce;
@@ -149,6 +150,15 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         throw new Exception(validation.errorMessage);
                     }
 
+                    var existingReport = await _podcastShowReportGenericRepository.FindAll()
+                        .Where(br => br.AccountId == parameter.AccountId && br.PodcastShowId == parameter.PodcastShowId && br.PodcastShowReportTypeId == parameter.PodcastShowReportTypeId && br.ResolvedAt == null)
+                        .ToListAsync();
+
+                    if (existingReport.Count() > 0)
+                    {
+                        throw new Exception("You have already reported this podcast show for the same reason");
+                    }
+
                     var newShowReport = new PodcastShowReport()
                     {
                         AccountId = parameter.AccountId,
@@ -230,11 +240,40 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 }
             }
         }
-        public async Task<List<PodcastShowReportTypeDTO>> GetPodcastShowReportTypeAsync()
+        public async Task<List<PodcastShowReportTypeDTO>> GetAllPodcastShowReportTypeAsync()
         {
             try
             {
-                return await _podcastShowReportTypeGenericRepository.FindAll()
+                var query = _podcastShowReportTypeGenericRepository.FindAll();
+                return await query
+                    .Select(brt => new PodcastShowReportTypeDTO()
+                    {
+                        Id = brt.Id,
+                        Name = brt.Name
+                    })
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching podcast show report types");
+                throw new HttpRequestException("Retrieve Show report types failed. Error: " + ex.Message);
+            }
+        }
+        public async Task<List<PodcastShowReportTypeDTO>> GetPodcastShowReportTypeAsync(AccountStatusCache? account, Guid podcastShowId)
+        {
+            try
+            {
+                var query = _podcastShowReportTypeGenericRepository.FindAll();
+                if (account != null)
+                {
+                    var reportList = await _podcastShowReportGenericRepository.FindAll()
+                        .Where(r => r.AccountId == account.Id && r.ResolvedAt == null && r.PodcastShowId == podcastShowId)
+                        .Select(r => r.PodcastShowReportTypeId)
+                        .Distinct()
+                        .ToListAsync();
+                    query = query.Where(brt => !reportList.Contains(brt.Id));
+                }
+                return await query
                     .Select(brt => new PodcastShowReportTypeDTO()
                     {
                         Id = brt.Id,

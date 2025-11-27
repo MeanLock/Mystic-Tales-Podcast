@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Client;
 using ModerationService.BusinessLogic.DTOs.Account;
+using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.CreatePodcastBuddyReport;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolveChannelEpisodesReportNoEffectChannelDeletionForce;
 using ModerationService.BusinessLogic.DTOs.MessageQueue.ReportManagementDomain.ResolvePodcastBuddyReport;
@@ -148,6 +150,14 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                         throw new Exception(podcaster.errorMessage);
                     }
 
+                    var existingReport = await _podcastBuddyReportGenericRepository.FindAll()
+                        .Where(br => br.AccountId == parameter.AccountId && br.PodcastBuddyId == parameter.PodcastBuddyId && br.PodcastBuddyReportTypeId == parameter.PodcastBuddyReportTypeId && br.ResolvedAt == null)
+                        .ToListAsync();
+                    if (existingReport.Count() > 0)
+                    {
+                        throw new Exception("You have already reported this podcaster for the same reason and it is still unresolved");
+                    }
+
                     var newBuddyReport = new PodcastBuddyReport()
                     {
                         AccountId = parameter.AccountId,
@@ -230,11 +240,41 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                 }
             }
         }
-        public async Task<List<PodcastBuddyReportTypeDTO>> GetPodcastBuddyReportTypeAsync()
+        public async Task<List<PodcastBuddyReportTypeDTO>> GetAllPodcastBuddyReportTypeAsync()
         {
             try
             {
-                return await _podcastBuddyReportTypeGenericRepository.FindAll()
+                var query = _podcastBuddyReportTypeGenericRepository.FindAll();
+                return await query
+                .Select(brt => new PodcastBuddyReportTypeDTO()
+                {
+                    Id = brt.Id,
+                    Name = brt.Name
+                })
+                .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching podcast buddy report type review sessions");
+                throw new HttpRequestException("Retreive Buddy report type failed. Error: " + ex.Message);
+
+            }
+        }
+        public async Task<List<PodcastBuddyReportTypeDTO>> GetPodcastBuddyReportTypeAsync(AccountStatusCache? account, int podcastBuddyId)
+        {
+            try
+            {
+                var query = _podcastBuddyReportTypeGenericRepository.FindAll();
+                if (account != null)
+                {
+                    var reportList = await _podcastBuddyReportGenericRepository.FindAll()
+                    .Where(r => r.AccountId == account.Id && r.ResolvedAt == null && r.PodcastBuddyId == podcastBuddyId)
+                    .Select(r => r.PodcastBuddyReportTypeId)
+                    .Distinct()
+                    .ToListAsync();
+                    query = query.Where(brt => !reportList.Contains(brt.Id));
+                }
+                return await query
                 .Select(brt => new PodcastBuddyReportTypeDTO()
                 {
                     Id = brt.Id,
