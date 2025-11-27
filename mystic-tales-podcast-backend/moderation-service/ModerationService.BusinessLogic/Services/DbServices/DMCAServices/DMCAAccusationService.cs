@@ -177,6 +177,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     AccuserEmail = pbrrs.AccuserEmail,
                     AccuserPhone = pbrrs.AccuserPhone,
                     AccuserFullName = pbrrs.AccuserFullName,
+                    DismissReason = pbrrs.DismissReason,
                     PodcastShow = show != null
                         ? new DMCAPodcastShowSnippetResponseDTO()
                         {
@@ -529,6 +530,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 AccuserEmail = da.AccuserEmail,
                 AccuserPhone = da.AccuserPhone,
                 AccuserFullName = da.AccuserFullName,
+                DismissReason = da.DismissReason,
                 PodcastShow = show != null
                     ? new DMCAPodcastShowSnippetResponseDTO()
                     {

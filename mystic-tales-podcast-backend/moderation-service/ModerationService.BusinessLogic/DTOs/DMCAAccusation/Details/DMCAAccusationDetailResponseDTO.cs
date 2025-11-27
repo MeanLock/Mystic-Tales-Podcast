@@ -16,6 +16,7 @@ namespace ModerationService.BusinessLogic.DTOs.DMCAAccusation.Details
         public string AccuserEmail { get; set; }
         public string AccuserPhone { get; set; }
         public string AccuserFullName { get; set; }
+        public string? DismissReason { get; set; }
         public DMCAPodcastShowSnippetResponseDTO? PodcastShow { get; set; }
         public DMCAPodcastEpisodeSnippetResponseDTO? PodcastEpisode { get; set; }
         public AssignedStaffSnippetResponseDTO? AssignedStaff { get; set; }
