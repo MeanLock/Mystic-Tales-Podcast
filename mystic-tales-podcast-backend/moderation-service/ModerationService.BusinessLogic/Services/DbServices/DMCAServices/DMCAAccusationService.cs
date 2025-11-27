@@ -643,6 +643,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var responseData = command.LastStepResponseData;
 
                     var config = await GetActiveSystemConfigProfile();
+                    if(config == null)
+                    {
+                        throw new Exception("Active system config profile not found");
+                    }
 
                     var dmcaAccusation = await _dmcaAccusationGenericRepository.FindByIdAsync(parameter.DMCAAccusationId,
                         includeFunc: function => function
@@ -834,7 +838,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accuserMailSendingFlow2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accuserMailSendingRequestData2,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
@@ -935,7 +939,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 }
                             });
                             var accuserMailSendingFlow3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.DmcaManagementDomain,
+                                topic: KafkaTopicEnum.ReportManagementDomain,
                                 requestData: accuserMailSendingRequestData3,
                                 sagaInstanceId: null,
                                 messageName: "moderation-service-mail-sending-flow");
@@ -1198,7 +1202,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 };
                                 var accountPunishMessageName1 = "user-violation-punishment-flow";
                                 var sagaAccountPunishStartSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    topic: KafkaTopicEnum.UserManagementDomain,
                                     requestData: accountPunishRequestData1,
                                     sagaInstanceId: null,
                                     messageName: accountPunishMessageName1);
@@ -1245,7 +1249,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 };
                                 var accountPunishMessageName2 = "user-violation-punishment-flow";
                                 var sagaAccountPunishStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    topic: KafkaTopicEnum.UserManagementDomain,
                                     requestData: accountPunishRequestData2,
                                     sagaInstanceId: null,
                                     messageName: accountPunishMessageName2);
@@ -1440,7 +1444,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 };
                                 var accountPunishMessageName3 = "user-violation-punishment-flow";
                                 var sagaAccountPunishStartSagaTriggerMessage3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                    topic: KafkaTopicEnum.UserManagementDomain,
                                     requestData: accountPunishRequestData3,
                                     sagaInstanceId: null,
                                     messageName: accountPunishMessageName3);
@@ -2322,7 +2326,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         };
                                         var accountPunishMessageName = "user-violation-punishment-flow";
                                         var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            topic: KafkaTopicEnum.UserManagementDomain,
                                             requestData: accountPunishRequestData,
                                             sagaInstanceId: null,
                                             messageName: accountPunishMessageName);
@@ -2568,7 +2572,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         };
                                         var accountPunishMessageName = "user-violation-punishment-flow";
                                         var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            topic: KafkaTopicEnum.UserManagementDomain,
                                             requestData: accountPunishRequestData,
                                             sagaInstanceId: null,
                                             messageName: accountPunishMessageName);
@@ -2704,7 +2708,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     };
                                     var accountPunishMessageName = "user-violation-punishment-flow";
                                     var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                        topic: KafkaTopicEnum.ContentManagementDomain,
+                                        topic: KafkaTopicEnum.UserManagementDomain,
                                         requestData: accountPunishRequestData,
                                         sagaInstanceId: null,
                                         messageName: accountPunishMessageName);
@@ -2830,6 +2834,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     if (!check)
                                     {
                                         dismissedEpisodeIds.Add(episodeId);
+
+                                        // Punish account
                                         var accountPunishRequestData = new JObject
                                         {
                                             { "AccountId", podcasterId },
@@ -2837,7 +2843,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         };
                                         var accountPunishMessageName = "user-violation-punishment-flow";
                                         var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            topic: KafkaTopicEnum.UserManagementDomain,
                                             requestData: accountPunishRequestData,
                                             sagaInstanceId: null,
                                             messageName: accountPunishMessageName);
@@ -2972,7 +2978,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         };
                                         var accountPunishMessageName = "user-violation-punishment-flow";
                                         var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            topic: KafkaTopicEnum.UserManagementDomain,
                                             requestData: accountPunishRequestData,
                                             sagaInstanceId: null,
                                             messageName: accountPunishMessageName);
@@ -3121,7 +3127,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                                 };
                                                 var accountPunishMessageName = "user-violation-punishment-flow";
                                                 var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                                    topic: KafkaTopicEnum.UserManagementDomain,
                                                     requestData: accountPunishRequestData,
                                                     sagaInstanceId: null,
                                                     messageName: accountPunishMessageName);
@@ -3276,7 +3282,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         };
                                         var accountPunishMessageName = "user-violation-punishment-flow";
                                         var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            topic: KafkaTopicEnum.UserManagementDomain,
                                             requestData: accountPunishRequestData,
                                             sagaInstanceId: null,
                                             messageName: accountPunishMessageName);
@@ -3419,7 +3425,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     };
                                     var accountPunishMessageName = "user-violation-punishment-flow";
                                     var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                        topic: KafkaTopicEnum.ContentManagementDomain,
+                                        topic: KafkaTopicEnum.UserManagementDomain,
                                         requestData: accountPunishRequestData,
                                         sagaInstanceId: null,
                                         messageName: accountPunishMessageName);
@@ -3547,6 +3553,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     {
                                         dismissedEpisodeIds.Add(episodeId);
 
+                                        // Punish Account
                                         var accountPunishRequestData = new JObject
                                         {
                                             { "AccountId", podcasterId },
@@ -3554,7 +3561,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         };
                                         var accountPunishMessageName = "user-violation-punishment-flow";
                                         var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            topic: KafkaTopicEnum.UserManagementDomain,
                                             requestData: accountPunishRequestData,
                                             sagaInstanceId: null,
                                             messageName: accountPunishMessageName);
@@ -3689,7 +3696,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         };
                                         var accountPunishMessageName = "user-violation-punishment-flow";
                                         var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            topic: KafkaTopicEnum.UserManagementDomain,
                                             requestData: accountPunishRequestData,
                                             sagaInstanceId: null,
                                             messageName: accountPunishMessageName);
@@ -3834,7 +3841,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                                 };
                                                 var accountPunishMessageName = "user-violation-punishment-flow";
                                                 var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                                    topic: KafkaTopicEnum.UserManagementDomain,
                                                     requestData: accountPunishRequestData,
                                                     sagaInstanceId: null,
                                                     messageName: accountPunishMessageName);
@@ -3971,7 +3978,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         };
                                         var accountPunishMessageName = "user-violation-punishment-flow";
                                         var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            topic: KafkaTopicEnum.UserManagementDomain,
                                             requestData: accountPunishRequestData,
                                             sagaInstanceId: null,
                                             messageName: accountPunishMessageName);
@@ -4102,6 +4109,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                             {
                                                 dismissedEpisodeIds.Add(episodeId);
 
+                                                // Punish Account
                                                 var accountPunishRequestData = new JObject
                                                 {
                                                     { "AccountId", podcasterId },
@@ -4109,7 +4117,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                                 };
                                                 var accountPunishMessageName = "user-violation-punishment-flow";
                                                 var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                                    topic: KafkaTopicEnum.ContentManagementDomain,
+                                                    topic: KafkaTopicEnum.UserManagementDomain,
                                                     requestData: accountPunishRequestData,
                                                     sagaInstanceId: null,
                                                     messageName: accountPunishMessageName);

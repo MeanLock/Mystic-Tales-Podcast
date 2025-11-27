@@ -405,6 +405,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new HttpRequestException("This producing request has been finished already");
                     }
                     var config = await GetActiveSystemConfigProfile();
+                    if(config == null)
+                    {
+                        throw new HttpRequestException("System configuration not found");
+                    }
                     var remainingPreviewListenSlot = config.BookingConfig.PodcastTrackPreviewListenSlot;
 
                     var existingProducingRequest = await _bookingProducingRequestGenericRepository.FindAll(
@@ -824,6 +828,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var responseData = command.LastStepResponseData;
 
                     var systemConfig = await GetActiveSystemConfigProfile();
+                    if(systemConfig == null)
+                    {
+                        throw new Exception("System configuration not found");
+                    }
                     var profitRate = systemConfig.BookingConfig.ProfitRate;
                     var depositRate = systemConfig.BookingConfig.DepositRate;
 
@@ -1086,9 +1094,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -1107,13 +1117,19 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
+                return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                    ? configArray.First.ToObject<SystemConfigProfileDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while fetching active system configuration profile.");
+                throw new HttpRequestException("Querying active system config failed. error: " + ex.Message);
+            }
         }
     }
 }

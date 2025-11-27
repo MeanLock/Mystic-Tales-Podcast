@@ -562,9 +562,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -583,12 +585,19 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                             Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First.ToObject<SystemConfigProfileDTO>()
-                : null;
+                return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                    ? configArray.First.ToObject<SystemConfigProfileDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n exception: " + ex.Message + "\n");
+                _logger.LogError(ex, "Error occurred while fetching active system configuration profile from System Configuration Service");
+                throw new HttpRequestException("Retreive Active System Configuration Profile failed. Error: " + ex.Message);
+            }
         }
         private async Task<int> GetRandomStaffFromList(List<AccountDTO>? array)
         {
@@ -639,52 +648,5 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             }
             return (true, string.Empty);
         }
-        //using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-        //{
-        //    try
-        //    {
-        //        var messageName = command.MessageName;
-        //        var sagaId = command.SagaInstanceId;
-        //        var flowName = command.FlowName;
-        //        var responseData = command.LastStepResponseData;
-
-        //await transaction.CommitAsync();
-
-        //var newResponseData = new JObject
-        //            {
-        //                { "AccountId", registrationResult.AccountId },
-        //                { "PodcastSubscriptionRegistrationId", registrationResult.Id },
-        //                { "CancelledAt", registrationResult.CancelledAt }
-        //            };
-        //var newMessageName = messageName + ".success";
-        //var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //    topic: KafkaTopicEnum.PaymentProcessingDomain,
-        //    requestData: command.RequestData,
-        //    responseData: newResponseData,
-        //    sagaInstanceId: sagaId,
-        //    flowName: flowName,
-        //    messageName: newMessageName);
-        //await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
-        //_logger.LogInformation("Successfully cancel podcast subscription registration for SagaId: {SagaId}", sagaId);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        await transaction.RollbackAsync();
-        //        _logger.LogError(ex, "Error occurred while create podcast buddy report for SagaId: {SagaId}", command.SagaInstanceId);
-        //        var newResponseData = new JObject{
-        //            { "ErrorMessage", "Create podcast buddy report failed, error: " + ex.Message }
-        //        };
-        //        var newMessageName = command.MessageName + ".failed";
-        //        var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-        //            topic: KafkaTopicEnum.PaymentProcessingDomain,
-        //            requestData: command.RequestData,
-        //            responseData: newResponseData,
-        //            sagaInstanceId: command.SagaInstanceId,
-        //            flowName: command.FlowName,
-        //            messageName: newMessageName);
-        //        await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
-        //        _logger.LogInformation("Create podcast buddy report failed for SagaId: {SagaId}", command.SagaInstanceId);
-        //    }
-        //}
     }
 }

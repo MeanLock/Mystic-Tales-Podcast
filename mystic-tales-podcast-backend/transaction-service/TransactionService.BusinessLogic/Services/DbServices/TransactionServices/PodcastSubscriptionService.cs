@@ -89,6 +89,10 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     var responseData = command.LastStepResponseData;
 
                     var systemConfig = await GetActiveSystemConfigProfile();
+                    if (systemConfig == null)
+                    {
+                        throw new Exception("Active system config profile with podcast subscription configs not found.");
+                    }
 
                     var transactionTypeId = parameter.TransactionTypeId;
                     var newPodcastSubscriptionTransaction = null as PodcastSubscriptionTransaction;
@@ -316,11 +320,13 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 }
             }
         }
-        public async Task<JObject?> GetPodcastSubscriptionRegistration(int accountId, Guid podcastSubscriptionRegistartionId)
+        public async Task<PodcastSubscriptionRegistrationDTO?> GetPodcastSubscriptionRegistration(int accountId, Guid podcastSubscriptionRegistartionId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -334,22 +340,30 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                                     Id = podcastSubscriptionRegistartionId,
                                     AccountId = accountId
                                 }
-                            }),
-                            Fields = new[] { "Id", "AccountId", "PodcastSubscriptionId"}
+                            })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", batchRequest);
 
-            return result.Results?["podcastSubscriptionRegistrationOfAccount"] is JArray podcastSubsciptionRegistrationArray && podcastSubsciptionRegistrationArray.Count > 0
-                ? podcastSubsciptionRegistrationArray.First as JObject
-                : null;
+                return result.Results?["podcastSubscriptionRegistrationOfAccount"] is JArray podcastSubsciptionRegistrationArray && podcastSubsciptionRegistrationArray.Count > 0
+                    ? podcastSubsciptionRegistrationArray.First.ToObject<PodcastSubscriptionRegistrationDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while fetching podcast subscription registration for AccountId: {AccountId} and PodcastSubscriptionRegistrationId: {PodcastSubscriptionRegistrationId}", accountId, podcastSubscriptionRegistartionId);
+                throw new HttpRequestException("Failed to fetch podcast subscription registration. error: " + ex.Message);
+            }
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -368,101 +382,19 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                             Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
-        }
-        public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
-        {
-            var batchRequest = new BatchQueryRequest
+                return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                    ? configArray.First.ToObject<SystemConfigProfileDTO>()
+                    : null;
+            }
+            catch (Exception ex)
             {
-                Queries = new List<BatchQueryItem>
-                    {
-                        new BatchQueryItem
-                        {
-                            Key = "podcastChannel",
-                            QueryType = "findall",
-                            EntityType = "PodcastChannel",
-                            Parameters = JObject.FromObject(new
-                            {
-                                where = new
-                                {
-                                    Id = podcastChannelId
-                                },
-                                include = "PodcastChannelStatusTrackings"
-                            })
-                        }
-                    }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
-
-            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
-                ? podcastChannelArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
-        }
-        public async Task<PodcastShowDTO?> GetPodcastShow(Guid podcastShowId)
-        {
-            var batchRequest = new BatchQueryRequest
-            {
-                Queries = new List<BatchQueryItem>
-                    {
-                        new BatchQueryItem
-                        {
-                            Key = "podcastShow",
-                            QueryType = "findall",
-                            EntityType = "PodcastShow",
-                            Parameters = JObject.FromObject(new
-                            {
-                                where = new
-                                {
-                                    Id = podcastShowId
-                                },
-                                include = "PodcastShowStatusTrackings"
-                            })
-                        }
-                    }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
-
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.First as JObject
-                : null;
-            //Console.WriteLine("Real Result: " + realResult);
-            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
-        }
-        public async Task<List<PodcastSubscriptionDTO>?> GetPodcastSubscriptionByShowId(Guid podcastShowId)
-        {
-            var batchRequest = new BatchQueryRequest
-            {
-                Queries = new List<BatchQueryItem>
-                    {
-                        new BatchQueryItem
-                        {
-                            Key = "podcastSubscription",
-                            QueryType = "findall",
-                            EntityType = "PodcastSubscription",
-                            Parameters = JObject.FromObject(new
-                            {
-                                where = new
-                                {
-                                    PodcastShowId = podcastShowId
-                                },
-                                include = "PodcastSubscriptionRegistrations"
-                            })
-                        }
-                    }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", batchRequest);
-
-            return result.Results?["podcastSubscription"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.ToObject<List<PodcastSubscriptionDTO>>()
-                : null;
-            //Console.WriteLine("Real Result: " + realResult);
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while fetching active system config profile");
+                throw new HttpRequestException("Failed to fetch active system config profile. error: " + ex.Message);
+            }
         }
     }
 }

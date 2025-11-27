@@ -1179,9 +1179,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -1200,12 +1202,19 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                             Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First.ToObject<SystemConfigProfileDTO>()
-                : null;
+                return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                    ? configArray.First.ToObject<SystemConfigProfileDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n exception: " + ex.Message + "\n");
+                _logger.LogError(ex, "Error occurred while fetching active System Config Profile from System Configuration Service");
+                throw new HttpRequestException("Retreive active System Config Profile failed. Error: " + ex.Message);
+            }
         }
         private async Task<int> GetRandomStaffFromList(List<AccountDTO>? array)
         {

@@ -595,6 +595,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
 
                         var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+
+                        // Send Email to Customer about New Version Availability
                         var newVersionMailSendingRequestData = JObject.FromObject(new
                         {
                             SendSubscriptionServiceEmailInfo = new
@@ -869,6 +871,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 foreach (var podcastSubscriptionRegistration in listRegistration)
                                 {
                                     var systemConfig = await GetActiveSystemConfigProfile();
+                                    if(systemConfig == null)
+                                    {
+                                        throw new Exception("No Active System Configuration Profile found.");
+                                    }
                                     var profitRate = systemConfig.PodcastSubscriptionConfigs
                                         .Where(ps => ps.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
                                         .Select(psc => psc.ProfitRate)
@@ -1551,6 +1557,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .FirstOrDefaultAsync();
 
                     var systemConfig = await GetActiveSystemConfigProfile();
+                    if(systemConfig == null)
+                    {
+                        throw new Exception("Active System Configuration Profile not found.");
+                    }
                     var profitRate = systemConfig.PodcastSubscriptionConfigs
                         .Where(psc => psc.SubscriptionCycleTypeId == podcastSubscriptionRegistration.SubscriptionCycleTypeId)
                         .Select(psc => psc.ProfitRate)
@@ -2404,30 +2414,32 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var responseData = command.LastStepResponseData;
 
                     var channelList = await GetPodcastChannelsWithAccountId(paremeter.PodcasterId);
-                    foreach (var channel in channelList)
+                    if(channelList != null)
                     {
-                        var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
-                        includeFunc: function => function
-                        .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
-                        .Include(ps => ps.PodcastSubscriptionRegistrations))
-                        .Where(ps => ps.PodcastChannelId == channel.Id
-                        && ps.IsActive)
-                        .ToListAsync();
-
-                        foreach (var podcastSubscription in podcastSubscriptions)
+                        foreach (var channel in channelList)
                         {
-                            var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
-                                    .Where(sr => sr.PodcastSubscriptionId == podcastSubscription.Id && sr.CancelledAt == null)
-                                    .ToListAsync();
-                            foreach (var registration in subscriptionRegistrations)
+                            var podcastSubscriptions = await _podcastSubscriptionGenericRepository.FindAll(
+                            includeFunc: function => function
+                            .Include(ps => ps.PodcastSubscriptionCycleTypePrices)
+                            .Include(ps => ps.PodcastSubscriptionRegistrations))
+                            .Where(ps => ps.PodcastChannelId == channel.Id
+                            && ps.IsActive)
+                            .ToListAsync();
+
+                            foreach (var podcastSubscription in podcastSubscriptions)
                             {
-                                if (!registration.IsIncomeTaken)
+                                var subscriptionRegistrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
+                                        .Where(sr => sr.PodcastSubscriptionId == podcastSubscription.Id && sr.CancelledAt == null)
+                                        .ToListAsync();
+                                foreach (var registration in subscriptionRegistrations)
                                 {
-                                    var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
-                                        .Select(ptcp => ptcp.Price)
-                                        .FirstOrDefault();
-                                    var tempRequestData = new JObject
+                                    if (!registration.IsIncomeTaken)
+                                    {
+                                        var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
+                                            .Select(ptcp => ptcp.Price)
+                                            .FirstOrDefault();
+                                        var tempRequestData = new JObject
                                 {
                                     { "PodcastSubscriptionRegistrationId", registration.Id },
                                     { "Profit", null },
@@ -2435,19 +2447,25 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     { "Amount", amount },
                                     { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
                                 };
-                                    var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                        topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                        requestData: tempRequestData,
-                                        sagaInstanceId: null,
-                                        messageName: "podcast-subscription-refund-flow");
-                                    await _messagingService.SendSagaMessageAsync(refundMessage, null);
+                                        var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                            topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                            requestData: tempRequestData,
+                                            sagaInstanceId: null,
+                                            messageName: "podcast-subscription-refund-flow");
+                                        await _messagingService.SendSagaMessageAsync(refundMessage, null);
+                                    }
+                                    await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
                                 }
-                                await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
                             }
                         }
                     }
+                    else
+                    {
+                        _logger.LogInformation("Unable to query channel for PodcasterId: {PodcasterId}", paremeter.PodcasterId);
+                    }
 
-                    await transaction.CommitAsync();
+
+                        await transaction.CommitAsync();
 
                     var newResponseData = command.RequestData;
                     var newMessageName = command.MessageName + ".success";
@@ -2488,6 +2506,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 try
                 {
                     var systemConfig = await GetActiveSystemConfigProfile();
+                    if(systemConfig == null) 
+                    { 
+                        _logger.LogWarning("Unable to query active System Config Profile for Podcast Subscription Income Release.");
+                        return;
+                    }
                     var podcastSubscriptionConfig = systemConfig.PodcastSubscriptionConfigs.ToList();
 
                     var registrationsList = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
@@ -2514,15 +2537,25 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             if (podcastSubscription.PodcastChannelId != null)
                             {
                                 var temp = await GetPodcastChannel(podcastSubscription.PodcastChannelId.Value);
+                                if(temp == null)
+                                {
+                                    _logger.LogWarning("Unable to query Podcast Channel for Id: {PodcastChannelId}", podcastSubscription.PodcastChannelId.Value);
+                                    continue;
+                                }
                                 podcasterId = temp.PodcasterId;
                             }
                             if (podcastSubscription.PodcastShowId != null)
                             {
                                 var temp = await GetPodcastShow(podcastSubscription.PodcastShowId.Value);
+                                if(temp == null)
+                                {
+                                    _logger.LogWarning("Unable to query Podcast Show for Id: {PodcastShowId}", podcastSubscription.PodcastShowId.Value);
+                                    continue;
+                                }
                                 podcasterId = temp.PodcasterId;
                             }
-                            //int incomeTakenDelayDays = config.IncomeTakenDelayDays;
-                            int incomeTakenDelayDays = 0;
+                            int incomeTakenDelayDays = config.IncomeTakenDelayDays;
+                            //int incomeTakenDelayDays = 0;
                             decimal profitRate = (decimal)config.ProfitRate;
                             var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                         .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
@@ -3221,6 +3254,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     if(result == null)
                     {
                         var show = await GetPodcastShow(episode.PodcastShowId);
+                        if(show == null)
+                        {
+                            throw new HttpRequestException("Podcast show not found");
+                        }
                         if (show.PodcastChannelId != null)
                         {
                             result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
@@ -3317,7 +3354,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             {
                 PodcastSubscriptionRegistrationDetailResponseDTO result = null;
                 var show = await GetPodcastShow(showId);
-                if(show.PodcastChannelId != null)
+                if(show == null)
+                {
+                    throw new HttpRequestException("Podcast show not found");
+                }
+                if (show.PodcastChannelId != null)
                 {
                     result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                     .Include(psr => psr.PodcastSubscription)
@@ -3780,8 +3821,12 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             try
             {
                 var config = await GetActiveSystemConfigProfile();
-                //int incomeReleaseDelayDay = config.PodcastSubscriptionConfigs.FirstOrDefault()?.IncomeTakenDelayDays ?? 7;
-                int incomeReleaseDelayDay = 0;
+                if(config == null)
+                {
+                    throw new HttpRequestException("Active system configuration profile not found");
+                }
+                int incomeReleaseDelayDay = config.PodcastSubscriptionConfigs.FirstOrDefault()?.IncomeTakenDelayDays ?? 7;
+                //int incomeReleaseDelayDay = 0;
                 var result = new PodcastSubscriptionDashboardResponseDTO();
                 result.Last30DayList = new List<PodcastSubscriptionLast30DashboardListItemResponseDTO>();
                 var subscriptions = await _podcastSubscriptionGenericRepository.FindAll(
@@ -3840,8 +3885,12 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             try
             {
                 var config = await GetActiveSystemConfigProfile();
-                //int incomeReleaseDelayDay = config.PodcastSubscriptionConfigs.FirstOrDefault()?.IncomeTakenDelayDays ?? 7;
-                int incomeReleaseDelayDay = 0;
+                if(config == null)
+                {
+                    throw new HttpRequestException("Active system configuration profile not found");
+                }
+                int incomeReleaseDelayDay = config.PodcastSubscriptionConfigs.FirstOrDefault()?.IncomeTakenDelayDays ?? 7;
+                //int incomeReleaseDelayDay = 0;
                 var result = new PodcastSubscriptionDashboardResponseDTO();
                 result.Last30DayList = new List<PodcastSubscriptionLast30DashboardListItemResponseDTO>();
                 var subscriptions = await _podcastSubscriptionGenericRepository.FindAll(
@@ -3893,9 +3942,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         }
         public async Task<PodcastChannelDTO?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -3913,12 +3964,17 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
-            var realResult = result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
-                ? podcastChannelArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                return result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                    ? podcastChannelArray.First.ToObject<PodcastChannelDTO>()
+                    : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast channel with AccountId: {AccountId} and PodcastChannelId: {PodcastChannelId}", accountId, podcastChannelId);
+                throw new HttpRequestException($"Error while querying Podcast Channel for AccountId: {accountId} and PodcastChannelId: {podcastChannelId}. Error: {ex.Message}");
+            }
         }
         private async Task<(bool isValid, string errorMessage)> ValidateEpisode(Guid podcastEpisodeId)
         {
@@ -4019,32 +4075,39 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         }
         public async Task<PodcastEpisodeDTO?> GetPodcastEpisode(Guid podcastEpisodeId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
-                    {
-                        new BatchQueryItem
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                         {
-                            Key = "podcastEpisode",
-                            QueryType = "findall",
-                            EntityType = "PodcastEpisode",
-                            Parameters = JObject.FromObject(new
+                            new BatchQueryItem
                             {
-                                where = new
+                                Key = "podcastEpisode",
+                                QueryType = "findall",
+                                EntityType = "PodcastEpisode",
+                                Parameters = JObject.FromObject(new
                                 {
-                                    Id = podcastEpisodeId
-                                },
-                                include = "PodcastEpisodeStatusTrackings"
-                            })
+                                    where = new
+                                    {
+                                        Id = podcastEpisodeId
+                                    },
+                                    include = "PodcastEpisodeStatusTrackings"
+                                })
+                            }
                         }
-                    }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
-                ? podcastEpisodeArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastEpisodeDTO>() : null;
+                return result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
+                    ? podcastEpisodeArray.First.ToObject<PodcastEpisodeDTO>()
+                    : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast episode with PodcastEpisodeId: {PodcastEpisodeId}", podcastEpisodeId);
+                throw new HttpRequestException($"Error while querying Podcast Episode for PodcastEpisodeId: {podcastEpisodeId}. Error: {ex.Message}");
+            }
         }
         public async Task<AccountDTO?> GetAccount(int accountId)
         {
@@ -4084,9 +4147,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         }
         public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4103,19 +4168,26 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
-                ? podcastChannelArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
+                return result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                    ? podcastChannelArray.First.ToObject<PodcastChannelDTO>() 
+                    : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast channel with PodcastChannelId: {PodcastChannelId}", podcastChannelId);
+                throw new HttpRequestException($"Error while querying Podcast Channel for PodcastChannelId: {podcastChannelId}. Error: {ex.Message}");
+            }
         }
         public async Task<PodcastShowDTO?> GetPodcastShow(Guid podcastShowId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4132,20 +4204,27 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.First as JObject
-                : null;
-            //Console.WriteLine("Real Result: " + realResult);
-            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
+                return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                    ? podcastShowArray.First.ToObject<PodcastShowDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast show with PodcastShowId: {PodcastShowId}", podcastShowId);
+                throw new HttpRequestException($"Error while querying Podcast Show for PodcastShowId: {podcastShowId}. Error: {ex.Message}");
+            }
         }
         public async Task<PodcastChannelSubscribedDTO?> GetSubscribedPodcastChannel(Guid podcastChannelId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4162,19 +4241,26 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
-                ? podcastChannelArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastChannelSubscribedDTO>() : null;
+                return result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                    ? podcastChannelArray.First.ToObject<PodcastChannelSubscribedDTO>()
+                    : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query subscribed podcast channel with PodcastChannelId: {PodcastChannelId}", podcastChannelId);
+                throw new HttpRequestException($"Error while querying Subscribed Podcast Channel for PodcastChannelId: {podcastChannelId}. Error: {ex.Message}");
+            }
         }
         public async Task<PodcastShowSubscribedDTO?> GetSubscribedPodcastShow(Guid podcastShowId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4191,20 +4277,27 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.First as JObject
-                : null;
-            //Console.WriteLine("Real Result: " + realResult);
-            return realResult != null ? realResult.ToObject<PodcastShowSubscribedDTO>() : null;
+                return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                    ? podcastShowArray.First.ToObject<PodcastShowSubscribedDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query subscribed podcast show with PodcastShowId: {PodcastShowId}", podcastShowId);
+                throw new HttpRequestException($"Error while querying Subscribed Podcast Show for PodcastShowId: {podcastShowId}. Error: {ex.Message}");
+            }
         }
         public async Task<List<PodcastShowDTO>> GetPodcastShowByPodcastChannelId(Guid podcastChannelId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4221,19 +4314,27 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray
-                : null;
-            return realResult != null ? realResult.ToObject<List<PodcastShowDTO>>() : null;
+                return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count >= 0
+                    ? podcastShowArray.ToObject<List<PodcastShowDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast shows with PodcastChannelId: {PodcastChannelId}", podcastChannelId);
+                throw new HttpRequestException($"Error while querying Podcast Shows for PodcastChannelId: {podcastChannelId}. Error: {ex.Message}");
+            }
         }
         public async Task<List<PodcastChannelDTO>?> GetPodcastChannelsWithAccountId(int accountId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4250,18 +4351,27 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            return result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
-                ? podcastChannelArray.ToObject<List<PodcastChannelDTO>>()
-                : null;
+                return result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count >= 0
+                    ? podcastChannelArray.ToObject<List<PodcastChannelDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast channels with AccountId: {AccountId}", accountId);
+                throw new HttpRequestException($"Error while querying Podcast Channels for AccountId: {accountId}. Error: {ex.Message}");
+            }
         }
         public async Task<List<PodcastSubscriptionTransactionDTO>?> GetPodcastSubscriptionTransactionByRegistrationId(Guid registrationId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4279,18 +4389,26 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
 
-            return result.Results?["podcastSubscriptionTransaction"] is JArray podcastSubscriptionTransactionArray && podcastSubscriptionTransactionArray.Count > 0
-                ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionDTO>>()
-                : null;
+                return result.Results?["podcastSubscriptionTransaction"] is JArray podcastSubscriptionTransactionArray && podcastSubscriptionTransactionArray.Count >= 0
+                    ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionDTO>>()
+                    : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast subscription transactions with RegistrationId: {RegistrationId}", registrationId);
+                throw new HttpRequestException($"Error while querying Podcast Subscription Transactions for RegistrationId: {registrationId}. Error: {ex.Message}");
+            }
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
             {
                 new BatchQueryItem
                 {
@@ -4309,13 +4427,19 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
                 }
             }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
+                return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                    ? configArray.First.ToObject<SystemConfigProfileDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query active system configuration profile");
+                throw new HttpRequestException($"Error while querying Active System Configuration Profile. Error: {ex.Message}");
+            }
         }
         public async Task<bool> ValidatePodcastSubscriptionRegistration(int accountId, Guid PodcastSubscriptionRegistrationId)
         {
@@ -4355,9 +4479,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         }
         public async Task<PodcastShowDTO?> GetPodcastShowWithAccountId(int accountId, Guid podcastShowId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4375,13 +4501,19 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShowOfAccount"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
+                return result.Results?["podcastShowOfAccount"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                    ? podcastShowArray.First.ToObject<PodcastShowDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast show with AccountId: {AccountId} and PodcastShowId: {PodcastShowId}", accountId, podcastShowId);
+                throw new HttpRequestException($"Error while querying Podcast Show for AccountId: {accountId} and PodcastShowId: {podcastShowId}. Error: {ex.Message}");
+            }
         }
     }
 }

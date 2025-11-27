@@ -896,6 +896,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var responseData = command.LastStepResponseData;
 
                     var systemConfig = await GetActiveSystemConfigProfile();
+                    if(systemConfig == null)
+                    {
+                        throw new Exception("System config not found");
+                    }
 
                     var booking = await _bookingGenericRepository.FindByIdAsync(
                         bookingId,
@@ -1357,6 +1361,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     var podcaster = await GetPodcaster(booking.PodcastBuddyId);
+                    if(podcaster == null)
+                    {
+                        throw new Exception($"Podcaster with ID {booking.PodcastBuddyId} not found");
+                    }
                     var totalWordCount = 0;
                     var newBookingStatusTracking = new BookingStatusTracking
                     {
@@ -1828,6 +1836,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             if (currentStatus >= (int)BookingStatusEnum.Producing)
                             {
                                 var systemConfig = await GetActiveSystemConfigProfile();
+                                if(systemConfig == null)
+                                {
+                                    throw new Exception("System configuration not found");
+                                }
                                 var profitRate = systemConfig.BookingConfig.ProfitRate;
                                 var depositRate = systemConfig.BookingConfig.DepositRate;
                                 var Amount = b.Price * (decimal)depositRate ;
@@ -1952,6 +1964,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 }
 
                                 var systemConfig = await GetActiveSystemConfigProfile();
+                                if(systemConfig == null)
+                                {
+                                    throw new Exception("System configuration not found");
+                                }
                                 var profitRate = systemConfig.BookingConfig.ProfitRate;
                                 var depositRate = systemConfig.BookingConfig.DepositRate;
                                 var Amount = b.Price * (decimal)depositRate ;
@@ -2101,6 +2117,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 try
                 {
                     var systemConfig = await GetActiveSystemConfigProfile();
+                    if (systemConfig == null)
+                    {
+                        throw new Exception("System configuration not found");
+                    }
                     var previewResponseAllowedDays = systemConfig.BookingConfig.PreviewResponseAllowedDays;
                     var producingRequestResponseAllowedDays = systemConfig.BookingConfig.ProducingRequestResponseAllowedDays;
                     var profitRate = systemConfig.BookingConfig.ProfitRate;
@@ -2166,6 +2186,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 try
                 {
                     var systemConfig = await GetActiveSystemConfigProfile();
+                    if (systemConfig == null)
+                    {
+                        throw new Exception("System configuration not found");
+                    }
                     var previewResponseAllowedDays = systemConfig.BookingConfig.PreviewResponseAllowedDays;
                     var producingRequestResponseAllowedDays = systemConfig.BookingConfig.ProducingRequestResponseAllowedDays;
                     var profitRate = systemConfig.BookingConfig.ProfitRate;
@@ -2381,8 +2405,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     throw new HttpRequestException("Booking is not completed yet for BookingId: " + bookingId);
                 }
 
-                var account = await GetPodcaster(booking.AccountId);
-                var podcaster = await GetPodcaster(booking.PodcastBuddyId);
+                var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
+                var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
                 AccountStatusCache? assignedStaff = null;
                 if(booking.AssignedStaffId.HasValue)
                 {
@@ -2472,35 +2496,49 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 throw new HttpRequestException("Error occurred while retrieving booking result");
             }
         }
-        private async Task<PodcasterDTO> GetPodcaster(int accountId)
+        private async Task<PodcasterDTO?> GetPodcaster(int accountId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
                             Key = "podcaster",
-                            QueryType = "findbyid",
+                            QueryType = "findall",
                             EntityType = "Account",
                             Parameters = JObject.FromObject(new
                             {
-                                id = accountId,
+                                where = new
+                                {
+                                    Id = accountId
+                                },
                                 include = "PodcasterProfile"
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
 
-            if (result.Results["podcaster"] == null) return null;
-            return (result.Results["podcaster"] as JObject).ToObject<PodcasterDTO>();
+                return result.Results?["podcaster"] is JArray podcasterArray && podcasterArray.Count > 0
+                   ? podcasterArray.First.ToObject<PodcasterDTO>()
+                   : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while querying podcaster for AccountId: {AccountId}", accountId);
+                throw new HttpRequestException("Error occurred while querying podcaster");
+            }
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -2519,13 +2557,18 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
+                return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                    ? configArray.First.ToObject<SystemConfigProfileDTO>()
+                    : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while querying active system config profile");
+                throw new HttpRequestException("Error occurred while querying active system config profile");
+            }
         }
         public async Task<BookingListenSessionResponseDTO> GetTrackListenAsync(int bookingId, Guid podcastTrackId, int accountId, DeviceInfoDTO deviceInfo, CustomerListenSessionProcedureSourceDetailTypeEnum sourceType)
         {
@@ -3454,6 +3497,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     var config = await GetActiveSystemConfigProfile();
+                    if(config == null)
+                    {
+                        throw new Exception("System configuration not found");
+                    }
                     var depositRate = config.BookingConfig.DepositRate;
                     var depositAmount = booking.Price * (decimal)depositRate ;
 
@@ -3540,6 +3587,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     var config = await GetActiveSystemConfigProfile();
+                    if (config == null)
+                    {
+                        throw new Exception("System configuration not found");
+                    }
                     var depositRate = config.BookingConfig.DepositRate;
                     var depositAmount = booking.Price * (decimal)depositRate;
                     var payTheRestAmount = booking.Price - depositAmount;
