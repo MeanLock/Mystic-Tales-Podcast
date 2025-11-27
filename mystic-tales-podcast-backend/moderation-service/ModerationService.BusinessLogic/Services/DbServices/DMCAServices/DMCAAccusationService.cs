@@ -702,19 +702,22 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             {
                                 throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation with Pending Dmca Notice Review status can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
                             }
-
+                            if (parameter.DMCAAccusationTakenDownReasonEnum == null)
+                            {
+                                throw new Exception("DMCA Accusation Taken Down Reason is required for Valid DMCA Notice action");
+                            }
                             //Send TakeDownFlow
                             var takeDownFlowMessage = new JObject
                             {
                                 { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
                                 { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
-                                { "TakenDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
+                                { "TakenDownReason", Enum.GetName((DMCATakeDownReasonEnum)parameter.DMCAAccusationTakenDownReasonEnum) }
                             };
                             var takeDownMessageName = "content-dmca-takedown-flow";
                             var sagaTakeDownStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.ContentManagementDomain,
                                 requestData: takeDownFlowMessage,
-                                sagaInstanceId: command.SagaInstanceId,
+                                sagaInstanceId: null,
                                 messageName: takeDownMessageName);
                             await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage, command.SagaInstanceId.ToString());
                             _logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);

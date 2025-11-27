@@ -9180,15 +9180,17 @@ flows:
           - AccountId
           - DMCAAccusationId
           - DMCAAccusationAction
+          - DMCAAccusationTakenDownReasonEnum   
         next-request-data:
           - AccountId
           - DMCAAccusationId
           - DMCAAccusationAction
+          - DMCAAccusationTakenDownReasonEnum
         response-data:
           - AccountId
           - DMCAAccusationId
           - DMCAAccusationAction
-          - UpdatedAt
+          - DMCAAccusationTakenDownReasonEnum
         onSuccess:
           emit: "update-dmca-accusation-status.success"
           topic: "dmca-management-domain"

@@ -209,6 +209,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var createLawsuitProofAttachFile = new List<string>();
 
+                    if(parameter.LawsuitProofAttachFileKeys == null || parameter.LawsuitProofAttachFileKeys.Count == 0)
+                    {
+                        throw new Exception("At least one attach file is required for lawsuit proof");
+                    }
+
                     // Process each file
                     foreach (var attachFileKey in parameter.LawsuitProofAttachFileKeys)
                     {

@@ -174,6 +174,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     var createCounterNoticeAttachFile = new List<string>();
 
+                    if(parameter.CounterNoticeAttachFileKeys == null || parameter.CounterNoticeAttachFileKeys.Count == 0)
+                    {
+                        throw new Exception("No attach files provided");
+                    }
                     // Process each file
                     foreach (var attachFileKey in parameter.CounterNoticeAttachFileKeys)
                     {

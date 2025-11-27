@@ -494,7 +494,8 @@ namespace ModerationService.API.Controllers.BaseControllers
         [Authorize(Policy = "Staff.BasicAccess")]
         public async Task<IActionResult> UpdateDMCAAccusationById(
             [FromRoute] int DMCAAccusationId,
-            [FromQuery] DMCAAccusationQueryEnum DMCAAccusationAction)
+            [FromQuery] DMCAAccusationQueryEnum DMCAAccusationAction,
+            [FromQuery] DMCATakeDownReasonEnum DMCAAccusationTakenDownReasonEnum)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var loginAccountId = account.Id;
@@ -503,6 +504,7 @@ namespace ModerationService.API.Controllers.BaseControllers
                 { "AccountId", loginAccountId },
                 { "DMCAAccusationId", DMCAAccusationId },
                 { "DMCAAccusationAction", (int)DMCAAccusationAction },
+                { "DMCAAccusationTakenDownReasonEnum", (int)DMCAAccusationTakenDownReasonEnum }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,
