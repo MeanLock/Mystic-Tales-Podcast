@@ -27,7 +27,7 @@ const podcasterApi = appApi.injectEndpoints({
       }),
     }),
     getFollowedPodcasters: build.query<
-      { PodcasterList: PodcasterFromApi[] },
+      { FollowedPodcasterList: PodcasterFromApi[] },
       void
     >({
       query: () => ({

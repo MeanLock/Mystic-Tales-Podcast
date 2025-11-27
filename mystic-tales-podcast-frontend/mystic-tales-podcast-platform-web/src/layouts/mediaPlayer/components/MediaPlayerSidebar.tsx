@@ -20,6 +20,7 @@ import {
   MdNotificationsNone,
   MdNotificationsPaused,
   MdOutlinePayments,
+  MdSaveAlt,
 } from "react-icons/md";
 import { PiHandWithdrawBold } from "react-icons/pi";
 import { MdOutlineSubscriptions } from "react-icons/md";
@@ -56,6 +57,7 @@ import {
   useGetPodcastContentOnKeywordRealTimeQuery,
 } from "@/core/services/search/search.service";
 import { Input } from "@/components/ui/input";
+import { LucideFileAudio } from "lucide-react";
 
 const mocksuggesstionContents: ContentRealtimeResponse[] = [
   // 1 — Episode
@@ -237,16 +239,16 @@ const navItems = [
         icon: <RiHistoryLine color="#fff" size={11} />,
         iconActive: <RiHistoryLine color="#fff" size={15} />,
         iconWhenSmall: <RiHistoryLine color="#333" size={11} />,
-        name: "Recent",
-        to: "/media-player/library/recent",
+        name: "Listen History",
+        to: "/media-player/library/listening-history",
         isSubItemsContain: false,
         subItems: [],
       },
       {
-        icon: <FaHeart color="#fff" size={11} />,
-        iconActive: <FaHeart color="#fff" size={15} />,
-        iconWhenSmall: <FaHeart color="#333" size={11} />,
-        name: "Favorites",
+        icon: <LucideFileAudio color="#fff" size={11} />,
+        iconActive: <LucideFileAudio color="#fff" size={15} />,
+        iconWhenSmall: <LucideFileAudio color="#333" size={11} />,
+        name: "Saved Episodes",
         to: "/media-player/library/saved",
         isSubItemsContain: false,
         subItems: [],

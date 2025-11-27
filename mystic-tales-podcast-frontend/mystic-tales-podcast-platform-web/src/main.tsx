@@ -160,7 +160,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="channels/:id" element={<ChannelDetailsPage />} />
                 <Route path="shows/:id" element={<ShowDetailsPage />} />
                 {/* Library */}
-                <Route path="library/recent" element={<RecentPage />} />
+                <Route path="library/listening-history" element={<RecentPage />} />
                 <Route path="library/saved" element={<SavedPage />} />
                 <Route
                   path="library/subscribed-channels"

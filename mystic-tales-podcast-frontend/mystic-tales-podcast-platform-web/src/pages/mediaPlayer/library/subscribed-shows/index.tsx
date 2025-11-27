@@ -166,40 +166,45 @@ const SubscribedShowsPage = () => {
         </p>
 
         {followedShows && followedShows.length > 0 ? (
-          <div className="mx-2 px-6 flex items-center justify-start gap-20 shadow-2xl py-3">
+          <div className="mx-8 p-4 flex items-center justify-start gap-6 bg-white/10 border border-white/20 rounded-md shadow-lg hover:bg-white/[0.12] transition-all duration-300">
             {/* Search Query Input */}
             <input
               type="text"
               placeholder="Search by show name..."
               value={followedSearchQuery}
               onChange={(e) => setFollowedSearchQuery(e.target.value)}
-              className="px-2 py-2 bg-transparent border-b-[2px] border-white/20 text-white placeholder:text-[#D9D9D9] focus:outline-none focus:border-b-2 focus:border-white w-80"
+              className="flex-1 px-4 py-3 bg-black/30 border border-white/20 rounded-md text-white placeholder:text-[#D9D9D9] focus:outline-none focus:bg-black/15 focus:border-white/40 transition-all duration-200 backdrop-blur-sm"
             />
             {/* Category Filter Dropdown */}
             <Popover>
               <PopoverTrigger asChild>
                 <div
                   className="
-                px-6 py-2 
-                bg-transparent border-mystic-green 
-                border-[1px] rounded-md 
-                text-mystic-green text-sm font-semibold font-poppins
-                transition-all duration-500 ease-out hover:bg-mystic-green hover:text-white hover:-translate-y-0.5 cursor-pointer
-                "
+                  px-5 py-3 
+                  bg-gradient-to-r from-[#12c2e9]/20 via-[#e0b0f8]/20 to-[#f3d9db]/20
+                  border border-white/20
+                  rounded-md 
+                  text-white text-sm font-semibold font-poppins
+                  transition-all duration-300 ease-out 
+                  hover:from-[#12c2e9]/30 hover:via-[#e0b0f8]/30 hover:to-[#f3d9db]/30
+                  hover:border-white/40
+                  hover:shadow-lg hover:-translate-y-0.5 
+                  cursor-pointer backdrop-blur-sm
+                  "
                 >
                   <p>Categories: {followedSelectedCategories.length}</p>
                 </div>
               </PopoverTrigger>
               <PopoverContent
-                align="start"
-                sideOffset={8}
-                className="w-80 bg-white/20 backdrop-blur-sm border-none"
+                align="end"
+                sideOffset={12}
+                className="w-80 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl"
               >
-                <div className="rounded-md flex flex-col gap-4">
-                  <p className="text-mystic-green font-poppins font-semibold">
-                    Categories
+                <div className="rounded-lg flex flex-col gap-4">
+                  <p className="text-white font-poppins font-semibold text-sm">
+                    Filter by Categories
                   </p>
-                  <div className="grid grid-cols-2 w-full gap-2">
+                  <div className="grid grid-cols-2 w-full gap-3">
                     {followedCategories.map((category) => (
                       <div key={category} className="flex items-center gap-2">
                         <Checkbox
@@ -211,14 +216,14 @@ const SubscribedShowsPage = () => {
                             toggleFollowedCategory(category)
                           }
                           className="
-                            border-mystic-green
+                            border-white/40
                             data-[state=checked]:bg-[#aee339]
                             data-[state=checked]:border-[#aee339]
                             data-[state=checked]:text-black
                           "
                         />
                         <Label
-                          className="text-white font-medium cursor-pointer"
+                          className="text-white/90 font-medium cursor-pointer text-sm"
                           htmlFor={`followed-category-${category}`}
                         >
                           {category}
@@ -261,47 +266,52 @@ const SubscribedShowsPage = () => {
       {/* Subscribed Shows */}
       <div className="w-full flex flex-col gap-5">
         <p className="mx-8 font-poppins text-6xl text-white font-semibold">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#74ebd5]  to-[#ACB6E5]">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#74ebd5] to-[#ACB6E5]">
             Subscribed
           </span>{" "}
           Shows
         </p>
 
         {subscribedShows && subscribedShows.length > 0 ? (
-          <div className="mx-2 px-6 flex items-center justify-start gap-20 shadow-2xl py-3">
+          <div className="mx-8 p-4 flex items-center justify-start gap-6 bg-white/10 border border-white/20 rounded-md shadow-lg hover:bg-white/[0.12] transition-all duration-300">
             {/* Search Query Input */}
             <input
               type="text"
               placeholder="Search by show name..."
               value={subscribedSearchQuery}
               onChange={(e) => setSubscribedSearchQuery(e.target.value)}
-              className="px-2 py-2 bg-transparent border-b-[2px] border-white/20 text-white placeholder:text-[#D9D9D9] focus:outline-none focus:border-b-2 focus:border-white w-80"
+              className="flex-1 px-4 py-3 bg-black/30 border border-white/20 rounded-md text-white placeholder:text-[#D9D9D9] focus:outline-none focus:bg-black/15 focus:border-white/40 transition-all duration-200 backdrop-blur-sm"
             />
             {/* Category Filter Dropdown */}
             <Popover>
               <PopoverTrigger asChild>
                 <div
                   className="
-                px-6 py-2 
-                bg-transparent border-mystic-green 
-                border-[1px] rounded-md 
-                text-mystic-green text-sm font-semibold font-poppins
-                transition-all duration-500 ease-out hover:bg-mystic-green hover:text-white hover:-translate-y-0.5 cursor-pointer
-                "
+                  px-5 py-3 
+                  bg-gradient-to-r from-[#74ebd5]/20 to-[#ACB6E5]/20 
+                  border border-white/20
+                  rounded-md 
+                  text-white text-sm font-semibold font-poppins
+                  transition-all duration-300 ease-out 
+                  hover:from-[#74ebd5]/30 hover:to-[#ACB6E5]/30 
+                  hover:border-white/40
+                  hover:shadow-lg hover:-translate-y-0.5 
+                  cursor-pointer backdrop-blur-sm
+                  "
                 >
                   <p>Categories: {subscribedSelectedCategories.length}</p>
                 </div>
               </PopoverTrigger>
               <PopoverContent
                 align="start"
-                sideOffset={8}
-                className="w-80 bg-white/20 backdrop-blur-sm border-none"
+                sideOffset={12}
+                className="w-80 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl"
               >
-                <div className="rounded-md flex flex-col gap-4">
-                  <p className="text-mystic-green font-poppins font-semibold">
-                    Categories
+                <div className="rounded-lg flex flex-col gap-4">
+                  <p className="text-white font-poppins font-semibold text-sm">
+                    Filter by Categories
                   </p>
-                  <div className="grid grid-cols-2 w-full gap-2">
+                  <div className="grid grid-cols-2 w-full gap-3">
                     {subscribedCategories.map((category) => (
                       <div key={category} className="flex items-center gap-2">
                         <Checkbox
@@ -313,14 +323,14 @@ const SubscribedShowsPage = () => {
                             toggleSubscribedCategory(category)
                           }
                           className="
-                            border-mystic-green
+                            border-white/40
                             data-[state=checked]:bg-[#aee339]
                             data-[state=checked]:border-[#aee339]
                             data-[state=checked]:text-black
                           "
                         />
                         <Label
-                          className="text-white font-medium cursor-pointer"
+                          className="text-white/90 font-medium cursor-pointer text-sm"
                           htmlFor={`subscribed-category-${category}`}
                         >
                           {category}

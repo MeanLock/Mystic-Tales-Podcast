@@ -45,6 +45,7 @@ import type { ShowUI } from "@/core/types/show";
 import Loading from "@/components/loading";
 import type { ChannelUI } from "@/core/types/channel";
 import ChannelCard from "./components/ChannelCard";
+import PodcasterCard from "./components/PodcasterCard";
 
 // File config cho từng section
 const baseOnYourTasteFileConfig: FileResolveConfig[] = [
@@ -824,10 +825,14 @@ const DiscoveryPage = () => {
                 {topPodcasters.PodcasterList.map((card, index) => (
                   <CarouselItem
                     key={index}
-                    className="basis-1/3 md:basis-1/4 lg:basis-1/6"
+                    className="basis-1/3 md:basis-1/3 lg:basis-1/5"
                   >
-                    <div className="p-1">
-                      <p>{card.FullName}</p>
+                    <div className="p-2">
+                      <PodcasterCard
+                        podcaster={
+                          card as TopPodcastersUI["PodcasterList"][number]
+                        }
+                      />
                     </div>
                   </CarouselItem>
                 ))}

@@ -1,4 +1,4 @@
-export type EpisodeFromAPI = {
+export type EpisodeDetailsFromAPI = {
   Id: string;
   Name: string;
   Description: string;
@@ -17,6 +17,7 @@ export type EpisodeFromAPI = {
   PodcastShow: {
     Id: string;
     Name: string;
+    Description: string;
     MainImageFileKey: string;
     ReleaseDate: string;
     IsReleased: boolean;
@@ -36,9 +37,16 @@ export type EpisodeFromAPI = {
     Id: number;
     Name: string;
   };
+  Podcaster: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
+  IsSavedByCurrentUser: true;
 };
 
-export type EpisodeUI = {
+export type EpisodeDetailsUI = {
   Id: string;
   Name: string;
   Description: string;
@@ -57,6 +65,7 @@ export type EpisodeUI = {
   PodcastShow: {
     Id: string;
     Name: string;
+    Description: string;
     ImageUrl: string;
     ReleaseDate: string;
     IsReleased: boolean;
@@ -76,4 +85,11 @@ export type EpisodeUI = {
     Id: number;
     Name: string;
   };
+  Podcaster: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    ImageUrl: string;
+  };
+  IsSavedByCurrentUser: true;
 };

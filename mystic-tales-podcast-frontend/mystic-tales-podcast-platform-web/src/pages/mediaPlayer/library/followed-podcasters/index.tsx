@@ -40,16 +40,22 @@ const FollowedPodcastersPage = () => {
       if (isFollowedPodcastersLoading) {
         return;
       }
-
+      console.log("Followed Podcasters Raw Data:", followedPodcastersRaw);
       setIsFileResolving(true);
 
       // Resolve Followed Podcasters
-      if (followedPodcastersRaw && followedPodcastersRaw.PodcasterList) {
-        const resolvedPromises = followedPodcastersRaw.PodcasterList.map(
-          (podcaster) => resolveFiles(podcaster, PodcasterFileConfig)
-        );
+      if (
+        followedPodcastersRaw &&
+        followedPodcastersRaw.FollowedPodcasterList
+      ) {
+        const resolvedPromises =
+          followedPodcastersRaw.FollowedPodcasterList.map((podcaster) =>
+            resolveFiles(podcaster, PodcasterFileConfig)
+          );
         const resolvedResults = await Promise.all(resolvedPromises);
+        console.log("Resolved Followed Podcasters:", resolvedResults);
         const resolved = resolvedResults.map((r) => r.resolvedData);
+        console.log("Resolved Followed Podcasters:", resolved);
         setPodcasters(resolved as unknown as PodcasterUI[]);
       } else {
         setPodcasters([]);
@@ -121,7 +127,7 @@ const FollowedPodcastersPage = () => {
   return (
     <div className="w-full flex flex-col relative p-8">
       <div className="w-full flex flex-col items-start justify-center mb-10 gap-2">
-        <p className="text-9xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FFFFFf] via-[#6DD5FA] to-[#2980B9]">
+        <p className="text-7xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#6DD5FA] to-white">
           Followed Podcasters
         </p>
         <p className="font-poppins text-white font-bold">
@@ -142,7 +148,7 @@ const FollowedPodcastersPage = () => {
             placeholder="Search podcaster by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 focus:border-mystic-green"
+            className="pl-10 bg-gray-800/30 border-gray-700 text-white placeholder:text-gray-400 focus:border-mystic-green"
           />
         </div>
       </div>

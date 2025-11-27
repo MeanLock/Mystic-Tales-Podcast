@@ -13,9 +13,10 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Check } from "lucide-react";
+import { Check, MoreHorizontalIcon } from "lucide-react";
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 import {
   useFollowShowMutation,
@@ -29,7 +30,16 @@ import {
   useSubscribePodcastSubscriptionMutation,
   useUnsubscribePodcastSubscriptionMutation,
 } from "@/core/services/subscription/subscription.service";
-import type { ShowDetailsUI, ShowUI } from "@/core/types/show";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { ShowDetailsUI } from "@/core/types/show";
 import {
   resolveFiles,
   type FileResolveConfig,
@@ -39,17 +49,23 @@ import type { RootState } from "@/redux/store";
 import { useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa6";
 import { FaPlay } from "react-icons/fa6";
-import { IoHeartOutline, IoHeartSharp, IoPause, IoPlay } from "react-icons/io5";
+import { IoHeartOutline, IoHeartSharp } from "react-icons/io5";
 import { LiaDizzy } from "react-icons/lia";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  pauseAudio,
-  playAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import { useUpdatePlayModeMutation } from "@/core/services/player/player.service";
-import { set } from "lodash";
-import PlayingWave from "@/components/playingWave/PlayWave";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
+import { TbMessageReport } from "react-icons/tb";
+import {
+  useGetShowReportTypesQuery,
+  useReportShowMutation,
+} from "@/core/services/report/report.service";
+import EpisodeCard from "./components/EpisodeCard";
 
 const ShowFileConfig: FileResolveConfig[] = [
   {
@@ -130,12 +146,6 @@ const cycleSuffix = (cycleName: string) => {
   return "/cycle";
 };
 
-// Helper function to format duration
-const formatDuration = (seconds: number): string => {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes} min`;
-};
-
 // Helper function to format time ago
 const getTimeAgo = (dateString: string): string => {
   console.log("Date String: ", dateString);
@@ -154,6 +164,9 @@ const ShowDetailsPage = () => {
   // STATES
   const [show, setShow] = useState<ShowDetailsUI | null>(null);
   const [isFileResolving, setIsFileResolving] = useState(false);
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(
+    null
+  );
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -169,6 +182,14 @@ const ShowDetailsPage = () => {
   );
   const [isFollowed, setIsFollowed] = useState(false);
 
+  // REPORT
+  const [reportShowDialog, setReportShowDialog] = useState(false);
+  const [isShowAlreadyReported, setIsShowAlreadyReported] = useState(false);
+  const [showSelectedReportTypeId, setShowSelectedReportTypeId] = useState<
+    number | null
+  >(null);
+  const [showReportContent, setShowReportContent] = useState("");
+
   // HOOKS
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -182,6 +203,8 @@ const ShowDetailsPage = () => {
   const [unsubscribeShow, { isLoading: isUnsubscribing }] =
     useUnsubscribePodcastSubscriptionMutation();
   const [ratingShow, { isLoading: isRating }] = useRatingShowMutation();
+
+  const [reportShow, { isLoading: isReportingShow }] = useReportShowMutation();
 
   // Queries
   const {
@@ -204,6 +227,12 @@ const ShowDetailsPage = () => {
     { PodcastShowId: id! },
     { skip: !id }
   );
+
+  const {
+    data: showAvailableReportTypes,
+    isLoading: isShowAvailableReportTypesLoading,
+    refetch: refetchShowReportTypes,
+  } = useGetShowReportTypesQuery({ PodcastShowId: id! }, { skip: !id });
 
   const [followShow, { isLoading: isFollowing }] = useFollowShowMutation();
   const [unFollowShow, { isLoading: isUnFollowing }] =
@@ -246,6 +275,17 @@ const ShowDetailsPage = () => {
         setIsUserSubscribed(false);
       }
 
+      // Check nếu user đã report show này chưa
+      if (showAvailableReportTypes) {
+        if (showAvailableReportTypes.ShowReportTypeList.length > 0) {
+          setIsShowAlreadyReported(false);
+        } else {
+          setIsShowAlreadyReported(true);
+        }
+      } else {
+        setIsShowAlreadyReported(true);
+      }
+
       // Resolve Show Files
       const { resolvedData: resolvedShow } = await resolveFiles(
         showDetailsRaw,
@@ -275,6 +315,8 @@ const ShowDetailsPage = () => {
     navigate,
     activeSubscriptionRaw,
     customerRegistrationInfo,
+    showAvailableReportTypes,
+    isShowAvailableReportTypesLoading,
   ]);
 
   // FUNCTIONS
@@ -501,17 +543,6 @@ const ShowDetailsPage = () => {
     }
   };
 
-  const handlePlayEpisode = (episodeId: string) => {
-    dispatch(
-      playAudio({
-        sourceType: "SpecifyShowEpisodes",
-        audioId: episodeId,
-      })
-    );
-  };
-
-  const player = useSelector((state: RootState) => state.player);
-
   const handleFollow = async (follow: boolean) => {
     if (!user) {
       dispatch(
@@ -538,6 +569,43 @@ const ShowDetailsPage = () => {
           message: `Error while ${
             follow ? "following" : "unfollowing"
           } show: ${error}`,
+          autoClose: 20,
+        })
+      );
+    }
+  };
+
+  const handleReportShow = async () => {
+    if (!user) {
+      dispatch(
+        setError({
+          message: "You need to login first to report a show!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+    if (!showSelectedReportTypeId || showReportContent.trim() === "" || !id) {
+      return;
+    }
+    try {
+      await reportShow({
+        PodcastShowId: id,
+        ReportTypeId: showSelectedReportTypeId,
+        Content: showReportContent.trim(),
+      }).unwrap();
+      // Success - refetch show details to update reports
+      await refetchShowDetails();
+      await refetchShowReportTypes();
+
+      // Close dialog and reset form
+      setReportShowDialog(false);
+      setShowSelectedReportTypeId(null);
+      setShowReportContent("");
+    } catch (error) {
+      dispatch(
+        setError({
+          message: `Error while reporting show: ${error}`,
           autoClose: 20,
         })
       );
@@ -661,20 +729,157 @@ const ShowDetailsPage = () => {
             </div>
           </div>
 
-          <div className="absolute w-10 h-10 z-20 top-12 right-12 flex items-center justify-center p-2 rounded-full bg-white/20">
+          <div className="absolute z-20 top-12 right-12 flex items-center justify-center gap-5">
             {isFollowed ? (
-              <IoHeartSharp
-                size={20}
-                className="text-mystic-green cursor-pointer hover:scale-110 transition"
-                onClick={() => handleFollow(false)}
-              />
+              <div className="w-10 h-10 p-2 rounded-full bg-white/20 flex items-center justify-center">
+                <IoHeartSharp
+                  size={20}
+                  className="text-mystic-green cursor-pointer hover:scale-110 transition"
+                  onClick={() => handleFollow(false)}
+                />
+              </div>
             ) : (
-              <IoHeartOutline
-                size={20}
-                className="text-white cursor-pointer hover:scale-110 transition"
-                onClick={() => handleFollow(true)}
-              />
+              <div className="w-10 h-10 p-2 rounded-full bg-white/20 flex items-center justify-center">
+                <IoHeartOutline
+                  size={20}
+                  className="text-white cursor-pointer hover:scale-110 transition"
+                  onClick={() => handleFollow(true)}
+                />
+              </div>
             )}
+
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <div className="w-10 h-10 p-2 rounded-full bg-white/20 flex items-center justify-center">
+                  <MoreHorizontalIcon
+                    size={20}
+                    className="text-white cursor-pointer hover:scale-110 transition"
+                  />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-60 z-[9999] py-4 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-md text-white"
+                align="end"
+                sideOffset={8}
+              >
+                <p className="ml-4 font-bold text-white mb-3">Show Actions</p>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onSelect={() => setReportShowDialog(true)}
+                    disabled={false}
+                    className=" 
+                    mx-2 px-2 py-1 flex items-center justify-start gap-2 rounded-lg cursor-pointer
+                    hover:font-semibold hover:shadow-md hover:bg-black/10 transition-all
+                    outline-none focus:outline-none focus-visible:outline-none
+                    focus:ring-0 focus-visible:ring-0"
+                  >
+                    <TbMessageReport />
+                    <p className="text-sm">Report Show</p>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Dialog open={reportShowDialog} onOpenChange={setReportShowDialog}>
+              <DialogContent className="z-[9999] sm:max-w-[500px] bg-[#0f1115]/95 border-white/10 text-white">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-mystic-green">
+                    Report Show
+                  </DialogTitle>
+                  <DialogDescription className="text-white/70">
+                    We truly appreciate your feedback. <br />
+                    Please select a report type and share the reason so we can
+                    review and improve this show.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-4 gap-10">
+                  {/* Report Type Selection */}
+                  <div className="space-y-2 mb-5 gap-2">
+                    <Label htmlFor="report-type" className="text-white">
+                      Report Type <span className="text-red-500">*</span>
+                    </Label>
+                    {isShowAvailableReportTypesLoading ? (
+                      <div className="h-10 bg-white/5 rounded-md animate-pulse" />
+                    ) : isShowAlreadyReported ? (
+                      <p className="text-sm text-yellow-500">
+                        You have already reported this show
+                      </p>
+                    ) : (
+                      <Select
+                        value={showSelectedReportTypeId?.toString() || ""}
+                        onValueChange={(value) =>
+                          setShowSelectedReportTypeId(Number(value))
+                        }
+                      >
+                        <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                          <SelectValue placeholder="Select a report type" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1a1d24] border-white/10 text-white">
+                          {showAvailableReportTypes?.ShowReportTypeList.map(
+                            (type) => (
+                              <SelectItem
+                                key={type.Id}
+                                value={type.Id.toString()}
+                                className="focus:bg-white/10 focus:text-white"
+                              >
+                                {type.Name}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Report Content */}
+                  <div className="space-y-2 gap-2">
+                    <Label htmlFor="report-content" className="text-white">
+                      Details <span className="text-red-500">*</span>
+                    </Label>
+                    <Textarea
+                      id="report-content"
+                      placeholder="Please provide more details about the issue..."
+                      value={showReportContent}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setShowReportContent(e.target.value)
+                      }
+                      className="min-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none"
+                      disabled={isShowAlreadyReported}
+                    />
+                    <p className="text-xs text-white/50">
+                      Minimum 10 characters
+                    </p>
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <DialogClose asChild>
+                    <Button
+                      variant="outline"
+                      className="bg-transparent border-white/20 text-white hover:bg-white/10"
+                    >
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button
+                    onClick={async () => {
+                      await handleReportShow();
+                      setReportShowDialog(false);
+                    }}
+                    disabled={
+                      !showSelectedReportTypeId ||
+                      showReportContent.trim().length < 10 ||
+                      isReportingShow ||
+                      isShowAlreadyReported
+                    }
+                    className="bg-mystic-green text-black hover:bg-mystic-green/90"
+                  >
+                    {isReportingShow ? "Submitting..." : "Submit Report"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
@@ -684,95 +889,7 @@ const ShowDetailsPage = () => {
         <h2 className="text-2xl font-medium mb-8 mt-12 px-12 ">Episodes</h2>
         <div className="space-y-10 px-3">
           {show.EpisodeList.map((episode) => (
-            <div
-              key={episode.Id}
-              className="px-12 flex h-28 items-center gap-10 p-2 rounded-lg hover:bg-white/10  transition-colors group cursor-pointer"
-            >
-              <div className="relative aspect-square h-full bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 ">
-                <img
-                  src={episode.ImageUrl}
-                  alt={episode.Name}
-                  className="w-full h-full aspect-square object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                    e.currentTarget.parentElement!.innerHTML = `
-                      <div class="w-full h-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                        </svg>
-                      </div>
-                    `;
-                  }}
-                />
-
-                {player.playMode.playStatus === "play" ? (
-                  player.currentAudio?.Id === episode.Id ? (
-                    <div className="absolute inset-0 flex bg-black/30 items-center justify-center">
-                      <div
-                        onClick={() => dispatch(pauseAudio())}
-                        className="p-3 rounded-full bg-mystic-green flex items-center justify-center hover:bg-mystic-green "
-                      >
-                        <PlayingWave />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
-                      <div
-                        onClick={() => handlePlayEpisode(episode.Id)}
-                        className="p-2  rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green "
-                      >
-                        <IoPlay size={25} color="#ffffff" />
-                      </div>
-                    </div>
-                  )
-                ) : (
-                  <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
-                    <div
-                      onClick={() => handlePlayEpisode(episode.Id)}
-                      className="p-2  rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green "
-                    >
-                      <IoPlay size={25} color="#ffffff" />
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 flex items-center justify-between gap-20">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#d9d9d9] mb-1">
-                        {getTimeAgo(episode.ReleaseDate)}
-                      </p>
-                      <h4 className="font-bold text-lg text-white mb-2 leading-tight">
-                        {episode.Name}
-                      </h4>
-                      {/* <p className="text-white font-light text-sm line-clamp-2 leading-relaxed">
-                        {episode.Description}
-                      </p> */}
-                      <div
-                        className="text-white font-light text-sm line-clamp-2 leading-relaxed"
-                        dangerouslySetInnerHTML={{
-                          __html: renderDescriptionHTML(episode.Description),
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-white font-bold text-sm">
-                  {formatDuration(episode.AudioLength)}
-                </p>
-                <button className=" text-mystic-green cursor-pointer">
-                  <svg
-                    className="w-5 h-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <EpisodeCard key={episode.Id} episode={episode} />
           ))}
         </div>
       </div>
@@ -1026,9 +1143,12 @@ const ShowDetailsPage = () => {
 
         {/* Full Description */}
         <div className="mt-8 pt-8 border-t border-white/10">
-          <p className="text-white text-base leading-relaxed">
-            {show.Description}
-          </p>
+          <div
+            className="text-white text-base leading-relaxed"
+            dangerouslySetInnerHTML={{
+              __html: renderDescriptionHTML(show.Description),
+            }}
+          />
         </div>
       </div>
 
