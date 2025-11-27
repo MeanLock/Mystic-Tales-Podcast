@@ -708,7 +708,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             {
                                 { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
                                 { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
-                                { "TakeDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
+                                { "TakenDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
                             };
                             var takeDownMessageName = "content-dmca-takedown-flow";
                             var sagaTakeDownStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -806,20 +806,20 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             }
 
                             //Send TakeDownFlow
-                            var takeDownFlowMessage2 = new JObject
-                            {
-                                { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
-                                { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
-                                { "TakeDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
-                            };
-                            var takeDownMessageName2 = "content-dmca-takedown-flow";
-                            var sagaTakeDownStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.ContentManagementDomain,
-                                requestData: takeDownFlowMessage2,
-                                sagaInstanceId: null,
-                                messageName: takeDownMessageName2);
-                            await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage2);
-                            _logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
+                            //var takeDownFlowMessage2 = new JObject
+                            //{
+                            //    { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
+                            //    { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
+                            //    { "TakenDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
+                            //};
+                            //var takeDownMessageName2 = "content-dmca-takedown-flow";
+                            //var sagaTakeDownStartSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            //    topic: KafkaTopicEnum.ContentManagementDomain,
+                            //    requestData: takeDownFlowMessage2,
+                            //    sagaInstanceId: null,
+                            //    messageName: takeDownMessageName2);
+                            //await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage2);
+                            //_logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
                             //Send Email to Accuser
                             var accuserMailSendingRequestData2 = JObject.FromObject(new
@@ -908,20 +908,20 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             }
 
                             //Send TakeDownFlow
-                            var takeDownFlowMessage3 = new JObject
-                            {
-                                { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
-                                { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
-                                { "TakeDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
-                            };
-                            var takeDownMessageName3 = "content-dmca-takedown-flow";
-                            var sagaTakeDownStartSagaTriggerMessage3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                topic: KafkaTopicEnum.ContentManagementDomain,
-                                requestData: takeDownFlowMessage3,
-                                sagaInstanceId: null,
-                                messageName: takeDownMessageName3);
-                            await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage3);
-                            _logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
+                            //var takeDownFlowMessage3 = new JObject
+                            //{
+                            //    { "PodcastShowId", dmcaAccusation.PodcastShowId ?? null },
+                            //    { "PodcastEpisodeId", dmcaAccusation.PodcastEpisodeId ?? null},
+                            //    { "TakenDownReason", Enum.GetName(DMCATakeDownReasonEnum.LawsuitDMCA) }
+                            //};
+                            //var takeDownMessageName3 = "content-dmca-takedown-flow";
+                            //var sagaTakeDownStartSagaTriggerMessage3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            //    topic: KafkaTopicEnum.ContentManagementDomain,
+                            //    requestData: takeDownFlowMessage3,
+                            //    sagaInstanceId: null,
+                            //    messageName: takeDownMessageName3);
+                            //await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage3);
+                            //_logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
                             //Send Confirm Email to Accuser
                             var accuserMailSendingRequestData3 = JObject.FromObject(new
