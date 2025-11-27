@@ -133,17 +133,21 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             }
             var dmcaAccusation = (await Task.WhenAll(query.Select(async pbrrs =>
             {
-                PodcastEpisodeDTO? episode = null;
+                PodcastEpisodeWithShowDTO? episode = null;
                 PodcastShowDTO? show = null;
                 if (pbrrs.PodcastEpisodeId != null)
                 {
-                    episode = await GetPodcastEpisode(pbrrs.PodcastEpisodeId.Value);
+                    episode = await GetPodcastEpisodeWithShow(pbrrs.PodcastEpisodeId.Value);
                 }
                 if(pbrrs.PodcastShowId != null)
                 {
                     show = await GetPodcastShow(pbrrs.PodcastShowId.Value);
                 }
-                
+                if(episode == null && show == null)
+                {
+                    _logger.LogWarning("DMCA Accusation {Id} has no associated episode or show", pbrrs.Id);
+                    return null;
+                }
                 AccountStatusCache? staff = null;
                 if (pbrrs.AssignedStaff.HasValue)
                 {
@@ -152,8 +156,16 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 AccountStatusCache? podcaster = null;
                 if(episode != null)
                 {
-                    var showOfEpisode = await GetPodcastShow(episode.PodcastShowId);
-                    podcaster = await _accountCachingService.GetAccountStatusCacheById(showOfEpisode.PodcasterId);
+                    if(episode.PodcastShow != null)
+                    {
+                        podcaster = await _accountCachingService.GetAccountStatusCacheById(episode.PodcastShow.PodcasterId);
+                    }
+                    else
+                    {
+                        var showOfEpisode = await GetPodcastShow(episode.PodcastShowId);
+                        podcaster = await _accountCachingService.GetAccountStatusCacheById(showOfEpisode.PodcasterId);
+                    }
+                    //podcaster = await _accountCachingService.GetAccountStatusCacheById(episode.PodcastShow.PodcasterId);
                 }
                 if(show != null && podcaster == null)
                 {
@@ -471,15 +483,20 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             if (da == null)
                 return null;
 
-            PodcastEpisodeDTO? episode = null;
+            PodcastEpisodeWithShowDTO? episode = null;
             PodcastShowDTO? show = null;
             if (da.PodcastEpisodeId != null)
             {
-                episode = await GetPodcastEpisode(da.PodcastEpisodeId.Value);
+                episode = await GetPodcastEpisodeWithShow(da.PodcastEpisodeId.Value);
             }
             if(da.PodcastShowId != null)
             {
                 show = await GetPodcastShow(da.PodcastShowId.Value);
+            }
+            if(episode == null && show == null)
+            {
+                _logger.LogWarning("DMCA Accusation {Id} has no associated episode or show", da.Id);
+                return null;
             }
             AccountStatusCache? staff = null;
             if (da.AssignedStaff.HasValue)
@@ -489,8 +506,15 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             AccountStatusCache? podcaster = null;
             if (episode != null)
             {
-                var showOfEpisode = await GetPodcastShow(episode.PodcastShowId);
-                podcaster = await _accountCachingService.GetAccountStatusCacheById(showOfEpisode.PodcasterId);
+                if(episode.PodcastShow != null)
+                {
+                    podcaster = await _accountCachingService.GetAccountStatusCacheById(episode.PodcastShow.PodcasterId);
+                }
+                else
+                {
+                    var showOfEpisode = await GetPodcastShow(episode.PodcastShowId);
+                    podcaster = await _accountCachingService.GetAccountStatusCacheById(showOfEpisode.PodcasterId);
+                }
             }
             if (show != null && podcaster == null)
             {
@@ -631,7 +655,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     }
 
                     var show = new PodcastShowDTO();
-                    var episode = new PodcastEpisodeDTO();
+                    var episode = new PodcastEpisodeWithShowDTO();
                     var podcasterId = 0;
                     if (dmcaAccusation.PodcastShowId != null)
                     {
@@ -640,9 +664,16 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     }
                     if (dmcaAccusation.PodcastEpisodeId != null)
                     {
-                        episode = await GetPodcastEpisode(dmcaAccusation.PodcastEpisodeId.Value);
-                        var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
-                        podcasterId = showFromEpisode.PodcasterId;
+                        episode = await GetPodcastEpisodeWithShow(dmcaAccusation.PodcastEpisodeId.Value);
+                        if(episode.PodcastShow != null)
+                        {
+                            podcasterId = episode.PodcastShow.PodcasterId;
+                        }
+                        else
+                        {
+                            var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
+                            podcasterId = showFromEpisode.PodcasterId;
+                        }
                     }
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
 
@@ -1030,7 +1061,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     Console.WriteLine("Fetched DMCA Accusation Id: " + dmcaAccusation.Id);
 
                     PodcastShowDTO? show = null;
-                    PodcastEpisodeDTO? episode = null;
+                    PodcastEpisodeWithShowDTO? episode = null;
                     var podcasterId = 0;
                     if (dmcaAccusation.PodcastShowId != null)
                     {
@@ -1039,9 +1070,16 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     }
                     if (dmcaAccusation.PodcastEpisodeId != null)
                     {
-                        episode = await GetPodcastEpisode(dmcaAccusation.PodcastEpisodeId.Value);
-                        var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
-                        podcasterId = showFromEpisode.PodcasterId;
+                        episode = await GetPodcastEpisodeWithShow(dmcaAccusation.PodcastEpisodeId.Value);
+                        if (episode.PodcastShow != null)
+                        {
+                            podcasterId = episode.PodcastShow.PodcasterId;
+                        }
+                        else
+                        {
+                            var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
+                            podcasterId = showFromEpisode.PodcasterId;
+                        }
                     }
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
 
@@ -1923,18 +1961,45 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         foreach (var dmcaAccusation in dmcaAccusationCheckingList)
                         {
                             PodcastShowDTO? show = null;
-                            PodcastEpisodeDTO? episode = null;
+                            PodcastEpisodeWithShowDTO? episode = null;
                             var podcasterId = 0;
                             if (dmcaAccusation.PodcastShowId != null)
                             {
                                 show = await GetPodcastShow(dmcaAccusation.PodcastShowId.Value);
+                                if(show == null)
+                                {
+                                    _logger.LogWarning("Podcast Show is null for DMCA Accusation Id: {DmcaAccusationId}", dmcaAccusation.Id);
+                                    continue;
+                                }
                                 podcasterId = show.PodcasterId;
                             }
                             if (dmcaAccusation.PodcastEpisodeId != null)
                             {
-                                episode = await GetPodcastEpisode(dmcaAccusation.PodcastEpisodeId.Value);
-                                var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
-                                podcasterId = showFromEpisode.PodcasterId;
+                                episode = await GetPodcastEpisodeWithShow(dmcaAccusation.PodcastEpisodeId.Value);
+                                if(episode == null)
+                                {
+                                    _logger.LogWarning("Podcast Episode is null for DMCA Accusation Id: {DmcaAccusationId}", dmcaAccusation.Id);
+                                    continue;
+                                }
+                                if (episode.PodcastShow != null)
+                                {
+                                    podcasterId = episode.PodcastShow.PodcasterId;
+                                }
+                                else
+                                {
+                                    var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
+                                    if(showFromEpisode == null)
+                                    {
+                                        _logger.LogWarning("Podcast Show from Episode is null for DMCA Accusation Id: {DmcaAccusationId}", dmcaAccusation.Id);
+                                        continue;
+                                    }
+                                    podcasterId = showFromEpisode.PodcasterId;
+                                }
+                            }
+                            if(podcasterId == 0)
+                            {
+                                _logger.LogWarning("PodcasterId is 0 for DMCA Accusation Id: {DmcaAccusationId}", dmcaAccusation.Id);
+                                continue;
                             }
                             var podcaster = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
 
@@ -2059,18 +2124,45 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         foreach (var dmcaAccusation in dmcaAccusationCheckingList)
                         {
                             PodcastShowDTO? show = null;
-                            PodcastEpisodeDTO? episode = null;
+                            PodcastEpisodeWithShowDTO? episode = null;
                             var podcasterId = 0;
                             if (dmcaAccusation.PodcastShowId != null)
                             {
                                 show = await GetPodcastShow(dmcaAccusation.PodcastShowId.Value);
+                                if(show == null)
+                                {
+                                    _logger.LogWarning("Podcast Show is null for DMCA Accusation Id: {DmcaAccusationId}", dmcaAccusation.Id);
+                                    continue;
+                                }
                                 podcasterId = show.PodcasterId;
                             }
                             if (dmcaAccusation.PodcastEpisodeId != null)
                             {
-                                episode = await GetPodcastEpisode(dmcaAccusation.PodcastEpisodeId.Value);
-                                var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
-                                podcasterId = showFromEpisode.PodcasterId;
+                                episode = await GetPodcastEpisodeWithShow(dmcaAccusation.PodcastEpisodeId.Value);
+                                if(episode == null)
+                                {
+                                    _logger.LogWarning("Podcast Episode is null for DMCA Accusation Id: {DmcaAccusationId}", dmcaAccusation.Id);
+                                    continue;
+                                }
+                                if (episode.PodcastShow != null)
+                                {
+                                    podcasterId = episode.PodcastShow.PodcasterId;
+                                }
+                                else
+                                {
+                                    var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
+                                    if(showFromEpisode == null)
+                                    {
+                                        _logger.LogWarning("Podcast Show from Episode is null for DMCA Accusation Id: {DmcaAccusationId}", dmcaAccusation.Id);
+                                        continue;
+                                    }
+                                    podcasterId = showFromEpisode.PodcasterId;
+                                }
+                            }
+                            if(podcasterId == 0)
+                            {
+                                _logger.LogWarning("Unable to get PodcasterId for DMCA Accusation Id: {DmcaAccusationId}", dmcaAccusation.Id);
+                                continue;
                             }
                             var podcaster = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
 
@@ -2198,24 +2290,47 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 {
                                     DmcaDismissedEpisodeId = parameter.PodcastEpisodeId;
 
-                                    var episode = await GetPodcastEpisode(parameter.PodcastEpisodeId);
-                                    var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
-                                    var podcasterId = showFromEpisode.PodcasterId;
-
-                                    //Punish account
-                                    var accountPunishRequestData = new JObject
+                                    var episode = await GetPodcastEpisodeWithShow(parameter.PodcastEpisodeId);
+                                    if(episode == null)
                                     {
-                                        { "AccountId", podcasterId },
-                                        { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
-                                    };
-                                    var accountPunishMessageName = "user-violation-punishment-flow";
-                                    var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                        topic: KafkaTopicEnum.ContentManagementDomain,
-                                        requestData: accountPunishRequestData,
-                                        sagaInstanceId: null,
-                                        messageName: accountPunishMessageName);
-                                    await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
+                                        throw new HttpRequestException("Podcast Episode not found for Podcast Episode Id: " + parameter.PodcastEpisodeId);
+                                    }
+                                    var podcasterId = 0;
+                                    if(episode.PodcastShow != null)
+                                    {
+                                        podcasterId = episode.PodcastShow.PodcasterId;
+                                    }
+                                    else
+                                    {
+                                        var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
+                                        if(showFromEpisode == null)
+                                        {
+                                            throw new HttpRequestException("Podcast Show not found for Podcast Show Id: " + episode.PodcastShowId);
+                                        }
+                                        podcasterId = showFromEpisode.PodcasterId;
+                                    }
 
+                                    if(podcasterId != 0)
+                                    {
+                                        //Punish account
+                                        var accountPunishRequestData = new JObject
+                                        {
+                                            { "AccountId", podcasterId },
+                                            { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
+                                        };
+                                        var accountPunishMessageName = "user-violation-punishment-flow";
+                                        var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            requestData: accountPunishRequestData,
+                                            sagaInstanceId: null,
+                                            messageName: accountPunishMessageName);
+                                        await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
+                                    }
+                                    else
+                                    {
+                                        //_logger.LogWarning("PodcasterId is 0 for Podcast Episode Id: {PodcastEpisodeId}", parameter.PodcastEpisodeId);
+                                        throw new HttpRequestException("Unable to get PodcasterId for Podcast Episode Id: " + parameter.PodcastEpisodeId);
+                                    }
                                     check = true;
                                 }
                             }
@@ -2386,6 +2501,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var responseData = command.LastStepResponseData;
 
                     var show = await GetPodcastShowWithEpisode(parameter.PodcastShowId);
+                    if(show == null)
+                    {
+                        throw new HttpRequestException("Podcast Show not found for Podcast Show Id: " + parameter.PodcastShowId);
+                    }
                     var podcasterId = show.PodcasterId;
 
                     foreach(var episodeId in show.PodcastEpisodes.Select(s => s.Id))
@@ -2570,6 +2689,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     DmcaDismissedShowId = parameter.PodcastShowId;
 
                                     var show = await GetPodcastShow(parameter.PodcastShowId);
+                                    if(show == null)
+                                    {
+                                        throw new HttpRequestException("Podcast Show not found for Podcast Show Id: " + parameter.PodcastShowId);
+                                    }
                                     var podcasterId = show.PodcasterId;
                                     //Punish account
                                     var accountPunishRequestData = new JObject
@@ -2651,6 +2774,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var responseData = command.LastStepResponseData;
 
                     var show = await GetPodcastShowWithEpisode(parameter.PodcastShowId);
+                    if(show == null)
+                    {
+                        throw new HttpRequestException("Podcast Show not found for Podcast Show Id: " + parameter.PodcastShowId);
+                    }
                     var podcasterId = show.PodcasterId;
 
                     List<Guid> dismissedEpisodeIds = new List<Guid>();
@@ -2782,6 +2909,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     List<Guid> dismissedShowId = new List<Guid>();
                     var showList = await GetPodcastShowByChannelId(parameter.PodcastChannelId);
+                    //Console.WriteLine("Show List Count: " + showList.Count);
                     foreach (var show in showList)
                     {
                         var dmcaList = await _dmcaAccusationGenericRepository.FindAll(
@@ -2916,12 +3044,22 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     List<Guid> dismissedEpisodeIds = new List<Guid>();
                     var channel = await GetPodcastChannelWithShow(parameter.PodcastChannelId);
+                    if(channel == null)
+                    {
+                        throw new HttpRequestException("Podcast Channel not found for Podcast Channel Id: " + parameter.PodcastChannelId);
+                    }
 
                     if (channel.PodcastShows != null && channel.PodcastShows.Count > 0)
                     {
                         foreach (var showId in channel.PodcastShows.Select(s => s.Id))
                         {
                             var show = await GetPodcastShowWithEpisode(showId);
+                            if(show == null)
+                            {
+                                //_logger.LogWarning("Podcast Show not found for Podcast Show Id: {ShowId}", showId);
+                                //continue;
+                                throw new HttpRequestException("Podcast Show not found for Podcast Show Id: " + showId);
+                            }
                             var podcasterId = show.PodcasterId;
 
                             foreach (var episodeId in show.PodcastEpisodes.Select(e => e.Id))
@@ -3106,23 +3244,47 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                 {
                                     DmcaDismissedEpisodeId = parameter.PodcastEpisodeId;
 
-                                    var episode = await GetPodcastEpisode(parameter.PodcastEpisodeId);
-                                    var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
-                                    var podcasterId = showFromEpisode.PodcasterId;
-
-                                    //Punish account
-                                    var accountPunishRequestData = new JObject
+                                    var episode = await GetPodcastEpisodeWithShow(parameter.PodcastEpisodeId);
+                                    if(episode == null)
                                     {
-                                        { "AccountId", podcasterId },
-                                        { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
-                                    };
-                                    var accountPunishMessageName = "user-violation-punishment-flow";
-                                    var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                        topic: KafkaTopicEnum.ContentManagementDomain,
-                                        requestData: accountPunishRequestData,
-                                        sagaInstanceId: null,
-                                        messageName: accountPunishMessageName);
-                                    await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
+                                        throw new HttpRequestException("Podcast Episode not found for Podcast Episode Id: " + parameter.PodcastEpisodeId);
+                                    }
+                                    var podcasterId = 0;
+                                    if (episode.PodcastShow != null)
+                                    {
+                                        podcasterId = episode.PodcastShow.PodcasterId;
+                                    }
+                                    else
+                                    {
+                                        var showFromEpisode = await GetPodcastShow(episode.PodcastShowId);
+                                        if(showFromEpisode == null)
+                                        {
+                                            throw new HttpRequestException("Podcast Show not found for Podcast Show Id: " + episode.PodcastShowId);
+                                        }
+                                        podcasterId = showFromEpisode.PodcasterId;
+                                    }
+
+                                    if(podcasterId != 0)
+                                    {
+                                        //Punish account
+                                        var accountPunishRequestData = new JObject
+                                        {
+                                            { "AccountId", podcasterId },
+                                            { "ViolationPoint", _dmcaAccusationConfig.DismissStaticViolationPoint }
+                                        };
+                                        var accountPunishMessageName = "user-violation-punishment-flow";
+                                        var sagaAccountPunishStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                            topic: KafkaTopicEnum.ContentManagementDomain,
+                                            requestData: accountPunishRequestData,
+                                            sagaInstanceId: null,
+                                            messageName: accountPunishMessageName);
+                                        await _messagingService.SendSagaMessageAsync(sagaAccountPunishStartSagaTriggerMessage);
+                                    }
+                                    else
+                                    {
+                                        //_logger.LogWarning("PodcasterId is 0 for EpisodeId: {EpisodeId}", parameter.PodcastEpisodeId);
+                                        throw new HttpRequestException("Podcaster Id is invalid for Podcast Episode Id: " + parameter.PodcastEpisodeId);
+                                    }
 
                                     check = true;
                                 }
@@ -3241,6 +3403,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     DmcaDismissedShowId = parameter.PodcastShowId;
 
                                     var show = await GetPodcastShow(parameter.PodcastShowId);
+                                    if(show == null)
+                                    {
+                                        throw new HttpRequestException($"Podcast Show with Id {parameter.PodcastShowId} not found.");
+                                    }
                                     var podcasterId = show.PodcasterId;
 
                                     //Punish account
@@ -3323,6 +3489,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var responseData = command.LastStepResponseData;
 
                     var show = await GetPodcastShowWithEpisode(parameter.PodcastShowId);
+                    if(show == null)
+                    {
+                        throw new HttpRequestException($"Podcast Show with Id {parameter.PodcastShowId} not found.");
+                    }
                     var podcasterId = show.PodcasterId;
 
                     List<Guid> dismissedEpisodeIds = new List<Guid>();
@@ -3591,11 +3761,19 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
 
                     List<Guid> dismissedEpisodeIds = new List<Guid>();
                     var channel = await GetPodcastChannelWithShow(parameter.PodcastChannelId);
+                    if(channel == null)
+                    {
+                        throw new HttpRequestException($"Podcast Channel with Id {parameter.PodcastChannelId} not found.");
+                    }
                     if (channel.PodcastShows != null && channel.PodcastShows.Count > 0)
                     {
                         foreach (var showId in channel.PodcastShows.Select(s => s.Id))
                         {
                             var show = await GetPodcastShowWithEpisode(showId);
+                            if(show == null)
+                            {
+                                throw new HttpRequestException($"Podcast Show with Id {showId} not found.");
+                            }
                             var podcasterId = show.PodcasterId;
 
                             foreach (var episodeId in show.PodcastEpisodes.Select(e => e.Id))
@@ -4175,9 +4353,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         }
         public async Task<PodcastEpisodeDTO?> GetPodcastEpisode(Guid podcastEpisodeId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4194,19 +4374,64 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
-                ? podcastEpisodeArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastEpisodeDTO>() : null;
+                return result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
+                    ? podcastEpisodeArray.First.ToObject<PodcastEpisodeDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Episode with Id: {PodcastEpisodeId}", podcastEpisodeId);
+                throw new HttpRequestException("Get Podcast Episode by id failed, error: " + ex.Message); ;
+            }
+        }
+        public async Task<PodcastEpisodeWithShowDTO?> GetPodcastEpisodeWithShow(Guid podcastEpisodeId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastEpisode",
+                            QueryType = "findall",
+                            EntityType = "PodcastEpisode",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    Id = podcastEpisodeId
+                                },
+                                include = "PodcastEpisodeStatusTrackings, PodcastShow"
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+                return result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
+                    ? podcastEpisodeArray.First.ToObject<PodcastEpisodeWithShowDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Episode with Id: {PodcastEpisodeId}", podcastEpisodeId);
+                throw new HttpRequestException("Get Podcast Episode by id failed, error: " + ex.Message); ;
+            }
         }
         public async Task<List<PodcastEpisodeDTO>?> GetPodcastEpisodeByShowId(Guid podcastShowId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4223,19 +4448,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count > 0
-                ? podcastEpisodeArray
-                : null;
-            return realResult != null ? realResult.ToObject<List<PodcastEpisodeDTO>>() : null;
+                return result.Results?["podcastEpisode"] is JArray podcastEpisodeArray && podcastEpisodeArray.Count >= 0
+                    ? podcastEpisodeArray.ToObject<List<PodcastEpisodeDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Episodes for Show Id: {PodcastShowId}", podcastShowId);
+                throw new HttpRequestException("Get Podcast Episodes for Show Id failed, error: " + ex.Message);
+            }
         }
         public async Task<PodcastChannelDTO?> GetPodcastChannel(Guid podcastChannelId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4252,19 +4485,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
-                ? podcastChannelArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastChannelDTO>() : null;
+                return result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                    ? podcastChannelArray.First.ToObject<PodcastChannelDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Channel with Id: {PodcastChannelId}", podcastChannelId);
+                throw new HttpRequestException("Get Podcast Channel with Id failed, error " + ex.Message);
+            }
         }
         public async Task<List<PodcastChannelDTO>?> GetPodcastChannelByPodcasterId(int podcasterId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4281,18 +4522,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            return result.Results?["podcastChannels"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
-                ? podcastChannelArray.ToObject<List<PodcastChannelDTO>>()
-                : null;
+                return result.Results?["podcastChannels"] is JArray podcastChannelArray && podcastChannelArray.Count >= 0
+                    ? podcastChannelArray.ToObject<List<PodcastChannelDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Channels for Podcaster Id: {PodcasterId}", podcasterId);
+                throw new HttpRequestException("Get Podcast Channels for Podcaster Id failed, error: " + ex.Message);
+            }
         }
         public async Task<PodcastShowDTO?> GetPodcastShow(Guid podcastShowId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4303,25 +4553,33 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             {
                                 where = new
                                 {
-                                    PodcasChannel = podcastShowId
+                                    Id = podcastShowId
                                 },
                                 include = "PodcastShowStatusTrackings"
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastShowDTO>() : null;
+                return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                    ? podcastShowArray.First.ToObject<PodcastShowDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Show with Id: {PodcastShowId}", podcastShowId);
+                throw new HttpRequestException("Get Podcast Show with Id failed, error: " + ex.Message);
+            }
         }
         public async Task<List<PodcastShowDTO>?> GetPodcastShowByChannelId(Guid podcastChannelid)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4338,16 +4596,24 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray
-                : null;
-            return realResult != null ? realResult.ToObject<List<PodcastShowDTO>>() : null;
+                return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count >= 0
+                    ? podcastShowArray.ToObject<List<PodcastShowDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Shows for Channel Id: {PodcastChannelId}", podcastChannelid);
+                throw new HttpRequestException("Get Podcast Shows for Channel Id failed, error: " + ex.Message);
+            }
         }
         public async Task<List<PodcastShowWithEpisodeDTO>?> GetPodcastShowByPodcasterId(int podcasterId)
         {
+            try
+            {
             var batchRequest = new BatchQueryRequest
             {
                 Queries = new List<BatchQueryItem>
@@ -4370,10 +4636,15 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             };
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray
+            return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count >= 0
+                ? podcastShowArray.ToObject<List<PodcastShowWithEpisodeDTO>>()
                 : null;
-            return realResult != null ? realResult.ToObject<List<PodcastShowWithEpisodeDTO>>() : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Shows for Podcaster Id: {PodcasterId}", podcasterId);
+                throw new HttpRequestException("Get Podcast Shows for Podcaster Id failed, error: " + ex.Message);
+            }
         }
         public async Task<DmcaaccusationStatusTracking> CreateDMCAAccusationStatusTracking(DmcaaccusationStatusTracking status)
         {
@@ -4399,9 +4670,11 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         }
         private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4420,19 +4693,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
 
-            var realResult = result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
-                ? configArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<SystemConfigProfileDTO>() : null;
+                return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                    ? configArray.First.ToObject<SystemConfigProfileDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Active System Config Profile");
+                throw new HttpRequestException("Get Active System Config Profile failed, error: " + ex.Message);
+            }
         }
         public async Task<PodcastChannelWithShowDTO?> GetPodcastChannelWithShow(Guid podcastChannelId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                     {
                         new BatchQueryItem
                         {
@@ -4449,43 +4730,55 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             })
                         }
                     }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
-                ? podcastChannelArray.First as JObject
-                : null;
-            return realResult != null ? realResult.ToObject<PodcastChannelWithShowDTO>() : null;
+                return result.Results?["podcastChannel"] is JArray podcastChannelArray && podcastChannelArray.Count > 0
+                    ? podcastChannelArray.First.ToObject<PodcastChannelWithShowDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Channel with Shows for Channel Id: {PodcastChannelId}", podcastChannelId);
+                throw new HttpRequestException("Get Podcast Channel with Shows for Channel Id failed, error: " + ex.Message);
+            }
         }
         public async Task<PodcastShowWithEpisodeDTO?> GetPodcastShowWithEpisode(Guid podcastShowId)
         {
-            var batchRequest = new BatchQueryRequest
+            try
             {
-                Queries = new List<BatchQueryItem>
-                    {
-                        new BatchQueryItem
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
                         {
-                            Key = "podcastShow",
-                            QueryType = "findall",
-                            EntityType = "PodcastShow",
-                            Parameters = JObject.FromObject(new
+                            new BatchQueryItem
                             {
-                                where = new
+                                Key = "podcastShow",
+                                QueryType = "findall",
+                                EntityType = "PodcastShow",
+                                Parameters = JObject.FromObject(new
                                 {
-                                    Id = podcastShowId
-                                },
-                                include = "PodcastShowStatusTrackings, PodcastEpisodes"
-                            })
+                                    where = new
+                                    {
+                                        Id = podcastShowId
+                                    },
+                                    include = "PodcastShowStatusTrackings, PodcastEpisodes"
+                                })
+                            }
                         }
-                    }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
-            var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray.First as JObject
-                : null;
-            //Console.WriteLine("Real Result: " + realResult);
-            return realResult != null ? realResult.ToObject<PodcastShowWithEpisodeDTO>() : null;
+                return result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
+                    ? podcastShowArray.First.ToObject<PodcastShowWithEpisodeDTO>()
+                    : null;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while getting Podcast Show with Episodes for Show Id: {PodcastShowId}", podcastShowId);
+                throw new HttpRequestException("Get Podcast Show with Episodes for Show Id failed, error: " + ex.Message);
+            }
         }
     }
 }

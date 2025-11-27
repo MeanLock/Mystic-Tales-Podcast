@@ -715,18 +715,20 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     includeFunc: function => function
                     .Include(pbt => pbt.PodcastBookingToneCategory))
                     .ToListAsync();
+                var list = await _podcastBuddyBookingToneGenericRepository.FindAll()
+                        .ToListAsync();
                 return result = (await Task.WhenAll(query.Select(async pbt =>
                 {
                     var count = 0;
-                    var availablePodcasterCount = await _podcastBuddyBookingToneGenericRepository.FindAll()
+                    var availablePodcasterCount = list
                         .Where(pbbt => pbbt.PodcastBookingToneId == pbt.Id)
                         .Select(pbbt => pbbt.PodcasterId)
                         .Distinct()
-                        .ToListAsync();
+                        .ToList();
                     foreach (var podcasterId in availablePodcasterCount)
                     {
                         var podcasterAccount = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
-                        if(podcasterAccount != null && podcasterAccount.HasVerifiedPodcasterProfile && podcasterAccount.PodcasterProfileIsBuddy && podcasterAccount.DeactivatedAt == null)
+                        if (podcasterAccount != null && podcasterAccount.HasVerifiedPodcasterProfile && podcasterAccount.PodcasterProfileIsBuddy && podcasterAccount.IsVerified)
                         {
                             count++;
                         }
@@ -746,7 +748,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         DeletedAt = pbt.DeletedAt
                     };
                 }))).ToList();
-
             }
             catch (Exception ex)
             {
@@ -2319,6 +2320,41 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             {
                 _logger.LogError(ex, "Error occurred while getting completed bookings for AccountId: {AccountId}", accountId);
                 throw new HttpRequestException("Error occurred while retrieving completed booking");
+            }
+        }
+        public async Task<List<PodcastBuddySnippetResponseDTO>> GetPodcastersByBookingToneIdAsync(Guid podcastBookingToneId)
+        {
+            try
+            {
+                var result = new List<PodcastBuddySnippetResponseDTO>();
+                var podcastBuddyBookingTones = await _podcastBuddyBookingToneGenericRepository.FindAll(
+                    predicate: pbbt => pbbt.PodcastBookingToneId == podcastBookingToneId
+                    )
+                    .Select(pbbt => pbbt.PodcasterId)
+                    .Distinct()
+                    .ToListAsync();
+                foreach (var podcasterId in podcastBuddyBookingTones)
+                {
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(podcasterId);
+                    var podcastReal = await GetPodcaster(podcasterId);
+                    if (podcaster != null && podcaster.HasVerifiedPodcasterProfile && podcaster.PodcasterProfileIsBuddy && podcaster.IsVerified)
+                    {
+                        result.Add(new PodcastBuddySnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.FullName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey,
+                            PriceBookingPerWord = podcastReal.PodcasterProfile?.PricePerBookingWord
+                        });
+                    }
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting podcasters for PodcastBookingToneId: {PodcastBookingToneId}", podcastBookingToneId);
+                throw new HttpRequestException("Error occurred while retrieving podcasters by booking tone");
             }
         }
         public async Task<BookingResultDetailResponseDTO> GetBookingResultByIdAsync(int bookingId, int accountId)

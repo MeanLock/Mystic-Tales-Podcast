@@ -73,7 +73,38 @@ namespace ModerationService.API.Controllers.BaseControllers
             _fileIOHelper = fileIOHelper;
             _logger = logger;
         }
-
+        //[HttpGet("test")]
+        //public async Task<IActionResult> Test1()
+        //{
+        //    var result = await _dmcaAccusationService.GetActiveSystemConfigProfile();
+        //    return Ok(JObject.FromObject(result));
+        //}
+        [HttpGet("test2/{id}/{test}")]
+        public async Task<IActionResult> Test2([FromRoute] Guid id, [FromRoute] int test)
+        {
+            switch (test)
+            {
+                case 1:
+                    var result1 = await _dmcaAccusationService.GetPodcastShowByChannelId(id);
+                    return Ok(result1);
+                case 2:
+                    var result2 = await _dmcaAccusationService.GetPodcastShow(id);
+                    if(result2 == null)
+                    {
+                        return NotFound();
+                    }
+                    return Ok(result2);
+                case 3:
+                    var result3 = await _dmcaAccusationService.GetPodcastEpisodeWithShow(id);
+                    if (result3 == null)
+                    {
+                        return NotFound();
+                    }
+                    return Ok(result3);
+                default:
+                    return BadRequest("Invalid test case");
+            }
+        }
         // /api/moderation-service/api/dmca-accusations/dmca-notice/get-file-url/{**FileKey}
         [HttpGet("dmca-notice/get-file-url/{**FileKey}")]
         public async Task<IActionResult> GetDMCAAccusationFileUrl(string FileKey)

@@ -4225,7 +4225,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
 
             var realResult = result.Results?["podcastShow"] is JArray podcastShowArray && podcastShowArray.Count > 0
-                ? podcastShowArray as JArray
+                ? podcastShowArray
                 : null;
             return realResult != null ? realResult.ToObject<List<PodcastShowDTO>>() : null;
         }
