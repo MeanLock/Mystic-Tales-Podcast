@@ -1,0 +1,62 @@
+.show-on-hover-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 45px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--btn-bg);
+  transition: width 0.3s ease, border-radius 0.3s ease;
+
+  /* width mặc định = tròn */
+  width: 45px;
+}
+
+/* Hover: mở ra theo độ dài text */
+.show-on-hover-btn:hover {
+  width: calc(45px + var(--text-width) + 20px); /* icon + text + padding */
+  border-radius: 40px;
+}
+
+/* Icon */
+.show-on-hover-btn__icon {
+  width: 45px;
+  height: 45px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.show-on-hover-btn__icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: white;
+}
+
+/* Text */
+.show-on-hover-btn__text {
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: max-width 0.3s ease, opacity 0.25s ease;
+}
+
+/* Hover → text trượt ra mượt */
+.show-on-hover-btn:hover .show-on-hover-btn__text {
+  opacity: 1;
+  max-width: var(--text-width);
+}
+
+/* Click effect */
+.show-on-hover-btn:active {
+  transform: translate(2px, 2px);
+}

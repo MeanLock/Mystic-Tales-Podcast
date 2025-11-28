@@ -1,0 +1,268 @@
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import type { PodcasterUI } from "@/core/types/podcaster";
+import type { SearchIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import PodcasterCard from "./components/PodcasterCard";
+import Autoplay from "embla-carousel-autoplay";
+import HighlyRatedCard from "./components/HighlyRatedCard";
+import { useGetPodcastersQuery } from "@/core/services/podcasters/podcasters.service";
+import Loading from "@/components/loading";
+import {
+  resolveFiles,
+  type FileResolveConfig,
+} from "@/core/utils/fileResolver.util";
+
+const PodcasterFileConfig: FileResolveConfig[] = [
+  {
+    path: "MainImageFileKey",
+    output: "ImageUrl",
+    type: "AccountPublic",
+  },
+];
+
+const PodcastersPage = () => {
+  // STATES
+  const [popularPodcasters, setPopularPodcasters] = useState<
+    PodcasterUI[] | null
+  >(null);
+  const [hotPodcasters, setHopularPodcasters] = useState<PodcasterUI[] | null>(
+    null
+  );
+  const [talentedRookies, setTalentedRookies] = useState<PodcasterUI[] | null>(
+    null
+  );
+  const [isFileResolving, setIsFileResolving] = useState(false);
+
+  // HOOKS
+  const { data: popularPodcastersRaw, isLoading: isPopularPodcasterLoading } =
+    useGetPodcastersQuery({ queryKey: "popular" });
+  const { data: hotPodcastersRaw, isLoading: isHotPodcastersLoading } =
+    useGetPodcastersQuery({ queryKey: "hotRencently" });
+  const { data: talentedRookiesRaw, isLoading: isTalentedRookiesLoading } =
+    useGetPodcastersQuery({ queryKey: "talentedRookie" });
+
+  useEffect(() => {
+    const resolveData = async () => {
+      // Đợi API loading xong
+      if (
+        isPopularPodcasterLoading ||
+        isHotPodcastersLoading ||
+        isTalentedRookiesLoading
+      ) {
+        return;
+      }
+
+      setIsFileResolving(true);
+
+      // Resolve Popular Podcasters
+      if (popularPodcastersRaw && popularPodcastersRaw.PodcasterList) {
+        const resolvedPromises = popularPodcastersRaw.PodcasterList.map(
+          (podcaster) => resolveFiles(podcaster, PodcasterFileConfig)
+        );
+        const resolvedResults = await Promise.all(resolvedPromises);
+        const resolved = resolvedResults.map((r) => r.resolvedData);
+        setPopularPodcasters(resolved as unknown as PodcasterUI[]);
+      } else {
+        setPopularPodcasters([]);
+      }
+
+      // Resolve Hot Podcasters
+      if (hotPodcastersRaw && hotPodcastersRaw.PodcasterList) {
+        const resolvedPromises = hotPodcastersRaw.PodcasterList.map(
+          (podcaster) => resolveFiles(podcaster, PodcasterFileConfig)
+        );
+        const resolvedResults = await Promise.all(resolvedPromises);
+        const resolved = resolvedResults.map((r) => r.resolvedData);
+        setHopularPodcasters(resolved as unknown as PodcasterUI[]);
+      } else {
+        setHopularPodcasters([]);
+      }
+
+      // Resolve Talented Rookies
+      if (talentedRookiesRaw && talentedRookiesRaw.PodcasterList) {
+        const resolvedPromises = talentedRookiesRaw.PodcasterList.map(
+          (podcaster) => resolveFiles(podcaster, PodcasterFileConfig)
+        );
+        const resolvedResults = await Promise.all(resolvedPromises);
+        const resolved = resolvedResults.map((r) => r.resolvedData);
+        setTalentedRookies(resolved as unknown as PodcasterUI[]);
+      } else {
+        setTalentedRookies([]);
+      }
+
+      setIsFileResolving(false);
+    };
+    resolveData();
+  }, [
+    popularPodcastersRaw,
+    hotPodcastersRaw,
+    talentedRookiesRaw,
+    isPopularPodcasterLoading,
+    isHotPodcastersLoading,
+    isTalentedRookiesLoading,
+  ]);
+
+  // FUNCTIONS
+
+  if (
+    isHotPodcastersLoading ||
+    isPopularPodcasterLoading ||
+    isTalentedRookiesLoading ||
+    isFileResolving
+  ) {
+    return (
+      <div className="w-full h-full flex items-center flex-col justify-center gap-5">
+        <Loading />
+        <p className="font-poppins text-[#D9D9D9] font-bold">
+          Finding Amazing Podcasters For You...
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full flex flex-col relative p-8">
+      <div className="w-full flex flex-col items-start justify-center mb-10 gap-2">
+        <p className="text-9xl pb-4 font-poppins font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FFFFFf] via-[#6DD5FA] to-[#2980B9]">
+          Our Podcasters
+        </p>
+        <p className="font-poppins text-white font-bold">
+          Meet Our Podcasters.
+        </p>
+        <p className="w-2/3 font-poppins text-[#d9d9d9]">
+          Behind every show is a creator with a voice, a story, and a vision.
+        </p>
+        <p className="font-poppins text-[#d9d9d9] w-1/2">
+          <span className="font-bold text-white">
+            Our podcasters are storytellers, educators, entertainers, and
+            experts from all over the world
+          </span>{" "}
+          — turning everyday ideas into conversations worth listening to.
+        </p>
+      </div>
+
+      {/* Content */}
+      {/* Top Podcaster */}
+      {popularPodcasters && popularPodcasters.length > 0 && (
+        <div className="mt-5 flex flex-col gap-2">
+          <div className="w-full flex flex-col gap-8">
+            <div className="w-full flex items-center justify-between">
+              <p className="text-5xl font-bold text-white font-poppins">
+                <span className="text-mystic-green">Popular</span> Podcasters of
+                all time!
+              </p>
+            </div>
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[
+                Autoplay({
+                  delay: 4000,
+                }),
+              ]}
+              className="w-full"
+            >
+              <CarouselContent>
+                {popularPodcasters.map((podcaster) => (
+                  <CarouselItem
+                    key={podcaster.AccountId}
+                    className="basis-1/1 md:basis-1/2 lg:basis-1/3"
+                  >
+                    <div className="p-0">
+                      <PodcasterCard podcaster={podcaster} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          </div>
+        </div>
+      )}
+
+      {/* Hot Recently */}
+      {hotPodcasters && hotPodcasters.length > 0 && (
+        <div className="mt-10 flex flex-col gap-2">
+          <div className="w-full flex flex-col gap-8">
+            <div className="w-full flex items-center justify-between">
+              <p className="text-5xl font-bold text-white font-poppins">
+                <span className="text-mystic-green">Hot</span> Podcasters this
+                week
+              </p>
+            </div>
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[
+                Autoplay({
+                  delay: 4000,
+                }),
+              ]}
+              className="w-full"
+            >
+              <CarouselContent>
+                {hotPodcasters.map((podcaster) => (
+                  <CarouselItem
+                    key={podcaster.AccountId}
+                    className="basis-1/2 md:basis-1/4 lg:basis-1/5"
+                  >
+                    <div className="p-0">
+                      <PodcasterCard podcaster={podcaster} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          </div>
+        </div>
+      )}
+
+      {/* Talented Rookies */}
+      {talentedRookies && talentedRookies.length > 0 && (
+        <div className="mt-10 flex flex-col gap-2">
+          <div className="w-full flex flex-col gap-8">
+            <div className="w-full flex items-center justify-between">
+              <p className="text-5xl font-bold text-white font-poppins">
+                <span className="text-mystic-green">Newbie</span> with new vibe!
+              </p>
+            </div>
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              plugins={[
+                Autoplay({
+                  delay: 4000,
+                }),
+              ]}
+              className="w-full"
+            >
+              <CarouselContent>
+                {talentedRookies.map((podcaster) => (
+                  <CarouselItem
+                    key={podcaster.AccountId}
+                    className="basis-1/2 md:basis-1/4 lg:basis-1/5"
+                  >
+                    <div className="p-0">
+                      <PodcasterCard podcaster={podcaster} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PodcastersPage;

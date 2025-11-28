@@ -1,0 +1,93 @@
+// chat-room/light.scss
+@mixin ChatRoom-Theme_red {
+  --color-text-primary: #008521;
+  --chat-box-info_text-secondary: red;
+  --chat-box-info_text-error: #00c807;
+  // App Layout
+  --app-layout-border-primary: #2fff00;
+
+
+  // Chat Box Info
+  --chat-box-info_text-primary: #f0f0f0;
+  --chat-box-info_text-secondary: #1eff00;
+  --chat-box-info_text-link: #0355e3;
+  --chat-box-info_title-primary: #000000;
+  --chat-box-info_button-bg-primary: #ff5f77;
+  --chat-box-info_button-text-primary: #00fd00;
+
+  --chat-box-info_button-active-text-primary: #ffffff;
+  --chat-box-info_button-active-bg-primary: #e4517a;
+
+  --chat-box-info_button-hover-text-primary: #ee0000;
+  --chat-box-info_button-hover-bg-primary: rgb(0, 255, 64);
+  --chat-box-info_button-group-text: #f51111;
+  --chat-box-info_action-button-bg: #5f0000;
+  --chat-box-info_action-group-bg: #ff0000;
+  --chat-box-info_action-button-hover-bg: #ffffff;
+  --chat-box-info_background-primary: #e2e2e2;
+  --chat-box-info_icon-primary: #08f69a;
+  --chat-box-info_infoSection-bg: #c90f0f;
+  --chat-box-info_infoSection-title-bg: #00c317;
+  --chat-box-info_infoSection-title-text: #ffffff;
+  --chat-box-info_infoSection-dropdown-item-bg: #fc2323;
+  --chat-box-info_infoSection-dropdown-item-hover-bg: #b97777;
+  --chat-box-info_infoSection-dropdown-item-border: #00ff2f;
+  --chat-box-info_background-secondary: #f51111;
+
+  --chat-box-info_button-active-bg-primary: #efefef;
+  --chat-box-info_button-active-text-primary: #ff2828;
+  --chat-box-info_input-focus-border-primary: #ff0000;
+
+  --chat-box-info_input-border-primary: #00ff2f;
+
+  // Room Browser
+
+  --room-browser_text-primary: #f0f0f0;
+  --room-browser_text-secondary: #1eff00;
+  --room-browser_text-link: #0355e3;
+  --room-browser_title-primary: #000000;
+  --room-browser_button-bg-primary: #ff5f77;
+  --room-browser_button-text-primary: #00fd00;
+
+  --room-browser_button-active-text-primary: #ffffff;
+  --room-browser_button-active-bg-primary: #e4517a;
+
+  --room-browser_button-hover-text-primary: #ee0000;
+  --room-browser_button-hover-bg-primary: rgb(0, 255, 64);
+  --room-browser_button-group-text: #f51111;
+  --room-browser_action-button-bg: #5f0000;
+  --room-browser_action-group-bg: #ff0000;
+  --room-browser_action-button-hover-bg: #ffffff;
+  --room-browser_background-primary: #e2e2e2;
+  --room-browser_icon-primary: #08f69a;
+  --room-browser_infoSection-bg: #c90f0f;
+  --room-browser_infoSection-title-bg: #00c317;
+  --room-browser_infoSection-title-text: #ffffff;
+  --room-browser_infoSection-dropdown-item-bg: #fc2323;
+  --room-browser_infoSection-dropdown-item-hover-bg: #b97777;
+  --room-browser_infoSection-dropdown-item-border: #00ff2f;
+  --room-browser_background-secondary: #f51111;
+
+  --room-browser_button-active-bg-primary: #efefef;
+  --room-browser_button-active-text-primary: #ff5f77;
+  --room-browser_input-focus-border-primary: #ff0000;
+
+  --room-browser_input-border-primary: #00ff2f;
+  
+
+  // Cấu hình cho các selector
+
+  .MessageListScrollBarLayout {
+    background-color: #f36100;
+  }
+
+  .TestLuonChoNongNe {
+    display: block;
+    background-color: rgb(14, 131, 140);
+    right: 50px;
+  }
+
+  ul {}
+
+  li {}
+}
