@@ -158,7 +158,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     AccountStatusCache? assignedStaff = null;
                     if (booking.AssignedStaffId != null)
                     {
-                        var staffAccount = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                        assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
                     }
                     result.Add(new BookingListItemResponseDTO
                     {
@@ -572,7 +572,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     AccountStatusCache? assignedStaff = null;
                     if (booking.AssignedStaffId != null)
                     {
-                        var staffAccount = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                        assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
                     }
                     result.Add(new BookingListItemResponseDTO
                     {
@@ -649,7 +649,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     AccountStatusCache? assignedStaff = null;
                     if (booking.AssignedStaffId != null)
                     {
-                        var staffAccount = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                        assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
                     }
                     result.Add(new BookingListItemResponseDTO
                     {
