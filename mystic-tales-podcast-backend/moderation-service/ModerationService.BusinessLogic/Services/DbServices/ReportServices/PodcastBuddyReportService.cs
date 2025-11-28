@@ -434,6 +434,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                     {
                         throw new Exception("The logged in Account is not authorize to resolve this buddy report review session");
                     }
+                    podcastBuddyReportReviewSessions.ResolvedViolationPoint = parameter.ResolvedViolationPoint;
                     podcastBuddyReportReviewSessions.IsResolved = parameter.IsResolved;
                     await _podcastBuddyReportReviewSessionGenericRepository.UpdateAsync(podcastBuddyReportReviewSessions.Id, podcastBuddyReportReviewSessions);
                     var podcastBuddyReportList = await _podcastBuddyReportGenericRepository.FindAll()

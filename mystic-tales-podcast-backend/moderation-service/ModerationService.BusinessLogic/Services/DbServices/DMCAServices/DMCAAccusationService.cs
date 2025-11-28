@@ -659,6 +659,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         throw new Exception($"DMCA Accusation with Id: {parameter.DMCAAccusationId} not found");
                     }
+                    if(dmcaAccusation.ResolvedAt != null)
+                    {
+                        throw new Exception($"DMCA Accusation with Id: {parameter.DMCAAccusationId} is already resolved at {dmcaAccusation.ResolvedAt}, no further status update is allowed");
+                    }
 
                     var show = new PodcastShowDTO();
                     var episode = new PodcastEpisodeWithShowDTO();
@@ -702,7 +706,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             {
                                 throw new Exception($"DMCAAccusation with Id: {dmcaAccusation.Id}. Only DMCA Accusation with Pending Dmca Notice Review status can perform this action: {Enum.GetName(typeof(DMCAAccusationQueryEnum), parameter.DMCAAccusationAction)}");
                             }
-                            if (parameter.DMCAAccusationTakenDownReasonEnum == null)
+                            if (parameter.DMCAAccusationTakenDownReasonEnum == null || parameter.DMCAAccusationTakenDownReasonEnum == 0)
                             {
                                 throw new Exception("DMCA Accusation Taken Down Reason is required for Valid DMCA Notice action");
                             }
@@ -749,7 +753,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             {
                                 SendModerationServiceEmailInfo = new
                                 {
-                                    MailTypeName = "DMCANoticeValidToAccuser",
+                                    MailTypeName = "DMCANoticeValidToAccused",
                                     ToEmail = podcaster.Email,
                                     MailObject = new DMCANoticeValidToAccusedMailViewModel
                                     {
@@ -1066,6 +1070,10 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     if(dmcaAccusation == null)
                     {
                         throw new Exception($"DMCA Accusation with Id: {dmcaAccusationReport.DmcaAccusationId} not found");
+                    }
+                    if(dmcaAccusation.ResolvedAt != null)
+                    {
+                        throw new Exception($"DMCA Accusation with Id: {dmcaAccusationReport.DmcaAccusationId} has been already resolved");
                     }
                     Console.WriteLine("Fetched DMCA Accusation Id: " + dmcaAccusation.Id);
 
@@ -1952,7 +1960,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 try
                 {
                     var dmcaNoticeResponseTime = _dmcaAccusationConfig.DMCANoticeResponseTime;
-                    var dmcaCounterNoticeResponseTime = _dmcaAccusationConfig.DMCACounterNoticeResponseTime;
+                    //var dmcaCounterNoticeResponseTime = _dmcaAccusationConfig.DMCACounterNoticeResponseTime;
+                    //var dmcaNoticeResponseTime = 0;
 
                     var dmcaAccusationCheckingList = await _dmcaAccusationGenericRepository.FindAll(
                         includeFunc: function => function
@@ -1962,7 +1971,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         .Include(da => da.DmcaaccusationStatusTrackings))
                         .Where(da =>
                         da.DmcaaccusationStatusTrackings.OrderByDescending(st => st.CreatedAt).FirstOrDefault().DmcaAccusationStatusId == (int)DMCAAccusationStatusEnum.ValidDMCANotice && da.Dmcanotices.OrderByDescending(dn => dn.CreatedAt).FirstOrDefault().ValidatedAt.Value.AddDays(dmcaNoticeResponseTime) < _dateHelper.GetNowByAppTimeZone()
-                        )
+                        && da.ResolvedAt == null)
                         .ToListAsync();
 
                     if(dmcaAccusationCheckingList != null)
@@ -2114,8 +2123,9 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
             {
                 try
                 {
-                    var dmcaNoticeResponseTime = _dmcaAccusationConfig.DMCANoticeResponseTime;
+                    //var dmcaNoticeResponseTime = _dmcaAccusationConfig.DMCANoticeResponseTime;
                     var dmcaCounterNoticeResponseTime = _dmcaAccusationConfig.DMCACounterNoticeResponseTime;
+                    //var dmcaCounterNoticeResponseTime = 0;
 
                     var dmcaAccusationCheckingList = await _dmcaAccusationGenericRepository.FindAll(
                         includeFunc: function => function
@@ -2125,7 +2135,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                         .Include(da => da.DmcaaccusationStatusTrackings))
                         .Where(da =>
                         da.DmcaaccusationStatusTrackings.OrderByDescending(st => st.CreatedAt).FirstOrDefault().DmcaAccusationStatusId == (int)DMCAAccusationStatusEnum.ValidCounterNotice && da.CounterNotices.OrderByDescending(dn => dn.CreatedAt).FirstOrDefault().ValidatedAt.Value.AddDays(dmcaCounterNoticeResponseTime) < _dateHelper.GetNowByAppTimeZone()
-                        )
+                        && da.ResolvedAt == null)
                         .ToListAsync();
 
                     if(dmcaAccusationCheckingList != null)

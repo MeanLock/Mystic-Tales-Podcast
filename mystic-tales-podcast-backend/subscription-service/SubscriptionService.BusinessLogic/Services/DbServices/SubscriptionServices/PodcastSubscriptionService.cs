@@ -745,12 +745,15 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         .ToListAsync();
                     foreach (var registration in subscriptionRegistrations)
                     {
+                        decimal refundAmount = 0;
+                        var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
                         if (!registration.IsIncomeTaken)
                         {
                             var amount = existPodcastSubscription.PodcastSubscriptionCycleTypePrices
                                 .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                 .Select(ptcp => ptcp.Price)
                                 .FirstOrDefault();
+                            refundAmount = amount;
                             var tempRequestData = new JObject
                             {
                                 { "PodcastSubscriptionRegistrationId", registration.Id },
@@ -766,7 +769,30 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 messageName: "podcast-subscription-refund-flow");
                             await _messagingService.SendSagaMessageAsync(refundMessage, null);
                         }
-                        await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+
+                        var cancelMailSendingRequestData = JObject.FromObject(new
+                        {
+                            SendSubscriptionServiceEmailInfo = new
+                            {
+                                MailTypeName = "PodcastSubscriptionCancel",
+                                ToEmail = account.Email,
+                                MailObject = new PodcastSubscriptionCancelMailViewModel
+                                {
+                                    RefundAmount = refundAmount,
+                                    CustomerFullName = account.FullName,
+                                    CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                }
+                            }
+                        });
+                        var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                            requestData: cancelMailSendingRequestData,
+                            sagaInstanceId: null,
+                            messageName: "subscription-service-mail-sending-flow");
+                        await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                        registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                     }
 
                     await transaction.CommitAsync();
@@ -1334,8 +1360,9 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     sagaInstanceId: null,
                                     messageName: "subscription-service-mail-sending-flow");
                                 await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
-
-                                await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+                                
+                                registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                                await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                             }
                         }
 
@@ -1481,7 +1508,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             messageName: "subscription-service-mail-sending-flow");
                         await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
 
-                        await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+                        registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                     }
 
                     await transaction.CommitAsync();
@@ -1772,7 +1800,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             messageName: "subscription-service-mail-sending-flow");
                         await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
 
-                        await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+                        registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                        await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                     }
 
                     await transaction.CommitAsync();
@@ -2002,12 +2031,20 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 .ToListAsync();
                         foreach (var registration in subscriptionRegistrations)
                         {
+                            decimal refundAmount = 0;
+                            var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                            if(account == null)
+                            {
+                                _logger.LogWarning("Unable to query account for AccountId: {AccountId}", registration.AccountId.Value);
+                                continue;
+                            }
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                     .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
+                                refundAmount = amount;
                                 var tempRequestData = new JObject
                                 {
                                     { "PodcastSubscriptionRegistrationId", registration.Id },
@@ -2023,7 +2060,30 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     messageName: "podcast-subscription-refund-flow");
                                 await _messagingService.SendSagaMessageAsync(refundMessage, null);
                             }
-                            await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+
+                            var cancelMailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendSubscriptionServiceEmailInfo = new
+                                {
+                                    MailTypeName = "PodcastSubscriptionCancel",
+                                    ToEmail = account.Email,
+                                    MailObject = new PodcastSubscriptionCancelMailViewModel
+                                    {
+                                        RefundAmount = refundAmount,
+                                        CustomerFullName = account.FullName,
+                                        CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                    }
+                                }
+                            });
+                            var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                requestData: cancelMailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "subscription-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                            registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                         }
                     }
 
@@ -2087,12 +2147,20 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 .ToListAsync();
                         foreach (var registration in subscriptionRegistrations)
                         {
+                            decimal refundAmount = 0;
+                            var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                            if(account == null)
+                            {
+                                _logger.LogWarning("Unable to query account for AccountId: {AccountId}", registration.AccountId.Value);
+                                continue;
+                            }
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                     .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
+                                refundAmount = amount;
                                 var tempRequestData = new JObject
                                 {
                                     { "PodcastSubscriptionRegistrationId", registration.Id },
@@ -2108,7 +2176,30 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     messageName: "podcast-subscription-refund-flow");
                                 await _messagingService.SendSagaMessageAsync(refundMessage, null);
                             }
-                            await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+
+                            var cancelMailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendSubscriptionServiceEmailInfo = new
+                                {
+                                    MailTypeName = "PodcastSubscriptionCancel",
+                                    ToEmail = account.Email,
+                                    MailObject = new PodcastSubscriptionCancelMailViewModel
+                                    {
+                                        RefundAmount = refundAmount,
+                                        CustomerFullName = account.FullName,
+                                        CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                    }
+                                }
+                            });
+                            var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                requestData: cancelMailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "subscription-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                            registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                         }
                     }
 
@@ -2173,12 +2264,20 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 .ToListAsync();
                         foreach (var registration in subscriptionRegistrations)
                         {
+                            decimal refundAmount = 0;
+                            var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                            if(account == null)
+                            {
+                                _logger.LogWarning("Unable to query account for AccountId: {AccountId}", registration.AccountId.Value);
+                                continue;
+                            }
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                     .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
+                                refundAmount = amount;
                                 var tempRequestData = new JObject
                                 {
                                     { "PodcastSubscriptionRegistrationId", registration.Id },
@@ -2194,7 +2293,30 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     messageName: "podcast-subscription-refund-flow");
                                 await _messagingService.SendSagaMessageAsync(refundMessage, null);
                             }
-                            await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+
+                            var cancelMailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendSubscriptionServiceEmailInfo = new
+                                {
+                                    MailTypeName = "PodcastSubscriptionCancel",
+                                    ToEmail = account.Email,
+                                    MailObject = new PodcastSubscriptionCancelMailViewModel
+                                    {
+                                        RefundAmount = refundAmount,
+                                        CustomerFullName = account.FullName,
+                                        CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                    }
+                                }
+                            });
+                            var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                requestData: cancelMailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "subscription-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                            registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                         }
                     }
 
@@ -2258,12 +2380,20 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 .ToListAsync();
                         foreach (var registration in subscriptionRegistrations)
                         {
+                            decimal refundAmount = 0;
+                            var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                            if(account == null)
+                            {
+                                _logger.LogWarning("Unable to query account for AccountId: {AccountId}", registration.AccountId.Value);
+                                continue;
+                            }
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                     .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
+                                refundAmount = amount;
                                 var tempRequestData = new JObject
                                 {
                                     { "PodcastSubscriptionRegistrationId", registration.Id },
@@ -2279,7 +2409,30 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     messageName: "podcast-subscription-refund-flow");
                                 await _messagingService.SendSagaMessageAsync(refundMessage, null);
                             }
-                            await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+
+                            var cancelMailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendSubscriptionServiceEmailInfo = new
+                                {
+                                    MailTypeName = "PodcastSubscriptionCancel",
+                                    ToEmail = account.Email,
+                                    MailObject = new PodcastSubscriptionCancelMailViewModel
+                                    {
+                                        RefundAmount = refundAmount,
+                                        CustomerFullName = account.FullName,
+                                        CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                    }
+                                }
+                            });
+                            var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                requestData: cancelMailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "subscription-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                            registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                         }
                     }
 
@@ -2343,12 +2496,20 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 .ToListAsync();
                         foreach (var registration in subscriptionRegistrations)
                         {
+                            decimal refundAmount = 0;
+                            var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                            if(account == null)
+                            {
+                                _logger.LogWarning("Unable to query account for AccountId: {AccountId}", registration.AccountId.Value);
+                                continue;
+                            }
                             if (!registration.IsIncomeTaken)
                             {
                                 var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                     .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
+                                refundAmount = amount;
                                 var tempRequestData = new JObject
                                 {
                                     { "PodcastSubscriptionRegistrationId", registration.Id },
@@ -2364,7 +2525,30 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     messageName: "podcast-subscription-refund-flow");
                                 await _messagingService.SendSagaMessageAsync(refundMessage, null);
                             }
-                            await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+
+                            var cancelMailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendSubscriptionServiceEmailInfo = new
+                                {
+                                    MailTypeName = "PodcastSubscriptionCancel",
+                                    ToEmail = account.Email,
+                                    MailObject = new PodcastSubscriptionCancelMailViewModel
+                                    {
+                                        RefundAmount = refundAmount,
+                                        CustomerFullName = account.FullName,
+                                        CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                    }
+                                }
+                            });
+                            var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                requestData: cancelMailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "subscription-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                            registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                            await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                         }
                     }
 
@@ -2433,20 +2617,28 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                         .ToListAsync();
                                 foreach (var registration in subscriptionRegistrations)
                                 {
+                                    decimal refundAmount = 0;
+                                    var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                                    if(account == null)
+                                    {
+                                        _logger.LogWarning("Unable to query account for AccountId: {AccountId}", registration.AccountId.Value);
+                                        continue;
+                                    }
                                     if (!registration.IsIncomeTaken)
                                     {
                                         var amount = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                             .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
                                             .Select(ptcp => ptcp.Price)
                                             .FirstOrDefault();
+                                        refundAmount = amount;
                                         var tempRequestData = new JObject
-                                {
-                                    { "PodcastSubscriptionRegistrationId", registration.Id },
-                                    { "Profit", null },
-                                    { "AccountId", registration.AccountId },
-                                    { "Amount", amount },
-                                    { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
-                                };
+                                        {
+                                            { "PodcastSubscriptionRegistrationId", registration.Id },
+                                            { "Profit", null },
+                                            { "AccountId", registration.AccountId },
+                                            { "Amount", amount },
+                                            { "TransactionTypeId", (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund }
+                                        };
                                         var refundMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                             topic: KafkaTopicEnum.PaymentProcessingDomain,
                                             requestData: tempRequestData,
@@ -2454,7 +2646,30 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                             messageName: "podcast-subscription-refund-flow");
                                         await _messagingService.SendSagaMessageAsync(refundMessage, null);
                                     }
-                                    await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+
+                                    var cancelMailSendingRequestData = JObject.FromObject(new
+                                    {
+                                        SendSubscriptionServiceEmailInfo = new
+                                        {
+                                            MailTypeName = "PodcastSubscriptionCancel",
+                                            ToEmail = account.Email,
+                                            MailObject = new PodcastSubscriptionCancelMailViewModel
+                                            {
+                                                RefundAmount = refundAmount,
+                                                CustomerFullName = account.FullName,
+                                                CancelledDate = _dateHelper.GetNowByAppTimeZone(),
+                                            }
+                                        }
+                                    });
+                                    var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                        requestData: cancelMailSendingRequestData,
+                                        sagaInstanceId: null,
+                                        messageName: "subscription-service-mail-sending-flow");
+                                    await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                                    registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                                    await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                                 }
                             }
                         }
@@ -2622,7 +2837,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
 
-                            if (account.Balance - price <= 0)
+                            if (account.Balance - price < 0)
                             {
                                 registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
                                 await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
@@ -2650,7 +2865,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
                                 continue;
                             }
-                            
+
                             registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
                             await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
 
@@ -2699,11 +2914,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 .FirstOrDefaultAsync();
                             var price = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                     .Where(ptcp => ptcp.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId
-                                    && ptcp.Version == registration.CurrentVersion)
+                                    && ptcp.Version == podcastSubscription.CurrentVersion)
                                     .Select(ptcp => ptcp.Price)
                                     .FirstOrDefault();
 
-                            if (account.Balance - price <= 0)
+                            if (account.Balance - price < 0)
                             {
                                 registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
                                 await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
@@ -2731,6 +2946,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
                                 continue;
                             }
+
+                            registration.IsAcceptNewestVersionSwitch = null;
                             registration.CurrentVersion = podcastSubscription.CurrentVersion;
                             registration.LastPaidAt = _dateHelper.GetNowByAppTimeZone();
 
@@ -2914,7 +3131,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                         messageName: "subscription-service-mail-sending-flow");
                                     await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
 
-                                    await _podcastSubscriptionRegistrationGenericRepository.DeleteAsync(registration.Id);
+                                    registration.CancelledAt = _dateHelper.GetNowByAppTimeZone();
+                                    await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
                                 }
                             }
                         }

@@ -184,7 +184,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         throw new Exception("DMCA Accusation not found");
                     }
-                    if (dmcaAccusation.DmcaaccusationStatusTrackings.OrderByDescending(dast => dast.CreatedAt).FirstOrDefault().DmcaAccusationStatusId != (int)DMCAAccusationStatusEnum.ValidCounterNotice)
+                    if (dmcaAccusation.DmcaaccusationStatusTrackings.OrderByDescending(dast => dast.CreatedAt).FirstOrDefault().DmcaAccusationStatusId != (int)DMCAAccusationStatusEnum.ValidCounterNotice || dmcaAccusation.ResolvedAt != null)
                     {
                         throw new Exception("DMCA Accusation is not allegible for creating lawsuit proof");
                     }

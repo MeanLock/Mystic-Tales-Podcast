@@ -149,7 +149,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     {
                         throw new Exception("DMCA Accusation not found");
                     }
-                    if(dmcaAccusation.DmcaaccusationStatusTrackings.OrderByDescending(dast => dast.CreatedAt).FirstOrDefault().DmcaAccusationStatusId != (int)DMCAAccusationStatusEnum.ValidDMCANotice)
+                    if(dmcaAccusation.DmcaaccusationStatusTrackings.OrderByDescending(dast => dast.CreatedAt).FirstOrDefault().DmcaAccusationStatusId != (int)DMCAAccusationStatusEnum.ValidDMCANotice || dmcaAccusation.ResolvedAt != null)
                     {
                         throw new Exception("DMCA Accusation is not allegible for creating counter notice");
                     }

@@ -15,7 +15,7 @@ namespace ModerationService.BusinessLogic.DTOs.DMCANotice
     public class DMCANoticeCreateInfoDTO 
     {
         public string AccuserEmail { get; set; }
-        public string AccuserPhone { get; set; }
+        public string AccuserPhone { get; set; }    
         public string AccuserFullName { get; set; }
     }
 }
