@@ -30,7 +30,6 @@ namespace BookingManagementService.API.Controllers.QueryControllers
             _acoustIDAudioFingerprintGenerator = acoustIDAudioFingerprintGenerator;
             _acoustIDAudioFingerprintComparator = acoustIDAudioFingerprintComparator;
         }
-
         [HttpPost("generate-audio-fingerprint")]
         public async Task<IActionResult> GenerateAudioFingerprint([FromBody] string filePath)
         {

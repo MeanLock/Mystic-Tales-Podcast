@@ -2131,8 +2131,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var previewingBookingList = _bookingGenericRepository.FindAll()
                         .Include(b => b.BookingProducingRequests)
                         .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.TrackPreviewing &&
-                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt.HasValue &&
-                        b.BookingProducingRequests.OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt!.Value.AddDays(previewResponseAllowedDays) < currentDateTime)
+                        b.BookingProducingRequests.Where(bpr => bpr.FinishedAt != null).OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt.HasValue &&
+                        b.BookingProducingRequests.Where(bpr => bpr.FinishedAt != null).OrderByDescending(bpr => bpr.CreatedAt).First().FinishedAt!.Value.AddDays(previewResponseAllowedDays) < currentDateTime)
                         .ToList();
 
                     foreach (var booking in previewingBookingList)
@@ -2146,7 +2146,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
                         booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                        booking.BookingAutoCancelReason = "ExpiredPreview (quá thời hạn preview và pay the rest)";
+                        booking.BookingAutoCancelReason = BookingCancelAutoReasonEnum.ExpiredPreview.GetDescription();
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                         if (booking.Price.HasValue)
@@ -2215,7 +2215,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         };
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
                         booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                        booking.BookingAutoCancelReason = "Reason: PodcastBuddyNoResponse (không phản hồi producing request)";
+                        booking.BookingAutoCancelReason = BookingCancelAutoReasonEnum.PodcastBuddyNoResponse.GetDescription();
                         await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                         var startFirstSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
@@ -3115,6 +3115,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     //{
                     //    procedure.
                     //}
+
                     ListenSessionProcedureListenObjectQueueItem nextListenObj = null;
                     if (procedure.PlayOrderMode.Equals(CustomerListenSessionProcedurePlayOrderModeEnum.Sequential.ToString()))
                     {
@@ -3246,7 +3247,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bptls.Id, bptls);
                         }
 
-                        var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindByIdAsync(nextListenObj.ListenObjectId);
+                        var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindByIdAsync(nextListenObj.ListenObjectId,
+                            includeFunc: function => function
+                            .Include(bp => bp.BookingRequirement));
+
+                        Console.WriteLine("---- BookingPodcastTrack Id to navigate to: " + bookingPodcastTrack.Id);
+                        
                         bookingPodcastTrack.RemainingPreviewListenSlot -= 1;
                         await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                         var newListenSession = new BookingPodcastTrackListenSession
@@ -3259,6 +3265,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
                         var createdListenSession = await _bookingPodcastTrackListenSessionGenericRepository.CreateAsync(newListenSession);
+
+                        Console.WriteLine("---- Created Listen Session Id: " + createdListenSession.Id);
 
                         var booking = await _bookingGenericRepository.FindAll(
                             predicate: b => b.Id == bookingPodcastTrack.BookingId,
@@ -3699,9 +3707,17 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var track = await _bookingPodcastTrackGenericRepository.FindAll(
                         predicate: bpt => bpt.Id == item.ListenObjectId
                     ).FirstOrDefaultAsync();
-                    if(track == null || track.RemainingPreviewListenSlot <= 0)
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
+                        id: track.BookingId,
+                        includeFunc: b => b
+                            .Include(b => b.BookingStatusTrackings));
+                    if(booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId != (int)BookingStatusEnum.Completed)
                     {
-                        item.IsListenable = false;
+                        if (track == null || track.RemainingPreviewListenSlot <= 0)
+                        {
+                            item.IsListenable = false;
+                            continue;
+                        }
                     }
                     else
                     {
