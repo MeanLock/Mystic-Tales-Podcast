@@ -1,3 +1,4 @@
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 import { RootState } from "@/src/store/store";
 import { BlurView } from "expo-blur";
 import { Stack, useRouter } from "expo-router";
@@ -95,15 +96,14 @@ const Header = ({ scrollY }: { scrollY: Animated.Value }) => {
             },
           ]}
         >
-          <Text style={[style.title, { color: "#AEE339" }]}>Explore</Text>
+          <Text style={[style.title, { color: "#AEE339" }]}>Trending</Text>
 
           {/* User badge or login button */}
           {authState.user ? (
             <Pressable style={style.userBadge} onPress={goToProfile}>
-              <Image
-                source={{
-                  uri: authState.user.MainImageFileKey,
-                }}
+              <AutoResolvingImage
+                FileKey={authState.user.MainImageFileKey}
+                type="AccountPublicSource"
                 style={style.userAvatar}
               />
             </Pressable>
@@ -128,7 +128,7 @@ const Header = ({ scrollY }: { scrollY: Animated.Value }) => {
           ]}
         >
           <Text style={[style.centeredTitle, { color: "#AEE339" }]}>
-            Explore
+            Trending
           </Text>
         </Animated.View>
       </View>

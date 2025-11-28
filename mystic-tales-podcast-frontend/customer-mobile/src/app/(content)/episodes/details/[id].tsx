@@ -4,77 +4,64 @@ import { View } from "@/src/components/ui/View";
 import { EpisodeWithImageUrl } from "@/src/types/episode";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView } from "react-native";
 import EpisodeInformations from "./components/EpisodeInformations";
 import EpisodeDescription from "./components/EpisodeDescription";
 import DebugPlayer from "./components/DebugPlayer";
-
-const epsideMockData: EpisodeWithImageUrl = {
-  Id: "a1c2f301-010",
-  Name: "Tập 10: Những Đứa Trẻ Không Hồn",
-  Description: `<p>Tiếp tục với câu chuyện từ tập trước, Alice làm theo những gì chiếc gương kỳ bí bảo. Cô đi vào ngôi nhà đầy rêu đó, bên trong toàn là những món ăn mà lâu rồi cô chưa được ăn. Đang tự nhủ rằng cô sẽ đánh 1 bữa thật no thì có tiếng động ... Ngôi nhà này <span style="color: var(--ui-editor-text-red)"><strong>không vô chủ</strong></span> ! Alice vội trốn vào một góc tủ, thì cô thấy một đám người gồm 3 đứa trẻ và 1 người lớn. Họ cùng nhau ngồi ăn trưa với đám đồ ăn mà Alice thèm nhỏ dãi.</p><p></p><p>Cô để ý rằng, mắt của bọn trẻ trống rỗng, sâu hoắm vào trong, đầu không 1 sợi tóc. Nhìn chúng thật kinh dị, và quái đản ... và có vẻ như chúng đã nhận ra sự hiện diện của Alice trong căn nhà ...</p><p></p><p></p><ul><li><p>Chào mọi người, tui là Lộc - podcaster đẹp trai của show này ! Mọi thông tin chi tiết xin liên hệ:</p></li><li><p>Facebook: <a target="_blank" rel="noopener noreferrer nofollow" href="https://www.facebook.com/mikely.soryzz"><span style="color: var(--ui-editor-text-green)"><em>https://www.facebook.com/mikely.soryzz</em></span></a></p></li><li><p><strong>Phone<em>:</em></strong><em> 089.689.3636</em></p></li></ul>`,
-  ExplicitContent: true,
-  ReleaseDate: "2025-03-15T09:00:00.000Z",
-  IsReleased: true,
-  ImageUrl:
-    "https://i.pinimg.com/736x/2e/fd/49/2efd4937b8c2f24ecd7784ad30ad556e.jpg",
-  AudioFileKey: "10",
-  AudioFileSize: 52000000,
-  AudioLength: 3100,
-  AudioFingerprint: "©189364",
-  PodcastEpisodeSubscriptionType: { Id: 1, Name: "Subcribed Show Only" },
-  PodcastShowId: "1",
-  SeasonNumber: 1,
-  TotalSave: 300,
-  ListenCount: 1600,
-  IsAudioPublishable: true,
-  DeletedAt: "",
-  TakenDownReason: "",
-  CreatedAt: "2025-02-15T11:56:06.138Z",
-  UpdatedAt: "2025-02-15T11:56:06.138Z",
-};
+import {
+  useGetEpisodeDetailsQuery,
+  useSaveEpisodeMutation,
+} from "@/src/core/services/episode/episode.service";
 
 export default function EpisdeDetailsScreen() {
   // STATES
-  const [episode, setEpisode] = useState<EpisodeWithImageUrl | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
 
   // HOOKS
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     if (id && id !== "") {
-  //       fetch(id);
-  //     }
-  //     return () => {};
-  //   }, [])
-  // );
+  const {
+    data: episodeData,
+    isLoading: isEpisodeLoading,
+    refetch: refetchEpisode,
+  } = useGetEpisodeDetailsQuery({ PodcastEpisodeId: id! }, { skip: !id });
+
+  const [saveEpisode, { isLoading: isSaveEpisodeLoading }] =
+    useSaveEpisodeMutation();
 
   useEffect(() => {
-    if (id && id !== "") {
-      fetch(id);
-    }
-  }, []);
+    if (!episodeData || !episodeData.Episode) return;
+    setIsSaved(episodeData.Episode.IsSavedByCurrentUser);
+  }, [episodeData, isEpisodeLoading]);
 
-  const fetch = async (id: string) => {
-    setTimeout(() => {
-      setEpisode(epsideMockData);
-      setIsLoading(false);
-    }, 300);
+  const handleSaveEpisode = async () => {
+    if (!episodeData || !episodeData.Episode) return;
+    const snapShotValue = episodeData.Episode.IsSavedByCurrentUser;
+    setIsSaved(!episodeData.Episode.IsSavedByCurrentUser);
+    try {
+      await saveEpisode({
+        PodcastEpisodeId: episodeData.Episode.Id,
+        IsSave: !episodeData.Episode.IsSavedByCurrentUser,
+      }).unwrap();
+
+      refetchEpisode();
+    } catch (error) {
+      Alert.alert("Failed to update saved status. Please try again later.");
+      setIsSaved(snapShotValue);
+    }
   };
 
-  if (isLoading) {
+  if (isEpisodeLoading) {
     return (
-      <View className="w-full h-screen items-center justify-center gap-3">
-        <ActivityIndicator />
+      <View className="w-full h-screen items-center justify-center gap-5">
+        <ActivityIndicator size="large" color="#AEE339" />
         <Text>Loading ...</Text>
       </View>
     );
   }
 
-  if (!episode || !episode.Id || episode.Id === "") {
+  if (!episodeData) {
     return (
       <View className="w-full h-screen items-center justify-center gap-3">
         <Text className="text-gray-500 font-bold">
@@ -88,8 +75,12 @@ export default function EpisdeDetailsScreen() {
   }
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
-      <EpisodeInformations {...episode} />
-      <EpisodeDescription description={episode.Description} />
+      <EpisodeInformations
+        onSaveToggle={handleSaveEpisode}
+        isSaved={isSaved}
+        episode={episodeData.Episode}
+      />
+      <EpisodeDescription description={episodeData.Episode.Description} />
       {/* <DebugPlayer /> */}
     </ScrollView>
   );

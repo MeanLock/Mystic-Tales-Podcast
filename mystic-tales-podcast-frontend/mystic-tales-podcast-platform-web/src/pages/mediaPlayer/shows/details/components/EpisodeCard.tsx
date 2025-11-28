@@ -6,7 +6,7 @@ import {
   pauseAudio,
   playAudio,
 } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import { MoreHorizontalIcon } from "lucide-react";
+import { MoreHorizontalIcon, Save } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -41,6 +41,8 @@ import {
 } from "@/core/services/report/report.service";
 import { setError } from "@/redux/slices/errorSlice/errorSlice";
 import { useEffect } from "react";
+import { useSaveEpisodeMutation } from "@/core/services/episode/episode.service";
+import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 
 // Helper function to format duration
 const formatDuration = (seconds: number): string => {
@@ -114,6 +116,9 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
   const [isEpisodeAlreadyReported, setIsEpisodeAlreadyReported] =
     useState(false);
 
+  const [fetchBenefits, { isFetching: isFetchingBenefits }] =
+    useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
+
   // REPORT QUERIES
   const {
     data: episodeAvailableReportTypes,
@@ -126,6 +131,8 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
 
   const [reportEpisode, { isLoading: isReportingEpisode }] =
     useReportEpisodeMutation();
+  const [saveEpisode, { isLoading: isSavingEpisode }] =
+    useSaveEpisodeMutation();
 
   // Auto-check if episode is already reported when data loads
   useEffect(() => {
@@ -139,13 +146,67 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
   }, [episodeAvailableReportTypes, isEpisodeAvailableReportTypesLoading]);
 
   // Handle play episode
-  const handlePlayEpisode = (episodeId: string) => {
-    dispatch(
-      playAudio({
-        sourceType: "SpecifyShowEpisodes",
-        audioId: episodeId,
-      })
-    );
+  const handlePlayEpisode = async (episodeId: string) => {
+    console.log("Playing episode:", episodeId);
+    try {
+      const benefits = await fetchBenefits({
+        PodcastEpisodeId: episodeId,
+      }).unwrap();
+      console.log("API Benefits response:", benefits);
+      console.log("Benefits data:", benefits);
+
+      // Normalize benefit list from different possible response shapes
+      const benefitList =
+        benefits.CurrentPodcastSubscriptionRegistrationBenefitList;
+      if (benefitList && benefitList.length > 0) {
+        const hasNonQuota = benefitList.some(
+          (s: any) => s?.Id === 1 || s?.Name === "Non-Quota Listening"
+        );
+
+        if (hasNonQuota) {
+          dispatch(
+            playAudio({
+              sourceType: "SpecifyShowEpisodes",
+              audioId: episodeId,
+            })
+          );
+        } else {
+          if (user?.PodcastListenSlot === 0) {
+            dispatch(
+              setError({
+                message: "You have no listen slots left.",
+                autoClose: 10,
+              })
+            );
+            return;
+          } else {
+            dispatch(
+              playAudio({
+                sourceType: "SpecifyShowEpisodes",
+                audioId: episodeId,
+              })
+            );
+          }
+        }
+      } else {
+        dispatch(
+          setError({
+            message:
+              "You need to subscribe to a plan to listen to this episode.",
+            autoClose: 10,
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching benefits:", error);
+      dispatch(
+        setError({
+          message:
+            "Unable to verify your subscription benefits. Please try again.",
+          autoClose: 10,
+        })
+      );
+    }
   };
 
   // Handle report episode
@@ -180,6 +241,19 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
       dispatch(
         setError({
           message: `Error while reporting episode: ${error}`,
+          autoClose: 20,
+        })
+      );
+    }
+  };
+
+  const handleSaveEpisode = async (episodeId: string) => {
+    try {
+      await saveEpisode({ PodcastEpisodeId: episodeId, IsSave: true }).unwrap();
+    } catch (error) {
+      dispatch(
+        setError({
+          message: `Error while saving episode: ${error}`,
           autoClose: 20,
         })
       );
@@ -286,6 +360,19 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
                     <TbMessageReport className="text-white" size={16} />
                   </div>
                   <p className="text-sm">Report Episode</p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="flex items-center gap-3 px-3 py-2 text-white hover:bg-white/10 rounded-md cursor-pointer transition-colors"
+                onSelect={() => {
+                  handleSaveEpisode(episode.Id);
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                    <Save className="text-white" size={16} />
+                  </div>
+                  <p className="text-sm">Save Episode</p>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuGroup>

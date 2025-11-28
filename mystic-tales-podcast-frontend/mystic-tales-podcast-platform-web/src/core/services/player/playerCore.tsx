@@ -24,6 +24,7 @@ import {
   useUpdateBookingTrackLastDurationMutation,
   useNavigateEpisodeInProcedureMutation,
   useNavigateBookingTrackInProcedureMutation,
+  playerApi,
 } from "./player.service";
 import { useGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import { BASE_URL } from "@/core/api/appApi";
@@ -32,6 +33,7 @@ import type {
   ListenSessionEpisodes,
   ListenSessionBookingTracks,
 } from "@/core/types/audio";
+import { setError } from "@/redux/slices/errorSlice/errorSlice";
 
 export default function PlayerCore() {
   const dispatch = useDispatch();
@@ -43,6 +45,8 @@ export default function PlayerCore() {
     continue_listen_session_id,
     bookingId,
   } = useSelector((s: RootState) => s.player);
+
+  const user = useSelector((state: RootState) => state.auth.user);
 
   const engineRef = useRef<any>(null);
   const hlsRef = useRef<any>(null);
@@ -188,6 +192,22 @@ export default function PlayerCore() {
               ? benefitsData.CurrentPodcastSubscriptionRegistrationBenefitList
               : null;
 
+          if (sourceType === "SpecifyShowEpisodes") {
+            if (benefitsList && benefitsList.length > 0) {
+              if (!benefitsList.some((b) => b.Id === 1)) {
+                if (user?.PodcastListenSlot === 0) {
+                  dispatch(
+                    setError({
+                      message:
+                        "You have no listen slots left.",
+                      autoClose: 10,
+                    })
+                  );
+                  return;
+                }
+              }
+            }
+          }
           const response = await navigateEpisode({
             ListenSessionNavigateType: navigateType,
             ListenSessionId: episodeSession.PodcastEpisodeListenSession.Id,

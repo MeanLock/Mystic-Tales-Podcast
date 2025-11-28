@@ -1,5 +1,6 @@
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
+import { EpisodeFromShow } from "@/src/core/types/episode.type";
 import { EvilIcons } from "@expo/vector-icons";
 import { StyleSheet } from "react-native";
 import { Pressable } from "react-native";
@@ -8,42 +9,17 @@ interface MoreInformationsProps {
   Podcaster: {
     Id: number;
     FullName: string;
-    ImageUrl: string;
     Email: string;
+    MainImageFileKey: string;
   };
   ReleaseDate: string;
   Copyright: string;
   PodcastChannel: {
     Id: string;
     Name: string;
-    ImageUrl: string;
+    MainImageFileKey: string;
   } | null;
-  ShowEpisodeList: {
-    Id: string;
-    Name: string;
-    Description: string;
-    ExplicitContent: boolean;
-    ReleaseDate: string;
-    IsReleased: boolean;
-    ImageUrl: string;
-    AudioFileKey: string;
-    AudioFileSize: number;
-    AudioLength: number; //Độ dài theo giây
-    AudioFingerprint: string;
-    PodcastEpisodeSubscriptionType: {
-      Id: number;
-      Name: string;
-    };
-    PodcastShowId: string;
-    SeasonNumber: number;
-    TotalSave: number;
-    ListenCount: number;
-    IsAudioPublishable: boolean;
-    TakenDownReason: string | null;
-    DeletedAt: string | null;
-    CreatedAt: string;
-    UpdatedAt: string;
-  }[];
+  ShowEpisodeList: EpisodeFromShow[];
   PodcastCategory: {
     Id: number;
     Name: string;
@@ -54,33 +30,6 @@ interface MoreInformationsProps {
     PodcastCategoryId: number;
   };
 }
-
-type Episode = {
-  Id: string;
-  Name: string;
-  Description: string;
-  ExplicitContent: boolean;
-  ReleaseDate: string;
-  IsReleased: boolean;
-  ImageUrl: string;
-  AudioFileKey: string;
-  AudioFileSize: number;
-  AudioLength: number; //Độ dài theo giây
-  AudioFingerprint: string;
-  PodcastEpisodeSubscriptionType: {
-    Id: number;
-    Name: string;
-  };
-  PodcastShowId: string;
-  SeasonNumber: number;
-  TotalSave: number;
-  ListenCount: number;
-  IsAudioPublishable: boolean;
-  TakenDownReason: string | null;
-  DeletedAt: string | null;
-  CreatedAt: string;
-  UpdatedAt: string;
-};
 
 const InformationItem = ({
   title,
@@ -117,7 +66,7 @@ const MoreInformations = ({
 }: MoreInformationsProps) => {
   const getActiveTimeString = (
     releaseDateString: string,
-    episodes: Episode[]
+    episodes: EpisodeFromShow[]
   ) => {
     // Parse show release date and get the start year
     const releaseDate = new Date(releaseDateString);
@@ -151,7 +100,7 @@ const MoreInformations = ({
     return `${startYear} - ${endYear}`;
   };
 
-  const checkExplicitContent = (episodes: Episode[]): boolean => {
+  const checkExplicitContent = (episodes: EpisodeFromShow[]): boolean => {
     // If there are no episodes, return false
     if (!episodes || episodes.length === 0) {
       return false;

@@ -42,6 +42,7 @@ import MediaPlayerModal, {
   MediaPlayerModalRef,
 } from "./mediaPlayer/mediaPlayerModal";
 import { Audio } from "expo-av";
+import { GlobalAlert } from "../components/alert/GlobalAlert";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -94,7 +95,7 @@ function RootLayoutNav() {
           }}
         >
           <SetUp />
-
+          <GlobalAlert />
           <ThemeProvider
             value={useColorScheme() === "dark" ? DarkTheme : DefaultTheme}
           >
@@ -181,7 +182,7 @@ function AppBody() {
         <Stack.Screen name="(content)" options={{ headerShown: false }} />
         <Stack.Screen name="(user)" options={{ headerShown: false }} />
       </Stack>
-    
+
       {isButtonVisible && (
         <Animated.View
           style={{

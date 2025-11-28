@@ -256,7 +256,7 @@ const CreateBookingPage = () => {
       }).unwrap();
       if (result) {
         alert(result);
-        navigate("media-player/management/bookings");
+        navigate("/media-player/management/bookings");
       }
     } catch (err: any) {
       console.error("Create booking failed:", err);

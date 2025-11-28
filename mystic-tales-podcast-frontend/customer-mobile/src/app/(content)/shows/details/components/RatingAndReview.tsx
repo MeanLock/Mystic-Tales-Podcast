@@ -19,14 +19,16 @@ type Rating = {
     Id: number;
     FullName: string;
     Email: string;
-    ImageUrl: string;
+    MainImageFileKey: string;
   };
-  IsDeleted: boolean;
-  CreatedAt: string;
+  PodcastShowId: string;
+  DeletedAt: string;
+  UpdatedAt: string;
 };
 
 interface RatingAndReviewProps {
   ratings: Rating[];
+  isCommented: boolean;
 }
 
 // Fix 1: Correctly define the RatingTextComponent as a React component with proper props
@@ -69,7 +71,7 @@ const RatingCard = ({ rating }: { rating: Rating }) => {
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{rating.Account.FullName}</Text>
             <Text style={styles.reviewDate}>
-              {formatDate(rating.CreatedAt)}
+              {formatDate(rating.UpdatedAt)}
             </Text>
           </View>
         </View>
@@ -195,7 +197,7 @@ const RatingChartComponent = ({ ratings }: { ratings: Rating[] }) => {
   );
 };
 
-const RatingAndReview = ({ ratings }: RatingAndReviewProps) => {
+const RatingAndReview = ({ ratings, isCommented }: RatingAndReviewProps) => {
   // Fix 3: Add proper null/empty check
   if (!ratings || ratings.length === 0) {
     return (
@@ -217,7 +219,7 @@ const RatingAndReview = ({ ratings }: RatingAndReviewProps) => {
       ? // Sort by date and get the first one
         [...ratings].sort(
           (a, b) =>
-            new Date(b.CreatedAt).getTime() - new Date(a.CreatedAt).getTime()
+            new Date(b.UpdatedAt).getTime() - new Date(a.UpdatedAt).getTime()
         )[0]
       : null;
 
@@ -257,10 +259,12 @@ const RatingAndReview = ({ ratings }: RatingAndReviewProps) => {
         )}
       </View>
 
-      <Pressable className="w-full py-3 flex flex-row items-center gap-1">
-        <Feather name="edit" color="#AEE339" size={15} />
-        <Text className="text-[#AEE339]">Write a comment</Text>
-      </Pressable>
+      {!isCommented && (
+        <Pressable className="w-full py-3 flex flex-row items-center gap-1">
+          <Feather name="edit" color="#AEE339" size={15} />
+          <Text className="text-[#AEE339]">Write a comment</Text>
+        </Pressable>
+      )}
     </View>
   );
 };
