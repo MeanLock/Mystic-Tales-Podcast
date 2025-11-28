@@ -307,7 +307,7 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "update-booking-listen-session-duration.failed"
             );
         }
-        [MessageHandler("complete-all-user-booking-listen-sessions", SAGA_TOPIC)]
+        [MessageHandler("complete-all-user-booking-producing-listen-sessions", SAGA_TOPIC)]
         public async Task HandleCompleteAllUserBookingProducingListenSessionsAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
