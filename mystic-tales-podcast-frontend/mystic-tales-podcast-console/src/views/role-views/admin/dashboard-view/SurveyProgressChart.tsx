@@ -3,8 +3,7 @@ import { ProgressBar } from "react-bootstrap"
 import { CommunitySurveySummaryCount } from "../../../../core/types/statistics";
 import { getSummaryCountCommunitySurvey } from "../../../../core/services/statistic/survey-statistics/survey-statistics.service";
 import { adminAxiosInstance } from "../../../../core/api/rest-api/config/instances/v2";
-import SurveyTalkLoading from "../../../components/common/loading";
-
+import Loading from "@/views/components/common/loading";
 export function SurveyProgressChart({ activeTab }: { activeTab: string }) {
   const [surveyCount, setSurveyCount] = useState<CommunitySurveySummaryCount | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -27,7 +26,7 @@ export function SurveyProgressChart({ activeTab }: { activeTab: string }) {
     fetchData();
   }, [activeTab]);
 
-  if (isLoading || !surveyCount) return <SurveyTalkLoading />;
+  if (isLoading || !surveyCount) return <Loading />;
 
   const surveyData = [
     { label: "Đã phát hành", value: surveyCount.Published, variant: "primary" },

@@ -45,7 +45,6 @@ export const errorAlert = (message: string) => {
 // thông báo hỏi confirm với message trả về boolean
 export const confirmAlert = (message: string) => {
   return Swal.fire({
-    title: 'Bạn chắc chứ?',
     text: message,
     icon: 'warning',
     showCancelButton: true,

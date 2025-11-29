@@ -4,11 +4,13 @@ import { AgGridReact } from "ag-grid-react"
 import { CButtonGroup, CCol, CRow } from "@coreui/react"
 import { AllCommunityModule, type ColDef, ModuleRegistry } from "ag-grid-community"
 import Modal_Button from "../../../components/common/modal/ModalButton"
-import SurveyTalkLoading from "../../../components/common/loading"
 import { formatDate } from "../../../../core/utils/date.util"
 import type { SystemConfig, SystemConfigList } from "@/core/types/system-config"
 import SystemConfigUpdate from "./SystemConfigUpdate"
 import { Eye } from "phosphor-react"
+import { getActiveConfig, getConfigList } from "@/core/services/system/system.service"
+import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v1/admin-instance"
+import Loading from "@/views/components/common/loading"
 
 export const mockData: any = {
   SystemConfigList: [
@@ -207,29 +209,40 @@ const SystemConfigView: FC<SystemConfigViewProps> = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [activateConfig, setActivateConfig] = useState<SystemConfig | null>(null)
 
-  // const handleDataChange = async () => {
-  //   setIsLoading(true);
-  //   try {
-  //     const configList = await getSystemConfigs(adminAxiosInstance);
-  //     if (configList.success) {
-  //       setState(state_creator(configList.data.Configs));
-  //     } else {
-  //       console.error('API Error:', configList.message);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching system configs:', error);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // }
+  const fetchSystemConfigs = async () => {
+    setIsLoading(true);
+    try {
+      const configList = await getConfigList(adminAxiosInstance);
+      if (configList.success) {
+        setState(state_creator(configList.data.SystemConfigList));
+      } else {
+        console.error('API Error:', configList.message);
+      }
+    } catch (error) {
+      console.error('Error fetching system configs:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const fetchActiveSystemConfig = async () => {
-    setActivateConfig(mockActive.SystemConfig)
+     try {
+      const active = await getActiveConfig(adminAxiosInstance);
+      if (active.success) {
+        setActivateConfig(active.data.SystemConfig);
+      } else {
+        console.error('API Error:', active.message);
+      }
+    } catch (error) {
+      console.error('Error fetching system configs:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleDataChange = async () => {
     setIsLoading(false)
-    await Promise.all([setState(state_creator(mockData.SystemConfigList)), fetchActiveSystemConfig()])
+    await Promise.all([fetchSystemConfigs(), fetchActiveSystemConfig()])
   }
 
   const handleInactivate = async () => {
@@ -515,7 +528,7 @@ const SystemConfigView: FC<SystemConfigViewProps> = () => {
           <CRow>
             <CCol xs={12}>
               {isLoading ? (
-                <SurveyTalkLoading />
+                <Loading />
               ) : (
                 <div className="system-config-view__table">
                   <AgGridReact

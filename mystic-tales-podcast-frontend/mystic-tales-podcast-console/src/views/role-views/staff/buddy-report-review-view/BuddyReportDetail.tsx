@@ -7,6 +7,9 @@ import { toast } from "react-toastify"
 import { formatDate } from "../../../../core/utils/date.util"
 import { BuddyReportReviewViewContext } from "."
 import { CheckCircle, XCircle, Warning, User, Calendar, FileText } from "phosphor-react"
+import { getBuddyReviewSessionDetail, resolveBuddyReviewSession } from "@/core/services/report/BuddyReport.service"
+import { staffAxiosInstance } from "@/core/api/rest-api/config/instances/v2/staff-axios-instance"
+import { useSagaPolling } from "@/hooks/useSagaPolling"
 
 export const mockDetail: any = {
   BuddyReportReviewSession: {
@@ -91,9 +94,23 @@ const DetailForm: React.FC<BuddyReportDetailProps> = ({ podcastBuddyReportReview
   const [loading, setLoading] = useState(false)
   const [showResolvePopup, setShowResolvePopup] = useState(false)
   const [violationPoint, setViolationPoint] = useState("")
-
+  const { startPolling } = useSagaPolling({
+    timeoutSeconds: 120,
+    intervalSeconds: 0.5,
+  })
   const fetchDetail = async (id: string) => {
-    setBuddyReportDetail(mockDetail.BuddyReportReviewSession)
+    try {
+      const response = await getBuddyReviewSessionDetail(staffAxiosInstance, id);
+      console.log("Fetched buddy reports:", response);
+
+      if (response.success) {
+        setBuddyReportDetail(response.data.BuddyReportReviewSession);
+      } else {
+        console.error('API Error:', response.message);
+      }
+    } catch (error) {
+      console.error('Lỗi khi fetch buddy reports:', error);
+    }
   }
 
   const handleAction = async (isResolved: boolean) => {
@@ -101,13 +118,25 @@ const DetailForm: React.FC<BuddyReportDetailProps> = ({ podcastBuddyReportReview
       setShowResolvePopup(true)
       return
     }
-    
+
     setLoading(true)
     try {
-      // API call to update status
-      toast.success(`Report ${isResolved ? "resolved" : "rejected"} successfully`)
-      // Update local state
-      setBuddyReportDetail((prev: any) => (prev ? { ...prev, IsResolved: isResolved } : null))
+      const res = await resolveBuddyReviewSession(staffAxiosInstance, podcastBuddyReportReviewSessionId, isResolved, 0);
+      const sagaId = res?.data?.SagaInstanceId
+      if (!sagaId) {
+        toast.success(`Report ${isResolved ? "resolved" : "rejected"} failed, please try again.`)
+        return
+      }
+      await startPolling(sagaId, staffAxiosInstance, {
+        onSuccess: () => {
+          onClose();
+          context?.handleDataChange();
+          toast.success(`Report ${isResolved ? "resolved" : "rejected"} successfully`)
+        },
+        onFailure: (err: any) => toast.error(err || "Saga failed!"),
+        onTimeout: () => toast.error("System not responding, please try again."),
+      })
+
     } catch (error) {
       toast.error("Failed to update report status")
     } finally {
@@ -129,18 +158,24 @@ const DetailForm: React.FC<BuddyReportDetailProps> = ({ podcastBuddyReportReview
 
     setLoading(true)
     try {
-      // API call to resolve with violation point
-      toast.success("Report resolved successfully")
-      // Update local state
-      setBuddyReportDetail((prev: any) => 
-        prev ? { 
-          ...prev, 
-          IsResolved: true, 
-          ResolvedViolationPoint: violationPointNum 
-        } : null
-      )
-      setShowResolvePopup(false)
-      setViolationPoint("")
+      const res = await resolveBuddyReviewSession(staffAxiosInstance, podcastBuddyReportReviewSessionId, true, violationPointNum);
+      const sagaId = res?.data?.SagaInstanceId
+      if (!sagaId) {
+        toast.success(`Report resolved failed, please try again.`)
+        return
+      }
+      await startPolling(sagaId, staffAxiosInstance, {
+        onSuccess: () => {
+          setShowResolvePopup(false)
+          setViolationPoint("")
+          onClose();
+          context?.handleDataChange();
+          toast.success(`Report resolved successfully`)
+        },
+        onFailure: (err: any) => toast.error(err || "Saga failed!"),
+        onTimeout: () => toast.error("System not responding, please try again."),
+      })
+
     } catch (error) {
       toast.error("Failed to resolve report")
     } finally {
@@ -317,7 +352,7 @@ const DetailForm: React.FC<BuddyReportDetailProps> = ({ podcastBuddyReportReview
           <div className="resolve-popup" onClick={(e) => e.stopPropagation()}>
             <div className="resolve-popup__header">
               <h4 className="resolve-popup__title">Resolve Report</h4>
-              <button 
+              <button
                 className="resolve-popup__close-btn"
                 onClick={handleClosePopup}
                 type="button"

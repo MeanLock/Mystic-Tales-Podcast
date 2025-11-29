@@ -3,40 +3,11 @@ import "./styles.scss"
 import { AgGridReact } from "ag-grid-react"
 import { CButton, CCard, CCol, CFormInput, CRow, CSpinner } from "@coreui/react"
 import { AllCommunityModule, ColDef, ModuleRegistry } from "ag-grid-community"
-import { managerAxiosInstance } from "../../../../../core/api/rest-api/config/instances/v2/manager-axios-instance"
-import SurveyTalkLoading from "../../../../components/common/loading"
 import { formatDate } from "../../../../../core/utils/date.util"
-export const mockList: any = {
-    EpisodeReportList: [
-        {
-            Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            Content: "This episode contains inappropriate language.",
-            AccountId: 101,
-            PodcastEpisodeId: "c7e3c9e0-12b4-45d1-bb25-91ffb44d8f6a",
-            PodcastEpisodeReportTypeId: 2, // e.g. 1: Spam, 2: Offensive, 3: Copyright
-            ResolvedAt: "2025-10-10T10:07:05.532Z",
-            CreatedAt: "2025-10-10T09:45:12.210Z",
-        },
-        {
-            Id: "c2a34b12-0b92-4f78-9fd3-914e0d567a01",
-            Content: "Reported due to misleading information.",
-            AccountId: 102,
-            PodcastEpisodeId: "a7b2e6b9-5f41-4a1e-80c2-26d37f6a6a90",
-            PodcastEpisodeReportTypeId: 1,
-            ResolvedAt: "2025-10-09T15:22:40.100Z",
-            CreatedAt: "2025-10-09T13:00:00.000Z",
-        },
-        {
-            Id: "f6c71c2e-8a93-47df-bd51-f60aee1df6c9",
-            Content: "Contains copyrighted background music.",
-            AccountId: 103,
-            PodcastEpisodeId: "9c73b3d0-1c41-4a8e-9d8c-11c5e6c74a01",
-            PodcastEpisodeReportTypeId: 3,
-            ResolvedAt: "",
-            CreatedAt: "2025-10-10T08:15:42.200Z",
-        },
-    ],
-};
+import { getEpisodeReports } from "@/core/services/report/EpisodeReport.service"
+import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v1/admin-instance"
+import Loading from "@/views/components/common/loading"
+
 ModuleRegistry.registerModules([AllCommunityModule])
 
 interface EpisodeReportViewProps { }
@@ -62,10 +33,10 @@ const state_creator = (table: any[]) => {
                 sortable: false,
                 filter: false
             },
-             { headerName: "Content", field: "Content", flex: 0.8 },
-            { headerName: "Account ID", field: "AccountId", flex: 0.8 },
-            { headerName: "Podcast Episode ID", field: "PodcastEpisodeId", flex: 0.8 },
-            { headerName: "Podcast Episode Report Type ID", field: "PodcastEpisodeReportTypeId", flex: 0.8 },
+            { headerName: "Content", field: "Content", flex: 0.8 },
+            { headerName: "Reported By", field: "Account.FullName", flex: 0.8 },
+            { headerName: "Episode", field: "PodcastEpisode.Name", flex: 0.8 },
+            { headerName: "Episode Report Type", field: "PodcastEpisodeReportType.Name", flex: 0.8 },
             {
                 headerName: "Status",
                 cellClass: 'd-flex align-items-center',
@@ -117,26 +88,23 @@ const EpisodeReportView: FC<EpisodeReportViewProps> = () => {
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // const handleDataChange = async () => {
-    //   setIsLoading(true);
-    //   try {
-    //     const accountList = await getCustomerAccounts(adminAxiosInstance);
-    //     if (accountList.success) {
-    //       setState(state_creator(accountList.data.Accounts));
-    //     } else {
-    //       console.error('API Error:', accountList.message);
-    //     }
-    //   } catch (error) {
-    //     console.error('Lỗi khi fetch customer accounts:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // }
     const handleDataChange = async () => {
-        setIsLoading(false);
-        setState(state_creator(mockList.EpisodeReportList));
-
+        setIsLoading(true);
+        try {
+            const reportList = await getEpisodeReports(adminAxiosInstance);
+            console.log("Fetched episode reports:", reportList);
+            if (reportList.success) {
+                setState(state_creator(reportList.data.EpisodeReportList));
+            } else {
+                console.error('API Error:', reportList.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch episode reports:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }
+
     useEffect(() => {
         handleDataChange()
     }, [])
@@ -162,7 +130,9 @@ const EpisodeReportView: FC<EpisodeReportViewProps> = () => {
             <CRow >
                 <CCol xs={12}>
                     {isLoading ? (
-                        <SurveyTalkLoading />
+                        <div className="flex justify-content-center align-items-center h-150" >
+                            <Loading />
+                        </div>
                     ) : (
                         <div
                             id="customer-table"

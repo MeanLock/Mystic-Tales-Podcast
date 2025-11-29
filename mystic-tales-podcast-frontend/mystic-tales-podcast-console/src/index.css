@@ -28,8 +28,8 @@ body,
 }
 
 span {
-    color: var(--primary-grey);
 }   
+
 
 .ag-header-cell-text {
     color: var(--white);

@@ -25,8 +25,8 @@ const parseSagaResultData = (raw: any) => {
 export async function pollSagaResult({
   sagaId,
   axiosInstance,
-  timeoutSeconds = 60, // Mặc định gọi trong 60 giây
-  intervalSeconds = 2, // Mặc định 2 giây mỗi lần gọi
+  timeoutSeconds = 5, // Mặc định gọi trong 5 giây
+  intervalSeconds = 0.5, // Mặc định 0.5 giây mỗi lần gọi
   abortRef,
 }: {
   sagaId: string
@@ -45,7 +45,7 @@ export async function pollSagaResult({
 
     try {
       const res = await axiosInstance.get(
-        `/api/saga-orchestrator-service/api/orchestration/result-data/${sagaId}`
+        `/saga-orchestrator-service/api/orchestration/result-data/${sagaId}`
       )
 
       const flowStatus = res.data?.FlowStatus

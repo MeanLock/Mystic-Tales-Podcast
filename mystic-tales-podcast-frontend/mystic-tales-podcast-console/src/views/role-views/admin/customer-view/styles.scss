@@ -36,6 +36,35 @@
     gap: 0.5rem;
   }
 
+  &__avatar-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  &__avatar-upload-label {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+       cursor: pointer;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      color: #282828;
+      transition: color 0.2s;
+    }
+
+    &:hover svg {
+      color: var(--primary-green);
+    }
+  }
+
+  &__avatar-input {
+    display: none;
+  }
+
   &__name {
     font-size: 1.5rem;
     font-weight: 700;

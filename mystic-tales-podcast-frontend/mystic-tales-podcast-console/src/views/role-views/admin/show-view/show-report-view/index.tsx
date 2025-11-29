@@ -3,9 +3,10 @@ import "./styles.scss"
 import { AgGridReact } from "ag-grid-react"
 import { CButton, CCard, CCol, CFormInput, CRow, CSpinner } from "@coreui/react"
 import { AllCommunityModule, ColDef, ModuleRegistry } from "ag-grid-community"
-import { managerAxiosInstance } from "../../../../../core/api/rest-api/config/instances/v2/manager-axios-instance"
-import SurveyTalkLoading from "../../../../components/common/loading"
 import { formatDate } from "../../../../../core/utils/date.util"
+import { getShowReports } from "@/core/services/report/ShowReport.Service"
+import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v1/admin-instance"
+import Loading from "@/views/components/common/loading"
 export const mockList: any = {
     ShowReportList: [
         {
@@ -54,7 +55,7 @@ const state_creator = (table: any[]) => {
         columnDefs: [
             {
                 headerName: "No.",
-                flex: 0.2,
+                flex: 0.4,
                 valueGetter: (params: any) => {
                     return params.node.rowIndex + 1; // Hiển thị số thứ tự từ 1
                 },
@@ -62,10 +63,10 @@ const state_creator = (table: any[]) => {
                 sortable: false,
                 filter: false
             },
-             { headerName: "Content", field: "Content", flex: 0.8 },
-            { headerName: "Account ID", field: "AccountId", flex: 0.8 },
-            { headerName: "Podcast Show ID", field: "PodcastShowId", flex: 0.8 },
-            { headerName: "Podcast Show Report Type ID", field: "PodcastShowReportTypeId", flex: 0.8 },
+            { headerName: "Content", field: "Content", flex: 0.8 },
+            { headerName: "Reported By", field: "Account.FullName", flex: 0.8 },
+            { headerName: " Show", field: "PodcastShow.Name", flex: 0.8 },
+            { headerName: " Show Report Type", field: "PodcastShowReportType.Name", flex: 0.8 },
             {
                 headerName: "Status",
                 cellClass: 'd-flex align-items-center',
@@ -80,7 +81,8 @@ const state_creator = (table: any[]) => {
                             title: 'Resolved',
                             color: 'success',
                         };
-                    } else {
+                        
+                    } else  {
                         status = {
                             title: 'Unresolved',
                             color: 'warning',
@@ -117,26 +119,23 @@ const ShowReportView: FC<ShowReportViewProps> = () => {
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // const handleDataChange = async () => {
-    //   setIsLoading(true);
-    //   try {
-    //     const accountList = await getCustomerAccounts(adminAxiosInstance);
-    //     if (accountList.success) {
-    //       setState(state_creator(accountList.data.Accounts));
-    //     } else {
-    //       console.error('API Error:', accountList.message);
-    //     }
-    //   } catch (error) {
-    //     console.error('Lỗi khi fetch customer accounts:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // }
     const handleDataChange = async () => {
-        setIsLoading(false);
-        setState(state_creator(mockList.ShowReportList));
-
+        setIsLoading(true);
+        try {
+            const reportList = await getShowReports(adminAxiosInstance);
+            console.log("Fetched show reports:", reportList);
+            if (reportList.success) {
+                setState(state_creator(reportList.data.ShowReportList));
+            } else {
+                console.error('API Error:', reportList.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch show reports:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }
+
     useEffect(() => {
         handleDataChange()
     }, [])
@@ -161,7 +160,9 @@ const ShowReportView: FC<ShowReportViewProps> = () => {
             <CRow >
                 <CCol xs={12}>
                     {isLoading ? (
-                        <SurveyTalkLoading />
+                        <div className="flex justify-content-center align-items-center h-150" >
+                            <Loading />
+                        </div>
                     ) : (
                         <div
                             id="customer-table"

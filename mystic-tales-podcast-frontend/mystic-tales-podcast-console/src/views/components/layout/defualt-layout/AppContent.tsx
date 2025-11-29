@@ -15,7 +15,7 @@ const AppContent = () => {
   return (
 <CContainer fluid className="app-content-container">
         <Suspense fallback={<CSpinner color="primary" />}>
-        {/* <Routes>
+        <Routes>
           {routes.map((route, idx) => {
             return (
               route.element && (LocalStorageUtil.getAuthUserFromPersistLocalStorage() && route.role_id?.some(item => item === Number(LocalStorageUtil.getAuthUserFromPersistLocalStorage().role_id))) && (
@@ -30,8 +30,8 @@ const AppContent = () => {
             )
           })}
           <Route path="/" element={<Navigate to="dashboard" replace />} /> 
-        </Routes> */}
-        <Routes>
+        </Routes>
+        {/* <Routes>
           {routes.map((route, idx) => {
             return (
               route.element && (route.role_id?.some(item => item === 1)) && (
@@ -46,7 +46,7 @@ const AppContent = () => {
             )
           })}
           <Route path="/" element={<Navigate to="dashboard" replace />} />
-        </Routes>
+        </Routes> */}
       </Suspense>
     </CContainer>
   )

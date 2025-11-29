@@ -23,6 +23,8 @@ import {
 import CIcon from '@coreui/icons-react'
 import { AuthState } from '../../../../../redux/auth/auth.slice'
 import { avatar8 } from '../../../../../assets/images'
+import AvatarInput from '@/views/components/common/avatar'
+import Image from '@/views/components/common/image'
 
 type UserType = AuthState['user']
 
@@ -30,7 +32,7 @@ const AppHeaderDropdown : FC<{ user: AuthState['user'] }> = ({user}) => {
   return (
     <CDropdown variant="nav-item">
       <CDropdownToggle className="py-0 pe-0" caret={false}>
-        <CAvatar src={avatar8} size="md" />
+        <Image mainImageFileKey={user.MainImageFileKey} className="rounded-full w-8 h-8" />
       </CDropdownToggle>
       <CDropdownMenu className="pt-0">
         <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>

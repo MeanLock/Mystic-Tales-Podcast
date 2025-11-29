@@ -3,9 +3,10 @@ import "./styles.scss"
 import { AgGridReact } from "ag-grid-react"
 import { CButton, CCard, CCol, CFormInput, CRow, CSpinner } from "@coreui/react"
 import { AllCommunityModule, ColDef, ModuleRegistry } from "ag-grid-community"
-import { managerAxiosInstance } from "../../../../../core/api/rest-api/config/instances/v2/manager-axios-instance"
-import SurveyTalkLoading from "../../../../components/common/loading"
 import { formatDate } from "../../../../../core/utils/date.util"
+import { getBuddyReports } from "@/core/services/report/BuddyReport.service"
+import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
+import Loading from "@/views/components/common/loading"
 export const mockList: any = {
     BuddyReportList: [
         {
@@ -72,8 +73,8 @@ const state_creator = (table: any[]) => {
                 filter: false
             },
             { headerName: "Content", field: "Content", flex: 0.8 },
-            { headerName: "Account ID", field: "AccountId", flex: 0.8 },
-            { headerName: "Podcast Buddy ID", field: "PodcastBuddyId", flex: 0.8 },
+            { headerName: "Reported By", field: "Account.FullName", flex: 0.8 },
+            { headerName: "Podcast Buddy ", field: "PodcastBuddy.FullName", flex: 0.8 },
             { headerName: "Podcast Show Report Type ", field: "PodcastBuddyReportType.Name", flex: 0.8 },
             {
                 headerName: "Status",
@@ -111,7 +112,6 @@ const state_creator = (table: any[]) => {
                 field: "CreatedAt",
                 flex: 0.5,
                 valueGetter: (params: any) => formatDate(params.data.CreatedAt),
-
             },
         ],
         rowData: table
@@ -126,25 +126,21 @@ const BuddyReportView: FC<BuddyReportViewProps> = () => {
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // const handleDataChange = async () => {
-    //   setIsLoading(true);
-    //   try {
-    //     const accountList = await getCustomerAccounts(adminAxiosInstance);
-    //     if (accountList.success) {
-    //       setState(state_creator(accountList.data.Accounts));
-    //     } else {
-    //       console.error('API Error:', accountList.message);
-    //     }
-    //   } catch (error) {
-    //     console.error('Lỗi khi fetch customer accounts:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // }
     const handleDataChange = async () => {
-        setIsLoading(false);
-        setState(state_creator(mockList.BuddyReportList));
-
+        setIsLoading(true);
+        try {
+            const reportList = await getBuddyReports(adminAxiosInstance);
+            console.log("Fetched buddy reports:", reportList);
+            if (reportList.success) {
+                setState(state_creator(reportList.data.BuddyReportList));
+            } else {
+                console.error('API Error:', reportList.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch buddy reports:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }
     useEffect(() => {
         handleDataChange()
@@ -170,7 +166,9 @@ const BuddyReportView: FC<BuddyReportViewProps> = () => {
             <CRow >
                 <CCol xs={12}>
                     {isLoading ? (
-                        <SurveyTalkLoading />
+                        <div className="flex justify-content-center align-items-center h-150" >
+                            <Loading />
+                        </div>
                     ) : (
                         <div
                             id="customer-table"
