@@ -61,12 +61,12 @@ namespace BookingManagementService.API.Controllers.ReportControllers
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
         public async Task<IActionResult> GetBookingStatisticsByPodcasterIdAsync(
             [FromRoute] Guid podcasterId,
-            [FromQuery] )
+            [FromQuery] Guid alo)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var statistics = await _bookingService.GetBookingStatisticsByPodcasterIdAsync(podcasterId, fromDate, toDate);
-            return Ok(statistics);
+            //var statistics = await _bookingService.GetBookingStatisticsByPodcasterIdAsync(podcasterId, fromDate, toDate);
+            return Ok();
         }
     }
 }
