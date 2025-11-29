@@ -1,6 +1,6 @@
 import type React from "react";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MdOutlineNavigateNext } from "react-icons/md";
 
 interface SubItem {
@@ -37,6 +37,7 @@ export const SidebarNavItems: React.FC<SidebarNavItemsProps> = ({
   isLoggedIn = false,
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const toggleExpand = (itemName: string) => {
@@ -208,7 +209,12 @@ export const SidebarNavItems: React.FC<SidebarNavItemsProps> = ({
         );
       })}
 
-      <p>Become Podcaster</p>
+      <p
+        onClick={() => navigate("/become-podcaster")}
+        className="text-mystic-green hidden md:inline-block hover:underline font-poppins italic cursor-pointer"
+      >
+        Become Podcaster
+      </p>
     </div>
   );
 };

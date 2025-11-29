@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { ChannelUI } from "@/core/types/channel";
 import type { ShowUI } from "@/core/types/show";
 import { MdOutlinePodcasts } from "react-icons/md";

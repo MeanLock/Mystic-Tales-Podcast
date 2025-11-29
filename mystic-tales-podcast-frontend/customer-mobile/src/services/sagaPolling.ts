@@ -55,7 +55,7 @@ export async function pollSagaResult<T>(
       // Create query args with public auth mode (no token required for saga status check)
       const queryArgs = withAuthMode(
         {
-          url: `/api/saga-orchestrator/api/saga/${sagaId}/status`,
+          url: `/api/saga-orchestrator-service/api/orchestration/result-data/${sagaId}`,
           method: "GET",
           headers: extraHeaders,
         },
@@ -75,28 +75,45 @@ export async function pollSagaResult<T>(
         continue;
       }
 
-      // Get the saga status from response
-      const sagaStatus = result.data as {
-        Status: SagaStatus;
-        Data?: T;
-        Error?: string;
-      };
+      // Get the saga status from response (support several shapes)
+      const raw = result.data as any;
+      const flowStatus: SagaStatus | undefined = raw?.FlowStatus ?? raw?.Status;
+      const dataField = raw?.Data ?? raw?.ResultData ?? raw?.Result ?? null;
+      const errorField = raw?.Error ?? raw?.ErrorMessage ?? null;
 
-      // Check if saga is complete
-      if (sagaStatus.Status === "SUCCESS") {
+      // Normalize status string (tolerate small typos from orchestrator)
+      const statusNorm =
+        typeof flowStatus === "string" ? flowStatus.toUpperCase().trim() : "";
+
+      // If flowStatus is success (or contains SUCCESS), try to parse Data/ResultData if it's a JSON string
+      if (statusNorm.includes("SUCCESS")) {
+        let parsed: any = null;
+        if (dataField != null) {
+          if (typeof dataField === "string") {
+            try {
+              parsed = JSON.parse(dataField);
+            } catch (e) {
+              // If parsing fails, return the raw string
+              parsed = dataField;
+            }
+          } else {
+            parsed = dataField;
+          }
+        }
+
         return {
           status: "SUCCESS",
-          data: sagaStatus.Data || null,
+          data: parsed || null,
           error: null,
         };
       }
 
-      // Check if saga has failed
-      if (sagaStatus.Status === "FAILURE") {
+      // Check if saga has failed (or contains FAIL)
+      if (typeof statusNorm === "string" && statusNorm.includes("FAIL")) {
         return {
           status: "FAILURE",
           data: null,
-          error: sagaStatus.Error || "Saga failed without specific error",
+          error: errorField || "Saga failed without specific error",
         };
       }
 

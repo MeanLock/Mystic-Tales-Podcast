@@ -32,6 +32,7 @@ const modeAwareBaseQuery: BaseQueryFn<
     params?: any;
     authMode?: AuthMode;
     responseHandler?: "json" | "text";
+    headers?: Record<string, string>;
   },
   unknown,
   ApiErrorModel
@@ -43,6 +44,7 @@ const modeAwareBaseQuery: BaseQueryFn<
     params,
     authMode = "public",
     responseHandler,
+    headers: endpointHeaders,
   } = args;
 
   // Clone headers tạm để gắn token theo mode
@@ -54,8 +56,30 @@ const modeAwareBaseQuery: BaseQueryFn<
     };
   }
 
+  // Gắn thêm header từ endpoint nếu có
+  // IMPORTANT: Headers.set() normalizes header names, so we need to convert to plain object
+  const headersRecord: Record<string, string> = {};
+
+  // Copy auth headers
+  headers.forEach((value, key) => {
+    headersRecord[key] = value;
+  });
+
+  // Add endpoint headers with exact casing
+  if (endpointHeaders) {
+    Object.entries(endpointHeaders).forEach(([k, v]) => {
+      if (v != null) headersRecord[k] = v;
+    });
+  }
+
   // Truyền headers sang fetchBaseQuery qua "headers" và cho phép override responseHandler
-  const baseQueryArgs: any = { url, method, body, params, headers };
+  const baseQueryArgs: any = {
+    url,
+    method,
+    body,
+    params,
+    headers: headersRecord,
+  };
   if (responseHandler) baseQueryArgs.responseHandler = responseHandler;
 
   const res: any = await rawBaseQuery(baseQueryArgs, api, extraOptions);
@@ -78,6 +102,7 @@ const modeAwareBaseQuery: BaseQueryFn<
 export const appApi = createApi({
   reducerPath: "appApi",
   baseQuery: modeAwareBaseQuery,
+  tagTypes: ["Account"],
   endpoints: (build) => ({
     /** MẪU 1: Hỏi kết quả Saga 1 lần (không poll) — dùng khi bạn tự poll bên ngoài */
     getSagaResultOnce: build.query<

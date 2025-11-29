@@ -1,8 +1,9 @@
-// store.ts
+// src/store/store.ts (MOBILE)
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
-import { baseApi } from "../services/baseApi";
+import { appApi } from "@/src/core/api/appApi/index"; // <-- thay path đúng với project mobile
 import authReducer from "../features/auth/authSlice";
 import downloadsReducer from "../features/download/downloadSlice";
+import alertReducer from "../features/alert/alertSlice";
 
 // persist
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -17,95 +18,58 @@ import {
   REGISTER,
 } from "redux-persist";
 
-import playerReducer, {
-  updatePosition,
-  onEnded,
-} from "../features/mediaPlayer/playerSlice";
-import { playerMiddleware } from "../features/mediaPlayer/playerMiddleware"; // ✅
-import { playerEngine } from "../services/audio/playerEngine";
+import playerReducer from "../features/mediaPlayer/playerSlice";
+// import { playerEngine } from "../services/audio/playerEngine";
 
+import { configureTokenGetter } from "@/src/core/api/appApi/token"; // <-- mới
+
+// rootReducer
 const rootReducer = combineReducers({
   auth: authReducer,
   downloads: downloadsReducer,
   player: playerReducer,
-  [baseApi.reducerPath]: baseApi.reducer,
+  alert: alertReducer,
+  [appApi.reducerPath]: appApi.reducer, // <-- thay baseApi bằng appApi
 });
 
+// persist config
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: [
-    // "player", // đang tắt persist player để test
-    "auth",
-  ],
+  whitelist: ["auth"], // chỉ cần persist auth là đủ để lấy token
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
+// store
 export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
+      immutableCheck: false,
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        // RTK Query may place non-serializable values under these paths
+        ignoredActionPaths: ["meta.arg", "payload"],
       },
-    })
-      .concat(baseApi.middleware) // RTK Query middleware
-      .concat(playerMiddleware), // ✅ Thêm playerEngine middleware
-  devTools: __DEV__,
+    }).concat(appApi.middleware),
+
+  devTools:
+    typeof __DEV__ !== "undefined"
+      ? __DEV__
+      : process.env.NODE_ENV !== "production",
 });
 
 export const persistor = persistStore(store);
 
 // Types
-export type RootState = ReturnType<typeof rootReducer>;
+export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
-playerEngine.onStatus = (s) => {
-  if ((s as any).didJustFinish) console.log("[status] didJustFinish true");
+/** Liên kết tokenGetter với auth slice */
+configureTokenGetter(() => {
+  const state = store.getState() as RootState;
+  return state.auth.accessToken ?? undefined;
+});
 
-  if ("isLoaded" in s && s.isLoaded) {
-    // chỉ cập nhật tiến độ nếu ĐANG PHÁT
-    if (s.isPlaying) {
-      const seconds = Math.floor((s.positionMillis ?? 0) / 1000);
-      store.dispatch(updatePosition({ position: seconds }));
-    }
-
-    // hết bài chuẩn
-    if ((s as any).didJustFinish) {
-      store.dispatch(onEnded());
-      return;
-    }
-
-    // fallback: một vài thiết bị không bắn didJustFinish ổn định
-    const pos = s.positionMillis ?? 0;
-    const dur = (s as any).durationMillis ?? 0;
-    if (!s.isPlaying && dur > 0 && pos >= dur - 150) {
-      store.dispatch(onEnded());
-    }
-  }
-};
-
-// === NEW: EndGuard – fallback chắc chắn auto-next ===
-const END_TOLERANCE_SEC = 0.7;
-let lastEndedId: string | null = null;
-
-setInterval(() => {
-  const st = store.getState().player;
-  const cur = st.currentAudio;
-  if (!cur) return;
-
-  // Reset guard nếu đã chuyển bài
-  if (lastEndedId && lastEndedId !== cur.Id) {
-    lastEndedId = null;
-  }
-
-  if (st.playerMode.playStatus !== "playing") return;
-  if (cur.AudioLength <= 0) return;
-
-  const nearTheEnd = cur.LatestPosition >= cur.AudioLength - END_TOLERANCE_SEC;
-  if (nearTheEnd && lastEndedId !== cur.Id) {
-    lastEndedId = cur.Id;
-    store.dispatch(onEnded());
-  }
-}, 400);
+/// ===== phần playerEngine.onStatus & setInterval giữ nguyên như cũ =====

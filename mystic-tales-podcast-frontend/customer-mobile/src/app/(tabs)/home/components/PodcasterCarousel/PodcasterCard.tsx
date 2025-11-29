@@ -3,20 +3,16 @@ import { Image, StyleSheet } from "react-native";
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
 import { useRouter } from "expo-router";
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 
 interface PodcasterCardProps {
   podcaster: {
     Id: number;
-    ImageUrl: string;
-    Fullname: string;
-    Followers?: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
   };
 }
-
-// Format follower count with comma separator
-const formatFollowerCount = (count: number): string => {
-  return count.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-};
 
 const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
   const router = useRouter();
@@ -25,7 +21,12 @@ const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
     <Pressable style={styles.card}>
       {/* Profile Image */}
       <View style={styles.imageContainer}>
-        <Image source={{ uri: podcaster.ImageUrl }} style={styles.image} />
+        {/* <Image source={{ uri: podcaster.MainImageFileKey }} style={styles.image} /> */}
+        <AutoResolvingImage
+          FileKey={podcaster.MainImageFileKey}
+          type="AccountPublicSource"
+          style={styles.image}
+        />
       </View>
 
       {/* Name and Follower Count */}
@@ -34,10 +35,10 @@ const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
           numberOfLines={1}
           className="text-white text-center font-semibold"
         >
-          {podcaster.Fullname}
+          {podcaster.FullName}
         </Text>
         <Text className="text-gray-400 text-center text-xs">
-          {formatFollowerCount(podcaster.Followers || 0)} followers
+          {podcaster.Email}
         </Text>
       </View>
     </Pressable>

@@ -11,6 +11,22 @@
   --color-mystic-green: #aae339;
 }
 
+.ql-editor.ql-blank::before {
+  color: rgba(255, 255, 255, 0.6) !important;
+  left: 0 !important;
+  right: 0 !important;
+  position: relative !important; /* 👈 fix bị lòi */
+  margin-left: 0.5rem;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -153,6 +169,16 @@ h1 {
     }
     100% {
       transform: translateX(100vw);
+    }
+  }
+  @keyframes rotate-spinner {
+    from {
+      transform: rotate(0deg);
+      transform-origin: center;
+    }
+    to {
+      transform: rotate(360deg);
+      transform-origin: center;
     }
   }
 }

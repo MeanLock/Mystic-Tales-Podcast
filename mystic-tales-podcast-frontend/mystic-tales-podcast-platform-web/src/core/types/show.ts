@@ -120,6 +120,7 @@ export type ShowDetailsFromAPI = {
   TotalFollow: number;
   ListenCount: number;
   EpisodeCount: number;
+  IsFollowedByCurrentUser: boolean;
   Podcaster: {
     Id: number;
     FullName: string;
@@ -147,6 +148,21 @@ export type ShowDetailsFromAPI = {
   Hashtags: {
     Id: number;
     Name: string;
+  }[];
+  ReviewList: {
+    Id: string;
+    Title: string;
+    Content: string;
+    Rating: number;
+    Account: {
+      Id: number;
+      FullName: string;
+      Email: string;
+      MainImageFileKey: string;
+    };
+    PodcastShowId: string;
+    DeletedAt: string;
+    UpdatedAt: string;
   }[];
   TakenDownReason: string;
   CreatedAt: string;
@@ -244,6 +260,7 @@ export type ShowDetailsUI = {
   TotalFollow: number;
   ListenCount: number;
   EpisodeCount: number;
+  IsFollowedByCurrentUser: boolean;
   Podcaster: {
     Id: number;
     FullName: string;
@@ -272,7 +289,7 @@ export type ShowDetailsUI = {
     Id: number;
     Name: string;
   }[];
-  RatingList: {
+  ReviewList: {
     Id: string;
     Title: string;
     Content: string;
@@ -284,7 +301,7 @@ export type ShowDetailsUI = {
       ImageUrl: string;
     };
     IsDeleted: boolean;
-    CreatedAt: string;
+    UpdatedAt: string;
   }[];
   TakenDownReason: string;
   CreatedAt: string;

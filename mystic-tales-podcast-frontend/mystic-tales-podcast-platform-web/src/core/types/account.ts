@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { CurrentAudioFromApi, CurrentAudioUI } from "./audio";
 
 export type AccountFromAPI = {
@@ -22,32 +24,37 @@ export type AccountFromAPI = {
   DeactivatedAt: string | null; // Format ISO String
   CreatedAt: string; // Format ISO String
   UpdatedAt: string; // Format ISO String
-  IsPodcaster: boolean //Để check xem User có phải podcaster không, hay là User thường
+  IsPodcaster: boolean; //Để check xem User có phải podcaster không, hay là User thường
 };
 
-export type AccountUI = {
+export type AccountMeFromApi = {
   Id: number;
   Email: string;
-  Role: AccountRole;
   FullName: string;
-  Dob: string; //Format "YYYY-MM-DD"
+  Dob: string;
   Gender: string;
   Address: string;
   Phone: string;
   Balance: number;
-  ImageUrl: string; //Đã lấy được ImageUrl
-  IsVerified: boolean;
-  GoogleId: string | null;
+  MainImageFileKey: string;
   PodcastListenSlot: number;
-  ViolationPoint: number;
-  ViolationLevel: number;
-  LastViolationPointChanged: string | null; // Format ISO String
-  LastViolationLevelChanged: string | null; // Format ISO String
-  LastPodcastListenSlotChanged: string | null;
-  DeactivatedAt: string | null; // Format ISO String
-  CreatedAt: string; // Format ISO String
-  UpdatedAt: string; // Format ISO String
-  IsPodcaster: boolean
+  DeactivatedAt: string;
+  IsPodcaster: boolean;
+};
+
+export type AccountMeUI = {
+  Id: number;
+  Email: string;
+  FullName: string;
+  Dob: string;
+  Gender: string;
+  Address: string;
+  Phone: string;
+  Balance: number;
+  ImageUrl: string;
+  PodcastListenSlot: number;
+  DeactivatedAt: string;
+  IsPodcaster: boolean;
 };
 
 // Customer: {Id: 1, Name: "string"}
@@ -57,13 +64,8 @@ export type AccountRole = {
 };
 
 // Lấy /me từ API
-export type AccountMeFromApi = {
-  Account: AccountFromAPI;
-  CurrentAudio: CurrentAudioFromApi;
-};
+// export type AccountMeFromApi = {
+//   Account: AccountFromAPI;
+//   CurrentAudio: CurrentAudioFromApi;
+// };
 
-// Account Me đã được handle hết các file url, image url
-export type AccountMeUi = {
-  Account: AccountUI;
-  CurrentAudio: CurrentAudioUI;
-};

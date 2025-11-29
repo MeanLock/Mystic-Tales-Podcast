@@ -1,288 +1,159 @@
+import Loading from "@/components/loading";
 import { Button } from "@/components/ui/button";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Check, MoreHorizontalIcon } from "lucide-react";
+import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
+import {
+  useFollowShowMutation,
+  useGetActiveShowSubscriptionQuery,
+  useGetShowDetailsQuery,
+  useRatingShowMutation,
+  useUnFollowShowMutation,
+} from "@/core/services/show/show.service";
+import {
+  useGetCustomerRegistrationInfoFromShowQuery,
+  useSubscribePodcastSubscriptionMutation,
+  useUnsubscribePodcastSubscriptionMutation,
+} from "@/core/services/subscription/subscription.service";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { ShowDetailsUI } from "@/core/types/show";
-import { useState } from "react";
+import {
+  resolveFiles,
+  type FileResolveConfig,
+} from "@/core/utils/fileResolver.util";
+import { setError } from "@/redux/slices/errorSlice/errorSlice";
+import type { RootState } from "@/redux/store";
+import { useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa6";
 import { FaPlay } from "react-icons/fa6";
-import { IoPlay } from "react-icons/io5";
+import { IoHeartOutline, IoHeartSharp } from "react-icons/io5";
+import { LiaDizzy } from "react-icons/lia";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
+import { TbMessageReport } from "react-icons/tb";
+import {
+  useGetShowReportTypesQuery,
+  useReportShowMutation,
+} from "@/core/services/report/report.service";
+import EpisodeCard from "./components/EpisodeCard";
 
-// Mock data theo hình ảnh "Kỳ Ẩn 101"
-export const mockdata: ShowDetailsUI = {
-  Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  Name: "Kỳ Án 101",
-  Description:
-    "Nơi những ám ảnh bùa nhập hồi hồn, những mảnh manh mặt tối của chúng vô nghĩa nổi vập vào dẫn đến sự thật kinh hoàng. Đây là nơi bạn sẽ gặp những kỳ án tóm sự, những vu ấn lạc đầu cảnh đau xa chỉ hóa bao nên gia đình thôi phép đoan vào trạng thật trong ngươi tầm. Tôi không cây không để mức tủ nhực để từa gì nhỏ không lấy lè hạt trong nhật bản",
-  Language: "Vietnamese",
-  ReleaseDate: "2025-11-05T05:59:24.492Z",
-  IsReleased: true,
-  Copyright: "© 2025 SAMURICE",
-  UploadFrequency: "Weekly",
-  RatingCount: 1540,
-  AverageRating: 4.8,
-  ImageUrl: `https://picsum.photos/300/300?random=1`,
-  TrailerAudioFileKey: "/public/audio/1.mp3",
-  TotalFollow: 23000,
-  ListenCount: 198000,
-  EpisodeCount: 4,
-  Podcaster: {
-    Id: 1,
-    FullName: "SAMURICE",
-    Email: "samurice@example.com",
-    ImageUrl: "/public/images/podcaster.jpg",
-  },
-  PodcastCategory: {
-    Id: 1,
-    Name: "Mystery",
-  },
-  PodcastSubCategory: {
-    Id: 2,
-    Name: "True Crime",
-    PodcastCategoryId: 1,
-  },
-  PodcastShowSubscriptionType: {
-    Id: 1,
-    Name: "Free",
-  },
-  PodcastChannel: {
-    Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    Name: "Mystery Channel",
-    ImageUrl: "/public/images/channel.jpg",
-  },
-  Hashtags: [
-    { Id: 1, Name: "#mystery" },
-    { Id: 2, Name: "#truecrime" },
-  ],
-  RatingList: [
-    {
-      Id: "1a2b3c4d-1234-5678-9abc-def012345678",
-      Title: "Âm thanh tuyệt vời!",
-      Content:
-        "Chất lượng âm thanh rất trong và rõ ràng. Tôi thực sự hài lòng với trải nghiệm nghe nhạc lần này.",
-      Rating: 5,
-      Account: {
-        Id: 101,
-        FullName: "Nguyễn Văn A",
-        Email: "nguyenvana@example.com",
-        ImageUrl:
-          "https://randomuser.me/api/portraits/men/32.jpg",
-      },
-      IsDeleted: false,
-      CreatedAt: "2025-11-01T08:30:00Z",
-    },
-    {
-      Id: "2b3c4d5e-2345-6789-abcd-ef0123456789",
-      Title: "Ổn nhưng chưa hoàn hảo",
-      Content:
-        "Mọi thứ đều ổn, nhưng bass hơi yếu và cần được cải thiện thêm.",
-      Rating: 3.5,
-      Account: {
-        Id: 102,
-        FullName: "Trần Thị B",
-        Email: "tranthib@example.com",
-        ImageUrl:
-          "https://randomuser.me/api/portraits/women/45.jpg",
-      },
-      IsDeleted: false,
-      CreatedAt: "2025-10-28T14:15:00Z",
-    },
-    {
-      Id: "3c4d5e6f-3456-789a-bcde-f01234567890",
-      Title: "Không đáng tiền",
-      Content:
-        "Sản phẩm không giống mô tả, chất lượng âm thanh kém và pin yếu.",
-      Rating: 1.5,
-      Account: {
-        Id: 103,
-        FullName: "Lê Văn C",
-        Email: "levanc@example.com",
-        ImageUrl:
-          "https://randomuser.me/api/portraits/men/77.jpg",
-      },
-      IsDeleted: false,
-      CreatedAt: "2025-10-20T10:00:00Z",
-    },
-    {
-      Id: "4d5e6f7g-4567-89ab-cdef-012345678901",
-      Title: "Trải nghiệm tốt",
-      Content:
-        "Dịch vụ chăm sóc khách hàng rất tốt, sản phẩm hoạt động mượt mà.",
-      Rating: 4,
-      Account: {
-        Id: 104,
-        FullName: "Phạm Thảo D",
-        Email: "phamthaod@example.com",
-        ImageUrl:
-          "https://randomuser.me/api/portraits/women/21.jpg",
-      },
-      IsDeleted: false,
-      CreatedAt: "2025-11-03T16:45:00Z",
-    },
-  ],
-  TakenDownReason: "",
-  CreatedAt: "2025-11-05T05:59:24.492Z",
-  UpdatedAt: "2025-11-05T05:59:24.492Z",
-  CurrentStatus: {
-    Id: 1,
-    Name: "Active",
-  },
-  PodcastSubscriptionList: [],
-  EpisodeList: [
-    {
-      Id: "ep-001",
-      Name: "Vụ mất tích trong căn phòng khóa kín",
-      Description: "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
-      ExplicitContent: false,
-      ReleaseDate: "2025-10-10T05:59:24.492Z",
-      EpisodeOrder: 1,
-      IsReleased: true,
-      ImageUrl: `https://picsum.photos/300/300?random=2`,
-      AudioFileKey: "/public/audio/episode1.mp3",
-      AudioFileSize: 24000000,
-      AudioLength: 1800, // 30 min
-      PodcastEpisodeSubscriptionType: {
-        Id: 1,
-        Name: "Free",
-      },
-      PodcastShow: {
-        Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        Name: "Kỳ Ẩn 101",
-        ImageUrl: "/public/images/show-cover.jpg",
-      },
-      Hashtags: [{ Id: 1, Name: "#mystery" }],
-      SeasonNumber: 1,
-      TotalSave: 340,
-      ListenCount: 18500,
-      IsAudioPublishable: true,
-      TakenDownReason: "",
-      CreatedAt: "2025-10-10T05:59:24.492Z",
-      UpdatedAt: "2025-10-15T05:59:24.492Z",
-      CurrentStatus: {
-        Id: 1,
-        Name: "Active",
-      },
-    },
-  ],
-};
-
-
-// Additional episodes for display (extending the mockdata)
-const additionalEpisodes = [
+const ShowFileConfig: FileResolveConfig[] = [
   {
-    Id: "ep-002",
-    Name: "Vụ mất tích trong căn phòng khóa kín",
-    Description: "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
-    ExplicitContent: false,
-    ReleaseDate: "2025-10-17T05:59:24.492Z",
-    EpisodeOrder: 2,
-    IsReleased: true,
-    ImageUrl: `https://picsum.photos/300/300?random=2`,
-    AudioFileKey: "/public/audio/episode2.mp3",
-    AudioFileSize: 24000000,
-    AudioLength: 1800,
-    PodcastEpisodeSubscriptionType: {
-      Id: 1,
-      Name: "Free",
-    },
-    PodcastShow: {
-      Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      Name: "Kỳ Án 101",
-      ImageUrl: "/public/images/show-cover.jpg",
-    },
-    Hashtags: [{ Id: 1, Name: "#mystery" }],
-    SeasonNumber: 1,
-    TotalSave: 280,
-    ListenCount: 16200,
-    IsAudioPublishable: true,
-    TakenDownReason: "",
-    CreatedAt: "2025-10-17T05:59:24.492Z",
-    UpdatedAt: "2025-10-17T05:59:24.492Z",
-    CurrentStatus: {
-      Id: 1,
-      Name: "Active",
-    },
+    path: "Show.MainImageFileKey",
+    output: "Show.ImageUrl",
+    type: "PodcastPublic",
   },
   {
-    Id: "ep-003",
-    Name: "Vụ mất tích trong căn phòng khóa kín",
-    Description: "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
-    ExplicitContent: false,
-    ReleaseDate: "2025-10-24T05:59:24.492Z",
-    EpisodeOrder: 3,
-    IsReleased: true,
-    ImageUrl: "/public/images/episode3.jpg",
-    AudioFileKey: "/public/audio/episode3.mp3",
-    AudioFileSize: 24000000,
-    AudioLength: 1800,
-    PodcastEpisodeSubscriptionType: {
-      Id: 1,
-      Name: "Free",
-    },
-    PodcastShow: {
-      Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      Name: "Kỳ Ẩn 101",
-      ImageUrl: "/public/images/show-cover.jpg",
-    },
-    Hashtags: [{ Id: 1, Name: "#mystery" }],
-    SeasonNumber: 1,
-    TotalSave: 320,
-    ListenCount: 17800,
-    IsAudioPublishable: true,
-    TakenDownReason: "",
-    CreatedAt: "2025-10-24T05:59:24.492Z",
-    UpdatedAt: "2025-10-24T05:59:24.492Z",
-    CurrentStatus: {
-      Id: 1,
-      Name: "Active",
-    },
+    path: "Show.Podcaster.MainImageFileKey",
+    output: "Show.Podcaster.ImageUrl",
+    type: "AccountPublic",
   },
   {
-    Id: "ep-004",
-    Name: "Vụ mất tích trong căn phòng khóa kín",
-    Description: "Một người đàn ông biến mất trong chính căn phòng khóa kín từ bên trong. Tìm kiếm sự thật về vụ án bí ẩn này và thám hiểm những manh mối ẩn giấu sau cánh cửa đóng.",
-    ExplicitContent: false,
-    ReleaseDate: "2025-10-31T05:59:24.492Z",
-    EpisodeOrder: 4,
-    IsReleased: true,
-    ImageUrl: "/public/images/episode4.jpg",
-    AudioFileKey: "/public/audio/episode4.mp3",
-    AudioFileSize: 24000000,
-    AudioLength: 1800,
-    PodcastEpisodeSubscriptionType: {
-      Id: 1,
-      Name: "Free",
-    },
-    PodcastShow: {
-      Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      Name: "Kỳ Ẩn 101",
-      ImageUrl: "/public/images/show-cover.jpg",
-    },
-    Hashtags: [{ Id: 1, Name: "#mystery" }],
-    SeasonNumber: 1,
-    TotalSave: 290,
-    ListenCount: 15600,
-    IsAudioPublishable: true,
-    TakenDownReason: "",
-    CreatedAt: "2025-10-31T05:59:24.492Z",
-    UpdatedAt: "2025-10-31T05:59:24.492Z",
-    CurrentStatus: {
-      Id: 1,
-      Name: "Active",
-    },
+    path: "Show.PodcastChannel.MainImageFileKey",
+    output: "Show.PodcastChannel.ImageUrl",
+    type: "PodcastPublic",
+  },
+  {
+    path: "Show.EpisodeList[].MainImageFileKey",
+    output: "Show.EpisodeList[].ImageUrl",
+    type: "PodcastPublic",
+  },
+  {
+    path: "Show.EpisodeList[].PodcastShow.MainImageFileKey",
+    output: "Show.EpisodeList[].PodcastShow.ImageUrl",
+    type: "PodcastPublic",
   },
 ];
 
-// Helper function to format duration
-const formatDuration = (seconds: number): string => {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes} min`;
+export function renderDescriptionHTML(description: string | null) {
+  if (!description) return "";
+
+  // --- Tách link ---
+  const linkRegex = /\$-\[link\]\$-([\s\S]*?)\$-\[link\]\$-/;
+  const linkMatch = description.match(linkRegex);
+  const link = linkMatch ? linkMatch[1].trim() : null;
+
+  // --- Tách script ---
+  const scriptRegex = /\$-\[script\]\$-([\s\S]*?)\$-\[script\]\$-/;
+  const scriptMatch = description.match(scriptRegex);
+  const scriptContent = scriptMatch ? scriptMatch[1].trim() : null;
+
+  // --- Loại bỏ các phần đặc biệt khỏi phần mô tả còn lại ---
+  let cleanDescription = description
+    .replace(linkRegex, "")
+    .replace(scriptRegex, "")
+    .trim();
+
+  // --- Tạo HTML ---
+  let html = `<p>${cleanDescription}</p>`;
+
+  if (link) {
+    html += `
+    <p><strong>Link</strong>: <a href="${link}" target="_blank" rel="noopener noreferrer">${link}</a></p>`;
+  }
+
+  if (scriptContent) {
+    html += `
+    <p><strong>Script</strong>:</p>
+    <div style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background-color: #f9f9f9;">
+      ${scriptContent}
+    </div>
+    `;
+  }
+
+  return html.trim();
+}
+
+const ACCENT = "#aee339";
+
+const formatVND = (n: number) =>
+  n.toLocaleString("vi-VN", { maximumFractionDigits: 0 });
+
+const cycleSuffix = (cycleName: string) => {
+  const n = (cycleName || "").toLowerCase();
+  if (n.includes("month")) return "/month";
+  if (n.includes("year") || n.includes("annual")) return "/year";
+  return "/cycle";
 };
 
 // Helper function to format time ago
 const getTimeAgo = (dateString: string): string => {
+  console.log("Date String: ", dateString);
   const date = new Date(dateString);
   const now = new Date();
-  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  const diffInDays = Math.floor(
+    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   if (diffInDays === 0) return "Today";
   if (diffInDays === 1) return "1 day ago";
@@ -290,19 +161,497 @@ const getTimeAgo = (dateString: string): string => {
 };
 
 const ShowDetailsPage = () => {
-  const showData = mockdata;
+  // STATES
+  const [show, setShow] = useState<ShowDetailsUI | null>(null);
+  const [isFileResolving, setIsFileResolving] = useState(false);
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(
+    null
+  );
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
-  // Combine the main episode with additional episodes
-  const allEpisodes = [...showData.EpisodeList, ...additionalEpisodes];
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewContent, setReviewContent] = useState("");
+  const [isUserSubscribed, setIsUserSubscribed] = useState(false);
+  const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] =
+    useState(false);
+  const [isCancelConfirmDialogOpen, setIsCancelConfirmDialogOpen] =
+    useState(false);
+  const [currentSubscription, setCurrentSubscription] = useState<any | null>(
+    null
+  );
+  const [isFollowed, setIsFollowed] = useState(false);
+
+  // REPORT
+  const [reportShowDialog, setReportShowDialog] = useState(false);
+  const [isShowAlreadyReported, setIsShowAlreadyReported] = useState(false);
+  const [showSelectedReportTypeId, setShowSelectedReportTypeId] = useState<
+    number | null
+  >(null);
+  const [showReportContent, setShowReportContent] = useState("");
+
+  // HOOKS
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // Mutations
+  const [subscribeShow, { isLoading: isSubscribing }] =
+    useSubscribePodcastSubscriptionMutation();
+  const [unsubscribeShow, { isLoading: isUnsubscribing }] =
+    useUnsubscribePodcastSubscriptionMutation();
+  const [ratingShow, { isLoading: isRating }] = useRatingShowMutation();
+
+  const [reportShow, { isLoading: isReportingShow }] = useReportShowMutation();
+
+  // Queries
+  const {
+    data: showDetailsRaw,
+    isLoading: isShowDetailsLoading,
+    refetch: refetchShowDetails,
+  } = useGetShowDetailsQuery({ PodcastShowId: id! }, { skip: !id });
+
+  const {
+    data: activeSubscriptionRaw,
+    isLoading: isActiveSubscriptionLoading,
+    refetch: refetchActiveSubscription,
+  } = useGetActiveShowSubscriptionQuery({ ShowId: id! }, { skip: !id });
+
+  const {
+    data: customerRegistrationInfo,
+    isLoading: isCustomerRegistrationInfoLoading,
+    refetch: refetchCustomerRegistration,
+  } = useGetCustomerRegistrationInfoFromShowQuery(
+    { PodcastShowId: id! },
+    { skip: !id }
+  );
+
+  const {
+    data: showAvailableReportTypes,
+    isLoading: isShowAvailableReportTypesLoading,
+    refetch: refetchShowReportTypes,
+  } = useGetShowReportTypesQuery({ PodcastShowId: id! }, { skip: !id });
+
+  const [followShow, { isLoading: isFollowing }] = useFollowShowMutation();
+  const [unFollowShow, { isLoading: isUnFollowing }] =
+    useUnFollowShowMutation();
+
+  useEffect(() => {
+    const resolveData = async () => {
+      if (!id) {
+        navigate("/media-player/shows");
+        return;
+      }
+
+      // Wait for API to finish loading
+      if (isShowDetailsLoading) {
+        return;
+      }
+
+      if (!showDetailsRaw) {
+        console.log("Show not found");
+        return;
+      }
+
+      setIsFileResolving(true);
+      setIsFollowed(showDetailsRaw.Show.IsFollowedByCurrentUser);
+      // Check coi user đã subscribe channel này chưa
+      if (
+        customerRegistrationInfo &&
+        customerRegistrationInfo.PodcastSubscriptionRegistration
+      ) {
+        if (
+          customerRegistrationInfo.PodcastSubscriptionRegistration
+            ?.PodcastSubscriptionId ===
+          activeSubscriptionRaw?.PodcastSubscription.Id
+        ) {
+          setIsUserSubscribed(true);
+        } else {
+          setIsUserSubscribed(false);
+        }
+      } else {
+        setIsUserSubscribed(false);
+      }
+
+      // Check nếu user đã report show này chưa
+      if (showAvailableReportTypes) {
+        if (showAvailableReportTypes.ShowReportTypeList.length > 0) {
+          setIsShowAlreadyReported(false);
+        } else {
+          setIsShowAlreadyReported(true);
+        }
+      } else {
+        setIsShowAlreadyReported(true);
+      }
+
+      // Resolve Show Files
+      const { resolvedData: resolvedShow } = await resolveFiles(
+        showDetailsRaw,
+        ShowFileConfig
+      );
+
+      const data = resolvedShow as unknown as { Show: ShowDetailsUI };
+
+      // Process subscription data
+      if (activeSubscriptionRaw && activeSubscriptionRaw.PodcastSubscription) {
+        setCurrentSubscription(activeSubscriptionRaw.PodcastSubscription);
+      } else {
+        setCurrentSubscription(null);
+      }
+
+      setShow(data.Show);
+      console.log("[Show Details]", data.Show);
+
+      setIsFileResolving(false);
+    };
+
+    resolveData();
+  }, [
+    id,
+    showDetailsRaw,
+    isShowDetailsLoading,
+    navigate,
+    activeSubscriptionRaw,
+    customerRegistrationInfo,
+    showAvailableReportTypes,
+    isShowAvailableReportTypesLoading,
+  ]);
+
+  // FUNCTIONS
+  // Calculate rating from ReviewList
+  const calculateRating = () => {
+    if (!show || !show.ReviewList || show.ReviewList.length === 0) {
+      return { averageRating: 0, ratingCount: 0 };
+    }
+    const totalRating = show.ReviewList.reduce(
+      (sum, review) => sum + review.Rating,
+      0
+    );
+    const averageRating = totalRating / show.ReviewList.length;
+    return { averageRating, ratingCount: show.ReviewList.length };
+  };
+
+  const { averageRating, ratingCount } = calculateRating();
+
+  // Check if user already reviewed this show
+  const hasUserReviewed = () => {
+    if (!user || !show || !show.ReviewList) return false;
+    return show.ReviewList.some((review) => review.Account.Id === user.Id);
+  };
+
+  const handleUnsubscribeShow = async () => {
+    if (!user) {
+      dispatch(
+        setError({
+          message: "You need to login first to perform this action!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+    if (
+      !customerRegistrationInfo ||
+      !customerRegistrationInfo.PodcastSubscriptionRegistration
+    ) {
+      dispatch(
+        setError({
+          message:
+            "You need to subscribe this show first to perform this action!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+    if (!activeSubscriptionRaw) {
+      dispatch(
+        setError({
+          message: "This show doesn't have any subscription to be cancelled!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+
+    try {
+      await unsubscribeShow({
+        PodcastSubscriptionRegistrationId:
+          customerRegistrationInfo.PodcastSubscriptionRegistration.Id,
+      }).unwrap();
+
+      // Success thì fetch lại hết
+      await Promise.all([
+        refetchShowDetails(),
+        refetchActiveSubscription(),
+        refetchCustomerRegistration(),
+      ]);
+    } catch (error) {
+      dispatch(
+        setError({
+          message: `Error while cancel subscription: ${error}`,
+          autoClose: 20,
+        })
+      );
+    }
+  };
+
+  const handleSubscribeShow = async (cycleTypeId: number) => {
+    if (!user) {
+      dispatch(
+        setError({
+          message: "You need to login first to perform this action!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+    if (
+      customerRegistrationInfo &&
+      customerRegistrationInfo.PodcastSubscriptionRegistration
+    ) {
+      console.log("Nè: ", customerRegistrationInfo);
+      dispatch(
+        setError({
+          message: "You have already subscribe this Show!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+    if (!activeSubscriptionRaw) {
+      dispatch(
+        setError({
+          message: "This show doesn't have any subscription to be subscribed!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+    try {
+      await subscribeShow({
+        CycleTypeId: cycleTypeId,
+        PodcastSubscriptionId: activeSubscriptionRaw.PodcastSubscription.Id,
+      }).unwrap();
+
+      // Thành công thì fetch lại hết
+      await Promise.all([
+        refetchShowDetails(),
+        refetchActiveSubscription(),
+        refetchCustomerRegistration(),
+      ]);
+
+      setIsSubscriptionDialogOpen(false);
+    } catch (error) {
+      dispatch(
+        setError({
+          message: `Error while subscribing: ${error}`,
+          autoClose: 20,
+        })
+      );
+    }
+  };
+
+  const handleRatingShow = async () => {
+    // Validate user login
+    if (!user) {
+      dispatch(
+        setError({
+          message: "You need to login first to write a review!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+
+    // Validate rating
+    if (rating === 0) {
+      dispatch(
+        setError({
+          message: "Please select a rating from 1 to 5 stars!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+
+    // Validate title
+    if (!reviewTitle.trim()) {
+      dispatch(
+        setError({
+          message: "Please enter a review title!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+
+    // Validate content
+    if (!reviewContent.trim()) {
+      dispatch(
+        setError({
+          message: "Please write your review content!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+
+    // Validate show ID
+    if (!id) {
+      dispatch(
+        setError({
+          message: "Show information is missing!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+
+    try {
+      await ratingShow({
+        PodcastShowId: id,
+        Title: reviewTitle.trim(),
+        Content: reviewContent.trim(),
+        Rating: rating,
+      }).unwrap();
+
+      // Success - refetch show details to update reviews
+      await refetchShowDetails();
+
+      // Close dialog and reset form
+      setIsReviewDialogOpen(false);
+      setRating(0);
+      setReviewTitle("");
+      setReviewContent("");
+      setHover(0);
+
+      // Show success message
+      // dispatch(
+      //   setError({
+      //     message: "Review submitted successfully!",
+      //     autoClose: 5,
+      //   })
+      // );
+    } catch (error) {
+      dispatch(
+        setError({
+          message: `Error while submitting review: ${error}`,
+          autoClose: 20,
+        })
+      );
+    }
+  };
+
+  const handleFollow = async (follow: boolean) => {
+    if (!user) {
+      dispatch(
+        setError({
+          message: "You need to login first to follow a show!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+    try {
+      setIsFollowed(follow);
+      if (follow) {
+        await followShow({ PodcastShowId: id! }).unwrap();
+      } else {
+        await unFollowShow({ PodcastShowId: id! }).unwrap();
+      }
+      // Refetch show details after follow/unfollow
+      await refetchShowDetails();
+    } catch (error) {
+      setIsFollowed(!follow);
+      dispatch(
+        setError({
+          message: `Error while ${
+            follow ? "following" : "unfollowing"
+          } show: ${error}`,
+          autoClose: 20,
+        })
+      );
+    }
+  };
+
+  const handleReportShow = async () => {
+    if (!user) {
+      dispatch(
+        setError({
+          message: "You need to login first to report a show!",
+          autoClose: 10,
+        })
+      );
+      return;
+    }
+    if (!showSelectedReportTypeId || showReportContent.trim() === "" || !id) {
+      return;
+    }
+    try {
+      await reportShow({
+        PodcastShowId: id,
+        ReportTypeId: showSelectedReportTypeId,
+        Content: showReportContent.trim(),
+      }).unwrap();
+      // Success - refetch show details to update reports
+      await refetchShowDetails();
+      await refetchShowReportTypes();
+
+      // Close dialog and reset form
+      setReportShowDialog(false);
+      setShowSelectedReportTypeId(null);
+      setShowReportContent("");
+    } catch (error) {
+      dispatch(
+        setError({
+          message: `Error while reporting show: ${error}`,
+          autoClose: 20,
+        })
+      );
+    }
+  };
+
+  // RENDER
+  if (isShowDetailsLoading || isFileResolving) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-5">
+        <Loading />
+        <p className="font-poppins font-bold text-[#d9d9d9]">Loading Show...</p>
+      </div>
+    );
+  }
+
+  if (!show) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-5">
+        <LiaDizzy size={100} className="text-[#D9D9D9] animate-bounce" />
+        <p className="font-poppins font-bold text-[#d9d9d9]">
+          Show Not Found...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen text-white py-6">
       {/* Back Button */}
-      <button className="px-12 flex items-center text-white  mb-6 cursor-pointer hover:-translate-y-1 ">
-        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      <button
+        onClick={() => navigate(-1)}
+        className="px-12 flex items-center text-white  mb-6 cursor-pointer hover:-translate-y-1 "
+      >
+        <svg
+          className="w-5 h-5 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
         Previous
       </button>
@@ -312,11 +661,11 @@ const ShowDetailsPage = () => {
         {/* Show Image */}
         <div className="w-80 h-80 bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
           <img
-            src={showData.ImageUrl}
-            alt={showData.Name}
+            src={show.ImageUrl}
+            alt={show.Name}
             className="w-full h-full object-cover"
             onError={(e) => {
-              e.currentTarget.style.display = 'none';
+              e.currentTarget.style.display = "none";
               e.currentTarget.parentElement!.innerHTML = `
                 <div class="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
                   <svg class="w-24 h-24 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
@@ -329,207 +678,347 @@ const ShowDetailsPage = () => {
         </div>
 
         {/* Show Info */}
-        <div className="flex-1">
-          <h1 className="text-4xl font-medium text-white mb-4">{showData.Name}</h1>
-          <p className="text-xl text-white mb-1 ">{showData.Podcaster.FullName}</p>
-          <span className="text-sm text-white">⭐ {showData.AverageRating} ({showData.RatingCount}) - {showData.PodcastCategory.Name} - {showData.PodcastSubCategory.Name}</span>
-          <p className="text-gray-300 text-base leading-relaxed my-6 max-w-2xl line-clamp-4">
-            {showData.Description}
-          </p>
+        <div className="flex-1 flex flex-col items-start justify-between">
+          <h1 className="text-4xl font-medium text-white">{show.Name}</h1>
+          <p className="text-xl text-white">{show.Podcaster.FullName}</p>
+          <span className="text-sm text-white">
+            ⭐ {averageRating.toFixed(1)} ({ratingCount}) -{" "}
+            {show.PodcastCategory.Name} - {show.PodcastSubCategory.Name}
+          </span>
+          {/* <p className="text-gray-300 text-base leading-relaxed my-6 max-w-2xl line-clamp-4">
+            {show.Description}
+          </p> */}
+          <div
+            className="text-gray-300 text-base leading-relaxed my-6 max-w-2xl line-clamp-4"
+            dangerouslySetInnerHTML={{
+              __html: renderDescriptionHTML(show.Description),
+            }}
+          />
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between ">
-            <Button className="bg-mystic-green hover:bg-lime-400 transition-all duration-700 ease-out  hover:-translate-y-1 cursor-pointer  text-black font-semibold px-6 py-2 rounded-sm">
-              <FaPlay />
-              Latest Episode
-            </Button>
+          <div className="flex w-full items-center justify-between">
+            {isUserSubscribed ? (
+              <Button className="bg-mystic-green hover:bg-lime-400 transition-all duration-700 ease-out  hover:-translate-y-1 cursor-pointer  text-black font-semibold px-6 py-2 rounded-sm">
+                <FaPlay />
+                Latest Episode
+              </Button>
+            ) : (
+              <Button className="bg-mystic-green hover:bg-lime-400 transition-all duration-700 ease-out  hover:-translate-y-1 cursor-pointer  text-black font-semibold px-6 py-2 rounded-sm">
+                <FaPlay />
+                Trailer Audio
+              </Button>
+            )}
             <div className="flex items-center gap-5">
-              <Button
-                variant="outline"
-                className="bg-mystic-green text-black hover:bg-lime-400 transition-all duration-700 ease-out hover:-translate-y-1 border-none px-4 py-0 rounded-full flex items-center gap-2"
-              >
-                + Follow
-              </Button>
-              <Button className="bg-mystic-green cursor-pointer hover:bg-lime-400   text-black rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
-                ⋯
-              </Button>
+              {isUserSubscribed ? (
+                <LiquidButton
+                  variant="minimal"
+                  onClick={() => setIsCancelConfirmDialogOpen(true)}
+                >
+                  <p>
+                    {isUnsubscribing ? "Processing..." : "Cancel Subscription"}
+                  </p>
+                </LiquidButton>
+              ) : (
+                <LiquidButton
+                  variant="minimal"
+                  onClick={() => setIsSubscriptionDialogOpen(true)}
+                >
+                  <p>Subscription Informations</p>
+                </LiquidButton>
+              )}
             </div>
+          </div>
+
+          <div className="absolute z-20 top-12 right-12 flex items-center justify-center gap-5">
+            {isFollowed ? (
+              <div className="w-10 h-10 p-2 rounded-full bg-white/20 flex items-center justify-center">
+                <IoHeartSharp
+                  size={20}
+                  className="text-mystic-green cursor-pointer hover:scale-110 transition"
+                  onClick={() => handleFollow(false)}
+                />
+              </div>
+            ) : (
+              <div className="w-10 h-10 p-2 rounded-full bg-white/20 flex items-center justify-center">
+                <IoHeartOutline
+                  size={20}
+                  className="text-white cursor-pointer hover:scale-110 transition"
+                  onClick={() => handleFollow(true)}
+                />
+              </div>
+            )}
+
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <div className="w-10 h-10 p-2 rounded-full bg-white/20 flex items-center justify-center">
+                  <MoreHorizontalIcon
+                    size={20}
+                    className="text-white cursor-pointer hover:scale-110 transition"
+                  />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-60 z-[9999] py-4 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-md text-white"
+                align="end"
+                sideOffset={8}
+              >
+                <p className="ml-4 font-bold text-white mb-3">Show Actions</p>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onSelect={() => setReportShowDialog(true)}
+                    disabled={false}
+                    className=" 
+                    mx-2 px-2 py-1 flex items-center justify-start gap-2 rounded-lg cursor-pointer
+                    hover:font-semibold hover:shadow-md hover:bg-black/10 transition-all
+                    outline-none focus:outline-none focus-visible:outline-none
+                    focus:ring-0 focus-visible:ring-0"
+                  >
+                    <TbMessageReport />
+                    <p className="text-sm">Report Show</p>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Dialog open={reportShowDialog} onOpenChange={setReportShowDialog}>
+              <DialogContent className="z-[9999] sm:max-w-[500px] bg-[#0f1115]/95 border-white/10 text-white">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-mystic-green">
+                    Report Show
+                  </DialogTitle>
+                  <DialogDescription className="text-white/70">
+                    We truly appreciate your feedback. <br />
+                    Please select a report type and share the reason so we can
+                    review and improve this show.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-4 gap-10">
+                  {/* Report Type Selection */}
+                  <div className="space-y-2 mb-5 gap-2">
+                    <Label htmlFor="report-type" className="text-white">
+                      Report Type <span className="text-red-500">*</span>
+                    </Label>
+                    {isShowAvailableReportTypesLoading ? (
+                      <div className="h-10 bg-white/5 rounded-md animate-pulse" />
+                    ) : isShowAlreadyReported ? (
+                      <p className="text-sm text-yellow-500">
+                        You have already reported this show
+                      </p>
+                    ) : (
+                      <Select
+                        value={showSelectedReportTypeId?.toString() || ""}
+                        onValueChange={(value) =>
+                          setShowSelectedReportTypeId(Number(value))
+                        }
+                      >
+                        <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                          <SelectValue placeholder="Select a report type" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1a1d24] border-white/10 text-white">
+                          {showAvailableReportTypes?.ShowReportTypeList.map(
+                            (type) => (
+                              <SelectItem
+                                key={type.Id}
+                                value={type.Id.toString()}
+                                className="focus:bg-white/10 focus:text-white"
+                              >
+                                {type.Name}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Report Content */}
+                  <div className="space-y-2 gap-2">
+                    <Label htmlFor="report-content" className="text-white">
+                      Details <span className="text-red-500">*</span>
+                    </Label>
+                    <Textarea
+                      id="report-content"
+                      placeholder="Please provide more details about the issue..."
+                      value={showReportContent}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setShowReportContent(e.target.value)
+                      }
+                      className="min-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none"
+                      disabled={isShowAlreadyReported}
+                    />
+                    <p className="text-xs text-white/50">
+                      Minimum 10 characters
+                    </p>
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <DialogClose asChild>
+                    <Button
+                      variant="outline"
+                      className="bg-transparent border-white/20 text-white hover:bg-white/10"
+                    >
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button
+                    onClick={async () => {
+                      await handleReportShow();
+                      setReportShowDialog(false);
+                    }}
+                    disabled={
+                      !showSelectedReportTypeId ||
+                      showReportContent.trim().length < 10 ||
+                      isReportingShow ||
+                      isShowAlreadyReported
+                    }
+                    className="bg-mystic-green text-black hover:bg-mystic-green/90"
+                  >
+                    {isReportingShow ? "Submitting..." : "Submit Report"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
-      <div>
-        <h2 className="text-2xl font-medium mb-2 mt-16 px-12 ">Trailer</h2>
-        <audio
-          controls
-          controlsList="nodownload noplaybackrate"
-          className="w-full px-12 pt-4"
-        >
-          <source src={showData.TrailerAudioFileKey}type="audio/mpeg" />
-        </audio>
-      </div>
+
       {/* Episodes Section */}
       <div>
         <h2 className="text-2xl font-medium mb-8 mt-12 px-12 ">Episodes</h2>
-
         <div className="space-y-10 px-3">
-          {allEpisodes.map((episode) => (
-            <div key={episode.Id} className="px-12 flex h-28 items-center gap-10 p-2 rounded-lg hover:bg-white/10  transition-colors group cursor-pointer">
-              <div className="relative aspect-square h-full bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 ">
-                <img
-                  src={episode.ImageUrl}
-                  alt={episode.Name}
-                  className="w-full h-full aspect-square object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = `
-                      <div class="w-full h-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                        </svg>
-                      </div>
-                    `;
-                  }}
-                />
-                <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
-                  <div className="p-2  rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green ">
-                    <IoPlay size={25} color="#ffffff" />
-                  </div>
-                </div>
-              </div>
-              <div className="flex-1 flex items-center justify-between gap-20">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#d9d9d9] mb-1">{getTimeAgo(episode.ReleaseDate)}</p>
-                      <h4 className="font-bold text-lg text-white mb-2 leading-tight">
-                        {episode.Name}
-                      </h4>
-                      <p className="text-white font-light text-sm line-clamp-2 leading-relaxed">
-                        {episode.Description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-white font-bold text-sm">
-                  {formatDuration(episode.AudioLength)}
-                </p>
-                <button className="text-[#d9d9d9] text-mystic-green cursor-pointer">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+          {show.EpisodeList.map((episode) => (
+            <EpisodeCard key={episode.Id} episode={episode} />
           ))}
         </div>
       </div>
       {/* Ratings & Reviews Section */}
-      <div className="px-12">
+      <div className="px-12 w-full">
         <div className="flex items-center gap-4 mb-8 mt-16">
           <h2 className="text-2xl font-medium">Ratings & Reviews</h2>
-          <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
-            <DialogTrigger asChild>
-              <button className="cursor-pointer w-8 h-8 rounded-full bg-mystic-green hover:bg-lime-400 flex items-center justify-center transition-all duration-300 hover:scale-110">
-                <FaPlus className="text-black" size={16} />
-              </button>
-            </DialogTrigger>
-            <DialogContent className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-semibold text-white mb-2">Write a Review</DialogTitle>
-              </DialogHeader>
+          {!hasUserReviewed() && (
+            <Dialog
+              open={isReviewDialogOpen}
+              onOpenChange={setIsReviewDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <button className="cursor-pointer w-8 h-8 rounded-full bg-mystic-green hover:bg-lime-400 flex items-center justify-center transition-all duration-300 hover:scale-110">
+                  <FaPlus className="text-black" size={16} />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="z-[9999] backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-semibold text-white mb-2">
+                    Write a Review
+                  </DialogTitle>
+                </DialogHeader>
 
-              {/* Rating & Review Form */}
-              <div className="mt-4">
-                <div className="mb-4">
-                  <label className="block text-white text-sm font-medium mb-3">Your Rating</label>
-                  <div className="flex gap-1">
-                    {Array.from({ length: 5 }).map((_, i) => {
-                      const index = i + 1;
-                      return (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => setRating(index)}
-                          onMouseEnter={() => setHover(index)}
-                          onMouseLeave={() => setHover(0)}
-                          className="w-10 h-10 transition-transform duration-200 hover:scale-110"
-                        >
-                          <svg
-                            className={`w-full h-full cursor-pointer transition-colors duration-200 ${index <= (hover || rating)
-                              ? "text-yellow-400"
-                              : "text-gray-400"
-                              }`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
+                {/* Rating & Review Form */}
+                <div className="mt-4 w-full ">
+                  <div className="mb-4">
+                    <label className="block text-white text-sm font-medium mb-3">
+                      Your Rating
+                    </label>
+                    <div className="flex gap-1">
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const index = i + 1;
+                        return (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => setRating(index)}
+                            onMouseEnter={() => setHover(index)}
+                            onMouseLeave={() => setHover(0)}
+                            className="w-10 h-10 transition-transform duration-200 hover:scale-110"
                           >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        </button>
-                      );
-                    })}
+                            <svg
+                              className={`w-full h-full cursor-pointer transition-colors duration-200 ${
+                                index <= (hover || rating)
+                                  ? "text-yellow-400"
+                                  : "text-gray-400"
+                              }`}
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
 
-                {/* Title Input */}
-                <div className="mb-4">
-                  <label className="block text-white text-sm font-medium mb-2">Review Title</label>
-                  <input
-                    type="text"
-                    placeholder="Give your review a title..."
-                    className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-mystic-green/50 focus:border-mystic-green/50 transition-all duration-300"
-                  />
-                </div>
+                  {/* Title Input */}
+                  <div className="mb-4">
+                    <label className="block text-white text-sm font-medium mb-2">
+                      Review Title
+                    </label>
+                    <input
+                      type="text"
+                      value={reviewTitle}
+                      onChange={(e) => setReviewTitle(e.target.value)}
+                      placeholder="Give your review a title..."
+                      className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-mystic-green/50 focus:border-mystic-green/50 transition-all duration-300"
+                    />
+                  </div>
 
-                {/* Content Textarea */}
-                <div className="mb-6">
-                  <label className="block text-white text-sm font-medium mb-2">Review Content</label>
-                  <textarea
-                    rows={5}
-                    placeholder="Share your thoughts about this podcast..."
-                    className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-mystic-green/50 focus:border-mystic-green/50 transition-all duration-300 resize-none"
-                  />
-                </div>
+                  {/* Content Textarea */}
+                  <div className="mb-6">
+                    <label className="block text-white text-sm font-medium mb-2">
+                      Review Content
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={reviewContent}
+                      onChange={(e) => setReviewContent(e.target.value)}
+                      placeholder="Share your thoughts about this podcast..."
+                      className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-mystic-green/50 focus:border-mystic-green/50 transition-all duration-300 resize-none"
+                    />
+                  </div>
 
-                {/* Submit Button */}
-                <Button
-                  onClick={() => setIsReviewDialogOpen(false)}
-                  className="w-full bg-mystic-green hover:bg-lime-400 text-black font-semibold py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-mystic-green/25"
-                >
-                  Submit Review
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+                  {/* Submit Button */}
+                  <Button
+                    onClick={handleRatingShow}
+                    disabled={isRating}
+                    className="w-full bg-mystic-green hover:bg-lime-400 text-black font-semibold py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-mystic-green/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRating ? "Submitting..." : "Submit Review"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
-        <div className="flex gap-12 mb-14">
+        <div className="flex gap-12 mb-14 w-full items-center">
           {/* Left side - Overall Rating */}
-          <div className="flex gap-12 items-center">
+          <div className="gap-12 w-full flex items-center">
             <div className="">
-              <p className="text-6xl font-bold text-mystic-green mb-2">
-                {showData.AverageRating}
+              <p className="text-6xl font-bold text-mystic-green">
+                {averageRating.toFixed(1)}
               </p>
               <p className="text-white text-center text-lg  mb-1">Out of 5</p>
-
             </div>
-
 
             {/* Rating bars */}
             <div className="space-y-2 w-100">
               {[5, 4, 3, 2, 1].map((rating) => {
-                // Calculate percentage for each rating
-                const count = showData.RatingList.filter(r => Math.floor(r.Rating) === rating).length;
-                const percentage = showData.RatingList.length > 0 ? (count / showData.RatingList.length) * 100 : 0;
+                const count = show.ReviewList.filter(
+                  (r) => Math.floor(r.Rating) === rating
+                ).length;
+                const percentage =
+                  show.ReviewList.length > 0
+                    ? (count / show.ReviewList.length) * 100
+                    : 0;
 
                 return (
-                  <div key={rating} className="flex items-center gap-3">
-                    {/* Stars */}
+                  <div key={rating} className="flex items-center gap-3 h-[1em]">
                     <div className="flex min-w-20">
                       {Array.from({ length: rating }).map((_, i) => (
                         <svg
                           key={i}
-                          className="w-4 h-4 text-white"
+                          className="w-4 h-4 text-mystic-green"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -538,23 +1027,23 @@ const ShowDetailsPage = () => {
                       ))}
                     </div>
 
-                    {/* Progress bar */}
-                    <div className="flex-1 bg-[#d9d9d9]  h-1">
+                    <div className="flex-1 bg-gray-300/20 h-2 rounded-full overflow-hidden">
                       <div
-                        className="bg-mystic-green h-1  transition-all duration-300"
+                        className="bg-white h-full transition-all duration-300"
                         style={{ width: `${percentage}%` }}
                       ></div>
                     </div>
-                  </div>
 
+                    <span className="text-white text-sm min-w-[3rem] text-right">
+                      {count}
+                    </span>
+                  </div>
                 );
               })}
-              <div className="text-white text-xs font-light text-right ">
-                {showData.RatingCount.toLocaleString()} ratings
+              <div className="text-white text-xs font-light text-right mt-4">
+                {ratingCount.toLocaleString()} ratings
               </div>
             </div>
-
-
           </div>
         </div>
         <Carousel
@@ -565,30 +1054,34 @@ const ShowDetailsPage = () => {
           className="w-full"
         >
           <CarouselContent className="-ml-4">
-            {showData.RatingList.map((review) => (
+            {show.ReviewList.map((review) => (
               <CarouselItem key={review.Id} className="pl-4 basis-1/3">
-                <div className=" rounded-2xl p-6 h-full " style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
-                  {/* Header with user info and date */}
+                <div
+                  className=" rounded-2xl p-6 h-full "
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                >
                   <div className="flex justify-between items-start mb-2">
                     <div className="text-xs text-gray-200">
-                      {getTimeAgo(review.CreatedAt)}
+                      {getTimeAgo(review.UpdatedAt)}
                     </div>
                     <div className="text-xs text-gray-200">
                       {review.Account.FullName}
                     </div>
                   </div>
 
-                  {/* Title */}
                   <h4 className="font-semibold text-white text-base mb-3">
                     {review.Title}
                   </h4>
 
-                  {/* Rating stars */}
                   <div className="flex mb-4">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <svg
                         key={i}
-                        className={`w-4 h-4 ${i < Math.floor(review.Rating) ? 'text-yellow-400' : 'text-gray-400'}`}
+                        className={`w-4 h-4 ${
+                          i < Math.floor(review.Rating)
+                            ? "text-yellow-400"
+                            : "text-gray-400"
+                        }`}
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -597,7 +1090,6 @@ const ShowDetailsPage = () => {
                     ))}
                   </div>
 
-                  {/* Review content */}
                   <p className="text-gray-100 text-sm leading-relaxed">
                     {review.Content}
                   </p>
@@ -617,45 +1109,249 @@ const ShowDetailsPage = () => {
           {/* Creator */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Creator</h3>
-            <p className="text-white text-base">{showData.Podcaster.FullName}</p>
+            <p className="text-white text-base">{show.Podcaster.FullName}</p>
           </div>
 
           {/* Seasons */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Seasons</h3>
-            <p className="text-white text-base">{showData.EpisodeList[0]?.SeasonNumber || 1}</p>
+            <p className="text-white text-base">
+              {show.EpisodeList[0]?.SeasonNumber || 1}
+            </p>
           </div>
-
 
           {/* Rating */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Upload Frequency</h3>
-            <p className="text-white text-base">{showData.UploadFrequency}</p>
+            <p className="text-white text-base">{show.UploadFrequency}</p>
           </div>
 
           {/* Copyright */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Copyright</h3>
-            <p className="text-white text-base">{showData.Copyright}</p>
+            <p className="text-white text-base">{show.Copyright}</p>
           </div>
 
           {/* Show Website */}
 
-
           {/* Provider */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Release Date</h3>
-            <p className="text-white text-base">{showData.ReleaseDate}</p>
+            <p className="text-white text-base">{show.ReleaseDate}</p>
           </div>
         </div>
 
         {/* Full Description */}
         <div className="mt-8 pt-8 border-t border-white/10">
-          <p className="text-white text-base leading-relaxed">
-            {showData.Description}
-          </p>
+          <div
+            className="text-white text-base leading-relaxed"
+            dangerouslySetInnerHTML={{
+              __html: renderDescriptionHTML(show.Description),
+            }}
+          />
         </div>
       </div>
+
+      {/* Cancel Subscription Confirmation Dialog */}
+      {isUserSubscribed && currentSubscription && (
+        <Dialog
+          open={isCancelConfirmDialogOpen}
+          onOpenChange={setIsCancelConfirmDialogOpen}
+        >
+          <DialogContent
+            className="w-[450px] px-8 py-8 border border-white/10 bg-[#0f1115]/50 text-white
+                 backdrop-blur-xl shadow-2xl rounded-2xl"
+          >
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-white">
+                Cancel Subscription?
+              </DialogTitle>
+              <DialogDescription className="text-white/70 mt-4 space-y-3">
+                {currentSubscription.PodcastChannelId &&
+                !currentSubscription.PodcastShowId ? (
+                  <>
+                    <p className="font-semibold text-mystic-green">
+                      ⚠️ Important Notice
+                    </p>
+                    <p>
+                      This subscription belongs to the entire{" "}
+                      <span className="font-bold text-mystic-green">
+                        Channel
+                      </span>
+                      . Canceling this subscription will cancel your access to
+                      all shows in this channel, not just this show.
+                    </p>
+                  </>
+                ) : (
+                  <p>
+                    Are you sure you want to cancel your subscription to this
+                    show? You will lose access to all premium content.
+                  </p>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="mt-6 flex gap-3 flex-row justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setIsCancelConfirmDialogOpen(false)}
+                className="px-6 py-2 border-white bg-white text-black hover:bg-white/10"
+              >
+                Keep Subscription
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsCancelConfirmDialogOpen(false);
+                  handleUnsubscribeShow();
+                }}
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Yes, Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Subscription Dialog */}
+      {!isUserSubscribed && currentSubscription && (
+        <Dialog
+          open={isSubscriptionDialogOpen}
+          onOpenChange={setIsSubscriptionDialogOpen}
+        >
+          <DialogContent
+            className="w-[500px] px-8 py-12 border border-white/10 bg-[#0f1115]/50 text-white
+                 backdrop-blur-xl shadow-2xl rounded-2xl"
+          >
+            <DialogHeader>
+              <DialogTitle className="text-3xl text-mystic-green font-bold tracking-tight">
+                {currentSubscription?.Name}
+              </DialogTitle>
+              <DialogDescription className="text-white/70 mt-2">
+                <div className="flex flex-col items-start">
+                  {currentSubscription.PodcastChannelId &&
+                    !currentSubscription.PodcastShowId && (
+                      <p>
+                        This Subscription is belongs to the{" "}
+                        <span className="font-bold text-mystic-green">
+                          Channel
+                        </span>
+                      </p>
+                    )}
+                  {!currentSubscription.PodcastChannelId &&
+                    currentSubscription.PodcastShowId && (
+                      <p>
+                        This Subscription is belongs to this own{" "}
+                        <span className="font-bold text-mystic-green">
+                          Show
+                        </span>
+                      </p>
+                    )}
+                  <p>{currentSubscription?.Description}</p>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+
+            <Tabs
+              defaultValue={
+                currentSubscription.PodcastSubscriptionCycleTypePriceList[0]
+                  .SubscriptionCycleType.Name
+              }
+              className="w-full mt-4"
+            >
+              <TabsList
+                className="w-full transition-all duration-200 ease-out flex items-center md:inline-flex gap-2 bg-white/5 p-1 rounded-full
+                     ring-1 ring-white/10"
+              >
+                {currentSubscription.PodcastSubscriptionCycleTypePriceList.map(
+                  (d: any) => (
+                    <TabsTrigger
+                      key={d.SubscriptionCycleType.Id}
+                      value={d.SubscriptionCycleType.Name}
+                      className="data-[state=active]:bg-[var(--accent)]
+                         data-[state=active]:text-black data-[state=active]:shadow
+                         rounded-full px-5 py-2 text-sm font-semibold
+                         text-white
+                         hover:bg-white/10 transition"
+                      style={{ ["--accent" as any]: ACCENT }}
+                    >
+                      {d.SubscriptionCycleType.Name}
+                    </TabsTrigger>
+                  )
+                )}
+              </TabsList>
+
+              {currentSubscription.PodcastSubscriptionCycleTypePriceList.map(
+                (d: any) => (
+                  <TabsContent
+                    key={d.SubscriptionCycleType.Id}
+                    value={d.SubscriptionCycleType.Name}
+                    className="mt-6 space-y-6"
+                  >
+                    <div
+                      className="rounded-2xl p-6 md:p-8 border border-white/10
+                         bg-gradient-to-b from-white/5 to-transparent"
+                    >
+                      <div className="flex items-end gap-3">
+                        <span className="text-4xl md:text-5xl text-mystic-green font-extrabold leading-none">
+                          {formatVND(d.Price)}đ
+                        </span>
+                        <span className="text-white/60 mb-1">
+                          {cycleSuffix(d.SubscriptionCycleType.Name)}
+                        </span>
+                      </div>
+
+                      {currentSubscription.PodcastSubscriptionBenefitMappingList
+                        .length > 0 && (
+                        <ul className="mt-5 flex flex-col gap-3">
+                          {currentSubscription.PodcastSubscriptionBenefitMappingList.map(
+                            (b: any) => (
+                              <li
+                                key={
+                                  b.PodcastSubscriptionId -
+                                  b.PodcastSubscriptionBenefit.Id
+                                }
+                                className="flex items-start gap-3"
+                              >
+                                <span
+                                  className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full
+                                   ring-1 ring-white/15"
+                                  style={{
+                                    backgroundColor: "rgba(174,227,57,0.15)",
+                                    color: "#cde97a",
+                                  }}
+                                >
+                                  <Check size={14} />
+                                </span>
+                                <span className="text-sm text-white/90">
+                                  {b.PodcastSubscriptionBenefit.Name}
+                                </span>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      )}
+
+                      <DialogFooter className="mt-8 flex items-center justify-center">
+                        <Button
+                          onClick={() =>
+                            handleSubscribeShow(d.SubscriptionCycleType.Id)
+                          }
+                          className="w-full mx-auto md:w-auto font-bold rounded-xl px-6 py-6
+                             text-black hover:brightness-95"
+                          style={{ backgroundColor: ACCENT }}
+                        >
+                          Subscribe now for only {formatVND(d.Price)}đ
+                          {cycleSuffix(d.SubscriptionCycleType.Name)}
+                        </Button>
+                      </DialogFooter>
+                    </div>
+                  </TabsContent>
+                )
+              )}
+            </Tabs>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

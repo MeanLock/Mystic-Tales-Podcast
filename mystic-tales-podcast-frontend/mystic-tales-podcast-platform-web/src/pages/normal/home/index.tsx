@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button";
+// @ts-nocheck
+
 import BannerCard from "./components/BannerCard";
 
 import { MdOutlineTune } from "react-icons/md";

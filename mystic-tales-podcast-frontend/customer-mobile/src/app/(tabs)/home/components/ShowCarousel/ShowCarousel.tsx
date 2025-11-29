@@ -7,6 +7,7 @@ import ShowCardVariant1 from "./ShowCardVariant1";
 import ShowCardVariant2 from "./ShowCardVariant2";
 import { Text } from "@/src/components/ui/Text";
 import { MaterialIcons } from "@expo/vector-icons";
+import { Show } from "@/src/core/types/show.type";
 
 export type ShowCardNormal = {
   Id: number;
@@ -22,31 +23,17 @@ export type ShowCardTop = {
 export interface ShowCarouselProps {
   variant: "normal" | "top";
   title: React.ReactNode;
-  shows: ShowCardNormal[] | ShowCardTop[];
+  shows: Show[];
 }
 
 const ITEM_SPACING = 14;
 
 const ShowCarousel = ({ variant, title, shows }: ShowCarouselProps) => {
-  useEffect(() => {
-    if (variant === "top") {
-      shows.sort((a, b) => (a as ShowCardTop).Top - (b as ShowCardTop).Top);
-    }
-  }, [variant, shows]);
-
   // 🔹 renderItem tuỳ theo variant
-  const renderItem = ({ item }: { item: ShowCardNormal | ShowCardTop }) => {
-    if (variant === "top") {
-      return (
-        <ShowCardVariant2
-          key={(item as ShowCardTop).Id}
-          show={item as ShowCardTop}
-        />
-      );
-    }
-    return <ShowCardVariant1 key={item.Id} show={item as ShowCardNormal} />;
+  const renderItem = ({ item }: { item: Show }) => {
+    return <ShowCardVariant1 key={item.Id} show={item} />;
   };
-
+  console.log("ShowCarousel shows:", shows);
   return (
     <View className="gap-5 mb-10">
       {/* Title */}

@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-
+import { GoogleOAuthProvider } from "@react-oauth/google";
 // Redux
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
@@ -15,7 +15,6 @@ import AuthLayout from "./layouts/auth/index.tsx";
 import LoginPage from "./pages/auth/login/index.tsx";
 import RegisterPage from "./pages/auth/register/index.tsx";
 import ForgotPasswordPage from "./pages/auth/forgot-password/index.tsx";
-import TestAPILoginPage from "./pages/auth/testAPILogin/index.tsx";
 import { store, persistor } from "./redux/store.ts";
 import MediaPlayerLayout from "./layouts/mediaPlayer/index.tsx";
 import DiscoveryPage from "./pages/mediaPlayer/discovery/index.tsx";
@@ -39,6 +38,10 @@ import ManagementSubscriptionsPage from "./pages/mediaPlayer/management/transact
 import ProfilePage from "./pages/mediaPlayer/management/profile/index.tsx";
 import ChannelDetailsPage from "./pages/mediaPlayer/channels/details/index.tsx";
 import ShowDetailsPage from "./pages/mediaPlayer/shows/details/index.tsx";
+import CreateBookingPage from "./pages/mediaPlayer/management/booking/create/index.tsx";
+import BecomePodcaster from "./pages/mediaPlayer/management/profile/becomePodcaster/index.tsx";
+import PaymentResultPage from "./pages/mediaPlayer/management/transaction/payment-result/index.tsx";
+import ErrorModal from "./components/ErrorModal.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -113,80 +116,97 @@ import ShowDetailsPage from "./pages/mediaPlayer/shows/details/index.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <PlayerCore />
-        <BrowserRouter>
-          <Routes>
-            {/* 1️⃣ NORMAL LAYOUT */}
-            <Route element={<NormalLayout />}>
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="/home" element={<HomePage />} />
-              <Route path="/faqs" element={<FAQPage />} />
-              <Route path="/about" element={<AboutPage />} />
-            </Route>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <PlayerCore />
+          <ErrorModal />
+          <BrowserRouter>
+            <Routes>
+              {/* 1️⃣ NORMAL LAYOUT */}
+              <Route element={<NormalLayout />}>
+                <Route path="/" element={<Navigate to="/home" replace />} />
+                <Route path="/home" element={<HomePage />} />
+                <Route path="/faqs" element={<FAQPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/become-podcaster" element={<BecomePodcaster />} />
+              </Route>
 
-            {/* 2️⃣ AUTH LAYOUT */}
-            <Route path="/auth" element={<AuthLayout />}>
-              <Route path="login" element={<LoginPage />} />
-              <Route path="register" element={<RegisterPage />} />
-              <Route
-                path="forgot-password/step-:step"
-                element={<ForgotPasswordPage />}
-              />
-              <Route path="test-login" element={<TestAPILoginPage />} />
-            </Route>
+              {/* 2️⃣ AUTH LAYOUT */}
+              <Route path="/auth" element={<AuthLayout />}>
+                <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} />
+                <Route
+                  path="forgot-password"
+                  element={<ForgotPasswordPage />}
+                />
+              </Route>
 
-            <Route path="/media-player" element={<MediaPlayerLayout />}>
-              {/* Normal */}
-              <Route path="discovery" element={<DiscoveryPage />} />
-              <Route path="trending" element={<TrendingPage />} />
-              <Route path="categories" element={<CategoryPage />} />
-              <Route path="categories/:id" element={<CategoryDetailsPage />} />
-              <Route path="search" element={<SearchPage />} />
-              <Route path="podcasters" element={<PodcastersPage />} />
-              <Route path="podcasters/:id" element={<PodcasterDetailsPage />} />
-              <Route path="channels/:id" element={<ChannelDetailsPage />} />
-              <Route path="shows/:id" element={<ShowDetailsPage />} />
-              {/* Library */}
-              <Route path="library/recent" element={<RecentPage />} />
-              <Route path="library/saved" element={<SavedPage />} />
-              <Route
-                path="library/subscribed-channels"
-                element={<SubscribedChannelsPage />}
-              />
-              <Route
-                path="library/subscribed-shows"
-                element={<SubscribedShowsPage />}
-              />
-              <Route
-                path="library/followed-podcasters"
-                element={<FollowedPodcastersPage />}
-              />
+              <Route path="/media-player" element={<MediaPlayerLayout />}>
+                {/* Normal */}
+                <Route path="discovery" element={<DiscoveryPage />} />
+                <Route path="trending" element={<TrendingPage />} />
+                <Route path="categories" element={<CategoryPage />} />
+                <Route
+                  path="categories/:id"
+                  element={<CategoryDetailsPage />}
+                />
+                <Route path="search" element={<SearchPage />} />
+                <Route path="podcasters" element={<PodcastersPage />} />
+                <Route
+                  path="podcasters/:id"
+                  element={<PodcasterDetailsPage />}
+                />
+                <Route path="channels/:id" element={<ChannelDetailsPage />} />
+                <Route path="shows/:id" element={<ShowDetailsPage />} />
+                {/* Library */}
+                <Route path="library/listening-history" element={<RecentPage />} />
+                <Route path="library/saved" element={<SavedPage />} />
+                <Route
+                  path="library/subscribed-channels"
+                  element={<SubscribedChannelsPage />}
+                />
+                <Route
+                  path="library/subscribed-shows"
+                  element={<SubscribedShowsPage />}
+                />
+                <Route
+                  path="library/followed-podcasters"
+                  element={<FollowedPodcastersPage />}
+                />
 
-              {/* Management */}
-              <Route path="management/bookings" element={<BookingsPage />} />
-              <Route path="management/profile" element={<ProfilePage />} />
-              <Route
-                path="management/bookings/:id"
-                element={<BookingDetailsPage />}
-              />
-              <Route
-                path="management/transactions/top-up"
-                element={<TopUpPage />}
-              />
-              <Route
-                path="management/transactions/withdraw"
-                element={<WithDrawPage />}
-              />
-              <Route
-                path="management/transactions/subscriptions"
-                element={<ManagementSubscriptionsPage />}
-              />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </PersistGate>
-    </Provider>
+                {/* Management */}
+                <Route path="management/bookings" element={<BookingsPage />} />
+                <Route
+                  path="management/bookings/create"
+                  element={<CreateBookingPage />}
+                />
+                <Route path="management/profile" element={<ProfilePage />} />
+                <Route
+                  path="management/bookings/:id"
+                  element={<BookingDetailsPage />}
+                />
+                <Route
+                  path="management/transactions/top-up"
+                  element={<TopUpPage />}
+                />
+                <Route
+                  path="management/transactions/payment-result"
+                  element={<PaymentResultPage />}
+                />
+                <Route
+                  path="management/transactions/withdraw"
+                  element={<WithDrawPage />}
+                />
+                <Route
+                  path="management/transactions/subscriptions"
+                  element={<ManagementSubscriptionsPage />}
+                />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </PersistGate>
+      </Provider>
+    </GoogleOAuthProvider>
   </StrictMode>
 );

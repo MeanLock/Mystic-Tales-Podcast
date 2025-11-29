@@ -4,33 +4,11 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Image, Pressable, StyleSheet } from "react-native";
 import { useMemo } from "react";
 import { useRouter } from "expo-router";
-
-type Episode = {
-  Id: string;
-  Name: string;
-  Description: string;
-  ExplicitContent: boolean;
-  ReleaseDate: string;
-  IsReleased: boolean;
-  ImageUrl: string;
-  AudioFileKey: string;
-  AudioFileSize: number;
-  AudioLength: number;
-  AudioFingerprint: string;
-  PodcastEpisodeSubscriptionType: { Id: number; Name: string };
-  PodcastShowId: string;
-  SeasonNumber: number;
-  TotalSave: number;
-  ListenCount: number;
-  IsAudioPublishable: boolean;
-  TakenDownReason: string | null;
-  DeletedAt: string | null;
-  CreatedAt: string;
-  UpdatedAt: string;
-};
+import { EpisodeFromShow } from "@/src/core/types/episode.type";
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 
 interface EpisodeListProps {
-  episodes: Episode[];
+  episodes: EpisodeFromShow[];
 }
 
 // Format date based on time difference
@@ -103,7 +81,7 @@ const formatAudioLength = (seconds: number): string => {
 };
 
 // Episode Component
-const EpisodeComponent = ({ episode }: { episode: Episode }) => {
+const EpisodeComponent = ({ episode }: { episode: EpisodeFromShow }) => {
   const router = useRouter();
 
   return (
@@ -133,9 +111,10 @@ const EpisodeComponent = ({ episode }: { episode: Episode }) => {
       </View>
       <View className="flex-1  min-w-[51px] items-end justify-between mt-1">
         <View>
-          <Image
-            source={{ uri: episode.ImageUrl }}
-            className="w-[80px] h-[80px]"
+          <AutoResolvingImage
+            FileKey={episode.MainImageFileKey}
+            type="PodcastPublicSource"
+            style={{ width: 80, height: 80 }}
           />
         </View>
         <View>

@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { PodcasterUI } from "@/core/types/podcaster";
 import type { TopPodcasterUI } from "..";
 import { MdPeopleAlt } from "react-icons/md";

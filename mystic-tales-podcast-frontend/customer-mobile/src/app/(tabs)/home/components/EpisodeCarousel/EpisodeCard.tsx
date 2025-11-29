@@ -44,13 +44,13 @@ const EpisodeCard = ({
       >
         <View className="flex flex-col gap-1 h-[60px] w-[220px]">
           <Text numberOfLines={1} className="text-white text-[10px] font-bold">
-            {episode.Title}
+            {episode.Name}
           </Text>
           <Text numberOfLines={3} className="text-white text-[7px]">
             {episode.Description}
           </Text>
           <View className="flex-1 flex flex-row items-end gap-2">
-            {episode.ExplicitContent && <ExplicitContentTag />}
+            {/* {episode.ExplicitContent && <ExplicitContentTag />} */}
             <AudioLengthTag length={episode.AudioLength} />
           </View>
         </View>

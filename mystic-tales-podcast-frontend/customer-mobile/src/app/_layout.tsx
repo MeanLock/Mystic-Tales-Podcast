@@ -42,6 +42,8 @@ import MediaPlayerModal, {
   MediaPlayerModalRef,
 } from "./mediaPlayer/mediaPlayerModal";
 import { Audio } from "expo-av";
+import { GlobalAlert } from "../components/alert/GlobalAlert";
+import UpdateAccountMeHook from "./UpdateAccountMeHook";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -83,25 +85,43 @@ function useIsTabScreen() {
 }
 
 function RootLayoutNav() {
-  // Layout Hooks
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <PersistGate
+          loading={null}
+          persistor={persistor}
+          onBeforeLift={() => {
+            console.log("🔄 PersistGate: Before lift");
+          }}
+        >
+          <SetUp />
+          <UpdateAccountMeHook />
+          <GlobalAlert />
+          <ThemeProvider
+            value={useColorScheme() === "dark" ? DarkTheme : DefaultTheme}
+          >
+            <AppBody />
+          </ThemeProvider>
+        </PersistGate>
+      </Provider>
+    </GestureHandlerRootView>
+  );
+}
+
+function AppBody() {
+  // Layout Hooks (inside Provider so we can use useSelector)
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const TAB_BAR_HEIGHT = 60; // Fixed height cho tab bar
-
-  // Detect xem có đang ở tab screen không
   const isTabScreen = useIsTabScreen();
+  const TAB_BAR_HEIGHT = 60;
 
-  // Animated value cho bottom position
   const bottomAnim = useRef(
     new Animated.Value(TAB_BAR_HEIGHT + insets.bottom)
   ).current;
 
-  // Tính bottom spacing động
   const targetBottom = useMemo(() => {
-    if (isTabScreen) {
-      return TAB_BAR_HEIGHT + insets.bottom;
-    }
-    return insets.bottom; // Chỉ cần thêm padding nhẹ khi không có tab bar
+    if (isTabScreen) return TAB_BAR_HEIGHT + insets.bottom;
+    return insets.bottom;
   }, [isTabScreen, insets.bottom]);
 
   useEffect(() => {
@@ -118,9 +138,9 @@ function RootLayoutNav() {
   useEffect(() => {
     Animated.spring(bottomAnim, {
       toValue: targetBottom,
-      useNativeDriver: false, // bottom không support native driver
-      tension: 80, // Độ căng của spring (càng cao càng nhanh)
-      friction: 10, // Độ ma sát (càng cao càng ít bounce)
+      useNativeDriver: false,
+      tension: 80,
+      friction: 10,
     }).start();
   }, [targetBottom, bottomAnim]);
 
@@ -128,104 +148,76 @@ function RootLayoutNav() {
     bootstrapAuth(store.dispatch);
   }, []);
 
-  // Bottom Sheet Modal
-  // states
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isButtonVisible, setIsButtonVisible] = useState(true);
-
-  // ref
+  // Bottom Sheet Modal state
+  const [isButtonVisibleLocal, setIsButtonVisibleLocal] = useState(true);
   const bottomSheetModalRef = useRef<MediaPlayerModalRef>(null);
 
-  // callbacks
   const handlePresentModalPress = useCallback(() => {
-    setIsButtonVisible(false);
+    setIsButtonVisibleLocal(false);
     bottomSheetModalRef.current?.present();
-    // Dùng setTimeout để đảm bảo modal đã mount xong
-    setTimeout(() => {
-      bottomSheetModalRef.current?.snapToIndex(0); // Snap to 100%
-    }, 100);
+    setTimeout(() => bottomSheetModalRef.current?.snapToIndex(0), 100);
   }, []);
 
   const handleSheetChanges = useCallback((index: number) => {
-    if (index === -1) {
-      setIsButtonVisible(true);
-      // Modal đã đóng
-    } else if (index === 0) {
-      setIsButtonVisible(false);
-      // Modal đang mở full screen
-    }
+    if (index === -1) setIsButtonVisibleLocal(true);
+    else if (index === 0) setIsButtonVisibleLocal(false);
     console.log("handleSheetChanges", index);
   }, []);
 
+  // derive from Redux: hide button when player stopped
+  const playStatus = useSelector(
+    (s: RootState) => s.player.playMode.playStatus
+  );
+  const isPlayerStopped = playStatus === "stop";
+
+  const isButtonVisible = isButtonVisibleLocal && !isPlayerStopped;
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Provider store={store}>
-        <PersistGate
-          loading={null}
-          persistor={persistor}
-          onBeforeLift={() => {
-            console.log("🔄 PersistGate: Before lift");
+    <BottomSheetModalProvider>
+      <Stack initialRouteName="(tabs)">
+        <Stack.Screen
+          name="index"
+          options={{ headerShown: false, animation: "none" }}
+        />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(content)" options={{ headerShown: false }} />
+        <Stack.Screen name="(user)" options={{ headerShown: false }} />
+      </Stack>
+
+      {isButtonVisible && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            bottom: bottomAnim,
+            right: 20,
+            left: 20,
+            zIndex: 99999,
+            gap: 10,
           }}
         >
-          <SetUp />
-
-          <ThemeProvider
-            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+          <Pressable
+            onPress={handlePresentModalPress}
+            style={{
+              backgroundColor: "#282828",
+              borderRadius: 10,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 10,
+            }}
           >
-            <BottomSheetModalProvider>
-              <Stack initialRouteName="(tabs)">
-                <Stack.Screen
-                  name="index"
-                  options={{ headerShown: false, animation: "none" }}
-                />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="(content)"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen name="(user)" options={{ headerShown: false }} />
-              </Stack>
+            <PlayerButtonUI />
+          </Pressable>
+        </Animated.View>
+      )}
 
-              {/* Open Button */}
-              {isButtonVisible && (
-                <Animated.View
-                  style={{
-                    position: "absolute",
-                    bottom: bottomAnim, // <<-- Sử dụng Animated value
-                    right: 20,
-                    left: 20,
-                    zIndex: 99999,
-                    gap: 10,
-                  }}
-                >
-                  <Pressable
-                    onPress={handlePresentModalPress}
-                    style={{
-                      backgroundColor: "#282828",
-                      borderRadius: 10,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 3.84,
-                      elevation: 10,
-                    }}
-                  >
-                    <PlayerButtonUI />
-                  </Pressable>
-                </Animated.View>
-              )}
-
-              {/* Modal */}
-              <MediaPlayerModal
-                ref={bottomSheetModalRef}
-                onChange={handleSheetChanges}
-              />
-            </BottomSheetModalProvider>
-          </ThemeProvider>
-        </PersistGate>
-      </Provider>
-    </GestureHandlerRootView>
+      <MediaPlayerModal
+        ref={bottomSheetModalRef}
+        onChange={handleSheetChanges}
+      />
+    </BottomSheetModalProvider>
   );
 }
 

@@ -1,7 +1,9 @@
+// @ts-nocheck
 // src/services/audio/playerEngine.ts
 import { Audio, AVPlaybackStatusSuccess } from "expo-av";
-import type { CurrentAudioType } from "@/src/features/mediaPlayer/playerSlice";
+
 import { audioMap } from "./audioMap";
+import { CurrentAudio } from "@/src/core/types/audio.type";
 
 class PlayerEngine {
   private sound: Audio.Sound | null = null;
@@ -46,7 +48,7 @@ class PlayerEngine {
   }
 
   /** Khi play từ preload, gắn callback TẠI ĐÂY */
-  async playCurrent(audio: NonNullable<CurrentAudioType>) {
+  async playCurrent(audio: NonNullable<CurrentAudio>) {
     if (!audio) return;
 
     // Resume cùng bài
@@ -110,7 +112,14 @@ class PlayerEngine {
   private getSource(key: string) {
     const mod = audioMap[key];
     if (!mod) throw new Error(`Audio key not found: ${key}`);
-    return mod;
+
+    // If the map value is a string, treat it as a remote uri for Expo Audio
+    if (typeof mod === "string") {
+      return { uri: mod };
+    }
+
+    // Otherwise assume it's a local require(...) (number) or already valid source
+    return mod as any;
   }
 
   // async playCurrent(audio: NonNullable<CurrentAudioType>) {

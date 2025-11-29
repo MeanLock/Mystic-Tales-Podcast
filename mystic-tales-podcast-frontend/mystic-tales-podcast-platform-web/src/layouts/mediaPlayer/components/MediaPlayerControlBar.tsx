@@ -1,43 +1,37 @@
 import { FaBackward } from "react-icons/fa";
 import { FaForward } from "react-icons/fa";
 
-import { IoClose, IoPlayCircle } from "react-icons/io5";
-import { MdOutlineFastRewind, MdPauseCircleFilled } from "react-icons/md";
+import { IoPlayCircle } from "react-icons/io5";
+import { MdPauseCircleFilled } from "react-icons/md";
 
 import { MdOutlineReplay10 } from "react-icons/md";
 import { MdOutlineForward10 } from "react-icons/md";
-
-import { IoIosHeartEmpty } from "react-icons/io";
-import { IoMdHeart } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
-  nextAudio,
   pauseAudio,
   playAudio,
-  removeFromQueue,
-  updateVolume,
+  setUIIsAutoPlay,
+  setUIPlayOrderMode,
+  setVolume,
 } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import { useState } from "react";
-
-import { MdOutlineQueueMusic } from "react-icons/md";
+import { useEffect, useState, useMemo } from "react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  FaRegCirclePlay,
-  FaVolumeHigh,
-  FaVolumeLow,
-  FaVolumeXmark,
-} from "react-icons/fa6";
+import { FaVolumeHigh, FaVolumeLow, FaVolumeXmark } from "react-icons/fa6";
 
 import { Slider } from "@/components/ui/slider";
 import { getAudioEngine } from "@/core/services/player/playerBridge";
 import { useAudioProgress } from "@/core/services/player/useAudioPress";
-import Waving from "@/components/loader/Waving";
+import { Switch } from "@/components/ui/switch";
+import { Repeat, Shuffle } from "lucide-react";
+import { useUpdatePlayModeMutation } from "@/core/services/player/player.service";
+import { setError } from "@/redux/slices/errorSlice/errorSlice";
+import ResolvedImage from "./ResolvedImage";
+
 
 const MediaPlayerControl = () => {
   // REDUX
@@ -45,19 +39,19 @@ const MediaPlayerControl = () => {
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
 
+  // MUTATIONS
+  const [updatePlayMode] = useUpdatePlayModeMutation();
+
   // AUDIO ENGINE & PROGRESS
   const engine = getAudioEngine();
   const { currentTime: t, duration: d } = useAudioProgress(250);
   // REFS
 
   // STATES
-  const [volume, setVolume] = useState<number>(player.playMode.volume);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [volume, setVolumeState] = useState<number>(player.playMode.volume);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekPreview, setSeekPreview] = useState<number | null>(null);
-
-  const [isQueueModelOpen, setIsQueueModelOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [isVolumeModelOpen, setIsVolumeModelOpen] = useState(false);
 
   const effectiveTime = isSeeking && seekPreview != null ? seekPreview : t;
@@ -65,7 +59,21 @@ const MediaPlayerControl = () => {
 
   const percent =
     effectiveDuration > 0 ? (effectiveTime / effectiveDuration) * 100 : 0;
+
   // EFFECTS
+  // Khởi tạo ban đầu từ listenSessionProcedure, sau đó theo playMode
+  useEffect(() => {
+    if (!isInitialized && player.listenSessionProcedure) {
+      // Chỉ set lần đầu từ listenSessionProcedure
+      dispatch(setUIIsAutoPlay(player.listenSessionProcedure.IsAutoPlay));
+      dispatch(setUIPlayOrderMode(player.listenSessionProcedure.PlayOrderMode));
+      setIsInitialized(true);
+    }
+  }, [player.listenSessionProcedure, isInitialized, dispatch]);
+
+  // Lấy giá trị từ playMode (Redux state)
+  const isAutoPlay = player.playMode.isAutoPlay;
+  const playOrderMode = player.playMode.nextMode;
 
   // FUNCTIONS
   const onProgressMouse = (
@@ -106,9 +114,8 @@ const MediaPlayerControl = () => {
   };
 
   const handleUpdateVolume = (newVolume: number) => {
-    setVolume(newVolume);
-    // dispatch action to update volume in redux
-    dispatch(updateVolume(newVolume));
+    setVolumeState(newVolume);
+    dispatch(setVolume(newVolume));
   };
 
   const handleSeekBackward = () => {
@@ -119,6 +126,113 @@ const MediaPlayerControl = () => {
   const handleSeekForward = () => {
     const newTime = Math.min(effectiveDuration, effectiveTime + 10);
     engine.seek(newTime);
+  };
+
+  const handleNextAudio = () => {
+    engine.next?.();
+  };
+
+  const handlePreviousAudio = () => {
+    engine.previous?.();
+  };
+
+  // Kiểm tra xem có nên disable next/previous không
+  const isNavigationDisabled = useMemo(() => {
+    if (!player.listenSessionProcedure) return true;
+
+    // Nếu isNextSessionNull là true, disable
+    if (player.playMode.isNextSessionNull) return true;
+
+    if (!player.listenSession) return true;
+
+    // Lấy playOrder dựa trên playMode.listenSessionProcedure (Redux state)
+    const playOrder =
+      player.listenSessionProcedure.PlayOrderMode === "Sequential"
+        ? player.listenSessionProcedure.ListenObjectsSequentialOrder
+        : player.listenSessionProcedure.ListenObjectsRandomOrder;
+
+    console.log("PlayOrder for disable check:", playOrder);
+    console.log("Using nextMode:", player.listenSessionProcedure.PlayOrderMode);
+
+    // Đếm số item IsListenable
+    const listenableCount =
+      playOrder?.filter((item) => item.IsListenable).length || 0;
+
+    console.log("Listenable count:", listenableCount);
+
+    // Disable nếu có <= 1 item
+    return listenableCount <= 1;
+  }, [player.listenSessionProcedure]);
+
+  const handleChangeOrderMode = async (mode: "Sequential" | "Random") => {
+    if (!player.listenSessionProcedure?.Id) {
+      dispatch(
+        setError({
+          message: "No active session to update play mode",
+          autoClose: 5,
+        })
+      );
+      return;
+    }
+
+    // Lưu giá trị cũ để revert nếu cần
+    const previousMode = playOrderMode;
+
+    // Optimistic UI update
+    dispatch(setUIPlayOrderMode(mode));
+    try {
+      await updatePlayMode({
+        PlayOrderMode: mode,
+        IsAutoPlay: isAutoPlay,
+        CustomerListenSessionProcedureId: player.listenSessionProcedure.Id,
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to update play order mode:", error);
+      // Revert on error
+      dispatch(setUIPlayOrderMode(previousMode));
+      dispatch(
+        setError({
+          message: "Failed to update play order mode. Please try again.",
+          autoClose: 5,
+        })
+      );
+    }
+  };
+
+  const handleChangeAutoPlay = async (checked: boolean) => {
+    if (!player.listenSessionProcedure?.Id) {
+      dispatch(
+        setError({
+          message: "No active session to update autoplay",
+          autoClose: 5,
+        })
+      );
+      return;
+    }
+
+    // Lưu giá trị cũ để revert nếu cần
+    const previousAutoPlay = isAutoPlay;
+
+    // Optimistic UI update
+    dispatch(setUIIsAutoPlay(checked));
+
+    try {
+      await updatePlayMode({
+        PlayOrderMode: playOrderMode,
+        IsAutoPlay: checked,
+        CustomerListenSessionProcedureId: player.listenSessionProcedure.Id,
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to update autoplay mode:", error);
+      // Revert on error
+      dispatch(setUIIsAutoPlay(previousAutoPlay));
+      dispatch(
+        setError({
+          message: "Failed to update autoplay mode. Please try again.",
+          autoClose: 5,
+        })
+      );
+    }
   };
 
   if (!user) {
@@ -136,10 +250,12 @@ const MediaPlayerControl = () => {
         <div className="absolute inset-0 bg-black/50 "></div>
 
         <div className="flex items-center gap-3">
-          <div className="bg-gray-500 w-12 h-12 rounded-md" />
-          <div className="flex flex-col items-start justify-center">
-            <p className="text-gray-400 font-semibold">No Audio Yet</p>
-            <p className="text-gray-400 text-sm">
+          <div className="bg-gray-500 w-12 aspect-square rounded-md" />
+          <div className="flex flex-col items-start justify-center ">
+            <p className="text-gray-400 font-semibold line-clamp-1">
+              No Audio Yet
+            </p>
+            <p className="text-gray-400 text-sm line-clamp-1">
               You might need to play an audio to continue
             </p>
           </div>
@@ -173,10 +289,9 @@ const MediaPlayerControl = () => {
   return (
     <div className="w-full h-full flex items-center px-5">
       <div className="flex items-center gap-3">
-        <img
-          src={player.currentAudio.ImageUrl}
-          className="w-12 h-12 aspect-square rounded-md shadow-md"
-          alt={player.currentAudio.Name}
+        <ResolvedImage
+          MainImageFileKey={player.currentAudio.MainImageFileKey}
+          Name={player.currentAudio.Name}
         />
         <div className="flex flex-col items-start justify-center w-[200px] overflow-ellipsis">
           <p className="text-white font-semibold line-clamp-1">
@@ -189,16 +304,48 @@ const MediaPlayerControl = () => {
       </div>
 
       <div className="flex items-center ml-20 gap-5">
-        {/* <div className="text-white hover:text-mystic-green cursor-pointer">
+        <div
+          onClick={isNavigationDisabled ? undefined : handlePreviousAudio}
+          className={`${
+            isNavigationDisabled
+              ? "text-gray-500 cursor-not-allowed"
+              : "text-white hover:text-mystic-green cursor-pointer"
+          }`}
+        >
           <FaBackward size={20} />
-        </div> */}
+        </div>
         <div
           onClick={handleSeekBackward}
           className="text-white hover:text-mystic-green cursor-pointer"
         >
           <MdOutlineReplay10 size={20} />
         </div>
-        {player.playMode.playStatus === "pause" ? (
+        {player.isBuffering ? (
+          <div className="text-white flex items-center justify-center">
+            <svg
+              className="h-[45px] w-[45px] text-white animate-[rotate-spinner_1s_linear_infinite]"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                className="opacity-80"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth="2" // giảm xuống 1.5 hoặc 1 nếu muốn mỏng nữa
+                d="M12 2a10 10 0 0 1 10 10" // một cung tròn từ trên xuống bên phải
+              />
+            </svg>
+          </div>
+        ) : player.playMode.playStatus === "pause" ? (
           <div
             onClick={handlePlayAudio}
             className="text-white hover:text-mystic-green cursor-pointer"
@@ -219,14 +366,16 @@ const MediaPlayerControl = () => {
         >
           <MdOutlineForward10 size={20} />
         </div>
-        {player.queueAudios.length > 0 && (
-          <div
-            onClick={() => dispatch(nextAudio())}
-            className="text-white ml-10 hover:text-mystic-green cursor-pointer"
-          >
-            <FaForward size={30} />
-          </div>
-        )}
+        <div
+          onClick={isNavigationDisabled ? undefined : handleNextAudio}
+          className={`${
+            isNavigationDisabled
+              ? "text-gray-500 cursor-not-allowed"
+              : "text-white hover:text-mystic-green cursor-pointer"
+          }`}
+        >
+          <FaForward size={20} />
+        </div>
       </div>
 
       {/* Audio Length Tracking */}
@@ -276,126 +425,60 @@ const MediaPlayerControl = () => {
         </div>
       </div>
 
-      {/* Queue & Volume Management */}
-      <div className="md:w-[200px] hidden md:inline-flex items-center justify-end gap-10">
-        <div className="hidden md:inline-flex items-center justify-end">
-          <Popover open={isQueueModelOpen} onOpenChange={setIsQueueModelOpen}>
-            {/* chỉ icon mới toggle */}
-            <PopoverTrigger asChild>
-              <button
-                className="
-                  p-2 rounded-full cursor-pointer
-                  bg-transparent hover:bg-gray-300/30 text-gray-300 hover:text-white
-                  transition ease-out duration-300
-                "
-                aria-label="Open queue"
-              >
-                <MdOutlineQueueMusic size={25} />
-              </button>
-            </PopoverTrigger>
-
-            <PopoverContent
-              side="top" // mở phía trên icon
-              align="end" // mép phải bám icon (kiểu chatbot)
-              sideOffset={12} // cách icon 12px
-              collisionPadding={8}
+      {/* Listen Mode Management */}
+      <div className="flex items-center justify-end gap-3 p-2 ml-7">
+        {/* IsAutoPlay */}
+        {!isNavigationDisabled && (
+          <div className="flex items-center space-x-2">
+            {isAutoPlay ? (
+              <p className="text-mystic-green font-poppins font-bold text-xs">
+                Autoplay
+              </p>
+            ) : (
+              <p className="text-[#D9D9D9] font-poppins font-bold text-xs">
+                Autoplay
+              </p>
+            )}
+            <Switch
+              checked={isAutoPlay}
+              onCheckedChange={handleChangeAutoPlay}
+              id="is-auto-play-mode"
               className="
-                w-96 h-96 rounded-2xl shadow-2xl
-                bg-black/40 backdrop-blur-md border border-white/10
-                text-white p-3
-                flex flex-col items-start gap-3
-              "
-              // ⛔ không đóng khi click ra vùng body: chỉ icon mới toggle
-              onInteractOutside={(e) => e.preventDefault()}
-            >
-              <p className="font-poppins text-xs text-neutral-400">Current</p>
-              {/* Current Audio */}
-              <div className="w-full flex items-center">
-                <div className="flex items-center justify-center relative">
-                  <img
-                    src={player.currentAudio.ImageUrl}
-                    className="w-12 h-12 aspect-square rounded-md shadow-md"
-                    alt={player.currentAudio.Name}
-                  />
+          data-[state=checked]:bg-[#aee339]   /* màu nền khi bật */
+          data-[state=unchecked]:bg-[#d9d9d9] /* tuỳ chọn: màu khi tắt */
+          "
+            />
+          </div>
+        )}
 
-                  {player.playMode.playStatus === "play" ? (
-                    <div
-                      onClick={() => dispatch(pauseAudio())}
-                      className="absolute w-12 h-12 flex items-center justify-center inset-0"
-                    >
-                      <Waving />
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => dispatch(playAudio(null))}
-                      className="bg-black/30 absolute w-12 h-12 flex items-center justify-center inset-0"
-                    >
-                      <FaRegCirclePlay size={25} color="#fff" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col items-start justify-center ml-3 overflow-ellipsis">
-                  <p className="text-white font-semibold line-clamp-1">
-                    {player.currentAudio.Name}
-                  </p>
-                  <p className="text-sm text-white font-light line-clamp-1">
-                    {player.currentAudio.PodcasterName}
-                  </p>
-                </div>
-              </div>
-              <div className="w-full h-[0.3px] bg-neutral-400" />
-
-              <p className="font-poppins text-xs text-neutral-400">Queue</p>
-              <div
-                className="w-full md:h-[230px] overflow-y-scroll flex flex-col items-center gap-2  [&::-webkit-scrollbar]:hidden
-                [-ms-overflow-style:none]
-                [scrollbar-width:none]"
-              >
-                {player.queueAudios.length === 0 ? (
-                  <p className="text-gray-400 italic text-sm">
-                    No audio in queue
-                  </p>
-                ) : (
-                  player.queueAudios.map((audio) => (
-                    <div
-                      key={`queue-audio-${audio.Id}-${audio.Index}`}
-                      className="w-full flex items-center transition-all hover:bg-white/10 p-1 rounded-md cursor-pointer"
-                    >
-                      <img
-                        src={audio.ImageUrl}
-                        className="w-10 h-10 aspect-square rounded-md shadow-md"
-                        alt={audio.Name}
-                      />
-                      <div className="flex flex-col items-start justify-center ml-3 w-2/3 overflow-ellipsis">
-                        <p className="text-white font-semibold line-clamp-1">
-                          {audio.Name}
-                        </p>
-                        <p className="text-sm text-white font-light line-clamp-1">
-                          {audio.PodcasterName}
-                        </p>
-                      </div>
-                      <div
-                        onClick={() =>
-                          dispatch(
-                            removeFromQueue({
-                              id: audio.Id,
-                              index: audio.Index,
-                            })
-                          )
-                        }
-                        className="flex-1 flex items-center justify-end pr-3 text-neutral-400 hover:text-white cursor-pointer"
-                      >
-                        <IoClose size={15} />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
+        {/* Sequential/Random */}
+        <div className="flex items-center justify-end mx-3 gap-3">
+          {/* Herre */}
+          <div
+            onClick={() => handleChangeOrderMode("Random")}
+            className={`p-2 transition-all duration-500 hover:scale-110 cursor-pointer rounded-md text-[#D9D9D9] flex items-center justify-center ${
+              playOrderMode === "Random"
+                ? "text-white bg-white/20"
+                : "bg-transparent hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <Shuffle size={15} />
+          </div>
+          <div
+            onClick={() => handleChangeOrderMode("Sequential")}
+            className={`p-2 transition-all duration-500 hover:scale-110 cursor-pointer rounded-md text-[#D9D9D9] flex items-center justify-center ${
+              playOrderMode === "Sequential"
+                ? "text-white bg-white/20"
+                : "bg-transparent hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <Repeat size={15} />
+          </div>
         </div>
+      </div>
 
+      {/* Volume Management */}
+      <div className="md:w-[200px] hidden md:inline-flex items-center justify-end gap-10">
         <div className="hidden md:inline-flex items-center justify-center">
           <Popover open={isVolumeModelOpen} onOpenChange={setIsVolumeModelOpen}>
             {/* chỉ icon mới toggle */}

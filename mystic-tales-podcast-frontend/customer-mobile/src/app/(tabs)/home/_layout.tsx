@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import { RootState } from "@/src/store/store";
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 
 // Create a context to share the scrollY value
 const ScrollContext = createContext<{
@@ -102,10 +103,15 @@ const Header = ({ scrollY }: { scrollY: Animated.Value }) => {
           {/* User badge or login button */}
           {authState.user ? (
             <Pressable style={style.userBadge} onPress={goToProfile}>
-              <Image
+              {/* <Image
                 source={{
-                  uri: authState.user.MainImageFileKey,
+                  uri: authState.user.ImageUrl,
                 }}
+                style={style.userAvatar}
+              /> */}
+              <AutoResolvingImage
+                FileKey={authState.user.MainImageFileKey}
+                type="AccountPublicSource"
                 style={style.userAvatar}
               />
             </Pressable>

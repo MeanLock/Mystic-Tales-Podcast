@@ -3,7 +3,7 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { appApi } from "@/core/api/appApi";
 import authReducer from "./slices/authSlice/authSlice";
 import mediaPlayerReducer from "./slices/mediaPlayerSlice/mediaPlayerSlice";
-
+import errorReducer from "./slices/errorSlice/errorSlice";
 // ⬇️ redux-persist
 import storage from "redux-persist/lib/storage"; // web: localStorage
 import {
@@ -16,12 +16,14 @@ import {
   PURGE,
   REGISTER,
 } from "redux-persist";
+import { configureTokenGetter } from "@/core/api/appApi/token";
 
 // Gộp reducers trước khi persist
 const rootReducer = combineReducers({
   [appApi.reducerPath]: appApi.reducer,
   auth: authReducer,
   player: mediaPlayerReducer,
+  error: errorReducer,
   // ...reducers khác
 });
 
@@ -44,6 +46,14 @@ export const store = configureStore({
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }).concat(appApi.middleware),
+});
+
+configureTokenGetter(() => {
+  return (
+    store.getState().auth.accessToken ??
+    localStorage.getItem("accessToken") ??
+    undefined
+  );
 });
 
 export const persistor = persistStore(store);

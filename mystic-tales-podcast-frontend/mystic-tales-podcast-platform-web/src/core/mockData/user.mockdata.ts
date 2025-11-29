@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { AccountFromAPI, AccountUI } from "../types/account";
 
 export const loginInfoMap = [
