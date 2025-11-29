@@ -1,7 +1,9 @@
+// @ts-nocheck
 // src/services/audio/playerEngine.ts
 import { Audio, AVPlaybackStatusSuccess } from "expo-av";
-import type { CurrentAudioType } from "@/src/features/mediaPlayer/playerSlice";
+
 import { audioMap } from "./audioMap";
+import { CurrentAudio } from "@/src/core/types/audio.type";
 
 class PlayerEngine {
   private sound: Audio.Sound | null = null;
@@ -46,7 +48,7 @@ class PlayerEngine {
   }
 
   /** Khi play từ preload, gắn callback TẠI ĐÂY */
-  async playCurrent(audio: NonNullable<CurrentAudioType>) {
+  async playCurrent(audio: NonNullable<CurrentAudio>) {
     if (!audio) return;
 
     // Resume cùng bài

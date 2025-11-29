@@ -18,11 +18,7 @@ import {
   REGISTER,
 } from "redux-persist";
 
-import playerReducer, {
-  updatePosition,
-  onEnded,
-} from "../features/mediaPlayer/playerSlice";
-import { playerMiddleware } from "../features/mediaPlayer/playerMiddleware";
+import playerReducer from "../features/mediaPlayer/playerSlice";
 // import { playerEngine } from "../services/audio/playerEngine";
 
 import { configureTokenGetter } from "@/src/core/api/appApi/token"; // <-- mới
@@ -50,19 +46,24 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
+      immutableCheck: false,
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        // RTK Query may place non-serializable values under these paths
+        ignoredActionPaths: ["meta.arg", "payload"],
       },
-    })
-      .concat(appApi.middleware) // <-- thay baseApi.middleware
-      .concat(playerMiddleware),
-  devTools: __DEV__,
+    }).concat(appApi.middleware),
+
+  devTools:
+    typeof __DEV__ !== "undefined"
+      ? __DEV__
+      : process.env.NODE_ENV !== "production",
 });
 
 export const persistor = persistStore(store);
 
 // Types
-export type RootState = ReturnType<typeof rootReducer>;
+export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
 /** Liên kết tokenGetter với auth slice */

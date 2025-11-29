@@ -3,25 +3,12 @@ import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingI
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
 import { EpisodeDetails } from "@/src/core/types/episode.type";
-import { mockEpisodes } from "@/src/data/mockEpisodes";
-import { enqueue, play } from "@/src/features/mediaPlayer/playerSlice";
 import { formatAudioLength, formatDateRange } from "@/src/lib/format";
-import { EpisodeWithImageUrl } from "@/src/types/episode";
-import {
-  Feather,
-  FontAwesome,
-  MaterialIcons,
-  Octicons,
-} from "@expo/vector-icons";
+
+import { Feather, MaterialIcons, Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import {
-  Image,
-  ImageBackground,
-  Platform,
-  Pressable,
-  StyleSheet,
-} from "react-native";
+
+import { Platform, Pressable, StyleSheet } from "react-native";
 import { useDispatch } from "react-redux";
 
 const EpisodeInformations = ({

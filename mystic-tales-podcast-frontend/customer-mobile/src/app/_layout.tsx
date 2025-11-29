@@ -43,6 +43,7 @@ import MediaPlayerModal, {
 } from "./mediaPlayer/mediaPlayerModal";
 import { Audio } from "expo-av";
 import { GlobalAlert } from "../components/alert/GlobalAlert";
+import UpdateAccountMeHook from "./UpdateAccountMeHook";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -95,6 +96,7 @@ function RootLayoutNav() {
           }}
         >
           <SetUp />
+          <UpdateAccountMeHook />
           <GlobalAlert />
           <ThemeProvider
             value={useColorScheme() === "dark" ? DarkTheme : DefaultTheme}
@@ -164,7 +166,7 @@ function AppBody() {
 
   // derive from Redux: hide button when player stopped
   const playStatus = useSelector(
-    (s: RootState) => s.player.playerMode.playStatus
+    (s: RootState) => s.player.playMode.playStatus
   );
   const isPlayerStopped = playStatus === "stop";
 
