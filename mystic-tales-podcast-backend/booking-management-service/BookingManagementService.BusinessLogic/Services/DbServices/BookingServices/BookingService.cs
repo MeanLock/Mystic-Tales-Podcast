@@ -25,6 +25,8 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.Snippet;
 using BookingManagementService.BusinessLogic.DTOs.SystemConfiguration;
+using BookingManagementService.BusinessLogic.DTOs.Transaction;
+using BookingManagementService.BusinessLogic.Enums;
 using BookingManagementService.BusinessLogic.Enums.Account;
 using BookingManagementService.BusinessLogic.Enums.App;
 using BookingManagementService.BusinessLogic.Enums.Booking;
@@ -2505,6 +2507,114 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 throw new HttpRequestException("Error occurred while retrieving booking result, error: " + ex.Message);
             }
         }
+        public async Task<List<BookingIncomeStatisticReportListItemResponseDTO>> GetBookingIncomeStatisticAsync(StatisticsReportPeriodEnum statisticEnum, AccountStatusCache account)
+        {
+            try
+            {
+                List<int> publishmentTransactionTypeIds = new List<int> { 1 };
+                List<int> transactionStatusIds = new List<int> { 2 };
+
+                List<BookingIncomeStatisticReportListItemResponseDTO> statisticList = new List<BookingIncomeStatisticReportListItemResponseDTO>();
+                if (statisticEnum == StatisticsReportPeriodEnum.Daily)
+                {
+                    DateOnly today = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone());
+                    // truy về 7 ngày gần nhất, bao gồm hôm nay, trả về mảng List<ProfitPeriodicReportListItemDTO>
+                    DateOnly startDate = today.AddDays(-6);
+                    for (int i = 0; i < 7; i++)
+                    {
+                        DateOnly currentDate = startDate.AddDays(i);
+                        var amount = await CalculateIncome(account.Id, currentDate, currentDate);
+
+                        statisticList.Add(new BookingIncomeStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentDate,
+                            EndDate = currentDate,
+                            Amount = amount
+                        });
+                    }
+
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Monthly)
+                {
+                    // truy vấn về 4 tuần trong tháng
+                    DateOnly startDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetLastDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfMonth;
+                    while (currentStartDate <= endDateOfMonth)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddDays(6);
+                        if (currentEndDate > endDateOfMonth)
+                        {
+                            currentEndDate = endDateOfMonth;
+                        }
+
+                        var amount = await CalculateIncome(account.Id, currentStartDate, currentEndDate);
+                        statisticList.Add(new BookingIncomeStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            Amount = amount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Yearly)
+                {
+                    // truy vấn về 12 tháng trong năm
+                    DateOnly startDateOfYear = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfYear = DateOnly.FromDateTime(_dateHelper.GetLastDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfYear;
+                    while (currentStartDate <= endDateOfYear)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddMonths(1).AddDays(-1);
+                        if (currentEndDate > endDateOfYear)
+                        {
+                            currentEndDate = endDateOfYear;
+                        }
+
+                        var amount = await CalculateIncome(account.Id, currentStartDate, currentEndDate);
+                        statisticList.Add(new BookingIncomeStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            Amount = amount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else
+                {
+                    throw new HttpRequestException("Selected Period Enum is not Supported");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting booking income statistic report for Period: {Period}", statisticEnum.ToString());
+                throw new HttpRequestException("Error occurred while retrieving booking income statistic report, error: " + ex.Message);
+            }
+        }
+        private async Task<decimal> CalculateIncome(int accountId, DateOnly startDate, DateOnly endDate)
+        {
+            decimal totalIncome = 0;
+            var bookingList = await _bookingGenericRepository.FindAll(
+                includeFunc: function => function
+                .Include(b => b.BookingStatusTrackings))
+                .Where(b => (b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Completed ||
+                b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledManually
+                )
+                && (startDate <= DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) &&
+                DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) <= endDate)
+                && b.PodcastBuddyId == accountId).ToListAsync();
+            foreach (var booking in bookingList)
+            {
+                var bookingTransactions = await GetBookingTransactionByBookingId(booking.Id);
+                totalIncome += bookingTransactions != null ? bookingTransactions.Sum(bt => bt.Amount) : 0;
+            }
+            return totalIncome;
+        }
         private async Task<PodcasterDTO?> GetPodcaster(int accountId)
         {
             try
@@ -2577,6 +2687,48 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 _logger.LogError(ex, "Error occurred while querying active system config profile");
                 throw new HttpRequestException("Error occurred while querying active system config profile, error: " + ex.Message);
+            }
+        }
+        private async Task<List<BookingTransactionDTO>?> GetBookingTransactionByBookingId(int bookingId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "bookingTransaction",
+                            QueryType = "findall",
+                            EntityType = "BookingTransaction",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        BookingId = bookingId,
+                                        TransactionTypeId = new List<int> {
+                                            (int)TransactionTypeEnum.PodcasterBookingIncome,
+                                            (int)TransactionTypeEnum.BookingDepositCompensation
+                                        },
+                                        TransactionStatusId = (int)TransactionStatusEnum.Success
+                                    }
+
+                                })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
+
+                return result.Results?["bookingTransaction"] is JArray bookingArray && bookingArray.Count >= 0
+                    ? bookingArray.ToObject<List<BookingTransactionDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while querying booking transaction");
+                throw new HttpRequestException("Error occurred while querying booking transaction, error: " + ex.Message);
             }
         }
         public async Task<BookingListenSessionResponseDTO> GetTrackListenAsync(int bookingId, Guid podcastTrackId, int accountId, DeviceInfoDTO deviceInfo, CustomerListenSessionProcedureSourceDetailTypeEnum sourceType)
@@ -3121,7 +3273,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     ListenSessionProcedureListenObjectQueueItem nextListenObj = null;
                     if (procedure.PlayOrderMode.Equals(CustomerListenSessionProcedurePlayOrderModeEnum.Sequential.ToString()))
                     {
-                        var currentListenObj = procedure.ListenObjectsSequentialOrder.Where(o => o.ListenObjectId.Equals(listenSession.BookingPodcastTrackId)).First();
+                        var currentListenObj = procedure.ListenObjectsSequentialOrder.Where(o => o.ListenObjectId.Equals(listenSession.BookingPodcastTrackId)).FirstOrDefault();
+                        if(currentListenObj == null)
+                        {
+                            throw new HttpRequestException("Current listen session's track is not found in the procedure's listen object queue");
+                        }
                         if (procedure.ListenObjectsSequentialOrder.Count(o => o.IsListenable) > 1)
                         {
                             await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(accountId);
@@ -3175,7 +3331,11 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
                     else if (procedure.PlayOrderMode.Equals(CustomerListenSessionProcedurePlayOrderModeEnum.Random.ToString()))
                     {
-                        var currentListenObj = procedure.ListenObjectsRandomOrder.Where(o => o.ListenObjectId.Equals(listenSession.BookingPodcastTrackId)).First();
+                        var currentListenObj = procedure.ListenObjectsRandomOrder.Where(o => o.ListenObjectId.Equals(listenSession.BookingPodcastTrackId)).FirstOrDefault();
+                        if(currentListenObj == null)
+                        {
+                            throw new HttpRequestException("Current listen session's track is not found in the procedure's listen object queue");
+                        }
                         if (procedure.ListenObjectsRandomOrder.Count(o => o.IsListenable) > 1)
                         {
                             await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(accountId);
@@ -3720,6 +3880,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             item.IsListenable = false;
                             continue;
                         }
+                        else
+                        {
+                            item.IsListenable = true;
+                        }
                     }
                     else
                     {
@@ -3743,9 +3907,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var track = await _bookingPodcastTrackGenericRepository.FindAll(
                         predicate: bpt => bpt.Id == item.ListenObjectId
                     ).FirstOrDefaultAsync();
-                    if (track == null || track.RemainingPreviewListenSlot <= 0)
+                    var booking = await _bookingGenericRepository.FindByIdAsync(
+                        id: track.BookingId,
+                        includeFunc: b => b
+                            .Include(b => b.BookingStatusTrackings));
+                    if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId != (int)BookingStatusEnum.Completed)
                     {
-                        item.IsListenable = false;
+                        if (track == null || track.RemainingPreviewListenSlot <= 0)
+                        {
+                            item.IsListenable = false;
+                            continue;
+                        }
+                        else
+                        {
+                            item.IsListenable = true;
+                        }
                     }
                     else
                     {

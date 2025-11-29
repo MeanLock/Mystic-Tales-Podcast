@@ -1,5 +1,6 @@
 ﻿using BookingManagementService.API.Filters.ExceptionFilters;
 using BookingManagementService.BusinessLogic.DTOs.Cache;
+using BookingManagementService.BusinessLogic.Enums;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Helpers.AuthHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
@@ -60,13 +61,16 @@ namespace BookingManagementService.API.Controllers.ReportControllers
         [HttpGet("me/statistics")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
         public async Task<IActionResult> GetBookingStatisticsByPodcasterIdAsync(
-            [FromRoute] Guid podcasterId,
-            [FromQuery] Guid alo)
+            [FromQuery] StatisticsReportPeriodEnum? report_period = null)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
-            var accountId = account.Id;
-            //var statistics = await _bookingService.GetBookingStatisticsByPodcasterIdAsync(podcasterId, fromDate, toDate);
-            return Ok();
+            if (!report_period.HasValue)
+            {
+                return BadRequest("ReportPeriod is required.");
+            }
+            var bookingIncomeStatistic = await _bookingService.GetBookingIncomeStatisticAsync(report_period.Value, account);
+
+            return Ok(bookingIncomeStatistic);
         }
     }
 }

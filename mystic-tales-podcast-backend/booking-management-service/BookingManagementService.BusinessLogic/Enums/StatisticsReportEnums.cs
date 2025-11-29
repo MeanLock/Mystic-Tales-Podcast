@@ -3,9 +3,8 @@ namespace BookingManagementService.BusinessLogic.Enums
     public enum StatisticsReportPeriodEnum
     {
         Daily = 1,
-        Weekly = 2,
-        Monthly = 3,
-        Yearly = 4,
-        AllTime = 5
+        Monthly = 2,
+        Yearly = 3,
+        AllTime = 4
     }  
 }
