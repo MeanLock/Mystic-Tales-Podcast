@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useHeaderScroll } from "../_layout";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import EpisodeCard from "./components/EpisodeCard";
 
 export default function SavedScreen() {
   // STATES
@@ -42,6 +43,7 @@ export default function SavedScreen() {
   return (
     <Animated.ScrollView
       onScroll={onScroll}
+      style={styles.container}
       scrollEventThrottle={16}
       contentContainerStyle={{
         paddingTop: 100,
@@ -49,16 +51,18 @@ export default function SavedScreen() {
         paddingBottom: 40,
       }}
     >
-      <Text className="text-white font-bold text-4xl my-5 mb-10">
-        Saved Episodes
-      </Text>
+      <View className="w-full flex flex-row items-center py-5 border-b-[0.5px] border-b-[#D9D9D9] mb-10">
+        <Text className="text-white font-bold text-3xl">Saved</Text>
+      </View>
 
       {/* Grid layout using flexDirection: row and flexWrap: wrap */}
-      <View style={styles.gridColTwoContainer}>
+      {/* <View style={styles.gridColTwoContainer}>
+       
+       
+      </View> */}
+      <View className="w-full flex flex-col items-start gap-5">
         {savedEpisodes?.SavedEpisodes.map((item, index) => (
-          <Text key={index} style={styles.itemText}>
-            {item.Name}
-          </Text>
+          <EpisodeCard key={item.Id} episode={item} />
         ))}
       </View>
       <View style={{ height: tabBarHeight + 50 }}></View>
@@ -67,7 +71,9 @@ export default function SavedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {},
+  container: {
+    backgroundColor: "#000",
+  },
   gridColTwoContainer: {
     flexDirection: "row",
     flexWrap: "wrap",

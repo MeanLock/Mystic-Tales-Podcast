@@ -83,10 +83,10 @@ const ShowInformations = ({
       <View className="w-full flex items-start justify-between gap-2">
         <View className="flex flex-row items-center gap-2">
           <MaterialIcons name="star" color={"#fff"} size={20} />
-          <Text className="font-bold">{ratingAvg}</Text>
-          <Text>({ratingCount})</Text>
+          <Text className="font-bold text-white">{ratingAvg}</Text>
+          <Text className="text-white">({ratingCount})</Text>
         </View>
-        <Text numberOfLines={1}>
+        <Text className="text-white" numberOfLines={1}>
           {categoryName} • {uploadFrequency} • {language}
         </Text>
       </View>

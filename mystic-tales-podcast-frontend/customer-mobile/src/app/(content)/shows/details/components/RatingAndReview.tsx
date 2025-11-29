@@ -1,4 +1,3 @@
-import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import {
@@ -7,6 +6,7 @@ import {
   StyleSheet,
   Pressable,
   Dimensions,
+  Text,
 } from "react-native";
 import { useMemo } from "react";
 
@@ -201,9 +201,11 @@ const RatingAndReview = ({ ratings, isCommented }: RatingAndReviewProps) => {
   // Fix 3: Add proper null/empty check
   if (!ratings || ratings.length === 0) {
     return (
-      <View style={style.container}>
+      <View style={styles.container}>
         <View className="flex flex-row items-center justify-between">
-          <Text className="text-[30px] font-bold">Rating & Reviews</Text>
+          <Text className="text-[30px] font-bold text-white">
+            Rating & Reviews
+          </Text>
           <MaterialIcons name="keyboard-arrow-right" size={30} color={"#fff"} />
         </View>
         <View className="w-full justify-center">
@@ -232,9 +234,14 @@ const RatingAndReview = ({ ratings, isCommented }: RatingAndReviewProps) => {
   }, [ratings]);
 
   return (
-    <View style={style.container}>
+    <View style={styles.container}>
       <View className="flex flex-row items-center justify-between">
-        <Text className="text-[30px] font-bold">Rating & Reviews</Text>
+        <Text
+          style={{ color: "#fff" }}
+          className="text-[30px] font-bold text-white"
+        >
+          Rating & Reviews
+        </Text>
         <Pressable>
           <MaterialIcons name="keyboard-arrow-right" size={30} color={"#fff"} />
         </Pressable>
@@ -271,13 +278,16 @@ const RatingAndReview = ({ ratings, isCommented }: RatingAndReviewProps) => {
 
 export default RatingAndReview;
 
-const style = StyleSheet.create({
+// const style = StyleSheet.create({
+//   container: {
+//     width: "100%",
+//   },
+// });
+
+const styles = StyleSheet.create({
   container: {
     width: "100%",
   },
-});
-
-const styles = StyleSheet.create({
   chartContainer: {
     width: "100%",
     paddingHorizontal: 8,

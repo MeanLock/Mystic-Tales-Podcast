@@ -8,6 +8,7 @@ import {
 } from "@/src/core/services/file/file.service";
 import { Image, View, ActivityIndicator, StyleSheet } from "react-native";
 import type { ImageStyle, ViewStyle } from "react-native";
+import { useState } from "react";
 
 interface AutoResolvingImageProps {
   FileKey?: string | null;
@@ -30,6 +31,7 @@ const AutoResolvingImage = ({
   containerStyle,
   fileEnum,
 }: AutoResolvingImageProps) => {
+  const [loadError, setLoadError] = useState(false);
   const hasFileKey = Boolean(FileKey);
   const validFileKey = (FileKey ?? "") as string;
 
@@ -125,12 +127,13 @@ const AutoResolvingImage = ({
     );
   }
 
-  if (!fileUrl) {
+  if (!fileUrl || loadError) {
     return (
       <Image
         source={require("@/assets/images/user/unknown.jpg")}
         style={style}
         resizeMode="cover"
+        onError={() => setLoadError(true)}
       />
     );
   }
@@ -141,6 +144,7 @@ const AutoResolvingImage = ({
       style={style}
       resizeMode="cover"
       defaultSource={require("@/assets/images/user/unknown.jpg")}
+      onError={() => setLoadError(true)}
     />
   );
 };

@@ -8,6 +8,7 @@ import {
   View,
   Animated,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useHeaderScroll } from "../_layout";
 import { useGetSavedEpisodesQuery } from "@/src/core/services/episode/episode.service";
@@ -38,7 +39,6 @@ function HeaderGlass() {
 }
 
 export default function LibrarySavedLayout() {
-  
   return (
     <>
       <Stack
@@ -70,11 +70,17 @@ export default function LibrarySavedLayout() {
                   size={18}
                   color="#AEE339"
                 />
-                <Text
-                  style={{ color: "#AEE339", fontSize: 16, fontWeight: "600" }}
-                >
-                  Library
-                </Text>
+                {Platform.OS === "ios" && (
+                  <Text
+                    style={{
+                      color: "#AEE339",
+                      fontSize: 16,
+                      fontWeight: "600",
+                    }}
+                  >
+                    Library
+                  </Text>
+                )}
               </Pressable>
             ),
             headerRight: () => (

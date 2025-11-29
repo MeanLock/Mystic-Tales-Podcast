@@ -283,17 +283,21 @@ export default function ShowDetailsScreen() {
 
   if (showLoading) {
     return (
-      <View className="w-full h-screen justify-center items-center gap-3">
+      <View className="w-full bg-black h-screen justify-center items-center gap-3">
         <ActivityIndicator />
-        <Text>Loading Show ...</Text>
+        <Text className="text-[#D9D9D9] font-bold text-lg">
+          Loading Show ...
+        </Text>
       </View>
     );
   }
   // ...render theo id
   if (!showData || !showData.Show) {
     return (
-      <View className="w-full h-full flex items-center justify-center">
-        <Text>Cannot Find Show :(</Text>
+      <View className="w-full bg-black h-full flex items-center justify-center">
+        <Text className="text-[#D9D9D9] font-bold text-lg">
+          Cannot Find Show :(
+        </Text>
         <Pressable
           className="flex flex-row items-center gap-2 mt-4 bg-[#AEE339] px-4 py-2 rounded-full"
           onPress={() => router.back()}
@@ -409,7 +413,7 @@ export default function ShowDetailsScreen() {
                               size={18}
                               color="#aee339"
                             />
-                            <Text>
+                            <Text className="text-white">
                               {benefit.PodcastSubscriptionBenefit.Name}
                             </Text>
                           </View>
@@ -457,7 +461,9 @@ export default function ShowDetailsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {},
+  container: {
+    backgroundColor: "black",
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",

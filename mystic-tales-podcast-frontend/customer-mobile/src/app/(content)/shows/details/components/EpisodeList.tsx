@@ -6,6 +6,8 @@ import { useMemo } from "react";
 import { useRouter } from "expo-router";
 import { EpisodeFromShow } from "@/src/core/types/episode.type";
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
+import PlayButtonVariant1 from "@/src/components/buttons/playButton/playButtonVariant1";
+import PlayButtonVariant2 from "@/src/components/buttons/playButton/playButtonVariant2";
 
 interface EpisodeListProps {
   episodes: EpisodeFromShow[];
@@ -51,39 +53,14 @@ const formatDate = (dateString: string): string => {
 };
 
 // Format audio length from seconds to human-readable format
-const formatAudioLength = (seconds: number): string => {
-  if (!seconds || seconds <= 0) {
-    return "0 sec";
-  }
-
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-
-  // Format based on the length:
-  // 1. If hours > 0: "X hours Y mins"
-  // 2. If only minutes > 0: "X mins Y secs"
-  // 3. If only seconds > 0: "X secs"
-
-  if (hours > 0) {
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ${
-      minutes > 0 ? `${minutes} ${minutes === 1 ? "min" : "mins"}` : ""
-    }`.trim();
-  } else if (minutes > 0) {
-    return `${minutes} ${minutes === 1 ? "min" : "mins"} ${
-      remainingSeconds > 0
-        ? `${remainingSeconds} ${remainingSeconds === 1 ? "sec" : "secs"}`
-        : ""
-    }`.trim();
-  } else {
-    return `${remainingSeconds} ${remainingSeconds === 1 ? "sec" : "secs"}`;
-  }
-};
 
 // Episode Component
 const EpisodeComponent = ({ episode }: { episode: EpisodeFromShow }) => {
   const router = useRouter();
-
+  const handlePlayEpisode = () => {
+    // Implement play functionality here
+    console.log("Play episode with ID:", episode.Id);
+  };
   return (
     <Pressable
       onPress={() => router.push(`/(content)/episodes/details/${episode.Id}`)}
@@ -92,21 +69,17 @@ const EpisodeComponent = ({ episode }: { episode: EpisodeFromShow }) => {
       <View className="w-[70%] justify-between">
         <Text style={style.dateText}>{formatDate(episode.ReleaseDate)}</Text>
         <View className="w-full gap-2">
-          <Text numberOfLines={2} className="font-bold text-white text-[20px]">
+          <Text className="text-white text-[20px] font-bold" numberOfLines={2}>
             {episode.Name}
           </Text>
           <Text numberOfLines={3}>{episode.Description}</Text>
         </View>
         <View className="w-full items-start mt-5">
-          <Pressable style={style.playButton} className="w-8/12">
-            <MaterialIcons name="play-arrow" size={15} color={"#AEE339"} />
-            <Text
-              numberOfLines={1}
-              className="text-[10px] font-bold text-[#AEE339]"
-            >
-              {formatAudioLength(episode.AudioLength)}
-            </Text>
-          </Pressable>
+          <PlayButtonVariant2
+            episodeId={episode.Id}
+            audioLength={episode.AudioLength}
+            onPlayPress={() => handlePlayEpisode()}
+          />
         </View>
       </View>
       <View className="flex-1  min-w-[51px] items-end justify-between mt-1">
@@ -150,7 +123,7 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
         style={style.borderBottom}
         className="w-full flex-row items-center justify-between pb-6"
       >
-        <Text className="text-[30px] font-bold">Episodes</Text>
+        <Text className="text-[30px] font-bold text-white">Episodes</Text>
         <View style={style.iconContainer}>
           <MaterialIcons name="keyboard-arrow-right" color={"#fff"} size={25} />
         </View>

@@ -17,6 +17,7 @@ import {
   useGetTemplatePodcastBuddyCommitmentFileQuery,
   useGetPodcastBuddyCommitmentFileQuery,
 } from "@/src/core/services/file/file.service";
+import { useState } from "react";
 
 type SourceType =
   | "AccountPublicSource"
@@ -42,6 +43,7 @@ const AutoResolvingImageBackground = ({
   style,
   ...backgroundProps // blurRadius, children, etc...
 }: AutoResolvingImageBackgroundProps) => {
+  const [loadError, setLoadError] = useState(false);
   const fallbackSource = require("@/assets/images/user/unknown.jpg");
   const hasFileKey = Boolean(FileKey);
   const validFileKey = (FileKey ?? "") as string;
@@ -137,7 +139,7 @@ const AutoResolvingImageBackground = ({
     );
   }
 
-  if (!fileUrl) {
+  if (!fileUrl || loadError) {
     return (
       <ImageBackground
         source={fallbackSource}
@@ -151,6 +153,7 @@ const AutoResolvingImageBackground = ({
   return (
     <ImageBackground
       source={{ uri: fileUrl }}
+      onError={() => setLoadError(true)}
       style={style}
       resizeMode="cover"
       defaultSource={fallbackSource}
