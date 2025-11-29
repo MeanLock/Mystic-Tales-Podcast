@@ -807,7 +807,7 @@ const SystemConfigForm: React.FC<SystemConfigUpdateProps> = ({ systemConfigId, o
             </CCol>
             <CCol md={12}>
               <div className="system-config-update__field">
-                <CFormLabel className="system-config-update__label">Storage Unit Price (VND)</CFormLabel>
+                <CFormLabel className="system-config-update__label">Storage Unit Price (Points)</CFormLabel>
                 <CFormInput
                   type="number"
                   value={formData.storageUnitPrice}

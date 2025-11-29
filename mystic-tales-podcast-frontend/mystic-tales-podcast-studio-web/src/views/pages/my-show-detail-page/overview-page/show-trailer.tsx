@@ -13,18 +13,29 @@ import {
     VolumeOff,
     MusicNote,
 } from "@mui/icons-material";
-import SampleAudio from "../../../../assets/Podbean_AI_test_-_Noise_Reduction_original_92vyi.mp3";
-import "./show-trailer.scss";
 import { Database, FileAudio, FolderSimple } from "phosphor-react";
 import { toast } from "react-toastify";
+import { useSagaPolling } from "@/core/hooks/useSagaPolling";
+import { getShowDetail, uploadTrailer } from "@/core/services/show/show.service";
+import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances/v2";
+import { useParams } from "react-router-dom";
+import Loading2 from "@/views/components/common/loading2";
+import { getPublicSource } from "@/core/services/file/file.service";
+import Loading from "@/views/components/common/loading";
+import { RootState } from "@/redux/rootReducer";
+import { useSelector } from "react-redux";
 
 interface ShowTrailerProps {
     initialAudio?: string;
 }
 
 const ShowTrailer: React.FC<ShowTrailerProps> = ({
-    initialAudio = SampleAudio,
+    initialAudio = "",
 }) => {
+
+    const { id } = useParams<{ id: string }>();
+    const authSlice = useSelector((state: RootState) => state.auth);
+
     const waveformRef = useRef<HTMLDivElement>(null);
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,12 +46,46 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
     const [duration, setDuration] = useState(0);
     const [volume, setVolume] = useState(0.7);
     const [isMuted, setIsMuted] = useState(false);
-    const [audioUrl, setAudioUrl] = useState(initialAudio);
+    const [audioUrl, setAudioUrl] = useState("");
     const [isDragging, setIsDragging] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const [uploadedFile, setUploadedFile] = useState<File | null>();
     const [isSeeking, setIsSeeking] = useState(false);
-    
+     
+    const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    const { startPolling } = useSagaPolling({
+        timeoutSeconds: 160,
+        intervalSeconds: 2,
+    })
+    const fetchTrailerAudio = async () => {
+        setLoading(true);
+        try {
+            const res = await getShowDetail(loginRequiredAxiosInstance, id);
+            console.log("Fetched show detail:", res.data.Show);
+            if (res.success && res.data.Show.TrailerAudioFileKey) {
+                const fileurl = await getPublicSource(loginRequiredAxiosInstance, res.data.Show.TrailerAudioFileKey);
+                if (fileurl.success && fileurl.data.FileUrl) {
+                    setAudioUrl(fileurl.data.FileUrl);
+                    const dummyFile = new File([], 'MTP_Existing_trailer.mp3', { type: 'audio/mpeg' });
+                    setUploadedFile(dummyFile);
+                } 
+
+            } else {
+                console.error('API Error:', res.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch show detail:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchTrailerAudio()
+    }, [id]);
+
     const handleSeekMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!progressBarRef.current || !wavesurferRef.current) return;
 
@@ -93,6 +138,7 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
             // setDuration(audio.duration); // nếu muốn
         };
     }, [uploadedFile]);
+
     useEffect(() => {
         if (!waveformRef.current) return;
 
@@ -204,8 +250,8 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files?.[0];
-        if (file.size > 50 * 1024 * 1024) {
-            toast.error("File size exceeds 50MB limit.");
+        if (file.size > 15 * 1024 * 1024) {
+            toast.error("File size exceeds 15MB limit.");
             return;
         }
         if (file && file.type.startsWith("audio/")) {
@@ -218,6 +264,45 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
 
     const handleBrowseClick = () => fileInputRef.current?.click();
 
+    const handleUploadTrailer = async () => {
+               if (authSlice.user?.ViolationLevel > 0) {
+                    toast.error('Your account is currently under violation !!');
+                    return;
+                }
+        try {
+            setUploading(true);
+            console.log('Uploading trailer with file:', uploadedFile);
+            const res = await uploadTrailer(loginRequiredAxiosInstance, id, uploadedFile);
+            const sagaId = res?.data?.SagaInstanceId
+            if (!res.success && res.message.content) {
+                toast.error(res.message.content)
+                return
+            }
+            if (!sagaId) {
+                toast.error(`Upload trailer failed, please try again.`)
+                return
+            }
+
+            await startPolling(sagaId, loginRequiredAxiosInstance, {
+                onSuccess: () => {
+                    toast.success(`Trailer uploaded successfully.`)
+                },
+                onFailure: (err) => toast.error(err || "Saga failed!"),
+                onTimeout: () => toast.error("System not responding, please try again."),
+            })
+        } catch (error) {
+            toast.error("Error uploading trailer");
+        } finally {
+            setUploading(false);
+        }
+    };
+    if(loading){
+        return (
+            <div className=" flex justify-center items-center mt-20">
+                <Loading />
+            </div>
+        );
+    }
     return (
         <div className="show-trailer">
             <div className="show-trailer__header">
@@ -227,7 +312,8 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
                 <Button
                     variant="contained"
                     className="show-trailer__save-btn"
-                    disabled={!hasChanges}
+                    onClick={() => handleUploadTrailer()}
+                    disabled={!hasChanges || uploading}
                 >
                     Save
                 </Button>
@@ -283,57 +369,60 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
                     </div>
                 </div>
             )}
-
-            {/* Upload section - full width khi chưa có file */}
-            <div className={`show-trailer__upload-section ${!uploadedFile ? 'show-trailer__upload-section--no-file' : ''}`}>
-                <div
-                    className={`show-trailer__upload ${isDragging ? "show-trailer__upload--dragging" : ""} ${!uploadedFile ? 'show-trailer__upload--full-width' : ''}`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={handleBrowseClick}
-                >
-                    <MusicNote className="show-trailer__upload-icon" />
-                    <Typography className="show-trailer__upload-text">
-                        Drop your audio file here
-                    </Typography>
-                    <Typography className="show-trailer__upload-subtext">
-                        or click to browse
-                    </Typography>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="audio/*"
-                        onChange={handleFileSelect}
-                        className="show-trailer__upload-input"
-                    />
+            {uploading ? (
+                <div className=" flex justify-center items-center mt-20">
+                    <Loading2 title="Uploading" />
                 </div>
-
-                {uploadedFile && (
-                    <div className="show-trailer__file-info">
-                        <div className="show-trailer__file-box">
-                            <div className="show-trailer__file-row">
-                                <FolderSimple size={20} color="#B6E04A" />
-                                <Typography variant="body2" className="show-trailer__file-name">
-                                    <strong>File Name:  </strong>{uploadedFile.name}
-                                </Typography>
-                            </div>
-                            <div className="show-trailer__file-row">
-                                <Database size={20} color="#B6E04A" />
-                                <Typography variant="body2" className="show-trailer__file-size">
-                                    <strong>Size:  </strong> {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                                </Typography>
-                            </div>
-                            <div className="show-trailer__file-row">
-                                <FileAudio size={20} color="#B6E04A" />
-                                <Typography variant="body2" className="show-trailer__file-type">
-                                    <strong>Type:  </strong>{uploadedFile.type.replace('audio/', '')}
-                                </Typography>
+            ) : (
+                <div className={`show-trailer__upload-section ${!uploadedFile ? 'show-trailer__upload-section--no-file' : ''}`}>
+                    <div
+                        className={`show-trailer__upload ${isDragging ? "show-trailer__upload--dragging" : ""} ${!uploadedFile ? 'show-trailer__upload--full-width' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={handleBrowseClick}
+                    >
+                        <MusicNote className="show-trailer__upload-icon" />
+                        <Typography className="show-trailer__upload-text">
+                            Drop your audio file here
+                        </Typography>
+                        <Typography className="show-trailer__upload-subtext">
+                            or click to browse
+                        </Typography>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="audio/*"
+                            onChange={handleFileSelect}
+                            className="show-trailer__upload-input"
+                        />
+                    </div>
+                    {(uploadedFile && uploadedFile.name !== 'MTP_Existing_trailer.mp3')  && (
+                        <div className="show-trailer__file-info">
+                            <div className="show-trailer__file-box">
+                                <div className="show-trailer__file-row">
+                                    <FolderSimple size={20} color="#B6E04A" />
+                                    <Typography variant="body2" className="show-trailer__file-name">
+                                        <strong>File Name:  </strong>{uploadedFile.name}
+                                    </Typography>
+                                </div>
+                                <div className="show-trailer__file-row">
+                                    <Database size={20} color="#B6E04A" />
+                                    <Typography variant="body2" className="show-trailer__file-size">
+                                        <strong>Size:  </strong> {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                                    </Typography>
+                                </div>
+                                <div className="show-trailer__file-row">
+                                    <FileAudio size={20} color="#B6E04A" />
+                                    <Typography variant="body2" className="show-trailer__file-type">
+                                        <strong>Type:  </strong>{uploadedFile.type.replace('audio/', '')}
+                                    </Typography>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

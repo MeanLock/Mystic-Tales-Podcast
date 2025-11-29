@@ -10,8 +10,8 @@ import { login } from "../../../core/services/auth/auth.service"
 import { toast } from "react-toastify"
 import logo from "../../../assets/brand/logo.png"
 import "./styles.scss"
-import axios from "axios"
 import { useSagaPolling } from "@/hooks/useSagaPolling"
+import { getCapacitorDevice } from "@/core/utils/device.util"
 
 const Login = () => {
   const email = useRef<HTMLInputElement>(null)
@@ -21,14 +21,16 @@ const Login = () => {
   const authSlice = useSelector((state: RootState) => state.auth)
   const [validated, setValidated] = useState<boolean>(false)
   const [disabled, setDisabled] = useState(false)
+  const deviceInfo = getCapacitorDevice();
 
   const { startPolling } = useSagaPolling({
-    timeoutSeconds: 120, // Chờ tối đa 120 giây (2 phút)
-    intervalSeconds: 2, // Gọi lại mỗi 2 giây
+    timeoutSeconds: 10, // Chờ tối đa 120 giây (2 phút)
+    intervalSeconds: 0.5, // Gọi lại mỗi 0.5 giây
     onSuccess: (data) => {
       const token = data?.AccessToken
       if (!token) return toast.error("Không nhận được token từ Saga")
       const user = JwtUtil.decodeToken(token)
+      console.log("Logged in user:", user)
       dispatch(setAuthToken({ token, user }))
       if (user.role_id == 3) {
         navigate("/dashboard")
@@ -54,7 +56,7 @@ const Login = () => {
       if (user.role_id == 3) {
         navigate("/dashboard")
       } else if (user.role_id == 2) {
-        navigate("/community-survey")
+        navigate("/staff/podcaster/table")
       }
     }
   }, [authSlice])
@@ -115,13 +117,14 @@ const Login = () => {
       setDisabled(true)
       try {
         const response = await login(publicAxiosInstance, {
-          email: email.current.value,
-          password: password.current.value,
+          Email: email.current.value,
+          Password: password.current.value,
+          DeviceInfo: await deviceInfo
         })
 
         const sagaId = response?.data?.SagaInstanceId
         if (!sagaId) {
-          toast.error("Đăng nhập thất bại, vui lòng thử lại.")
+          toast.error("Login failed.")
           setDisabled(false)
           return
         }

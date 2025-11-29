@@ -37,7 +37,7 @@ adminAxiosInstance.interceptors.request.use(
       const user = JwtUtil.decodeToken(token);
 
       //if (user.role.id != 2 && user.role.id != 3 && user.role.id != 4) {
-      if (!user || ![1,2].includes(Number(user.role_id))) {
+      if (!user || ![3].includes(Number(user.role_id))) {
         //** CHO HIỆN THÔNG BÁO YÊU CẦU ĐĂNG NHẬP
         // await loginRequiredAlert();
         

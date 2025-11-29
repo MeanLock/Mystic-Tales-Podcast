@@ -1,55 +1,12 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { Box, Avatar, Typography, List, ListItem, ListItemIcon, ListItemText, Icon } from "@mui/material"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { RootState } from "@/redux/rootReducer"
+import Image from "../../common/image"
+import { _channelDetailNav, _podcasterNav, _showDetailNav } from "@/router/_roleNav"
 
 
-// export const mockNavigation = {
-//     // user context (podcaster)
-//     userContext: {
-//         id: "u_1",
-//         name: "SAMURICE",
-//         email: "samurice@gmail.com",
-//         avatar: "https://lumiere-a.akamaihd.net/v1/images/a_avatarpandorapedia_neytiri_16x9_1098_01_0e7d844a.jpeg?region=420%2C0%2C1080%2C1080",
-//         subtitle: "CREATOR",
-//         type: "user",
-//     },
-
-//     showContext: {
-//         id: "s_42",
-//         name: "Mystic Tales - Episode 42",
-//         email: "", // not required for show
-//         avatar: "/assets/images/show-cover.jpg",
-//         subtitle: "SHOW",
-//         type: "show",
-//     },
-
-//     // nav items for user/podcaster context
- 
-
-//     // nav items for a specific show context
-//     showNavItems: [
-//         { label: "Overview", icon: "info", path: "/show/42/overview" },
-//         { label: "Episodes", icon: "queue_music", path: "/show/42/episodes" },
-//         { label: "Analytics", icon: "insights", path: "/show/42/analytics" },
-//         { label: "Guests", icon: "groups", path: "/show/42/guests" },
-//         { label: "Settings", icon: "settings", path: "/show/42/settings" },
-//     ],
-// }
-
-// helper that returns the shape your Sidebar expects
-// export function makeNavigationFor(context: "user" | "show" = "user") {
-//     if (context === "show") {
-//         return {
-//             currentContext: mockNavigation.showContext,
-//             navItems: mockNavigation.showNavItems,
-//         }
-//     }
-//     return {
-//         currentContext: mockNavigation.userContext,
-//     }
-// }
 
 const DefaultLayoutSideBar = () => {
     const location = useLocation()
@@ -64,16 +21,39 @@ const DefaultLayoutSideBar = () => {
                 dispatch({ type: "ui/set", payload: { sidebarNarrow: true } })
             }
         }
-
         handleResize()
         window.addEventListener("resize", handleResize)
         return () => window.removeEventListener("resize", handleResize)
     }, [dispatch, uiSlice.sidebarNarrow])
 
+    const navItems = useMemo(() => {
+        const ctxId = navigation.currentContext?.id;
+        switch (navigation.contextType) {
+            case 'channel':
+                return _channelDetailNav.map((item) => ({
+                    ...item,
+                    path: item.path.replace(':id', ctxId || '')
+                }));
+            case 'show':
+                return _showDetailNav.map((item) => ({
+                    ...item,
+                    path: item.path.replace(':id', ctxId || '')
+                }));
+            default:
+                return _podcasterNav;
+        }
+    }, [navigation.contextType, navigation.currentContext?.id]);
+
     if (!navigation.currentContext) {
         return null
     }
+        const isActiveRoute = (pathname: string, itemPath: string) => {
+        if (pathname === itemPath || pathname.startsWith(itemPath + '/')) return true;
 
+        if (itemPath === '/booking/table' && /^\/booking\/[^/]+$/.test(pathname)) return true;
+
+        return false;
+    };
     const sidebarClassName = [
         "default-layout__sidebar",
         uiSlice.sidebarNarrow && window.innerWidth > 768 ? "default-layout__sidebar--narrow" : "",
@@ -81,14 +61,26 @@ const DefaultLayoutSideBar = () => {
     ]
         .filter(Boolean)
         .join(" ")
-
     return (
         <Box className={sidebarClassName}>
             {/* Profile Section */}
             <Box className="default-layout__sidebar-profile">
-                <Avatar src={navigation.currentContext.avatar} className="default-layout__sidebar-profile-avatar">
+                {/* <Avatar src={navigation.currentContext.avatar} className="default-layout__sidebar-profile-avatar">
                     {navigation.currentContext.name.charAt(0).toUpperCase()}
-                </Avatar>
+                </Avatar> */}
+                {navigation.currentContext.id === "user" ? (
+                    <Image
+                        mainImageUrl={navigation.currentContext.avatar}
+                        alt={navigation.currentContext.name}
+                        className="default-layout__sidebar-profile-avatar rounded-full"
+                    />
+                ) : (
+                    <Image
+                        mainImageFileKey={navigation.currentContext.avatar}
+                        alt={navigation.currentContext.name}
+                        className="default-layout__sidebar-profile-avatar rounded-full"
+                    />
+                )}
 
                 <Typography className="default-layout__sidebar-profile-name">{navigation.currentContext.name}</Typography>
 
@@ -104,19 +96,23 @@ const DefaultLayoutSideBar = () => {
             {/* Navigation Items */}
             <Box className="default-layout__sidebar-nav">
                 <List sx={{ padding: 0 }}>
-                    {navigation.navItems.map((item) => (
-                        <ListItem
-                            key={item.path}
-                            component={Link}
-                            to={item.path}
-                            className={`gap-3 default-layout__sidebar-nav-item ${location.pathname === item.path ? "default-layout__sidebar-nav-item--active" : ""}`}
-                        >
-                            <ListItemIcon className="default-layout__sidebar-nav-item-icon">
-                                {item.icon}
-                            </ListItemIcon>
-                            <ListItemText primary={item.label} className="default-layout__sidebar-nav-item-text" />
-                        </ListItem>
-                    ))}
+                    {navItems.map((item) => {
+                        const isActive = isActiveRoute(location.pathname, item.path);
+
+                        return (
+                            <ListItem
+                                key={item.path}
+                                component={Link}
+                                to={item.path}
+                                className={`gap-3 default-layout__sidebar-nav-item ${isActive ? "default-layout__sidebar-nav-item--active" : ""}`}
+                            >
+                                <ListItemIcon className="default-layout__sidebar-nav-item-icon">
+                                    {item.icon}
+                                </ListItemIcon>
+                                <ListItemText primary={item.label} className="default-layout__sidebar-nav-item-text" />
+                            </ListItem>
+                        );
+                    })}
                 </List>
             </Box>
         </Box>

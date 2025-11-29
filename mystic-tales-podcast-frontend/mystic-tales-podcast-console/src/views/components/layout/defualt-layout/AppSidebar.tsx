@@ -19,6 +19,9 @@ import { get_roleNav } from '../../../../_role-nav'
 import { setUi, UiState } from '../../../../redux/ui/ui.slice'
 import { cilMenu } from '@coreui/icons'
 import logo from '../../../../assets/brand/logoMTP2.png'
+import { loginRequiredAxiosInstance } from '@/core/api/rest-api/config/instances/v2'
+import { setAuthToken } from '@/redux/auth/auth.slice'
+import { getProfile } from '@/core/services/account/account.service'
 const AppSidebar = () => {
 
   // const unfoldable = useSelector((state : State) => state.sidebarUnfoldable)
@@ -34,24 +37,39 @@ const AppSidebar = () => {
   const dispatch = useDispatch()
   const uiSlice = useSelector((state: RootState) => state.ui)
   const authSlice = useSelector((state: RootState) => state.auth);
-
-
-  // useEffect(() => {
-  //   if (authSlice && authSlice.token) {
-  //     const user = JwtUtil.decodeToken(authSlice.token);
-
-  //     //*[NOTE] Sau có thay đổi role thì gọi lại hàm này
-  //     setNavigation(get_roleNav(user.role_id, user.id));
-
-  //   } else {
-  //     navigate("/login")
-  //   }
-  // }, [authSlice])
-  useEffect(() => {
   
-      setNavigation(get_roleNav(2, 2));
+  // SERVICES
+  
+  // Lazy import to avoid circulars if any
 
-  }, [])
+
+  useEffect(() => {
+    if (authSlice && authSlice.token) {
+      const user = JwtUtil.decodeToken(authSlice.token);
+      console.log("Sidebar user:", user);
+      //*[NOTE] Sau có thay đổi role thì gọi lại hàm này
+      setNavigation(get_roleNav(user.role_id, user.id));
+
+      // if( !authSlice.user.MainImageFileKey || !authSlice.user.FullName ){
+      //    (async () => {
+      //   try {
+      //     const res = await getProfile(loginRequiredAxiosInstance);
+      //     if (res?.success && res?.data?.Account) {
+      //       const { MainImageFileKey, FullName } = res.data.Account;
+      //     dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, MainImageFileKey, FullName } }));
+      //     }
+      //   } catch (e) {
+      //     console.warn('Failed to fetch profile for sidebar:', e);
+      //   }
+      // })();
+      // }
+     
+
+    } else {
+      navigate("/login")
+    }
+  }, [authSlice])
+
   return (
     <CSidebar
       className={`app-sidebar`}

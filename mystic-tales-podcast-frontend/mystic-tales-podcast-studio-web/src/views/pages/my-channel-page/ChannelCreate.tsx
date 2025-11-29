@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, use } from 'react';
+import React, { useEffect, useState, useRef, use, useContext, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -20,48 +20,16 @@ import { useQuill } from 'react-quilljs';
 import 'quill/dist/quill.snow.css';
 import './styles.scss';
 import logo from '../../../assets/logoMTP.jpg';
-export const mockPodcastCategories = [
-    { Id: 1, Name: "True Crime " },
-    { Id: 2, Name: "Horror " },
-    { Id: 3, Name: "Society & Culture " },
-    { Id: 4, Name: "Psychology " },
-    { Id: 5, Name: "Philosophy " },
-    { Id: 6, Name: "History " },
-    { Id: 7, Name: "Comics" },
-];
-
-export const mockPodcastSubCategories = [
-    // ===== True Crime (1) =====
-    { Id: 1, Name: "Serial Killers", PodcastCategoryId: 1 },
-    { Id: 2, Name: "Unsolved Mysteries ", PodcastCategoryId: 1 },
-    { Id: 3, Name: "White Collar Crime", PodcastCategoryId: 1 },
-    { Id: 4, Name: "Cybercrime ", PodcastCategoryId: 1 },
-    { Id: 5, Name: "International Crimes", PodcastCategoryId: 1 },
-    { Id: 6, Name: "Organized Crime", PodcastCategoryId: 1 },
-    { Id: 7, Name: "Miscarriage of Justice", PodcastCategoryId: 1 },
-
-    // ===== Horror (2) =====
-    { Id: 8, Name: "Asian Folklore Horror", PodcastCategoryId: 2 },
-    { Id: 9, Name: "Europe Folklore Horror", PodcastCategoryId: 2 },
-    { Id: 10, Name: "Creepypasta", PodcastCategoryId: 2 },
-    { Id: 11, Name: "Urban Legends", PodcastCategoryId: 2 },
-    { Id: 12, Name: "Supernatural", PodcastCategoryId: 2 },
-
-    // ===== Society & Culture (3) =====
-    { Id: 13, Name: "Heterodox Faith", PodcastCategoryId: 3 },
-    { Id: 14, Name: "Horrific Cultures", PodcastCategoryId: 3 },
-    { Id: 15, Name: "Dark Prejudices", PodcastCategoryId: 3 },
-    { Id: 16, Name: "Mysterious Tribes", PodcastCategoryId: 3 },
-];
-
-
-
-// Mock available hashtags for autocomplete
-const availableHashtags = [
-    '#Mystery', '#HorrorStories', '#Paranormal', '#TrueCrime', '#Supernatural',
-    '#Investigation', '#Thriller', '#Creepy', '#Folklore', '#Legend',
-    '#SerialKiller', '#UnsolvedMystery', '#ColdCase', '#Detective'
-];
+import { MyChannelPageContext } from '.';
+import { PodcastCategory, PodcastSubCategory } from '@/core/types/category';
+import { toast } from 'react-toastify';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/rootReducer';
+import { useSagaPolling } from '@/core/hooks/useSagaPolling';
+import { createHashtag, getHashtags } from '@/core/services/misc/hashtag.service';
+import { loginRequiredAxiosInstance } from '@/core/api/rest-api/config/instances/v2';
+import { createChannel } from '@/core/services/channel/channel.service';
+import { urlToFile } from '@/core/utils/image.util';
 
 interface ChannelCreateInfo {
     Name: string;
@@ -78,21 +46,31 @@ interface HashtagOption {
 }
 
 const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
-    const [channelData, setChannelData] = useState<ChannelCreateInfo>({
-        Name: '',
-        Description: '',
-        PodcasterId: 0, // This should be set from user context
-        PodcastCategoryId: 0,
-        PodcastSubCategoryId: 0,
-        HashtagIds: []
-    });
-
+    const context = useContext(MyChannelPageContext);
+    const authSlice = useSelector((state: RootState) => state.auth);
+    const categoryList: PodcastCategory[] = context?.categoryList || [];
     const [selectedHashtags, setSelectedHashtags] = useState<HashtagOption[]>([]);
     const [hashtagInput, setHashtagInput] = useState<string>('');
+    const [suggestions, setSuggestions] = useState<HashtagOption[]>([]);
+    const [suggestLoading, setSuggestLoading] = useState<boolean>(false);
+    const [openSuggest, setOpenSuggest] = useState<boolean>(false);
     const [previewImage, setPreviewImage] = useState<string>('');
     const [mainImageFile, setMainImageFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
+    
+    const [channelData, setChannelData] = useState<ChannelCreateInfo>({
+        Name: '',
+        Description: '',
+        PodcasterId: authSlice.user?.Id || 0,
+        PodcastCategoryId: 0,
+        PodcastSubCategoryId: 0,
+        HashtagIds: []
+    });
+    const { startPolling } = useSagaPolling({
+        timeoutSeconds: 5,
+        intervalSeconds: 0.5,
+    })
 
     // Quill editor for description
     const { quill, quillRef } = useQuill({
@@ -109,7 +87,6 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
         placeholder: 'Add description...'
     });
 
-    // Set up Quill listener for description changes
     useEffect(() => {
         if (quill) {
             quill.on('text-change', () => {
@@ -122,9 +99,10 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
         }
     }, [quill]);
 
-    // Get subcategories for selected category
-    const getSubCategoriesForCategory = (categoryId: number) => {
-        return mockPodcastSubCategories.filter(sub => sub.PodcastCategoryId === categoryId);
+
+    const getSubCategoriesForCategory = (categoryId: number): PodcastSubCategory[] => {
+        const found = categoryList.find(cat => cat.Id === categoryId);
+        return found?.PodcastSubCategoryList ?? [];
     };
 
     const handleCategoryChange = (categoryId: number) => {
@@ -143,50 +121,63 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
     };
 
     const handleCreateChannel = async () => {
+               if (authSlice.user?.ViolationLevel > 0) {
+                    toast.error('Your account is currently under violation !!');
+                    return;
+                }
         try {
             setLoading(true);
-
-            // Validate required fields
             if (!channelData.Name.trim()) {
-                alert('Please enter a channel name');
+                toast.error('Please enter a channel name');
                 return;
             }
 
             if (!channelData.PodcastCategoryId) {
-                alert('Please select a category');
+                toast.error('Please select a category');
                 return;
             }
 
+            if (!channelData.PodcastSubCategoryId) {
+                toast.error('Please select a subcategory');
+                return;
+            }
+
+            let fileToSend: File | null = mainImageFile;
             if (!mainImageFile) {
-                alert('Please select a main image');
-                return;
+                fileToSend = await urlToFile(logo, "default-logo.jpg", "image/jpeg");
             }
 
-            // Prepare form data for API call
-            const formData = new FormData();
-
-            // Add ChannelCreateInfo as JSON
-            const channelCreateInfo = {
-                ...channelData,
-                HashtagIds: selectedHashtags.map(tag => tag.id)
+            const payload = {
+                ChannelCreateInfo: {
+                    ...channelData,
+                    HashtagIds: selectedHashtags.map(tag => tag.id)
+                },
+                MainImageFile: fileToSend
             };
 
-            formData.append('ChannelCreateInfo', JSON.stringify(channelCreateInfo));
-            formData.append('MainImageFile', mainImageFile);
-
-            // TODO: Call your API here
-            console.log('Creating channel with data:', channelCreateInfo);
-            console.log('Main image file:', mainImageFile);
-
-            // Example API call:
-            // await createChannelAPI(formData);
-
-            alert('Channel created successfully!');
-            onClose?.();
-
+            console.log('Creating channel with data:', payload);
+            try {
+                const res = await createChannel(loginRequiredAxiosInstance, payload);
+                const sagaId = res?.data?.SagaInstanceId
+                if (!sagaId) {
+                    toast.error("Create channel failed, please try again.")
+                    return
+                }
+                await startPolling(sagaId, loginRequiredAxiosInstance, {
+                    onSuccess: () => {
+                        onClose();
+                        context?.handleDataChange();
+                        toast.success(`Channel created successfully!`);
+                    },
+                    onFailure: (err) => toast.error(err || "Saga failed!"),
+                    onTimeout: () => toast.error("System not responding, please try again."),
+                })
+            } catch (error) {
+                toast.error("Error creating channel");
+            }
         } catch (error) {
             console.error('Error creating channel:', error);
-            alert('Failed to create channel');
+            toast.error('Failed to create channel');
         } finally {
             setLoading(false);
         }
@@ -205,31 +196,77 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
         }
     };
 
-    const handleAddHashtag = () => {
-        if (hashtagInput.trim()) {
-            // For create mode, we'll create new hashtags with temporary IDs
-            // In a real app, you might want to search existing hashtags first
-            const newHashtag: HashtagOption = {
-                id: Date.now(), // Temporary ID, will be replaced by backend
-                name: hashtagInput.trim()
-            };
-
-            const exists = selectedHashtags.some(tag =>
-                tag.name.toLowerCase() === newHashtag.name.toLowerCase()
-            );
-
-            if (!exists) {
-                setSelectedHashtags(prev => [...prev, newHashtag]);
-                setHashtagInput('');
+    const handleAddHashtag = async (hashtagInput: string) => {
+        try {
+            const res = await createHashtag(loginRequiredAxiosInstance, { HashtagName: hashtagInput });
+            if (res?.success) {
+                const newHashtag: HashtagOption = {
+                    id: res.data.NewHashtag.Id,
+                    name: res.data.NewHashtag.Name
+                };
+                // Allow same letters with different case (Abc vs aBc treated as different)
+                const exists = selectedHashtags.some(tag => tag.id === newHashtag.id || tag.name === newHashtag.name);
+                if (!exists) {
+                    setSelectedHashtags(prev => [...prev, newHashtag]);
+                    setHashtagInput('');
+                    setSuggestions([]);
+                    setOpenSuggest(false);
+                }
             }
+        } catch (err) {
+            toast.error("Error adding hashtag");
         }
     };
+    const fetchHashtag = useCallback(async (keyword: string) => {
+        if (!keyword.trim()) {
+            setSuggestions([]);
+            return;
+        }
+        try {
+            setSuggestLoading(true);
+            const res = await getHashtags(loginRequiredAxiosInstance, keyword.trim());
+            if (res?.success) {
+                const list = (res.data?.HashtagList || []).map((h: any) => ({ id: h.Id, name: h.Name })) as HashtagOption[];
+                setSuggestions(list);
+            } else {
+                setSuggestions([]);
+            }
+        } catch (err) {
+            console.error('fetchHashtag error', err);
+            setSuggestions([]);
+        } finally {
+            setSuggestLoading(false);
+        }
+    }, []);
 
+    useEffect(() => {
+        const t = setTimeout(() => {
+            if (hashtagInput.trim().length > 0) {
+                setOpenSuggest(true);
+                fetchHashtag(hashtagInput);
+            } else {
+                setOpenSuggest(false);
+                setSuggestions([]);
+            }
+        }, 300);
+        return () => clearTimeout(t);
+    }, [hashtagInput, fetchHashtag]);
+    
     const handleHashtagKeyPress = (event: React.KeyboardEvent) => {
         if (event.key === 'Enter') {
             event.preventDefault();
-            handleAddHashtag();
+            handleAddHashtag(hashtagInput);
         }
+    };
+
+    const handleSelectSuggestion = (option: HashtagOption) => {
+        const exists = selectedHashtags.some(tag => tag.id === option.id);
+        if (!exists) {
+            setSelectedHashtags(prev => [...prev, option]);
+        }
+        setHashtagInput('');
+        setSuggestions([]);
+        setOpenSuggest(false);
     };
 
     const handleRemoveHashtag = (tagToRemove: HashtagOption) => {
@@ -290,7 +327,7 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
                             <MenuItem value={0} disabled>
                                 Select Category
                             </MenuItem>
-                            {mockPodcastCategories.map((category) => (
+                            {categoryList.map((category) => (
                                 <MenuItem
                                     key={category.Id}
                                     value={category.Id}
@@ -309,14 +346,13 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
                             value={channelData.PodcastSubCategoryId}
                             onChange={(e) => handleSubCategoryChange(e.target.value as unknown as number)}
                             className="channel-overview-page__select"
+                            required
                         >
-                            <MenuItem value={0}>
-                                None
+                            <MenuItem value={0} disabled>
+                                Select Subcategory
                             </MenuItem>
-                            {getSubCategoriesForCategory(channelData.PodcastCategoryId).map((subCategory) => (
-                                <MenuItem key={subCategory.Id} value={subCategory.Id}>
-                                    {subCategory.Name}
-                                </MenuItem>
+                            {getSubCategoriesForCategory(channelData.PodcastCategoryId).map(sub => (
+                                <MenuItem key={sub.Id} value={sub.Id}>{sub.Name}</MenuItem>
                             ))}
                         </TextField>
                     </div>
@@ -331,12 +367,15 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
                                 onKeyPress={handleHashtagKeyPress}
                                 size="small"
                                 className="channel-overview-page__hashtag-field"
+                                onFocus={() => {
+                                    if (hashtagInput.trim()) setOpenSuggest(true);
+                                }}
                                 InputProps={{
                                     endAdornment: (
                                         <InputAdornment position="end">
                                             <IconButton
-                                                onClick={handleAddHashtag}
-                                                disabled={!hashtagInput.trim() || selectedHashtags.some(tag => tag.name.toLowerCase() === hashtagInput.trim().toLowerCase())}
+                                                onClick={() => handleAddHashtag(hashtagInput)}
+                                                disabled={!hashtagInput.trim() || selectedHashtags.some(tag => tag.name === hashtagInput.trim())}
                                                 size="small"
                                                 sx={{ color: 'var(--primary-green)' }}
                                             >
@@ -357,6 +396,33 @@ const ChannelCreate = ({ onClose }: { onClose?: () => void }) => {
                                     '& .MuiInputLabel-root.Mui-focused': { color: 'var(--primary-green)' }
                                 }}
                             />
+                            {openSuggest && (suggestions.length > 0 || suggestLoading) && (
+                                <Box
+                                    className="channel-overview-page__hashtag-suggest"
+                                    sx={{
+                                        mt: 0.5,
+                                        maxHeight: 200,
+                                        overflowY: 'auto',
+                                        border: '1px solid #444',
+                                        borderRadius: 1,
+                                        background: '#1f1f1f',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                                    }}
+                                >
+                                    {suggestLoading && (
+                                        <Box sx={{ p: 1.5, color: '#aaa', fontSize: 13 }}>Searching…</Box>
+                                    )}
+                                    {!suggestLoading && suggestions.map((opt) => (
+                                        <MenuItem
+                                            key={opt.id}
+                                            onClick={() => handleSelectSuggestion(opt)}
+                                            sx={{ fontSize: 14 }}
+                                        >
+                                            #{opt.name}
+                                        </MenuItem>
+                                    ))}
+                                </Box>
+                            )}
                         </div>
                         <div className="channel-overview-page__hashtag-chips">
                             {selectedHashtags.map((tag, index) => (

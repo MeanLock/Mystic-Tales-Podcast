@@ -7,6 +7,7 @@ import { RouterProvider } from "react-router-dom";
 import { appRouter } from "./router";
 import { ToastContainer } from "react-toastify";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import Loading from "./views/components/common/loading";
 function App() {
 
   return (
@@ -28,7 +29,7 @@ function App() {
               backgroundColor: "var(--primary-grey)",
             }}
           >
-            <CircularProgress color="primary" />
+            <Loading  />
           </Box>
         }
       >

@@ -88,7 +88,12 @@
   --sidebar-ring: oklch(0.708 0 0);
   --ag-background-color: var(--primary-grey);
   --ag-foreground-color: white;
-
+    --secondary-grey: #282828;
+    --border-grey: #404040;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --waveform-primary: #7BA225;
+    --waveform-accent: #AEE339;
 }
 
 .dark {

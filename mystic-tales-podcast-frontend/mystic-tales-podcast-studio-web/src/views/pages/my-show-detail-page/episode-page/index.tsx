@@ -6,117 +6,15 @@ import { Button, CircularProgress, Grid, IconButton, Rating, Typography } from "
 import { formatDate } from "@/core/utils/date.util"
 import { Eye } from 'phosphor-react';
 import { Add } from '@mui/icons-material';
-import { useNavigate } from "react-router"
+import { useNavigate, useParams } from "react-router"
+import Modal_Button from "@/views/components/common/modal/ModalButton"
+import EpisodeCreate from "./EpisodeCreate"
+import { getShowDetail } from "@/core/services/show/show.service"
+import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
+import Image from "@/views/components/common/image"
+import Loading from "@/views/components/common/loading"
 
-export const mockShowEpisodeList: any = {
-    EpisodeList: [
-        {
-            Id: "3fa85f64-5717-4562-fjdf43-2c963f66afa6",
-            Name: "Tech Talk Weekly",
-            Description: "Bản tin công nghệ cập nhật mỗi tuần Bản tin công nghệ cập nhật mỗi tuầnBản tin công nghệ cập nhật mỗi tuần Bản tin công nghệ cập nhật mỗi tuần Bản tin công nghệ cập nhật mỗi tuần",
-            ReleaseDate: "2025-10-01T08:00:00.000Z",
-            ExplicitContent: false,
-            MainImageFileKey: "techtalk.jpg",
-            TotalSave: 1200,
-            ListenCount: 50000,
-            SeasonNumber: 1,
-            PodcastShowsSubscriptionType: {
-                Id: 2,
-                Name: "Trả phí"
-            },
-            PodcastShow: {
-                Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                Name: "string",
-                MainImageFileKey: "string"
-            },
-            TakenDownReason: "",
-            UpdatedAt: "2025-10-15T08:00:00.000Z",
-            CurrentStatus: {
-                Id: 0,
-                Name: "Ready to Release"
-            }
-        },
-        {
-            Id: "ep002",
-            Name: "Chuyện đời thường",
-            Description: "Những câu chuyện giản dị và sâu sắc",
-            ReleaseDate: "2025-09-15T07:30:00.000Z",
-            UploadFrequency: "Biweekly",
-            ExplicitContent: true,
-            MainImageFileKey: "life.jpg",
-            TotalFollow: 800,
-            ListenCount: 15000,
-            RatingCount: 10,
-            AverageRating: 3.5,
-            PodcastCategory: {
-                Id: 2,
-                Name: "Đời sống"
-            },
-            PodcastSubCategory: {
-                Id: 21,
-                Name: "Tâm sự",
-                PodcastCategoryId: 2
-            },
-            PodcastShowsSubscriptionType: {
-                Id: 2,
-                Name: "Trả phí"
-            },
-            TakenDownReason: "",
-            UpdatedAt: "2025-10-10T07:30:00.000Z",
-            CurrentStatus: {
-                Id: 0,
-                Name: "Published "
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Draft"
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Taken Down"
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Removed"
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Pending Review "
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Published "
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Pending Edit Required "
-            }
-        },
-        {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Published "
-            }
-        }, {
-            CurrentStatus: {
-                Id: 0,
-                Name: "Published "
-            }
-        },
-    ]
-};
+
 ModuleRegistry.registerModules([AllCommunityModule])
 
 interface ShowEpisodeViewProps { }
@@ -137,6 +35,7 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                 headerName: "Episode",
                 flex: 2,
                 cellClass: 'd-flex align-items-center',
+                tooltipValueGetter: (params: any) => `Id: ${params.data?.Id ?? ''}`,
                 cellRenderer: (params: any) => {
                     return (
                         <div style={{
@@ -146,16 +45,10 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                             padding: '8px 0',
                             width: '100%'
                         }}>
-                            <img
-                                src={`https://picsum.photos/300/300?random=${params.node.rowIndex}`}
+                            <Image
+                                mainImageFileKey={params.data.MainImageFileKey}
                                 alt={params.data.Name}
-                                style={{
-                                    width: '70px',
-                                    height: '70px',
-                                    borderRadius: '8px',
-                                    objectFit: 'cover',
-                                    flexShrink: 0
-                                }}
+                                className="w-[60px] h-[60px] rounded-[8px] object-cover flex-shrink-0"
                             />
                             <div style={{
                                 flex: 1,
@@ -173,7 +66,7 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                                 }}>
                                     {params.data.Name}
                                 </div>
-                                <div style={{
+                                {/* <div style={{
                                     fontSize: '0.6rem',
                                     color: 'var(--white-75)',
                                     lineHeight: '1.5',
@@ -184,7 +77,7 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                                     WebkitBoxOrient: 'vertical'
                                 }}>
                                     {params.data.Description}
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     );
@@ -198,10 +91,9 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                 headerName: "Season", field: "SeasonNumber", cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
             },
             {
-                headerName: "Recently Updated",
-                field: "UpdatedAt",
+                headerName: "Subscription",
+                field: "PodcastEpisodeSubscriptionType.Name",
                 cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-                valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
 
             },
             {
@@ -217,20 +109,19 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 flex: 1.1,
                 cellRenderer: (params: any) => {
-                    const status = params.data?.CurrentStatus?.Name?.trim() || '';
+                    const status = params.data?.CurrentStatus?.Name || '';
                     let color = '#888';
                     let bg = 'transparent';
                     switch (status) {
                         case 'Draft':
                             color = '#9e9e9e'; bg = 'rgba(158,158,158,0.15)'; // xám trung tính sáng
                             break;
+                        case 'Pending Edit Required':
                         case 'Pending Review':
                             color = '#ffb300'; bg = 'rgba(255, 179, 0, 0.15)'; // vàng cam tươi
                             break;
-                        case 'Pending Edit Required':
-                            color = '#f06292'; bg = 'rgba(240, 98, 146, 0.15)'; // hồng sáng
-                            break;
-                        case 'Ready to Release':
+                        case 'Audio Processing':
+                        case 'Ready To Release':
                             color = '#61a7f2ff'; bg = 'rgba(41, 182, 246, 0.15)'; // xanh trời tươi
                             break;
                         case 'Published':
@@ -278,7 +169,7 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
 
                     const handleClick = () => {
                         if (!episodeId) return;
-                            navigate(`${episodeId}`);
+                        navigate(`${episodeId}`);
 
                     };
 
@@ -309,6 +200,7 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
 
 const ShowEpisodeView: FC<ShowEpisodeViewProps> = () => {
     let [state, setState] = useState<GridState | null>(null);
+    const { id } = useParams<{ id: string }>();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const gridRef = useRef<any>(null);
     const navigate = useNavigate();
@@ -323,28 +215,27 @@ const ShowEpisodeView: FC<ShowEpisodeViewProps> = () => {
             gridRef.current.columnApi.autoSizeColumns(allColumnIds, false);
         }
     }, [state]);
-    // const handleDataChange = async () => {
-    //   setIsLoading(true);
-    //   try {
-    //     const accountList = await getCustomerAccounts(adminAxiosInstance);
-    //     if (accountList.success) {
-    //       setState(state_creator(accountList.data.Accounts));
-    //     } else {
-    //       console.error('API Error:', accountList.message);
-    //     }
-    //   } catch (error) {
-    //     console.error('Lỗi khi fetch customer accounts:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // }
-    const handleDataChange = async () => {
-        setIsLoading(false);
-        setState(state_creator(mockShowEpisodeList.EpisodeList, navigate));
+    const fetchShowDetail = async () => {
+        setIsLoading(true);
+        try {
+            const res = await getShowDetail(loginRequiredAxiosInstance, id);
+            console.log("Fetched show detail:", res.data.Show);
+            if (res.success && res.data) {
+                const ch = res.data.Show;
+                setState(state_creator(ch.EpisodeList, navigate));
 
+            } else {
+                console.error('API Error:', res.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch channel list:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }
+
     useEffect(() => {
-        handleDataChange()
+        fetchShowDetail()
     }, [])
 
     const defaultColDef = useMemo(() => {
@@ -360,7 +251,7 @@ const ShowEpisodeView: FC<ShowEpisodeViewProps> = () => {
     }, [])
 
     return (
-        <ShowEpisodeViewContext.Provider value={{ handleDataChange }}>
+        <ShowEpisodeViewContext.Provider value={{ handleDataChange: fetchShowDetail }}>
             <div
                 className="show-episode"
             >
@@ -368,13 +259,16 @@ const ShowEpisodeView: FC<ShowEpisodeViewProps> = () => {
                     <Typography variant="h4" className="show-episode__title" >
                         Episodes on Show <span className="text-primary ">({state?.rowData?.length || 0})</span>
                     </Typography>
-                    <Button
-                        variant="contained"
+                    <Modal_Button
                         className="show-episode__btn--add"
+                        content="New Episode"
+                        variant="contained"
+                        size='lg'
                         startIcon={<Add />}
                     >
-                        Add Episode
-                    </Button>
+                        <EpisodeCreate />
+                    </Modal_Button>
+
                 </div>
 
                 <div
@@ -393,7 +287,7 @@ const ShowEpisodeView: FC<ShowEpisodeViewProps> = () => {
                                 height: "100%",
                             }}
                         >
-                            <CircularProgress />
+                            <Loading />
                         </div>
                     ) : (
                         <AgGridReact
@@ -407,6 +301,7 @@ const ShowEpisodeView: FC<ShowEpisodeViewProps> = () => {
                             paginationPageSize={10}
                             paginationPageSizeSelector={[10, 16, 24, 32]}
                             domLayout="normal"
+                            tooltipShowDelay={0}
                         />
                     )}
                 </div>

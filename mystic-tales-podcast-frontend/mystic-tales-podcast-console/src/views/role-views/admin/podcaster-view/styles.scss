@@ -35,10 +35,55 @@
 }
 
 .podcaster-profile {
-  
+
   padding: 2rem;
   background: #ffffff;
+&__btn {
+    padding: 0.875rem 2.5rem;
+    border-radius: 8px;
+    font-weight: 700;
+    border: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 
+    &--deactivate {
+      background: #dc3545;
+      color: #ffffff;
+
+      &:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+      }
+    }
+
+    &--activate {
+      background: #28a745;
+      color: #ffffff;
+
+      &:hover {
+        background: #218838;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        color: #ffffff;
+
+      }
+    }
+
+    &--update {
+      background: #AEE339;
+      color: #282828;
+
+      &:hover {
+        background: #9fd327;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(174, 227, 57, 0.4);
+      }
+    }
+  }
   &__loading {
     padding: 3rem;
     text-align: center;
@@ -60,17 +105,18 @@
 
   &__title-section {
     flex: 1;
+
   }
 
   &__title {
     font-size: 1.75rem;
     font-weight: 700;
     color: #AEE339;
-    margin: 0 0 0.5rem 0;
+
   }
 
   &__subtitle {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.8);
     margin: 0;
   }
@@ -293,6 +339,17 @@
       background: #AEE339;
       color: #282828;
     }
+
+    &--close {
+      background: transparent;
+      border: 2px solid #de1414;
+      color: #de1414;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+
+    }
+
   }
 
   &__document-info {
@@ -310,7 +367,7 @@
 
   &__document-link {
     font-size: 0.875rem;
-    color: #AEE339;
+    color: #7fb800;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.3s ease;
@@ -419,7 +476,6 @@
     }
   }
 }
-
 .account-info {
   padding: 2rem;
   background: #ffffff;
@@ -456,6 +512,35 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  &__avatar-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  &__avatar-upload-label {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+       cursor: pointer;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      color: #282828;
+      transition: color 0.2s;
+    }
+
+    &:hover svg {
+      color: var(--primary-green);
+    }
+  }
+
+  &__avatar-input {
+    display: none;
   }
 
   &__name {

@@ -1,4 +1,3 @@
-// Channel Overview Page with BEM methodology
 .channel-overview-page {
     padding: 40px 40px 24px 48px;
     background-color: var(--primary-grey, #1a1a1a);
@@ -30,22 +29,29 @@
         font-weight: 600 !important;
 
         &--remove {
-            background-color: #d32f2f !important;
-            color: white !important;
+            color: #d32f2f !important;
+            border: 1px solid #d32f2f !important;
 
             &:hover {
                 background-color: #b71c1c !important;
+                color: white !important;
             }
         }
 
         &--unpublish {
-            border-color: #888 !important;
-            color: #888 !important;
-            background-color: transparent !important;
+            color: white !important;
+            background: linear-gradient(90deg, #ff9800 0%, #f57c00 100%);
+            border: none !important;
 
             &:hover {
-                border-color: white !important;
+                background: linear-gradient(90deg, #f57c00 0%, #e65100 100%);
                 color: white !important;
+                border: none !important;
+            }
+
+            &:disabled {
+                background-color: rgba(255, 255, 255, 0.1) !important;
+                color: rgba(255, 255, 255, 0.4) !important;
             }
         }
 
@@ -55,6 +61,11 @@
 
             &:hover {
                 background-color: #8bc34a !important;
+            }
+
+            &:disabled {
+                background-color: rgba(255, 255, 255, 0.1) !important;
+                color: rgba(255, 255, 255, 0.4) !important;
             }
         }
 
@@ -124,6 +135,8 @@
         &--status {
             flex: 1;
             min-width: 120px;
+            background-color: #99999912;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 
             .MuiInputLabel-root {
                 color: var(--third-grey);
@@ -177,6 +190,8 @@
     &__input-small {
         flex: 1;
         min-width: 120px;
+        background-color: #99999912;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 
         .MuiInputLabel-root {
             color: var(--third-grey);
@@ -515,11 +530,6 @@
     }
 }
 
-
-
-
-
-// Dark theme overrides for MUI components
 .channel-overview-page {
     .MuiPaper-root {
         background-color: #2a2a2a;
@@ -583,4 +593,313 @@
         }
     }
 
+}
+
+.deletion-option-modal {
+    &__content {
+        padding: 2rem 1rem;
+        color: white;
+
+        &::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: var(--primary-green);
+            border-radius: 4px;
+        }
+    }
+
+    &__header {
+        padding: 0.4rem 2rem;
+        background: rgba(239, 83, 80, 0.15);
+        border: 1px solid #d32f2f;
+    }
+
+    &__description {
+        color: #d32f2f !important;
+        line-height: 1.5 !important;
+    }
+
+    &__divider {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        margin: 16px 0 20px 0 !important;
+    }
+
+    &__select-all {
+        margin-bottom: 20px;
+        padding: 12px;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+
+        &-label {
+            margin: 0;
+
+            .MuiFormControlLabel-label {
+                color: white !important;
+                font-weight: 500 !important;
+                font-size: 0.95rem !important;
+            }
+        }
+    }
+
+    &__checkbox {
+        color: var(--primary-green) !important;
+
+        &.Mui-checked {
+            color: var(--primary-green) !important;
+        }
+
+        &.MuiCheckbox-indeterminate {
+            color: var(--primary-green) !important;
+        }
+    }
+
+    &__show-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 8px;
+
+        &::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+        }
+    }
+
+    &__show-card {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 2px solid transparent !important;
+        border-radius: 12px !important;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            border-color: rgba(156, 204, 101, 0.3) !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        &--selected {
+            background-color: rgba(156, 204, 101, 0.1) !important;
+            border-color: var(--primary-green) !important;
+            box-shadow: 0 0 0 1px var(--primary-green);
+
+            .deletion-option-modal__show-name {
+                color: var(--primary-green) !important;
+            }
+        }
+
+        &-content {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            gap: 16px;
+        }
+    }
+
+    &__show-checkbox {
+        color: var(--primary-green) !important;
+        flex-shrink: 0;
+
+        &.Mui-checked {
+            color: var(--primary-green) !important;
+        }
+    }
+
+    &__show-image {
+        width: 80px;
+        height: 80px;
+        flex-shrink: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+
+        &-content {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    &__show-info {
+        flex: 1;
+        padding: 0 !important;
+
+        &:last-child {
+            padding-bottom: 0 !important;
+        }
+    }
+
+    &__show-name {
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+        margin-bottom: 8px !important;
+        line-height: 1.3 !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    &__show-description {
+        color: rgba(255, 255, 255, 0.7) !important;
+        margin-bottom: 12px !important;
+        line-height: 1.4 !important;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    &__show-stats {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    &__show-stat {
+        color: rgba(255, 255, 255, 0.6) !important;
+        font-size: 0.75rem !important;
+        font-weight: 500 !important;
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    &__no-shows {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.6) !important;
+        padding: 40px 20px !important;
+        font-style: italic;
+    }
+
+    &__actions {
+        padding: 20px 0 0 0;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    &__button {
+        text-transform: none !important;
+        border-radius: 8px !important;
+        padding: 12px 24px !important;
+        font-weight: 600 !important;
+        min-width: 200px;
+
+        &--delete {
+            background-color: #d32f2f !important;
+            color: white !important;
+
+            &:hover {
+                background-color: #b71c1c !important;
+            }
+
+            &:disabled {
+                background-color: rgba(211, 47, 47, 0.3) !important;
+                cursor: not-allowed;
+            }
+        }
+    }
+
+    &__loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    // Responsive design
+    @media (max-width: 768px) {
+
+        &__show-card {
+            &-content {
+                padding: 12px;
+                gap: 12px;
+            }
+        }
+
+        &__show-image {
+            width: 60px;
+            height: 60px;
+        }
+
+        &__show-name {
+            font-size: 1rem !important;
+        }
+
+        &__show-description {
+            font-size: 0.85rem !important;
+        }
+
+        &__actions {
+            padding: 20px 0 0 0;
+
+            .deletion-option-modal__button {
+                width: 100%;
+                min-width: unset;
+            }
+        }
+    }
+
+    // Dark theme MUI component overrides
+    .MuiCheckbox-root {
+        color: rgba(255, 255, 255, 0.6) !important;
+
+        &.Mui-checked,
+        &.MuiCheckbox-indeterminate {
+            color: var(--primary-green) !important;
+        }
+
+        .MuiSvgIcon-root {
+            font-size: 1.2rem;
+        }
+    }
+
+    .MuiFormControlLabel-root {
+        .MuiFormControlLabel-label {
+            font-family: 'Inter', sans-serif;
+        }
+    }
+}
+
+.swal2-container {
+    z-index: 99999 !important;
+}
+
+.swal2-popup {
+    z-index: 99999 !important;
 }

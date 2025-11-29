@@ -14,7 +14,6 @@ import { CssBaseline, Radio, RadioGroup } from '@mui/material';
 import { callAxiosRestApi } from '../../../core/api/rest-api/main/api-call';
 import { publicAxiosInstance } from '../../../core/api/rest-api/config/instances/v2';
 import { errorAlert, successAlert } from '../../../core/utils/alert.util';
-import AppTheme from '../../components/common/mui-ui/AppTheme';
 import { SignInContainer } from './SignInContainer';
 import { Card } from './Card';
 
@@ -119,132 +118,133 @@ const RegistersPage : FC<RegisterPageProps> = (props) => {
     }
 
     return (
-        <AppTheme {...props}>
-            <CssBaseline enableColorScheme />
-            <SignInContainer direction="column" justifyContent="space-between">
-                <Card variant="outlined">
-                    <Typography
-                        component="h1"
-                        variant="h4"
-                        sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
-                    >
-                        Register
-                    </Typography>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            width: '100%',
-                            gap: 2,
-                        }}
-                    >
-                        <FormControl>
-                            <FormLabel htmlFor="email">membername</FormLabel>
-                            <TextField
-                                error={membernameErrorMessage.length > 0}
-                                helperText={membernameErrorMessage}
-                                id="email"
-                                type="text"
-                                name="email"
-                                placeholder="membername"
-                                autoComplete="email"
-                                autoFocus
-                                required
-                                fullWidth
-                                variant="outlined"
-                                color={membernameErrorMessage ? 'error' : 'primary'}
-                                onChange={(e) => setMembername(e.target.value)}
-                            />
-                        </FormControl>
-                        <FormControl>
-                            <FormLabel htmlFor="password">password</FormLabel>
-                            <TextField
-                                error={passwordErrorMessage.length > 0}
-                                helperText={passwordErrorMessage}
-                                name="password"
-                                placeholder="••••••"
-                                type="password"
-                                id="password"
-                                autoComplete="current-password"
-                                required
-                                fullWidth
-                                variant="outlined"
-                                color={passwordErrorMessage ? 'error' : 'primary'}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </FormControl>
-                        <FormControl>
-                            <FormLabel htmlFor="email">email</FormLabel>
-                            <TextField
-                                error={emailErrorMessage.length > 0}
-                                helperText={emailErrorMessage}
-                                id="email"
-                                type="email"
-                                name="email"
-                                placeholder="your@email.com"
-                                autoComplete="email"
-                                required
-                                fullWidth
-                                variant="outlined"
-                                color={emailErrorMessage ? 'error' : 'primary'}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </FormControl>
-                        <FormControl>
-                            <FormLabel htmlFor="email">YOB</FormLabel>
-                            <TextField
-                                error={YOBErrorMessage.length > 0}
-                                helperText={YOBErrorMessage}
-                                id="email"
-                                type="number"
-                                name="email"
-                                placeholder="year of birth"
-                                autoComplete="email"
-                                required
-                                fullWidth
-                                variant="outlined"
-                                color={YOBErrorMessage ? 'error' : 'primary'}
-                                onChange={(e) => setYOB(parseInt(e.target.value))}
-                            />
-                        </FormControl>
-                        <FormControl>
-                            <FormLabel htmlFor="email">gender</FormLabel>
-                            <RadioGroup
-                                aria-labelledby="demo-controlled-radio-buttons-group"
-                                name="controlled-radio-buttons-group"
-                                value={gender}
-                                onChange={(e) => setGender(e.target.value)}
-                            >
-                                <FormControlLabel value="male" control={<Radio />} label="Male" />
-                                <FormControlLabel value="female" control={<Radio />} label="Female" />
+        // <div {...props}>
+        //     <CssBaseline enableColorScheme />
+        //     <SignInContainer direction="column" justifyContent="space-between">
+        //         <Card variant="outlined">
+        //             <Typography
+        //                 component="h1"
+        //                 variant="h4"
+        //                 sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
+        //             >
+        //                 Register
+        //             </Typography>
+        //             <Box
+        //                 sx={{
+        //                     display: 'flex',
+        //                     flexDirection: 'column',
+        //                     width: '100%',
+        //                     gap: 2,
+        //                 }}
+        //             >
+        //                 <FormControl>
+        //                     <FormLabel htmlFor="email">membername</FormLabel>
+        //                     <TextField
+        //                         error={membernameErrorMessage.length > 0}
+        //                         helperText={membernameErrorMessage}
+        //                         id="email"
+        //                         type="text"
+        //                         name="email"
+        //                         placeholder="membername"
+        //                         autoComplete="email"
+        //                         autoFocus
+        //                         required
+        //                         fullWidth
+        //                         variant="outlined"
+        //                         color={membernameErrorMessage ? 'error' : 'primary'}
+        //                         onChange={(e) => setMembername(e.target.value)}
+        //                     />
+        //                 </FormControl>
+        //                 <FormControl>
+        //                     <FormLabel htmlFor="password">password</FormLabel>
+        //                     <TextField
+        //                         error={passwordErrorMessage.length > 0}
+        //                         helperText={passwordErrorMessage}
+        //                         name="password"
+        //                         placeholder="••••••"
+        //                         type="password"
+        //                         id="password"
+        //                         autoComplete="current-password"
+        //                         required
+        //                         fullWidth
+        //                         variant="outlined"
+        //                         color={passwordErrorMessage ? 'error' : 'primary'}
+        //                         onChange={(e) => setPassword(e.target.value)}
+        //                     />
+        //                 </FormControl>
+        //                 <FormControl>
+        //                     <FormLabel htmlFor="email">email</FormLabel>
+        //                     <TextField
+        //                         error={emailErrorMessage.length > 0}
+        //                         helperText={emailErrorMessage}
+        //                         id="email"
+        //                         type="email"
+        //                         name="email"
+        //                         placeholder="your@email.com"
+        //                         autoComplete="email"
+        //                         required
+        //                         fullWidth
+        //                         variant="outlined"
+        //                         color={emailErrorMessage ? 'error' : 'primary'}
+        //                         onChange={(e) => setEmail(e.target.value)}
+        //                     />
+        //                 </FormControl>
+        //                 <FormControl>
+        //                     <FormLabel htmlFor="email">YOB</FormLabel>
+        //                     <TextField
+        //                         error={YOBErrorMessage.length > 0}
+        //                         helperText={YOBErrorMessage}
+        //                         id="email"
+        //                         type="number"
+        //                         name="email"
+        //                         placeholder="year of birth"
+        //                         autoComplete="email"
+        //                         required
+        //                         fullWidth
+        //                         variant="outlined"
+        //                         color={YOBErrorMessage ? 'error' : 'primary'}
+        //                         onChange={(e) => setYOB(parseInt(e.target.value))}
+        //                     />
+        //                 </FormControl>
+        //                 <FormControl>
+        //                     <FormLabel htmlFor="email">gender</FormLabel>
+        //                     <RadioGroup
+        //                         aria-labelledby="demo-controlled-radio-buttons-group"
+        //                         name="controlled-radio-buttons-group"
+        //                         value={gender}
+        //                         onChange={(e) => setGender(e.target.value)}
+        //                     >
+        //                         <FormControlLabel value="male" control={<Radio />} label="Male" />
+        //                         <FormControlLabel value="female" control={<Radio />} label="Female" />
 
-                            </RadioGroup>
-                        </FormControl>
-                        <Button
-                            fullWidth
-                            variant="contained"
-                            onClick={handleRegisterMember}
-                            loading={loading}
-                        >
-                            Sign up
-                        </Button>
-                    </Box>
-                    <Divider>or</Divider>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Typography sx={{ textAlign: 'center' }}>
-                            Already have an account?{' '}
-                            <Link
-                                href="/login"
-                                variant="body2"
-                                sx={{ alignSelf: 'center' }}
-                            >
-                                Log in
-                            </Link>
-                        </Typography>
-                    </Box>
-                </Card>
-            </SignInContainer>
-        </AppTheme>
+        //                     </RadioGroup>
+        //                 </FormControl>
+        //                 <Button
+        //                     fullWidth
+        //                     variant="contained"
+        //                     onClick={handleRegisterMember}
+        //                     loading={loading}
+        //                 >
+        //                     Sign up
+        //                 </Button>
+        //             </Box>
+        //             <Divider>or</Divider>
+        //             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        //                 <Typography sx={{ textAlign: 'center' }}>
+        //                     Already have an account?{' '}
+        //                     <Link
+        //                         href="/login"
+        //                         variant="body2"
+        //                         sx={{ alignSelf: 'center' }}
+        //                     >
+        //                         Log in
+        //                     </Link>
+        //                 </Typography>
+        //             </Box>
+        //         </Card>
+        //     </SignInContainer>
+        // </AppTheme>
+        <div></div>
     );
 }
 

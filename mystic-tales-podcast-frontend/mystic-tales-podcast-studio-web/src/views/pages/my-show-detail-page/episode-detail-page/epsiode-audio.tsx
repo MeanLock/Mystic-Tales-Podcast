@@ -1,18 +1,27 @@
-
 import type React from "react"
-import { useEffect, useMemo, useRef, useState, useCallback } from "react"
+import { useContext, useEffect, useMemo, useRef, useState } from "react"
 import WaveSurfer from "wavesurfer.js"
-import { Music, Download, Play, Minus, Pause as LucidePause } from "lucide-react"
-import "./episode-audio.scss"
-import "./sequencer-styles.scss"
+import { Music, Download, Play, Minus, CloudUpload } from "lucide-react"
 import { ArrowCounterClockwise, Database, FolderSimple, Plus, Question } from "phosphor-react"
-import { IconButton, MenuItem, Select, Tooltip } from "@mui/material"
-import { Rnd } from "react-rnd"
+import { IconButton, MenuItem, Modal, Select, Skeleton, Tooltip } from "@mui/material"
 import ghost from "../../../../assets/ghost.mp3"
-import { PlayArrow, Pause } from "@mui/icons-material"
+import { PlayArrow, Pause, ContentCopy, PublishedWithChangesOutlined } from "@mui/icons-material"
 import { toast } from "react-toastify"
-import { AudioTuning } from "@/core/services/account/account.service"
-import { loginRequiredAxiosInstance, publicAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
+import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
+import { useNavigate, useParams } from "react-router-dom"
+import { audioTuning, getAudioFile, getBackgroundSoundFile, getBackgroundSounds, uploadAudio } from "@/core/services/episode/audio.service"
+import { BackgroundSound } from "@/core/types"
+import { useSagaPolling } from "@/core/hooks/useSagaPolling"
+import { set } from "lodash"
+import Loading2 from "@/views/components/common/loading2"
+import Image from "@/views/components/common/image"
+import { Episode } from "@/core/types/episode"
+import { getEpisodeDetail } from "@/core/services/episode/episode.service"
+import Loading from "@/views/components/common/loading"
+import Modal_Button from "@/views/components/common/modal/ModalButton"
+import { buildEpisodeAudioFileName } from "@/core/utils/audio.util"
+import { confirmAlert } from "@/core/utils/alert.util"
+import { EpisodeDetailViewContext } from "."
 interface EpisodeAudioProps {
     initialAudio?: string
 }
@@ -88,86 +97,27 @@ const MOOD_OPTIONS = [
     { value: 'Mysterious', label: 'Mysterious' },
     { value: 'Eerie', label: ' Eerie' },
 ]
-
-
-const secondsToTime = (s: number) => {
-    if (s < 0) s = 0;
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60)
-        .toString()
-        .padStart(2, "0");
-    return `${m}:${sec}`;
-};
-
-// Sequencer Clip interface
-interface Clip {
-    id: string
-    name: string
-    file: File
-    buffer: AudioBuffer
-    duration: number
-    start: number
-    trimStart: number
-    trimEnd: number
-    track: number
-    volume?: number // Volume in dB for background clips
-}
-
-// System background sounds (predefined)
-const SYSTEM_BACKGROUND_SOUNDS = [
-    { id: 'ghost', name: 'Ghost', file: ghost },
-    { id: 'rain', name: 'Rain', file: ghost }, // placeholder - replace with actual rain file
-    { id: 'forest', name: 'Forest', file: ghost }, // placeholder - replace with actual forest file
-    { id: 'ocean', name: 'Ocean', file: ghost }, // placeholder - replace with actual ocean file
-]
-
-// Utility functions
-const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
-
-let _ac: AudioContext
-const getAC = () => {
-    if (!_ac) _ac = new (window.AudioContext || (window as any).webkitAudioContext)()
-    return _ac
-}
-
 const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
+    const { episodeId } = useParams<{ episodeId: string }>();
+    const ctx = useContext(EpisodeDetailViewContext);
+    const authSlice = ctx?.authSlice;
+    const episodeDetail = ctx?.episodeDetail;
+    const refreshEpisode = ctx?.refreshEpisode;
     // ============ REFS ============
-    const fileInputRef = useRef<HTMLInputElement>(null)
     const waveformRefOriginal = useRef<HTMLDivElement>(null)
     const waveformRefPreview = useRef<HTMLDivElement>(null)
-    const waveformRefBg = useRef<HTMLDivElement>(null)
     const wavesurferRefOriginal = useRef<WaveSurfer | null>(null)
     const wavesurferRefPreview = useRef<WaveSurfer | null>(null)
-    const wavesurferRefBg = useRef<WaveSurfer | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
     const progressBarRefOriginal = useRef<HTMLDivElement>(null)
     const progressBarRefPreview = useRef<HTMLDivElement>(null)
-    const progressBarRefSequencer = useRef<HTMLDivElement>(null)
-    const timelineScrollRef = useRef<HTMLDivElement>(null)
 
     // ============ STATE ============
     const [uploadedFile, setUploadedFile] = useState<File | null>(null)
     const [audioUrl, setAudioUrl] = useState<string | null>(initialAudio || null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+    const [previewFile, setPreviewFile] = useState<File | null>(null)
     const [isDragging, setIsDragging] = useState(false)
-
-    // Sequencer state
-    const [clips, setClips] = useState<Clip[]>([])
-    const [availableBackgrounds, setAvailableBackgrounds] = useState(SYSTEM_BACKGROUND_SOUNDS)
-    const [showSequencer, setShowSequencer] = useState(false)
-    const [pixelsPerSecond, setPPS] = useState(30) // Thu hẹp từ 120 xuống 30 để giảm scroll ngang
-    const [isPlayingSequencer, setIsPlayingSequencer] = useState(false)
-    const [playhead, setPlayhead] = useState(0)
-    const [trackVolumes, setTrackVolumes] = useState([1, 1])
-
-    // Audio context refs for sequencer
-    const acRef = useRef<AudioContext | null>(null)
-    const startWallClockRef = useRef(0)
-    const startPlayheadRef = useRef(0)
-    const activeNodesRef = useRef<Array<{ src: AudioBufferSourceNode }>>([])
-    const rafRef = useRef<number | undefined>()
-    const trackGainsRef = useRef<Array<{ gain: GainNode }>>([])
-
-    const rowH = 120 // Tăng từ 90 lên 120 để hiển thị waveform rõ hơn
 
     // Original audio player state
     const [isPlayingOriginal, setIsPlayingOriginal] = useState(false)
@@ -182,10 +132,10 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     const [isSeekingPreview, setIsSeekingPreview] = useState(false)
 
     // Sidebar state
-    const [eqPreset, setEqPreset] = useState("flat")
-    const [mood, setMood] = useState("Mysterious")
-    const [backgroundSounds, setBackgroundSounds] = useState<string[]>([])
+    const [backgroundSounds, setBackgroundSounds] = useState<BackgroundSound[]>([])
     const [selectedBgSound, setSelectedBgSound] = useState<string>("")
+    const [bgInfo, setBgInfo] = useState<BackgroundSound | null>(null)
+    const [bgSoundFile, setBgSoundFile] = useState<string | null>(null)
     const [bgSoundVolume, setBgSoundVolume] = useState(0)
     const [showBgSoundSelector, setShowBgSoundSelector] = useState(false)
     const [showMoodSelector, setShowMoodSelector] = useState(false)
@@ -193,265 +143,87 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     // EQ state
     const [eqConfig, setEqConfig] = useState(presets["Flat"])
     const [selectedPreset, setSelectedPreset] = useState("Flat")
-    const [selectedMood, setSelectedMood] = useState("Mysterious")
+    const [selectedMood, setSelectedMood] = useState("")
 
-    // ============ SEQUENCER HANDLERS ============
-    const handleClipsChange = useCallback((newClips: Clip[]) => {
-        setClips(newClips)
-    }, [])
+    const [currentFileSource, setCurrentFileSource] = useState<'server' | 'local'>('server');
+    const [previewReady, setPreviewReady] = useState(false);
+    const [lastPreviewSignature, setLastPreviewSignature] = useState<{
+        fileName: string;
+        fileSize: number;
+        eq: Record<string, number>;
+        mood: string;
+        bg: string;
+        vol: number;
+    } | null>(null);
 
-    // Ensure gain nodes for sequencer
-    const ensureTrackGains = useCallback(() => {
-        const ac = acRef.current || getAC()
-        while (trackGainsRef.current.length < 2) {
-            const gain = ac.createGain()
-            gain.gain.value = 1
-            gain.connect(ac.destination)
-            trackGainsRef.current.push({ gain })
-        }
-        trackGainsRef.current[0].gain.gain.value = trackVolumes[0] ?? 1
-        trackGainsRef.current[1].gain.gain.value = trackVolumes[1] ?? 1
-    }, [trackVolumes])
+    const [loading, setLoading] = useState(false);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [saveChoiceOpen, setSaveChoiceOpen] = useState(false);
 
-    // Stop all audio nodes
-    const stopAll = useCallback(() => {
-        activeNodesRef.current.forEach(({ src }) => {
-            try {
-                src.stop()
-            } catch { }
-        })
-        activeNodesRef.current = []
-        if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    }, [])
+    const { startPolling } = useSagaPolling({
+        timeoutSeconds: 200,
+        intervalSeconds: 5,
+    })
 
-    // Helper function to find next available position for background clip
-    const findAvailablePosition = useCallback((newDuration: number, existingBgClips: Clip[]) => {
-        if (existingBgClips.length === 0) {
-            return 0 // No existing clips, start at beginning
-        }
 
-        // Sort existing clips by start time
-        const sortedClips = existingBgClips
-            .map(clip => ({
-                start: clip.start,
-                end: clip.start + Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
-            }))
-            .sort((a, b) => a.start - b.start)
-
-        // Check if we can fit at the beginning
-        if (sortedClips[0].start >= newDuration) {
-            return 0
-        }
-
-        // Check gaps between clips
-        for (let i = 0; i < sortedClips.length - 1; i++) {
-            const gapStart = sortedClips[i].end
-            const gapEnd = sortedClips[i + 1].start
-            const gapSize = gapEnd - gapStart
-
-            if (gapSize >= newDuration) {
-                return gapStart
-            }
-        }
-
-        // Place after the last clip
-        const lastClipEnd = sortedClips[sortedClips.length - 1].end
-        return lastClipEnd
-    }, [])
-
-    // Load background sound to sequencer
-    const handleAddBackgroundToSequencer = useCallback(async (bgSound: typeof SYSTEM_BACKGROUND_SOUNDS[0]) => {
-        if (!uploadedFile) return
-
+    const fetchBackgroundSounds = async () => {
+        setLoading(true);
         try {
-            const ac = acRef.current || getAC()
-            acRef.current = ac
-
-            const response = await fetch(bgSound.file)
-            const arrayBuffer = await response.arrayBuffer()
-            const buffer = await ac.decodeAudioData(arrayBuffer.slice(0)) // Use slice to create a copy
-
-            // Get existing background clips
-            const existingBgClips = clips.filter(c => c.track === 1)
-
-            // Find the best position for this new clip
-            const optimalStart = findAvailablePosition(buffer.duration, existingBgClips)
-
-            // Create blob and file from the same arrayBuffer
-            const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
-            const file = new File([blob], bgSound.name, { type: 'audio/mpeg' })
-
-            const newClip: Clip = {
-                id: `${bgSound.id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                name: bgSound.name,
-                file,
-                buffer,
-                duration: buffer.duration,
-                start: optimalStart,
-                trimStart: 0,
-                trimEnd: 0,
-                track: 1, // Background track
-                volume: -5, // Default volume -5dB for background
+            const res = await getBackgroundSounds(loginRequiredAxiosInstance);
+            console.log("Fetched bg list:", res.data.BackgroundSoundTrackList);
+            if (res.success && res.data) {
+                setBackgroundSounds(res.data.BackgroundSoundTrackList || []);
+            } else {
+                console.error('API Error:', res.message);
             }
-
-            setClips(prev => [...prev, newClip])
-            setShowSequencer(true)
-            toast.success(`Added ${bgSound.name} to sequencer at ${Math.floor(optimalStart)}s`)
         } catch (error) {
-            console.error('Failed to load background sound:', error)
-            toast.error('Failed to load background sound')
+            console.error('Lỗi khi fetch show detail:', error);
+        } finally {
+            setLoading(false);
         }
-    }, [uploadedFile, clips, findAvailablePosition])
+    }
 
-    // Load original audio to sequencer
     useEffect(() => {
-        if (!uploadedFile) return
-
-        const loadOriginalAudio = async () => {
+        const loadServerAudio = async () => {
+            if (!episodeDetail?.AudioFileKey) {
+                setAudioUrl(null);
+                setUploadedFile(null);
+                return;
+            }
             try {
-                const ac = getAC()
-                acRef.current = ac
-
-                const buffer = await ac.decodeAudioData(await uploadedFile.arrayBuffer())
-                const originalClip: Clip = {
-                    id: `${uploadedFile.name}-${Date.now()}-0`,
-                    name: uploadedFile.name,
-                    file: uploadedFile,
-                    buffer,
-                    duration: buffer.duration,
-                    start: 0,
-                    trimStart: 0,
-                    trimEnd: 0,
-                    track: 0, // Original track
+                const res = await getAudioFile(loginRequiredAxiosInstance, episodeDetail.AudioFileKey);
+                if (res.success && res.data?.FileUrl) {
+                    setAudioUrl(res.data.FileUrl);
+                    const blob = await fetch(res.data.FileUrl).then(r => r.blob());
+                    const fileName = buildEpisodeAudioFileName(episodeDetail, blob.type);
+                    setUploadedFile(new File([blob], fileName, { type: blob.type }));
+                    setCurrentFileSource('server');
+                    setPreviewReady(false);
+                    setLastPreviewSignature(null);
                 }
-
-                setClips(prev => {
-                    const filtered = prev.filter(c => c.track !== 0)
-                    return [...filtered, originalClip]
-                })
-            } catch (error) {
-                console.error("Failed to load original audio:", error)
+            } catch (e) {
+                toast.error('Load audio failed');
             }
-        }
+        };
+        loadServerAudio();
+        fetchBackgroundSounds()
+    }, [episodeDetail?.AudioFileKey]);
 
-        loadOriginalAudio()
-    }, [uploadedFile])
-
-    // Sequencer playback functions
-    const originalDuration = useMemo(() => {
-        const clip = clips.find((c) => c.track === 0)
-        return clip ? clip.duration : 30
-    }, [clips])
-
-    const totalLengthSec = useMemo(() => {
-        const mx = clips.reduce((m, c) => {
-            const vis = Math.max(0, c.duration - c.trimStart - c.trimEnd)
-            return Math.max(m, c.start + vis)
-        }, originalDuration)
-        return Math.max(mx, originalDuration)
-    }, [clips, originalDuration])
-
-    const scheduleFrom = useCallback((fromSec: number) => {
-        const ac = acRef.current || getAC()
-        ensureTrackGains()
-
-        stopAll()
-
-        startWallClockRef.current = ac.currentTime
-        startPlayheadRef.current = fromSec
-
-        for (let t = 0; t < 2; t++) {
-            const tGain = trackGainsRef.current[t]?.gain || ac.destination
-            const tClips = clips.filter((c) => c.track === t)
-
-            const scheduleClipAt = (clip: Clip, offsetSec: number) => {
-                const playStart = clip.start + offsetSec
-                const clipDur = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
-                const playEnd = playStart + clipDur
-                if (clipDur <= 0) return
-                if (fromSec < playEnd) {
-                    const when = Math.max(0, playStart - fromSec)
-                    const offset = Math.max(0, fromSec - playStart) + clip.trimStart
-                    const dur = clipDur - Math.max(0, fromSec - playStart)
-                    const src = ac.createBufferSource()
-                    src.buffer = clip.buffer
-
-                    // Apply individual clip volume for background tracks
-                    if (clip.track === 1 && clip.volume !== undefined) {
-                        const clipGain = ac.createGain()
-                        // Convert dB to linear gain: gain = 10^(dB/20)
-                        const linearGain = Math.pow(10, clip.volume / 20)
-                        clipGain.gain.value = linearGain
-                        src.connect(clipGain)
-                        clipGain.connect(tGain)
-                    } else {
-                        src.connect(tGain)
-                    }
-
-                    try {
-                        src.start(ac.currentTime + when, offset, Math.max(0, dur))
-                        activeNodesRef.current.push({ src })
-                    } catch { }
-                }
+    const fetchBackgroundSoundAudio = async (fileKey: string) => {
+        const bgSound = backgroundSounds.find(bg => bg.AudioFileKey === fileKey) || null;
+        setBgInfo(bgSound);
+        try {
+            setSelectedBgSound(fileKey);
+            const response = await getBackgroundSoundFile(loginRequiredAxiosInstance, fileKey)
+            if (response.success && response.data) {
+                setBgSoundFile(response.data.FileUrl)
             }
-
-            tClips.forEach((c) => scheduleClipAt(c, 0))
+        } catch (error) {
+            console.error('Error fetching PDF:', error)
+            toast.error('Failed to load PDF')
         }
-
-        const tick = () => {
-            const elapsed = ac.currentTime - startWallClockRef.current
-            const ph = startPlayheadRef.current + elapsed
-            setPlayhead(ph)
-            if (ph >= totalLengthSec) {
-                setIsPlayingSequencer(false)
-                setPlayhead(0)
-                return
-            }
-            rafRef.current = requestAnimationFrame(tick)
-        }
-        rafRef.current = requestAnimationFrame(tick)
-    }, [clips, totalLengthSec, ensureTrackGains, stopAll])
-
-    const handleSequencerPlay = useCallback(() => {
-        if (isPlayingSequencer) return
-        getAC().resume()
-        setIsPlayingSequencer(true)
-        scheduleFrom(playhead)
-    }, [isPlayingSequencer, playhead, scheduleFrom])
-
-    const handleSequencerPause = useCallback(() => {
-        setIsPlayingSequencer(false)
-        stopAll()
-    }, [stopAll])
-
-    const handleSequencerStop = useCallback(() => {
-        handleSequencerPause()
-        setPlayhead(0)
-    }, [handleSequencerPause])
-
-    useEffect(() => {
-        ensureTrackGains()
-    }, [ensureTrackGains])
-
-    useEffect(() => () => stopAll(), [stopAll])
-
-    // Auto-scroll timeline to follow playhead
-    useEffect(() => {
-        if (isPlayingSequencer && timelineScrollRef.current) {
-            const scrollContainer = timelineScrollRef.current
-            const playheadPosition = playhead * pixelsPerSecond
-            const containerWidth = scrollContainer.clientWidth
-            const scrollLeft = scrollContainer.scrollLeft
-
-            // Scroll if playhead is near the right edge or out of view
-            if (playheadPosition > scrollLeft + containerWidth - 200) {
-                scrollContainer.scrollTo({
-                    left: playheadPosition - containerWidth / 2,
-                    behavior: 'smooth'
-                })
-            }
-        }
-    }, [playhead, isPlayingSequencer, pixelsPerSecond])
+    }
 
     const handlePresetChange = (preset: string) => {
         setSelectedPreset(preset)
@@ -471,7 +243,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     } | null>(null)
     const [baselineTick, setBaselineTick] = useState(0)
 
-    // Reset baseline when a new audio is loaded: baseline = current state (Preview stays disabled until changes)
     useEffect(() => {
         if (!audioUrl) {
             baselineRef.current = null
@@ -548,39 +319,12 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         }
     }, [audioUrl])
 
-    // Waveform background (chỉ hiển thị, không cần chức năng tương tác)
-    useEffect(() => {
-        if (!waveformRefBg.current || !selectedBgSound) return;
-
-        const wsBg = WaveSurfer.create({
-            container: waveformRefBg.current,
-            waveColor: "#7BA225",
-            progressColor: "#AEE339",
-            cursorColor: "#AEE339",
-            barWidth: 2,
-            barGap: 2,
-            fillParent: true,
-            minPxPerSec: 30,
-            barRadius: 2,
-            height: 130,
-            interact: false,
-            hideScrollbar: true,
-        });
-        wavesurferRefBg.current = wsBg;
-        // Nếu là ghost.mp3 demo thì dùng ghost, còn lại dùng selectedBgSound
-        const bgUrl = selectedBgSound === "main_files/PodcastBackgroundSoundTracks/afdc0507-0e6d-4696-8467-1fc7b4d26514/audio.mp3" ? ghost : selectedBgSound;
-        wsBg.load(bgUrl);
-        return () => {
-            wsBg.destroy();
-        };
-    }, [selectedBgSound]);
-
     useEffect(() => {
         return () => {
             if (previewUrl) URL.revokeObjectURL(previewUrl)
         }
     }, [previewUrl])
-    // Preview waveform
+
     useEffect(() => {
         if (!waveformRefPreview.current || !previewUrl) return
 
@@ -694,21 +438,46 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     }, [isSeekingOriginal, isSeekingPreview, durationOriginal, durationPreview])
 
     // ============ FILE HANDLING ============
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0]
-        if (!file) return
+    const resetForNewFile = (file: File) => {
+        const url = URL.createObjectURL(file);
+        setAudioUrl(url);
+        setUploadedFile(file);
+        setCurrentFileSource('local');
+
+        // Always reset preview-related state
+        setPreviewReady(false);
+        setPreviewUrl(null);
+        setPreviewFile(null);
+        setLastPreviewSignature(null);
+        baselineRef.current = null;
+        setBaselineTick(t => t + 1);
+
+        setEqConfig(presets["Flat"]);
+        setSelectedPreset("Flat");
+        setSelectedMood("");
+        setShowMoodSelector(false);
+        setSelectedBgSound("");
+        setBgSoundFile(null);
+        setBgSoundVolume(0);
+        setShowBgSoundSelector(false);
+
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
 
         if (file.size > 150 * 1024 * 1024) {
-            alert("File size exceeds 150MB limit.")
-            return
+            toast.error("File size exceeds 150MB limit.");
+            return;
         }
-
-        if (file.type.startsWith("audio/")) {
-            const url = URL.createObjectURL(file)
-            setAudioUrl(url)
-            setUploadedFile(file)
+        if (!file.type.startsWith('audio/')) {
+            toast.error("Unsupported file type.");
+            return;
         }
-    }
+        resetForNewFile(file);
+    };
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault()
@@ -728,12 +497,40 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             return
         }
 
-        if (file.type.startsWith("audio/")) {
-            const url = URL.createObjectURL(file)
-            setAudioUrl(url)
-            setUploadedFile(file)
+        if (file.type.startsWith('audio/')) {
+            const url = URL.createObjectURL(file);
+            setAudioUrl(url);
+            setUploadedFile(file);
+            setCurrentFileSource('local');
+            setPreviewReady(false);
+            setPreviewUrl(null);
+            setPreviewFile(null);
+            setLastPreviewSignature(null);
         }
     }
+    const currentSignature = useMemo(() => {
+        if (!uploadedFile) return null;
+        return {
+            fileName: uploadedFile.name,
+            fileSize: uploadedFile.size,
+            eq: eqConfig,
+            mood: selectedMood,
+            bg: selectedBgSound,
+            vol: bgSoundVolume,
+        };
+    }, [uploadedFile, eqConfig, selectedMood, selectedBgSound, bgSoundVolume]);
+
+    const hasUnsavedPreview = useMemo(() => {
+        if (!previewReady || !lastPreviewSignature || !currentSignature) return false;
+        const diff =
+            lastPreviewSignature.fileName !== currentSignature.fileName ||
+            lastPreviewSignature.fileSize !== currentSignature.fileSize ||
+            !isEqEqual(lastPreviewSignature.eq, currentSignature.eq) ||
+            lastPreviewSignature.mood !== currentSignature.mood ||
+            lastPreviewSignature.bg !== currentSignature.bg ||
+            lastPreviewSignature.vol !== currentSignature.vol;
+        return diff;
+    }, [previewReady, lastPreviewSignature, currentSignature]);
 
     // ============ UTILITY FUNCTIONS ============
     const formatTime = (seconds: number) => {
@@ -751,6 +548,11 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     }
 
     const handleAddBackgroundSound = () => {
+        if (showBgSoundSelector) {
+            setSelectedBgSound("")
+            setBgSoundFile(null)
+            setBgSoundVolume(0)
+        }
         setShowBgSoundSelector(!showBgSoundSelector)
     }
 
@@ -758,10 +560,8 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         setShowMoodSelector((prev) => {
             const next = !prev
             if (next) {
-                // auto-add a default mood when opening selector
-                if (!selectedMood) setSelectedMood('balance')
+                if (!selectedMood) setSelectedMood('Mysterious')
             } else {
-                // remove mood when closing selector
                 setSelectedMood('')
             }
             return next
@@ -769,6 +569,12 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     }
 
     const handlePreview = async () => {
+               if (authSlice.user?.ViolationLevel > 0) {
+                    toast.error('Your account is currently under violation !!');
+                    return;
+                }
+        if (!uploadedFile) return;
+        setPreviewLoading(true)
         const payload = {
             GeneralTuningProfileRequestInfo: {
                 EqualizerProfile: {
@@ -794,16 +600,20 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             AudioFile: uploadedFile
         }
         console.log("Audio Tuning Payload:", payload)
-        const response = await AudioTuning(loginRequiredAxiosInstance, payload)
+        const response = await audioTuning(loginRequiredAxiosInstance, episodeId, payload)
         console.log("Audio Tuning Response:", response)
         if (response.success && response.data) {
             const blob = response.data;
+            const file = new File([blob], "preview-audio.mp3", { type: blob.type || "audio/mpeg" });
             const url = URL.createObjectURL(blob);
             setPreviewUrl(url);
+            setPreviewFile(file);
+            setPreviewReady(true);
+            setLastPreviewSignature(currentSignature); // chốt snapshot
         } else {
-            //console.log(response.message)
             toast.error(response.message.content || "Thất bại, vui lòng thử lại !")
         }
+        setPreviewLoading(false);
         baselineRef.current = {
             eqConfig: { ...eqConfig },
             selectedMood,
@@ -815,9 +625,81 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         console.log('Previewing audio...', { eqConfig, selectedMood, selectedBgSound, bgSoundVolume })
     }
 
-    const handleSave = () => {
-        alert("Audio saved with current settings!")
-    }
+    const performSave = async (fileToSave: File) => {
+               if (authSlice.user?.ViolationLevel > 0) {
+                    toast.error('Your account is currently under violation !!');
+                    return;
+                }
+        try {
+            setSaving(true);
+            const payload = { AudioFile: fileToSave };
+            console.log("Upload Audio Payload:", payload);
+            const res = await uploadAudio(loginRequiredAxiosInstance, episodeId, payload);
+            const sagaId = res?.data?.SagaInstanceId;
+            if (!res.success && res.message.content) {
+                toast.error(res.message.content);
+                return;
+            }
+            if (!sagaId) {
+                toast.error('Saving episode failed, please try again.');
+                return;
+            }
+            await startPolling(sagaId, loginRequiredAxiosInstance, {
+                onSuccess: async () => {
+                    toast.success('Audio saved successfully.');
+                    await refreshEpisode?.();
+                },
+                onFailure: (err) => toast.error(err || 'Saga failed!'),
+                onTimeout: () => toast.error('System not responding, please try again.'),
+            });
+        } catch (error) {
+            toast.error('Error saving audio');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSaveClick = async () => {
+               if (authSlice.user?.ViolationLevel > 0) {
+                    toast.error('Your account is currently under violation !!');
+                    return;
+                }
+        if (episodeDetail && episodeDetail.CurrentStatus.Id === 5) {
+            toast.error("Cannot change audio for Published episodes, please Unpublish first");
+            return;
+        }
+        if (episodeDetail && episodeDetail.CurrentStatus.Id === 4) {
+            const alert = await confirmAlert("If you save changes now, you must Request to Publish again. Do you want to continue?");
+            if (!alert.isConfirmed) return;
+        }
+        if (episodeDetail && episodeDetail.CurrentStatus.Id === 2) {
+            toast.error("This episode is Pending Review, please Discard Publish Request first");
+            return;
+        }
+
+        if (saving || previewLoading) return;
+        if (saveDisabled) {
+            if (currentFileSource === 'server') {
+                toast.info('Preview the server audio before saving.');
+            }
+            return;
+        }
+        if (!uploadedFile) return;
+
+        // Server file: luôn save bản preview (đã được đảm bảo hợp lệ bởi saveDisabled)
+        if (currentFileSource === 'server') {
+            performSave(previewFile!);
+            return;
+        }
+
+        // Local file: nếu có preview hợp lệ thì hỏi chọn; nếu chưa preview hoặc preview đã outdated thì lưu bản gốc
+        const canChoose = previewReady && previewFile && !hasUnsavedPreview;
+        if (canChoose) {
+            setSaveChoiceOpen(true);
+        } else {
+            performSave(uploadedFile);
+        }
+    };
 
     const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>, isPreview: boolean) => {
         if (isPreview) {
@@ -848,10 +730,75 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             setCurrentTimeOriginal(0);
         }
     };
+    const previewDisabled =
+        !uploadedFile ||
+        previewLoading ||
+        saving ||
+        !hasPreviewChanges;
+
+
+    const saveDisabled = useMemo(() => {
+        if (!uploadedFile) return true; // rule 1
+        if (currentFileSource === 'server') {
+            // Chỉ được save khi đã render preview hợp lệ
+            if (!previewReady) return true;
+            if (!previewFile) return true;
+            if (hasUnsavedPreview) return true;
+            return false; // có preview hợp lệ
+        }
+
+
+        // local file: luôn có thể save
+        return false;
+    }, [uploadedFile, currentFileSource, previewReady, previewFile, hasUnsavedPreview, episodeDetail]);
+    const shortenFileName = (name: string, max = 32) => {
+        if (!name) return "";
+        if (name.length <= max) return name;
+        const match = name.match(/^(.*?)(\.[^.]+)$/);
+        const base = match ? match[1] : name;
+        const ext = match ? match[2] : "";
+        const room = max - ext.length - 5; // 5 cho "...".
+        const head = base.slice(0, Math.ceil(room / 2));
+        const tail = base.slice(-Math.floor(room / 2));
+        return `${head}...${tail}${ext}`;
+    };
+
+    if (!episodeDetail) {
+        return (
+            <div className="flex justify-center items-center h-100">
+                <Loading />
+            </div>
+        );
+    }
     return (
         <div className="episode-audio">
+
             {/* ============ MAIN CONTENT (LEFT) ============ */}
             <div className="episode-audio__content">
+                {episodeDetail && episodeDetail.CurrentStatus?.Id === 8 && (
+                    <div
+                        className="flex items-center gap-2 bg-[#29b6f626] border border-[#61a7f2ff] rounded-xs px-3 py-2 mb-3"
+                        style={{ width: "fit-content" }}
+                    >
+                        <svg className="w-5 h-5 text-[#61a7f2ff] shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+                        </svg>
+                        <span className="text-sm text-[#61a7f2ff] font-medium">
+                            <strong>Your episode audio is being processed, it will be available soon</strong>
+                        </span>
+                    </div>
+                )}
+                {episodeDetail && episodeDetail.CurrentStatus?.Id === 3 && (
+                    <div className="flex items-center gap-2 bg-red-100 border border-red-400  rounded px-3 py-2 mb-3 " style={{ width: "fit-content" }}>
+                        <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" />
+                        </svg>
+                        <span className="text-xs text-red-700 font-medium">
+                            <strong>Your episode is being required to edit, please upload new audio</strong>
+                        </span>
+                    </div>
+                )}
+
                 {/* Original Audio Section */}
                 {audioUrl && (
                     <div className="episode-audio__player-section">
@@ -859,14 +806,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                         <div className="episode-audio__waveform-container">
                             <div ref={waveformRefOriginal} className="episode-audio__waveform" />
                         </div>
-                        {selectedBgSound && (
-                            <div className="episode-audio__player-section">
-                                <h3 className="episode-audio__player-title">Background Audio</h3>
-                                <div className="episode-audio__waveform-container">
-                                    <div ref={waveformRefBg} className="episode-audio__waveform" />
-                                </div>
-                            </div>
-                        )}
                         <div className="episode-audio__controls">
                             <div className="episode-audio__controls-left">
                                 <IconButton onClick={() => handlePlayPause(false)} className="episode-audio__play-btn">
@@ -904,9 +843,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                         </div>
                     </div>
                 )}
-
-                {/* Background Audio Waveform Section (chỉ hiển thị) */}
-
 
                 {/* Preview Audio Section */}
                 {previewUrl && (
@@ -953,191 +889,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                     </div>
                 )}
 
-                {/* Audio Sequencer */}
-                {showSequencer && uploadedFile && (
-                    <div className="episode-audio__sequencer-container">
-                        {/* <div className="episode-audio__sequencer-header">
-                        <h3 className="text-lg font-semibold text-white mb-4">Audio Sequencer</h3>
-                        <p className="text-sm text-gray-400 mb-4">
-                            Drag and trim background sounds on the timeline. Multiple backgrounds cannot overlap in time.
-                        </p>
-                    </div> */}
-                        <div className="ml-4 flex items-center gap-2">
-                            <label className="text-sm">Zoom</label>
-                            <input
-                                type="range"
-                                min={15}
-                                max={80}
-                                value={pixelsPerSecond}
-                                onChange={(e) => setPPS(Number.parseInt(e.target.value))}
-                                className="accent-emerald-600"
-                            />
-                            <span className="text-xs text-slate-400">{pixelsPerSecond}px/s</span>
-                            <button
-                                onClick={() => {
-                                    console.log('=== SEQUENCER CLIP INFO ===')
-                                    const originalClip = clips.find(c => c.track === 0)
-                                    const bgClips = clips.filter(c => c.track === 1)
-
-                                    if (originalClip) {
-                                        console.log('🎵 ORIGINAL AUDIO:')
-                                        console.log(`  File: ${originalClip.name}`)
-                                        console.log(`  Duration: ${secondsToTime(originalClip.duration)} (${originalClip.duration.toFixed(2)}s)`)
-                                        console.log(`  Timeline Start: ${secondsToTime(originalClip.start)} (${originalClip.start.toFixed(2)}s)`)
-                                        console.log(`  Timeline End: ${secondsToTime(originalClip.start + originalClip.duration)} (${(originalClip.start + originalClip.duration).toFixed(2)}s)`)
-                                    }
-
-                                    bgClips.forEach((clip, idx) => {
-                                        const visibleDur = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
-                                        console.log(`\n🎧 BACKGROUND ${idx + 1}:`)
-                                        console.log(`  File: ${clip.name}`)
-                                        console.log(`  Full Duration: ${secondsToTime(clip.duration)} (${clip.duration.toFixed(2)}s)`)
-                                        console.log(`  Visible Duration: ${secondsToTime(visibleDur)} (${visibleDur.toFixed(2)}s)`)
-                                        console.log(`  Timeline Start: ${secondsToTime(clip.start)} (${clip.start.toFixed(2)}s)`)
-                                        console.log(`  Timeline End: ${secondsToTime(clip.start + visibleDur)} (${(clip.start + visibleDur).toFixed(2)}s)`)
-                                        console.log(`  Trim Start: ${secondsToTime(clip.trimStart)} (${clip.trimStart.toFixed(2)}s)`)
-                                        console.log(`  Trim End: ${secondsToTime(clip.trimEnd)} (${clip.trimEnd.toFixed(2)}s)`)
-
-                                        // Show volume for background clips
-                                        if (clip.track === 1 && clip.volume !== undefined) {
-                                            console.log(`  Volume: ${clip.volume.toFixed(1)} dB`)
-                                        }
-
-                                        if (originalClip) {
-                                            console.log(`  Position in Original: ${secondsToTime(clip.start)} → ${secondsToTime(clip.start + visibleDur)}`)
-                                        }
-                                    })
-
-                                    console.log('\n=== END CLIP INFO ===')
-                                }}
-                                className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 transition-all text-xs flex items-center gap-1"
-                                title="Show clip timeline info in console"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="12" y1="16" x2="12" y2="12" />
-                                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                                </svg>
-                                Info
-                            </button>
-                        </div>
-                        {/* Sequencer Controls */}
-                        <div className="w-full text-slate-100 p-4 flex flex-col gap-3 select-none bg-slate-900 rounded">
-                            {/* Toolbar */}
-
-                            {/* Tracks */}
-                            <div className="relative border border-slate-800 rounded overflow-hidden">
-                                {/* Track headers */}
-                                <div className="bg-slate-900 border-b border-slate-800">
-                                    {/* Original track */}
-                                    {/* <div className="flex items-center gap-3 px-3" style={{ height: rowH, borderBottom: "1px solid #0b1320" }}>
-                                        <div className="text-xs w-20 font-semibold">Original</div>
-                                        <div className="flex items-center gap-2">
-                                            <label className="text-xs">Vol</label>
-                                            <input
-                                                type="range"
-                                                min={0}
-                                                max={1}
-                                                step={0.01}
-                                                value={trackVolumes[0] ?? 1}
-                                                onChange={(e) => {
-                                                    const v = Number.parseFloat(e.target.value)
-                                                    setTrackVolumes([v, trackVolumes[1]])
-                                                }}
-                                            />
-                                        </div>
-                                    </div> */}
-
-                                    {/* Background track */}
-                                    {/* <div className="flex items-center gap-3 px-3" style={{ height: rowH, borderBottom: "1px solid #0b1320" }}>
-                                        <div className="text-xs w-20 font-semibold">Background</div>
-                                        <div className="flex items-center gap-2">
-                                            <label className="text-xs">Vol</label>
-                                            <input
-                                                type="range"
-                                                min={0}
-                                                max={1}
-                                                step={0.01}
-                                                value={trackVolumes[1] ?? 1}
-                                                onChange={(e) => {
-                                                    const v = Number.parseFloat(e.target.value)
-                                                    setTrackVolumes([trackVolumes[0], v])
-                                                }}
-                                            />
-                                        </div>
-                                    </div> */}
-                                </div>
-
-                                {/* Timeline body - với container có scroll để giới hạn chiều rộng */}
-                                <div className="overflow-x-auto max-w-full" ref={timelineScrollRef} >
-                                    <SequencerTimeline
-                                        clips={clips}
-                                        setClips={setClips}
-                                        pixelsPerSecond={pixelsPerSecond}
-                                        rowH={rowH}
-                                        totalLengthSec={totalLengthSec}
-                                        playhead={playhead}
-                                    />
-                                </div>
-
-                            </div>
-
-                            {/* Ruler - với scroll tương tự */}
-                            <div className="overflow-x-auto max-w-full">
-                                <SequencerRuler
-                                    totalLengthSec={totalLengthSec}
-                                    pixelsPerSecond={pixelsPerSecond}
-                                    playhead={playhead}
-                                />
-                            </div>
-                        </div>
-
-                        <header className="flex flex-wrap items-center gap-3">
-                            <IconButton onClick={isPlayingSequencer ? handleSequencerPause : handleSequencerPlay} className="episode-audio__play-btn">
-                                {isPlayingSequencer ? <Pause /> : <PlayArrow />}
-                            </IconButton>
-                            <IconButton onClick={() => handleSequencerStop()} className="episode-audio__play-btn">
-                                <ArrowCounterClockwise size={26} weight="bold" />
-                            </IconButton>
-                            <span className="episode-audio__time-display">{secondsToTime(playhead)}</span>
-                            <div
-                                className="episode-audio__progress-bar"
-                                ref={progressBarRefSequencer}
-                                onMouseDown={(e) => {
-                                    if (!progressBarRefSequencer.current) return
-                                    const rect = progressBarRefSequencer.current.getBoundingClientRect()
-                                    const percent = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1)
-                                    const newTime = percent * totalLengthSec
-                                    setPlayhead(newTime)
-                                }}
-                                onClick={(e) => {
-                                    if (!progressBarRefSequencer.current) return
-                                    const rect = progressBarRefSequencer.current.getBoundingClientRect()
-                                    const percent = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1)
-                                    const newTime = percent * totalLengthSec
-                                    setPlayhead(newTime)
-                                }}
-                            >
-                                <div
-                                    className="episode-audio__progress-fill"
-                                    style={{
-                                        width: `${(playhead / totalLengthSec) * 100}%`,
-                                    }}
-                                />
-                                <div
-                                    className="episode-audio__progress-thumb"
-                                    style={{
-                                        left: `${(playhead / totalLengthSec) * 100}%`,
-                                    }}
-                                />
-                            </div>
-
-                            <div className="episode-audio__controls-right">
-                                <span className="episode-audio__time-display">{secondsToTime(totalLengthSec)}</span>
-                            </div>
-                        </header>
-                    </div>
-                )}
                 {/* EQ Table Section */}
                 {audioUrl && (
                     <div className="episode-audio__eq-table">
@@ -1184,31 +935,48 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                 {/* Audio Upload */}
                 <div className="episode-audio__upload-box">
                     <h3 className="episode-audio__section-title">Audio Upload</h3>
-                    <div
-                        className={`episode-audio__upload-area ${isDragging ? "episode-audio__upload-area--dragging" : ""}`}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <Music className="episode-audio__upload-icon" size={40} />
-                        <p className="episode-audio__upload-text">Drop your audio file here</p>
-                        <p className="episode-audio__upload-subtext">or click to browse</p>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="audio/*"
-                            onChange={handleFileSelect}
-                            className="episode-audio__upload-input"
-                        />
-                    </div>
+                    {episodeDetail && episodeDetail.CurrentStatus?.Id !== 8 && (
+                        <div
+                            className={`episode-audio__upload-area ${isDragging ? "episode-audio__upload-area--dragging" : ""}`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <Music className="episode-audio__upload-icon" size={40} />
+                            <p className="episode-audio__upload-text">Drop your audio file here</p>
+                            <p className="episode-audio__upload-subtext">or click to browse</p>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="audio/*"
+                                onChange={handleFileSelect}
+                                className="episode-audio__upload-input"
+                            />
+                        </div>
+                    )}
+
 
                     {uploadedFile && (
                         <div className="episode-audio__file-info">
                             <div className="episode-audio__file-info__row">
                                 <FolderSimple size={20} color="#B6E04A" />
-                                <span className="episode-audio__file-info__label">{uploadedFile.name}</span>
-                                <span className="episode-audio__file-info__value"></span>
+                                <span
+                                    className="episode-audio__file-info__label"
+                                    title={uploadedFile.name}
+                                >
+                                    {shortenFileName(uploadedFile.name, 40)}
+                                </span>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(uploadedFile.name);
+                                        toast.success("Copied filename");
+                                    }}
+                                    className="episode-audio__file-info__copy"
+                                >
+                                    <ContentCopy fontSize="inherit" />
+                                </IconButton>
                             </div>
                             <div className="episode-audio__file-info__row">
                                 <Database size={20} color="#B6E04A" />
@@ -1325,7 +1093,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                                 className="episode-audio__selector"
                                 value={selectedBgSound}
                                 displayEmpty
-                                onChange={(e) => setSelectedBgSound(e.target.value)}
+                                onChange={(e) => fetchBackgroundSoundAudio(e.target.value)}
                                 disabled={!audioUrl}
                                 sx={{
                                     '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--border-grey)' },
@@ -1337,10 +1105,19 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                                 <MenuItem value="">
                                     <p style={{ color: 'var(--third-grey)' }}>Select A sound...</p>
                                 </MenuItem>
-                                <MenuItem value="main_files/PodcastBackgroundSoundTracks/afdc0507-0e6d-4696-8467-1fc7b4d26514/audio.mp3">Ghost.mp3</MenuItem>
-                                <MenuItem value="main_files/PodcastBackgroundSoundTracks/rain.mp3">Rain.mp3</MenuItem>
-                                <MenuItem value="main_files/PodcastBackgroundSoundTracks/forest.mp3">Forest.mp3</MenuItem>
-                                <MenuItem value="main_files/PodcastBackgroundSoundTracks/ocean.mp3">Ocean.mp3</MenuItem>
+                                {backgroundSounds.map((bg) => (
+                                    <MenuItem
+                                        key={bg.Id}
+                                        value={bg.AudioFileKey}
+                                        sx={{
+                                            '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
+
+                                        }}
+                                    >
+                                        {bg.Name}
+                                    </MenuItem>
+                                ))}
+
                             </Select>
 
                             {selectedBgSound && (
@@ -1374,395 +1151,117 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                             )}
 
                             {selectedBgSound && (
-                                <div className="episode-audio__background-preview mt-3 ">
-                                    <audio controls src={ghost} controlsList="nodownload noplaybackrate" />
+                                <div className="flex flex-col mt-4 gap-4">
+                                    <div className="flex  gap-4">
+                                        <Image mainImageFileKey={`${bgInfo?.MainImageFileKey || ''}`} alt={'Background Sound Image'} className="w-12 h-12 object-cover rounded-sm" />
+                                        <div className="flex flex-col items-start">
+                                            <p className="text-[#aee339] font-medium text-sm">{bgInfo?.Name}</p>
+                                            <p className="text-[#d9d9d9] font-light text-xs">{bgInfo?.Description}</p>
+                                        </div>
+
+                                    </div>
+
+                                    <audio controls src={bgSoundFile || undefined} controlsList="nodownload noplaybackrate" />
 
                                 </div>
                             )}
                         </>
                     )}
                 </div>
-
-                {/* Background Sound Sequencer */}
-                <div className="episode-audio__background-sound">
-                    <div className="episode-audio__background-sound-header">
-                        <div className="flex items-center gap-2">
-                            <h3 className="episode-audio__section-title">
-                                Sequencer
-                            </h3>
-                            <Tooltip placement="top-start" title="Add multiple background sounds with precise timing control">
-                                <Question color="var(--third-grey)" size={16} />
-                            </Tooltip>
-                            {clips.filter(c => c.track === 1).length > 0 && (
-                                <span className="text-xs text-slate-400">
-                                    ({clips.filter(c => c.track === 1).length} backgrounds)
-                                </span>
-                            )}
-                        </div>
-                        <IconButton
-                            className="episode-audio__add-btn"
-                            onClick={() => setShowSequencer(!showSequencer)}
-                            title={showSequencer ? "Hide Sequencer" : "Show Sequencer"}
-                            disabled={!audioUrl}
-                        >
-                            {showSequencer ? <Minus color="white" size={20} /> : <Plus size={20} />}
-                        </IconButton>
+                {previewLoading || saving ? (
+                    <div className="flex justify-center items-center m-8 ">
+                        <Loading2 title="Audio Processing" />
                     </div>
+                ) : (
+                    <>
+                        {episodeDetail && (episodeDetail.CurrentStatus.Id !== 8 && episodeDetail.CurrentStatus.Id !== 7 && episodeDetail.CurrentStatus.Id !== 6) && (
+                            <div className="episode-audio__actions">
+                                <button className="episode-audio__btn episode-audio__btn--primary"
+                                    onClick={handleSaveClick}
+                                    disabled={saveDisabled}>
+                                    <CloudUpload size={18} />
+                                    Save
+                                </button>
+                                <button
+                                    className="episode-audio__btn episode-audio__btn--secondary"
+                                    onClick={handlePreview}
+                                    disabled={previewDisabled}
+                                >
+                                    <Play size={18} />
+                                    Preview
+                                </button>
 
-                    {/* Available Background Sounds - Moved to Sidebar */}
-                    {showSequencer && (
-                        <div className="mt-3">
-                            <h4 className="text-sm font-medium mb-2 text-white flex items-center gap-2">
-                                <span style={{ color: 'var(--primary-green)' }}>Add Background Sounds</span>
-                                <Tooltip placement="top" title="Click to add backgrounds - they will be auto-positioned">
-                                    <Question color="var(--third-grey)" size={14} />
-                                </Tooltip>
-                            </h4>
-                            <div className="grid grid-cols-2 gap-2 mb-3">
-                                {availableBackgrounds.map((bg) => (
-                                    <button
-                                        key={bg.id}
-                                        className="px-3 py-2 text-xs rounded transition-all text-white border"
-                                        style={{
-                                            background: 'rgba(23, 23, 23, 0.6)',
-                                            borderColor: 'rgba(174, 227, 57, 0.2)',
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = 'rgba(174, 227, 57, 0.15)'
-                                            e.currentTarget.style.borderColor = 'rgba(174, 227, 57, 0.4)'
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = 'rgba(23, 23, 23, 0.6)'
-                                            e.currentTarget.style.borderColor = 'rgba(174, 227, 57, 0.2)'
-                                        }}
-                                        onClick={() => handleAddBackgroundToSequencer(bg)}
-                                        title={`Add ${bg.name}`}
-                                    >
-                                        <span className="block truncate">{bg.name}</span>
-                                    </button>
-                                ))}
                             </div>
+                        )}
+                    </>
 
-                            {/* Background Clips Volume Controls */}
-                            {clips.filter(c => c.track === 1).length > 0 && (
-                                <div className="mt-4 pt-3 border-t" style={{ borderColor: 'rgba(174, 227, 57, 0.15)' }}>
-                                    <h4 className="text-sm font-medium mb-3 text-white flex items-center gap-2">
-                                        <span style={{ color: 'var(--primary-green)' }}>Background Volumes</span>
-                                        <Tooltip placement="top" title="Adjust volume for each background before merging">
-                                            <Question color="var(--third-grey)" size={14} />
-                                        </Tooltip>
-                                    </h4>
-                                    {clips.filter(c => c.track === 1).map((clip) => (
-                                        <div key={clip.id} className="mb-3 p-2 rounded" style={{ background: 'rgba(23, 23, 23, 0.4)' }}>
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-xs text-white truncate max-w-[120px]" title={clip.name}>
-                                                    {clip.name}
-                                                </span>
-                                                <span className="text-xs" style={{ color: 'var(--primary-green)' }}>
-                                                    {(clip.volume ?? -5).toFixed(1)} dB
-                                                </span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min={-20}
-                                                max={10}
-                                                step={0.5}
-                                                value={clip.volume ?? 0}
-                                                onChange={(e) => {
-                                                    const newVolume = Number.parseFloat(e.target.value)
-                                                    setClips(prev => prev.map(c =>
-                                                        c.id === clip.id ? { ...c, volume: newVolume } : c
-                                                    ))
-                                                }}
-                                                className="episode-audio__volume-slider"
-                                                style={
-                                                    {
-                                                        "--value": `${((bgSoundVolume + 20) / 20) * 100}%`,
-                                                    } as React.CSSProperties
-                                                }
-                                            />
-                                            <div className="flex justify-between text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                                                <span>-20</span>
-                                                <span>0</span>
-                                                <span>+10</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="episode-audio__actions">
-                    <button className="episode-audio__btn episode-audio__btn--primary" onClick={handleSave} disabled={!audioUrl}>
-                        <Download size={18} />
-                        Save
-                    </button>
-                    <button
-                        className="episode-audio__btn episode-audio__btn--secondary"
-                        onClick={handlePreview}
-                        disabled={!audioUrl || !hasPreviewChanges}
-                    >
-                        <Play size={18} />
-                        Preview
-                    </button>
-                </div>
-            </div>
-
+                )}
+                <Modal open={saveChoiceOpen} onClose={() => setSaveChoiceOpen(false)}>
+                    <div style={{
+                        background: '#171717e6',
+                        padding: '24px',
+                        borderRadius: '12px',
+                        width: '360px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px',
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+                    }}>
+                        <h4 style={{ margin: 0, color: 'var(--primary-green)' }}>Choose what you want to save</h4>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--third-grey)' }}>
+                            You can save the original or the processed version.
+                        </p>
+                        {currentFileSource === 'local' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <button
+                                    className="episode-audio__btn episode-audio__btn--secondary"
+                                    onClick={() => { if (uploadedFile) performSave(uploadedFile); setSaveChoiceOpen(false); }}
+                                    disabled={!uploadedFile || saving}
+                                >
+                                    Save Original
+                                </button>
+                                <button
+                                    className="episode-audio__btn episode-audio__btn--primary"
+                                    onClick={() => { if (previewFile) performSave(previewFile); setSaveChoiceOpen(false); }}
+                                    disabled={!previewFile || saving || hasUnsavedPreview}
+                                >
+                                    Save Preview
+                                </button>
+                            </div>
+                        ) : (
+                            // Server source sẽ không hiển thị lựa chọn (chỉ cho save bản preview) – modal không nên mở nhưng fallback
+                            <div>
+                                <button
+                                    className="episode-audio__btn episode-audio__btn--primary"
+                                    onClick={() => { if (previewFile) performSave(previewFile); setSaveChoiceOpen(false); }}
+                                    disabled={!previewFile || saving || hasUnsavedPreview}
+                                >
+                                    Save Preview
+                                </button>
+                            </div>
+                        )}
+                        <button
+                            style={{
+                                background: 'transparent',
+                                color: 'var(--third-grey)',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '0.75rem',
+                                alignSelf: 'center'
+                            }}
+                            onClick={() => setSaveChoiceOpen(false)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </Modal>
+            </div >
         </div >
     )
 }
-
-// ============ SEQUENCER COMPONENTS ============
-
-interface SequencerTimelineProps {
-    clips: Clip[]
-    setClips: React.Dispatch<React.SetStateAction<Clip[]>>
-    pixelsPerSecond: number
-    rowH: number
-    totalLengthSec: number
-    playhead: number
-}
-
-function SequencerTimeline({ clips, setClips, pixelsPerSecond, rowH, totalLengthSec, playhead }: SequencerTimelineProps) {
-    const totalWidth = Math.max(Math.ceil(totalLengthSec * pixelsPerSecond), 1200) // Minimum 1200px cho full width
-
-    return (
-        <div className="relative bg-slate-900" style={{ width: totalWidth, height: rowH * 2 + 10, minWidth: '100%' }}>
-            <div style={{ width: totalWidth, height: rowH * 2 + 10 }} className="relative">
-                {/* Track backgrounds */}
-                <div className="absolute left-0" style={{ top: 0, height: rowH, width: totalWidth, background: "#0b1220" }} />
-                <div className="absolute left-0" style={{ top: rowH + 10, height: rowH, width: totalWidth, background: "#0f172a" }} />
-
-                {/* Clips */}
-                {clips.map((clip) => (
-                    <ClipRnd
-                        key={clip.id}
-                        clip={clip}
-                        pps={pixelsPerSecond}
-                        rowH={rowH}
-                        isOriginal={clip.track === 0}
-                        allClips={clips}
-                        onChange={(next) => {
-                            if (next && next.__delete) {
-                                setClips((prev) => prev.filter((c) => c.id !== clip.id))
-                            } else {
-                                setClips((prev) => prev.map((c) => (c.id === clip.id ? { ...c, ...next } : c)))
-                            }
-                        }}
-                    />
-                ))}
-
-                {/* Playhead */}
-                <div
-                    className="pointer-events-none absolute top-0 bottom-0 w-px bg-rose-400"
-                    style={{ left: playhead * pixelsPerSecond }}
-                />
-            </div>
-        </div>
-    )
-}
-
-interface SequencerRulerProps {
-    totalLengthSec: number
-    pixelsPerSecond: number
-    playhead: number
-}
-
-function SequencerRuler({ totalLengthSec, pixelsPerSecond, playhead }: SequencerRulerProps) {
-    const totalWidth = Math.max(Math.ceil(totalLengthSec * pixelsPerSecond), 1200) // Minimum 1200px cho full width
-
-    return (
-        <div className="relative border border-slate-800 rounded bg-slate-900 h-[44px]" style={{ width: totalWidth, minWidth: '100%' }}>
-            <div style={{ width: totalWidth }} className="relative h-full">
-                {Array.from({ length: Math.max(Math.ceil(totalLengthSec) + 1, Math.ceil(1200 / pixelsPerSecond) + 1) }).map((_, i) => {
-                    const left = i * pixelsPerSecond
-                    const major = i % 5 === 0
-                    return (
-                        <div key={i} className="absolute top-0 h-full" style={{ left, width: 1 }}>
-                            <div className={`w-px ${major ? "h-full bg-slate-600" : "h-1/2 bg-slate-700"}`} />
-                            {major && <div className="absolute top-0 left-1 text-xs text-slate-300">{secondsToTime(i)}</div>}
-                        </div>
-                    )
-                })}
-                <div className="absolute top-0 bottom-0 w-px bg-rose-400" style={{ left: playhead * pixelsPerSecond }} />
-            </div>
-        </div>
-    )
-}
-
-interface ClipRndProps {
-    clip: Clip
-    pps: number
-    rowH: number
-    isOriginal: boolean
-    onChange: (update: Partial<Clip> & { __delete?: boolean }) => void
-    allClips: Clip[]
-}
-
-function ClipRnd({ clip, pps, rowH, isOriginal, onChange, allClips }: ClipRndProps) {
-    const visibleDur = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
-    const width = Math.max(8, visibleDur * pps)
-    const x = clip.start * pps
-    const y = clip.track === 0 ? 0 : rowH + 10 // Thêm khoảng cách 10px giữa tracks
-    const height = rowH
-    const dragHandle = "clip-drag-handle"
-    const snapGridX = Math.max(1, Math.round(pps / 20))
-
-    return (
-        <Rnd
-            size={{ width, height }}
-            position={{ x, y }}
-            bounds="parent"
-            dragAxis="x"
-            dragGrid={[snapGridX, 0]}
-            enableResizing={
-                isOriginal
-                    ? false
-                    : {
-                        left: true,
-                        right: true,
-                        top: false,
-                        bottom: false,
-                    }
-            }
-            dragHandleClassName={dragHandle}
-            onDragStop={(e, d) => {
-                const newStart = Math.max(0, d.x / pps);
-
-                // Ngăn chồng lấn background track
-                if (clip.track === 1) {
-                    const visibleDur = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd);
-                    const newEnd = newStart + visibleDur;
-                    const hasConflict = allClips.some((c) => {
-                        if (c.id === clip.id || c.track !== 1) return false;
-                        const otherDur = Math.max(0, c.duration - c.trimStart - c.trimEnd);
-                        return !(newEnd <= c.start || newStart >= c.start + otherDur);
-                    });
-                    if (hasConflict) {
-                        toast.error("Cannot move clip: it would overlap another background sound");
-                        return;
-                    }
-                }
-
-                onChange({ start: newStart });
-            }}
-            onResizeStop={(e, dir, ref, delta, pos) => {
-                if (isOriginal) return;
-                const newWpx = ref.offsetWidth;
-                const newVisible = Math.max(0.01, newWpx / pps);
-
-                if (dir === "left") {
-                    const deltaSeconds = -delta.width / pps;
-                    const newStart = Math.max(0, pos.x / pps);
-                    let nextTrimStart = clip.trimStart + deltaSeconds;
-                    nextTrimStart = clamp(nextTrimStart, 0, clip.duration - clip.trimEnd - 0.01);
-                    onChange({ start: newStart, trimStart: +nextTrimStart });
-                }
-
-                if (dir === "right") {
-                    const nextTrimEnd = clamp(
-                        clip.duration - clip.trimStart - newVisible,
-                        0,
-                        clip.duration - clip.trimStart - 0.01
-                    );
-                    onChange({ trimEnd: +nextTrimEnd });
-                }
-            }}
-            className="rounded-xl shadow-lg border border-slate-700 bg-slate-800"
-        >
-            <ClipWaveform
-                clip={clip}
-                height={height}
-                width={width}
-                dragHandle={dragHandle}
-                isOriginal={isOriginal}
-                onDelete={() => onChange({ __delete: true })}
-            />
-        </Rnd>
-
-    )
-}
-
-interface ClipWaveformProps {
-    clip: Clip
-    width: number
-    height: number
-    dragHandle: string
-    isOriginal: boolean
-    onDelete: () => void
-}
-
-function ClipWaveform({ clip, width, height, dragHandle, isOriginal, onDelete }: ClipWaveformProps) {
-    const containerRef = useRef<HTMLDivElement>(null)
-    const wsRef = useRef<WaveSurfer | null>(null)
-
-    useEffect(() => {
-        if (!containerRef.current) return
-        const ws = WaveSurfer.create({
-            container: containerRef.current,
-            height: Math.max(15, height - 50),
-            waveColor: "#7BA225",
-            progressColor: "#AEE339",
-            cursorWidth: 0,
-            interact: false,
-            hideScrollbar: true,
-            minPxPerSec: 10,
-            partialRender: true,
-        })
-        wsRef.current = ws
-        ws.loadBlob(clip.file).catch(() => { })
-        return () => {
-            try {
-                ws.destroy()
-            } catch { }
-        }
-    }, [clip.file, height])
-
-    // Tính toán vùng thời gian hiển thị (chỉ ghi nhớ start, end)
-    const visibleDur = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
-    const leftTrimPercent = (clip.trimStart / clip.duration) * 100
-
-    return (
-        <div className="w-full h-full flex flex-col">
-            <div
-                className={`px-2 py-1 text-xs text-slate-200 flex items-center justify-between border-b border-slate-700 ${dragHandle}`}
-            >
-                <div className="truncate" title={clip.name}>
-                    {clip.name}
-                </div>
-                <div className="flex items-center gap-2">
-                    {!isOriginal && (
-                        <button
-                            className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-700"
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                onDelete()
-                            }}
-                        >
-                            Delete
-                        </button>
-                    )}
-                    <div className="text-slate-400">{secondsToTime(visibleDur)}</div>
-                </div>
-            </div>
-
-            <div className="flex-1 relative overflow-hidden">
-                {/* Hiển thị waveform theo vùng đã cắt, không overlay */}
-                <div
-                    ref={containerRef}
-                    className="absolute top-0 bottom-0 left-0"
-                    style={{
-                        width: `${(clip.duration / visibleDur) * 100}%`,
-                        transform: `translateX(-${leftTrimPercent}%)`,
-                    }}
-                />
-            </div>
-        </div>
-    )
-}
-
 
 export default EpisodeAudio
