@@ -204,7 +204,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         var newTrackToEdit = new BookingProducingRequestPodcastTrackToEdit
                         {
-                            Id = Guid.NewGuid(),
+                            //Id = Guid.NewGuid(),
                             BookingProducingRequestId = newProducingRequest.Id,
                             BookingPodcastTrackId = trackToEdit,
                         };
@@ -222,7 +222,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                         {
-                            Id = Guid.NewGuid(),
+                            //Id = Guid.NewGuid(),
                             BookingId = booking.Id,
                             BookingStatusId = (int)BookingStatusEnum.ProducingRequested,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -309,7 +309,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var isValid = await ValidateBookingAccountOrPodcasterAsync(parameter.BookingId, parameter.AccountId);
                     if (!isValid)
                     {
-                        throw new HttpRequestException("The logged in account are not authorized to request cancel producing request for this booking.");
+                        throw new Exception("The logged in account are not authorized to request cancel producing request for this booking.");
                     }
 
                     var booking = await _bookingGenericRepository.FindAll(
@@ -565,7 +565,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                         {
-                            Id = Guid.NewGuid(),
+                            //Id = Guid.NewGuid(),
                             BookingId = booking.Id,
                             BookingStatusId = (int)BookingStatusEnum.TrackPreviewing,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -692,7 +692,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                             {
-                                Id = Guid.NewGuid(),
+                                //Id = Guid.NewGuid(),
                                 BookingId = booking.Id,
                                 BookingStatusId = (int)BookingStatusEnum.Producing,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -708,7 +708,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             await _bookingProducingRequestGenericRepository.UpdateAsync(bookingProducingRequest.Id, bookingProducingRequest);
                             await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking()
                             {
-                                Id = Guid.NewGuid(),
+                                //Id = Guid.NewGuid(),
                                 BookingId = booking.Id,
                                 BookingStatusId = (int)BookingStatusEnum.TrackPreviewing,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
@@ -833,7 +833,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("System configuration not found");
                     }
                     var profitRate = systemConfig.BookingConfig.ProfitRate;
+                    Console.WriteLine("Profit Rate: = " + profitRate);
                     var depositRate = systemConfig.BookingConfig.DepositRate;
+                    Console.WriteLine("Deposit Rate: = " + depositRate);
 
                     var booking = await _bookingGenericRepository.FindByIdAsync(
                         parameter.BookingId,
@@ -848,6 +850,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         throw new Exception("Account is not assigned staff of this booking");
                     }
+                    var depositPrice = booking.Price * (decimal)depositRate;
                     var currentStatusId = booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId;
                     if (parameter.IsAccepted)
                     {
@@ -858,36 +861,41 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 throw new Exception("Customer booking cancel deposit refund rate is required");
                             }
                             booking.CustomerBookingCancelDepositRefundRate = (double)parameter.CustomerBookingCancelDepositRefundRate;
+                            Console.WriteLine("Customer Booking Cancel Deposit Refund Rate: = " + booking.CustomerBookingCancelDepositRefundRate);
                             booking.PodcastBuddyBookingCancelDepositRefundRate = 100 - (double)parameter.CustomerBookingCancelDepositRefundRate;
+                            Console.WriteLine("Podcast Buddy Booking Cancel Deposit Refund Rate: = " + booking.PodcastBuddyBookingCancelDepositRefundRate);
                             booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
-                            var refundAmount = (double)booking.Price * booking.CustomerBookingCancelDepositRefundRate;
+                            var refundAmount = depositPrice * (decimal)booking.CustomerBookingCancelDepositRefundRate / 100;
+                            Console.WriteLine("Refund Amount: = " + refundAmount);
                             var refundMessageName = "booking-refund-flow";
                             var newRefundRequestData = new JObject
                             {
                                 { "BookingId", booking.Id },
-                                { "Profit", booking.Price * (decimal)profitRate },
                                 { "Amount", refundAmount },
-                                { "AccountId", parameter.AccountId },
+                                { "AccountId", booking.AccountId },
                                 { "PodcasterId", booking.PodcastBuddyId },
                                 { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
                             };
                             var startSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                requestData: command.RequestData,
+                                requestData: newRefundRequestData,
                                 sagaInstanceId: null,
                                 messageName: refundMessageName);
                             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage1, sagaId.ToString());
                             _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
 
 
-                            var compensationOriginalAmount = booking.Price * (decimal)booking.PodcastBuddyBookingCancelDepositRefundRate;
+                            var compensationOriginalAmount = depositPrice * (decimal)booking.PodcastBuddyBookingCancelDepositRefundRate / 100;
+                            Console.WriteLine("Compensation Original Amount: = " + compensationOriginalAmount);
                             var compensationAmount = compensationOriginalAmount - compensationOriginalAmount * (decimal)profitRate;
-                            var compensationMessageName = "booking-deposit-compenstation-flow";
+                            Console.WriteLine("Compensation Amount: = " + compensationAmount);
+                            var compensationMessageName = "booking-deposit-compensation-flow";
                             var newCompensationRequestData = new JObject
                             {
                                 { "BookingId", booking.Id },
+                                { "Profit", compensationOriginalAmount * (decimal)profitRate },
                                 { "Amount", compensationAmount },
                                 { "AccountId", booking.AccountId },
                                 { "PodcasterId", booking.PodcastBuddyId },
@@ -916,36 +924,41 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 throw new Exception("Podcast buddy booking cancel deposit refund rate is required");
                             }
                             booking.CustomerBookingCancelDepositRefundRate = 100 - (double)parameter.PodcastBuddyBookingCancelDepositRefundRate;
+                            Console.WriteLine("Customer Booking Cancel Deposit Refund Rate: = " + booking.CustomerBookingCancelDepositRefundRate);
                             booking.PodcastBuddyBookingCancelDepositRefundRate = (double)parameter.PodcastBuddyBookingCancelDepositRefundRate;
+                            Console.WriteLine("Podcast Buddy Booking Cancel Deposit Refund Rate: = " + booking.PodcastBuddyBookingCancelDepositRefundRate);
                             booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                             await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
-                            var refundAmount = (double)booking.Price * booking.CustomerBookingCancelDepositRefundRate;
+                            var refundAmount = depositPrice * (decimal)booking.CustomerBookingCancelDepositRefundRate / 100;
+                            Console.WriteLine("Refund Amount: = " + refundAmount);
                             var refundMessageName = "booking-refund-flow";
                             var newRefundRequestData = new JObject
                                 {
                                     { "BookingId", booking.Id },
-                                    { "Profit", booking.Price * (decimal)profitRate },
                                     { "Amount", refundAmount },
-                                    { "AccountId", parameter.AccountId },
+                                    { "AccountId", booking.AccountId },
                                     { "PodcasterId", booking.PodcastBuddyId },
                                     { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
                                 };
                             var startSagaTriggerMessage1 = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                 topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                requestData: command.RequestData,
+                                requestData: newRefundRequestData,
                                 sagaInstanceId: null,
                                 messageName: refundMessageName);
                             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage1, sagaId.ToString());
                             _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
 
 
-                            var compensationOriginalAmount = booking.Price * (decimal)booking.PodcastBuddyBookingCancelDepositRefundRate;
+                            var compensationOriginalAmount = depositPrice * (decimal)booking.PodcastBuddyBookingCancelDepositRefundRate / 100;
+                            Console.WriteLine("Compensation Original Amount: = " + compensationOriginalAmount);
                             var compensationAmount = compensationOriginalAmount - compensationOriginalAmount * (decimal)profitRate;
-                            var compensationMessageName = "booking-deposit-compenstation-flow";
+                            Console.WriteLine("Compensation Amount: = " + compensationAmount);
+                            var compensationMessageName = "booking-deposit-compensation-flow";
                             var newCompensationRequestData = new JObject
                             {
                                 { "BookingId", booking.Id },
+                                { "Profit", compensationOriginalAmount * (decimal)profitRate },
                                 { "Amount", compensationAmount },
                                 { "AccountId", booking.AccountId },
                                 { "PodcasterId", booking.PodcastBuddyId },
@@ -987,7 +1000,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var producingRequest = await _bookingProducingRequestGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(pr => pr.BookingPodcastTracks))
-                        .Where(bpr => bpr.BookingId == booking.Id)
+                        .Where(bpr => bpr.BookingId == booking.Id && bpr.FinishedAt != null)
                         .OrderByDescending(bpr => bpr.CreatedAt)
                         .FirstOrDefaultAsync();
 

@@ -101,6 +101,22 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(depositCompensationBookingTransaction);
+
+                            if(newBookingTransaction.Profit != null && newBookingTransaction.Profit > 0)
+                            {
+                                var requestData = new JObject
+                                {
+                                    { "BookingId", newBookingTransaction.BookingId },
+                                    { "Profit", null },
+                                    { "AccountId", parameter.AccountId },
+                                    { "PodcasterId", parameter.PodcasterId },
+                                    { "Amount", newBookingTransaction.Profit },
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.SystemBookingIncome }
+                                };
+                                var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(KafkaTopicEnum.PaymentProcessingDomain, requestData, null, "booking-system-payment-flow");
+                                await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+                            }
+
                             break;
                         case (int)TransactionTypeEnum.BookingPayTheRest:
                             var payTheRestBookingTransaction = new BookingTransaction
@@ -127,6 +143,19 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(additionalStoragePurchaseBookingTransaction);
+
+                            var requestData2 = new JObject
+                            {
+                                { "BookingId", newBookingTransaction.BookingId },
+                                { "Profit", null },
+                                { "AccountId", parameter.AccountId },
+                                { "PodcasterId", parameter.PodcasterId },
+                                { "Amount", newBookingTransaction.Profit },
+                                { "TransactionTypeId", (int)TransactionTypeEnum.SystemBookingIncome }
+                            };
+                            var startSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(KafkaTopicEnum.PaymentProcessingDomain, requestData2, null, "booking-system-payment-flow");
+                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage2);
+
                             break;
                         case (int)TransactionTypeEnum.SystemBookingIncome:
                             var systemBookingIncomeTransaction = new BookingTransaction
