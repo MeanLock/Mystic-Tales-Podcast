@@ -497,7 +497,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     await _bookingStatusTrackingGenericRepository.CreateAsync(new BookingStatusTracking
                     {
-                        Id = Guid.NewGuid(),
+                        //Id = Guid.NewGuid(),
                         BookingId = newBooking.Id,
                         BookingStatusId = (int)BookingStatusEnum.QuotationRequest,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -829,7 +829,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         var newBookingStatusTracking = new BookingStatusTracking
                         {
-                            Id = Guid.NewGuid(),
+                            //Id = Guid.NewGuid(),
                             BookingId = bookingId,
                             BookingStatusId = (int)BookingStatusEnum.QuotationRejected,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -963,46 +963,46 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                             if (booking.AccountId == parameter.AccountId)
                             {
-                                var Amount = booking.Price - booking.Price * (decimal)profitRate;
-                                var refundMessageName = "booking-refund-flow";
-                                var newRequestData = new JObject
-                                {
-                                    { "BookingId", booking.Id },
-                                    { "Profit", booking.Price * (decimal) profitRate  },
-                                    { "Amount", Amount },
-                                    { "AccountId", parameter.AccountId },
-                                    { "PodcasterId", booking.PodcastBuddyId },
-                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
-                                };
-                                var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                    requestData: command.RequestData,
-                                    sagaInstanceId: null,
-                                    messageName: refundMessageName);
-                                await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, sagaId.ToString());
-                                _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
-                            }
-                            else
-                            {
-                                var Amount = booking.Price * (decimal)depositRate ;
+                                var Amount = booking.Price * (decimal)depositRate;
                                 var refundMessageName = "booking-refund-flow";
                                 var newRequestData = new JObject
                                 {
                                     { "BookingId", booking.Id },
                                     { "Profit", null },
                                     { "Amount", Amount },
-                                    { "AccountId", parameter.AccountId },
-                                    { "PodcasterId", booking.AccountId },
-                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositCompensation }
+                                    { "AccountId", booking.AccountId },
+                                    { "PodcasterId", booking.PodcastBuddyId },
+                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
                                 };
                                 var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                                     topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                    requestData: command.RequestData,
+                                    requestData: newRequestData,
                                     sagaInstanceId: null,
                                     messageName: refundMessageName);
                                 await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, sagaId.ToString());
-                                _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", command.SagaInstanceId);
+                                _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", startSagaTriggerMessage.SagaInstanceId);
                             }
+                            //else
+                            //{
+                            //    var Amount = booking.Price * (decimal)depositRate ;
+                            //    var refundMessageName = "booking-deposit-compensation-flow";
+                            //    var newRequestData = new JObject
+                            //    {
+                            //        { "BookingId", booking.Id },
+                            //        { "Profit", null },
+                            //        { "Amount", Amount },
+                            //        { "AccountId", booking.AccountId },
+                            //        { "PodcasterId", booking.AccountId },
+                            //        { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositCompensation }
+                            //    };
+                            //    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                            //        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                            //        requestData: newRequestData,
+                            //        sagaInstanceId: null,
+                            //        messageName: refundMessageName);
+                            //    await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage, sagaId.ToString());
+                            //    _logger.LogInformation("Booking refund message send successfully for SagaId: {SagaId}", startSagaTriggerMessage.SagaInstanceId);
+                            //}
                         }
 
                         await transaction.CommitAsync();
@@ -1368,7 +1368,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var totalWordCount = 0;
                     var newBookingStatusTracking = new BookingStatusTracking
                     {
-                        Id = Guid.NewGuid(),
+                        //Id = Guid.NewGuid(),
                         BookingId = bookingId,
                         BookingStatusId = (int)BookingStatusEnum.QuotationDealing,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -1456,7 +1456,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
                     var newBookingStatusTracking = new BookingStatusTracking
                     {
-                        Id = Guid.NewGuid(),
+                        //Id = Guid.NewGuid(),
                         BookingId = bookingId,
                         BookingStatusId = (int)BookingStatusEnum.Producing,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -1470,7 +1470,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     var newBookingProducingRequest = new BookingProducingRequest
                     {
-                        Id = Guid.NewGuid(),
+                        //Id = Guid.NewGuid(),
                         BookingId = bookingId,
                         Note = string.Empty,
                         Deadline = _dateHelper.GetNowByAppTimeZone().AddDays((double)booking.DeadlineDays.Value),
@@ -1543,7 +1543,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     var newBookingStatusTracking = new BookingStatusTracking
                     {
-                        Id = Guid.NewGuid(),
+                        //Id = Guid.NewGuid(),
                         BookingId = bookingId,
                         BookingStatusId = (int)BookingStatusEnum.Completed,
                         CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -1824,7 +1824,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             var newBookingStatusTracking = new BookingStatusTracking
                             {
-                                Id = Guid.NewGuid(),
+                                //Id = Guid.NewGuid(),
                                 BookingId = b.Id,
                                 BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -1925,7 +1925,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             var newBookingStatusTracking = new BookingStatusTracking
                             {
-                                Id = Guid.NewGuid(),
+                                //Id = Guid.NewGuid(),
                                 BookingId = b.Id,
                                 BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -2122,6 +2122,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("System configuration not found");
                     }
                     var previewResponseAllowedDays = systemConfig.BookingConfig.PreviewResponseAllowedDays;
+                    //var previewResponseAllowedDays = 7; 
                     var producingRequestResponseAllowedDays = systemConfig.BookingConfig.ProducingRequestResponseAllowedDays;
                     var profitRate = systemConfig.BookingConfig.ProfitRate;
                     var depositRate = systemConfig.BookingConfig.DepositRate;
@@ -2139,7 +2140,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         var newBookingStatusTracking = new BookingStatusTracking
                         {
-                            Id = Guid.NewGuid(),
+                            //Id = Guid.NewGuid(),
                             BookingId = booking.Id,
                             BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),
@@ -2151,11 +2152,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         if (booking.Price.HasValue)
                         {
-                            var Amount = booking.Price * (decimal)depositRate  - booking.Price * (decimal)profitRate ;
-                            var compensationMessageName = "booking-deposit-compenstation-flow";
+                            var Amount = booking.Price * (decimal)depositRate - booking.Price * (decimal)profitRate ;
+                            var compensationMessageName = "booking-deposit-compensation-flow";
                             var newRequestData = new JObject
                             {
                                 { "BookingId", booking.Id },
+                                { "Profit", booking.Price * (decimal)profitRate },
                                 { "Amount", Amount },
                                 { "AccountId", booking.AccountId },
                                 { "PodcasterId", booking.PodcastBuddyId },
@@ -2208,7 +2210,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         var newBookingStatusTracking = new BookingStatusTracking
                         {
-                            Id = Guid.NewGuid(),
+                            //Id = Guid.NewGuid(),
                             BookingId = booking.Id,
                             BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone(),

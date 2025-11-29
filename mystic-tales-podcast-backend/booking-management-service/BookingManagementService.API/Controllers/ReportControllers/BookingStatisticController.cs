@@ -1,4 +1,5 @@
 ﻿using BookingManagementService.API.Filters.ExceptionFilters;
+using BookingManagementService.BusinessLogic.DTOs.Cache;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Helpers.AuthHelpers;
 using BookingManagementService.BusinessLogic.Helpers.FileHelpers;
@@ -56,6 +57,16 @@ namespace BookingManagementService.API.Controllers.ReportControllers
             _messagingService = messagingService;
             _ffMpegCoreHlsService = ffMpegCoreHlsService;
         }
-
+        [HttpGet("me/statistics")]
+        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        public async Task<IActionResult> GetBookingStatisticsByPodcasterIdAsync(
+            [FromRoute] Guid podcasterId,
+            [FromQuery] )
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var statistics = await _bookingService.GetBookingStatisticsByPodcasterIdAsync(podcasterId, fromDate, toDate);
+            return Ok(statistics);
+        }
     }
 }
