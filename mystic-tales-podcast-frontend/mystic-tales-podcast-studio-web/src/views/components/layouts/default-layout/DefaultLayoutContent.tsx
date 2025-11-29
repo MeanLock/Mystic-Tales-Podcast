@@ -1,9 +1,15 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 import { Box, CircularProgress } from "@mui/material";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import routes from "../../../../router/default.routes";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/redux/rootReducer";
 
 const DefaultLayoutContent = () => {
+  const dispatch = useDispatch()
+      const authSlice = useSelector((state: RootState) => state.auth)
+      const navigate = useNavigate();
+
   return (
     <Box>
         <Suspense 

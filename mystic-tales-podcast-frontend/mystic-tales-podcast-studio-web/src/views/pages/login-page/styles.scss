@@ -20,7 +20,7 @@
 
     &-card {
         background-color: rgba(0, 0, 0, 0.2) !important;
-        border: none!important;
+        border: none !important;
         backdrop-filter: blur(10px);
 
         .MuiFormLabel-root {
@@ -33,7 +33,7 @@
             .MuiOutlinedInput-root {
                 background-color: rgba(255, 255, 255, 0.1);
                 color: white !important;
-                
+
                 fieldset {
                     border-color: rgba(255, 255, 255, 0.3) !important;
                 }
@@ -41,6 +41,7 @@
                 &:hover fieldset {
                     border-color: var(--primary-green, #AEE339) !important;
                 }
+
 
                 &.Mui-focused fieldset {
                     border-color: var(--primary-green, #AEE339) !important;
@@ -53,7 +54,7 @@
 
                 input {
                     color: white !important;
-                    
+
                     &::placeholder {
                         color: rgba(255, 255, 255, 0.6) !important;
                     }
@@ -76,6 +77,7 @@
             font-size: 1rem !important;
             box-shadow: 0 4px 12px rgba(174, 227, 57, 0.3) !important;
             margin-top: 16px !important;
+
             &:hover {
                 background-color: var(--primary-green) !important;
                 box-shadow: 0 6px 16px rgba(174, 227, 57, 0.4) !important;
@@ -88,9 +90,8 @@
             }
 
             &:disabled {
-                background-color: rgba(255, 255, 255, 0.2) !important;
-                color: rgba(255, 255, 255, 0.5) !important;
-                box-shadow: none !important;
+                background-color: var(--primary-green) !important;
+                border: none;
             }
         }
 
@@ -112,7 +113,8 @@
             color: rgba(255, 255, 255, 0.6) !important;
             margin: 24px 0 !important;
 
-            &::before, &::after {
+            &::before,
+            &::after {
                 border-color: rgba(255, 255, 255, 0.2) !important;
             }
         }

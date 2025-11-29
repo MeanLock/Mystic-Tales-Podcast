@@ -94,18 +94,26 @@ const Modal_Button = (props: ModalButtonProps) => {
             alignItems: 'center',
           }}
         >
-          <img src={logo || "/placeholder.svg"} alt="Logo" className="custom-modal-header-brand-logo w-10 h-10 aspect-square rounded-full object-cover" />
-          <div className="custom-modal-header-brand-text">
-            <span className="custom-modal-header-brand-text-title">Mystic Tales</span>
-            <span className="custom-modal-header-brand-text-subtitle">STUDIO</span>
-          </div>
-          <Typography
-            variant="h6"
-            component="div"
-            className="custom-modal-title"
-          >
-            {props.title}
-          </Typography>
+          {props.title ? (
+            <Typography
+              variant="h6"
+              component="div"
+              className="custom-modal-title"
+            >
+              {props.title}
+            </Typography>
+          ) : (
+            <>
+              <div className='flex'>
+                <img src={logo || "/placeholder.svg"} alt="Logo" className="custom-modal-header-brand-logo w-10 h-10 aspect-square rounded-full object-cover" />
+                <div className="custom-modal-header-brand-text">
+                  <span className="custom-modal-header-brand-text-title">Mystic Tales</span>
+                  <span className="custom-modal-header-brand-text-subtitle">STUDIO</span>
+                </div>  
+              </div>
+            </>
+          )}
+
           <IconButton
             aria-label="close"
             onClick={handleClose}

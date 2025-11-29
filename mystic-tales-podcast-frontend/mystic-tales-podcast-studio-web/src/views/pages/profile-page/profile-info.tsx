@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useContext } from 'react';
+import React, { useEffect, useState, useRef, useContext, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -7,77 +7,127 @@ import {
     Card,
     CardMedia,
     MenuItem,
-
-
+    Dialog,
+    DialogTitle,
+    IconButton,
+    DialogContent,
+    FormControlLabel,
+    Switch,
+    SwitchProps,
+    styled,
+    Tooltip,
+    Chip,
+    Skeleton,
+    Collapse,
+    InputBase,
 } from '@mui/material';
+import { ExpandMore, ExpandLess, Search } from '@mui/icons-material';
 
 import { useQuill } from 'react-quilljs';
 import 'quill/dist/quill.snow.css';
 import { ProfileViewContext } from '.';
+import { useSagaPolling } from '@/core/hooks/useSagaPolling';
+import { updatePodcasterProfile } from '@/core/services/account/account.service';
+import { loginRequiredAxiosInstance } from '@/core/api/rest-api/config/instances/v2';
+import { toast } from 'react-toastify';
+import Loading from '@/views/components/common/loading';
+import { s } from 'graphql-ws/dist/common-DY-PBNYy';
+import { format } from 'path';
+import { formatDate } from '@/core/utils/date.util';
+import { getBuddyCommitment } from '@/core/services/file/file.service';
+import { DocumentViewer } from '@/views/components/common/document';
+import { Close } from '@mui/icons-material';
+import { Question } from 'phosphor-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { setAuthToken } from '@/redux/auth/authSlice';
+import { RootState } from '@/redux/rootReducer';
+import { getBookingTone, getBookingToneList, updateBookingTone } from '@/core/services/booking/booking.service';
+import { BookingTone } from '@/core/types';
+import { set } from 'lodash';
 
 
+interface ProfileInfoProps {
+    loading: boolean;
+}
 
-const ProfileInfo = () => {
+const IOSSwitch = styled((props: SwitchProps) => (
+    <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
+))(({ theme }) => ({
+    width: 50,
+    height: 26,
+    padding: 0,
+    '& .MuiSwitch-switchBase': {
+        padding: 0,
+        margin: 2,
+        transitionDuration: '300ms',
+        '&.Mui-checked': {
+            transform: 'translateX(24px)',
+            color: '#fff',
+            '& + .MuiSwitch-track': {
+                backgroundColor: '#aee339',
+                border: 0,
+                opacity: 2,
+            },
+            '&.Mui-disabled + .MuiSwitch-track': {
+                opacity: 0.5,
+            },
+        },
+        '&.Mui-focusVisible .MuiSwitch-thumb': {
+            color: '#aee339',
+            border: '6px solid #fff',
+        },
+        '&.Mui-disabled .MuiSwitch-thumb': {
+            color: theme.palette.grey[600],
+        },
+        '&.Mui-disabled + .MuiSwitch-track': {
+            opacity: 0.1,
+        },
+    },
+    '& .MuiSwitch-thumb': {
+        boxSizing: 'border-box',
+        width: 22,
+        height: 22,
+    },
+    '& .MuiSwitch-track': {
+        borderRadius: 26 / 2,
+        backgroundColor: '#39393D',
+        opacity: 1,
+        transition: theme.transitions.create(['background-color'], {
+            duration: 500,
+        }),
+    },
+}));
+
+const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
     const context = useContext(ProfileViewContext);
-    const profile = context?.profile ?? null;
+    const profile = context?.profile;
+    const refreshProfile = context?.refreshProfile;
+    const dispatch = useDispatch();
+    const authSlice = useSelector((state: RootState) => state.auth);
+
     const [profileData, setProfileData] = useState<any | null>(null);
-    const [description, setDescription] = useState<string>('');
-    const [previewImage, setPreviewImage] = useState<string>('https://i.pinimg.com/736x/e8/c4/d3/e8c4d39d44c8945d62cd6f35e45959df.jpg');
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        role: '',
-        phone: '',
-        gender: '',
-        address: '',
-        balance: 0,
-        createdAt: '',
-        updatedAt: '',
-        studioName: '',
-        avgRating: 0,
-        ratingCount: 0,
-        totalFollow: 0,
-        listenCount: 0,
-        ownedStorage: 0,
-        usedStorage: 0,
-        isVerified: false,
-        description: ''
-    });
-    // populate local state when context provides data
-    useEffect(() => {
-        console.log('Profile data changed:', profile);
-        if (!profile) return;
-        setProfileData(profile);
-        const pp = profile.PodcasterProfile ?? {};
-        console.log('Podcaster Profile Description:', pp.Description);
-        setDescription(pp.Description);
-        setPreviewImage(profile.MainImageFileKey || previewImage);
-        setFormData({
-            name: profile.FullName ?? '',
-            email: profile.Email ?? '',
-            role: profile.Role?.Name ?? '',
-            phone: profile.Phone ?? '',
-            gender: profile.Gender ?? '',
-            address: profile.Address ?? '',
-            balance: profile.Balance ?? 0,
-            createdAt: (profile.CreatedAt ?? '').split('T')[0] ?? '',
-            updatedAt: (profile.UpdatedAt ?? '').split('T')[0] ?? '',
-            studioName: pp.Name ?? '',
-            avgRating: pp.AverageRating ?? 0,
-            ratingCount: pp.RatingCount ?? 0,
-            totalFollow: pp.TotalFollow ?? 0,
-            listenCount: pp.ListenCount ?? 0,
-            ownedStorage: pp.OwnedBookingStorageSize ?? 0,
-            usedStorage: pp.UsedBookingStorageSize ?? 0,
-            isVerified: !!(profile.IsVerified || pp.IsVerified),
-            description: pp.Description ?? ''
-        });
-    }, [profile]);
+    const [originalProfile, setOriginalProfile] = useState<any | null>(null);
 
-    const data = profileData ?? profile;
+    const [toneList, setToneList] = useState<BookingTone[]>([]); // complete catalog
+    const [tones, setTones] = useState<BookingTone[]>([]); // currently applied
+    const [selectedToneIds, setSelectedToneIds] = useState<string[]>([]); // working selection
+    const [originalSelectedToneIds, setOriginalSelectedToneIds] = useState<string[]>([]); // baseline for change detection
 
-    // Quill editor for description
+    const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [viewingFile, setViewingFile] = useState<{ url: string } | null>(null);
+
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [filterText, setFilterText] = useState<string>('');
+    const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
+    const [showAllCategory, setShowAllCategory] = useState<Record<string, boolean>>({});
+    const displayLimit = 10;
+
+
+
+    const { startPolling } = useSagaPolling({
+        timeoutSeconds: 5,
+        intervalSeconds: 0.5,
+    })
     const { quill, quillRef } = useQuill({
         theme: 'snow',
         modules: {
@@ -91,110 +141,258 @@ const ProfileInfo = () => {
         },
         placeholder: 'Add description...'
     });
-
-    // Set initial description in Quill
-    useEffect(() => {
-        if (quill && data?.PodcasterProfile.Description) {
-            const initialDescription = data.PodcasterProfile.Description || '';
-            if (initialDescription) {
-                quill.setContents([
-                    { insert: initialDescription }
-                ]);
+    const fetchBookingToneList = async () => {
+        setIsLoading(true);
+        try {
+            const res = await getBookingToneList(loginRequiredAxiosInstance);
+            console.log("Fetched tone lisst :", res.data.PodcastBookingToneList);
+            if (res.success && res.data) {
+                setToneList(res.data.PodcastBookingToneList);
+            } else {
+                console.error('API Error:', res.message);
             }
+        } catch (error) {
+            console.error('Lỗi khi fetch detail:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
-            // Listen for text changes
-            quill.on('text-change', () => {
-                const content = quill.getText(); // Get plain text
-                const htmlContent = quill.root.innerHTML; // Get HTML content
+    const fetchPodcasterBookingTone = async () => {
+        setIsLoading(true);
+        try {
+            const res = await getBookingTone(loginRequiredAxiosInstance);
+            console.log("Fetched tone :", res.data.PodcastBookingToneList);
+            if (res.success && res.data) {
+                const applied = res.data.PodcastBookingToneList || [];
+                setTones(applied);
+                setSelectedToneIds(applied.map(t => t.Id));
+                setOriginalSelectedToneIds(applied.map(t => t.Id));
+            } else {
+                console.error('API Error:', res.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch detail:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
-                // Update description state
-                setDescription(content);
-                // Update formData with description
-                setFormData(prev => ({
-                    ...prev,
-                    description: htmlContent // Save HTML format or use 'content' for plain text
-                }));
+    useEffect(() => {
+        if (!profile) return;
+        setProfileData(profile);
+        setOriginalProfile(prev => prev ?? profile);
+        fetchBookingToneList();
+        fetchPodcasterBookingTone();
+    }, [profile]);
 
-                // Optional: Auto-save to backend
-                // handleAutoSave(htmlContent);
+
+
+    useEffect(() => {
+        if (!quill) return;
+        const serverHtml = profileData?.PodcasterProfile.Description ?? '';
+        const currentHtml = quill.root.innerHTML;
+        if (serverHtml !== currentHtml) {
+            (quill.clipboard as any).dangerouslyPasteHTML(serverHtml);
+        }
+    }, [quill, profileData?.PodcasterProfile.Description]);
+
+    useEffect(() => {
+        if (!quill) return;
+        const onTextChange = (_delta: any, _oldDelta: any, source: 'user' | 'api') => {
+            if (source !== 'user') return;
+            const htmlContent = quill.root.innerHTML;
+            setProfileData(prev => {
+                if (!prev || prev.PodcasterProfile.Description === htmlContent) return prev;
+                return { ...prev, PodcasterProfile: { ...prev.PodcasterProfile, Description: htmlContent } };
             });
+        };
+        quill.on('text-change', onTextChange);
+        return () => {
+            quill.off?.('text-change', onTextChange);
+        };
+    }, [quill]);
+
+    const nameChanged = useMemo(() => {
+        if (!originalProfile || !profileData) return false;
+        return originalProfile.PodcasterProfile.Name !== profileData.PodcasterProfile.Name.trim();
+    }, [originalProfile, profileData?.PodcasterProfile.Name]);
+
+    const buddyChanged = useMemo(() => {
+        if (!originalProfile || !profileData) return false;
+        return originalProfile.PodcasterProfile.IsBuddy !== profileData.PodcasterProfile.IsBuddy;
+    }, [originalProfile, profileData?.PodcasterProfile.IsBuddy]);
+
+    const priceChanged = useMemo(() => {
+        if (!originalProfile || !profileData) return false;
+        return originalProfile.PodcasterProfile.PricePerBookingWord !== profileData.PodcasterProfile.PricePerBookingWord;
+    }, [originalProfile, profileData?.PodcasterProfile.PricePerBookingWord]);
+
+    const descriptionChanged = useMemo(() => {
+        if (!originalProfile || !profileData) return false;
+        const norm = (s: string) => (s || '').trim();
+        return norm(originalProfile.PodcasterProfile.Description || '') !== norm(profileData.PodcasterProfile.Description || '');
+    }, [originalProfile, profileData?.PodcasterProfile.Description]);
+
+    const toneSelectionChanged = useMemo(() => {
+        if (originalSelectedToneIds.length !== selectedToneIds.length) return true;
+        const a = new Set(originalSelectedToneIds);
+        for (const id of selectedToneIds) if (!a.has(id)) return true;
+        return false;
+    }, [originalSelectedToneIds, selectedToneIds]);
+
+    const isDirty = useMemo(
+        () => nameChanged || descriptionChanged || priceChanged || buddyChanged || toneSelectionChanged,
+        [nameChanged, descriptionChanged, priceChanged, buddyChanged, toneSelectionChanged]
+    );
+    const isDirtyTone = useMemo(
+        () => toneSelectionChanged,
+        [toneSelectionChanged]
+    );
+
+
+    const groupedTones = useMemo(() => {
+        const groups: Record<string, BookingTone[]> = {};
+        toneList
+            .filter(t => !filterText || t.Name.toLowerCase().includes(filterText.toLowerCase()))
+            .forEach(t => {
+                const catName = t.PodcastBookingToneCategory?.Name || 'Other';
+                if (!groups[catName]) groups[catName] = [];
+                groups[catName].push(t);
+            });
+        return groups;
+    }, [toneList, filterText]);
+
+    const handleToggleTone = (toneId: string) => {
+        setSelectedToneIds(prev => prev.includes(toneId) ? prev.filter(id => id !== toneId) : [...prev, toneId]);
+    };
+
+    const handleSaveTones = async () => {
+        if (!isDirtyTone) return;
+        try {
+            setIsSaving(true);
+            const payload = { PodcasterBookingToneApplyInfo: selectedToneIds };
+            const res = await updateBookingTone(loginRequiredAxiosInstance, profileData.PodcasterProfile.IsBuddy, payload);
+            const sagaId = res?.data.SagaInstanceId
+            if (!sagaId) {
+                toast.error("Profile update failed, please try again.")
+                return
+            }
+            await startPolling(sagaId, loginRequiredAxiosInstance, {
+                onSuccess: async () => {
+                    toast.success('Booking tones updated');
+                    await fetchPodcasterBookingTone();
+                },
+                onFailure: (err) => toast.error(err || "Saga failed!"),
+                onTimeout: () => toast.error("System not responding, please try again."),
+            })
+        } catch (err) {
+            console.error(err);
+            toast.error('Error updating booking tones');
+        } finally {
+            setIsSaving(false);
         }
-    }, [quill, data]);
-
-
-
-
-    const handleSave = () => {
-        console.log('Saving channel data with description:', formData);
     };
 
-    const handleRemove = () => {
-        console.log('Removing channel...');
-    };
 
-    const handleUnpublish = () => {
-        console.log('Unpublishing channel...');
-    };
 
-    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const imageUrl = e.target?.result as string;
+    const handleSave = async () => {
+        if (!profileData || !isDirty) return;
 
-                setPreviewImage(imageUrl);
-            };
-            reader.readAsDataURL(file);
+        if (profileData.PodcasterProfile.IsBuddy && selectedToneIds.length === 0) {
+            toast.error("As a Buddy, you must select at least one booking tone.");
+            return;
+        }
+        if (isDirtyTone) {
+            await handleSaveTones();
+        }
+        if (isDirty) {
+            try {
+                setIsSaving(true);
+                const payload = {
+                    PodcasterProfileUpdateInfo: {
+                        Name: profileData.PodcasterProfile.Name,
+                        Description: profileData.PodcasterProfile.Description || '',
+                        PricePerBookingWord: profileData.PodcasterProfile.PricePerBookingWord || 1,
+                        IsBuddy: profileData.PodcasterProfile.IsBuddy,
+                    },
+                    BuddyAudioFile: null
+                };
+                console.log("Updating profile with payload:", profileData);
+                const res = await updatePodcasterProfile(loginRequiredAxiosInstance, String(profileData.Id), payload);
+                const sagaId = res?.data.SagaInstanceId
+                if (!sagaId) {
+                    toast.error("Profile update failed, please try again.")
+                    return
+                }
+                await startPolling(sagaId, loginRequiredAxiosInstance, {
+                    onSuccess: async () => {
+                        toast.success('Profile updated successfully');
+                        setOriginalProfile(prev => ({
+                            ...(prev || profileData),
+                            Name: profileData.PodcasterProfile.Name,
+                            Description: profileData.PodcasterProfile.Description,
+                            PricePerBookingWord: profileData.PodcasterProfile.PricePerBookingWord,
+                            IsBuddy: profileData.PodcasterProfile.IsBuddy,
+                        }));
+                        dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: profileData.PodcasterProfile.IsBuddy } }));
+
+                        await refreshProfile?.();
+
+                    },
+                    onFailure: (err) => toast.error(err || "Saga failed!"),
+                    onTimeout: () => toast.error("System not responding, please try again."),
+                })
+            } catch (error) {
+                toast.error("Error updating profile");
+            } finally {
+                setIsSaving(false);
+            }
         }
     };
 
-    if (!profileData) return <div>Loading...</div>;
+    const handleViewFile = async (fileKey: string) => {
+        try {
+            const response = await getBuddyCommitment(loginRequiredAxiosInstance, fileKey)
+            if (response.success && response.data) {
+                setViewingFile({ url: response.data.FileUrl })
+            }
+        } catch (error) {
+            console.error('Error fetching PDF:', error)
+            toast.error('Failed to load PDF')
+        }
+    }
+
+    if (loading || !profileData) {
+        return (
+            <div className="flex justify-center items-center h-100">
+                <Loading />
+            </div>
+        );
+    }
 
     return (
         <div className="profile-info-page ">
             <div className="profile-info-page__actions">
                 <Button
                     variant="contained"
-                    color="error"
-                    className="profile-info-page__action-btn profile-info-page__action-btn--remove"
-                    onClick={handleRemove}
-                >
-                    Remove
-                </Button>
-                <Button
-                    variant="outlined"
-                    className="profile-info-page__action-btn profile-info-page__action-btn--unpublish"
-                    onClick={handleUnpublish}
-                >
-                    Unpublish
-                </Button>
-                <Button
-                    variant="contained"
                     className="profile-info-page__action-btn profile-info-page__action-btn--save"
+                    disabled={(!isDirty && !isDirtyTone) || isSaving}
                     onClick={handleSave}
                 >
                     Save
-                </Button>
-                <Button
-                    variant="text"
-                    className="profile-info-page__action-btn profile-info-page__action-btn--more"
-                >
-                    ⋮
                 </Button>
             </div>
 
 
             <div className="profile-info-page__content">
-                {/* Form Section */}
                 <div className="profile-info-page__form">
-                    {/* Profile Name and Verified Row */}
                     <div className="profile-info-page__row">
                         <TextField
                             label="Name"
-                            value={formData.name}
+                            value={profileData.PodcasterProfile.Name}
                             variant="standard"
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            onChange={(e) => setProfileData({ ...profileData, PodcasterProfile: { ...profileData.PodcasterProfile, Name: e.target.value } })}
                             className="profile-info-page__input profile-info-page__input--name"
                             sx={{
                                 '& .MuiOutlinedInput-root': {
@@ -210,61 +408,25 @@ const ProfileInfo = () => {
                             variant="filled"
                             slotProps={{ input: { readOnly: true } }}
                             label="Email"
-                            value={formData.email}
+                            value={profileData.Email}
                             className="profile-info-page__input profile-info-page__input--email"
-                        />
-                    </div>
-                    {/* Contact & Account Info */}
-                    <div className="profile-info-page__row">
-                        <TextField
-                            select
-                            variant="standard"
-                            label="Gender"
-                            value={formData.gender}
-                            onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                            className="profile-info-page__select"
-                        >
-                            <MenuItem value="Male">Male</MenuItem>
-                            <MenuItem value="Female">Female</MenuItem>
-                            <MenuItem value="Other">Other</MenuItem>
-                        </TextField>
-                       <TextField
-                            label="Phone"
-                            value={formData.phone}
-                            variant="standard"
-                            type='number'
-                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            className="profile-info-page__input profile-info-page__input--name"
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    '& fieldset': { borderColor: '#999999 !important' },
-                                    '&:hover fieldset': { borderColor: '#999999 !important' },
-                                    '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
-                                },
-                            }}
-                        />
-                        <TextField
-                            variant="filled"
-                            slotProps={{ input: { readOnly: true } }}
-                            label="Phone"
-                            value={formData.phone}
-                            className="profile-info-page__input-small"
-                        />
-                        <TextField
-                            variant="filled"
-                            slotProps={{ input: { readOnly: true } }}
-                            label="DoB"
-                            value={formData.phone}
-                            className="profile-info-page__input-small"
                         />
                     </div>
 
                     <div className="profile-info-page__row">
                         <TextField
-                            label="Address"
-                            value={formData.address}
+                            label="Price Per Booking Word"
+                            value={profileData.PodcasterProfile.PricePerBookingWord}
                             variant="standard"
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            type="number"
+                            onChange={(e) => {
+                                let val = e.target.value;
+                                if (val === '' || Number(val) < 1) {
+                                    setProfileData({ ...profileData, PodcasterProfile: { ...profileData.PodcasterProfile, PricePerBookingWord: 1 } });
+                                } else {
+                                    setProfileData({ ...profileData, PodcasterProfile: { ...profileData.PodcasterProfile, PricePerBookingWord: Number(val) } });
+                                }
+                            }}
                             className="profile-info-page__input profile-info-page__input--name"
                             sx={{
                                 '& .MuiOutlinedInput-root': {
@@ -278,27 +440,47 @@ const ProfileInfo = () => {
                             variant="filled"
                             slotProps={{ input: { readOnly: true } }}
                             label="Balance"
-                            value={formData.balance}
+                            value={profileData.Balance}
                             className="profile-info-page__input-small"
                         />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{
-                                input: {
-                                    readOnly: true,
-                                },
-                            }}
-                            label="Rating Average"
-                            value={`${formData.avgRating} ⭐`}
-                            className="profile-info-page__input-small"
+                        <div>
 
-                        />
+                            <FormControlLabel
+                                value={profileData.PodcasterProfile.IsBuddy ? true : false}
+                                control={<IOSSwitch sx={{ m: 1 }}
+                                    checked={!!profileData.PodcasterProfile.IsBuddy}
+                                    onChange={(_e, checked) => {
+                                        setProfileData({
+                                            ...profileData,
+                                            PodcasterProfile: {
+                                                ...profileData.PodcasterProfile,
+                                                IsBuddy: checked,
+                                            }
+                                        });
+                                    }}
+                                />}
+                                label={
+                                    <div className="flex items-center gap-2">
+                                        <label className="episode-audio__selector-label">Is Buddy</label>
+                                        <Tooltip placement="top-start" title="If you are a Buddy, you can receive booking requests from customers.">
+                                            <Question color="var(--third-grey)" size={16} />
+                                        </Tooltip >
+                                    </div>
+                                }
+                                labelPlacement="top"
+                                sx={{
+                                    '& .MuiFormControlLabel-label': {
+                                        color: '#999999',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        letterSpacing: '0.5px',
+                                        mb: 0.75
+                                    },
+
+                                }}
+                            />
+                        </div>
                     </div>
-
-
-
-
                     <div className="profile-info-page__row">
                         <TextField
                             variant="filled"
@@ -307,9 +489,20 @@ const ProfileInfo = () => {
                                     readOnly: true,
                                 },
                             }}
-                            label="Created At"
-                            type="date"
-                            value={formData.createdAt}
+                            label="Violation Level"
+                            value={profileData.ViolationLevel ? profileData.ViolationLevel : '0'}
+                            className="profile-info-page__input-small"
+
+                        />
+                        <TextField
+                            variant="filled"
+                            slotProps={{
+                                input: {
+                                    readOnly: true,
+                                },
+                            }}
+                            label="Violation Point"
+                            value={profileData.ViolationPoint ? profileData.ViolationPoint : '0'}
                             className="profile-info-page__input-small"
 
                         />
@@ -322,8 +515,7 @@ const ProfileInfo = () => {
                                 },
                             }}
                             label="Updated At"
-                            type="date"
-                            value={formData.updatedAt}
+                            value={formatDate(profileData.PodcasterProfile.UpdatedAt)}
                             className="profile-info-page__input-small"
 
                         />
@@ -331,8 +523,8 @@ const ProfileInfo = () => {
                             id="filled-helperText"
                             variant="filled"
                             slotProps={{ input: { readOnly: true } }}
-                            label="Total Follow"
-                            value={formData.totalFollow}
+                            label="Total Followers"
+                            value={profileData.PodcasterProfile.TotalFollow}
                             className="profile-info-page__input-small"
                         />
                         <TextField
@@ -340,27 +532,39 @@ const ProfileInfo = () => {
                             variant="filled"
                             slotProps={{ input: { readOnly: true } }}
                             label="Listen Count"
-                            value={formData.listenCount}
+                            value={profileData.PodcasterProfile.ListenCount}
                             className="profile-info-page__input-small"
                         />
                         <TextField
                             id="filled-helperText"
                             variant="filled"
-                            slotProps={{ input: { readOnly: true } }}
-                            label="Owned Storage (MB)"
-                            value={formData.ownedStorage}
+                            slotProps={{
+                                input: {
+                                    readOnly: true,
+                                },
+                            }}
+                            label="Rating Average"
+                            value={`${profileData.PodcasterProfile.AverageRating} ⭐ (${profileData.PodcasterProfile.RatingCount})`}
                             className="profile-info-page__input-small"
-                        />
-                        <TextField
-                            id="filled-helperText"
-                            variant="filled"
-                            slotProps={{ input: { readOnly: true } }}
-                            label="Used Storage (MB)"
-                            value={formData.usedStorage}
-                            className="profile-info-page__input-small"
+
                         />
                     </div>
+                    <div className='flex mb-0'>
+                        <Button
+                            size="small"
+                            onClick={() => handleViewFile(profileData.PodcasterProfile.CommitmentDocumentFileKey)}
+                            sx={{
+                                color: 'var(--primary-green)',
+                                backgroundColor: 'transparent',
+                                textTransform: 'none',
+                                fontStyle: 'italic',
+                                '&:hover': { textDecoration: 'underline', backgroundColor: 'transparent' },
+                            }}
+                        >
+                            Buddy Commitment
 
+                        </Button>
+                    </div>
                     {/* Description */}
                     <div className="profile-info-page__description">
                         <Typography variant="body2" className="profile-info-page__description-label">
@@ -369,65 +573,139 @@ const ProfileInfo = () => {
                         <div className="profile-info-page__description-editor">
                             <div ref={quillRef} />
                         </div>
-
                     </div>
                 </div>
 
                 {/* Preview Section */}
                 <div className="profile-info-page__preview">
-                    <div className="profile-info-page__main-image-container">
-                        <img
-                            src={previewImage}
-                            alt={formData.name}
-                            className="profile-info-page__main-image-file"
-                        />
-                        <Button
-                            className="profile-info-page__change-artwork-btn"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            Change Artwork
-                        </Button>
-                    </div>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleImageUpload}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                    />
+                    <div>
+                        <p className="font-bold text-left mb-4">
+                            Booking Tone
+                        </p>
 
-                    <Typography variant="h6" className="profile-info-page__preview-title">
-                        Preview
-                    </Typography>
-                    <Card className="profile-info-page__preview-card">
-                        <div className="profile-info-page__preview-image-container">
-                            <CardMedia
-                                component="img"
-                                image={previewImage}
-                                alt={formData.name}
-                                className="profile-info-page__preview-bg-image"
+                        <Box className="profile-info-page__search-container mb-4">
+                            <Box className="profile-info-page__search-icon">
+                                <Search />
+                            </Box>
+                            <InputBase
+                                placeholder="Search booking tones..."
+                                value={filterText}
+                                onChange={(e) => setFilterText(e.target.value)}
+                                className="profile-info-page__search-input"
                             />
-                            <div className="profile-info-page__preview-overlay">
-                                <div className="profile-info-page__preview-content">
-                                    <img
-                                        src={previewImage}
-                                        alt={formData.name}
-                                        className="profile-info-page__preview-avatar"
-                                    />
-                                    <div className="profile-info-page__preview-info">
-                                        <Typography variant="h6" className="profile-info-page__preview-name">
-                                            {formData.name}
-                                        </Typography>
-                                        <Typography variant="body2" className="profile-info-page__preview-subtitle">
-                                            {formData.studioName || formData.role}
-                                        </Typography>
-                                    </div>
-                                </div>
+                        </Box>
+                        {isLoading && toneList.length === 0 ? (
+                            <div className="flex flex-col gap-2">
+                                <Skeleton variant="rectangular" height={32} />
+                                <Skeleton variant="rectangular" height={32} />
+                                <Skeleton variant="rectangular" height={32} />
                             </div>
-                        </div>
-                    </Card>
+                        ) : (
+                            <div className="booking-tone-selector flex flex-col gap-2" style={{ maxHeight: 420, overflow: 'auto' }}>
+                                {Object.entries(groupedTones).map(([category, tones]) => {
+                                    const isOpen = openCategories[category] ?? false;
+                                    const showAll = showAllCategory[category] ?? false;
+                                    const visibleTones = showAll ? tones : tones.slice(0, displayLimit);
+                                    const collapsedSelectedCount = !isOpen ? tones.filter(t => selectedToneIds.includes(t.Id)).length : 0;
+                                    return (
+                                        <div key={category} className="booking-tone-selector__group">
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <IconButton size="small" onClick={() => setOpenCategories(prev => ({ ...prev, [category]: !isOpen }))}>
+                                                        {isOpen ? <ExpandLess fontSize="small" className='text-[#aee339]' /> : <ExpandMore className='text-[#aee339]' fontSize="small" />}
+                                                    </IconButton>
+                                                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                                        {category}
+                                                    </Typography>
+                                                </Box>
+                                                {!isOpen && collapsedSelectedCount > 0 && (
+                                                    <Typography variant="caption" className='text-[#aee339]'>{collapsedSelectedCount} selected</Typography>
+                                                )}
+                                            </Box>
+                                            <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                                                <Box className="booking-tone-selector__tones" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 0.5 }}>
+                                                    {visibleTones.map(t => {
+                                                        const selected = selectedToneIds.includes(t.Id);
+                                                        return (
+                                                            <Chip
+                                                                key={t.Id}
+                                                                label={t.Name}
+                                                                onClick={() => handleToggleTone(t.Id)}
+                                                                sx={{
+                                                                    backgroundColor: selected ? '#aee339' : 'transparent',
+                                                                    color: selected ? 'black' : 'var(--primary-green)',
+                                                                    border: '1px solid var(--primary-green)',
+                                                                    boxShadow: '1px 1px 5px rgba(12, 254, 4, 0.18)',
+                                                                    '& .MuiChip-label': {
+                                                                        fontSize: '0.8rem',
+                                                                        maxWidth: '200px',
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis'
+                                                                    },
+                                                                    '&:hover': {
+                                                                        cursor: 'pointer',
+                                                                        backgroundColor: selected ? '#aee339' : 'transparent',
+                                                                        color: selected ? 'black' : 'var(--primary-green)',
+                                                                        border: '1px solid var(--primary-green)',
+                                                                        boxShadow: '1px 1px 5px rgba(12, 254, 4, 0.18)',
+                                                                    },
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
+                                                    {tones.length > displayLimit && (
+                                                        <Chip
+                                                            label={showAll ? 'Show Less' : `Show More (${tones.length - displayLimit})`}
+                                                            color={showAll ? 'warning' : 'warning'}
+                                                            variant='outlined'
+                                                            onClick={() => setShowAllCategory(prev => ({ ...prev, [category]: !showAll }))}
+                                                            sx={{ cursor: 'pointer' }}
+                                                        />
+                                                    )}
+                                                </Box>
+                                            </Collapse>
+                                        </div>
+                                    );
+                                })}
+                                {toneList.length === 0 && !isLoading && (
+                                    <Typography variant="body2" color="text.secondary">No booking tones available.</Typography>
+                                )}
+                            </div>
+                        )}
+                        {/* {toneSelectionChanged && (
+                            <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
+                                You have unsaved booking tone changes.
+                            </Typography>
+                        )} */}
+                    </div>
                 </div>
             </div>
+
+            <Dialog
+                open={!!viewingFile}
+                onClose={() => setViewingFile(null)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        backgroundColor: '#1a1a1a',
+                        color: 'white',
+                        minHeight: '500px'
+                    }
+                }}
+            >
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6">Buddy Commitment Preview</Typography>
+                    <IconButton onClick={() => setViewingFile(null)} sx={{ color: 'white' }}>
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    {viewingFile && (
+                        <DocumentViewer url={viewingFile.url} height={600} />
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

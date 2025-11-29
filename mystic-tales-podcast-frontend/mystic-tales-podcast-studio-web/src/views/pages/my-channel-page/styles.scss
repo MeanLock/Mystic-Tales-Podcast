@@ -93,9 +93,10 @@
         font-weight: 600;
         border-radius: 8px;
         text-transform: none;
+        transition: all 0.3s ease;
 
         &:hover {
-            background-color: #8bc34a;
+            transform: translateY(-2px);
         }
 
         @media (max-width: 768px) {
@@ -111,9 +112,10 @@
         font-weight: bold;
         border-radius: 8px;
         text-transform: none;
+        transition: all 0.3s ease;
 
         &:hover {
-            background-color: #8bc34a;
+            transform: translateY(-2px);
         }
 
         @media (max-width: 768px) {
@@ -400,7 +402,7 @@
 }
 
 .channel-overview-page {
-    
+
     padding: 40px 40px 24px 48px;
     background-color: rgba(0, 0, 0, 0.2) !important;
     color: white;

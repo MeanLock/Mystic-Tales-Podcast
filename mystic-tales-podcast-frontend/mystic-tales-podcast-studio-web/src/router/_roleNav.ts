@@ -34,12 +34,12 @@ export const _podcasterNav: {
     {
       label: "Booking Management",
       icon: React.createElement(ListBullets, { size: 24 }),
-      path: "/booking-management",
+      path: "/booking/table",
     },
     {
-      label: "Earn",
+      label: "Withdrawal",
       icon: React.createElement(Money, { size: 24 }),
-      path: "/earn",
+      path: "/withdrawal",
     },
     {
       label: "Copyright",
