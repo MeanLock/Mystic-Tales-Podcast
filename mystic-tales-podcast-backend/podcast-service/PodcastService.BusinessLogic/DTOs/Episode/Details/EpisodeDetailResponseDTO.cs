@@ -13,6 +13,7 @@ namespace PodcastService.BusinessLogic.DTOs.Episode.Details
     {
 
         public required AccountSnippetResponseDTO Podcaster { get; set; } = null!;
+        public required bool? IsSavedByCurrentUser { get; set; }
 
 
     }

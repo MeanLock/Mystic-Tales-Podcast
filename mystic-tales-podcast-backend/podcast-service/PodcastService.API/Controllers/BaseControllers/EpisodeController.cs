@@ -10,6 +10,7 @@ using PodcastService.BusinessLogic.DTOs.Cache;
 using PodcastService.BusinessLogic.DTOs.Episode;
 using PodcastService.BusinessLogic.Enums.Account;
 using PodcastService.BusinessLogic.Enums.App;
+using PodcastService.BusinessLogic.Enums.ListenSessionProcedure;
 using PodcastService.BusinessLogic.Helpers.AuthHelpers;
 using PodcastService.BusinessLogic.Helpers.FileHelpers;
 using PodcastService.BusinessLogic.Models.CrossService;
@@ -78,13 +79,41 @@ namespace PodcastService.API.Controllers.BaseControllers
         #region Sample coding format must be followed
         #endregion
 
+        // /api/podcast-service/api/episodes/saved
+        [HttpGet("saved")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetMySavedEpisodes()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var savedEpisodes = await _podcastEpisodeService.GetMySavedEpisodesAsync(account.Id);
+
+            return Ok(new
+            {
+                SavedEpisodes = savedEpisodes
+            });
+        }
+
+        // /api/podcast-service/api/episodes/dmca-assignable
+        [HttpGet("dmca-assignable")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> GetDmcaAssignableEpisodes()
+        {
+            var episodes = await _podcastEpisodeService.GetDmcaAssignableEpisodesAsync();
+
+            return Ok(new
+            {
+                EpisodeList = episodes
+            });
+        }
+
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}
         [HttpGet("{PodcastEpisodeId}")]
         public async Task<IActionResult> GetEpisodeById(Guid PodcastEpisodeId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
-            var episode = await _podcastEpisodeService.GetEpisodeByIdAsync(PodcastEpisodeId, account?.RoleId);
+            var episode = await _podcastEpisodeService.GetEpisodeByIdAsync(PodcastEpisodeId, account);
 
             return Ok(new
             {
@@ -453,7 +482,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/listen
         [HttpPost("{PodcastEpisodeId}/listen")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId, [FromBody] EpisodeListenRequestDTO listenRequestDTO, [FromQuery] string? Token = null)
+        public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId, [FromBody] EpisodeListenRequestDTO listenRequestDTO,[FromQuery] Guid? continue_listen_session_id = null, [FromQuery] string? Token = null)
         {
             string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
             string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
@@ -487,16 +516,55 @@ namespace PodcastService.API.Controllers.BaseControllers
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
 
-            var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, listenRequestDTO, deviceInfo, Token);
+            var episodeListenResponse = await _podcastEpisodeService.GetEpisodeListenAsync(PodcastEpisodeId, account.Id, listenRequestDTO, deviceInfo, continue_listen_session_id, Token);
 
-            return Ok(new
+            return Ok(episodeListenResponse);
+        }
+
+        // /api/podcast-service/api/episodes/listen-sessions/navigate
+        [HttpPost("listen-sessions/navigate")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> NavigateEpisodeListenSession([FromBody] EpisodeListenSessionNavigateRequestDTO episodeListenSessionNavigateRequestDTO,[FromQuery] ListenSessionNavigateTypeEnum listen_session_navigate_type)
+        {
+            // bắt buộc phải gửi về enum đúng
+            if (!Enum.IsDefined(typeof(ListenSessionNavigateTypeEnum), listen_session_navigate_type))
             {
-                ListenSession = episodeListenResponse
-            });
+                return BadRequest(new
+                {
+                    error = "Invalid listen_session_navigate_type value"
+                });
+            }
+            string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
+            string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
+            if (string.IsNullOrEmpty(deviceTokenHeader))
+            {
+                return BadRequest(new
+                {
+                    error = "Missing X-DeviceInfo-Token header"
+                });
+            }
+            else if (string.IsNullOrEmpty(authorizedDeviceToken))
+            {
+                return Unauthorized(new
+                {
+                    error = "Unauthorized: Missing device_info_token claim"
+                });
+            }
+            else if (deviceTokenHeader != authorizedDeviceToken)
+            {
+                return Unauthorized(new
+                {
+                    error = "Unauthorized: Device info token mismatch"
+                });
+            }
+            var deviceInfo = JwtHelper.ClaimsPrincipalToObject<DeviceInfoDTO>(_jwtHelper.DecodeToken_OneSecretKey(deviceTokenHeader));
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var episodeListenResponse = await _podcastEpisodeService.NavigateEpisodeListenSessionAsync(account.Id, listen_session_navigate_type, episodeListenSessionNavigateRequestDTO, deviceInfo);
+            return Ok(episodeListenResponse);
         }
 
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/hls-encryption-key/{KeyId}
-        [HttpGet("{PodcastEpisodeId}/hls-encryption-key/{KeyId}")]
+            [HttpGet("{PodcastEpisodeId}/hls-encryption-key/{KeyId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetEpisodeHlsEncryptionKeyFileUrl(Guid PodcastEpisodeId, Guid KeyId, [FromQuery] string? Token = null)
         {
@@ -701,10 +769,7 @@ namespace PodcastService.API.Controllers.BaseControllers
 
             var listenSession = await _podcastEpisodeService.GetLatestPodcastEpisodeListenSessionAsync(account.Id, deviceInfo);
 
-            return Ok(new
-            {
-                ListenSession = listenSession
-            });
+            return Ok(listenSession);
         }
 
         // /api/podcast-service/api/episodes/listen-sessions/{PodcastEpisodeListenSessionId}/last-duration-seconds/{LastListenDurationSeconds}

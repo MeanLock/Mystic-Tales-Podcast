@@ -319,6 +319,21 @@ namespace PodcastService.API.Controllers.BaseControllers
             });
         }
 
+        // /api/podcast-service/api/review-sessions/episode-publish/episodes/{PodcastEpisodeId}/current
+        [HttpGet("episode-publish/episodes/{PodcastEpisodeId}/current")]
+        [Authorize(Policy = "AdminOrStaff.BasicAccess.Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetCurrentEpisodePublishReviewSessionByEpisodeId(Guid PodcastEpisodeId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            var publishReviewSession = await _reviewSessionService.GetCurrentEpisodePublishReviewSessionByEpisodeIdAsync(PodcastEpisodeId, account);
+
+            return Ok(new
+            {
+                ReviewSession = publishReviewSession
+            });
+        }
+
         // /api/podcast-service/api/review-sessions/episode-publish/{PodcastEpisodePublishReviewSessionId}
         [HttpGet("episode-publish/{PodcastEpisodePublishReviewSessionId}")]
         [Authorize(Policy = "AdminOrStaff.BasicAccess")]

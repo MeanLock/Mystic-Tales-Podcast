@@ -351,9 +351,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     return null;
                 }
 
+                // distint and order by last episode listened id
+                listenSessions = listenSessions
+                    .GroupBy(ls => ls.PodcastEpisodeId)
+                    .Select(g => g.OrderByDescending(ls => ls.CreatedAt).First())
+                    .OrderByDescending(ls => ls.CreatedAt)
+                    .ToList();
+
                 // Get unique podcaster IDs
                 var podcasterIds = listenSessions
                     .Select(ls => ls.PodcastEpisode.PodcastShow.PodcasterId)
+                    // .Select(ls => ls.PodcastEpisodeId)
                     .Distinct()
                     .ToList();
 
@@ -384,7 +392,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             Description = ls.PodcastEpisode.Description,
                             MainImageFileKey = ls.PodcastEpisode.MainImageFileKey,
                             IsReleased = ls.PodcastEpisode.IsReleased,
-                            ReleaseDate = ls.PodcastEpisode.ReleaseDate
+                            ReleaseDate = ls.PodcastEpisode.ReleaseDate,
+                            AudioLength = ls.PodcastEpisode.AudioLength
                         },
                         Podcaster = podcasterAccount != null ? new AccountSnippetResponseDTO
                         {
@@ -2714,7 +2723,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Description = ep.Description,
                     MainImageFileKey = ep.MainImageFileKey,
                     IsReleased = ep.IsReleased,
-                    ReleaseDate = ep.ReleaseDate
+                    ReleaseDate = ep.ReleaseDate,
+                    AudioLength = ep.AudioLength
                 }).ToList();
 
                 Console.WriteLine($"[TrendingNewEpisodes] Built with {episodeListItems.Count} episodes");
@@ -2806,7 +2816,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Description = ep.Description,
                     MainImageFileKey = ep.MainImageFileKey,
                     IsReleased = ep.IsReleased,
-                    ReleaseDate = ep.ReleaseDate
+                    ReleaseDate = ep.ReleaseDate,
+                    AudioLength = ep.AudioLength
                 }).ToList();
 
                 Console.WriteLine($"[TrendingPopularEpisodes] Built with {episodeListItems.Count} episodes (A:{partAEpisodes.Count}, B:{partBEpisodes.Count})");
@@ -3770,7 +3781,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 Description = episode.Description,
                                 MainImageFileKey = episode.MainImageFileKey,
                                 IsReleased = episode.IsReleased,
-                                ReleaseDate = episode.ReleaseDate
+                                ReleaseDate = episode.ReleaseDate,
+                                AudioLength = episode.AudioLength
                             }
                         };
                     }
@@ -3908,6 +3920,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 return new CategoryBasePodcastFeedDTO
                 {
+                    PodcastCategory = new PodcastCategoryDTO
+                    {
+                        Id = category.Id,
+                        Name = category.Name,
+                        MainImageFileKey = category.MainImageFileKey
+                    },
                     TopChannels = topChannels,
                     TopShows = topShows,
                     HotShows = hotShows,

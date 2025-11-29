@@ -1,3 +1,4 @@
+using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.DTOs.Cache;
 using PodcastService.BusinessLogic.DTOs.Channel;
 using PodcastService.BusinessLogic.DTOs.Episode;
@@ -9,7 +10,7 @@ namespace PodcastService.BusinessLogic.DTOs.ReviewSession.Details
     public class EpisodePublishReviewSessionDetailResponseDTO
     {
         public int Id { get; set; }
-        public int AssignedStaff { get; set; }
+        public AccountSnippetResponseDTO AssignedStaff { get; set; }
         public string? Note { get; set; }
         public int ReReviewCount { get; set; }
         public DateTime? Deadline { get; set; }

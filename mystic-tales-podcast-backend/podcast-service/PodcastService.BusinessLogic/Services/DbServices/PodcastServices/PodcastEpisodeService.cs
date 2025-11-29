@@ -170,6 +170,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         private readonly FFMpegCoreHlsService _ffMpegCoreHlsService;
         private readonly AudioTuningService _audioTuningService;
 
+        // HTTP CLIENT
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly CrossServiceHttpService _crossServiceHttpService;
 
         public PodcastEpisodeService(
             ILogger<PodcastEpisodeService> logger,
@@ -224,7 +227,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             AcoustIDAudioFingerprintGenerator audioFingerprintService,
             AcoustIDAudioFingerprintComparator audioFingerprintComparator,
             FFMpegCoreHlsService ffMpegCoreHlsService,
-            AudioTuningService audioTuningService
+            AudioTuningService audioTuningService,
+
+            IHttpClientFactory httpClientFactory,
+            CrossServiceHttpService crossServiceHttpService
             )
         {
             _logger = logger;
@@ -281,6 +287,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _acoustIDAudioFingerprintComparator = audioFingerprintComparator;
             _ffMpegCoreHlsService = ffMpegCoreHlsService;
             _audioTuningService = audioTuningService;
+
+            _httpClientFactory = httpClientFactory;
+            _crossServiceHttpService = crossServiceHttpService;
         }
 
 
@@ -835,7 +844,246 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task<EpisodeDetailResponseDTO> GetEpisodeByIdAsync(Guid episodeId, int? role)
+        public async Task<List<EpisodeListItemResponseDTO>> GetMySavedEpisodesAsync(int accountId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+            {
+                new BatchQueryItem
+                {
+                    Key = "savedEpisodes",
+                    QueryType = "findall",
+                    EntityType = "AccountSavedPodcastEpisode",
+                    Parameters = JObject.FromObject(new
+                    {
+                        where = new
+                        {
+                            AccountId = accountId
+                        },
+                        orderBy = "CreatedAt"
+                    }),
+                    Fields = new[] { "AccountId", "PodcastEpisodeId", "CreatedAt" }
+                }
+            }
+                };
+
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                var savedEpisodes = ((JArray)result.Results["savedEpisodes"])
+                    .ToObject<List<AccountSavedPodcastEpisodeDTO>>();
+                var savedEpisodeIds = savedEpisodes.Select(se => se.PodcastEpisodeId).ToList();
+                // truy vấn các episode và trả về 
+                var episodeList = await _podcastEpisodeGenericRepository.FindAll(
+                    predicate: pe => pe.DeletedAt == null
+                    && pe.PodcastShow.DeletedAt == null
+                    && (pe.PodcastShow.PodcastChannel == null || pe.PodcastShow.PodcastChannel.DeletedAt == null)
+                    && savedEpisodeIds.Contains(pe.Id),
+                    includeFunc: q => q
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                        .ThenInclude(pet => pet.PodcastEpisodeStatus)
+                        .Include(pe => pe.PodcastEpisodeHashtags)
+                        .ThenInclude(peh => peh.Hashtag)
+                        .Include(pe => pe.PodcastEpisodeSubscriptionType)
+                        .Include(pe => pe.PodcastShow)
+                ).ToListAsync();
+
+                // var shows = (await Task.WhenAll(showList.Select(async ps =>
+                // {
+                //     var podcaster = await _accountCachingService.GetAccountStatusCacheById(ps.PodcasterId);
+                //     if (podcaster == null || podcaster.Id != ps.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
+                //     {
+                //         throw new Exception("Podcaster with id " + ps.PodcasterId + " does not exist");
+                //     }
+                //     return new ShowListItemResponseDTO
+                //     {
+                //         Id = ps.Id,
+                //         Name = ps.Name,
+                //         Description = ps.Description,
+                //         MainImageFileKey = ps.MainImageFileKey,
+                //         TrailerAudioFileKey = ps.TrailerAudioFileKey,
+                //         TotalFollow = ps.TotalFollow,
+                //         ListenCount = ps.ListenCount,
+                //         AverageRating = ps.AverageRating,
+                //         RatingCount = ps.RatingCount,
+                //         Copyright = ps.Copyright,
+                //         IsReleased = ps.IsReleased,
+                //         Language = ps.Language,
+                //         UploadFrequency = ps.UploadFrequency,
+                //         ReleaseDate = ps.ReleaseDate,
+                //         TakenDownReason = null,
+                //         EpisodeCount = ps.PodcastEpisodes.Count(pe =>
+                //         {
+                //             return pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null;
+
+                //         }),
+                //         PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
+                //         {
+                //             Id = ps.PodcastCategory.Id,
+                //             Name = ps.PodcastCategory.Name,
+                //             MainImageFileKey = ps.PodcastCategory.MainImageFileKey
+                //         } : null,
+                //         PodcastSubCategory = ps.PodcastSubCategory != null ? new PodcastSubCategoryDTO
+                //         {
+                //             Id = ps.PodcastSubCategory.Id,
+                //             Name = ps.PodcastSubCategory.Name,
+                //             PodcastCategoryId = ps.PodcastSubCategory.PodcastCategoryId
+                //         } : null,
+                //         PodcastChannel = ps.PodcastChannel != null ? new PodcastChannelSnippetResponseDTO
+                //         {
+                //             Id = ps.PodcastChannel.Id,
+                //             Name = ps.PodcastChannel.Name,
+                //             Description = ps.PodcastChannel.Description,
+                //             MainImageFileKey = ps.PodcastChannel.MainImageFileKey
+                //         } : null,
+                //         Podcaster = new AccountSnippetResponseDTO
+                //         {
+                //             Id = podcaster.Id,
+                //             Email = podcaster.Email,
+                //             FullName = podcaster.PodcasterProfileName,
+                //             MainImageFileKey = podcaster.MainImageFileKey
+                //         },
+                //         PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
+                //         {
+                //             Id = ps.PodcastShowSubscriptionType.Id,
+                //             Name = ps.PodcastShowSubscriptionType.Name
+                //         } : null,
+                //         Hashtags = ps.PodcastShowHashtags.Select(psh => new HashtagDTO
+                //         {
+                //             Id = psh.Hashtag.Id,
+                //             Name = psh.Hashtag.Name
+                //         }).ToList(),
+                //         CreatedAt = ps.CreatedAt,
+                //         UpdatedAt = ps.UpdatedAt,
+                //         CurrentStatus = ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).Select(pst => new PodcastShowStatusDTO
+                //         {
+                //             Id = pst.PodcastShowStatus.Id,
+                //             Name = pst.PodcastShowStatus.Name
+                //         }).FirstOrDefault()!,
+                //     };
+                // }))).ToList();
+
+                var episodes = episodeList.Select(pe => new EpisodeListItemResponseDTO
+                {
+                    Id = pe.Id,
+                    Name = pe.Name,
+                    Description = pe.Description,
+                    AudioFileKey = pe.AudioFileKey,
+                    AudioLength = pe.AudioLength,
+                    ReleaseDate = pe.ReleaseDate,
+                    IsReleased = pe.IsReleased,
+                    AudioFileSize = pe.AudioFileSize,
+                    EpisodeOrder = pe.EpisodeOrder,
+                    ExplicitContent = pe.ExplicitContent,
+                    IsAudioPublishable = pe.IsAudioPublishable,
+                    ListenCount = pe.ListenCount,
+                    MainImageFileKey = pe.MainImageFileKey,
+                    SeasonNumber = pe.SeasonNumber,
+                    TakenDownReason = null,
+                    TotalSave = pe.TotalSave,
+                    Hashtags = pe.PodcastEpisodeHashtags.Select(peh => new HashtagDTO
+                    {
+                        Id = peh.Hashtag.Id,
+                        Name = peh.Hashtag.Name
+                    }).ToList(),
+                    PodcastShow = new PodcastShowSnippetResponseDTO
+                    {
+                        Id = pe.PodcastShow.Id,
+                        Name = pe.PodcastShow.Name,
+                        Description = pe.PodcastShow.Description,
+                        MainImageFileKey = pe.PodcastShow.MainImageFileKey,
+                        IsReleased = pe.PodcastShow.IsReleased,
+                        ReleaseDate = pe.PodcastShow.ReleaseDate
+                    },
+                    PodcastEpisodeSubscriptionType = pe.PodcastEpisodeSubscriptionType != null ? new PodcastEpisodeSubscriptionTypeDTO
+                    {
+                        Id = pe.PodcastEpisodeSubscriptionType.Id,
+                        Name = pe.PodcastEpisodeSubscriptionType.Name
+                    } : null,
+                    CreatedAt = pe.CreatedAt,
+                    UpdatedAt = pe.UpdatedAt,
+                    CurrentStatus = pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).Select(pet => new PodcastEpisodeStatusDTO
+                    {
+                        Id = pet.PodcastEpisodeStatus.Id,
+                        Name = pet.PodcastEpisodeStatus.Name
+                    }).FirstOrDefault()!,
+                }).ToList();
+
+                return episodes;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get my saved episodes failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<List<PodcastEpisodeSnippetResponseDTO>> GetDmcaAssignableEpisodesAsync()
+        {
+            try
+            {
+                var episodes = await _podcastEpisodeGenericRepository.FindAll(
+                    predicate: pe => pe.DeletedAt == null
+                    && pe.PodcastShow.DeletedAt == null
+                    && (pe.PodcastShow.PodcastChannel == null || pe.PodcastShow.PodcastChannel.DeletedAt == null),
+                    includeFunc: q => q
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastChannel)
+                        .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // lấy ra các episode phải thuộc published/takendown, và show phải thuộc publish/takendown , và channel phải published nếu có
+                episodes = episodes.Where(pe =>
+                {
+                    var episodeStatusId = pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId;
+                    if (episodeStatusId != (int)PodcastEpisodeStatusEnum.Published && episodeStatusId != (int)PodcastEpisodeStatusEnum.TakenDown)
+                    {
+                        return false;
+                    }
+
+                    var showStatusId = pe.PodcastShow.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId;
+                    if (showStatusId != (int)PodcastShowStatusEnum.Published && showStatusId != (int)PodcastShowStatusEnum.TakenDown)
+                    {
+                        return false;
+                    }
+
+                    if (pe.PodcastShow.PodcastChannel != null)
+                    {
+                        var channelStatusId = pe.PodcastShow.PodcastChannel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId;
+                        if (channelStatusId != (int)PodcastChannelStatusEnum.Published)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }).ToList();
+
+                var episodeSnippets = episodes.Select(pe => new PodcastEpisodeSnippetResponseDTO
+                {
+                    Id = pe.Id,
+                    Name = pe.Name,
+                    AudioLength = pe.AudioLength,
+                    Description = pe.Description,
+                    IsReleased = pe.IsReleased,
+                    ReleaseDate = pe.ReleaseDate,
+                    MainImageFileKey = pe.MainImageFileKey
+                }).ToList();
+
+                return episodeSnippets;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get DMCA assignable episodes failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<EpisodeDetailResponseDTO> GetEpisodeByIdAsync(Guid episodeId, AccountStatusCache? requestedAccount)
         {
             try
             {
@@ -850,7 +1098,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .Include(pe => pe.PodcastEpisodeSubscriptionType)
                 );
 
-                if (role == null || role == 1)
+                if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == (int)RoleEnum.Customer)
                 {
                     episodeQuery = episodeQuery.Where(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.IsReleased != null);
                 }
@@ -868,11 +1116,43 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     throw new Exception("Podcaster with id " + episode.PodcastShow.PodcasterId + " does not exist");
                 }
 
+                bool? IsSavedByCurrentUser = null;
+                if (requestedAccount != null && requestedAccount.RoleId != null && requestedAccount.RoleId == (int)RoleEnum.Customer)
+                {
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                        {
+                            new BatchQueryItem
+                            {
+                                Key = "savedEpisode",
+                                QueryType = "findall",
+                                EntityType = "AccountSavedPodcastEpisode",
+
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        AccountId = requestedAccount.Id,
+                                        PodcastEpisodeId = episode.Id
+                                    }
+                                }),
+                            }
+                        }
+                    };
+                    var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                    var savedEpisode = ((JArray)result.Results["savedEpisode"])
+                        .ToObject<List<AccountSavedPodcastEpisodeDTO>>()
+                        .FirstOrDefault();
+                    IsSavedByCurrentUser = savedEpisode != null;
+                }
+
                 var episodeDetail = new EpisodeDetailResponseDTO
                 {
                     Id = episode.Id,
                     Name = episode.Name,
                     Description = episode.Description,
+                    IsSavedByCurrentUser = IsSavedByCurrentUser,
                     AudioFileKey = episode.AudioFileKey,
                     AudioLength = episode.AudioLength,
                     ReleaseDate = episode.ReleaseDate,
@@ -884,7 +1164,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     ListenCount = episode.ListenCount,
                     MainImageFileKey = episode.MainImageFileKey,
                     SeasonNumber = episode.SeasonNumber,
-                    TakenDownReason = role == null || role == 1 ? null : episode.TakenDownReason,
+                    TakenDownReason = requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == (int)RoleEnum.Customer ? null : episode.TakenDownReason,
                     TotalSave = episode.TotalSave,
                     Hashtags = episode.PodcastEpisodeHashtags.Select(peh => new HashtagDTO
                     {
@@ -971,6 +1251,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Id = episode.Id,
                     Name = episode.Name,
                     Description = episode.Description,
+                    IsSavedByCurrentUser = null,
                     AudioFileKey = episode.AudioFileKey,
                     AudioLength = episode.AudioLength,
                     ReleaseDate = episode.ReleaseDate,
@@ -2041,7 +2322,11 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         fingerprintStreamCopy.Position = 0;
 
                         // Chạy đồng thời với Task.WhenAll
-                        var transcriptionTask = _audioTranscriptionService.TranscribeAudioAsync(transcriptionStreamCopy);
+                        var transcriptionTask = _audioTranscriptionService.TranscribeAudioAsync(transcriptionStreamCopy, 
+                        // lấy filename = "audio" + extension từ AudioFileKey
+                        // FilePathHelper.GetFileName(existingPodcastEpisode.AudioFileKey)
+                        "audio" + FilePathHelper.GetExtension(existingPodcastEpisode.AudioFileKey)
+                        );
                         var fingerprintTask = _acoustIDAudioFingerprintGenerator.GenerateFingerprintAsync(fingerprintStreamCopy);
 
                         var startsw = System.Diagnostics.Stopwatch.StartNew();
@@ -2065,27 +2350,50 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             predicate: pe => pe.Id != existingPodcastEpisode.Id &&
                                 pe.AudioFingerPrint != null &&
                                 pe.DeletedAt == null &&
-                                pe.PodcastShow.PodcasterId != existingPodcastEpisode.PodcastShow.PodcasterId, // không so sánh với episode của cùng podcaster
-                                                                                                              // (pe.PodcastEpisodeStatusTrackings
-                                                                                                              //     .OrderByDescending(pet => pet.CreatedAt)
-                                                                                                              //     .FirstOrDefault()
-                                                                                                              //     .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published ||
-                                                                                                              // pe.PodcastEpisodeStatusTrackings
-                                                                                                              //     .OrderByDescending(pet => pet.CreatedAt)
-                                                                                                              //     .FirstOrDefault()
-                                                                                                              //     .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown),
+                                pe.PodcastShow.PodcasterId != existingPodcastEpisode.PodcastShow.PodcasterId &&
+                                pe.PodcastShow.DeletedAt == null &&
+                                (pe.PodcastShow.PodcastChannel == null || pe.PodcastShow.PodcastChannel.DeletedAt == null)
+                                , // không so sánh với episode của cùng podcaster
+                                  // (pe.PodcastEpisodeStatusTrackings
+                                  //     .OrderByDescending(pet => pet.CreatedAt)
+                                  //     .FirstOrDefault()
+                                  //     .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published ||
+                                  // pe.PodcastEpisodeStatusTrackings
+                                  //     .OrderByDescending(pet => pet.CreatedAt)
+                                  //     .FirstOrDefault()
+                                  //     .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown),
+
                             includeFunc: q => q.Include(pe => pe.PodcastEpisodeStatusTrackings)
                             .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                            .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastChannel)
+                            .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
                         ).ToListAsync();
 
                         publishedEpisode = publishedEpisode.Where(pe =>
                         {
-                            var latestStatusId = pe.PodcastEpisodeStatusTrackings
-                                .OrderByDescending(pet => pet.CreatedAt)
-                                .FirstOrDefault()
-                                .PodcastEpisodeStatusId;
-                            return latestStatusId == (int)PodcastEpisodeStatusEnum.Published ||
-                                   latestStatusId == (int)PodcastEpisodeStatusEnum.TakenDown;
+                            // var latestEpisodeStatusId = pe.PodcastEpisodeStatusTrackings
+                            //     .OrderByDescending(pet => pet.CreatedAt)
+                            //     .FirstOrDefault()
+                            //     .PodcastEpisodeStatusId;
+                            // return latestStatusId == (int)PodcastEpisodeStatusEnum.Published ||
+                            //        latestStatusId == (int)PodcastEpisodeStatusEnum.TakenDown;
+                            var episodeCurrentStatus = pe.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastEpisodeStatusId;
+
+                            var showCurrentStatus = pe.PodcastShow.PodcastShowStatusTrackings
+                                .OrderByDescending(t => t.CreatedAt)
+                                .FirstOrDefault()?.PodcastShowStatusId;
+
+                            var channelCurrentStatus = pe.PodcastShow.PodcastChannel == null ? null : pe.PodcastShow.PodcastChannel.PodcastChannelStatusTrackings
+                                .OrderByDescending(t => t.CreatedAt)
+                                .FirstOrDefault()?.PodcastChannelStatusId;
+
+                            return episodeCurrentStatus == (int)PodcastEpisodeStatusEnum.Published &&
+                                   showCurrentStatus == (int)PodcastShowStatusEnum.Published &&
+                                    (channelCurrentStatus == null || channelCurrentStatus == (int)PodcastChannelStatusEnum.Published);
                         }).ToList();
 
                         AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison comparison = new AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison
@@ -3550,13 +3858,27 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         // }
 
 
-        public async Task<EpisodeListenResponseDTO> GetEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId, EpisodeListenRequestDTO episodeListenRequest, DeviceInfoDTO deviceInfo, string? token)
+        public async Task<EpisodeListenResponseDTO> GetEpisodeListenAsync(Guid podcastEpisodeId, int listenerAccountId, EpisodeListenRequestDTO episodeListenRequest, DeviceInfoDTO deviceInfo, Guid? continueListenSessionId, string? token)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
                 bool transactionCompleted = false;
                 try
                 {
+                    PodcastEpisodeListenSession? continueListenSession = null;
+                    if (continueListenSessionId != null)
+                    {
+                        continueListenSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(
+                            id: continueListenSessionId,
+                            includeFunc: null
+                        );
+                        if (continueListenSession == null || continueListenSession.AccountId != listenerAccountId || continueListenSession.PodcastEpisodeId != podcastEpisodeId)
+                        {
+                            // throw new Exception("Invalid continue listen session id or session already completed");
+                            throw new Exception("Invalid continue listen session id " + continueListenSessionId);
+                        }
+                    }
+
                     var validEpisode = await GetValidEpisodeListenPermission(podcastEpisodeId);
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(validEpisode.PodcastShow.PodcasterId);
                     var playlistFileKey = FilePathHelper.CombinePaths(
@@ -3579,6 +3901,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                     if (listenPermissionConditions.Count == 0)
                     {
+                        List<int> listenerBenefits = episodeListenRequest.CurrentPodcastSubscriptionRegistrationBenefitList
+                                    .Select(psb => psb.Id)
+                                    .ToList();
                         // đánh iscopleted = true ở tất cả các session cũ chưa completed của episode này và account này
                         var oldSessionIds = await _podcastEpisodeListenSessionGenericRepository.FindAll(
                             predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
@@ -3601,6 +3926,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             PodcastEpisodeId = validEpisode.Id,
                             PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
                             PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
+                            LastListenDurationSeconds = continueListenSession != null ? continueListenSession.LastListenDurationSeconds : 0,
                             IsContentRemoved = false,
                             ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
                         };
@@ -3615,166 +3941,211 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             IsUsed = false,
                         });
 
-                        await UpdateListenCountAsync(validEpisode, account, podcaster, new List<int>());
+                        await UpdateListenCountAsync(validEpisode, account, podcaster, listenerBenefits);
 
 
                     }
                     else
                     {
-                        PodcastSubscriptionDTO channelSubscription = null;
-                        PodcastSubscriptionDTO showSubscription = null;
+                        // PodcastSubscriptionDTO channelSubscription = null;
+                        // PodcastSubscriptionDTO showSubscription = null;
 
-                        // kiểm tra điều kiện subscription
-                        if (validEpisode.PodcastShow.PodcastChannelId != null)
-                        {
-                            channelSubscription = await GetActivePodcastSubscriptionByChannelId(validEpisode.PodcastShow.PodcastChannelId);
-                        }
-                        showSubscription = await GetActivePodcastSubscriptionByShowId(validEpisode.PodcastShow.Id);
+                        // // kiểm tra điều kiện subscription
+                        // if (validEpisode.PodcastShow.PodcastChannelId != null)
+                        // {
+                        //     channelSubscription = await GetActivePodcastSubscriptionByChannelId(validEpisode.PodcastShow.PodcastChannelId);
+                        // }
+                        // showSubscription = await GetActivePodcastSubscriptionByShowId(validEpisode.PodcastShow.Id);
 
-                        if (channelSubscription == null && showSubscription == null)
+                        // if (channelSubscription == null && showSubscription == null)
+                        // {
+                        //     // không có gói subscription active nào => từ chối nghe
+                        //     await transaction.CommitAsync();
+                        //     transactionCompleted = true;
+                        //     throw new Exception("Listener does not have permission to listen to this episode, reason: no active subscription");
+                        // }
+                        // else
+                        // {
+                        // kiểm tra các benefit người dùng gửi vào 
+                        var currentPodcastSubscriptionRegistrationBenefitList = episodeListenRequest.CurrentPodcastSubscriptionRegistrationBenefitList;
+
+                        if (currentPodcastSubscriptionRegistrationBenefitList == null || currentPodcastSubscriptionRegistrationBenefitList.Count == 0)
                         {
-                            // không có gói subscription active nào => từ chối nghe
+                            // không đăng kí gói subscription active nào => từ chối nghe
                             await transaction.CommitAsync();
                             transactionCompleted = true;
-                            throw new Exception("Listener does not have permission to listen to this episode, reason: no active subscription");
+                            throw new Exception("Listener does not have permission to listen to this episode, reason: no subscription registration");
                         }
                         else
                         {
-                            // kiểm tra các benefit người dùng gửi vào 
-                            var currentPodcastSubscriptionRegistrationBenefitList = episodeListenRequest.CurrentPodcastSubscriptionRegistrationBenefitList;
+                            // kiểm tra benefit đang có theo danh sách người dùng gửi vào 
+                            List<int> listenerBenefits = currentPodcastSubscriptionRegistrationBenefitList
+                                .Select(psb => psb.Id)
+                                .ToList();
 
-                            if (currentPodcastSubscriptionRegistrationBenefitList == null || currentPodcastSubscriptionRegistrationBenefitList.Count == 0)
+                            bool hasAllConditions = true;
+                            HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
+                            foreach (var condition in listenPermissionConditions)
                             {
-                                // không đăng kí gói subscription active nào => từ chối nghe
+                                if (!listenerBenefits.Contains((int)condition))
+                                {
+                                    hasAllConditions = false;
+                                    // break;
+                                    missingConditions.Add(condition);
+                                }
+                            }
+
+                            if (hasAllConditions == false)
+                            {
+                                // không có đủ benefit để nghe => từ chối nghe
                                 await transaction.CommitAsync();
                                 transactionCompleted = true;
-                                throw new Exception("Listener does not have permission to listen to this episode, reason: no subscription registration");
+                                throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits - missing conditions: " + string.Join(", ", missingConditions));
                             }
                             else
                             {
-                                // kiểm tra benefit đang có theo danh sách người dùng gửi vào 
-                                List<int> listenerBenefits = currentPodcastSubscriptionRegistrationBenefitList
-                                    .Select(psb => psb.Id)
-                                    .ToList();
-
-                                bool hasAllConditions = true;
-                                HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
-                                foreach (var condition in listenPermissionConditions)
+                                // Đánh dấu các session cũ là đã hoàn thành
+                                var oldSessionIds = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+                                    predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
+                                    includeFunc: null
+                                ).Select(pes => pes.Id).ToListAsync();
+                                foreach (var oldSessionId in oldSessionIds)
                                 {
-                                    if (!listenerBenefits.Contains((int)condition))
-                                    {
-                                        hasAllConditions = false;
-                                        // break;
-                                        missingConditions.Add(condition);
-                                    }
+                                    var oldSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(oldSessionId);
+                                    oldSession.IsCompleted = true;
+                                    await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(oldSession.Id, oldSession);
                                 }
 
-                                if (hasAllConditions == false)
+                                // có đủ benefit => tạo session mới
+                                newSession = new PodcastEpisodeListenSession
                                 {
-                                    // không có đủ benefit để nghe => từ chối nghe
-                                    await transaction.CommitAsync();
-                                    transactionCompleted = true;
-                                    throw new Exception("Listener does not have permission to listen to this episode, reason: insufficient benefits - missing conditions: " + string.Join(", ", missingConditions));
-                                }
-                                else
+                                    Id = Guid.NewGuid(),
+                                    AccountId = listenerAccountId,
+                                    PodcastEpisodeId = validEpisode.Id,
+                                    PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
+                                    PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
+                                    IsContentRemoved = false,
+                                    LastListenDurationSeconds = continueListenSession != null ? continueListenSession.LastListenDurationSeconds : 0,
+                                    ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
+                                };
+
+                                await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
+                                sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
+                                await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
                                 {
-                                    // Đánh dấu các session cũ là đã hoàn thành
-                                    var oldSessionIds = await _podcastEpisodeListenSessionGenericRepository.FindAll(
-                                        predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
-                                        includeFunc: null
-                                    ).Select(pes => pes.Id).ToListAsync();
-                                    foreach (var oldSessionId in oldSessionIds)
-                                    {
-                                        var oldSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(oldSessionId);
-                                        oldSession.IsCompleted = true;
-                                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(oldSession.Id, oldSession);
-                                    }
+                                    PodcastEpisodeListenSessionId = newSession.Id,
+                                    Token = sessionToken,
+                                    IsUsed = false,
+                                });
 
-                                    // có đủ benefit => tạo session mới
-                                    newSession = new PodcastEpisodeListenSession
-                                    {
-                                        Id = Guid.NewGuid(),
-                                        AccountId = listenerAccountId,
-                                        PodcastEpisodeId = validEpisode.Id,
-                                        PodcastCategoryId = validEpisode.PodcastShow.PodcastCategoryId,
-                                        PodcastSubCategoryId = validEpisode.PodcastShow.PodcastSubCategoryId,
-                                        IsContentRemoved = false,
-                                        ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
-                                    };
+                                await UpdateListenCountAsync(validEpisode, account, podcaster, listenerBenefits);
 
-                                    await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
-                                    sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
-                                    await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
-                                    {
-                                        PodcastEpisodeListenSessionId = newSession.Id,
-                                        Token = sessionToken,
-                                        IsUsed = false,
-                                    });
-
-                                    await UpdateListenCountAsync(validEpisode, account, podcaster, listenerBenefits);
-
-                                }
                             }
                         }
+                        // }
                     }
 
                     // Cập nhật listenCount ở các đối tượng liên quan
                     await transaction.CommitAsync();
                     transactionCompleted = true;
 
-                    // đánh completed mọi prcedure , tạo procedure mới và chạy flow complete-all-user-episode-listen-sessions 
+                    // đánh completed mọi prcedure 
                     await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(listenerAccountId);
-                    Guid newProcedureId = new Guid();
-                    // CustomerListenSessionProcedure newProcedure = new CustomerListenSessionProcedure
-                    // {
-                    //     Id = newProcedureId,
-                    //     PlayOrderMode = _customerListenSessionProcedureConfig.DefaultPlayOrderMode,
-                    //     IsAutoPlay = _customerListenSessionProcedureConfig.DefaultIsAutoPlay,
-                    //     ListenObjectsRandomOrder=,
-                    //     ListenObjectsSequentialOrder=,
-                    //     SourceDetail = new ListenSessionProcedureSourceDetail
-                    //     {
-                    //         SourceType = CustomerListenSessionProcedureSourceDetailTypeEnum.,
-                    //         PodcastEpisodeId = validEpisode.Id
-                    //     },
-                    //     IsCompleted = false,
-                    //     CreatedAt = _dateHelper.GetNowByAppTimeZone()
-                    // };
-                    // await _customerListenSessionProcedureCachingService.CreateProcedureAsync(listenerAccountId, newProcedureId, newProcedure);
-                       
+                    // tạo procedure mới
+                    Guid newProcedureId = Guid.NewGuid();
+                    Console.WriteLine("Generating new procedure id...,");
+                    CustomerListenSessionProcedure newProcedure = new CustomerListenSessionProcedure
+                    {
+                        Id = newProcedureId,
+                        PlayOrderMode = _customerListenSessionProcedureConfig.DefaultPlayOrderMode,
+                        IsAutoPlay = _customerListenSessionProcedureConfig.DefaultIsAutoPlay,
+                        ListenObjectsRandomOrder = new List<ListenSessionProcedureListenObjectQueueItem>(),
+                        ListenObjectsSequentialOrder = new List<ListenSessionProcedureListenObjectQueueItem>(),
+                        SourceDetail = new ListenSessionProcedureSourceDetail
+                        {
+                            Type = episodeListenRequest.SourceType.ToString(),
+                            Booking = null,
+                            PodcastShow = episodeListenRequest.SourceType == CustomerListenSessionProcedureSourceDetailTypeEnum.SpecifyShowEpisodes
+                                ? new PodcastShowInfo
+                                {
+                                    Id = validEpisode.PodcastShowId,
+                                    Name = validEpisode.PodcastShow.Name
+                                }
+                                : null
+                        },
+                        IsCompleted = false,
+                        CreatedAt = _dateHelper.GetNowByAppTimeZone()
+                    };
+                    // refresh order 
+                    if (episodeListenRequest.SourceType == CustomerListenSessionProcedureSourceDetailTypeEnum.SavedEpisodes)
+                    {
+                        newProcedure = await RefreshEpisodeOrderForSavedEpisodesSourceAsync(
+                            newProcedure,
+                            listenerAccountId,
+                            null,
+                            // episodeListenRequest.CurrentPodcastSubscriptionRegistrationBenefitList
+                            null
+                        );
+                    }
+                    else if (episodeListenRequest.SourceType == CustomerListenSessionProcedureSourceDetailTypeEnum.SpecifyShowEpisodes)
+                    {
+                        newProcedure = await RefreshEpisodeOrderForSpecifyShowEpisodesSourceAsync(
+                            newProcedure,
+                            listenerAccountId,
+                            null,
+                            episodeListenRequest.CurrentPodcastSubscriptionRegistrationBenefitList
+                        );
+                    }
+                    await _customerListenSessionProcedureCachingService.CreateProcedureAsync(listenerAccountId, newProcedureId, newProcedure);
+
+                    // chạy flow complete-all-user-episode-listen-sessions
+                    JObject requestData = new JObject
+                    {
+                        ["AccountId"] = listenerAccountId,
+                        ["IsEpisodeListenSessionCompleted"] = false,
+                        ["IsBookingProducingListenSessionCompleted"] = true,
+                    };
+
+                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "all-user-listen-session-completion-flow");
+                    await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
 
                     return new EpisodeListenResponseDTO
                     {
-                        // Token = newSession.Token,
-                        Token = sessionToken,
-                        PlaylistFileKey = playlistFileKey,
-                        // LastListenDurationSeconds = 0,
-                        PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
+                        ListenSession = new EpisodeListenSessionResponseDTO
                         {
-                            Id = newSession.Id,
-                            LastListenDurationSeconds = newSession.LastListenDurationSeconds
-                        },
-                        PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
-                        {
-                            Id = validEpisode.Id,
-                            Name = validEpisode.Name,
-                            Description = validEpisode.Description,
-                            MainImageFileKey = validEpisode.MainImageFileKey,
-                            IsReleased = validEpisode.IsReleased,
-                            ReleaseDate = validEpisode.ReleaseDate,
-                        },
-                        Podcaster = new AccountSnippetResponseDTO
-                        {
-                            Id = podcaster.Id,
-                            Email = podcaster.Email,
-                            FullName = podcaster.PodcasterProfileName,
-                            MainImageFileKey = podcaster.MainImageFileKey
-                        },
-                        AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+                            // Token = newSession.Token,
+                            Token = sessionToken,
+                            PlaylistFileKey = playlistFileKey,
+                            // LastListenDurationSeconds = 0,
+                            PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
+                            {
+                                Id = newSession.Id,
+                                LastListenDurationSeconds = newSession.LastListenDurationSeconds
+                            },
+                            PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
+                            {
+                                Id = validEpisode.Id,
+                                Name = validEpisode.Name,
+                                Description = validEpisode.Description,
+                                MainImageFileKey = validEpisode.MainImageFileKey,
+                                IsReleased = validEpisode.IsReleased,
+                                ReleaseDate = validEpisode.ReleaseDate,
+                                AudioLength = validEpisode.AudioLength
+                            },
+                            Podcaster = new AccountSnippetResponseDTO
+                            {
+                                Id = podcaster.Id,
+                                Email = podcaster.Email,
+                                FullName = podcaster.PodcasterProfileName,
+                                MainImageFileKey = podcaster.MainImageFileKey
+                            },
+                            AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
                             ? await _fileIOHelper.GeneratePresignedUrlAsync(
                                 validEpisode.AudioFileKey
                             )
                             : null
+                        },
+                        ListenSessionProcedure = newProcedure
                     };
 
                 }
@@ -3790,6 +4161,391 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        public async Task<EpisodeListenResponseDTO> NavigateEpisodeListenSessionAsync(int listenerAccountId, ListenSessionNavigateTypeEnum listenSessionNavigateType, EpisodeListenSessionNavigateRequestDTO episodeListenSessionNavigateRequestDTO, DeviceInfoDTO deviceInfo)
+        {
+            // /navigate : refresh lại procedure hiện tại
+            // đánh completed = false cho procedure hiện tại và đánh completed mọi procedure cũ (ngoài trừ trường hợp còn lại duy nhất 1 item islistenable = true trong order và item đó là item hiện tại, thì không làm gì cả)
+            // tạo listensession mới từ id chọn ra từ next hoặc previous theo EpisodeId của currentListensession là ListenObject trong procedure, sao khi có được navigate listenObjectId từ việc chọn sẽ tạo listensession với listenObjectId này (sẽ không tạo listensession tức là null khi không còn item nào đang IsListenable = true hoặc chỉ còn duy nhất 1 item và item đó là current item)
+            // đánh completed mọi listensession cũ (nếu có listen session mới được tạo)
+            // chạy all-user-listen-session-completion-flow (nếu có listen session mới được tạo)
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                bool transactionCompleted = false;
+                try
+                {
+                    var account = await GetAccountById(listenerAccountId);
+
+                    if (account == null)
+                    {
+                        throw new Exception("Listener with id " + listenerAccountId + " does not exist");
+                    }
+
+                    // STEP 1: Get current procedure
+                    var currentProcedure = await _customerListenSessionProcedureCachingService.GetProcedureAsync(
+                        listenerAccountId,
+                        episodeListenSessionNavigateRequestDTO.CurrentListenSession.ListenSessionProcedureId
+                    );
+
+                    if (currentProcedure == null)
+                    {
+                        Console.WriteLine("[Navigate] Current procedure not found");
+                        return new EpisodeListenResponseDTO
+                        {
+                            ListenSession = null,
+                            ListenSessionProcedure = null
+                        };
+                    }
+
+                    Console.WriteLine($"[Navigate] Current procedure mode: {currentProcedure.PlayOrderMode}, Direction: {listenSessionNavigateType.ToString()}");
+
+                    // STEP 2: Validate current listen session
+                    var currentListenSession = await _podcastEpisodeListenSessionGenericRepository.FindByIdAsync(
+                        episodeListenSessionNavigateRequestDTO.CurrentListenSession.ListenSessionId
+                    );
+
+                    if (currentListenSession == null)
+                    {
+                        Console.WriteLine("[Navigate] Current listen session not found");
+                        return new EpisodeListenResponseDTO
+                        {
+                            ListenSession = null,
+                            ListenSessionProcedure = null
+                        };
+                    }
+                    Console.WriteLine($"[Navigate] Current listen session episode id: {currentListenSession.PodcastEpisodeId}, listen object id: {currentListenSession.PodcastEpisodeId}");
+
+                    // STEP 3: Xác định listenerBenefits để check NonQuota
+                    List<int> listenerBenefits = new List<int>();
+
+                    // Chỉ check benefit khi account.PodcastListenSlot == 0
+                    if (account.PodcastListenSlot == 0 && currentProcedure.SourceDetail.Type == CustomerListenSessionProcedureSourceDetailTypeEnum.SpecifyShowEpisodes.ToString())
+                    {
+                        var currentBenefitList = episodeListenSessionNavigateRequestDTO.CurrentPodcastSubscriptionRegistrationBenefitList;
+
+                        if (currentBenefitList != null && currentBenefitList.Count > 0)
+                        {
+                            listenerBenefits = currentBenefitList.Select(psb => psb.Id).ToList();
+
+                            // Kiểm tra xem có benefit NonQuotaListening không
+                            if (!listenerBenefits.Contains((int)PodcastSubscriptionBenefitEnum.NonQuotaListening))
+                            {
+                                throw new Exception("Listener does not have permission to listen to this episode, reason: PodcastListenSlot is 0 and no NonQuotaListening benefit");
+                            }
+                        }
+                        else
+                        {
+                            throw new Exception("Listener does not have permission to listen to this episode, reason: PodcastListenSlot is 0 and no subscription benefits");
+                        }
+                    }
+
+
+
+
+                    // STEP 4: Refresh procedure với current position
+                    if (currentProcedure.SourceDetail.Type == CustomerListenSessionProcedureSourceDetailTypeEnum.SavedEpisodes.ToString())
+                    {
+                        currentProcedure = await RefreshEpisodeOrderForSavedEpisodesSourceAsync(
+                            currentProcedure,
+                            listenerAccountId,
+                            currentListenSession.PodcastEpisodeId,
+                            // episodeListenSessionNavigateRequestDTO.CurrentPodcastSubscriptionRegistrationBenefitList
+                            null
+                        );
+                    }
+                    else if (currentProcedure.SourceDetail.Type == CustomerListenSessionProcedureSourceDetailTypeEnum.SpecifyShowEpisodes.ToString())
+                    {
+                        currentProcedure = await RefreshEpisodeOrderForSpecifyShowEpisodesSourceAsync(
+                            currentProcedure,
+                            listenerAccountId,
+                            currentListenSession.PodcastEpisodeId,
+                            episodeListenSessionNavigateRequestDTO.CurrentPodcastSubscriptionRegistrationBenefitList
+                        );
+                    }
+
+                    // STEP 5: Get order list theo mode
+                    var orderList = currentProcedure.PlayOrderMode == CustomerListenSessionProcedurePlayOrderModeEnum.Sequential.ToString()
+                        ? currentProcedure.ListenObjectsSequentialOrder
+                        : currentProcedure.ListenObjectsRandomOrder;
+
+                    if (orderList == null || orderList.Count == 0)
+                    {
+                        Console.WriteLine("[Navigate] Order list is empty");
+                        return new EpisodeListenResponseDTO
+                        {
+                            ListenSession = null,
+                            ListenSessionProcedure = currentProcedure
+                        };
+                    }
+
+                    // foreach (var item in orderList)
+                    // {
+                    //     Console.WriteLine($"[Navigate] Order List Item - ListenObjectId: {item.ListenObjectId}, IsListenable: {item.IsListenable}");
+                    // }
+
+                    // STEP 6: Find current position
+                    var currentIndex = orderList.FindIndex(item => item.ListenObjectId == currentListenSession.PodcastEpisodeId);
+
+                    if (currentIndex == -1)
+                    {
+                        Console.WriteLine("[Navigate] Current episode not found in order");
+                        return new EpisodeListenResponseDTO
+                        {
+                            ListenSession = null,
+                            ListenSessionProcedure = currentProcedure
+                        };
+                    }
+
+                    // STEP 7: Check if only one listenable item left
+                    var listenableItems = orderList.Where(item => item.IsListenable).ToList();
+                    // foreach (var item in listenableItems)
+                    // {
+                    //     Console.WriteLine($"[Navigate] Listenable Item - ListenObjectId: {item.ListenObjectId}");
+                    // }
+
+                    // Console.WriteLine($"[Navigate] Total listenable items count: {listenableItems.Count}, Current ListenObjectId: {currentListenSession.PodcastEpisodeId}, first listenable item id: {(listenableItems.Count > 0 ? listenableItems[0].ListenObjectId.ToString() : "N/A")}");
+
+                    if (listenableItems.Count == 1 && listenableItems[0].ListenObjectId == currentListenSession.PodcastEpisodeId)
+                    {
+                        Console.WriteLine("[Navigate] Only one listenable item left (current item), no navigation possible");
+                        // in ra thông tin vị trí hiện tại và item duy nhất
+                        Console.WriteLine($"[Navigate] Current Index: {currentIndex}, ListenObjectId: {listenableItems[0].ListenObjectId}");
+
+                        await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(listenerAccountId);
+                        currentProcedure.IsCompleted = false;
+                        await _customerListenSessionProcedureCachingService.UpdateProcedureAsync(
+                            listenerAccountId,
+                            currentProcedure.Id,
+                            currentProcedure
+                        );
+
+                        return new EpisodeListenResponseDTO
+                        {
+                            ListenSession = null,
+                            ListenSessionProcedure = currentProcedure
+                        };
+                    }
+
+                    // STEP 8: Navigate to next/previous listenable item
+                    Guid? nextListenObjectId = null;
+
+                    if (listenSessionNavigateType == ListenSessionNavigateTypeEnum.Next)
+                    {
+                        Console.WriteLine("[Navigate] Searching for next listenable item (circular)...");
+
+                        // Tìm từ vị trí hiện tại + 1 đến cuối list
+                        for (int i = currentIndex + 1; i < orderList.Count; i++)
+                        {
+                            Console.WriteLine($"[Navigate] Checking item at index {i}, ListenObjectId: {orderList[i].ListenObjectId}, IsListenable: {orderList[i].IsListenable}");
+                            if (orderList[i].IsListenable)
+                            {
+                                nextListenObjectId = orderList[i].ListenObjectId;
+                                break;
+                            }
+                        }
+
+                        // Nếu không tìm thấy, wrap around về đầu list (từ 0 đến currentIndex - 1)
+                        if (nextListenObjectId == null)
+                        {
+                            Console.WriteLine("[Navigate] No item found after current, wrapping to start...");
+                            for (int i = 0; i < currentIndex; i++)
+                            {
+                                Console.WriteLine($"[Navigate] Checking item at index {i}, ListenObjectId: {orderList[i].ListenObjectId}, IsListenable: {orderList[i].IsListenable}");
+                                if (orderList[i].IsListenable)
+                                {
+                                    nextListenObjectId = orderList[i].ListenObjectId;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else if (listenSessionNavigateType == ListenSessionNavigateTypeEnum.Previous)
+                    {
+                        Console.WriteLine("[Navigate] Searching for previous listenable item (circular)...");
+
+                        // Tìm từ vị trí hiện tại - 1 về đầu list
+                        for (int i = currentIndex - 1; i >= 0; i--)
+                        {
+                            Console.WriteLine($"[Navigate] Checking item at index {i}, ListenObjectId: {orderList[i].ListenObjectId}, IsListenable: {orderList[i].IsListenable}");
+                            if (orderList[i].IsListenable)
+                            {
+                                nextListenObjectId = orderList[i].ListenObjectId;
+                                break;
+                            }
+                        }
+
+                        // Nếu không tìm thấy, wrap around về cuối list (từ cuối về currentIndex + 1)
+                        if (nextListenObjectId == null)
+                        {
+                            Console.WriteLine("[Navigate] No item found before current, wrapping to end...");
+                            for (int i = orderList.Count - 1; i > currentIndex; i--)
+                            {
+                                Console.WriteLine($"[Navigate] Checking item at index {i}, ListenObjectId: {orderList[i].ListenObjectId}, IsListenable: {orderList[i].IsListenable}");
+                                if (orderList[i].IsListenable)
+                                {
+                                    nextListenObjectId = orderList[i].ListenObjectId;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // STEP 9: Nếu không tìm thấy item listenable nào
+                    if (nextListenObjectId == null)
+                    {
+                        Console.WriteLine($"[Navigate] No listenable item found in {listenSessionNavigateType.ToString()} direction");
+
+                        await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(listenerAccountId);
+                        currentProcedure.IsCompleted = false;
+                        await _customerListenSessionProcedureCachingService.UpdateProcedureAsync(
+                            listenerAccountId,
+                            currentProcedure.Id,
+                            currentProcedure
+                        );
+
+                        return new EpisodeListenResponseDTO
+                        {
+                            ListenSession = null,
+                            ListenSessionProcedure = currentProcedure
+                        };
+                    }
+
+                    Console.WriteLine($"[Navigate] Found next episode: {nextListenObjectId}");
+
+                    // STEP 10: Get next episode info (KHÔNG validate permission vì refresh đã làm rồi)
+                    var nextEpisode = await _podcastEpisodeGenericRepository.FindByIdAsync(nextListenObjectId.Value,
+                        includeFunc: q => q
+                            .Include(pe => pe.PodcastShow)
+                                .ThenInclude(ps => ps.PodcastCategory)
+                            .Include(pe => pe.PodcastShow)
+                                .ThenInclude(ps => ps.PodcastSubCategory)
+
+                    );
+
+                    if (nextEpisode == null)
+                    {
+                        throw new Exception("Next episode not found");
+                    }
+
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(nextEpisode.PodcastShow.PodcasterId);
+
+
+                    // STEP 11: Complete old sessions
+                    var oldSessions = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+                        predicate: pes => pes.AccountId == listenerAccountId && pes.IsCompleted == false,
+                        includeFunc: null
+                    ).ToListAsync();
+
+                    foreach (var oldSession in oldSessions)
+                    {
+                        oldSession.IsCompleted = true;
+                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(oldSession.Id, oldSession);
+                    }
+
+                    // STEP 12: Create new listen session
+                    var newSession = new PodcastEpisodeListenSession
+                    {
+                        Id = Guid.NewGuid(),
+                        AccountId = listenerAccountId,
+                        PodcastEpisodeId = nextEpisode.Id,
+                        PodcastCategoryId = nextEpisode.PodcastShow.PodcastCategoryId,
+                        PodcastSubCategoryId = nextEpisode.PodcastShow.PodcastSubCategoryId,
+                        IsContentRemoved = false,
+                        ExpiredAt = _dateHelper.GetNowByAppTimeZone().AddMinutes(_podcastListenSessionConfig.SessionExpirationMinutes)
+                    };
+
+                    await _podcastEpisodeListenSessionGenericRepository.CreateAsync(newSession);
+
+                    var sessionToken = GenerateEpisodeListenHlsEnckeyRequestToken(newSession.Id);
+                    await _podcastEpisodeListenSessionHlsEnckeyRequestTokenGenericRepository.CreateAsync(new PodcastEpisodeListenSessionHlsEnckeyRequestToken
+                    {
+                        PodcastEpisodeListenSessionId = newSession.Id,
+                        Token = sessionToken,
+                        IsUsed = false,
+                    });
+
+                    // STEP 13: Update listen count
+                    await UpdateListenCountAsync(nextEpisode, account, podcaster, listenerBenefits);
+
+                    // STEP 14: Mark tất cả procedures khác là completed
+                    await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(listenerAccountId);
+
+                    // STEP 15: Update procedure hiện tại về IsCompleted = false (active)
+                    currentProcedure.IsCompleted = false;
+                    await _customerListenSessionProcedureCachingService.UpdateProcedureAsync(
+                        listenerAccountId,
+                        currentProcedure.Id,
+                        currentProcedure
+                    );
+
+                    await transaction.CommitAsync();
+                    transactionCompleted = true;
+
+                    // STEP 16: Run completion flow
+                    JObject requestData = new JObject
+                    {
+                        ["AccountId"] = listenerAccountId,
+                        ["IsEpisodeListenSessionCompleted"] = false,
+                        ["IsBookingProducingListenSessionCompleted"] = true,
+                    };
+
+                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("content-management-domain", requestData, null, "all-user-listen-session-completion-flow");
+                    await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+
+                    // STEP 17: Return response
+                    var playlistFileKey = FilePathHelper.CombinePaths(
+                        _filePathConfig.PODCAST_EPISODE_FILE_PATH,
+                        nextEpisode.Id.ToString(),
+                        "playlist",
+                        _hlsConfig.PlaylistFileName
+                    );
+
+                    return new EpisodeListenResponseDTO
+                    {
+                        ListenSession = new EpisodeListenSessionResponseDTO
+                        {
+                            Token = sessionToken,
+                            PlaylistFileKey = playlistFileKey,
+                            PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
+                            {
+                                Id = newSession.Id,
+                                LastListenDurationSeconds = newSession.LastListenDurationSeconds
+                            },
+                            PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
+                            {
+                                Id = nextEpisode.Id,
+                                Name = nextEpisode.Name,
+                                Description = nextEpisode.Description,
+                                MainImageFileKey = nextEpisode.MainImageFileKey,
+                                IsReleased = nextEpisode.IsReleased,
+                                ReleaseDate = nextEpisode.ReleaseDate,
+                                AudioLength = nextEpisode.AudioLength
+                            },
+                            Podcaster = new AccountSnippetResponseDTO
+                            {
+                                Id = podcaster.Id,
+                                Email = podcaster.Email,
+                                FullName = podcaster.PodcasterProfileName,
+                                MainImageFileKey = podcaster.MainImageFileKey
+                            },
+                            AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+                                ? await _fileIOHelper.GeneratePresignedUrlAsync(nextEpisode.AudioFileKey)
+                                : null
+                        },
+                        ListenSessionProcedure = currentProcedure
+                    };
+                }
+                catch (Exception ex)
+                {
+                    if (!transactionCompleted)
+                    {
+                        await transaction.RollbackAsync();
+                    }
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                    throw new HttpRequestException("An error occurred while navigating episode listen session, error: " + ex.Message);
+                }
+            }
+        }
+
         // hàm refresh order của episode đối với nguồn SavedEpisodes (order by createdAt trong danh sách AccountSavedPodcastEpisode) 
         // Mode là CustomerListenSessionProcedurePlayOrderModeEnum.Sequencial sẽ refreh trên ListenObjectsSequentialOrder và Random sẽ refresh trên ListenObjectsRandomOrder
         // truyền vào List<PodcastSubscriptionBenefitDTO> listenerCurrentPodcastSubscriptionRegistrationBenefitList để làm điều kiện cho field IsListenable ở các item trong order
@@ -3799,14 +4555,702 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         // Đối với Sequencial thì xếp theo (season number asc, episode order asc, created at asc)
         // ĐỐi với random sẽ chỉ random toà bộ khi không có vị trí đứng hiện, ngược lại sẽ random bố trí vào trước/sau tuy vào việc vị trí đứng có phải là cuối cùng hay không
         // hàm này lấy ra tất cả các episode đang publish ở cả 3 level (channel level, show level, episode level) trong danh sách episode của soure type và đặt IsListenable theo điều kiện nghe của listener
-        public async Task RefreshEpisodeOrderForSavedEpisodesSourceAsync(CustomerListenSessionProcedure customerListenSessionProcedure, int listenerAccountId, Guid? currentListenObjectId, List<PodcastSubscriptionBenefitDTO> listenerCurrentPodcastSubscriptionRegistrationBenefitList)
+        public async Task<CustomerListenSessionProcedure> RefreshEpisodeOrderForSavedEpisodesSourceAsync(
+    CustomerListenSessionProcedure customerListenSessionProcedure,
+    int listenerAccountId,
+    Guid? currentListenObjectId,
+    List<PodcastSubscriptionBenefitDTO>? listenerCurrentPodcastSubscriptionRegistrationBenefitList = null)
         {
-            
+            try
+            {
+                Console.WriteLine($"[RefreshSavedEpisodes] Start for listener {listenerAccountId}, mode: {customerListenSessionProcedure.PlayOrderMode}");
+
+                // STEP 1: Validate source type
+                if (customerListenSessionProcedure.SourceDetail.Type != CustomerListenSessionProcedureSourceDetailTypeEnum.SavedEpisodes.ToString())
+                {
+                    throw new Exception($"Invalid source type: {customerListenSessionProcedure.SourceDetail.Type}. Expected SavedEpisodes.");
+                }
+
+                // STEP 2: Query saved episodes từ UserService
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+            {
+                new BatchQueryItem
+                {
+                    Key = "savedEpisodes",
+                    QueryType = "findall",
+                    EntityType = "AccountSavedPodcastEpisode",
+                    Parameters = JObject.FromObject(new
+                    {
+                        where = new
+                        {
+                            AccountId = listenerAccountId
+                        },
+                        orderBy = "CreatedAt"
+                    }),
+                    Fields = new[] { "AccountId", "PodcastEpisodeId", "CreatedAt" }
+                }
+            }
+                };
+
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                var savedEpisodes = ((JArray)result.Results["savedEpisodes"])
+                    .ToObject<List<AccountSavedPodcastEpisodeDTO>>();
+
+                if (savedEpisodes == null || savedEpisodes.Count == 0)
+                {
+                    Console.WriteLine("[RefreshSavedEpisodes] No saved episodes found");
+                    return customerListenSessionProcedure;
+                }
+
+                var episodeIds = savedEpisodes.Select(se => se.PodcastEpisodeId).ToList();
+                Console.WriteLine($"[RefreshSavedEpisodes] Found {episodeIds.Count} saved episodes");
+
+                // STEP 3: Query episodes với 3-level validation
+                var episodes = await _podcastEpisodeGenericRepository.FindAll(
+                    predicate: pe => episodeIds.Contains(pe.Id)
+                        && pe.DeletedAt == null
+                        && pe.PodcastShow.DeletedAt == null
+                        && (pe.PodcastShow.PodcastChannel == null || pe.PodcastShow.PodcastChannel.DeletedAt == null),
+                    includeFunc: q => q
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastChannel)
+                                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // STEP 4: Filter Published status
+                var publishedEpisodes = episodes.Where(pe =>
+                {
+                    var episodeStatus = pe.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastEpisodeStatusId;
+
+                    var showStatus = pe.PodcastShow.PodcastShowStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastShowStatusId;
+
+                    var channelValid = pe.PodcastShow.PodcastChannel == null ||
+                        (pe.PodcastShow.PodcastChannel.DeletedAt == null &&
+                         pe.PodcastShow.PodcastChannel.PodcastChannelStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published);
+
+                    return episodeStatus == (int)PodcastEpisodeStatusEnum.Published
+                        && showStatus == (int)PodcastShowStatusEnum.Published
+                        && channelValid;
+                }).ToList();
+
+                Console.WriteLine($"[RefreshSavedEpisodes] {publishedEpisodes.Count} published episodes after 3-level validation");
+
+                // STEP 5: Check IsListenable cho từng episode
+                var episodesWithListenability = new List<(PodcastEpisode episode, bool isListenable, DateTime createdAt)>();
+
+                // nếu listenerCurrentPodcastSubscriptionRegistrationBenefitList = null nghĩa là người dùng đang gọi từ navigate trong soure SavedEpisodes
+                // lúc này cần phải query các gói đăng kí của người dùng ở mọi episode khác vì source saved episodes không làm việc trên 1 specify show nên không thể có gói cố định gửi vào
+                UserPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO = null;
+                if (listenerCurrentPodcastSubscriptionRegistrationBenefitList == null)
+                {
+                    UserPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO userPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO = new UserPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO
+                    {
+                        EpisodeBaseSourceInfoList = publishedEpisodes.Select(pe => new EpisodeBaseSourceInfoDTO
+                        {
+                            EpisodeId = pe.Id,
+                            ShowId = pe.PodcastShowId,
+                            ChannelId = pe.PodcastShow.PodcastChannel != null ? pe.PodcastShow.PodcastChannel.Id : (Guid?)null
+                        }).ToList(),
+                    };
+
+                    userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO =
+                           await _crossServiceHttpService.PostManualAsync<UserPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO>(
+                               serviceName: "SubscriptionService",
+                               body: userPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO,
+                               relativePath: $"api/podcast-subscriptions/service-query/{listenerAccountId}"
+                           );
+                }
+
+                // List<List<PodcastSubscriptionBenefitDTO>> mappedEpisodeBaseListenerBenefit = userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO.EpisodeBaseBenefitList.Select(e => e.PodcastSubscriptionBenefitIds.Select(id => new PodcastSubscriptionBenefitDTO { Id = id }).ToList()).ToList();
+
+                foreach (var episode in publishedEpisodes)
+                {
+                    var savedEpisode = savedEpisodes.First(se => se.PodcastEpisodeId == episode.Id);
+
+                    var canListen = await CheckListenerCanListenToEpisodeAsync(
+                        listenerId: listenerAccountId,
+                        validEpisode: episode,
+                        isNonQuotaListeningCheck: true, // true vì lí do FE và BE đầu vào không thể chặng trước , nên sẽ chặng từ bước này , ví do là vì nguồn này không thuộc vào show cụ thể
+                        // listenerCurrentPodcastSubscriptionRegistrationBenefitList: listenerCurrentPodcastSubscriptionRegistrationBenefitList
+                        // listenerCurrentPodcastSubscriptionRegistrationBenefitList: userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO.EpisodeBaseBenefitList.First(e => e.EpisodeId == episode.Id).PodcastSubscriptionBenefitIds.Select(id => new PodcastSubscriptionBenefitDTO { Id = id }).ToList()
+                        listenerCurrentPodcastSubscriptionRegistrationBenefitList: listenerCurrentPodcastSubscriptionRegistrationBenefitList != null ? listenerCurrentPodcastSubscriptionRegistrationBenefitList
+                            : userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO.EpisodeBaseBenefitList
+                                .First(e => e.EpisodeId == episode.Id)
+                                .PodcastSubscriptionBenefitIds
+                                .Select(id => new PodcastSubscriptionBenefitDTO { Id = id })
+                                .ToList()
+                    );
+
+                    episodesWithListenability.Add((episode, canListen.CanListen, savedEpisode.CreatedAt));
+                }
+
+                // STEP 6: Get current order
+                var currentOrder = customerListenSessionProcedure.PlayOrderMode == CustomerListenSessionProcedurePlayOrderModeEnum.Sequential.ToString()
+                    ? customerListenSessionProcedure.ListenObjectsSequentialOrder ?? new List<ListenSessionProcedureListenObjectQueueItem>()
+                    : customerListenSessionProcedure.ListenObjectsRandomOrder ?? new List<ListenSessionProcedureListenObjectQueueItem>();
+
+                var existingIds = currentOrder.Select(o => o.ListenObjectId).ToHashSet();
+
+                // Console.WriteLine($"[RefreshSavedEpisodes] CCCCCCCCurrent order count: {currentOrder.Count}, Existing IDs count: {existingIds.Count}");
+
+                // STEP 7: Refresh order theo mode
+                List<ListenSessionProcedureListenObjectQueueItem> refreshedOrder;
+
+                if (customerListenSessionProcedure.PlayOrderMode == CustomerListenSessionProcedurePlayOrderModeEnum.Sequential.ToString())
+                {
+                    refreshedOrder = await RefreshSequentialOrderWithOrderForSavedEpisodesSource(
+                        episodesWithListenability,
+                        currentOrder,
+                        existingIds
+                    );
+                    customerListenSessionProcedure.ListenObjectsSequentialOrder = refreshedOrder;
+                    Console.WriteLine($"[RefreshSavedEpisodes] Final order count: {refreshedOrder.Count}");
+
+                }
+                else // Random
+                {
+                    refreshedOrder = RefreshRandomOrderWithOrderForSavedEpisodesSource(
+                        episodesWithListenability,
+                        currentOrder,
+                        existingIds,
+                        currentListenObjectId
+                    );
+                    customerListenSessionProcedure.ListenObjectsRandomOrder = refreshedOrder;
+                    Console.WriteLine($"[RefreshSavedEpisodes] Final order count: {refreshedOrder.Count}");
+                }
+
+                return customerListenSessionProcedure;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RefreshSavedEpisodes] ERROR: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                throw;
+            }
         }
+
+        #region Helper Methods for Order Refresh WITH Order field for SavedEpisodes Source
+
+        private async Task<List<ListenSessionProcedureListenObjectQueueItem>> RefreshSequentialOrderWithOrderForSavedEpisodesSource(
+    List<(PodcastEpisode episode, bool isListenable, DateTime createdAt)> episodesWithListenability,
+    List<ListenSessionProcedureListenObjectQueueItem> currentOrder,
+    HashSet<Guid> existingIds)
+        {
+            // STEP 1: Sort episodes còn tồn tại theo CreatedAt (từ AccountSavedPodcastEpisode)
+            var sortedEpisodes = episodesWithListenability
+                .OrderBy(e => e.createdAt)
+                .ToList();
+
+            // STEP 2: Tìm các items đã bị unsave (không còn trong episodesWithListenability)
+            var sortedEpisodeIds = episodesWithListenability.Select(e => e.episode.Id).ToHashSet();
+            var removedItems = currentOrder
+                .Where(item => !sortedEpisodeIds.Contains(item.ListenObjectId))
+                .OrderBy(item => item.Order) // Giữ nguyên thứ tự cũ của removed items
+                .ToList();
+
+            // STEP 3: Tạo order mới
+            var newOrder = new List<ListenSessionProcedureListenObjectQueueItem>();
+
+            // Thêm episodes còn tồn tại (sorted theo createdAt)
+            foreach (var (episode, isListenable, createdAt) in sortedEpisodes)
+            {
+                newOrder.Add(new ListenSessionProcedureListenObjectQueueItem
+                {
+                    ListenObjectId = episode.Id,
+                    Order = 0, // Temporary
+                    IsListenable = isListenable
+                });
+            }
+
+            // STEP 4: Append removed items vào cuối với IsListenable = false
+            foreach (var removedItem in removedItems)
+            {
+                newOrder.Add(new ListenSessionProcedureListenObjectQueueItem
+                {
+                    ListenObjectId = removedItem.ListenObjectId,
+                    Order = 0, // Temporary
+                    IsListenable = false // Đánh dấu không thể nghe
+                });
+            }
+
+            // STEP 5: Re-index Order liên tục (1, 2, 3, 4...)
+            return newOrder.Select((item, index) => new ListenSessionProcedureListenObjectQueueItem
+            {
+                ListenObjectId = item.ListenObjectId,
+                Order = index + 1,
+                IsListenable = item.IsListenable
+            }).ToList();
+        }
+        private List<ListenSessionProcedureListenObjectQueueItem> RefreshRandomOrderWithOrderForSavedEpisodesSource(
+            List<(PodcastEpisode episode, bool isListenable, DateTime createdAt)> episodesWithListenability,
+            List<ListenSessionProcedureListenObjectQueueItem> currentOrder,
+            HashSet<Guid> existingIds,
+            Guid? currentListenObjectId)
+        {
+            var random = new Random();
+            var newOrder = new List<ListenSessionProcedureListenObjectQueueItem>(currentOrder);
+
+            // STEP 1: Tìm valid episode IDs
+            var validEpisodeIds = episodesWithListenability.Select(e => e.episode.Id).ToHashSet();
+
+            // STEP 2: Update IsListenable cho tất cả items trong currentOrder
+            foreach (var item in newOrder)
+            {
+                if (validEpisodeIds.Contains(item.ListenObjectId))
+                {
+                    // Episode còn tồn tại → Update IsListenable
+                    var episode = episodesWithListenability.First(e => e.episode.Id == item.ListenObjectId);
+                    item.IsListenable = episode.isListenable;
+                }
+                else
+                {
+                    // Episode đã bị removed (unsaved) → Mark IsListenable = false, GIỮ NGUYÊN VỊ TRÍ
+                    item.IsListenable = false;
+                }
+            }
+
+            // STEP 3: Tìm new episodes (chưa có trong currentOrder)
+            var newEpisodes = episodesWithListenability
+                .Where(e => !existingIds.Contains(e.episode.Id))
+                .ToList();
+
+            if (newEpisodes.Count == 0)
+            {
+                // Không có episodes mới → chỉ re-index
+                return newOrder.Select((item, index) => new ListenSessionProcedureListenObjectQueueItem
+                {
+                    ListenObjectId = item.ListenObjectId,
+                    Order = index + 1,
+                    IsListenable = item.IsListenable
+                }).ToList();
+            }
+
+            Console.WriteLine($"[RefreshRandomOrder] {newEpisodes.Count} new episodes to insert");
+
+            // STEP 4: Xử lý insert logic
+            // CASE 1: Procedure mới (currentOrder rỗng) → Full shuffle
+            if (currentOrder.Count == 0)
+            {
+                Console.WriteLine("[RefreshRandomOrder] New procedure (empty order) → Full shuffle");
+
+                foreach (var (episode, isListenable, _) in newEpisodes)
+                {
+                    newOrder.Add(new ListenSessionProcedureListenObjectQueueItem
+                    {
+                        ListenObjectId = episode.Id,
+                        Order = 0, // Temporary
+                        IsListenable = isListenable
+                    });
+                }
+
+                // Shuffle toàn bộ
+                var shuffled = newOrder.OrderBy(x => random.Next()).ToList();
+                return shuffled.Select((item, index) => new ListenSessionProcedureListenObjectQueueItem
+                {
+                    ListenObjectId = item.ListenObjectId,
+                    Order = index + 1,
+                    IsListenable = item.IsListenable
+                }).ToList();
+            }
+
+            // CASE 2: Procedure cũ → LUÔN có currentListenObjectId
+            if (currentListenObjectId == null || !existingIds.Contains(currentListenObjectId.Value))
+            {
+                throw new Exception("Invalid state: Existing procedure must have valid currentListenObjectId");
+            }
+
+            var currentIndex = newOrder.FindIndex(o => o.ListenObjectId == currentListenObjectId.Value);
+            Console.WriteLine($"[RefreshRandomOrder] Current index of listenObjectId {currentListenObjectId.Value}: {currentIndex}");
+
+            if (currentIndex == -1)
+            {
+                throw new Exception("Current position not found in order");
+            }
+
+            bool isLastPosition = currentIndex == newOrder.Count - 1;
+            Console.WriteLine($"[RefreshRandomOrder] Current position index: {currentIndex}/{newOrder.Count}, isLast: {isLastPosition}");
+
+            if (isLastPosition)
+            {
+                // ✅ Last position → INSERT vào TRƯỚC
+                Console.WriteLine("[RefreshRandomOrder] Last position → Insert BEFORE current");
+
+                foreach (var (episode, isListenable, _) in newEpisodes)
+                {
+                    var insertIndex = currentIndex > 0
+                        ? random.Next(0, currentIndex)
+                        : 0;
+
+                    newOrder.Insert(insertIndex, new ListenSessionProcedureListenObjectQueueItem
+                    {
+                        ListenObjectId = episode.Id,
+                        Order = 0,
+                        IsListenable = isListenable
+                    });
+
+                    currentIndex++; // Update vị trí current vì insert vào trước
+                }
+            }
+            else
+            {
+                // ✅ Not last → INSERT vào SAU
+                Console.WriteLine("[RefreshRandomOrder] Not last position → Insert AFTER current");
+
+                foreach (var (episode, isListenable, _) in newEpisodes)
+                {
+                    var insertIndex = random.Next(currentIndex + 1, newOrder.Count + 1);
+
+                    newOrder.Insert(insertIndex, new ListenSessionProcedureListenObjectQueueItem
+                    {
+                        ListenObjectId = episode.Id,
+                        Order = 0,
+                        IsListenable = isListenable
+                    });
+                }
+            }
+
+            // Re-index Order liên tục (1, 2, 3, 4...)
+            return newOrder.Select((item, index) => new ListenSessionProcedureListenObjectQueueItem
+            {
+                ListenObjectId = item.ListenObjectId,
+                Order = index + 1,
+                IsListenable = item.IsListenable
+            }).ToList();
+        }
+        #endregion
 
 
         // hàm refresh order của episode đối với nguồn SpecifyShowEpisodes (order by episode season number tới episode order tới created at , vì có thể có sự trùng nhau về seansonnumer hoặc episode order giữa những episode) (truyền vào chế độ là CustomerListenSessionProcedureSPlayOrderModeEnum.Sequencial hoặc Random)
+        public async Task<CustomerListenSessionProcedure> RefreshEpisodeOrderForSpecifyShowEpisodesSourceAsync(
+            CustomerListenSessionProcedure customerListenSessionProcedure,
+            int listenerAccountId,
+            Guid? currentListenObjectId,
+            List<PodcastSubscriptionBenefitDTO> listenerCurrentPodcastSubscriptionRegistrationBenefitList)
+        {
+            try
+            {
+                Console.WriteLine($"[RefreshSpecifyShowEpisodes] Start for listener {listenerAccountId}, mode: {customerListenSessionProcedure.PlayOrderMode}");
 
+                // STEP 1: Validate source type
+                if (customerListenSessionProcedure.SourceDetail.Type != CustomerListenSessionProcedureSourceDetailTypeEnum.SpecifyShowEpisodes.ToString())
+                {
+                    throw new Exception($"Invalid source type: {customerListenSessionProcedure.SourceDetail.Type}. Expected SpecifyShowEpisodes.");
+                }
+
+                // STEP 2: Validate PodcastShow info in SourceDetail
+                if (customerListenSessionProcedure.SourceDetail.PodcastShow == null)
+                {
+                    throw new Exception("PodcastShow info is missing in SourceDetail");
+                }
+
+                var podcastShowId = customerListenSessionProcedure.SourceDetail.PodcastShow.Id;
+
+                // STEP 3: Query episodes từ PodcastShow với 3-level validation
+                var episodes = await _podcastEpisodeGenericRepository.FindAll(
+                    predicate: pe => pe.PodcastShowId == podcastShowId
+                        && pe.DeletedAt == null
+                        && pe.PodcastShow.DeletedAt == null
+                        && (pe.PodcastShow.PodcastChannel == null || pe.PodcastShow.PodcastChannel.DeletedAt == null),
+                    includeFunc: q => q
+                        .Include(pe => pe.PodcastEpisodeStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                        .Include(pe => pe.PodcastShow)
+                            .ThenInclude(ps => ps.PodcastChannel)
+                                .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                ).ToListAsync();
+
+                // STEP 4: Filter Published status
+                var publishedEpisodes = episodes.Where(pe =>
+                {
+                    var episodeStatus = pe.PodcastEpisodeStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastEpisodeStatusId;
+
+                    var showStatus = pe.PodcastShow.PodcastShowStatusTrackings
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefault()?.PodcastShowStatusId;
+
+                    var channelValid = pe.PodcastShow.PodcastChannel == null ||
+                        (pe.PodcastShow.PodcastChannel.DeletedAt == null &&
+                         pe.PodcastShow.PodcastChannel.PodcastChannelStatusTrackings
+                            .OrderByDescending(t => t.CreatedAt)
+                            .FirstOrDefault()?.PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published);
+
+                    return episodeStatus == (int)PodcastEpisodeStatusEnum.Published
+                        && showStatus == (int)PodcastShowStatusEnum.Published
+                        && channelValid;
+                }).ToList();
+
+                Console.WriteLine($"[RefreshSpecifyShowEpisodes] {publishedEpisodes.Count} published episodes after 3-level validation");
+
+                // STEP 5: Check IsListenable cho từng episode
+                var episodesWithListenability = new List<(PodcastEpisode episode, bool isListenable, DateTime createdAt)>();
+
+                foreach (var episode in publishedEpisodes)
+                {
+                    var canListen = await CheckListenerCanListenToEpisodeAsync(
+                        listenerId: listenerAccountId,
+                        validEpisode: episode,
+                        isNonQuotaListeningCheck: false,
+                        listenerCurrentPodcastSubscriptionRegistrationBenefitList: listenerCurrentPodcastSubscriptionRegistrationBenefitList
+                    );
+
+                    episodesWithListenability.Add((episode, canListen.CanListen, episode.CreatedAt));
+                }
+
+                // STEP 6: Get current order
+                var currentOrder = customerListenSessionProcedure.PlayOrderMode == CustomerListenSessionProcedurePlayOrderModeEnum.Sequential.ToString()
+                    ? customerListenSessionProcedure.ListenObjectsSequentialOrder ?? new List<ListenSessionProcedureListenObjectQueueItem>()
+                    : customerListenSessionProcedure.ListenObjectsRandomOrder ?? new List<ListenSessionProcedureListenObjectQueueItem>();
+
+                var existingIds = currentOrder.Select(o => o.ListenObjectId).ToHashSet();
+
+                // STEP 7: Refresh order theo mode
+                List<ListenSessionProcedureListenObjectQueueItem> refreshedOrder;
+
+                if (customerListenSessionProcedure.PlayOrderMode == CustomerListenSessionProcedurePlayOrderModeEnum.Sequential.ToString())
+                {
+                    refreshedOrder = await RefreshSequentialOrderWithOrderForSpecifyShowEpisodesSource(
+                        episodesWithListenability,
+                        currentOrder,
+                        existingIds
+                    );
+                    customerListenSessionProcedure.ListenObjectsSequentialOrder = refreshedOrder;
+                    Console.WriteLine($"[RefreshSpecifyShowEpisodes] Final order count: {refreshedOrder.Count}");
+
+                }
+                else if (customerListenSessionProcedure.PlayOrderMode == CustomerListenSessionProcedurePlayOrderModeEnum.Random.ToString())
+                {
+                    refreshedOrder = RefreshRandomOrderWithOrderForSpecifyShowEpisodesSource(
+                        episodesWithListenability,
+                        currentOrder,
+                        existingIds,
+                        currentListenObjectId
+                    );
+                    customerListenSessionProcedure.ListenObjectsRandomOrder = refreshedOrder;
+                    Console.WriteLine($"[RefreshSpecifyShowEpisodes] Final order count: {refreshedOrder.Count}");
+
+                }
+
+                return customerListenSessionProcedure;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RefreshSpecifyShowEpisodes] ERROR: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                throw;
+            }
+        }
+
+        #region Helper Methods for Order Refresh WITH Order field for SpecifyShowEpisodes Source
+
+        private async Task<List<ListenSessionProcedureListenObjectQueueItem>> RefreshSequentialOrderWithOrderForSpecifyShowEpisodesSource(
+            List<(PodcastEpisode episode, bool isListenable, DateTime createdAt)> episodesWithListenability,
+            List<ListenSessionProcedureListenObjectQueueItem> currentOrder,
+            HashSet<Guid> existingIds)
+        {
+            // STEP 1: Tìm các ID CŨ KHÔNG CÓ trong sortedEpisodes
+            var sortedEpisodeIds = episodesWithListenability.Select(e => e.episode.Id).ToHashSet();
+            var removedItemIds = currentOrder
+                .Where(item => !sortedEpisodeIds.Contains(item.ListenObjectId))
+                .Select(item => item.ListenObjectId)
+                .ToList();
+
+            // STEP 2: Query episodes bị removed để lấy sort info
+            var removedEpisodesInfo = new List<(Guid id, int seasonNumber, int episodeOrder, DateTime createdAt)>();
+
+            if (removedItemIds.Count > 0)
+            {
+                var removedEpisodes = await _podcastEpisodeGenericRepository.FindAll(
+                    predicate: pe => removedItemIds.Contains(pe.Id),
+                    includeFunc: null
+                ).ToListAsync();
+
+                // Map sang tuple để sort
+                removedEpisodesInfo = removedEpisodes.Select(pe =>
+                    (pe.Id, pe.SeasonNumber, pe.EpisodeOrder, pe.CreatedAt)
+                ).ToList();
+            }
+
+            // STEP 3: Merge sortedEpisodes + removedEpisodes
+            var allEpisodes = new List<(Guid id, int? seasonNumber, int? episodeOrder, DateTime createdAt, bool isListenable)>();
+
+            // Thêm episodes có trong sortedEpisodes
+            foreach (var (episode, isListenable, createdAt) in episodesWithListenability)
+            {
+                allEpisodes.Add((episode.Id, episode.SeasonNumber, episode.EpisodeOrder, createdAt, isListenable));
+            }
+
+            // Thêm removed episodes với IsListenable = false
+            foreach (var (id, seasonNumber, episodeOrder, createdAt) in removedEpisodesInfo)
+            {
+                allEpisodes.Add((id, seasonNumber, episodeOrder, createdAt, isListenable: false));
+            }
+
+            // STEP 4: Sort toàn bộ theo SeasonNumber → EpisodeOrder → CreatedAt
+            var sortedAll = allEpisodes
+                .OrderBy(e => e.seasonNumber ?? int.MaxValue)
+                .ThenBy(e => e.episodeOrder ?? int.MaxValue)
+                .ThenBy(e => e.createdAt)
+                .ToList();
+
+            // STEP 5: Tạo final order với Order liên tục
+            return sortedAll.Select((item, index) => new ListenSessionProcedureListenObjectQueueItem
+            {
+                ListenObjectId = item.id,
+                Order = index + 1,
+                IsListenable = item.isListenable
+            }).ToList();
+        }
+
+        private List<ListenSessionProcedureListenObjectQueueItem> RefreshRandomOrderWithOrderForSpecifyShowEpisodesSource(
+            List<(PodcastEpisode episode, bool isListenable, DateTime createdAt)> episodesWithListenability,
+            List<ListenSessionProcedureListenObjectQueueItem> currentOrder,
+            HashSet<Guid> existingIds,
+            Guid? currentListenObjectId)
+        {
+            var random = new Random();
+            var newOrder = new List<ListenSessionProcedureListenObjectQueueItem>(currentOrder);
+
+            // STEP 1: Tìm valid episode IDs
+            var validEpisodeIds = episodesWithListenability.Select(e => e.episode.Id).ToHashSet();
+
+            // STEP 2: Update IsListenable cho tất cả items trong currentOrder
+            foreach (var item in newOrder)
+            {
+                if (validEpisodeIds.Contains(item.ListenObjectId))
+                {
+                    // Episode còn tồn tại → Update IsListenable
+                    var episode = episodesWithListenability.First(e => e.episode.Id == item.ListenObjectId);
+                    item.IsListenable = episode.isListenable;
+                }
+                else
+                {
+                    // Episode đã bị removed (unpublished) → Mark IsListenable = false, GIỮ NGUYÊN VỊ TRÍ
+                    item.IsListenable = false;
+                }
+            }
+
+            // STEP 3: Tìm new episodes (chưa có trong currentOrder)
+            var newEpisodes = episodesWithListenability
+                .Where(e => !existingIds.Contains(e.episode.Id))
+                .ToList();
+
+            if (newEpisodes.Count == 0)
+            {
+                // Không có episodes mới → chỉ re-index
+                return newOrder.Select((item, index) => new ListenSessionProcedureListenObjectQueueItem
+                {
+                    ListenObjectId = item.ListenObjectId,
+                    Order = index + 1,
+                    IsListenable = item.IsListenable
+                }).ToList();
+            }
+
+            Console.WriteLine($"[RefreshRandomOrder] {newEpisodes.Count} new episodes to insert");
+
+            // STEP 4: Xử lý insert logic
+            // CASE 1: Procedure mới (currentOrder rỗng) → Full shuffle
+            if (currentOrder.Count == 0)
+            {
+                Console.WriteLine("[RefreshRandomOrder] New procedure (empty order) → Full shuffle");
+
+                foreach (var (episode, isListenable, _) in newEpisodes)
+                {
+                    newOrder.Add(new ListenSessionProcedureListenObjectQueueItem
+                    {
+                        ListenObjectId = episode.Id,
+                        Order = 0,
+                        IsListenable = isListenable
+                    });
+                }
+
+                // Shuffle toàn bộ
+                var shuffled = newOrder.OrderBy(x => random.Next()).ToList();
+                return shuffled.Select((item, index) => new ListenSessionProcedureListenObjectQueueItem
+                {
+                    ListenObjectId = item.ListenObjectId,
+                    Order = index + 1,
+                    IsListenable = item.IsListenable
+                }).ToList();
+            }
+
+            // CASE 2: Procedure cũ → LUÔN có currentListenObjectId
+            if (currentListenObjectId == null || !existingIds.Contains(currentListenObjectId.Value))
+            {
+                throw new Exception("Invalid state: Existing procedure must have valid currentListenObjectId");
+            }
+
+            var currentIndex = newOrder.FindIndex(o => o.ListenObjectId == currentListenObjectId.Value);
+
+            if (currentIndex == -1)
+            {
+                throw new Exception("Current position not found in order");
+            }
+
+            bool isLastPosition = currentIndex == newOrder.Count - 1;
+            Console.WriteLine($"[RefreshRandomOrder] Current position index: {currentIndex}/{newOrder.Count}, isLast: {isLastPosition}");
+
+            if (isLastPosition)
+            {
+                // ✅ Last position → INSERT vào TRƯỚC
+                Console.WriteLine("[RefreshRandomOrder] Last position → Insert BEFORE current");
+
+                foreach (var (episode, isListenable, _) in newEpisodes)
+                {
+                    var insertIndex = currentIndex > 0
+                        ? random.Next(0, currentIndex)
+                        : 0;
+
+                    newOrder.Insert(insertIndex, new ListenSessionProcedureListenObjectQueueItem
+                    {
+                        ListenObjectId = episode.Id,
+                        Order = 0,
+                        IsListenable = isListenable
+                    });
+
+                    currentIndex++;
+                }
+            }
+            else
+            {
+                // ✅ Not last → INSERT vào SAU
+                Console.WriteLine("[RefreshRandomOrder] Not last position → Insert AFTER current");
+
+                foreach (var (episode, isListenable, _) in newEpisodes)
+                {
+                    var insertIndex = random.Next(currentIndex + 1, newOrder.Count + 1);
+
+                    newOrder.Insert(insertIndex, new ListenSessionProcedureListenObjectQueueItem
+                    {
+                        ListenObjectId = episode.Id,
+                        Order = 0,
+                        IsListenable = isListenable
+                    });
+                }
+            }
+
+            // Re-index Order liên tục (1, 2, 3, 4...)
+            return newOrder.Select((item, index) => new ListenSessionProcedureListenObjectQueueItem
+            {
+                ListenObjectId = item.ListenObjectId,
+                Order = index + 1,
+                IsListenable = item.IsListenable
+            }).ToList();
+        }
+        #endregion
 
         public async Task<byte[]> GetEpisodeHlsEncryptionKeyFileAsync(Guid episodeId, Guid keyId, string? token = null)
         {
@@ -4483,7 +5927,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             {
                 try
                 {
-                    Console.WriteLine("Removing dismissed episode dmca unpublish episode force for DmcaDismissedEpisodeId: " + removeDismissedEpisodeDmcaUnpublishEpisodeForceParameterDTO.DmcaDismissedEpisodeId == null ? "null" : removeDismissedEpisodeDmcaUnpublishEpisodeForceParameterDTO.DmcaDismissedEpisodeId.ToString());
                     // unpublish episode
                     var episode = await _podcastEpisodeGenericRepository.FindByIdAsync(
                         id: removeDismissedEpisodeDmcaUnpublishEpisodeForceParameterDTO.DmcaDismissedEpisodeId,
@@ -5653,7 +7096,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             .OrderByDescending(pet => pet.CreatedAt)
                             .FirstOrDefault();
 
-                        if (currentStatusTracking.PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Draft)
+                        if (currentStatusTracking.PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Draft && currentStatusTracking.PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Removed)
                         {
                             // Unpublish khác với delete
                             var newStatusTracking = new PodcastEpisodeStatusTracking
@@ -5849,7 +7292,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             Description = pes.PodcastEpisode.Description,
                             MainImageFileKey = pes.PodcastEpisode.MainImageFileKey,
                             IsReleased = pes.PodcastEpisode.IsReleased,
-                            ReleaseDate = pes.PodcastEpisode.ReleaseDate
+                            ReleaseDate = pes.PodcastEpisode.ReleaseDate,
+                            AudioLength = pes.PodcastEpisode.AudioLength
                         }).FirstOrDefault(),
                         Podcaster = g.Select(pes => new AccountSnippetResponseDTO
                         {
@@ -5905,26 +7349,78 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     var latestListenSession = await _podcastEpisodeListenSessionGenericRepository.FindAll(
                         predicate: pes => pes.AccountId == listenerId,
                         includeFunc: null
-                            // .Include(pes => pes.PodcastEpisode)
-                            // .ThenInclude(pe => pe.PodcastShow)
+                    // .Include(pes => pes.PodcastEpisode)
+                    // .ThenInclude(pe => pe.PodcastShow)
                     )
                         .OrderByDescending(pes => pes.CreatedAt)
                         .FirstOrDefaultAsync();
                     if (latestListenSession == null || latestListenSession.IsCompleted == true || latestListenSession.ExpiredAt <= _dateHelper.GetNowByAppTimeZone())
                     {
-                        return null!;
+                        // return null!;
+                        Console.WriteLine("No valid latest listen session found for listener id: " + listenerId);
+                        // in các thông tin của latestListenSession
+                        Console.WriteLine($"LatestListenSession: {latestListenSession.ToString()}");
+                        return new EpisodeListenResponseDTO
+                        {
+                            ListenSessionProcedure = null,
+                            ListenSession = null
+                        };
                     }
                     // var episode = latestListenSession.PodcastEpisode;
                     var episode = await GetValidEpisodeListenPermission(latestListenSession.PodcastEpisodeId);
+
+                    UserPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO userPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO = new UserPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO
+                    {
+                        EpisodeBaseSourceInfoList = new List<EpisodeBaseSourceInfoDTO>
+                            {
+                                new EpisodeBaseSourceInfoDTO
+                                {
+                                    EpisodeId = episode.Id,
+                                    ShowId = episode.PodcastShowId,
+                                    ChannelId = episode.PodcastShow.PodcastChannel != null ? episode.PodcastShow.PodcastChannel.Id : (Guid?)null
+                                }
+                            }
+                    };
+
+                    UserPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO =
+                            await _crossServiceHttpService.PostManualAsync<UserPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO>(
+                                serviceName: "SubscriptionService",
+                                body: userPodcastSubscriptionRegistrationEpisodeBaseQueryRequestDTO,
+                                relativePath: $"api/podcast-subscriptions/service-query/{listenerId}"
+                            );
+
+                    List<PodcastSubscriptionBenefitDTO> listenerCurrentPodcastSubscriptionRegistrationBenefitListOfLatestListenSession =
+                        userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO.EpisodeBaseBenefitList
+                                .First(e => e.EpisodeId == episode.Id)
+                                .PodcastSubscriptionBenefitIds
+                                .Select(id => new PodcastSubscriptionBenefitDTO { Id = id })
+                                .ToList();
+                    // in ra tất cả các benefit
+                    foreach (var benefit in listenerCurrentPodcastSubscriptionRegistrationBenefitListOfLatestListenSession)
+                    {
+                        Console.WriteLine("Listener current podcast subscription benefit id: " + benefit.Id);
+                    }
+
+                    foreach (var benefit in listenerCurrentPodcastSubscriptionRegistrationBenefitListOfLatestListenSession)
+                    {
+                        Console.WriteLine("Listener current podcast subscription benefit id: " + benefit.Id);
+                    }
+
                     var canListen = await this.CheckListenerCanListenToEpisodeAsync(
                         listenerId: listenerId,
                         validEpisode: episode,
-                        isNonQuotaListeningCheck: false
+                        isNonQuotaListeningCheck: false,
+                        listenerCurrentPodcastSubscriptionRegistrationBenefitList: listenerCurrentPodcastSubscriptionRegistrationBenefitListOfLatestListenSession
                     );
 
-                    EpisodeListenResponseDTO responseDTO = null!;
+                    EpisodeListenResponseDTO responseDTO = new EpisodeListenResponseDTO
+                    {
+                        ListenSessionProcedure = null,
+                        ListenSession = null
+                    };
                     if (!canListen.CanListen)
                     {
+                        Console.WriteLine("Listener id " + listenerId + " cannot listen to episode id " + episode.Id + ", reason: " + canListen.Reason);
                         // mark session là completed
                         latestListenSession.IsCompleted = true;
                         await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(latestListenSession.Id, latestListenSession);
@@ -5956,39 +7452,70 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                         var podcaster = await _accountCachingService.GetAccountStatusCacheById(episode.PodcastShow.PodcasterId);
 
+                        var currentProcedure = await _customerListenSessionProcedureCachingService.GetActiveProcedureByCustomerIdAsync(listenerId);
+
+
+                        //refresh
+                        if (currentProcedure.SourceDetail.Type == CustomerListenSessionProcedureSourceDetailTypeEnum.SavedEpisodes.ToString())
+                        {
+                            currentProcedure = await RefreshEpisodeOrderForSavedEpisodesSourceAsync(
+                                currentProcedure,
+                                listenerId,
+                                latestListenSession.PodcastEpisodeId,
+                                null
+                            );
+                        }
+                        else if (currentProcedure.SourceDetail.Type == CustomerListenSessionProcedureSourceDetailTypeEnum.SpecifyShowEpisodes.ToString())
+                        {
+                            currentProcedure = await RefreshEpisodeOrderForSpecifyShowEpisodesSourceAsync(
+                                currentProcedure,
+                                listenerId,
+                                latestListenSession.PodcastEpisodeId,
+                                listenerCurrentPodcastSubscriptionRegistrationBenefitListOfLatestListenSession
+                            );
+                        }
+                        await _customerListenSessionProcedureCachingService.UpdateProcedureAsync(listenerId, currentProcedure.Id, currentProcedure);
+
+
 
                         responseDTO = new EpisodeListenResponseDTO
                         {
-                            PlaylistFileKey = playlistFileKey,
-                            // Token = latestListenSession.Token,
-                            Token = newSessionToken,
-                            // LastListenDurationSeconds = latestListenSession.LastListenDurationSeconds,
-                            PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
+                            ListenSessionProcedure = currentProcedure,
+                            ListenSession = new EpisodeListenSessionResponseDTO
                             {
-                                Id = latestListenSession.Id,
-                                LastListenDurationSeconds = latestListenSession.LastListenDurationSeconds,
-                            },
-                            PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
-                            {
-                                Id = episode.Id,
-                                Name = episode.Name,
-                                Description = episode.Description,
-                                MainImageFileKey = episode.MainImageFileKey,
-                                IsReleased = episode.IsReleased,
-                                ReleaseDate = episode.ReleaseDate
-                            },
-                            Podcaster = new AccountSnippetResponseDTO
-                            {
-                                Id = podcaster.Id,
-                                FullName = podcaster.PodcasterProfileName,
-                                Email = podcaster.Email,
-                                MainImageFileKey = podcaster.MainImageFileKey,
-                            },
-                            AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
+                                PlaylistFileKey = playlistFileKey,
+                                // Token = latestListenSession.Token,
+                                Token = newSessionToken,
+                                // LastListenDurationSeconds = latestListenSession.LastListenDurationSeconds,
+                                PodcastEpisodeListenSession = new PodcastEpisodeListenSessionSnippetResponseDTO
+                                {
+                                    Id = latestListenSession.Id,
+                                    LastListenDurationSeconds = latestListenSession.LastListenDurationSeconds,
+                                },
+                                PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
+                                {
+                                    Id = episode.Id,
+                                    Name = episode.Name,
+                                    Description = episode.Description,
+                                    MainImageFileKey = episode.MainImageFileKey,
+                                    IsReleased = episode.IsReleased,
+                                    ReleaseDate = episode.ReleaseDate,
+                                    AudioLength = episode.AudioLength
+                                },
+                                Podcaster = new AccountSnippetResponseDTO
+                                {
+                                    Id = podcaster.Id,
+                                    FullName = podcaster.PodcasterProfileName,
+                                    Email = podcaster.Email,
+                                    MainImageFileKey = podcaster.MainImageFileKey,
+                                },
+                                AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
                                 ? await _fileIOHelper.GeneratePresignedUrlAsync(
                                     episode.AudioFileKey
                                 )
                                 : null
+                            }
+
                         };
                     }
 
@@ -6047,25 +7574,31 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     listenPermissionConditions.Remove(PodcastSubscriptionBenefitEnum.NonQuotaListening);
                 }
 
+                // in ra tất cả các điều kiện cần thiết
+                foreach (var condition in listenPermissionConditions)
+                {
+                    Console.WriteLine("Listen permission condition: " + condition.ToString());
+                }
+
                 // 5. Check subscription requirements
-                PodcastSubscriptionDTO channelSubscription = null;
-                PodcastSubscriptionDTO showSubscription = null;
+                // PodcastSubscriptionDTO channelSubscription = null;
+                // PodcastSubscriptionDTO showSubscription = null;
 
-                if (validEpisode.PodcastShow.PodcastChannelId != null)
-                {
-                    channelSubscription = await GetActivePodcastSubscriptionByChannelId(validEpisode.PodcastShow.PodcastChannelId);
-                }
-                showSubscription = await GetActivePodcastSubscriptionByShowId(validEpisode.PodcastShow.Id);
+                // if (validEpisode.PodcastShow.PodcastChannelId != null)
+                // {
+                //     channelSubscription = await GetActivePodcastSubscriptionByChannelId(validEpisode.PodcastShow.PodcastChannelId);
+                // }
+                // showSubscription = await GetActivePodcastSubscriptionByShowId(validEpisode.PodcastShow.Id);
 
-                if (channelSubscription == null && showSubscription == null)
-                {
-                    return new ListenPermissionResult
-                    {
-                        CanListen = false,
-                        Reason = "No active subscription available",
-                        MissingConditions = listenPermissionConditions
-                    };
-                }
+                // if (channelSubscription == null && showSubscription == null)
+                // {
+                //     return new ListenPermissionResult
+                //     {
+                //         CanListen = false,
+                //         Reason = "No active subscription available",
+                //         MissingConditions = listenPermissionConditions
+                //     };
+                // }
                 // [CHỈNH LẠI] sau này sẽ xem th subscription nào != và dựa vào mảng listenerSubscriptionRegistration để xong cho ở level đó không từ đó so sánh contain
                 // ở hàm gọi thì nếu slot còn lại n và không có benefit nonquota thì chỉ giữa lại n item đầu tiên trong mảng đủ điều kiện nghe trả về với n là slot còn lại (nếu ngay từ đầu không có benefit nonquota và slot còn lại là 0 thì trả về order rỗng luôn)
                 // 6. Check listener's subscription registration
@@ -6085,13 +7618,15 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
 
                 // 7. Check listener's benefits vs required conditions
-                // List<int> listenerBenefits = listenerSubscriptionRegistration.PodcastSubscription.PodcastSubscriptionBenefitMappings
-                //     .Where(psbm => psbm.Version == listenerSubscriptionRegistration.CurrentVersion)
-                //     .Select(psbm => psbm.PodcastSubscriptionBenefitId)
-                //     .ToList();
+
                 List<int> listenerBenefits = listenerCurrentPodcastSubscriptionRegistrationBenefitList
                                     .Select(psb => psb.Id)
-                                    .ToList();  
+                                    .ToList();
+                // in ra tất cả các benefit của listener
+                foreach (var benefitId in listenerBenefits)
+                {
+                    Console.WriteLine("Listener benefit id: " + benefitId);
+                }
 
                 HashSet<PodcastSubscriptionBenefitEnum> missingConditions = new HashSet<PodcastSubscriptionBenefitEnum>();
                 foreach (var condition in listenPermissionConditions)
@@ -6133,6 +7668,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
+                bool transactionCompleted = false;
                 try
                 {
                     // logic thực hiện cũ:
@@ -6171,6 +7707,12 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     );
                     if (!canListen.CanListen)
                     {
+                        // đánh completed cho listen session
+                        listenSession.IsCompleted = true;
+                        await _podcastEpisodeListenSessionGenericRepository.UpdateAsync(listenSession.Id, listenSession);
+                        transactionCompleted = true;
+                        await transaction.CommitAsync();
+
                         throw new Exception($"Listener cannot listen to episode: {canListen.Reason}");
                     }
 
@@ -6221,7 +7763,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    if (!transactionCompleted)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.ContentManagementDomain,
                         requestData: command.RequestData,

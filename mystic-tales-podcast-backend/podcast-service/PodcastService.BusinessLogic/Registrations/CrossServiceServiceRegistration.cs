@@ -10,6 +10,8 @@ namespace PodcastService.BusinessLogic.Registrations
             services.AddScoped<HttpServiceQueryClient>();
             services.AddScoped<FieldSelector>();
             services.AddScoped<GenericQueryService>();
+            services.AddScoped<CrossServiceHttpService>();
+
             return services;
         }
     }

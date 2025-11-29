@@ -65,6 +65,11 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting
         public bool IsValidFile(string fieldName, string fileName, long fileSizeBytes, string mimeType)
         {
             var rule = GetValidationRule(fieldName);
+            // in ra toàn bộ rule
+            Console.WriteLine(JsonConvert.SerializeObject(rule, Formatting.Indented));
+            // in ra toàn bộ thông tin file
+            Console.WriteLine($"FileName: {fileName}, FileSize: {fileSizeBytes}, MimeType: {mimeType}");
+
             if (rule == null)
                 return false;
 

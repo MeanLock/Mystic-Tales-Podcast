@@ -1,3 +1,4 @@
+using PodcastService.BusinessLogic.DTOs.Account;
 using PodcastService.BusinessLogic.DTOs.Episode;
 
 namespace PodcastService.BusinessLogic.DTOs.ReviewSession.ListItems
@@ -6,7 +7,7 @@ namespace PodcastService.BusinessLogic.DTOs.ReviewSession.ListItems
     {
         public int Id { get; set; }
 
-        public int AssignedStaff { get; set; }
+        public AccountSnippetResponseDTO AssignedStaff { get; set; }
         public string? Note { get; set; }
 
         public int ReReviewCount { get; set; }

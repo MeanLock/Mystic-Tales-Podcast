@@ -7,6 +7,7 @@ using UserService.API.Enums.Api;
 using UserService.API.Filters.ExceptionFilters;
 using UserService.BusinessLogic.DTOs.Account;
 using UserService.BusinessLogic.DTOs.Cache;
+using UserService.BusinessLogic.DTOs.Cache.ListesnSessionProcedure;
 using UserService.BusinessLogic.Enums.App;
 using UserService.BusinessLogic.Helpers.FileHelpers;
 using UserService.BusinessLogic.Models.CrossService;
@@ -627,6 +628,17 @@ namespace UserService.API.Controllers.BaseControllers
             var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
 
             return Ok(new { FileUrl = url });
+        }
+
+        // /api/user-service/api/accounts/customer-listen-session-procedures/{CustomerListenSessionProcedureId}
+        [HttpPut("customer-listen-session-procedures/{CustomerListenSessionProcedureId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> CreateCustomerListenSessionProcedureRecord(Guid CustomerListenSessionProcedureId, CustomerListenSessionProcedureUpdateRequestDTO customerListenSessionProcedureUpdateRequestDTO)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            await _accountService.UpdateCustomerListenSessionProcedureRecords(account.Id, CustomerListenSessionProcedureId, customerListenSessionProcedureUpdateRequestDTO.CustomerListenSessionProcedureUpdateInfo);
+            return Ok(new { Message = "Customer listen session procedure record updated successfully." });
         }
 
 

@@ -14,5 +14,6 @@ namespace UserService.BusinessLogic.DTOs.MessageQueue.UserManagementDomain.Updat
         public required string Description { get; set; }
         public decimal? PricePerBookingWord { get; set; }
         public string BuddyAudioFileKey { get; set; }
+        public required bool IsBuddy { get; set; }
     }
 }

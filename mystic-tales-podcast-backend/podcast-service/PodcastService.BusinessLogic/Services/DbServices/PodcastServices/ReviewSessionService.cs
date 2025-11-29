@@ -429,25 +429,36 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
 
 
-                var reviewSessions = (await reviewSessionsQuery.ToListAsync()).Select(ps => new EpisodePublishReviewSessionListItemResponseDTO
+
+                var reviewSessions = (await Task.WhenAll((await reviewSessionsQuery.ToListAsync()).Select(async ps =>
                 {
-                    Id = ps.Id,
-                    AssignedStaff = ps.AssignedStaff,
-                    CreatedAt = ps.CreatedAt,
-                    UpdatedAt = ps.UpdatedAt,
-                    Deadline = ps.Deadline,
-                    Note = ps.Note,
-                    ReReviewCount = ps.ReReviewCount,
-                    PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
+                    var assignedStaffAccount = await _accountCachingService.GetAccountStatusCacheById(ps.AssignedStaff);
+                    return new EpisodePublishReviewSessionListItemResponseDTO
                     {
-                        Id = ps.PodcastEpisode.Id,
-                        Name = ps.PodcastEpisode.Name,
-                        Description = ps.PodcastEpisode.Description,
-                        MainImageFileKey = ps.PodcastEpisode.MainImageFileKey,
-                        IsReleased = ps.PodcastEpisode.IsReleased,
-                        ReleaseDate = ps.PodcastEpisode.ReleaseDate
-                    },
-                    CurrentStatus = ps.PodcastEpisodePublishReviewSessionStatusTrackings
+                        Id = ps.Id,
+                        AssignedStaff = new AccountSnippetResponseDTO
+                        {
+                            Id = assignedStaffAccount.Id,
+                            FullName = assignedStaffAccount.FullName,
+                            Email = assignedStaffAccount.Email,
+                            MainImageFileKey = assignedStaffAccount.MainImageFileKey
+                        },
+                        CreatedAt = ps.CreatedAt,
+                        UpdatedAt = ps.UpdatedAt,
+                        Deadline = ps.Deadline,
+                        Note = ps.Note,
+                        ReReviewCount = ps.ReReviewCount,
+                        PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
+                        {
+                            Id = ps.PodcastEpisode.Id,
+                            Name = ps.PodcastEpisode.Name,
+                            Description = ps.PodcastEpisode.Description,
+                            MainImageFileKey = ps.PodcastEpisode.MainImageFileKey,
+                            IsReleased = ps.PodcastEpisode.IsReleased,
+                            ReleaseDate = ps.PodcastEpisode.ReleaseDate,
+                            AudioLength = ps.PodcastEpisode.AudioLength
+                        },
+                        CurrentStatus = ps.PodcastEpisodePublishReviewSessionStatusTrackings
                         .OrderByDescending(s => s.CreatedAt).Select(s => new PodcastEpisodePublishReviewSessionStatusDTO
                         {
                             Id = s.PodcastEpisodePublishReviewSessionStatusId,
@@ -455,13 +466,108 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         })
                         .FirstOrDefault()!
 
-                }).ToList();
+                    };
+                }))).ToList();
                 return reviewSessions;
 
             }
             catch (Exception ex)
             {
-                throw new Exception("Get episode publish review sessions by podcaster id failed, error: " + ex.Message);
+                throw new HttpRequestException("Get episode publish review sessions by podcaster id failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<EpisodePublishReviewSessionListItemResponseDTO> GetCurrentEpisodePublishReviewSessionByEpisodeIdAsync(Guid podcastEpisodeId, AccountStatusCache requestAccount)
+        {
+            try
+            {
+                var reviewSessionQuery = _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
+                    predicate: pers => pers.PodcastEpisodeId == podcastEpisodeId &&
+                        pers.PodcastEpisode.DeletedAt == null &&
+                        pers.PodcastEpisode.PodcastShow.DeletedAt == null &&
+                        (pers.PodcastEpisode.PodcastShow.PodcastChannelId == null || pers.PodcastEpisode.PodcastShow.PodcastChannel.DeletedAt == null),
+
+                    includeFunc: q => q
+                        .Include(pers => pers.PodcastEpisodePublishReviewSessionStatusTrackings)
+                        .ThenInclude(pes => pes.PodcastEpisodePublishReviewSessionStatus)
+                        .Include(pers => pers.PodcastEpisode)
+                        .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
+                        .Include(pers => pers.PodcastEpisode)
+                        .ThenInclude(pe => pe.PodcastShow)
+                        .Include(pers => pers.PodcastEpisode)
+                        .ThenInclude(pe => pe.PodcastShow)
+                        .ThenInclude(ps => ps.PodcastChannel)
+                );
+
+                if (requestAccount.RoleId == (int)RoleEnum.Staff)
+                {
+                    reviewSessionQuery = reviewSessionQuery.Where(pers =>
+                        pers.AssignedStaff == requestAccount.Id
+                    );
+                }
+                else if (requestAccount.RoleId == (int)RoleEnum.Customer)
+                {
+                    // chỉ được lấy review session của các episode thuộc kênh của mình
+
+                    reviewSessionQuery = reviewSessionQuery.Where(pers =>
+                        pers.PodcastEpisode.PodcastShow.PodcasterId == requestAccount.Id &&
+                        (pers.PodcastEpisode.PodcastShow.PodcastChannelId == null || pers.PodcastEpisode.PodcastShow.PodcastChannel.PodcasterId == requestAccount.Id)
+                    );
+                }
+
+                var reviewSessions = await reviewSessionQuery.ToListAsync();
+
+                // lấy ra review session có status là "Pending Review"
+                var currentReviewSession = reviewSessions
+                    .Where(rs => rs.PodcastEpisodePublishReviewSessionStatusTrackings
+                        .OrderByDescending(s => s.CreatedAt)
+                        .FirstOrDefault().PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview)
+                    .FirstOrDefault();
+
+                if (currentReviewSession == null)
+                {
+                    return null;
+                }
+
+                var assignedStaffAccount = await _accountCachingService.GetAccountStatusCacheById(currentReviewSession.AssignedStaff);
+                return new EpisodePublishReviewSessionListItemResponseDTO
+                {
+                    Id = currentReviewSession.Id,
+                    AssignedStaff = new AccountSnippetResponseDTO
+                    {
+                        Id = assignedStaffAccount.Id,
+                        FullName = assignedStaffAccount.FullName,
+                        Email = assignedStaffAccount.Email,
+                        MainImageFileKey = assignedStaffAccount.MainImageFileKey
+                    },
+                    CreatedAt = currentReviewSession.CreatedAt,
+                    UpdatedAt = currentReviewSession.UpdatedAt,
+                    Deadline = currentReviewSession.Deadline,
+                    Note = currentReviewSession.Note,
+                    ReReviewCount = currentReviewSession.ReReviewCount,
+                    PodcastEpisode = new PodcastEpisodeSnippetResponseDTO
+                    {
+                        Id = currentReviewSession.PodcastEpisode.Id,
+                        Name = currentReviewSession.PodcastEpisode.Name,
+                        Description = currentReviewSession.PodcastEpisode.Description,
+                        MainImageFileKey = currentReviewSession.PodcastEpisode.MainImageFileKey,
+                        IsReleased = currentReviewSession.PodcastEpisode.IsReleased,
+                        ReleaseDate = currentReviewSession.PodcastEpisode.ReleaseDate,
+                        AudioLength = currentReviewSession.PodcastEpisode.AudioLength
+                    },
+                    CurrentStatus = currentReviewSession.PodcastEpisodePublishReviewSessionStatusTrackings
+                    .OrderByDescending(s => s.CreatedAt).Select(s => new PodcastEpisodePublishReviewSessionStatusDTO
+                    {
+                        Id = s.PodcastEpisodePublishReviewSessionStatusId,
+                        Name = s.PodcastEpisodePublishReviewSessionStatus.Name
+                    })
+                    .FirstOrDefault()!
+
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new HttpRequestException("Get current episode publish review session by episode id failed, error: " + ex.Message);
             }
         }
 
@@ -519,7 +625,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     throw new Exception("Review session not found");
                 }
 
-                var podcaster = await _accountCachingService.GetAccountStatusCacheById(reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.PodcasterId);
+                var podcaster = await _accountCachingService.GetAccountStatusCacheById(reviewSession.PodcastEpisode.PodcastShow.PodcasterId);
 
                 var episodeCurrentStatus = reviewSession.PodcastEpisode.PodcastEpisodeStatusTrackings
                     .OrderByDescending(s => s.CreatedAt).Select(s => new PodcastEpisodeStatusDTO
@@ -555,10 +661,18 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Name = s.PodcastEpisodePublishReviewSessionStatus.Name
                     })
                     .FirstOrDefault();
+
+                var assignedStaffAccount = await _accountCachingService.GetAccountStatusCacheById(reviewSession.AssignedStaff);
                 return new EpisodePublishReviewSessionDetailResponseDTO
                 {
                     Id = reviewSession.Id,
-                    AssignedStaff = reviewSession.AssignedStaff,
+                    AssignedStaff = new AccountSnippetResponseDTO
+                    {
+                        Id = assignedStaffAccount.Id,
+                        FullName = assignedStaffAccount.FullName,
+                        Email = assignedStaffAccount.Email,
+                        MainImageFileKey = assignedStaffAccount.MainImageFileKey
+                    },
                     CreatedAt = reviewSession.CreatedAt,
                     UpdatedAt = reviewSession.UpdatedAt,
                     Deadline = reviewSession.Deadline,
@@ -597,7 +711,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Description = reviewSession.PodcastEpisode.PodcastShow.Description,
                         MainImageFileKey = reviewSession.PodcastEpisode.PodcastShow.MainImageFileKey,
                         IsReleased = reviewSession.PodcastEpisode.PodcastShow.IsReleased,
-                        ReleaseDate = reviewSession.PodcastEpisode.PodcastShow.ReleaseDate
+                        ReleaseDate = reviewSession.PodcastEpisode.PodcastShow.ReleaseDate,
+                        DeletedAt = reviewSession.PodcastEpisode.PodcastShow.DeletedAt,
                     },
                     PodcastChannel = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel != null ? new PodcastChannelSnippetResponseDTO
                     {
@@ -605,6 +720,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Name = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.Name,
                         Description = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.Description,
                         MainImageFileKey = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.MainImageFileKey,
+                        DeletedAt = reviewSession.PodcastEpisode.PodcastShow.PodcastChannel.DeletedAt,
                     } : null,
                     Podcaster = new AccountStatusSnippetResponseDTO
                     {
@@ -768,7 +884,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                     var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
                     // var newDeadline = _dateHelper.GetNowByAppTimeZone().AddHours(activeSystemConfigProfile["ReviewSessionConfig"]["PodcastEpisodePublishEditRequirementExpiredHours"].Value<int>());
-                    var newDeadline = _dateHelper.GetNowByAppTimeZone().AddHours(activeSystemConfigProfile.ReviewSessionConfig.PodcastEpisodePublishEditRequirementExpiredHours);   
+                    var newDeadline = _dateHelper.GetNowByAppTimeZone().AddHours(activeSystemConfigProfile.ReviewSessionConfig.PodcastEpisodePublishEditRequirementExpiredHours);
 
                     // cập nhật lại ghi chú và deadline của phiên kiểm duyệt publish episode
                     existingPodcastEpisodePublishReviewSession.Note = requireEpisodePublishReviewSessionEditParameterDTO.Note;
@@ -903,7 +1019,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     }
 
                     var episodeCurrentStatusId = existingEpisode.PodcastEpisodeStatusTrackings
-                            .OrderByDescending(s => s.CreatedAt).Select(s =>s.PodcastEpisodeStatusId)
+                            .OrderByDescending(s => s.CreatedAt).Select(s => s.PodcastEpisodeStatusId)
                             .FirstOrDefault();
                     var showCurrentStatusId = existingEpisode.PodcastShow.PodcastShowStatusTrackings
                             .OrderByDescending(s => s.CreatedAt).Select(s => s.PodcastShowStatusId)
@@ -1063,7 +1179,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     }
 
                     var episodeCurrentStatusId = existingEpisode.PodcastEpisodeStatusTrackings
-                            .OrderByDescending(s => s.CreatedAt).Select(s =>s.PodcastEpisodeStatusId)
+                            .OrderByDescending(s => s.CreatedAt).Select(s => s.PodcastEpisodeStatusId)
                             .FirstOrDefault();
                     var showCurrentStatusId = existingEpisode.PodcastShow.PodcastShowStatusTrackings
                             .OrderByDescending(s => s.CreatedAt).Select(s => s.PodcastShowStatusId)

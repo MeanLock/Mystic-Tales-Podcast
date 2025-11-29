@@ -9,6 +9,7 @@ namespace PodcastService.BusinessLogic.DTOs.Feed;
 
 public class CategoryBasePodcastFeedDTO
 {
+    public required PodcastCategoryDTO PodcastCategory { get; set; } = new PodcastCategoryDTO();
     public List<ChannelListItemResponseDTO> TopChannels { get; set; } = new List<ChannelListItemResponseDTO>();
     public List<ShowListItemResponseDTO> TopShows { get; set; } = new List<ShowListItemResponseDTO>();
     public List<EpisodeListItemResponseDTO> TopEpisodes { get; set; } = new List<EpisodeListItemResponseDTO>();

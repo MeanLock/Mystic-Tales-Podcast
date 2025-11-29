@@ -13,5 +13,6 @@ namespace UserService.BusinessLogic.DTOs.Account
         public required string Name { get; set; }
         public required string Description { get; set; }
         public decimal? PricePerBookingWord { get; set; }
+        public required bool IsBuddy { get; set; }
     }
 }

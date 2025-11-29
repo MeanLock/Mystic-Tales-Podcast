@@ -61,6 +61,20 @@ namespace PodcastService.API.Controllers.BaseControllers
             });
         }
 
+        // /api/podcast-service/api/channels/favorited
+        [HttpGet("favorited")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetFavoritedChannels()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var favoritedChannels = await _podcastChannelService.GetFavoritedChannels(account.Id);
+
+            return Ok(new
+            {
+                ChannelList = favoritedChannels
+            });
+        }
+
         // /api/podcast-service/api/channels
         [HttpPost("")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
@@ -151,7 +165,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
 
-            var channel = await _podcastChannelService.GetChannelByIdAsync(PodcastChannelId, account?.RoleId);
+            var channel = await _podcastChannelService.GetChannelByIdAsync(PodcastChannelId, account);
 
             return Ok(new
             {
@@ -288,7 +302,7 @@ namespace PodcastService.API.Controllers.BaseControllers
             );
         }
 
-        // /api/podcast-service/api/channels/{PodcastShowId}/favorite/{IsFavorite}
+        // /api/podcast-service/api/channels/{PodcastChannelId}/favorite/{IsFavorite}
         [HttpPost("{PodcastChannelId}/favorite/{IsFavorite}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> FavoriteOrUnfavoriteChannelById(Guid PodcastChannelId, bool IsFavorite)

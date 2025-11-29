@@ -4871,7 +4871,7 @@ flows:
           topic: "content-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
-            - name: "complete-all-user-booking-listen-sessions"
+            - name: "complete-all-user-booking-producing-listen-sessions"
               topic: "booking-management-domain"
               handle-service: "BookingManagementService"
           nextFlows: []

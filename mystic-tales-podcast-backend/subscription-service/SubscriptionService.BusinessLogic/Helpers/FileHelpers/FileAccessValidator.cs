@@ -11,7 +11,7 @@ namespace SubscriptionService.BusinessLogic.Helpers.FileHelpers
 
         // File extensions
         private const string IMAGE_EXT = @"\.(jpg|jpeg|png|webp|gif)$";
-        private const string AUDIO_EXT = @"\.(mp3|wav|m4a|aac)$";
+        private const string AUDIO_EXT = @"\.(mp3|wav|m4a|aac|flac)$";
         private const string DOCUMENT_EXT = @"\.(pdf|doc|docx)$";
         private const string ARCHIVE_EXT = @"\.(zip|rar)$";
         private const string M3U8_EXT = @"\.m3u8$";

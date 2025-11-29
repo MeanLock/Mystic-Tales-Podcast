@@ -8,5 +8,6 @@ namespace PodcastService.BusinessLogic.DTOs.Show
         public string? MainImageFileKey { get; set; }
         public required bool? IsReleased { get; set; }
         public required DateOnly? ReleaseDate { get; set; }
+        public DateTime? DeletedAt { get; set; }
     }
 }

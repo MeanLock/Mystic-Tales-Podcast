@@ -43,6 +43,7 @@ using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.Del
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.UnpublishPodcasterChannelsTerminatePodcasterForce;
 using PodcastService.BusinessLogic.Services.DbServices.CachingServices;
 using PodcastService.BusinessLogic.DTOs.SystemConfiguration;
+using PodcastService.BusinessLogic.Enums.Account;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -335,6 +336,107 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        public async Task<List<ChannelListItemResponseDTO>> GetFavoritedChannels(int accountId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "accountFavoritedPodcastChannels",
+                            QueryType = "findall",
+                            EntityType = "AccountFavoritedPodcastChannel",
+                            Parameters = JObject.FromObject(new
+                            {
+                                AccountId = accountId,
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                var allFavorites = result.Results["accountFavoritedPodcastChannels"].ToObject<List<AccountFavoritedPodcastChannelDTO>>();
+
+                // truy vấn channel và trả về
+                List<Guid> favoritedChannelIds = allFavorites.Select(af => af.PodcastChannelId).ToList();
+                var channelList = await _podcastChannelGenericRepository.FindAll(
+                    predicate: c => c.DeletedAt == null && favoritedChannelIds.Contains(c.Id),
+                    includeFunc: q => q
+                        .Include(pc => pc.PodcastCategory)
+                        .Include(pc => pc.PodcastSubCategory)
+                        .Include(pc => pc.PodcastChannelStatusTrackings)
+                        .ThenInclude(pct => pct.PodcastChannelStatus)
+                        .Include(pc => pc.PodcastChannelHashtags)
+                        .ThenInclude(pch => pch.Hashtag)
+                        .Include(pc => pc.PodcastShows)
+                        .ThenInclude(ps => ps.PodcastShowStatusTrackings)
+                ).ToListAsync();
+
+
+                var favoritedChannels = (await Task.WhenAll(channelList.Select(async pc =>
+                {
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(pc.PodcasterId);
+                    if (podcaster == null || podcaster.Id != pc.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + pc.PodcasterId + " does not exist");
+                    }
+                    return new ChannelListItemResponseDTO
+                    {
+                        Id = pc.Id,
+                        Name = pc.Name,
+                        Description = pc.Description,
+                        MainImageFileKey = pc.MainImageFileKey,
+                        BackgroundImageFileKey = pc.BackgroundImageFileKey,
+                        PodcastCategory = pc.PodcastCategory != null ? new PodcastCategoryDTO
+                        {
+                            Id = pc.PodcastCategory.Id,
+                            Name = pc.PodcastCategory.Name,
+                            MainImageFileKey = pc.PodcastCategory.MainImageFileKey
+                        } : null,
+                        PodcastSubCategory = pc.PodcastSubCategory != null ? new PodcastSubCategoryDTO
+                        {
+                            Id = pc.PodcastSubCategory.Id,
+                            Name = pc.PodcastSubCategory.Name,
+                            PodcastCategoryId = pc.PodcastSubCategory.PodcastCategoryId
+                        } : null,
+                        CurrentStatus = pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).Select(pct => new PodcastChannelStatusDTO
+                        {
+                            Id = pct.PodcastChannelStatus.Id,
+                            Name = pct.PodcastChannelStatus.Name
+                        }).FirstOrDefault()!,
+                        Hashtags = pc.PodcastChannelHashtags.Select(pch => new HashtagDTO
+                        {
+                            Id = pch.Hashtag.Id,
+                            Name = pch.Hashtag.Name
+                        }).ToList(),
+                        TotalFavorite = pc.TotalFavorite,
+                        ListenCount = pc.ListenCount,
+                        ShowCount = pc.PodcastShows != null ? pc.PodcastShows.Count(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId != (int)PodcastShowStatusEnum.Published && ps.DeletedAt == null) : 0,
+                        Podcaster = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.PodcasterProfileName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        CreatedAt = pc.CreatedAt,
+                        UpdatedAt = pc.UpdatedAt
+                    };
+                }))).ToList();
+
+
+
+                return favoritedChannels;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get favorited channels failed, error: " + ex.Message);
+            }
+        }
+
         public async Task<List<ChannelListItemResponseDTO>> GetChannelByPodcasterIdAsync(int podcasterId)
         {
             // tuân thủ cách viết ở trên
@@ -416,7 +518,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task<ChannelDetailResponseDTO> GetChannelByIdAsync(Guid channelId, int? role)
+        public async Task<ChannelDetailResponseDTO> GetChannelByIdAsync(Guid channelId, AccountStatusCache? requestedAccount)
         {
             try
             {
@@ -433,7 +535,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .ThenInclude(ps => ps.PodcastShowStatusTrackings)
                 );
 
-                if (role == null || role == 1)
+                if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1)
                 {
                     query = query.Where(pc => pc.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published);
                 }
@@ -456,7 +558,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             EntityType = "PodcastSubscription",
                             Parameters = JObject.FromObject(new
                             {
-                                where = (role == null || role == 1) ? new
+                                where = (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1) ? new
                                 {
                                     IsActive = (bool?)true,
                                     DeletedAt = (DateTime?)null,
@@ -489,7 +591,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
                 );
 
-                if (role == null || role == 1)
+                if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1)
                 {
                     showByChannelIdQuery = showByChannelIdQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && ps.IsReleased != null); // đã đăng và có ngày phát hành (có thể là đã phát hành hoặc sắp phát hành)
                 }
@@ -501,6 +603,32 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     throw new Exception("Podcaster with id " + channel.PodcasterId + " does not exist");
                 }
 
+                bool? IsFavoritedByCurrentUser = null;
+                if (requestedAccount != null && requestedAccount.RoleId != null && requestedAccount.RoleId == (int)RoleEnum.Customer)
+                {
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "accountFavoritedPodcastChannels",
+                            QueryType = "findall",
+                            EntityType = "AccountFavoritedPodcastChannel",
+                            Parameters = JObject.FromObject(new
+                            {
+                                AccountId = requestedAccount.Id,
+                                PodcastChannelId = channel.Id,
+                            })
+                        }
+                    }
+                    };
+                    var favoriteResult = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                    var allFavorites = favoriteResult.Results["accountFavoritedPodcastChannels"].ToObject<List<AccountFavoritedPodcastChannelDTO>>();
+                    IsFavoritedByCurrentUser = allFavorites != null && allFavorites.Count > 0;
+                }
+
+
 
                 var channelDetail = new ChannelDetailResponseDTO
                 {
@@ -509,6 +637,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Description = channel.Description,
                     MainImageFileKey = channel.MainImageFileKey,
                     BackgroundImageFileKey = channel.BackgroundImageFileKey,
+                    IsFavoritedByCurrentUser = IsFavoritedByCurrentUser,
                     PodcastCategory = channel.PodcastCategory != null ? new PodcastCategoryDTO
                     {
                         Id = channel.PodcastCategory.Id,
@@ -559,14 +688,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Language = ps.Language,
                         UploadFrequency = ps.UploadFrequency,
                         ReleaseDate = ps.ReleaseDate,
-                        TakenDownReason = role == null || role == 1 ? null : ps.TakenDownReason,
+                        TakenDownReason = requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1 ? null : ps.TakenDownReason,
                         // EpisodeCount = ps.PodcastEpisodes != null ? (
                         //     role == null || role == 1 ?
                         //      (ps.PodcastEpisodes.Count(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId != (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null)) : ((pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null)
                         //     )),
                         EpisodeCount = ps.PodcastEpisodes != null ? ps.PodcastEpisodes.Count(pe =>
                             {
-                                if (role == null || role == 1)
+                                if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1)
                                 {
                                     return pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null;
                                 }
@@ -718,7 +847,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 };
 
                 var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", podcastSubscriptionBatchRequest);
-
+                Console.WriteLine("Podcast Subscription Batch Result: " + result.ToString());
 
                 var showByChannelIdQuery = _podcastShowGenericRepository.FindAll(
                     predicate: ps => ps.DeletedAt == null && ps.PodcastChannelId == channel.Id,
@@ -750,6 +879,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Description = channel.Description,
                     MainImageFileKey = channel.MainImageFileKey,
                     BackgroundImageFileKey = channel.BackgroundImageFileKey,
+                    IsFavoritedByCurrentUser = null,
                     PodcastCategory = channel.PodcastCategory != null ? new PodcastCategoryDTO
                     {
                         Id = channel.PodcastCategory.Id,

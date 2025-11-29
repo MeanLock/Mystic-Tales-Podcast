@@ -13,6 +13,6 @@ namespace PodcastService.BusinessLogic.DTOs.Episode
         [Required]
         [EnumDataType(typeof(CustomerListenSessionProcedureSourceDetailTypeEnum))]
         public required CustomerListenSessionProcedureSourceDetailTypeEnum SourceType { get; set; }
-        public required List<PodcastSubscriptionBenefitDTO> CurrentPodcastSubscriptionRegistrationBenefitList { get; set; }
+        public required List<PodcastSubscriptionBenefitDTO>? CurrentPodcastSubscriptionRegistrationBenefitList { get; set; }
     }
 }

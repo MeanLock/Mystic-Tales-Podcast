@@ -11,6 +11,7 @@ namespace PodcastService.BusinessLogic.DTOs.Channel.Details
     {
         public List<PodcastSubscriptionListItemResponseDTO> PodcastSubscriptionList { get; set; } = new();
         public List<ShowListItemResponseDTO> ShowList { get; set; } = new();
+        public required bool? IsFavoritedByCurrentUser { get; set; }
 
 
 

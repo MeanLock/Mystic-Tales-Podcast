@@ -89,6 +89,7 @@ using UserService.BusinessLogic.DTOs.Account.ListItems;
 using UserService.BusinessLogic.Services.DbServices.CachingServices;
 using UserService.BusinessLogic.DTOs.SystemConfiguration;
 using UserService.BusinessLogic.DTOs.Account.Details;
+using UserService.BusinessLogic.DTOs.Cache.ListesnSessionProcedure;
 
 namespace UserService.BusinessLogic.Services.DbServices.UserServices
 {
@@ -129,6 +130,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
         // CACHING SERVICE
         private readonly AccountCachingService _accountCachingService;
+        private readonly CustomerListenSessionProcedureCachingService _customerListenSessionProcedureCachingService;
 
         // GOOGLE SERVICE
         private readonly FluentEmailService _fluentEmailService;
@@ -159,6 +161,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             IGenericRepository<AccountSavedPodcastEpisode> accountSavedPodcastEpisodeGenericRepository,
 
             AccountCachingService accountCachingService,
+            CustomerListenSessionProcedureCachingService customerListenSessionProcedureCachingService,
 
             FileIOHelper fileIOHelper,
             DateHelper dateHelper,
@@ -190,6 +193,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _accountSavedPodcastEpisodeGenericRepository = accountSavedPodcastEpisodeGenericRepository;
 
             _accountCachingService = accountCachingService;
+            _customerListenSessionProcedureCachingService = customerListenSessionProcedureCachingService;
 
             _fileIOHelper = fileIOHelper;
             _jwtHelper = jwtHelper;
@@ -859,6 +863,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     return new PodcastBuddyListItemResponseDTO
                     {
+                        PodcastBuddyAccount = new PodcastBuddyAccountDTO
+                        {
+                            MainImageFileKey = item.MainImageFileKey
+                        },
                         PodcastBuddyProfile = new PodcastBuddyProfileDTO
                         {
                             AccountId = item.PodcasterProfile.AccountId,
@@ -873,7 +881,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
                             IsVerified = item.PodcasterProfile.IsVerified,
                             IsFollowedByCurrentUser = item.AccountFollowedPodcasterPodcasters.Any(afp => afp.AccountId == requesterAccount.Id),
-                        },
+                        }, 
                         ReviewList = item.PodcastBuddyReviewPodcastBuddies?
                         .Where(r => r.Account != null).Select(r => new PodcastBuddyReviewListItemResponseDTO
                         {
@@ -1096,6 +1104,10 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                 return new PodcastBuddyListItemResponseDTO
                 {
+                    PodcastBuddyAccount = new PodcastBuddyAccountDTO
+                    {
+                        MainImageFileKey = podcaster.MainImageFileKey
+                    },
                     PodcastBuddyProfile = new PodcastBuddyProfileDTO
                     {
                         AccountId = podcaster.PodcasterProfile.AccountId,
@@ -1414,6 +1426,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             {
                 try
                 {
+                    if (updatePodcasterProfileParameterDTO.IsBuddy == true && (updatePodcasterProfileParameterDTO.PricePerBookingWord == null || updatePodcasterProfileParameterDTO.PricePerBookingWord < 0))
+                    {
+                        // throw new Exception("Price per booking word cannot be negative");
+                        throw new Exception("Price per booking word must be provided and cannot be negative when setting IsBuddy to true");
+                    }
+
                     var podcasterProfile = (await _podcasterProfileGenericRepository.FindAll(
                         predicate: a => a.AccountId == updatePodcasterProfileParameterDTO.AccountId,
                         includeFunc: null
@@ -1434,6 +1452,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                     podcasterProfile.Name = updatePodcasterProfileParameterDTO.Name;
                     podcasterProfile.Description = updatePodcasterProfileParameterDTO.Description;
+                    podcasterProfile.IsBuddy = updatePodcasterProfileParameterDTO.IsBuddy;
 
                     if (updatePodcasterProfileParameterDTO.PricePerBookingWord != null)
                     {
@@ -1727,7 +1746,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     account.LastViolationPointChanged = _dateHelper.GetNowByAppTimeZone();
 
                     // cập nhật violation level nếu account violation level hiện tại là 0
-                    if (account.ViolationLevel == 0)
+                    if (account.ViolationLevel == 0 && account.DeactivatedAt == null)
                     {
                         // var newViolationLevel = CalculateViolationLevel(account.ViolationPoint, activeSystemConfigProfile["AccountViolationLevelConfigs"] as JArray);
                         var newViolationLevel = CalculateViolationLevel(account.ViolationPoint, activeSystemConfigProfile.AccountViolationLevelConfigs);
@@ -5196,6 +5215,31 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                     throw new Exception("ResetAccountViolationLevelsAsync failed, error: " + ex.Message);
                 }
+            }
+        }
+
+        public async Task UpdateCustomerListenSessionProcedureRecords(int accountId, Guid customerListenSessionProcedureId, CustomerListenSessionProcedureUpdateInfoDTO customerListenSessionProcedureUpdateInfoDTO)
+        {
+            try
+            {
+                var customerListenSessionProcedureCache = await _customerListenSessionProcedureCachingService.GetProcedureAsync(accountId, customerListenSessionProcedureId);
+                if (customerListenSessionProcedureCache != null)
+                {
+                    customerListenSessionProcedureCache.PlayOrderMode = customerListenSessionProcedureUpdateInfoDTO.PlayOrderMode.ToString();
+                    customerListenSessionProcedureCache.IsAutoPlay = customerListenSessionProcedureUpdateInfoDTO.IsAutoPlay;
+
+                    await _customerListenSessionProcedureCachingService.UpdateProcedureAsync(accountId, customerListenSessionProcedureId, customerListenSessionProcedureCache);
+                }
+                else
+                {
+                    throw new Exception("CustomerListenSessionProcedure cache not found with Id: " + customerListenSessionProcedureId);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("UpdateCustomerListenSessionProcedureRecords failed, error: " + ex.Message);
+
             }
         }
     }

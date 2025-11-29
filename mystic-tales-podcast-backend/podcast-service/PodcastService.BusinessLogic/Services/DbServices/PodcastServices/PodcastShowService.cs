@@ -69,6 +69,7 @@ using PodcastService.BusinessLogic.DTOs.SystemConfiguration;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.KeepChannelShowsChannelDeletionForce;
 using Hangfire.Common;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.AssignShowChannel;
+using PodcastService.BusinessLogic.Enums.Account;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -393,6 +394,129 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
+        public async Task<List<ShowListItemResponseDTO>> GetFollowedShowsByAccountIdAsync(int accountId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "accountFollowedPodcastShows",
+                            QueryType = "findall",
+                            EntityType = "AccountFollowedPodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                AccountId = accountId,
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                var allFavorites = result.Results["accountFollowedPodcastShows"].ToObject<List<AccountFollowedPodcastShowDTO>>();
+                var followedShowIds = allFavorites.Select(af => af.PodcastShowId).ToList();
+
+                var showsQuery = _podcastShowGenericRepository.FindAll(
+                    predicate: ps => ps.DeletedAt == null && (ps.PodcastChannelId == null || ps.PodcastChannel.DeletedAt == null) && followedShowIds.Contains(ps.Id),
+                    includeFunc: q => q
+                        .Include(ps => ps.PodcastShowStatusTrackings)
+                        .ThenInclude(pst => pst.PodcastShowStatus)
+                        .Include(ps => ps.PodcastCategory)
+                        .Include(ps => ps.PodcastSubCategory)
+                        .Include(ps => ps.PodcastShowHashtags)
+                        .ThenInclude(psh => psh.Hashtag)
+                        .Include(ps => ps.PodcastShowSubscriptionType)
+                        .Include(ps => ps.PodcastChannel)
+                        .Include(ps => ps.PodcastEpisodes)
+                        .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
+                );
+
+                var showList = await showsQuery.ToListAsync();
+                var shows = (await Task.WhenAll(showList.Select(async ps =>
+                {
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(ps.PodcasterId);
+                    if (podcaster == null || podcaster.Id != ps.PodcasterId || podcaster.IsVerified == false || podcaster.HasVerifiedPodcasterProfile == false)
+                    {
+                        throw new Exception("Podcaster with id " + ps.PodcasterId + " does not exist");
+                    }
+                    return new ShowListItemResponseDTO
+                    {
+                        Id = ps.Id,
+                        Name = ps.Name,
+                        Description = ps.Description,
+                        MainImageFileKey = ps.MainImageFileKey,
+                        TrailerAudioFileKey = ps.TrailerAudioFileKey,
+                        TotalFollow = ps.TotalFollow,
+                        ListenCount = ps.ListenCount,
+                        AverageRating = ps.AverageRating,
+                        RatingCount = ps.RatingCount,
+                        Copyright = ps.Copyright,
+                        IsReleased = ps.IsReleased,
+                        Language = ps.Language,
+                        UploadFrequency = ps.UploadFrequency,
+                        ReleaseDate = ps.ReleaseDate,
+                        TakenDownReason = null,
+                        EpisodeCount = ps.PodcastEpisodes.Count(pe =>
+                        {
+                            return pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.DeletedAt == null;
+
+                        }),
+                        PodcastCategory = ps.PodcastCategory != null ? new PodcastCategoryDTO
+                        {
+                            Id = ps.PodcastCategory.Id,
+                            Name = ps.PodcastCategory.Name,
+                            MainImageFileKey = ps.PodcastCategory.MainImageFileKey
+                        } : null,
+                        PodcastSubCategory = ps.PodcastSubCategory != null ? new PodcastSubCategoryDTO
+                        {
+                            Id = ps.PodcastSubCategory.Id,
+                            Name = ps.PodcastSubCategory.Name,
+                            PodcastCategoryId = ps.PodcastSubCategory.PodcastCategoryId
+                        } : null,
+                        PodcastChannel = ps.PodcastChannel != null ? new PodcastChannelSnippetResponseDTO
+                        {
+                            Id = ps.PodcastChannel.Id,
+                            Name = ps.PodcastChannel.Name,
+                            Description = ps.PodcastChannel.Description,
+                            MainImageFileKey = ps.PodcastChannel.MainImageFileKey
+                        } : null,
+                        Podcaster = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            Email = podcaster.Email,
+                            FullName = podcaster.PodcasterProfileName,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        PodcastShowSubscriptionType = ps.PodcastShowSubscriptionType != null ? new PodcastShowSubscriptionTypeDTO
+                        {
+                            Id = ps.PodcastShowSubscriptionType.Id,
+                            Name = ps.PodcastShowSubscriptionType.Name
+                        } : null,
+                        Hashtags = ps.PodcastShowHashtags.Select(psh => new HashtagDTO
+                        {
+                            Id = psh.Hashtag.Id,
+                            Name = psh.Hashtag.Name
+                        }).ToList(),
+                        CreatedAt = ps.CreatedAt,
+                        UpdatedAt = ps.UpdatedAt,
+                        CurrentStatus = ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).Select(pst => new PodcastShowStatusDTO
+                        {
+                            Id = pst.PodcastShowStatus.Id,
+                            Name = pst.PodcastShowStatus.Name
+                        }).FirstOrDefault()!,
+                    };
+                }))).ToList();
+
+                return shows;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get followed shows failed, error: " + ex.Message);
+            }
+        }
         public async Task<List<ShowListItemResponseDTO>> GetShowsByPodcasterIdAsync(int podcasterId)
         {
             try
@@ -480,7 +604,53 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             }
         }
 
-        public async Task<ShowDetailResponseDTO> GetShowByIdAsync(Guid showId, int? role)
+        public async Task<List<PodcastShowSnippetResponseDTO>> GetDmcaAssignableShowsAsync()
+        {
+            try
+            {
+                var query = _podcastShowGenericRepository.FindAll(
+                    predicate: c => c.DeletedAt == null && (c.PodcastChannelId == null || c.PodcastChannel.DeletedAt == null),
+                    includeFunc: q => q
+                        .Include(pc => pc.PodcastShowStatusTrackings)
+                        .Include(pc => pc.PodcastChannel)
+                        .ThenInclude(pc => pc.PodcastChannelStatusTrackings)
+                );
+
+                var shows = await query.ToListAsync();
+
+                // lấy ra các show có status là publish/takendown và nằm trong channel phải publish
+                shows = shows.Where(ps =>
+                    (
+                        ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published ||
+                        ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.TakenDown
+                    )
+                    &&
+                    (
+                        ps.PodcastChannel == null ||
+                        (ps.PodcastChannel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId == (int)PodcastChannelStatusEnum.Published)
+                    )
+                ).ToList();
+
+                var showSnippets = shows.Select(ps => new PodcastShowSnippetResponseDTO
+                {
+                    Id = ps.Id,
+                    Name = ps.Name,
+                    MainImageFileKey = ps.MainImageFileKey,
+                    Description = ps.Description,
+                    IsReleased = ps.IsReleased,
+                    ReleaseDate = ps.ReleaseDate
+                }).ToList();
+                return showSnippets;
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("Get show snippets failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<ShowDetailResponseDTO> GetShowByIdAsync(Guid showId, AccountStatusCache? requestedAccount)
         {
             try
             {
@@ -499,7 +669,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .Include(pc => pc.PodcastShowReviews)
                 );
 
-                if (role == null || role == 1)
+                if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1)
                 {
                     query = query.Where(pc => pc.PodcastShowStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && pc.IsReleased != null); // đã đăng và có ngày phát hành (có thể là đã phát hành hoặc sắp phát hành)
                 }
@@ -512,7 +682,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 // kiểm tra có thuộc về 1 channel đang được publish hay không, Customer không thấy được những show thuộc kênh chưa được publish hoặc đã bị xóa
                 if (show.PodcastChannel != null && (show.PodcastChannel.PodcastChannelStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastChannelStatusId != (int)PodcastChannelStatusEnum.Published || show.PodcastChannel.DeletedAt != null))
                 {
-                    if (role == null || role == 1)
+                    if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1)
                     {
                         throw new Exception("Show with id " + showId + " does not exist");
                     }
@@ -535,7 +705,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             EntityType = "PodcastSubscription",
                             Parameters = JObject.FromObject(new
                             {
-                                where = (role == null || role == 1) ? new
+                                where = (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1) ? new
                                 {
                                     IsActive = (bool?)true,
                                     DeletedAt = (DateTime?)null,
@@ -564,7 +734,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         .Include(pe => pe.PodcastEpisodeSubscriptionType)
                 );
 
-                if (role == null || role == 1)
+                if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1)
                 {
                     episodeByShowIdQuery = episodeByShowIdQuery.Where(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.IsReleased != null);
                 }
@@ -597,6 +767,31 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     };
                 }))).ToList();
 
+                bool? IsFollowedByCurrentUser = null;
+                if (requestedAccount != null && requestedAccount.RoleId != null && requestedAccount.RoleId == (int)RoleEnum.Customer)
+                {
+                    var batchRequest = new BatchQueryRequest
+                    {
+                        Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "accountFollowedPodcastShows",
+                            QueryType = "findall",
+                            EntityType = "AccountFollowedPodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                AccountId = requestedAccount.Id,
+                                PodcastShowId = show.Id,
+                            })
+                        }
+                    }
+                    };
+                    var followedResult = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+                    var followedShow = followedResult.Results["accountFollowedPodcastShows"].ToObject<List<AccountFollowedPodcastShowDTO>>().FirstOrDefault();
+                    IsFollowedByCurrentUser = followedShow != null;
+                }
+
                 var showDetail = new ShowDetailResponseDTO
                 {
                     Id = show.Id,
@@ -609,6 +804,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     AverageRating = show.AverageRating,
                     RatingCount = show.RatingCount,
                     EpisodeCount = episodeList.Count,
+                    IsFollowedByCurrentUser = IsFollowedByCurrentUser,
                     CurrentStatus = show.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).Select(pst => new PodcastShowStatusDTO
                     {
                         Id = pst.PodcastShowStatus.Id,
@@ -619,7 +815,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Language = show.Language,
                     UploadFrequency = show.UploadFrequency,
                     ReleaseDate = show.ReleaseDate,
-                    TakenDownReason = role == null || role == 1 ? null : show.TakenDownReason,
+                    TakenDownReason = requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1 ? null : show.TakenDownReason,
                     PodcastCategory = show.PodcastCategory != null ? new PodcastCategoryDTO
                     {
                         Id = show.PodcastCategory.Id,
@@ -714,7 +910,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         ListenCount = pe.ListenCount,
                         MainImageFileKey = pe.MainImageFileKey,
                         SeasonNumber = pe.SeasonNumber,
-                        TakenDownReason = role == null || role == 1 ? null : pe.TakenDownReason,
+                        TakenDownReason = requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1 ? null : pe.TakenDownReason,
                         TotalSave = pe.TotalSave,
                         Hashtags = pe.PodcastEpisodeHashtags.Select(peh => new HashtagDTO
                         {
@@ -865,6 +1061,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     Id = show.Id,
                     Name = show.Name,
                     Description = show.Description,
+                    IsFollowedByCurrentUser = null,
                     MainImageFileKey = show.MainImageFileKey,
                     TrailerAudioFileKey = show.TrailerAudioFileKey,
                     TotalFollow = show.TotalFollow,
@@ -2699,7 +2896,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                                 .OrderByDescending(pet => pet.CreatedAt)
                                                 .FirstOrDefault();
 
-                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.ReadyToRelease && currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Draft)
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.ReadyToRelease && currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Draft && currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed)
                         {
                             // nếu có ít nhất 1 episode ở trạng thái published thì chuyển thành ready to release, ngược lại là draft
                             bool hasPublishedEpisode = false;
@@ -2786,7 +2983,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             .OrderByDescending(pst => pst.CreatedAt)
                             .FirstOrDefault();
 
-                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Draft)
+                        if (currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Draft && currentStatusTracking.PodcastShowStatusId != (int)PodcastShowStatusEnum.Removed)
                         {
                             var newStatusTracking = new PodcastShowStatusTracking
                             {

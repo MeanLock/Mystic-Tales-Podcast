@@ -8,5 +8,6 @@ namespace PodcastService.BusinessLogic.DTOs.Episode
         public string? MainImageFileKey { get; set; }
         public required bool? IsReleased { get; set; }
         public required DateOnly? ReleaseDate { get; set; }
+        public required int? AudioLength { get; set; }
     }
 }
