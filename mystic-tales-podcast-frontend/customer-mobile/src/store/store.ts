@@ -4,6 +4,7 @@ import { appApi } from "@/src/core/api/appApi/index"; // <-- thay path đúng v�
 import authReducer from "../features/auth/authSlice";
 import downloadsReducer from "../features/download/downloadSlice";
 import alertReducer from "../features/alert/alertSlice";
+import episodeReducer from "../features/episode/episodeSlice";
 
 // persist
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -29,6 +30,7 @@ const rootReducer = combineReducers({
   downloads: downloadsReducer,
   player: playerReducer,
   alert: alertReducer,
+  episode: episodeReducer,
   [appApi.reducerPath]: appApi.reducer, // <-- thay baseApi bằng appApi
 });
 

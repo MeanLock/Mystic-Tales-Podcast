@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -19,9 +18,12 @@ import { router, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { User } from "@/src/types/user";
 import { logoutLocal } from "@/src/features/auth/authSlice";
-import { useUpdateAccountInformationsMutation, useUpdateAccountMeQuery } from "@/src/core/services/account/account.service";
+import {
+  useUpdateAccountInformationsMutation,
+  useUpdateAccountMeQuery,
+} from "@/src/core/services/account/account.service";
 import MixxingText from "@/src/components/ui/MixxingText";
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker";
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 
 type UpdateInformationsForm = {
@@ -40,9 +42,12 @@ type AccountUpdateInfoErrors = Partial<
 >;
 
 const ProfilePage = () => {
-  const [accountInformation, setAccountInformation] =
-    useState<any | null>(null);
-  const [tempUploadedImageUri, setTempUploadedImageUri] = useState<string | null>(null);
+  const [accountInformation, setAccountInformation] = useState<any | null>(
+    null
+  );
+  const [tempUploadedImageUri, setTempUploadedImageUri] = useState<
+    string | null
+  >(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] =
     useState<boolean>(false);
@@ -139,12 +144,9 @@ const ProfilePage = () => {
     setUpdateSuccessMessage(null);
   };
   const handleDateChange = (event: any, selectedDate?: Date) => {
-
-
-    if (event.type === 'set' && selectedDate) {
+    if (event.type === "set" && selectedDate) {
       const isoString = selectedDate.toISOString();
-      handleInputChange('Dob', isoString);
-
+      handleInputChange("Dob", isoString);
     }
   };
   const getDateValue = () => {
@@ -153,10 +155,14 @@ const ProfilePage = () => {
     return new Date(dobIso);
   };
   const handleUploadAvatarClick = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permissionResult.granted) {
-      Alert.alert("Permission Required", "Please grant camera roll permissions to upload an avatar.");
+      Alert.alert(
+        "Permission Required",
+        "Please grant camera roll permissions to upload an avatar."
+      );
       return;
     }
 
@@ -195,12 +201,12 @@ const ProfilePage = () => {
     setFormState((prev) =>
       prev
         ? {
-          ...prev,
-          AccountUpdateInfo: {
-            ...prev.AccountUpdateInfo,
-            [field]: value,
-          },
-        }
+            ...prev,
+            AccountUpdateInfo: {
+              ...prev.AccountUpdateInfo,
+              [field]: value,
+            },
+          }
         : prev
     );
     setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -245,9 +251,9 @@ const ProfilePage = () => {
   };
 
   /**
-     * options.onlyAvatar = true → chỉ update avatar, AccountUpdateInfo lấy giá trị cũ
-     * options.file = file avatar mới
-     */
+   * options.onlyAvatar = true → chỉ update avatar, AccountUpdateInfo lấy giá trị cũ
+   * options.file = file avatar mới
+   */
   const handleSaveEdit = async (options?: {
     onlyAvatar?: boolean;
     file?: File | { uri: string; type: string; name: string; size?: number };
@@ -335,9 +341,9 @@ const ProfilePage = () => {
       setFormState((prev) =>
         prev
           ? {
-            ...prev,
-            MainImageFile: null,
-          }
+              ...prev,
+              MainImageFile: null,
+            }
           : prev
       );
     } catch (error: any) {
@@ -465,9 +471,16 @@ const ProfilePage = () => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       <View style={{ height: 50 }} />
-      <MixxingText style={styles.title} originalText="Your Profile" coloredText="Profile" />
+      <MixxingText
+        style={styles.title}
+        originalText="Your Profile"
+        coloredText="Profile"
+      />
       <View style={styles.section}>
         <View style={styles.avatarCard}>
           {tempUploadedImageUri ? (
@@ -477,9 +490,21 @@ const ProfilePage = () => {
                 source={{ uri: tempUploadedImageUri }}
                 style={styles.avatar}
               />
-              <View style={[styles.avatarOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.4)' }]}>
+              <View
+                style={[
+                  styles.avatarOverlay,
+                  { backgroundColor: "rgba(0, 0, 0, 0.4)" },
+                ]}
+              >
                 <ActivityIndicator size="small" color="#aee339" />
-                <Text style={[styles.avatarOverlayText, { fontSize: 12, marginTop: 8 }]}>Uploading...</Text>
+                <Text
+                  style={[
+                    styles.avatarOverlayText,
+                    { fontSize: 12, marginTop: 8 },
+                  ]}
+                >
+                  Uploading...
+                </Text>
               </View>
             </View>
           ) : accountInformation?.MainImageFileKey ? (
@@ -518,7 +543,10 @@ const ProfilePage = () => {
             <Text style={styles.sectionTitle}>Personal Info</Text>
 
             {!isEditing ? (
-              <TouchableOpacity style={styles.editButton} onPress={handleToggleEdit}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={handleToggleEdit}
+              >
                 <Ionicons name="create-outline" size={20} color="black" />
                 <Text style={styles.buttonText}>Edit Profile</Text>
               </TouchableOpacity>
@@ -527,14 +555,20 @@ const ProfilePage = () => {
                 <TouchableOpacity
                   onPress={handleToggleEdit}
                   disabled={isUpdating}
-                  style={[styles.cancelButton, isUpdating && styles.disabledButton]}
+                  style={[
+                    styles.cancelButton,
+                    isUpdating && styles.disabledButton,
+                  ]}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleSaveEdit()}
                   disabled={isUpdating}
-                  style={[styles.saveButton, isUpdating && styles.disabledButton]}
+                  style={[
+                    styles.saveButton,
+                    isUpdating && styles.disabledButton,
+                  ]}
                 >
                   <Text style={styles.saveButtonText}>
                     {isUpdating ? "Saving..." : "Save Changes"}
@@ -561,7 +595,9 @@ const ProfilePage = () => {
                     placeholderTextColor="#666"
                   />
                   {fieldErrors.FullName && (
-                    <Text style={styles.fieldError}>{fieldErrors.FullName}</Text>
+                    <Text style={styles.fieldError}>
+                      {fieldErrors.FullName}
+                    </Text>
                   )}
                 </>
               ) : (
@@ -574,9 +610,7 @@ const ProfilePage = () => {
             {/* Email - chỉ view */}
             <View style={styles.fieldWrapper}>
               <Text style={styles.fieldLabel}>Email</Text>
-              <Text style={styles.fieldValue}>
-                {accountInformation?.Email}
-              </Text>
+              <Text style={styles.fieldValue}>{accountInformation?.Email}</Text>
             </View>
 
             {/* Phone */}
@@ -612,9 +646,19 @@ const ProfilePage = () => {
                       style={styles.pickerButton}
                       onPress={() => {
                         Alert.alert("Select Gender", "", [
-                          { text: "Male", onPress: () => handleInputChange("Gender", "Male") },
-                          { text: "Female", onPress: () => handleInputChange("Gender", "Female") },
-                          { text: "Other", onPress: () => handleInputChange("Gender", "Other") },
+                          {
+                            text: "Male",
+                            onPress: () => handleInputChange("Gender", "Male"),
+                          },
+                          {
+                            text: "Female",
+                            onPress: () =>
+                              handleInputChange("Gender", "Female"),
+                          },
+                          {
+                            text: "Other",
+                            onPress: () => handleInputChange("Gender", "Other"),
+                          },
                           { text: "Cancel", style: "cancel" },
                         ]);
                       }}
@@ -645,9 +689,21 @@ const ProfilePage = () => {
                     style={styles.input}
                     onPress={() => setShowDatePicker(!showDatePicker)}
                   >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={styles.fieldValue}>{getDobDisplayValue()}</Text>
-                      <Ionicons name="calendar-outline" size={20} color="#aee339" />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={styles.fieldValue}>
+                        {getDobDisplayValue()}
+                      </Text>
+                      <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color="#aee339"
+                      />
                     </View>
                   </TouchableOpacity>
 
@@ -655,7 +711,7 @@ const ProfilePage = () => {
                     <DateTimePicker
                       value={getDateValue()}
                       mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
                       onChange={handleDateChange}
                       maximumDate={new Date()}
                       minimumDate={new Date(1900, 0, 1)}
@@ -724,7 +780,9 @@ const ProfilePage = () => {
             onPress={handleResetPassword}
           >
             <Ionicons name="lock-closed-outline" size={20} color="white" />
-            <Text style={[styles.buttonText, { color: "#fff" }]}>Reset Password</Text>
+            <Text style={[styles.buttonText, { color: "#fff" }]}>
+              Reset Password
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -814,7 +872,9 @@ const ProfilePage = () => {
                 <Text style={styles.errorMessage}>{resetPasswordError}</Text>
               )}
               {resetPasswordSuccess && (
-                <Text style={styles.successMessage}>{resetPasswordSuccess}</Text>
+                <Text style={styles.successMessage}>
+                  {resetPasswordSuccess}
+                </Text>
               )}
             </View>
 
@@ -836,12 +896,8 @@ const ProfilePage = () => {
                 </Text>
               </TouchableOpacity> */}
               {/* Thịnh để tạm sau này có thì mở cái trên */}
-              <TouchableOpacity
-                style={[styles.modalConfirmButton]}
-              >
-                <Text style={styles.modalConfirmText}>
-                  Reset Password
-                </Text>
+              <TouchableOpacity style={[styles.modalConfirmButton]}>
+                <Text style={styles.modalConfirmText}>Reset Password</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -935,7 +991,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
     alignSelf: "flex-start",
-
   },
   buttonTextGreen: {
     color: "#aee339",

@@ -8,6 +8,11 @@ import { EpisodeFromShow } from "@/src/core/types/episode.type";
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 import PlayButtonVariant1 from "@/src/components/buttons/playButton/playButtonVariant1";
 import PlayButtonVariant2 from "@/src/components/buttons/playButton/playButtonVariant2";
+import { useDispatch } from "react-redux";
+import {
+  setEpisodes,
+  setEpisodesData,
+} from "@/src/features/episode/episodeSlice";
 
 interface EpisodeListProps {
   episodes: EpisodeFromShow[];
@@ -117,6 +122,21 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
     );
   }, [episodes]);
 
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const handleViewMoreEpisodesFromShow = () => {
+    // Implement navigation or action to view more episodes from the show
+    dispatch(
+      setEpisodesData({
+        episodes: episodes as EpisodeFromShow[],
+        title: `Show: ${episodes[0]?.PodcastShow?.Name || "Episodes"}`,
+        from: "ShowDetails",
+      })
+    );
+    // Navigate to the episodes list page
+    router.push(`/(content)/episodes`);
+  };
+
   return (
     <View className="w-full">
       <Pressable
@@ -136,7 +156,10 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
 
       {/* Show "See all" button if there are more than 4 episodes */}
       {episodes.length > 4 && (
-        <Pressable className="w-full flex flex-row items-center justify-between py-3">
+        <Pressable
+          onPress={() => handleViewMoreEpisodesFromShow()}
+          className="w-full flex flex-row items-center justify-between py-3"
+        >
           <Text className="font-bold text-[#AEE339]">
             See all ({episodes.length})
           </Text>
