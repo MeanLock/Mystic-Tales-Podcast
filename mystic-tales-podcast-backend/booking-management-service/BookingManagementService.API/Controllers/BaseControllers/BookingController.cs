@@ -747,6 +747,22 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 BookingList = result
             });
         }
+        [HttpGet("get-completed-booking/{BookingId")]
+        [Authorize("BasicAccess")]
+        public async Task<IActionResult> GetCompletedBookingDetail([FromRoute] int BookingId)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var result = await _bookingService.GetCompletedBookingDetailByAccountIdAsync(accountId, BookingId);
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No completed bookings found for the current user.");
+            //}
+            return Ok(new
+            {
+                BookingList = result
+            });
+        }
         [HttpGet("{BookingId}/result")]
         [Authorize("BasicAccess")]
         public async Task<IActionResult> GetBookingResultById(int BookingId)
