@@ -1,8 +1,10 @@
 import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 import PlayButtonVariant1 from "@/src/components/buttons/playButton/playButtonVariant1";
 import { Episode } from "@/src/core/types/episode.type";
+import { playAudio } from "@/src/features/mediaPlayer/playerSlice";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
+import { useDispatch } from "react-redux";
 
 const calculateReleaseDate = (releaseDate: string): string => {
   const date = new Date(releaseDate);
@@ -39,9 +41,14 @@ const formatAudioLength = (seconds: number): string => {
 };
 
 const EpisodeCard = ({ episode }: { episode: Episode }) => {
+  const dispatch = useDispatch();
   const handlePlayEpisodeFromSavedCard = () => {
-    // Implement play functionality here
-    console.log("Play episode with ID:", episode.Id);
+    dispatch(
+      playAudio({
+        sourceType: "SavedEpisodes",
+        audioId: episode.Id,
+      })
+    );
   };
   return (
     <View style={styles.episodeCardContainer}>

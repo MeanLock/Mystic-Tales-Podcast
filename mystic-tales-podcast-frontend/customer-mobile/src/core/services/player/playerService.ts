@@ -5,6 +5,7 @@ import type {
   ListenSessionProcedure,
 } from "@/src/core/types/audio.type";
 import { appApi } from "../../api/appApi";
+import * as SecureStore from "expo-secure-store";
 
 type CurrentPodcastSubscriptionRegistrationBenefit = {
   Id: number;
@@ -26,27 +27,38 @@ export const playerApi = appApi.injectEndpoints({
         continue_listen_session_id?: string;
       }
     >({
-      query: ({
-        PodcastEpisodeId,
-        SourceType,
-        CurrentPodcastSubscriptionRegistrationBenefitList,
-        continue_listen_session_id,
-      }) => ({
-        url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}/listen${
-          continue_listen_session_id
-            ? `?continue_listen_session_id=${continue_listen_session_id}`
-            : ""
-        }`,
-        method: "POST",
-        authMode: "required",
-        body: {
+      async queryFn(
+        {
+          PodcastEpisodeId,
           SourceType,
           CurrentPodcastSubscriptionRegistrationBenefitList,
+          continue_listen_session_id,
         },
-        headers: {
-          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
-        },
-      }),
+        _api,
+        _extraOptions,
+        baseQuery
+      ) {
+        const deviceToken =
+          (await SecureStore.getItemAsync("device_info_token")) || "";
+        const result = await baseQuery({
+          url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}/listen${
+            continue_listen_session_id
+              ? `?continue_listen_session_id=${continue_listen_session_id}`
+              : ""
+          }`,
+          method: "POST",
+          authMode: "required",
+          body: {
+            SourceType,
+            CurrentPodcastSubscriptionRegistrationBenefitList,
+          },
+          headers: {
+            "X-DeviceInfo-Token": deviceToken,
+          },
+        });
+        if (result.error) return { error: result.error as any };
+        return { data: result.data as any };
+      },
       invalidatesTags: ["Account"],
     }),
 
@@ -61,17 +73,28 @@ export const playerApi = appApi.injectEndpoints({
         BookingPodcastTrackId: string;
       }
     >({
-      query: ({ BookingId, BookingPodcastTrackId }) => ({
-        url: `/api/booking-management-service/api/bookings/${BookingId}/booking-podcast-tracks/${BookingPodcastTrackId}/listen`,
-        method: "POST",
-        authMode: "required",
-        body: {
-          SourceType: "BookingProducingTracks",
-        },
-        headers: {
-          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
-        },
-      }),
+      async queryFn(
+        { BookingId, BookingPodcastTrackId },
+        _api,
+        _extra,
+        baseQuery
+      ) {
+        const deviceToken =
+          (await SecureStore.getItemAsync("device_info_token")) || "";
+        const result = await baseQuery({
+          url: `/api/booking-management-service/api/bookings/${BookingId}/booking-podcast-tracks/${BookingPodcastTrackId}/listen`,
+          method: "POST",
+          authMode: "required",
+          body: {
+            SourceType: "BookingProducingTracks",
+          },
+          headers: {
+            "X-DeviceInfo-Token": deviceToken,
+          },
+        });
+        if (result.error) return { error: result.error as any };
+        return { data: result.data as any };
+      },
       invalidatesTags: ["Account"],
     }),
 
@@ -90,26 +113,37 @@ export const playerApi = appApi.injectEndpoints({
           | null;
       }
     >({
-      query: ({
-        ListenSessionNavigateType,
-        ListenSessionId,
-        ListenSessionProcedureId,
-        CurrentPodcastSubscriptionRegistrationBenefitList,
-      }) => ({
-        url: `/api/podcast-service/api/episodes/listen-sessions/navigate?listen_session_navigate_type=${ListenSessionNavigateType}`,
-        method: "POST",
-        authMode: "required",
-        body: {
-          CurrentListenSession: {
-            ListenSessionId,
-            ListenSessionProcedureId,
-          },
+      async queryFn(
+        {
+          ListenSessionNavigateType,
+          ListenSessionId,
+          ListenSessionProcedureId,
           CurrentPodcastSubscriptionRegistrationBenefitList,
         },
-        headers: {
-          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
-        },
-      }),
+        _api,
+        _extra,
+        baseQuery
+      ) {
+        const deviceToken =
+          (await SecureStore.getItemAsync("device_info_token")) || "";
+        const result = await baseQuery({
+          url: `/api/podcast-service/api/episodes/listen-sessions/navigate?listen_session_navigate_type=${ListenSessionNavigateType}`,
+          method: "POST",
+          authMode: "required",
+          body: {
+            CurrentListenSession: {
+              ListenSessionId,
+              ListenSessionProcedureId,
+            },
+            CurrentPodcastSubscriptionRegistrationBenefitList,
+          },
+          headers: {
+            "X-DeviceInfo-Token": deviceToken,
+          },
+        });
+        if (result.error) return { error: result.error as any };
+        return { data: result.data as any };
+      },
       invalidatesTags: ["Account"],
     }),
 
@@ -128,24 +162,35 @@ export const playerApi = appApi.injectEndpoints({
           | null;
       }
     >({
-      query: ({
-        ListenSessionNavigateType,
-        ListenSessionId,
-        ListenSessionProcedureId,
-      }) => ({
-        url: `/api/booking-management-service/api/bookings/listen-sessions/navigate?listen_session_navigate_type=${ListenSessionNavigateType}`,
-        method: "POST",
-        authMode: "required",
-        body: {
-          CurrentListenSession: {
-            ListenSessionId,
-            ListenSessionProcedureId,
+      async queryFn(
+        {
+          ListenSessionNavigateType,
+          ListenSessionId,
+          ListenSessionProcedureId,
+        },
+        _api,
+        _extra,
+        baseQuery
+      ) {
+        const deviceToken =
+          (await SecureStore.getItemAsync("device_info_token")) || "";
+        const result = await baseQuery({
+          url: `/api/booking-management-service/api/bookings/listen-sessions/navigate?listen_session_navigate_type=${ListenSessionNavigateType}`,
+          method: "POST",
+          authMode: "required",
+          body: {
+            CurrentListenSession: {
+              ListenSessionId,
+              ListenSessionProcedureId,
+            },
           },
-        },
-        headers: {
-          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
-        },
-      }),
+          headers: {
+            "X-DeviceInfo-Token": deviceToken,
+          },
+        });
+        if (result.error) return { error: result.error as any };
+        return { data: result.data as any };
+      },
       invalidatesTags: ["Account"],
     }),
 
@@ -281,14 +326,20 @@ export const playerApi = appApi.injectEndpoints({
       },
       void
     >({
-      query: () => ({
-        url: `/api/podcast-service/api/episodes/listen-sessions/latest`,
-        method: "GET",
-        authMode: "required",
-        headers: {
-          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
-        },
-      }),
+      async queryFn(_arg, _api, _extra, baseQuery) {
+        const deviceToken =
+          (await SecureStore.getItemAsync("device_info_token")) || "";
+        const result = await baseQuery({
+          url: `/api/podcast-service/api/episodes/listen-sessions/latest`,
+          method: "GET",
+          authMode: "required",
+          headers: {
+            "X-DeviceInfo-Token": deviceToken,
+          },
+        });
+        if (result.error) return { error: result.error as any };
+        return { data: result.data as any };
+      },
     }),
 
     getBookingLatestSession: build.query<
@@ -298,14 +349,20 @@ export const playerApi = appApi.injectEndpoints({
       },
       void
     >({
-      query: () => ({
-        url: `/api/booking-management-service/api/bookings/listen-sessions/latest`,
-        method: "GET",
-        authMode: "required",
-        headers: {
-          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
-        },
-      }),
+      async queryFn(_arg, _api, _extra, baseQuery) {
+        const deviceToken =
+          (await SecureStore.getItemAsync("device_info_token")) || "";
+        const result = await baseQuery({
+          url: `/api/booking-management-service/api/bookings/listen-sessions/latest`,
+          method: "GET",
+          authMode: "required",
+          headers: {
+            "X-DeviceInfo-Token": deviceToken,
+          },
+        });
+        if (result.error) return { error: result.error as any };
+        return { data: result.data as any };
+      },
     }),
   }),
 });

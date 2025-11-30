@@ -198,8 +198,7 @@ export default function PlayerCore() {
                 if (user?.PodcastListenSlot === 0) {
                   dispatch(
                     setError({
-                      message:
-                        "You have no listen slots left.",
+                      message: "You have no listen slots left.",
                       autoClose: 10,
                     })
                   );
@@ -518,9 +517,7 @@ export default function PlayerCore() {
             MainImageFileKey:
               episodeSession.PodcastEpisode.MainImageFileKey || "", // Will be resolved later if needed
             PodcasterName: episodeSession.Podcaster.FullName || "Unknown",
-            AudioLength:
-              episodeSession.PodcastEpisodeListenSession
-                .LastListenDurationSeconds || 0,
+            AudioLength: episodeSession.PodcastEpisode.AudioLength || 0,
           };
         } else if (sourceType === "BookingProducingTracks") {
           const bookingSession = listenResult as ListenSessionBookingTracks;

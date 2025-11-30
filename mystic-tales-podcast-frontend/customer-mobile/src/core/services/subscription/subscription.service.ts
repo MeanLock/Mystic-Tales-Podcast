@@ -1,4 +1,3 @@
-;
 import type { Channel } from "@/src/core/types/channel.type";
 import type { Show } from "@/src/core/types/show.type";
 import type {
@@ -11,7 +10,7 @@ import { appApi } from "../../api/appApi";
 
 type SubscriptionApiResponse = {
   PodcastSubscriptionRegistration?: {
-    PodcastSubscriptionBenefit?: SubscriptionBenefit[];
+    PodcastSubscriptionBenefitList?: SubscriptionBenefit[];
   };
 };
 
@@ -139,6 +138,7 @@ const subscriptionApi = appApi.injectEndpoints({
       }),
     }),
 
+    // Lấy danh sách các benefit mà Customer có được đối với episode này
     getSubscriptionBenefitsMapListFromEpisodeId: build.query<
       {
         CurrentPodcastSubscriptionRegistrationBenefitList: SubscriptionBenefit[];
@@ -155,7 +155,7 @@ const subscriptionApi = appApi.injectEndpoints({
 
         const benefits =
           response?.PodcastSubscriptionRegistration
-            ?.PodcastSubscriptionBenefit ?? [];
+            ?.PodcastSubscriptionBenefitList ?? [];
 
         console.log("Fetched Benefits:", benefits);
 
@@ -170,6 +170,22 @@ const subscriptionApi = appApi.injectEndpoints({
       },
     }),
 
+    // Kiểm tra coi có Non-quota không
+    getIsHasNonQuotaAccess: build.query<boolean, { PodcastEpisodeId: string }>({
+      query: ({ PodcastEpisodeId }) => ({
+        url: `/api/subscription-service/api/podcast-subscriptions/podcast-subscriptions-registrations/episodes/${PodcastEpisodeId}`,
+        method: "GET",
+        authMode: "required",
+      }),
+      transformResponse: (response: SubscriptionApiResponse) => {
+        const benefits =
+          response?.PodcastSubscriptionRegistration
+            ?.PodcastSubscriptionBenefitList ?? [];
+        return benefits.some((b) => b.Id === 1);
+      },
+    }),
+
+    // Lấy nội dung mà user đã đăng ký subscription
     getSubscribedContents: build.query<
       {
         PodcastChannelList: Channel[];
@@ -271,4 +287,5 @@ export const {
   useCancelSubscriptionRegistrationMutation,
   useMakeDecisionOnAcceptingNewestVersionMutation,
   useGetRegistrationDetailsQuery,
+  useLazyGetIsHasNonQuotaAccessQuery,
 } = subscriptionApi;

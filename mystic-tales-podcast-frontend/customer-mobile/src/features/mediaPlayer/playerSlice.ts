@@ -14,8 +14,11 @@ export type PlayerType = {
   listenSessionProcedure: ListenSessionProcedure;
   bookingId: number | null;
   seekTo: number | null;
+  seekDelta: number | null;
   continue_listen_session_id: string | null;
   isBuffering: boolean;
+  playbackPosition: number; // giây
+  playbackDuration: number; // giây
 };
 
 /** ===== Initial ===== */
@@ -36,6 +39,9 @@ const initialState: PlayerType = {
   continue_listen_session_id: null,
   isBuffering: false,
   seekTo: null,
+  seekDelta: null,
+  playbackPosition: 0,
+  playbackDuration: 0,
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -136,6 +142,31 @@ const playerSlice = createSlice({
     setBuffering: (state, action: PayloadAction<boolean>) => {
       state.isBuffering = action.payload;
     },
+
+    // ACTION 13 //
+    seekTo: (state, action: PayloadAction<{ position: number }>) => {
+      state.seekTo = action.payload.position;
+    },
+
+    // ACTION 14 //
+    seekBy: (state, action: PayloadAction<{ delta: number }>) => {
+      state.seekDelta = action.payload.delta;
+    },
+
+    // ACTION 15 //
+    consumeSeek: (state) => {
+      state.seekTo = null;
+      state.seekDelta = null;
+    },
+
+    // ACTION 16 //
+    setPlaybackState: (
+      state,
+      action: PayloadAction<{ position: number; duration: number }>
+    ) => {
+      state.playbackPosition = action.payload.position; // giây
+      state.playbackDuration = action.payload.duration; // giây
+    },
   },
 });
 
@@ -152,6 +183,10 @@ export const {
   setUIIsAutoPlay,
   setUIPlayOrderMode,
   setBuffering,
+  seekTo,
+  seekBy,
+  consumeSeek,
+  setPlaybackState
 } = playerSlice.actions;
 
 export default playerSlice.reducer;

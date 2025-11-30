@@ -58,6 +58,7 @@ const PlayButtonVariant2 = ({
       <Pressable
         style={style.playButton}
         onPress={() => dispatch(pauseAudio())}
+        className="w-8/12"
       >
         <EqualizerVariant1 color="#AEE339" />
         <Text className="text-[#AEE339] text-xs font-bold">
@@ -88,12 +89,13 @@ export default PlayButtonVariant2;
 
 const style = StyleSheet.create({
   playButton: {
-    backgroundColor: "rgba(217, 217, 217, 0.2)",
+    borderRadius: 999,
     paddingVertical: 5,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(217, 217, 217, 0.2)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    borderRadius: 8,
   },
 });

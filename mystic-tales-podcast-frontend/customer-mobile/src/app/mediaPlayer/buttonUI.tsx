@@ -1,6 +1,11 @@
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
-import { pause, play, seekBy } from "@/src/features/mediaPlayer/playerSlice";
+import {
+  pauseAudio,
+  playAudio,
+  seekBy,
+} from "@/src/features/mediaPlayer/playerSlice";
 import { RootState } from "@/src/store/store";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet } from "react-native";
@@ -12,33 +17,50 @@ const PlayerButtonUI = () => {
   const dispatch = useDispatch();
 
   const handlePausePress = () => {
-    dispatch(pause());
+    dispatch(pauseAudio());
   };
 
   const handlePlayPress = () => {
-    dispatch(play());
+    if (!playerState.listenSessionProcedure || !playerState.currentAudio) {
+      return;
+    }
+    dispatch(
+      playAudio({
+        sourceType: playerState.listenSessionProcedure.SourceDetail.Type,
+        audioId: playerState.currentAudio.Id,
+      })
+    );
   };
 
   return (
     <View className="px-1" style={styles.container}>
       <View style={styles.imageContainer}>
-        <Image
+        {/* <Image
           style={styles.image}
           source={{ uri: playerState.currentAudio?.ImageUrl }}
+        /> */}
+        <AutoResolvingImage
+          FileKey={playerState.currentAudio?.MainImageFileKey || ""}
+          type="PodcastPublicSource"
+          style={styles.image}
         />
       </View>
 
       <View className="h-full flex justify-between items-start p-2 w-3/4">
         <Text numberOfLines={1} className="text-white w-3/4">
-          {playerState.currentAudio?.Name}
+          {playerState.currentAudio?.Name === ""
+            ? "Loading..."
+            : playerState.currentAudio?.Name}
         </Text>
         <Text numberOfLines={1} className="text-sm text-gray-400 w-3/4">
-          {playerState.currentAudio?.PodcasterName}
+          {playerState.currentAudio?.PodcasterName === ""
+            ? "Loading..."
+            : playerState.currentAudio?.PodcasterName}
         </Text>
       </View>
 
       <View style={styles.actionsContainer}>
-        {playerState.playerMode.playStatus === "playing" ? (
+        {playerState.playMode.playStatus === "play" ? (
           <Pressable onPress={handlePausePress}>
             <MaterialIcons name="pause" color="#fff" size={30} />
           </Pressable>
@@ -49,7 +71,7 @@ const PlayerButtonUI = () => {
         )}
         <Pressable>
           <MaterialIcons
-            onPress={() => dispatch(seekBy({ delta: -10 }))}
+            onPress={() => dispatch(seekBy({ delta: 10 }))}
             name="forward-10"
             color="#fff"
             size={30}

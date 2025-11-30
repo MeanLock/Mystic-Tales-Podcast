@@ -1,22 +1,12 @@
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
-import {
-  CurrentAudioType,
-  QueuedAudioType,
-  pause,
-  play,
-  moveInQueue,
-  moveInQueueSwap,
-  seekBy,
-  seekTo,
-  nextTrack,
-  seekPreview,
-} from "@/src/features/mediaPlayer/playerSlice";
+
 import { formatAudioLength } from "@/src/lib/format";
 import { RootState } from "@/src/store/store";
 import {
   Entypo,
   Feather,
+  FontAwesome5,
   Foundation,
   Ionicons,
   MaterialCommunityIcons,
@@ -32,21 +22,38 @@ import DraggableFlatList, {
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import Slider from "@react-native-community/slider";
+import {
+  CurrentAudio,
+  ListenSessionBookingTracks,
+  ListenSessionEpisodes,
+} from "@/src/core/types/audio.type";
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
+import {
+  pauseAudio,
+  playAudio,
+  seekBy,
+  seekTo,
+  setUIIsAutoPlay,
+  setUIPlayOrderMode,
+} from "@/src/features/mediaPlayer/playerSlice";
+import { usePlayerNavigate } from "@/src/core/services/player/usePlayerNavigate";
+import { useUpdatePlayModeMutation } from "@/src/core/services/player/playerService";
 
-const MainAudioCard = ({ audio }: { audio: CurrentAudioType }) => {
+const MainAudioCard = ({ audio }: { audio: CurrentAudio }) => {
   return (
     <View style={styles.currentAudioCardContainer}>
-      <Image
+      <AutoResolvingImage
+        FileKey={audio?.MainImageFileKey || ""}
+        type="PodcastPublicSource"
         style={styles.currentAudioCardImage}
-        source={{ uri: audio?.ImageUrl }}
       />
       <View>
         <Text className="text-[#BFC0BA] font-semibold text-[12px]">
-          EPISODE 1
+          NOW PLAYING
         </Text>
         <Text
           numberOfLines={1}
-          className="text-[#fff] font-semibold text-[16px] w-3/4"
+          className="text-[#fff] font-semibold text-[16px]"
         >
           {audio?.Name}
         </Text>
@@ -64,151 +71,130 @@ const MainAudioCard = ({ audio }: { audio: CurrentAudioType }) => {
   );
 };
 
-const QueueAudioRow = ({
-  audio,
-  drag,
-  isActive,
-}: {
-  audio: QueuedAudioType;
-  drag: () => void;
-  isActive: boolean;
-}) => {
-  return (
-    <View
-      style={[
-        styles.queueAudioCardContainer,
-        { opacity: isActive ? 0.9 : 1, marginBottom: 10 },
-      ]}
-    >
-      <Image
-        style={styles.queueAudioCardImage}
-        source={{ uri: audio.ImageUrl }}
-      />
-      <View>
-        <View className="w-[250px]">
-          <Text numberOfLines={1} className="text-[#fff] text-[15px]">
-            {audio.Name}
-          </Text>
-        </View>
-        <Text className="text-[#D9D9D9] text-[12px]">
-          Season 1, Episode 12 • {formatAudioLength(audio.AudioLength)}
-        </Text>
-      </View>
-
-      <View className="flex-1 items-end justify-center">
-        <Pressable className="p-1 bg-gray-300/10 rounded-md" onPressIn={drag}>
-          <Feather name="menu" color="#9999" size={24} />
-        </Pressable>
-      </View>
-    </View>
-  );
-};
-
-const RenderQueueList = ({ queue }: { queue: QueuedAudioType[] }) => {
-  const dispatch = useDispatch();
-  const [localQueue, setLocalQueue] = useState(queue);
-
-  useEffect(() => {
-    setLocalQueue(queue);
-  }, [queue]);
-
-  if (!queue || queue.length === 0) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <Text className="font-semibold text-[15px] text-[#fff]">
-          Your queue is empty
-        </Text>
-        <Text className="font-light text-[15px] text-[#D9D9D9] text-center">
-          Episodes you add to the queue will appear here.
-        </Text>
-      </View>
-    );
-  }
-
-  return (
-    <View className="flex-1 gap-2 px-[20px] mt-7">
-      <View className="w-full flex-row items-center justify-between">
-        <Text className="font-semibold text-white text-[16px]">Your Queue</Text>
-        <Pressable>
-          <Text className="font-light text-[15px] text-[#d9d9d9]">
-            Clear all
-          </Text>
-        </Pressable>
-      </View>
-
-      <DraggableFlatList
-        data={localQueue}
-        extraData={localQueue.length}
-        keyExtractor={(item, index) => `${item.Id}-${index}`}
-        containerStyle={{ flexGrow: 1 }}
-        contentContainerStyle={{ paddingVertical: 10 }}
-        onDragEnd={({ from, to, data }) => {
-          setLocalQueue(data);
-          dispatch(moveInQueueSwap({ fromIndex: from, toIndex: to }));
-        }}
-        renderItem={({
-          item,
-          drag,
-          isActive,
-        }: RenderItemParams<QueuedAudioType>) => (
-          <ScaleDecorator>
-            <QueueAudioRow audio={item} drag={drag} isActive={isActive} />
-          </ScaleDecorator>
-        )}
-        activationDistance={0}
-        autoscrollThreshold={50}
-        autoscrollSpeed={250}
-      />
-    </View>
-  );
-};
-
 const MediaPlayerContent = () => {
   const playerState = useSelector((state: RootState) => state.player);
   const dispatch = useDispatch();
+  const { canNavigate, navigateNext, navigatePrevious } = usePlayerNavigate();
 
-  const [displayMode, setDisplayMode] = useState<"current" | "queue">(
-    "current"
-  );
+  const duration =
+    playerState.playbackDuration ?? playerState.currentAudio?.AudioLength ?? 0;
 
-  const duration = playerState.currentAudio?.AudioLength ?? 0; // giây
-  const position = playerState.currentAudio?.LatestPosition ?? 0; // giây
+  const position = playerState.playbackPosition ?? 0;
+
   const clampedPos = Math.min(Math.max(position, 0), duration);
   const remaining = Math.max(duration - clampedPos, 0);
   const progressPct = duration > 0 ? (clampedPos / duration) * 100 : 0;
 
   const handlePausePress = () => {
-    dispatch(pause());
+    dispatch(pauseAudio());
   };
 
   const handlePlayPress = () => {
-    dispatch(play());
+    if (!playerState.listenSessionProcedure || !playerState.currentAudio) {
+      return;
+    }
+    dispatch(
+      playAudio({
+        sourceType: playerState.listenSessionProcedure.SourceDetail.Type,
+        audioId: playerState.currentAudio.Id,
+      })
+    );
   };
 
-  const canNext = playerState.queueAudios.length > 0;
+  const [updatePlayMode] = useUpdatePlayModeMutation();
+
+  const setIsAutoPlay = (isAutoPlay: boolean) => {
+    const restoreValue = playerState.playMode.isAutoPlay;
+
+    if (!playerState.listenSessionProcedure) return;
+    if (!playerState.listenSessionProcedure.PlayOrderMode) return;
+
+    dispatch(setUIIsAutoPlay(isAutoPlay));
+    // Gọi API cập nhật ngầm
+    try {
+      updatePlayMode({
+        IsAutoPlay: isAutoPlay,
+        PlayOrderMode: playerState.listenSessionProcedure.PlayOrderMode,
+        CustomerListenSessionProcedureId: playerState.listenSessionProcedure.Id,
+      }).unwrap();
+    } catch (error) {
+      // Nếu lỗi thì restore lại giá trị cũ
+      dispatch(setUIIsAutoPlay(restoreValue));
+    }
+  };
+
+  const setPlayOrderMode = (mode: "Sequential" | "Random") => {
+    const restoreValue = playerState.listenSessionProcedure?.PlayOrderMode;
+    if (!playerState.listenSessionProcedure) return;
+    dispatch(setUIPlayOrderMode(mode));
+    // Gọi API cập nhật ngầm
+    try {
+      updatePlayMode({
+        IsAutoPlay: playerState.playMode.isAutoPlay,
+        PlayOrderMode: mode,
+        CustomerListenSessionProcedureId: playerState.listenSessionProcedure.Id,
+      }).unwrap();
+    } catch (error) {
+      // Nếu lỗi thì restore lại giá trị cũ
+      if (restoreValue) {
+        dispatch(setUIPlayOrderMode(restoreValue));
+      }
+    }
+  };
+
+  // SỬA LẠI LOGIC: Disable nút Next nếu
+  // player.playMode.isNextSessionNull === true (không có audio tiếp theo)
+  // Và
+  // player.listenSessionProcedure.ListenObjectsSequentialOrder có số lượng các item có
+  // const canNavigate = () => {
+  //   if (!playerState.listenSessionProcedure || !playerState.listenSession) {
+  //     return false;
+  //   }
+
+  //   if (playerState.playMode.isNextSessionNull) {
+  //     let availableAudioCount = 0;
+  //     if (
+  //       playerState.listenSessionProcedure &&
+  //       playerState.listenSessionProcedure.ListenObjectsRandomOrder &&
+  //       playerState.listenSessionProcedure.ListenObjectsRandomOrder.length > 0
+  //     ) {
+  //       const availableAudio =
+  //         playerState.listenSessionProcedure?.ListenObjectsRandomOrder.map(
+  //           (item) => item.IsListenable
+  //         );
+  //       availableAudioCount = availableAudio?.length ?? 0;
+  //     } else if (
+  //       playerState.listenSessionProcedure &&
+  //       playerState.listenSessionProcedure.ListenObjectsSequentialOrder &&
+  //       playerState.listenSessionProcedure.ListenObjectsSequentialOrder.length >
+  //         0
+  //     ) {
+  //       const availableAudio =
+  //         playerState.listenSessionProcedure.ListenObjectsSequentialOrder.map(
+  //           (item) => item.IsListenable
+  //         );
+  //       availableAudioCount = availableAudio?.length ?? 0;
+  //     }
+  //     return availableAudioCount > 0;
+  //   } else {
+  //     return true;
+  //   }
+  // };
 
   return (
     <View style={styles.container}>
       <View style={styles.contentContainer}>
-        {displayMode === "current" ? (
-          <View style={styles.currentContainer}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: playerState.currentAudio?.ImageUrl }}
-                style={styles.image}
-              />
-            </View>
+        <View style={styles.currentContainer}>
+          <View style={styles.imageContainer}>
+            <AutoResolvingImage
+              FileKey={playerState.currentAudio?.MainImageFileKey || ""}
+              type="PodcastPublicSource"
+              style={styles.image}
+            />
+          </View>
 
-            <MainAudioCard audio={playerState.currentAudio} />
-          </View>
-        ) : (
-          <View style={styles.container}>
-            <View className="w-full mt-5">
-              <MainAudioCard audio={playerState.currentAudio} />
-            </View>
-            <RenderQueueList queue={playerState.queueAudios} />
-          </View>
-        )}
+          <MainAudioCard audio={playerState.currentAudio} />
+        </View>
       </View>
       <View style={styles.actionContainer}>
         {/* Audio Length Tracking */}
@@ -225,7 +211,7 @@ const MediaPlayerContent = () => {
             thumbTintColor="#fff"
             onValueChange={(val) => {
               // chỉ update UI (redux) để thanh chạy mượt, không gọi engine
-              dispatch(seekPreview({ position: val }));
+              // dispatch(seekPreview({ position: val }));
             }}
             onSlidingComplete={(val) => {
               // seek thật: lúc này middleware sẽ gọi engine.seek duy nhất 1 lần
@@ -245,11 +231,18 @@ const MediaPlayerContent = () => {
           style={{ gap: 40 }}
           className="w-full py-5 flex-row items-center justify-center"
         >
+          <Pressable
+            onPress={() => canNavigate && navigatePrevious()}
+            disabled={!canNavigate}
+            style={{ opacity: canNavigate ? 1 : 0.4 }}
+          >
+            <Foundation name="previous" color="#d9d9d9" size={30} />
+          </Pressable>
           {/* === NEW: tua -10s === */}
           <Pressable onPress={() => dispatch(seekBy({ delta: -10 }))}>
-            <MaterialCommunityIcons name="rewind-10" color="#fff" size={30} />
+            <MaterialCommunityIcons name="rewind-10" color="#fff" size={25} />
           </Pressable>
-          {playerState.playerMode.playStatus === "playing" ? (
+          {playerState.playMode.playStatus === "play" ? (
             <Pressable
               onPress={() => {
                 handlePausePress();
@@ -271,38 +264,57 @@ const MediaPlayerContent = () => {
             <MaterialCommunityIcons
               name="fast-forward-10"
               color="#fff"
-              size={30}
+              size={25}
             />
           </Pressable>
-        </View>
-
-        {/* Next Audio, Change Layout to Queue Layout */}
-        <View
-          style={{ gap: 80 }}
-          className="w-full h-[120px] flex-row items-center justify-center "
-        >
-          {/* Next Audio on Queue */}
-          {/* === NEW: Next – disable nếu queue rỗng === */}
           <Pressable
-            onPress={() => canNext && dispatch(nextTrack())}
-            disabled={!canNext}
-            style={{ opacity: canNext ? 1 : 0.4 }}
+            onPress={() => canNavigate && navigateNext()}
+            disabled={!canNavigate}
+            style={{ opacity: canNavigate ? 1 : 0.4 }}
           >
             <Foundation name="next" color="#d9d9d9" size={30} />
           </Pressable>
-          {/* Change Layout to Queue Layout */}
-          {displayMode === "queue" ? (
-            <Pressable
-              onPress={() => setDisplayMode("current")}
-              className="p-1 rounded-md bg-[#d9d9d9]/30"
-            >
-              <Entypo name="list" color="#000" size={30} />
-            </Pressable>
-          ) : (
-            <Pressable className="p-1" onPress={() => setDisplayMode("queue")}>
-              <Entypo name="list" color="#d9d9d9" size={30} />
-            </Pressable>
-          )}
+        </View>
+
+        {/* IsAutoPlay, Sequential/Random */}
+        <View
+          style={{ gap: 20 }}
+          className="w-full h-[100px] flex-row items-center justify-center "
+        >
+          <Pressable
+            onPress={() => setIsAutoPlay(false)}
+            disabled={!canNavigate}
+            style={{ opacity: canNavigate ? 1 : 0.4 }}
+          >
+            <MaterialIcons
+              name="auto-awesome"
+              color={playerState.playMode.isAutoPlay ? "#aee339" : "#d9d9d9"}
+              size={20}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => setIsAutoPlay(false)}
+            disabled={!canNavigate}
+            style={{ opacity: canNavigate ? 1 : 0.4 }}
+            className="ml-10"
+          >
+            <Foundation
+              name="loop"
+              color={playerState.playMode.isAutoPlay ? "#aee339" : "#d9d9d9"}
+              size={20}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => setIsAutoPlay(false)}
+            disabled={!canNavigate}
+            style={{ opacity: canNavigate ? 1 : 0.4 }}
+          >
+            <FontAwesome5
+              name="random"
+              color={playerState.playMode.isAutoPlay ? "#aee339" : "#d9d9d9"}
+              size={20}
+            />
+          </Pressable>
         </View>
       </View>
     </View>

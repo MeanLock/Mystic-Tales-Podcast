@@ -44,6 +44,7 @@ import MediaPlayerModal, {
 import { Audio } from "expo-av";
 import { GlobalAlert } from "../components/alert/GlobalAlert";
 import UpdateAccountMeHook from "./UpdateAccountMeHook";
+import PlayerCore from "../core/services/player/playerCore";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -96,6 +97,7 @@ function RootLayoutNav() {
           }}
         >
           <SetUp />
+          <PlayerCore />
           <UpdateAccountMeHook />
           <GlobalAlert />
           <ThemeProvider
