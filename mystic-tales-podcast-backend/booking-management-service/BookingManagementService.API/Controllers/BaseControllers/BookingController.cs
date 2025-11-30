@@ -747,7 +747,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 BookingList = result
             });
         }
-        [HttpGet("get-completed-booking/{BookingId")]
+        [HttpGet("get-completed-booking/{BookingId}")]
         [Authorize("BasicAccess")]
         public async Task<IActionResult> GetCompletedBookingDetail([FromRoute] int BookingId)
         {
