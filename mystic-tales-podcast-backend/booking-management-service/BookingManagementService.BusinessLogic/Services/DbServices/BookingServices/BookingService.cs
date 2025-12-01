@@ -295,8 +295,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Id = podcastBuddy.Id,
                         FullName = podcastBuddy.FullName,
                         Email = podcastBuddy.Email,
+                        Description = podcastBuddy.PodcasterProfile?.Description ?? string.Empty,
                         MainImageFileKey = podcastBuddy.MainImageFileKey,
                         AverageRating = podcastBuddy.PodcasterProfile?.AverageRating ?? 0,
+                        RatingCount = podcastBuddy.PodcasterProfile?.RatingCount ?? 0,
                         TotalFollow = podcastBuddy.PodcasterProfile?.TotalFollow ?? 0,
                         TotalBookingCompleted = 0,
                         PriceBookingPerWord = podcastBuddy.PodcasterProfile?.PricePerBookingWord ?? 0
@@ -2449,8 +2451,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Id = podcastBuddy.Id,
                         FullName = podcastBuddy.FullName,
                         Email = podcastBuddy.Email,
+                        Description = podcastBuddy.PodcasterProfile?.Description ?? string.Empty,
                         MainImageFileKey = podcastBuddy.MainImageFileKey,
                         AverageRating = podcastBuddy.PodcasterProfile?.AverageRating ?? 0,
+                        RatingCount = podcastBuddy.PodcasterProfile?.RatingCount ?? 0,
                         TotalFollow = podcastBuddy.PodcasterProfile?.TotalFollow ?? 0,
                         TotalBookingCompleted = 0,
                         PriceBookingPerWord = podcastBuddy.PodcasterProfile?.PricePerBookingWord ?? 0
@@ -2548,8 +2552,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Id = podcastReal.Id,
                             FullName = podcastReal.FullName,
                             Email = podcastReal.Email,
+                            Description = podcastReal.PodcasterProfile?.Description ?? string.Empty,
                             MainImageFileKey = podcastReal.MainImageFileKey,
                             AverageRating = podcastReal.PodcasterProfile?.AverageRating ?? 0,
+                            RatingCount = podcastReal.PodcasterProfile?.RatingCount ?? 0,
                             TotalFollow = podcastReal.PodcasterProfile?.TotalFollow ?? 0,
                             TotalBookingCompleted = _bookingGenericRepository.FindAll(
                                 includeFunc: function => function
@@ -2621,8 +2627,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         Id = podcaster.Id,
                         FullName = podcaster.FullName,
                         Email = podcaster.Email,
+                        Description = podcaster.PodcasterProfile?.Description ?? string.Empty,
                         MainImageFileKey = podcaster.MainImageFileKey,
                         AverageRating = podcaster.PodcasterProfile?.AverageRating ?? 0,
+                        RatingCount = podcaster.PodcasterProfile?.RatingCount ?? 0,
                         TotalFollow = podcaster.PodcasterProfile?.TotalFollow ?? 0,
                         TotalBookingCompleted = 0,
                         PriceBookingPerWord = podcaster.PodcasterProfile?.PricePerBookingWord

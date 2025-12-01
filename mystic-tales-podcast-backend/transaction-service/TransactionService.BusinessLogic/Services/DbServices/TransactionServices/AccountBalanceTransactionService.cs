@@ -39,6 +39,7 @@ using TransactionService.DataAccess.UOW;
 using TransactionService.Infrastructure.Configurations.Payos.interfaces;
 using TransactionService.Infrastructure.Models.Kafka;
 using TransactionService.Infrastructure.Services.Kafka;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServices
 {
@@ -648,6 +649,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     for (int i = 0; i < 7; i++)
                     {
                         DateOnly currentDate = startDate.AddDays(i);
+                        Console.WriteLine("Account Id: " + account.Id);
                         var depositAmount = await CalculateDepositAmount(currentDate, currentDate, account.Id);
                         var withdrawalAmount = await CalculateWithdrawlAmount(currentDate, currentDate, account.Id);
 
@@ -817,20 +819,36 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
         private async Task<decimal> CalculateDepositAmount(DateOnly startDate, DateOnly endDate, int? accountId = null)
         {
             decimal totalIncome = 0;
-            var transactionList = await _accountBalanceTransactionGenericRepository.FindAll()
-                .Where(ab => ab.TransactionStatusId == (int)TransactionStatusEnum.Success && ab.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceDeposits
-                && DateOnly.FromDateTime(ab.CreatedAt) >= startDate && DateOnly.FromDateTime(ab.CreatedAt) <= endDate
-                && accountId != null ? ab.AccountId == accountId : true).ToListAsync();
+            Console.WriteLine("Account Id in CalculateDepositAmount: " + accountId);
+            var query = _accountBalanceTransactionGenericRepository.FindAll()
+            .Where(ab => ab.TransactionStatusId == (int)TransactionStatusEnum.Success
+                && ab.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceDeposits
+                && DateOnly.FromDateTime(ab.UpdatedAt) >= startDate
+                && DateOnly.FromDateTime(ab.UpdatedAt) <= endDate);
+
+            if (accountId.HasValue)
+            {
+                query = query.Where(ab => ab.AccountId == accountId.Value);
+            }
+
+            var transactionList = await query.ToListAsync();
+
             totalIncome += transactionList != null ? transactionList.Sum(bt => bt.Amount) : 0;
             return totalIncome;
         }
         private async Task<decimal> CalculateWithdrawlAmount(DateOnly startDate, DateOnly endDate, int? accountId = null)
         {
             decimal totalIncome = 0;
-            var transactionList = await _accountBalanceWithdrawalRequestGenericRepository.FindAll()
+            var query = _accountBalanceWithdrawalRequestGenericRepository.FindAll()
                 .Where(ab => ab.CompletedAt.HasValue && ab.IsRejected == false
-                && DateOnly.FromDateTime(ab.CompletedAt.Value) >= startDate && DateOnly.FromDateTime(ab.CompletedAt.Value) <= endDate
-                && accountId != null ? ab.AccountId == accountId : true).ToListAsync();
+                && DateOnly.FromDateTime(ab.CompletedAt.Value) >= startDate && DateOnly.FromDateTime(ab.CompletedAt.Value) <= endDate);
+
+            if(accountId.HasValue)
+            {
+                query = query.Where(ab => ab.AccountId == accountId.Value);
+            }
+
+            var transactionList = await query.ToListAsync();
             totalIncome += transactionList != null ? transactionList.Sum(bt => bt.Amount) : 0;
             return totalIncome;
         }
