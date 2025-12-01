@@ -374,6 +374,40 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 throw new HttpRequestException($"Retrieving Booking failed. Error: {ex.Message}");
             }
         }
+        public async Task<List<PodcastBookingToneMeListItemResponseDTO>?> GetAllPodcastBookingTonesByPodcasterIdAsync(int podcastBuddyId)
+        {
+            try
+            {
+                List<PodcastBookingToneMeListItemResponseDTO> result = new List<PodcastBookingToneMeListItemResponseDTO>();
+                var podcastBookingTones = await _podcastBuddyBookingToneGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(pb => pb.PodcastBookingTone)
+                    .ThenInclude(pb => pb.PodcastBookingToneCategory))
+                    .Where(pb => pb.PodcasterId == podcastBuddyId)
+                    .Select(pb => new PodcastBookingToneMeListItemResponseDTO
+                    {
+                        Id = pb.PodcastBookingTone.Id,
+                        Name = pb.PodcastBookingTone.Name,
+                        Description = pb.PodcastBookingTone.Description,
+                        PodcastBookingToneCategory = new PodcastBookingToneCategoryDetailResponseDTO
+                        {
+                            Id = pb.PodcastBookingTone.PodcastBookingToneCategory.Id,
+                            Name = pb.PodcastBookingTone.PodcastBookingToneCategory.Name
+                        },
+                    })
+                    .ToListAsync();
+                if (podcastBookingTones != null)
+                {
+                    result = podcastBookingTones;
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving podcast booking tones for PodcasterId: {podcastBuddyId}", podcastBuddyId);
+                throw new HttpRequestException($"Retrieving Podcast Booking Tones for PodcasterId {podcastBuddyId} failed. Error: {ex.Message}");
+            }
+        }
         public async Task<List<PodcastBookingToneMeListItemResponseDTO>> GetPodcasterPodcastBookingTonesAsync(int accountId)
         {
             try

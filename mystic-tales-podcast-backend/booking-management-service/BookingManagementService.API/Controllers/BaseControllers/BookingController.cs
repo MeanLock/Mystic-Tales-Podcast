@@ -219,6 +219,20 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 PodcastBookingToneList = result
             });
         }
+        [HttpGet("podcast-booking-tone/podcast-buddy/{PodcastBuddyId}")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetPodcastBookingTonesByPodcasterId([FromRoute] int PodcastBuddyId)
+        {
+            var result = await _bookingService.GetAllPodcastBookingTonesByPodcasterIdAsync(PodcastBuddyId);
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No podcast booking tones found.");
+            //}
+            return Ok(new
+            {
+                PodcastBookingToneList = result
+            });
+        }
         [HttpGet("podcast-booking-tone/me")]
         [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> GetPodcasterPodcastBookingTones()
