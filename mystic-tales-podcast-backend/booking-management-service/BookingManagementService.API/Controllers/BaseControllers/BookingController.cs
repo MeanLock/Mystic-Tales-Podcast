@@ -512,7 +512,20 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
-
+        [HttpGet("optional-manual-cancel-reasons")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetOptionalManualCancelReasons()
+        {
+            var result = await _bookingService.GetOptionalManualCancelReasonsAsync();
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No optional manual cancel reasons found.");
+            //}
+            return Ok(new
+            {
+                OptionalManualCancelReasonList = result
+            });
+        }
         // /api/booking-management-service/api/bookings/{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen
         [HttpPost("{BookingId}/booking-podcast-tracks/{BookingPodcastTrackId}/listen")]
         [Authorize(Policy = "Customer.BasicAccess")]

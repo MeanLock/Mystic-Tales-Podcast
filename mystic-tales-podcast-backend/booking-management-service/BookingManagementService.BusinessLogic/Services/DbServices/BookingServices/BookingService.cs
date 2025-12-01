@@ -71,6 +71,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         private readonly IGenericRepository<BookingPodcastTrack> _bookingPodcastTrackGenericRepository;
         private readonly IGenericRepository<PodcastBuddyBookingTone> _podcastBuddyBookingToneGenericRepository;
         private readonly IGenericRepository<BookingPodcastTrackListenSession> _bookingPodcastTrackListenSessionGenericRepository;
+        private readonly IGenericRepository<BookingOptionalManualCancelReason> _bookingOptionalManualCancelReasonGenericRepository;
         private readonly IPodcastBuddyBookingToneRepository _podcastBuddyBookingToneRepository;
 
         private readonly HttpServiceQueryClient _httpServiceQueryClient;
@@ -98,6 +99,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             IGenericRepository<BookingPodcastTrack> bookingPodcastTrackGenericRepository,
             IGenericRepository<PodcastBuddyBookingTone> podcastBuddyBookingToneGenericRepository,
             IGenericRepository<BookingPodcastTrackListenSession> bookingPodcastTrackListenSessionGenericRepository,
+            IGenericRepository<BookingOptionalManualCancelReason> bookingOptionalManualCancelReasonGenericRepository,
             IPodcastBuddyBookingToneRepository podcastBuddyBookingToneRepository,
             HttpServiceQueryClient httpServiceQueryClient,
             IMessagingService messagingService,
@@ -125,6 +127,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _podcastBuddyBookingToneGenericRepository = podcastBuddyBookingToneGenericRepository;
             _bookingPodcastTrackListenSessionGenericRepository = bookingPodcastTrackListenSessionGenericRepository;
             _podcastBuddyBookingToneRepository = podcastBuddyBookingToneRepository;
+            _bookingOptionalManualCancelReasonGenericRepository = bookingOptionalManualCancelReasonGenericRepository;
 
             _httpServiceQueryClient = httpServiceQueryClient;
             _messagingService = messagingService;
@@ -668,6 +671,21 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             {
                 _logger.LogError(ex, "Error occurred while retrieving bookings for PodcasterId: {PodcastBuddyId}", podcastBuddyId);
                 throw new HttpRequestException($"Retrieving Bookings for PodcasterId {podcastBuddyId} failed. Error: {ex.Message}");
+            }
+        }
+        public async Task<List<string>> GetOptionalManualCancelReasonsAsync()
+        {
+            try
+            {
+                var result = await _bookingOptionalManualCancelReasonGenericRepository
+                    .FindAll()
+                    .Select(bomc => bomc.Name).ToListAsync();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving optional manual cancel reasons");
+                throw new HttpRequestException($"Retrieving optional manual cancel reasons failed. Error: {ex.Message}");
             }
         }
         public async Task<List<BookingListItemResponseDTO>> GetBookingsByAccountIdAsync(int accountId, bool isPodcaster)
