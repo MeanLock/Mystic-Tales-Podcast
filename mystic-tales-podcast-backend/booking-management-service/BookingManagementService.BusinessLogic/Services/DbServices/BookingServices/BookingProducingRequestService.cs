@@ -252,6 +252,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
                         .Where(ls => !ls.IsCompleted && previousProducingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == parameter.AccountId)
                         .ToListAsync();
+                    var Count = listenSession.Count;
                     foreach (var session in listenSession)
                     {
                         session.IsCompleted = true;
@@ -276,7 +277,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         { "Note", producingRequest.Note},
                         { "DeadlineDays", producingRequest.DeadlineDays },
                         { "BookingPodcastTrackIds", JArray.FromObject(producingRequest.BookingProducingRequestPodcastTrackToEdits.Select(x => x.BookingPodcastTrackId).ToList()) },
-                        { "CreatedAt", producingRequest.CreatedAt }
+                        { "CreatedAt", producingRequest.CreatedAt },
+                        { "Count", Count }
                     };
                     var newMessageName = messageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(

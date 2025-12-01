@@ -687,7 +687,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                 { "AccountId", accountId },
                 { "BookingId", BookingId },
                 { "Note", request.BookingProducingRequestInfo.Note },
-                { "DeadlineDayCount", request.BookingProducingRequestInfo.DeadlineDayCount }, // Convert DateOnly to string
+                { "DeadlineDayCount", request.BookingProducingRequestInfo.DeadlineDayCount },
                 { "BookingPodcastTrackIds", JArray.FromObject(request.BookingProducingRequestInfo.BookingPodcastTrackIds) }
             };
 
