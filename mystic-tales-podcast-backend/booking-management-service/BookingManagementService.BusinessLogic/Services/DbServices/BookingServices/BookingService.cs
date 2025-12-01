@@ -296,6 +296,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         FullName = podcastBuddy.FullName,
                         Email = podcastBuddy.Email,
                         MainImageFileKey = podcastBuddy.MainImageFileKey,
+                        AverageRating = podcastBuddy.PodcasterProfile?.AverageRating ?? 0,
+                        TotalFollow = podcastBuddy.PodcasterProfile?.TotalFollow ?? 0,
+                        TotalBookingCompleted = 0,
                         PriceBookingPerWord = podcastBuddy.PodcasterProfile?.PricePerBookingWord ?? 0
                     },
                     AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
@@ -2447,6 +2450,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         FullName = podcastBuddy.FullName,
                         Email = podcastBuddy.Email,
                         MainImageFileKey = podcastBuddy.MainImageFileKey,
+                        AverageRating = podcastBuddy.PodcasterProfile?.AverageRating ?? 0,
+                        TotalFollow = podcastBuddy.PodcasterProfile?.TotalFollow ?? 0,
+                        TotalBookingCompleted = 0,
                         PriceBookingPerWord = podcastBuddy.PodcasterProfile?.PricePerBookingWord ?? 0
                     },
                     AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
@@ -2539,11 +2545,18 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         result.Add(new PodcastBuddySnippetResponseDTO
                         {
-                            Id = podcaster.Id,
-                            FullName = podcaster.FullName,
-                            Email = podcaster.Email,
-                            MainImageFileKey = podcaster.MainImageFileKey,
-                            PriceBookingPerWord = podcastReal.PodcasterProfile?.PricePerBookingWord
+                            Id = podcastReal.Id,
+                            FullName = podcastReal.FullName,
+                            Email = podcastReal.Email,
+                            MainImageFileKey = podcastReal.MainImageFileKey,
+                            AverageRating = podcastReal.PodcasterProfile?.AverageRating ?? 0,
+                            TotalFollow = podcastReal.PodcasterProfile?.TotalFollow ?? 0,
+                            TotalBookingCompleted = _bookingGenericRepository.FindAll(
+                                includeFunc: function => function
+                                .Include(b => b.BookingStatusTrackings))
+                            .Where(b => b.PodcastBuddyId == podcastReal.Id && b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId == (int)BookingStatusEnum.Completed)
+                            .Count(),
+                            PriceBookingPerWord = podcastReal.PodcasterProfile?.PricePerBookingWord ?? 0
                         });
                     }
                 }
@@ -2609,6 +2622,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         FullName = podcaster.FullName,
                         Email = podcaster.Email,
                         MainImageFileKey = podcaster.MainImageFileKey,
+                        AverageRating = podcaster.PodcasterProfile?.AverageRating ?? 0,
+                        TotalFollow = podcaster.PodcasterProfile?.TotalFollow ?? 0,
+                        TotalBookingCompleted = 0,
                         PriceBookingPerWord = podcaster.PodcasterProfile?.PricePerBookingWord
                     },
                     AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO

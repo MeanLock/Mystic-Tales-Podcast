@@ -12,6 +12,9 @@ namespace BookingManagementService.BusinessLogic.DTOs.Snippet
         public string FullName { get; set; }
         public string Email { get; set; }
         public string? MainImageFileKey { get; set; }
+        public double? AverageRating { get; set; }
+        public int TotalFollow { get; set; }
         public decimal? PriceBookingPerWord { get; set; }
+        public int TotalBookingCompleted { get; set; }
     }
 }
