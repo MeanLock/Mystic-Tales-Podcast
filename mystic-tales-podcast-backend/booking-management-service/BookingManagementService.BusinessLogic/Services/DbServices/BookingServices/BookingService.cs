@@ -2374,7 +2374,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             .Where(bpr => bpr.FinishedAt != null)
                             .OrderByDescending(bpr => bpr.CreatedAt)
                             .FirstOrDefault()
-                            .BookingPodcastTracks.Count,
+                            .BookingPodcastTracks.Count(),
                         CompletedAt = booking.BookingStatusTrackings
                             .Where(bst => bst.BookingStatusId == (int)BookingStatusEnum.Completed)
                             .OrderByDescending(bst => bst.CreatedAt)
@@ -2414,6 +2414,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .ThenInclude(bt => bt.PodcastBookingToneCategory)
                     .Include(b => b.BookingProducingRequests)
                         .ThenInclude(bp => bp.BookingPodcastTracks)
+                            .ThenInclude(bpt => bpt.BookingRequirement)
                     .Include(b => b.BookingStatusTrackings)
                         .ThenInclude(bst => bst.BookingStatus));
 
@@ -2455,7 +2456,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 var lastestBookingPodcastTracks = new List<BookingPodcastTrackListItemResponseDTO>();
                 if (lastestProducingRequest != null)
                 {
-                    lastestBookingPodcastTracks = lastestProducingRequest.BookingPodcastTracks.Select(bpt => new BookingPodcastTrackListItemResponseDTO
+                    lastestBookingPodcastTracks = lastestProducingRequest.BookingPodcastTracks.OrderBy(bpt => bpt.BookingRequirement.Order).Select(bpt => new BookingPodcastTrackListItemResponseDTO
                     {
                         Id = bpt.Id,
                         BookingId = bpt.BookingId,
