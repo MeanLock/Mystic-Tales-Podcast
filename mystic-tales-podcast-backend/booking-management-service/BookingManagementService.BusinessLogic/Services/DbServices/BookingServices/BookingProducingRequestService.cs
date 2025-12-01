@@ -363,6 +363,34 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
+                    var previousProducingRequest = await _bookingProducingRequestGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(ppr => ppr.BookingPodcastTracks))
+                        .Where(pr => pr.BookingId == parameter.BookingId && pr.FinishedAt != null)
+                        .OrderByDescending(pr => pr.CreatedAt)
+                        .FirstOrDefaultAsync();
+
+                    // Complete all listen sessions in the previous producing request
+                    var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                        .Where(ls => !ls.IsCompleted && previousProducingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == parameter.AccountId)
+                        .ToListAsync();
+                    var Count = listenSession.Count;
+                    foreach (var session in listenSession)
+                    {
+                        session.IsCompleted = true;
+                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                    }
+
+                    // Complete all listen session procedures of the previous producing request in cache
+                    var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
+                    foreach (var procedure in customerListenSessionCacheKey.Values)
+                    {
+                        if (!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == previousProducingRequest.Id)
+                        {
+                            await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                        }
+                    }
+
                     await transaction.CommitAsync();
                     var newResponseData = command.RequestData;
                     newResponseData["UpdatedAt"] = booking.UpdatedAt;
@@ -432,7 +460,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         includeFunc: include => include
                             .Include(bpr => bpr.BookingPodcastTracks))
                         .Where(pr => pr.BookingId == bookingProducingRequest.BookingId &&
-                                     pr.Id != bookingProducingRequest.Id)
+                                     pr.Id != bookingProducingRequest.Id && pr.FinishedAt != null)
                         .ToListAsync();
 
                     Console.WriteLine("Existing Producing Requests Count: " + existingProducingRequest.Count);
