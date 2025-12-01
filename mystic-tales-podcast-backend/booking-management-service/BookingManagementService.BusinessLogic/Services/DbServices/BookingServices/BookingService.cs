@@ -3202,7 +3202,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     // Complete existing booking listen session if any
                     var existingBookingListenSession = _bookingPodcastTrackListenSessionGenericRepository.FindAll(
-                        predicate: bpts => bpts.BookingPodcastTrackId == bookingPodcastTrack.Id && bpts.AccountId == accountId && bpts.IsCompleted == false
+                        predicate: bpts => bpts.AccountId == accountId && bpts.IsCompleted == false
                     ).ToListAsync();
                     foreach (var session in existingBookingListenSession.Result)
                     {
