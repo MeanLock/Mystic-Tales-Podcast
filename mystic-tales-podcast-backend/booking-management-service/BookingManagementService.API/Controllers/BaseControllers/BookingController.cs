@@ -92,7 +92,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpGet("{BookingId}")]
-        [Authorize(Policy = "BasicAccess")]
+        [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
         public async Task<IActionResult> GetBookingById(int BookingId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -761,7 +761,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("completed")]
-        [Authorize("BasicAccess")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetCompletedBookings()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -778,7 +778,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("get-completed-booking/{BookingId}")]
-        [Authorize("BasicAccess")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetCompletedBookingDetail([FromRoute] int BookingId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -794,7 +794,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("{BookingId}/result")]
-        [Authorize("BasicAccess")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetBookingResultById(int BookingId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
