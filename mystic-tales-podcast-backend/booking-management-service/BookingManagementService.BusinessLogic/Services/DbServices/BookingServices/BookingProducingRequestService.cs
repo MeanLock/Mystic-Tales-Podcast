@@ -9,6 +9,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.Detail;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
 using BookingManagementService.BusinessLogic.DTOs.SystemConfiguration;
+using BookingManagementService.BusinessLogic.Enums.Account;
 using BookingManagementService.BusinessLogic.Enums.Booking;
 using BookingManagementService.BusinessLogic.Enums.Kafka;
 using BookingManagementService.BusinessLogic.Enums.Transaction;
@@ -94,7 +95,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             _dateHelper = dateHelper;
             _ffMpegCoreHlsService = ffMpegCoreHlsService;
         }
-        public async Task<BookingProducingRequestDetailResponseDTO?> GetProducingRequestByIdAsync(Guid id)
+        public async Task<BookingProducingRequestDetailResponseDTO?> GetProducingRequestByIdAsync(Guid id, AccountStatusCache account)
         {
             try
             {
@@ -105,6 +106,19 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                 if (bookingProducingRequest == null)
                     return null;
+
+                var booking = await _bookingGenericRepository.FindByIdAsync(bookingProducingRequest.BookingId,
+                    includeFunc: function => function
+                    .Include(b => b.BookingProducingRequests));
+
+                bool isLastestProducingRequest = true;
+                if (account.RoleId == (int)RoleEnum.Customer && !account.HasVerifiedPodcasterProfile && !account.PodcasterProfileIsBuddy)
+                {
+                    if (booking.BookingProducingRequests.OrderByDescending(bp => bp.CreatedAt).Where(bp => bp.FinishedAt != null).FirstOrDefault()?.Id != bookingProducingRequest.Id)
+                    {
+                        isLastestProducingRequest = false;
+                    }
+                }
 
                 // Fix: Use ToListAsync first, then fetch requirement names in a separate async loop
                 var editRequirements = await _bookingProducingRequestPodcastTrackToEditGenericRepository.FindAll()
@@ -145,7 +159,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     FinishedAt = bookingProducingRequest.FinishedAt,
                     RejectReason = bookingProducingRequest.RejectReason,
                     CreatedAt = bookingProducingRequest.CreatedAt,
-                    BookingPodcastTracks = bookingProducingRequest.BookingPodcastTracks?.Select(nego => new BookingPodcastTrackListItemResponseDTO
+                    BookingPodcastTracks = isLastestProducingRequest ?
+                    bookingProducingRequest.BookingPodcastTracks?.Select(nego => new BookingPodcastTrackListItemResponseDTO
                     {
                         Id = nego.Id,
                         BookingId = nego.BookingId,
@@ -155,7 +170,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         AudioFileSize = nego.AudioFileSize,
                         AudioLength = nego.AudioLength,
                         RemainingPreviewListenSlot = nego.RemainingPreviewListenSlot
-                    }).ToList() ?? new List<BookingPodcastTrackListItemResponseDTO>(),
+                    }).ToList() : new List<BookingPodcastTrackListItemResponseDTO>() ?? new List<BookingPodcastTrackListItemResponseDTO>(),
                     EditRequirementList = editRequirementList
                 };
 

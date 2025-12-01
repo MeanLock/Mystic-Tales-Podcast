@@ -106,10 +106,11 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         }
 
         [HttpGet("{BookingProducingRequestId}")]
-        [Authorize(Policy = "Customer.BasicAccess")]
+        [Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
         public async Task<IActionResult> GetProducingRequestById([FromRoute] Guid BookingProducingRequestId)
         {
-            var result = await _bookingProducingRequestService.GetProducingRequestByIdAsync(BookingProducingRequestId);
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var result = await _bookingProducingRequestService.GetProducingRequestByIdAsync(BookingProducingRequestId, account);
             //if (result == null)
             //{
             //    return NotFound($"Booking Producing Request with ID {BookingProducingRequestId} not found.");

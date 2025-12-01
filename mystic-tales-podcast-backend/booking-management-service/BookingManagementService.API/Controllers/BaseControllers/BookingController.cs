@@ -406,15 +406,31 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             });
         }
 
-        [HttpGet("me")]
-        [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> GetMyBookings()
+        [HttpGet("taken")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
+        public async Task<IActionResult> GetMyTakenBookings()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            var isPodcaster = account.HasVerifiedPodcasterProfile && account.PodcasterProfileIsBuddy;
 
-            var result = await _bookingService.GetBookingsByAccountIdAsync(accountId, isPodcaster);
+            var result = await _bookingService.GetBookingsByAccountIdAsync(accountId, true);
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No bookings found for the current user.");
+            //}
+            return Ok(new
+            {
+                BookingList = result
+            });
+        }
+        [HttpGet("given")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetMyGivenBookings()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+
+            var result = await _bookingService.GetBookingsByAccountIdAsync(accountId, false);
             //if (result == null || !result.Any())
             //{
             //    return NotFound("No bookings found for the current user.");

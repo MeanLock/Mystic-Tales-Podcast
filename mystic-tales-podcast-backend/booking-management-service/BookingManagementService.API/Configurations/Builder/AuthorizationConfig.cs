@@ -101,7 +101,11 @@ namespace BookingManagementService.API.Configurations.Builder
                 {
                     policy.Requirements.Add(new AdminStaffBasicAccessOrCustomerPodcasterAccessRequirement());
                 });
-
+                options.AddPolicy("AdminOrStaffOrCustomer.BasicAccess", policy =>
+                {
+                    policy.RequireRole("Admin", "Staff", "Customer");
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
+                });
 
             });
 
