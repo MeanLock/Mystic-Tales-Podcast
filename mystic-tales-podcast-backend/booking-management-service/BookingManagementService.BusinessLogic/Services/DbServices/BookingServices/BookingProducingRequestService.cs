@@ -201,7 +201,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var previousProducingRequest = await _bookingProducingRequestGenericRepository.FindAll(
                         includeFunc: function => function
                         .Include(ppr => ppr.BookingPodcastTracks))
-                        .Where(pr => pr.BookingId == parameter.BookingId)
+                        .Where(pr => pr.BookingId == parameter.BookingId && pr.FinishedAt != null)
                         .OrderByDescending(pr => pr.CreatedAt)
                         .FirstOrDefaultAsync();
 

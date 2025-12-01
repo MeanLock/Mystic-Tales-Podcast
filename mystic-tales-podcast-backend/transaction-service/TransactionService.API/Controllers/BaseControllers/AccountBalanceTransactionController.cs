@@ -235,6 +235,7 @@ namespace TransactionService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("balance-change-history/{AccountBalanceTypeEnum}")]
+        [Authorize(Policy = "Customer.NoViolationAccess")]
         public async Task<IActionResult> GetAccountBalanceTransactions(
             [FromRoute] AccountBalanceTypeEnum AccountBalanceTypeEnum)
         {
@@ -264,6 +265,7 @@ namespace TransactionService.API.Controllers.BaseControllers
             );
         }
         [HttpGet("balance-withdrawal-request")]
+        [Authorize(Policy = "AdminOrCustomer.BasicAccess")]
         public async Task<IActionResult> GetAccountBalanceWithdrawalRequests()
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;

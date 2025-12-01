@@ -156,7 +156,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                                 { "AccountId", parameter.AccountId },
                                 { "PodcasterId", parameter.PodcasterId },
                                 { "Amount", newPodcastSubscriptionTransaction.Profit },
-                                { "TransactionTypeId", 10 }
+                                { "TransactionTypeId", (int)TransactionTypeEnum.SystemSubscriptionIncome }
                             };
 
                             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("payment-processing-domain", requestData, null, "podcast-subscription-system-payment-flow");

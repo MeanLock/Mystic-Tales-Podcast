@@ -91,7 +91,11 @@ namespace TransactionService.API.Configurations.Builder
                     policy.Requirements.Add(new AccountNoViolationAccessRequirement());
                     policy.Requirements.Add(new AccountPodcasterAccessRequirement());
                 });
-
+                options.AddPolicy("AdminOrCustomer.BasicAccess", policy =>
+                {
+                    policy.RequireRole("Admin", "Customer");
+                    policy.Requirements.Add(new AccountBasicAccessRequirement());
+                });
 
 
             });
