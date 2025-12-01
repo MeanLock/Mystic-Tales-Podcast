@@ -12,6 +12,8 @@ using System.Text;
 using System.Threading.Tasks;
 using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction;
 using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction.ListItems;
+using TransactionService.BusinessLogic.DTOs.Booking.ListItems;
+using TransactionService.BusinessLogic.DTOs.Cache;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.AccountBalanceCreatePaymentLink;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmAccountBalanceWithdrawal;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPayment;
@@ -20,6 +22,7 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateWithdrawalRequest;
 using TransactionService.BusinessLogic.DTOs.Snippet;
 using TransactionService.BusinessLogic.DTOs.Transaction;
+using TransactionService.BusinessLogic.Enums;
 using TransactionService.BusinessLogic.Enums.Account;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Enums.Transaction;
@@ -632,6 +635,204 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 _logger.LogError(ex, "Error occurred while retrieving account balance withdrawal requests for AccountId: {AccountId}", accountId);
                 throw new HttpRequestException("An error occurred while retrieving account balance withdrawal requests.");
             }
+        }
+        public async Task<List<AccountBalanceTransactionStatisticReportListItemResponseDTO>?> GetAccountBalanceTransactionStatisticByPodcasterIdAsync(StatisticsReportPeriodEnum statisticEnum, AccountStatusCache account)
+        {
+            try
+            {
+                List<AccountBalanceTransactionStatisticReportListItemResponseDTO> statisticList = new List<AccountBalanceTransactionStatisticReportListItemResponseDTO>();
+                if (statisticEnum == StatisticsReportPeriodEnum.Daily)
+                {
+                    DateOnly today = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone());
+                    DateOnly startDate = today.AddDays(-6);
+                    for (int i = 0; i < 7; i++)
+                    {
+                        DateOnly currentDate = startDate.AddDays(i);
+                        var depositAmount = await CalculateDepositAmount(currentDate, currentDate, account.Id);
+                        var withdrawalAmount = await CalculateWithdrawlAmount(currentDate, currentDate, account.Id);
+
+                        statisticList.Add(new AccountBalanceTransactionStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentDate,
+                            EndDate = currentDate,
+                            DepositTransactionAmount = depositAmount,
+                            WithdrawalTransactionAmount = withdrawalAmount
+                        });
+                    }
+
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Monthly)
+                {
+                    DateOnly startDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetLastDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfMonth;
+                    while (currentStartDate <= endDateOfMonth)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddDays(6);
+                        if (currentEndDate > endDateOfMonth)
+                        {
+                            currentEndDate = endDateOfMonth;
+                        }
+
+                        var depositAmount = await CalculateDepositAmount(currentStartDate, currentEndDate, account.Id);
+                        var withdrawalAmount = await CalculateWithdrawlAmount(currentStartDate, currentEndDate, account.Id);
+                        statisticList.Add(new AccountBalanceTransactionStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            DepositTransactionAmount = depositAmount,
+                            WithdrawalTransactionAmount = withdrawalAmount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Yearly)
+                {
+                    DateOnly startDateOfYear = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfYear = DateOnly.FromDateTime(_dateHelper.GetLastDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfYear;
+                    while (currentStartDate <= endDateOfYear)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddMonths(1).AddDays(-1);
+                        if (currentEndDate > endDateOfYear)
+                        {
+                            currentEndDate = endDateOfYear;
+                        }
+
+                        var depositAmount = await CalculateDepositAmount(currentStartDate, currentEndDate, account.Id);
+                        var withdrawalAmount = await CalculateWithdrawlAmount(currentStartDate, currentEndDate, account.Id);
+                        statisticList.Add(new AccountBalanceTransactionStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            DepositTransactionAmount = depositAmount,
+                            WithdrawalTransactionAmount = withdrawalAmount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else
+                {
+                    throw new HttpRequestException("Selected Period Enum is not Supported");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetPodcastSubscriptionIncomeStatisticByPodcasterIdAsync for PodcasterId: {PodcasterId}");
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription Income Statistic for PodcasterId: {ex.Message}");
+            }
+        }
+        public async Task<List<AccountBalanceTransactionStatisticReportListItemResponseDTO>?> GetSystemAccountBalanceTransactionStatisticAsync(StatisticsReportPeriodEnum statisticEnum)
+        {
+            try
+            {
+                List<AccountBalanceTransactionStatisticReportListItemResponseDTO> statisticList = new List<AccountBalanceTransactionStatisticReportListItemResponseDTO>();
+                if (statisticEnum == StatisticsReportPeriodEnum.Daily)
+                {
+                    DateOnly today = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone());
+                    DateOnly startDate = today.AddDays(-6);
+                    for (int i = 0; i < 7; i++)
+                    {
+                        DateOnly currentDate = startDate.AddDays(i);
+                        var depositAmount = await CalculateDepositAmount(currentDate, currentDate);
+                        var withdrawalAmount = await CalculateWithdrawlAmount(currentDate, currentDate);
+
+                        statisticList.Add(new AccountBalanceTransactionStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentDate,
+                            EndDate = currentDate,
+                            DepositTransactionAmount = depositAmount,
+                            WithdrawalTransactionAmount = withdrawalAmount
+                        });
+                    }
+
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Monthly)
+                {
+                    DateOnly startDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetLastDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfMonth;
+                    while (currentStartDate <= endDateOfMonth)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddDays(6);
+                        if (currentEndDate > endDateOfMonth)
+                        {
+                            currentEndDate = endDateOfMonth;
+                        }
+
+                        var depositAmount = await CalculateDepositAmount(currentStartDate, currentEndDate);
+                        var withdrawalAmount = await CalculateWithdrawlAmount(currentStartDate, currentEndDate);
+                        statisticList.Add(new AccountBalanceTransactionStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            DepositTransactionAmount = depositAmount,
+                            WithdrawalTransactionAmount = withdrawalAmount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Yearly)
+                {
+                    DateOnly startDateOfYear = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfYear = DateOnly.FromDateTime(_dateHelper.GetLastDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfYear;
+                    while (currentStartDate <= endDateOfYear)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddMonths(1).AddDays(-1);
+                        if (currentEndDate > endDateOfYear)
+                        {
+                            currentEndDate = endDateOfYear;
+                        }
+
+                        var depositAmount = await CalculateDepositAmount(currentStartDate, currentEndDate);
+                        var withdrawalAmount = await CalculateWithdrawlAmount(currentStartDate, currentEndDate);
+                        statisticList.Add(new AccountBalanceTransactionStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            DepositTransactionAmount = depositAmount,
+                            WithdrawalTransactionAmount = withdrawalAmount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else
+                {
+                    throw new HttpRequestException("Selected Period Enum is not Supported");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetPodcastSubscriptionIncomeStatisticByPodcasterIdAsync for PodcasterId: {PodcasterId}");
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription Income Statistic for PodcasterId: {ex.Message}");
+            }
+        }
+        private async Task<decimal> CalculateDepositAmount(DateOnly startDate, DateOnly endDate, int? accountId = null)
+        {
+            decimal totalIncome = 0;
+            var transactionList = await _accountBalanceTransactionGenericRepository.FindAll()
+                .Where(ab => ab.TransactionStatusId == (int)TransactionStatusEnum.Success && ab.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceDeposits
+                && DateOnly.FromDateTime(ab.CreatedAt) >= startDate && DateOnly.FromDateTime(ab.CreatedAt) <= endDate
+                && accountId != null ? ab.AccountId == accountId : true).ToListAsync();
+            totalIncome += transactionList != null ? transactionList.Sum(bt => bt.Amount) : 0;
+            return totalIncome;
+        }
+        private async Task<decimal> CalculateWithdrawlAmount(DateOnly startDate, DateOnly endDate, int? accountId = null)
+        {
+            decimal totalIncome = 0;
+            var transactionList = await _accountBalanceWithdrawalRequestGenericRepository.FindAll()
+                .Where(ab => ab.CompletedAt.HasValue && ab.IsRejected == false
+                && DateOnly.FromDateTime(ab.CompletedAt.Value) >= startDate && DateOnly.FromDateTime(ab.CompletedAt.Value) <= endDate
+                && accountId != null ? ab.AccountId == accountId : true).ToListAsync();
+            totalIncome += transactionList != null ? transactionList.Sum(bt => bt.Amount) : 0;
+            return totalIncome;
         }
         public async Task<long> GenerateRandomLongAsync(int minDigits = 5, int maxDigits = 8)
         {

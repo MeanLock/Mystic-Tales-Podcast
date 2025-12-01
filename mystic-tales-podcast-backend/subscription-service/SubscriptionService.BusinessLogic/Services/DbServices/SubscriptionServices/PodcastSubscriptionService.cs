@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.Account;
+using SubscriptionService.BusinessLogic.DTOs.Booking.ListItems;
 using SubscriptionService.BusinessLogic.DTOs.Cache;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CAcceptPodcastSubscriptionNewestVersion;
@@ -30,6 +31,7 @@ using SubscriptionService.BusinessLogic.DTOs.Snippet;
 using SubscriptionService.BusinessLogic.DTOs.Subscription;
 using SubscriptionService.BusinessLogic.DTOs.SystemConfiguration;
 using SubscriptionService.BusinessLogic.DTOs.Transaction;
+using SubscriptionService.BusinessLogic.Enums;
 using SubscriptionService.BusinessLogic.Enums.Kafka;
 using SubscriptionService.BusinessLogic.Enums.Podcast;
 using SubscriptionService.BusinessLogic.Enums.Subscription;
@@ -49,6 +51,7 @@ using SubscriptionService.Infrastructure.Services.Kafka;
 using System.Security.Principal;
 using System.Threading.Channels;
 using System.Transactions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices
 {
@@ -2597,7 +2600,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
-                    var channelList = await GetPodcastChannelsWithAccountId(paremeter.PodcasterId);
+                    var channelList = await GetPodcastChannelByPodcasterId(paremeter.PodcasterId);
                     if(channelList != null)
                     {
                         foreach (var channel in channelList)
@@ -4158,6 +4161,220 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while retrieving Podcast Subscription Dashboard for PodcastShowId: {podcastShowId}. Error: {ex.Message}");
             }
         }
+        public async Task<List<PodcastSubscriptionIncomeStatisticReportListItemResponseDTO>> GetPodcastSubscriptionIncomeStatisticByPodcasterIdAsync(StatisticsReportPeriodEnum statisticEnum, AccountStatusCache account)
+        {
+            try
+            {
+                List<PodcastSubscriptionIncomeStatisticReportListItemResponseDTO> statisticList = new List<PodcastSubscriptionIncomeStatisticReportListItemResponseDTO>();
+                if (statisticEnum == StatisticsReportPeriodEnum.Daily)
+                {
+                    DateOnly today = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone());
+                    DateOnly startDate = today.AddDays(-6);
+                    for (int i = 0; i < 7; i++)
+                    {
+                        DateOnly currentDate = startDate.AddDays(i);
+                        var amount = await CalculateIncome(account.Id, currentDate, currentDate);
+
+                        statisticList.Add(new PodcastSubscriptionIncomeStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentDate,
+                            EndDate = currentDate,
+                            Amount = amount
+                        });
+                    }
+
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Monthly)
+                {
+                    DateOnly startDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetLastDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfMonth;
+                    while (currentStartDate <= endDateOfMonth)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddDays(6);
+                        if (currentEndDate > endDateOfMonth)
+                        {
+                            currentEndDate = endDateOfMonth;
+                        }
+
+                        var amount = await CalculateIncome(account.Id, currentStartDate, currentEndDate);
+                        statisticList.Add(new PodcastSubscriptionIncomeStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            Amount = amount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Yearly)
+                {
+                    DateOnly startDateOfYear = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfYear = DateOnly.FromDateTime(_dateHelper.GetLastDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfYear;
+                    while (currentStartDate <= endDateOfYear)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddMonths(1).AddDays(-1);
+                        if (currentEndDate > endDateOfYear)
+                        {
+                            currentEndDate = endDateOfYear;
+                        }
+
+                        var amount = await CalculateIncome(account.Id, currentStartDate, currentEndDate);
+                        statisticList.Add(new PodcastSubscriptionIncomeStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            Amount = amount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else
+                {
+                    throw new HttpRequestException("Selected Period Enum is not Supported");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetPodcastSubscriptionIncomeStatisticByPodcasterIdAsync for PodcasterId: {PodcasterId}");
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription Income Statistic for PodcasterId: {ex.Message}");
+            }
+        }
+        public async Task<List<PodcastSubscriptionIncomeStatisticReportListItemResponseDTO>> GetSystemPodcastSubscriptionIncomeStatisticAsync(StatisticsReportPeriodEnum statisticEnum)
+        {
+            try
+            {
+                List<PodcastSubscriptionIncomeStatisticReportListItemResponseDTO> statisticList = new List<PodcastSubscriptionIncomeStatisticReportListItemResponseDTO>();
+                if (statisticEnum == StatisticsReportPeriodEnum.Daily)
+                {
+                    DateOnly today = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone());
+                    DateOnly startDate = today.AddDays(-6);
+                    for (int i = 0; i < 7; i++)
+                    {
+                        DateOnly currentDate = startDate.AddDays(i);
+                        var amount = await CalculateSystemIncome(currentDate, currentDate);
+
+                        statisticList.Add(new PodcastSubscriptionIncomeStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentDate,
+                            EndDate = currentDate,
+                            Amount = amount
+                        });
+                    }
+
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Monthly)
+                {
+                    DateOnly startDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetLastDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfMonth;
+                    while (currentStartDate <= endDateOfMonth)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddDays(6);
+                        if (currentEndDate > endDateOfMonth)
+                        {
+                            currentEndDate = endDateOfMonth;
+                        }
+
+                        var amount = await CalculateSystemIncome(currentStartDate, currentEndDate);
+                        statisticList.Add(new PodcastSubscriptionIncomeStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            Amount = amount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Yearly)
+                {
+                    DateOnly startDateOfYear = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfYear = DateOnly.FromDateTime(_dateHelper.GetLastDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly currentStartDate = startDateOfYear;
+                    while (currentStartDate <= endDateOfYear)
+                    {
+                        DateOnly currentEndDate = currentStartDate.AddMonths(1).AddDays(-1);
+                        if (currentEndDate > endDateOfYear)
+                        {
+                            currentEndDate = endDateOfYear;
+                        }
+
+                        var amount = await CalculateSystemIncome(currentStartDate, currentEndDate);
+                        statisticList.Add(new PodcastSubscriptionIncomeStatisticReportListItemResponseDTO
+                        {
+                            StartDate = currentStartDate,
+                            EndDate = currentEndDate,
+                            Amount = amount
+                        });
+                        currentStartDate = currentEndDate.AddDays(1);
+                    }
+                    return statisticList;
+                }
+                else
+                {
+                    throw new HttpRequestException("Selected Period Enum is not Supported");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetPodcastSubscriptionIncomeStatisticByPodcasterIdAsync for PodcasterId: {PodcasterId}");
+                throw new HttpRequestException($"Error while retrieving Podcast Subscription Income Statistic for PodcasterId: {ex.Message}");
+            }
+        }
+        private async Task<decimal> CalculateIncome(int accountId, DateOnly startDate, DateOnly endDate)
+        {
+            decimal totalIncome = 0;
+            var channelList = await GetPodcastChannelByPodcasterId(accountId);
+            var showList = await GetPodcastShowByPodcasterId(accountId);
+            var channelIds = channelList?.Select(c => c.Id).ToList() ?? new List<Guid>();
+            var showIds = showList?.Select(s => s.Id).ToList() ?? new List<Guid>();
+
+            var podcastSubscriptionList = await _podcastSubscriptionGenericRepository.FindAll(
+                includeFunc: function => function
+                .Include(ps => ps.PodcastSubscriptionRegistrations))
+                .Where(ps => ps.PodcastChannelId.HasValue ? channelIds.Contains(ps.PodcastChannelId.Value) : showIds.Contains(ps.PodcastShowId.Value)).ToListAsync();
+            foreach (var subscription in podcastSubscriptionList)
+            {
+                var registrations = subscription.PodcastSubscriptionRegistrations
+                    .Where(psr => DateOnly.FromDateTime(psr.LastPaidAt) >= startDate&& DateOnly.FromDateTime(psr.LastPaidAt) <= endDate && psr.IsIncomeTaken);
+                foreach (var registration in registrations)
+                {
+                    var subscriptionRegistrations = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                    totalIncome += subscriptionRegistrations != null ? subscriptionRegistrations.Where(st => DateOnly.FromDateTime(st.CreatedAt) >= startDate && DateOnly.FromDateTime(st.CreatedAt) <= endDate).Sum(bt => bt.Amount) : 0;
+                }
+            }
+            return totalIncome;
+        }
+        private async Task<decimal> CalculateSystemIncome(DateOnly startDate, DateOnly endDate)
+        {
+            decimal totalIncome = 0;
+            var channelList = await GetAllPodcastChannels();
+            var showList = await GetAllPodcastShows();
+            var channelIds = channelList?.Select(c => c.Id).ToList() ?? new List<Guid>();
+            var showIds = showList?.Select(s => s.Id).ToList() ?? new List<Guid>();
+
+            var podcastSubscriptionList = await _podcastSubscriptionGenericRepository.FindAll(
+                includeFunc: function => function
+                .Include(ps => ps.PodcastSubscriptionRegistrations))
+                .Where(ps => ps.PodcastChannelId.HasValue ? channelIds.Contains(ps.PodcastChannelId.Value) : showIds.Contains(ps.PodcastShowId.Value)).ToListAsync();
+            foreach (var subscription in podcastSubscriptionList)
+            {
+                var registrations = subscription.PodcastSubscriptionRegistrations
+                    .Where(psr => DateOnly.FromDateTime(psr.LastPaidAt) >= startDate && DateOnly.FromDateTime(psr.LastPaidAt) <= endDate && psr.IsIncomeTaken);
+                foreach (var registration in registrations)
+                {
+                    var subscriptionRegistrations = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                    totalIncome += subscriptionRegistrations != null ? subscriptionRegistrations.Where(st => DateOnly.FromDateTime(st.CreatedAt) >= startDate && DateOnly.FromDateTime(st.CreatedAt) <= endDate).Sum(bt => bt.Amount) : 0;
+                }
+            }
+            return totalIncome;
+        }
         public async Task<PodcastChannelDTO?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
         {
             try
@@ -4546,7 +4763,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while querying Podcast Shows for PodcastChannelId: {podcastChannelId}. Error: {ex.Message}");
             }
         }
-        public async Task<List<PodcastChannelDTO>?> GetPodcastChannelsWithAccountId(int accountId)
+        public async Task<List<PodcastChannelDTO>?> GetPodcastChannelByPodcasterId(int accountId)
         {
             try
             {
@@ -4583,6 +4800,39 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 throw new HttpRequestException($"Error while querying Podcast Channels for AccountId: {accountId}. Error: {ex.Message}");
             }
         }
+        public async Task<List<PodcastChannelDTO>?> GetAllPodcastChannels()
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastChannelOfAccount",
+                            QueryType = "findall",
+                            EntityType = "PodcastChannel",
+                            Parameters = JObject.FromObject(new
+                            {
+                                include = "PodcastChannelStatusTrackings"
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+                return result.Results?["podcastChannelOfAccount"] is JArray podcastChannelArray && podcastChannelArray.Count >= 0
+                    ? podcastChannelArray.ToObject<List<PodcastChannelDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query all podcast channels}");
+                throw new HttpRequestException($"Error while querying all Podcast Channels. Error: {ex.Message}");
+            }
+        }
         public async Task<List<PodcastSubscriptionTransactionDTO>?> GetPodcastSubscriptionTransactionByRegistrationId(Guid registrationId)
         {
             try
@@ -4614,6 +4864,44 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionDTO>>()
                     : null;
             } catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast subscription transactions with RegistrationId: {RegistrationId}", registrationId);
+                throw new HttpRequestException($"Error while querying Podcast Subscription Transactions for RegistrationId: {registrationId}. Error: {ex.Message}");
+            }
+        }
+        public async Task<List<PodcastSubscriptionTransactionDTO>?> GetSystemPodcastSubscriptionTransactionByRegistrationId(Guid registrationId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastSubscriptionTransaction",
+                            QueryType = "findall",
+                            EntityType = "PodcastSubscriptionTransaction",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    PodcastSubscriptionRegistrationId = registrationId,
+                                    TransactionTypeId =(int)TransactionTypeEnum.SystemSubscriptionIncome,
+                                    TransactionStatusId = (int)TransactionStatusEnum.Success
+                                }
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
+
+                return result.Results?["podcastSubscriptionTransaction"] is JArray podcastSubscriptionTransactionArray && podcastSubscriptionTransactionArray.Count >= 0
+                    ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 _logger.LogError(ex, "Error occurred while query podcast subscription transactions with RegistrationId: {RegistrationId}", registrationId);
@@ -4731,6 +5019,76 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 _logger.LogError(ex, "Error occurred while query podcast show with AccountId: {AccountId} and PodcastShowId: {PodcastShowId}", accountId, podcastShowId);
                 throw new HttpRequestException($"Error while querying Podcast Show for AccountId: {accountId} and PodcastShowId: {podcastShowId}. Error: {ex.Message}");
+            }
+        }
+        public async Task<List<PodcastShowDTO>?> GetPodcastShowByPodcasterId(int accountId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShowOfAccount",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    PodcasterId = accountId
+                                },
+                                include = "PodcastShowStatusTrackings"
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+                return result.Results?["podcastShowOfAccount"] is JArray podcastShowArray && podcastShowArray.Count >= 0
+                    ? podcastShowArray.ToObject<List<PodcastShowDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast show with AccountId: {AccountId}}", accountId);
+                throw new HttpRequestException($"Error while querying Podcast Show for AccountId: {accountId}. Error: {ex.Message}");
+            }
+        }
+        public async Task<List<PodcastShowDTO>?> GetAllPodcastShows()
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastShowOfAccount",
+                            QueryType = "findall",
+                            EntityType = "PodcastShow",
+                            Parameters = JObject.FromObject(new
+                            {
+                                include = "PodcastShowStatusTrackings"
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("PodcastService", batchRequest);
+
+                return result.Results?["podcastShowOfAccount"] is JArray podcastShowArray && podcastShowArray.Count >= 0
+                    ? podcastShowArray.ToObject<List<PodcastShowDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query all podcast show");
+                throw new HttpRequestException($"Error while querying all Podcast Show. Error: {ex.Message}");
             }
         }
     }

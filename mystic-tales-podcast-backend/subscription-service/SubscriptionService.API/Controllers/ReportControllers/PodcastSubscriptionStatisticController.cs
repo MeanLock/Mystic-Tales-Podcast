@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SubscriptionService.API.Controllers.BaseControllers;
 using SubscriptionService.API.Filters.ExceptionFilters;
 using SubscriptionService.BusinessLogic.DTOs.Cache;
+using SubscriptionService.BusinessLogic.Enums;
 using SubscriptionService.BusinessLogic.Enums.Kafka;
 using SubscriptionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices;
@@ -69,6 +70,32 @@ namespace SubscriptionService.API.Controllers.ReportControllers
             var podcastSubscriptionDashboard = await _podcastSubscriptionService.GetPodcastSubscriptionDashboardByPodcastShowIdAsync(PodcastShowId);
             return Ok(podcastSubscriptionDashboard);
         }
+        [HttpGet("statistics/summary/me")]
+        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        public async Task<IActionResult> GetPodcastSubscriptionStatisticByPodcasterIdAsync(
+            [FromQuery] StatisticsReportPeriodEnum? report_period = null)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            if (!report_period.HasValue)
+            {
+                return BadRequest("ReportPeriod is required.");
+            }
+            var podcastSubscriptionIncomeStatistic = await _podcastSubscriptionService.GetPodcastSubscriptionIncomeStatisticByPodcasterIdAsync(report_period.Value, account);
 
+            return Ok(podcastSubscriptionIncomeStatistic);
+        }
+        [HttpGet("statistics/summary/system")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> GetSystemPodcastSubscriptionStatisticAsync(
+            [FromQuery] StatisticsReportPeriodEnum? report_period = null)
+        {            
+            if (!report_period.HasValue)
+            {
+                return BadRequest("ReportPeriod is required.");
+            }
+            var podcastSubscriptionIncomeStatistic = await _podcastSubscriptionService.GetSystemPodcastSubscriptionIncomeStatisticAsync(report_period.Value);
+
+            return Ok(podcastSubscriptionIncomeStatistic);
+        }
     }
 }

@@ -58,7 +58,7 @@ namespace BookingManagementService.API.Controllers.ReportControllers
             _messagingService = messagingService;
             _ffMpegCoreHlsService = ffMpegCoreHlsService;
         }
-        [HttpGet("me/statistics")]
+        [HttpGet("statistics/summary/me")]
         [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
         public async Task<IActionResult> GetBookingStatisticsByPodcasterIdAsync(
             [FromQuery] StatisticsReportPeriodEnum? report_period = null)
@@ -69,6 +69,19 @@ namespace BookingManagementService.API.Controllers.ReportControllers
                 return BadRequest("ReportPeriod is required.");
             }
             var bookingIncomeStatistic = await _bookingService.GetBookingIncomeStatisticAsync(report_period.Value, account);
+
+            return Ok(bookingIncomeStatistic);
+        }
+        [HttpGet("statistics/summary/system")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> GetBookingStatisticsAsync(
+            [FromQuery] StatisticsReportPeriodEnum? report_period = null)
+        {
+            if (!report_period.HasValue)
+            {
+                return BadRequest("ReportPeriod is required.");
+            }
+            var bookingIncomeStatistic = await _bookingService.GetSystemBookingIncomeStatisticAsync(report_period.Value);
 
             return Ok(bookingIncomeStatistic);
         }

@@ -4,7 +4,6 @@ namespace BookingManagementService.BusinessLogic.Enums
     {
         Daily = 1,
         Monthly = 2,
-        Yearly = 3,
-        AllTime = 4
+        Yearly = 3
     }  
 }
