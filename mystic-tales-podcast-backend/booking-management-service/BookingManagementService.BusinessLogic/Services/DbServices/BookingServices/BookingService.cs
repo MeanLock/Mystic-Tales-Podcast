@@ -53,6 +53,7 @@ using GreenDonut;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Security.Principal;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
@@ -3479,6 +3480,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 .OrderByDescending(bpts => bpts.CreatedAt)
                 .FirstOrDefaultAsync();
 
+                Console.WriteLine("\n ALOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+                Console.WriteLine(bookingPodcastTrackListenSession == null);
+                //Console.WriteLine("\n" + JsonConvert.SerializeObject(bookingPodcastTrackListenSession) + "\n");
                 if (bookingPodcastTrackListenSession == null)
                 {
                     return new BookingListenSessionResponseDTO
