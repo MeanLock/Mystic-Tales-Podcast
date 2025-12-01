@@ -263,9 +263,15 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
                     foreach (var procedure in customerListenSessionCacheKey.Values)
                     {
-                        if(!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == previousProducingRequest.Id)
+                        if (!procedure.IsCompleted)
                         {
-                            await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                            bool belongsToThisBooking = booking.BookingProducingRequests
+                                .Any(bp => bp.Id == procedure.SourceDetail.Booking.BookingProducingRequestId);
+
+                            if (belongsToThisBooking)
+                            {
+                                await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                            }
                         }
                     }
 
@@ -385,9 +391,15 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
                     foreach (var procedure in customerListenSessionCacheKey.Values)
                     {
-                        if (!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == previousProducingRequest.Id)
+                        if (!procedure.IsCompleted)
                         {
-                            await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                            bool belongsToThisBooking = booking.BookingProducingRequests
+                                .Any(bp => bp.Id == procedure.SourceDetail.Booking.BookingProducingRequestId);
+
+                            if (belongsToThisBooking)
+                            {
+                                await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                            }
                         }
                     }
 
