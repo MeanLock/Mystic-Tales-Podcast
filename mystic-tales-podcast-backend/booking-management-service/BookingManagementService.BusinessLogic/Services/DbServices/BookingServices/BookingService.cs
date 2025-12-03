@@ -1526,7 +1526,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     booking.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
                     booking.Deadline = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone().AddDays((double)booking.DeadlineDays.Value));
                     var staffList = await GetStaffList();
-                    booking.AssignedStaffId = await GetRandomItemFromJArray(staffList);
+                    booking.AssignedStaffId = await GetRandomStaffFromList(staffList);
                     await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                     var newBookingProducingRequest = new BookingProducingRequest
@@ -1770,35 +1770,52 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         //        }
         //    }
         //}
-        private async Task<JArray?> GetStaffList()
-        {
-            var batchRequest = new BatchQueryRequest
-            {
-                Queries = new List<BatchQueryItem>
-                    {
-                        new BatchQueryItem
-                        {
-                            Key = "activeStaffList",
-                            QueryType = "findall",
-                            EntityType = "Account",
-                                Parameters = JObject.FromObject(new
-                                {
-                                    where = new
-                                    {
-                                        IsVerify = true,
-                                        RoleId = (int)RoleEnum.Staff
-                                    },
-                                }),
-                        }
-                    }
-            };
-            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+        //private async Task<JArray?> GetStaffList()
+        //{
+        //    var batchRequest = new BatchQueryRequest
+        //    {
+        //        Queries = new List<BatchQueryItem>
+        //            {
+        //                new BatchQueryItem
+        //                {
+        //                    Key = "activeStaffList",
+        //                    QueryType = "findall",
+        //                    EntityType = "Account",
+        //                        Parameters = JObject.FromObject(new
+        //                        {
+        //                            where = new
+        //                            {
+        //                                IsVerify = true,
+        //                                RoleId = (int)RoleEnum.Staff
+        //                            },
+        //                        }),
+        //                }
+        //            }
+        //    };
+        //    var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
 
-            return result.Results?["activeStaffList"] is JArray staffListArray && staffListArray.Count > 0
-                ? staffListArray as JArray
-                : null;
-        }
-        private async Task<int> GetRandomItemFromJArray(JArray? array)
+        //    var realResult = result.Results?["activeStaffList"] is JArray staffListArray && staffListArray.Count >= 0
+        //        ? staffListArray as JArray
+        //        : null;
+        //    if(realResult != null)
+        //    {
+        //        for (int i = 0; i < realResult.Count; i++)
+        //        {
+        //            var staff = realResult[i];
+        //            if (staff["Id"] != null && staff["Id"].Type == JTokenType.Integer)
+        //            {
+        //                // Valid staff Id
+        //            }
+        //            else
+        //            {
+        //                // Invalid staff Id, remove this entry
+        //                realResult.RemoveAt(i);
+        //                i--; // Adjust index after removal
+        //            }
+        //        }
+        //    }
+        //}
+        private async Task<int> GetRandomStaffFromList(List<AccountDTO>? array)
         {
             //if (array == null || array.Count == 0)
             //    return null;
@@ -1811,7 +1828,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 .Select(pbrrs => pbrrs.AssignedStaffId)
                 .ToListAsync();
 
-            List<AccountDTO> availableStaff = array.ToObject<List<AccountDTO>>();
+            List<AccountDTO> availableStaff = array;
             Dictionary<int, int> staffAssignmentCount = new Dictionary<int, int>();
             foreach (var staff in availableStaff)
             {
@@ -2966,9 +2983,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledManually ||
                 b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledAutomatically ||
                 b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.QuotationRejected
-                )
                 && (startDate <= DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) &&
-                DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) <= endDate)).ToListAsync();
+                DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) <= endDate))).ToListAsync();
             foreach (var booking in bookingList)
             {
                 var bookingTransactions = await GetSystemBookingTransactionByBookingId(booking.Id);
@@ -2985,10 +3001,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 .Where(b => (b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Completed ||
                 b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledManually ||
                 b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledAutomatically
-                )
                 && (startDate <= DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) &&
                 DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) <= endDate)
-                && b.PodcastBuddyId == accountId).ToListAsync();
+                && b.PodcastBuddyId == accountId)).ToListAsync();
             foreach (var booking in bookingList)
             {
                 var bookingTransactions = await GetBookingTransactionByBookingId(booking.Id);
@@ -4126,6 +4141,44 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogError("Complete All User Booking Producing Listen Sessions failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
                 }
+            }
+        }
+        private async Task<List<AccountDTO>?> GetStaffList()
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "activeStaffList",
+                            QueryType = "findall",
+                            EntityType = "Account",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        IsVerify = true,
+                                        RoleId = (int)RoleEnum.Staff,
+                                        DeactivatedAt = (DateTime?) null
+                                    },
+                                }),
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+
+                return result.Results?["activeStaffList"] is JArray staffListArray && staffListArray.Count >= 0
+                    ? staffListArray.ToObject<List<AccountDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n exception: " + ex.Message + "\n");
+                _logger.LogError(ex, "Error occurred while fetching staff list from User Service");
+                throw new HttpRequestException("Retreive Staff list failed. Error: " + ex.Message);
             }
         }
         private async Task<bool> CheckListenerCanListenToTrackAsync(int accountId, Guid podcastTrackId)

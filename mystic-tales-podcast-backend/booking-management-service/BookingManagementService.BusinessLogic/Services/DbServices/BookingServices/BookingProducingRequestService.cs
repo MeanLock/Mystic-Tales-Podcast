@@ -248,29 +248,32 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new HttpRequestException("Current booking status is not valid for creating producing request");
                     }
 
-                    // Complete all listen sessions in the previous producing request
-                    var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                    if (previousProducingRequest != null)
+                    {
+                        // Complete all listen sessions in the previous producing request
+                        var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
                         .Where(ls => !ls.IsCompleted && previousProducingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == parameter.AccountId)
                         .ToListAsync();
-                    var Count = listenSession.Count;
-                    foreach (var session in listenSession)
-                    {
-                        session.IsCompleted = true;
-                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
-                    }
-
-                    // Complete all listen session procedures of the previous producing request in cache
-                    var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
-                    foreach (var procedure in customerListenSessionCacheKey.Values)
-                    {
-                        if (!procedure.IsCompleted)
+                        var Count = listenSession.Count;
+                        foreach (var session in listenSession)
                         {
-                            bool belongsToThisBooking = booking.BookingProducingRequests
-                                .Any(bp => bp.Id == procedure.SourceDetail.Booking.BookingProducingRequestId);
+                            session.IsCompleted = true;
+                            await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                        }
 
-                            if (belongsToThisBooking)
+                        // Complete all listen session procedures of the previous producing request in cache
+                        var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
+                        foreach (var procedure in customerListenSessionCacheKey.Values)
+                        {
+                            if (!procedure.IsCompleted)
                             {
-                                await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                                bool belongsToThisBooking = booking.BookingProducingRequests
+                                    .Any(bp => bp.Id == procedure.SourceDetail.Booking.BookingProducingRequestId);
+
+                                if (belongsToThisBooking)
+                                {
+                                    await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                                }
                             }
                         }
                     }
@@ -340,13 +343,26 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .Include(b => b.BookingStatusTrackings))
                         .Where(b => b.Id == parameter.BookingId)
                         .FirstOrDefaultAsync();
+                    var currentStatus = booking.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).Select(bs => bs.BookingStatusId).FirstOrDefault();
                     if (booking == null)
                     {
                         throw new Exception($"Booking with id {parameter.BookingId} not found");
                     }
-                    if (booking.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).Select(bs => bs.BookingStatusId).FirstOrDefault() != (int)BookingStatusEnum.Producing)
+                    if (currentStatus < (int)BookingStatusEnum.Producing)
                     {
-                        throw new Exception("Can't request cancel when booking is not in producing");
+                        throw new Exception("Booking is not eligible for cancelling");
+                    }
+                    if (currentStatus == (int)BookingStatusEnum.CustomerCancelledRequest || currentStatus == (int)BookingStatusEnum.PodcastBuddyCancelledRequest)
+                    {
+                        throw new Exception("Booking is currently in cancelling requested");
+                    }
+                    if(currentStatus == (int)BookingStatusEnum.CancelledAutomatically || currentStatus == (int)BookingStatusEnum.CancelledManually)
+                    {
+                        throw new Exception("Booking has been cancelled already");
+                    }
+                    if(currentStatus == (int)BookingStatusEnum.Completed)
+                    {
+                        throw new Exception("Booking has been completed already");
                     }
                     var status = 0;
                     if (booking.AccountId == parameter.AccountId)
@@ -376,29 +392,32 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .OrderByDescending(pr => pr.CreatedAt)
                         .FirstOrDefaultAsync();
 
-                    // Complete all listen sessions in the previous producing request
-                    var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
-                        .Where(ls => !ls.IsCompleted && previousProducingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == parameter.AccountId)
-                        .ToListAsync();
-                    var Count = listenSession.Count;
-                    foreach (var session in listenSession)
+                    if(previousProducingRequest != null)
                     {
-                        session.IsCompleted = true;
-                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
-                    }
-
-                    // Complete all listen session procedures of the previous producing request in cache
-                    var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
-                    foreach (var procedure in customerListenSessionCacheKey.Values)
-                    {
-                        if (!procedure.IsCompleted)
+                        // Complete all listen sessions in the previous producing request
+                        var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                            .Where(ls => !ls.IsCompleted && previousProducingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == parameter.AccountId)
+                            .ToListAsync();
+                        var Count = listenSession.Count;
+                        foreach (var session in listenSession)
                         {
-                            bool belongsToThisBooking = booking.BookingProducingRequests
-                                .Any(bp => bp.Id == procedure.SourceDetail.Booking.BookingProducingRequestId);
+                            session.IsCompleted = true;
+                            await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                        }
 
-                            if (belongsToThisBooking)
+                        // Complete all listen session procedures of the previous producing request in cache
+                        var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
+                        foreach (var procedure in customerListenSessionCacheKey.Values)
+                        {
+                            if (!procedure.IsCompleted)
                             {
-                                await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                                bool belongsToThisBooking = booking.BookingProducingRequests
+                                    .Any(bp => bp.Id == procedure.SourceDetail.Booking.BookingProducingRequestId);
+
+                                if (belongsToThisBooking)
+                                {
+                                    await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                                }
                             }
                         }
                     }
@@ -1061,22 +1080,25 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .OrderByDescending(bpr => bpr.CreatedAt)
                         .FirstOrDefaultAsync();
 
-                    var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                    if(producingRequest != null)
+                    {
+                        var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
                         .Where(ls => !ls.IsCompleted && producingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == parameter.AccountId)
                         .ToListAsync();
-                    foreach (var session in listenSession)
-                    {
-                        session.IsCompleted = true;
-                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
-                    }
-
-                    // Complete all customer listen session procedure of the producing request in cache
-                    var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
-                    foreach (var procedure in customerListenSessionCacheKey.Values)
-                    {
-                        if (!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                        foreach (var session in listenSession)
                         {
-                            await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                            session.IsCompleted = true;
+                            await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                        }
+
+                        // Complete all customer listen session procedure of the producing request in cache
+                        var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
+                        foreach (var procedure in customerListenSessionCacheKey.Values)
+                        {
+                            if (!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                            {
+                                await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                            }
                         }
                     }
 

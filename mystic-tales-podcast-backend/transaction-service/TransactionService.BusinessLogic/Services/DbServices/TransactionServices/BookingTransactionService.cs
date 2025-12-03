@@ -8,9 +8,13 @@ using System.Threading.Tasks;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CompleteBookingTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateBookingTransactionRollback;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ProcessingBookingTransaction;
+using TransactionService.BusinessLogic.DTOs.SystemConfiguration;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
+using TransactionService.BusinessLogic.Models.CrossService;
+using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
 using TransactionService.DataAccess.Data;
 using TransactionService.DataAccess.Entities.SqlServer;
@@ -31,6 +35,8 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
         private readonly DateHelper _dateHelper;
+        private readonly HttpServiceQueryClient _httpServiceQueryClient;
+
         public BookingTransactionService(
             AppDbContext appDbContext,
             ILogger<BookingTransactionService> logger,
@@ -38,7 +44,8 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             IPayosConfig payosConfig,
             KafkaProducerService kafkaProducerService,
             IMessagingService messagingService,
-            DateHelper dateHelper)
+            DateHelper dateHelper,
+            HttpServiceQueryClient httpServiceQueryClient)
         {
             _appDbContext = appDbContext;
             _logger = logger;
@@ -47,6 +54,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
             _dateHelper = dateHelper;
+            _httpServiceQueryClient = httpServiceQueryClient;
         }
         public async Task CreateBookingTransactionAsync(CreateBookingTransactionParameterDTO parameter, SagaCommandMessage command)
         {
@@ -119,6 +127,13 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
 
                             break;
                         case (int)TransactionTypeEnum.BookingPayTheRest:
+                            var config = await GetActiveSystemConfigProfile();
+                            if (config == null || config.BookingConfig == null)
+                            {
+                                throw new Exception("Active system config profile or booking config not found.");
+                            }
+                            var profitRate = config.BookingConfig.ProfitRate;
+                            var depositRate = config.BookingConfig.DepositRate;
                             var payTheRestBookingTransaction = new BookingTransaction
                             {
                                 BookingId = parameter.BookingId,
@@ -130,6 +145,20 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                                 UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                             };
                             newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(payTheRestBookingTransaction);
+
+                            var originalPrice = parameter.Amount / (decimal)depositRate;
+                            var requestData2 = new JObject
+                            {
+                                { "BookingId", parameter.BookingId },
+                                { "Profit", originalPrice * (decimal)profitRate },
+                                { "AccountId", parameter.AccountId },
+                                { "PodcasterId", parameter.PodcasterId },
+                                { "Amount", originalPrice - originalPrice * (decimal)profitRate },
+                                { "TransactionTypeId", (int)TransactionTypeEnum.PodcasterBookingIncome }
+                            };
+                            var startSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(KafkaTopicEnum.PaymentProcessingDomain, requestData2, null, "booking-podcaster-payment-flow");
+                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage2);
+
                             break;
                         case (int)TransactionTypeEnum.PodcasterBookingIncome:
                             var additionalStoragePurchaseBookingTransaction = new BookingTransaction
@@ -144,7 +173,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                             };
                             newBookingTransaction = await _bookingTransactionGenericRepository.CreateAsync(additionalStoragePurchaseBookingTransaction);
 
-                            var requestData2 = new JObject
+                            var requestData3 = new JObject
                             {
                                 { "BookingId", newBookingTransaction.BookingId },
                                 { "Profit", null },
@@ -153,8 +182,8 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                                 { "Amount", newBookingTransaction.Profit },
                                 { "TransactionTypeId", (int)TransactionTypeEnum.SystemBookingIncome }
                             };
-                            var startSagaTriggerMessage2 = _kafkaProducerService.PrepareStartSagaTriggerMessage(KafkaTopicEnum.PaymentProcessingDomain, requestData2, null, "booking-system-payment-flow");
-                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage2);
+                            var startSagaTriggerMessage3 = _kafkaProducerService.PrepareStartSagaTriggerMessage(KafkaTopicEnum.PaymentProcessingDomain, requestData3, null, "booking-system-payment-flow");
+                            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage3);
 
                             break;
                         case (int)TransactionTypeEnum.SystemBookingIncome:
@@ -298,6 +327,39 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 }
             }
         }
+        //public async Task ProcessingBookingTransactionAsync(ProcessingBookingTransactionParameterDTO parameter, SagaCommandMessage command)
+        //{
+        //    using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //    {
+        //        try
+        //        {
+        //            var messageName = command.MessageName;
+        //            var sagaId = command.SagaInstanceId;
+        //            var flowName = command.FlowName;
+        //            var responseData = command.LastStepResponseData;
+
+
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            await transaction.RollbackAsync();
+        //            _logger.LogError(ex, "Error occurred while Processing Booking Transaction for SagaId: {SagaId}", command.SagaInstanceId);
+        //            var newResponseData = new JObject{
+        //                    { "ErrorMessage", "Processing Booking Transaction failed, error: " + ex.Message }
+        //                };
+        //            var newMessageName = command.MessageName + ".failed";
+        //            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                topic: KafkaTopicEnum.PaymentProcessingDomain,
+        //                requestData: command.RequestData,
+        //                responseData: newResponseData,
+        //                sagaInstanceId: command.SagaInstanceId,
+        //                flowName: command.FlowName,
+        //                messageName: newMessageName);
+        //            await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+        //            _logger.LogInformation("Processing Booking Transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
+        //        }
+        //    }
+        //}
         public async Task CreateBookingTransactionRollbackAsync(CreateBookingTransactionRollbackParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -351,6 +413,45 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
                     _logger.LogInformation("Rollback create booking transaction failed for SagaId: {SagaId}", command.SagaInstanceId);
                 }
+            }
+        }
+        private async Task<SystemConfigProfileDTO?> GetActiveSystemConfigProfile()
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "activeSystemConfigProfile",
+                            QueryType = "findall",
+                            EntityType = "SystemConfigProfile",
+                                Parameters = JObject.FromObject(new
+                                {
+                                    where = new
+                                    {
+                                        IsActive = true
+                                    },
+                                    include = "AccountConfig,AccountViolationLevelConfigs, BookingConfig, PodcastSubscriptionConfigs, PodcastSuggestionConfig, ReviewSessionConfig",
+
+                                }),
+                            Fields = new[] { "Id", "Name", "IsActive", "AccountConfig", "AccountViolationLevelConfigs", "BookingConfig", "PodcastSubscriptionConfigs", "PodcastSuggestionConfig", "ReviewSessionConfig" }
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SystemConfigurationService", batchRequest);
+
+                return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
+                    ? configArray.First.ToObject<SystemConfigProfileDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while fetching active system config profile");
+                throw new HttpRequestException("Failed to fetch active system config profile. error: " + ex.Message);
             }
         }
     }

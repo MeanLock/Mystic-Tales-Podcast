@@ -20,6 +20,7 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransaction;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreatePodcastSubscriptionTransactionRollback;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateWithdrawalRequest;
+using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ProcessingBookingTransaction;
 using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Services.DbServices.TransactionServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
@@ -289,5 +290,20 @@ namespace TransactionService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "confirm-account-balance-withdrawal.failed"
             );
         }
+        //[MessageHandler("processing-booking-transaction", SAGA_TOPIC)]
+        //public async Task HandleProcessingBookingTransactionCommandAsync(string key, string messageJson)
+        //{
+        //    await ExecuteSagaCommandMessageAsync(
+        //        messageJson,
+        //        async (command) =>
+        //        {
+        //            var parameters = command.RequestData.ToObject<ProcessingBookingTransactionParameterDTO>();
+        //            await _accountBalanceTransactionService.ProcessingBookingTransactionAsync(parameters, command);
+        //            _logger.LogInformation("Handled processing-booking-transaction command for SagaId: {SagaId}", command.SagaInstanceId);
+        //        },
+        //        responseTopic: SAGA_TOPIC,
+        //        failedEmitMessage: "processing-booking-transaction.failed"
+        //    );
+        //}
     }
 }

@@ -7201,6 +7201,137 @@ flows:
               topic: "user-management-domain"
               handle-service: "SagaOrchestratorService"
 
+  booking-podcaster-payment-flow:
+    topic: "payment-processing-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Thanh toán phí dịch vụ booking cho hệ thống"
+    save-file: ""
+    steps:
+      - name: "create-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Tạo booking system payment transaction"
+        parameters:
+          - BookingId
+          - Amount
+          - Profit
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        next-request-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - Profit 
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - Profit 
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+          - CreatedAt
+        onSuccess:
+          emit: "create-booking-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "add-podcaster-balance-amount"
+              topic: "user-management-domain"
+              handle-service: "UserService"
+          nextFlows: []
+        onFailure:
+          emit: "create-booking-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "add-podcaster-balance-amount"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Thêm tiền vô ví podcaster"
+        parameters:
+          - PodcasterId
+          - Amount
+        next-request-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - Profit 
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - PodcasterId
+          - Amount
+          - NewBalance
+        onSuccess:
+          emit: "add-podcaster-balance-amount.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: 
+            - name: "complete-booking-transaction"
+              topic: "payment-processing-domain"
+              handle-service: "TransactionService"
+          nextFlows: []
+        onFailure:
+          emit: "add-podcaster-balance-amount.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "create-booking-transaction-rollback-flow"
+              topic: "payment-processing-domain"
+              handle-service: "SagaOrchestratorService"
+      - name: "complete-booking-transaction"
+        topic: "payment-processing-domain"
+        handle-service: "TransactionService"
+        description: "Cập nhật status thành success cho booking transaction"
+        parameters:
+          - BookingTransactionId
+        next-request-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - Profit 
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+        response-data:
+          - BookingTransactionId
+          - BookingId
+          - Amount
+          - Profit 
+          - AccountId
+          - PodcasterId
+          - TransactionTypeId
+          - UpdatedAt
+        onSuccess:
+          emit: "complete-booking-transaction.success"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "booking-completion-flow"
+              topic: "booking-management-domain"
+              handle-service: "SagaOrchestratorService"
+        onFailure:
+          emit: "complete-booking-transaction.failed"
+          topic: "payment-processing-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: 
+            - name: "subtract-account-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+            - name: "add-podcaster-balance-amount-rollback-flow"
+              topic: "user-management-domain"
+              handle-service: "SagaOrchestratorService"
+
   booking-final-payment-flow:
     topic: "payment-processing-domain"
     handle-service: "SagaOrchestratorService"
@@ -7234,7 +7365,7 @@ flows:
           topic: "payment-processing-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: 
-            - name: "add-podcaster-balance-amount"
+            - name: "subtract-account-balance-amount"
               topic: "user-management-domain"
               handle-service: "UserService"
           nextFlows: []
@@ -7244,43 +7375,6 @@ flows:
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []
-      - name: "add-podcaster-balance-amount"
-        topic: "user-management-domain"
-        handle-service: "UserService"
-        description: "Thêm tiền vô ví podcaster"
-        parameters:
-          - PodcasterId
-          - Amount
-        next-request-data:
-          - BookingTransactionId
-          - BookingId
-          - Amount
-          - Profit 
-          - AccountId
-          - PodcasterId
-          - TransactionTypeId
-        response-data:
-          - PodcasterId
-          - Amount
-          - NewBalance
-        onSuccess:
-          emit: "add-podcaster-balance-amount.success"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: 
-            - name: "subtract-account-balance-amount"
-              topic: "user-management-domain"
-              handle-service: "UserService"
-          nextFlows: []
-        onFailure:
-          emit: "add-podcaster-balance-amount.failed"
-          topic: "user-management-domain"
-          handle-service: "SagaOrchestratorService"
-          nextSteps: []
-          nextFlows: 
-            - name: "create-booking-transaction-rollback-flow"
-              topic: "payment-processing-domain"
-              handle-service: "SagaOrchestratorService"
       - name: "subtract-account-balance-amount"
         topic: "user-management-domain"
         handle-service: "UserService"

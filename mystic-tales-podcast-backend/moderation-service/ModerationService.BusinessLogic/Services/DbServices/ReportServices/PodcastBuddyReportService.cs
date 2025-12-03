@@ -582,7 +582,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
                                     where = new
                                     {
                                         IsVerify = true,
-                                        RoleId = (int)RoleEnum.Staff
+                                        RoleId = (int)RoleEnum.Staff,
+                                        DeactivatedAt = (DateTime?) null
                                     },
                                 }),
                         }
