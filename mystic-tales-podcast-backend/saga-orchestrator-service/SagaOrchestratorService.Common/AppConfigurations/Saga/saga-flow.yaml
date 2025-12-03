@@ -5140,13 +5140,38 @@ flows:
           topic: "report-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps:
+            - name: "remove-podcaster-booking-tracks-listen-session-terminate-podcaster-force"
+              topic: "booking-management-domain"
+              handle-service: "BookingManagementService"
+          nextFlows: []
+        onFailure:
+          emit: "resolve-podcast-buddy-report-no-effect-terminate-podcaster-force.failed"
+          topic: "report-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+      - name: "remove-podcaster-booking-tracks-listen-session-terminate-podcaster-force"
+        topic: "booking-management-domain"
+        handle-service: "BookingManagementService"
+        description: "Removes all booking tracks associated with the podcaster from users' listen sessions."
+        parameters:
+          - PodcasterId
+        next-request-data:
+          - PodcasterId
+        response-data:
+          - PodcasterId
+        onSuccess:
+          emit: "remove-podcaster-booking-tracks-listen-session-terminate-podcaster-force.success"
+          topic: "booking-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps:
             - name: "unpublish-podcaster-channels-terminate-podcaster-force"
               topic: "content-management-domain"
               handle-service: "PodcastService"
           nextFlows: []
         onFailure:
-          emit: "resolve-podcast-buddy-report-no-effect-terminate-podcaster-force.failed"
-          topic: "report-management-domain"
+          emit: "remove-podcaster-booking-tracks-listen-session-terminate-podcaster-force.failed"
+          topic: "booking-management-domain"
           handle-service: "SagaOrchestratorService"
           nextSteps: []
           nextFlows: []

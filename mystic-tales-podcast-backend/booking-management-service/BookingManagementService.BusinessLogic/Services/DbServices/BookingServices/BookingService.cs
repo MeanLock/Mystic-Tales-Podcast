@@ -20,6 +20,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingDepositPayment;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingPayTheRestPayment;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RemovePodcasterBookingTracksListenSessionTerminatePodcasterForce;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateBookingListenSessionDuration;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
@@ -1849,116 +1850,116 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             }
             return booking.PodcastBuddyId == podcasterId;
         }
-        public async Task TerminateBookingOfPodcasterAsync(TerminateBookingOfPodcasterParameterDTO parameter, SagaCommandMessage command)
-        {
-            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    var messageName = command.MessageName;
-                    var sagaId = command.SagaInstanceId;
-                    var flowName = command.FlowName;
-                    var responseData = command.LastStepResponseData;
+        //public async Task TerminateBookingOfPodcasterAsync(TerminateBookingOfPodcasterParameterDTO parameter, SagaCommandMessage command)
+        //{
+        //    using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+        //    {
+        //        try
+        //        {
+        //            var messageName = command.MessageName;
+        //            var sagaId = command.SagaInstanceId;
+        //            var flowName = command.FlowName;
+        //            var responseData = command.LastStepResponseData;
 
-                    //var booking = _bookingGenericRepository.FindAll()
-                    //    .Include(b => b.BookingStatusTrackings)
-                    //    .Where(b => b.PodcastBuddyId == parameter.PodcasterId && 
-                    //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 3 &&
-                    //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 4 &&
-                    //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 8 &&
-                    //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 9 &&
-                    //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 10 )
-                    //    .ToList();
-                    var booking = _bookingGenericRepository.FindAll()
-                        .Include(b => b.BookingStatusTrackings)
-                        .Where(b => b.PodcastBuddyId == parameter.PodcasterId)
-                        .ToList();
-                    foreach (var b in booking)
-                    {
-                        var currentStatus = b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
-                        if (currentStatus != (int)BookingStatusEnum.QuotationRejected &&
-                           currentStatus != (int)BookingStatusEnum.QuotationCancelled &&
-                           currentStatus != (int)BookingStatusEnum.Completed &&
-                           currentStatus != (int)BookingStatusEnum.CancelledAutomatically &&
-                           currentStatus != (int)BookingStatusEnum.CancelledManually)
-                        {
-                            var newBookingStatusTracking = new BookingStatusTracking
-                            {
-                                //Id = Guid.NewGuid(),
-                                BookingId = b.Id,
-                                BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
-                                CreatedAt = _dateHelper.GetNowByAppTimeZone(),
-                            };
-                            await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
-                            b.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                            b.BookingAutoCancelReason = "TerminatedByPodcaster (bị hủy bởi podcaster)";
-                            await _bookingGenericRepository.UpdateAsync(b.Id, b);
-                            if (currentStatus >= (int)BookingStatusEnum.Producing)
-                            {
-                                var systemConfig = await GetActiveSystemConfigProfile();
-                                if(systemConfig == null)
-                                {
-                                    throw new Exception("System configuration not found");
-                                }
-                                var profitRate = systemConfig.BookingConfig.ProfitRate;
-                                var depositRate = systemConfig.BookingConfig.DepositRate;
-                                var Amount = b.Price * (decimal)depositRate ;
-                                var newRequestData = new JObject
-                                {
-                                    { "BookingId", b.Id },
-                                    { "Amount", Amount },
-                                    { "AccountId", b.AccountId },
-                                    { "PodcasterId", b.PodcastBuddyId },
-                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
-                                };
-                                var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                    requestData: newRequestData,
-                                    sagaInstanceId: null,
-                                    messageName: "booking-refund-flow");
-                                await _messagingService.SendSagaMessageAsync(startSecondSagaTriggerMessage, b.Id.ToString());
-                                _logger.LogInformation("Booking refund message send successfully for BookingId: {BookingId}", b.Id);
-                            }
-                        }
-                    }
+        //            //var booking = _bookingGenericRepository.FindAll()
+        //            //    .Include(b => b.BookingStatusTrackings)
+        //            //    .Where(b => b.PodcastBuddyId == parameter.PodcasterId && 
+        //            //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 3 &&
+        //            //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 4 &&
+        //            //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 8 &&
+        //            //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 9 &&
+        //            //    b.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != 10 )
+        //            //    .ToList();
+        //            var booking = _bookingGenericRepository.FindAll()
+        //                .Include(b => b.BookingStatusTrackings)
+        //                .Where(b => b.PodcastBuddyId == parameter.PodcasterId)
+        //                .ToList();
+        //            foreach (var b in booking)
+        //            {
+        //                var currentStatus = b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
+        //                if (currentStatus != (int)BookingStatusEnum.QuotationRejected &&
+        //                   currentStatus != (int)BookingStatusEnum.QuotationCancelled &&
+        //                   currentStatus != (int)BookingStatusEnum.Completed &&
+        //                   currentStatus != (int)BookingStatusEnum.CancelledAutomatically &&
+        //                   currentStatus != (int)BookingStatusEnum.CancelledManually)
+        //                {
+        //                    var newBookingStatusTracking = new BookingStatusTracking
+        //                    {
+        //                        //Id = Guid.NewGuid(),
+        //                        BookingId = b.Id,
+        //                        BookingStatusId = (int)BookingStatusEnum.CancelledAutomatically,
+        //                        CreatedAt = _dateHelper.GetNowByAppTimeZone(),
+        //                    };
+        //                    await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
+        //                    b.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+        //                    b.BookingAutoCancelReason = "TerminatedByPodcaster (bị hủy bởi podcaster)";
+        //                    await _bookingGenericRepository.UpdateAsync(b.Id, b);
+        //                    if (currentStatus >= (int)BookingStatusEnum.Producing)
+        //                    {
+        //                        var systemConfig = await GetActiveSystemConfigProfile();
+        //                        if(systemConfig == null)
+        //                        {
+        //                            throw new Exception("System configuration not found");
+        //                        }
+        //                        var profitRate = systemConfig.BookingConfig.ProfitRate;
+        //                        var depositRate = systemConfig.BookingConfig.DepositRate;
+        //                        var Amount = b.Price * (decimal)depositRate ;
+        //                        var newRequestData = new JObject
+        //                        {
+        //                            { "BookingId", b.Id },
+        //                            { "Amount", Amount },
+        //                            { "AccountId", b.AccountId },
+        //                            { "PodcasterId", b.PodcastBuddyId },
+        //                            { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
+        //                        };
+        //                        var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+        //                            topic: KafkaTopicEnum.PaymentProcessingDomain,
+        //                            requestData: newRequestData,
+        //                            sagaInstanceId: null,
+        //                            messageName: "booking-refund-flow");
+        //                        await _messagingService.SendSagaMessageAsync(startSecondSagaTriggerMessage, b.Id.ToString());
+        //                        _logger.LogInformation("Booking refund message send successfully for BookingId: {BookingId}", b.Id);
+        //                    }
+        //                }
+        //            }
 
-                    await transaction.CommitAsync();
-                    var newResponseData = new JObject
-                    {
-                        { "PodcasterId", parameter.PodcasterId },
-                    };
-                    var newMessageName = command.MessageName + ".success";
-                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.BookingManagementDomain,
-                        requestData: command.RequestData,
-                        responseData: newResponseData,
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: newMessageName);
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
-                    _logger.LogInformation("Booking terminate success for SagaId: {SagaId}", sagaId.ToString());
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while terminating booking for SagaId: {SagaId}", command.SagaInstanceId);
-                    var newResponseData = new JObject
-                    {
-                        { "ErrorMessage", "Terminate booking failed, error: " + ex.Message }
-                    };
-                    var newMessageName = command.MessageName + ".failed";
-                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
-                        topic: KafkaTopicEnum.BookingManagementDomain,
-                        requestData: command.RequestData,
-                        responseData: newResponseData,
-                        sagaInstanceId: command.SagaInstanceId,
-                        flowName: command.FlowName,
-                        messageName: newMessageName);
-                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
-                    _logger.LogError("Booking terminate failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
-                }
-            }
-        }
+        //            await transaction.CommitAsync();
+        //            var newResponseData = new JObject
+        //            {
+        //                { "PodcasterId", parameter.PodcasterId },
+        //            };
+        //            var newMessageName = command.MessageName + ".success";
+        //            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                topic: KafkaTopicEnum.BookingManagementDomain,
+        //                requestData: command.RequestData,
+        //                responseData: newResponseData,
+        //                sagaInstanceId: command.SagaInstanceId,
+        //                flowName: command.FlowName,
+        //                messageName: newMessageName);
+        //            await _messagingService.SendSagaMessageAsync(sagaEventMessage, sagaId.ToString());
+        //            _logger.LogInformation("Booking terminate success for SagaId: {SagaId}", sagaId.ToString());
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            await transaction.RollbackAsync();
+        //            _logger.LogError(ex, "Error occurred while terminating booking for SagaId: {SagaId}", command.SagaInstanceId);
+        //            var newResponseData = new JObject
+        //            {
+        //                { "ErrorMessage", "Terminate booking failed, error: " + ex.Message }
+        //            };
+        //            var newMessageName = command.MessageName + ".failed";
+        //            var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+        //                topic: KafkaTopicEnum.BookingManagementDomain,
+        //                requestData: command.RequestData,
+        //                responseData: newResponseData,
+        //                sagaInstanceId: command.SagaInstanceId,
+        //                flowName: command.FlowName,
+        //                messageName: newMessageName);
+        //            await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+        //            _logger.LogError("Booking terminate failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+        //        }
+        //    }
+        //}
         public async Task CancelPodcasterBookingsTerminatePodcasterForceAsync(CancelPodcasterBookingsTerminatePodcasterForceParameterDTO parameter, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -1972,7 +1973,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     var booking = _bookingGenericRepository.FindAll()
                         .Include(b => b.BookingStatusTrackings)
-                        .Where(b => b.PodcastBuddyId == parameter.PodcasterId)
+                        .Where(b => b.PodcastBuddyId == parameter.PodcasterId || b.AccountId == parameter.PodcasterId)
                         .ToList();
                     foreach (var b in booking)
                     {
@@ -1992,36 +1993,39 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             };
                             await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
                             b.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                            b.BookingAutoCancelReason = "TerminatedByPodcaster (bị hủy bởi podcaster)";
+                            if(b.AccountId == parameter.PodcasterId)
+                                b.BookingAutoCancelReason = BookingCancelAutoReasonEnum.TerminatePodcasterTaken.GetDescription();
+                            else
+                                b.BookingAutoCancelReason = BookingCancelAutoReasonEnum.TerminatePodcasterGiven.GetDescription();
                             await _bookingGenericRepository.UpdateAsync(b.Id, b);
                             if (currentStatus >= (int)BookingStatusEnum.Producing)
                             {
-                                // Complete all listen session of lastest producing request
-                                var producingRequest = await _bookingProducingRequestGenericRepository.FindAll(
-                                    includeFunc: function => function
-                                    .Include(pr => pr.BookingPodcastTracks))
-                                    .Where(bpr => bpr.BookingId == b.Id)
-                                    .OrderByDescending(bpr => bpr.CreatedAt)
-                                    .FirstOrDefaultAsync();
+                                //// Complete all listen session of lastest producing request
+                                //var producingRequest = await _bookingProducingRequestGenericRepository.FindAll(
+                                //    includeFunc: function => function
+                                //    .Include(pr => pr.BookingPodcastTracks))
+                                //    .Where(bpr => bpr.BookingId == b.Id)
+                                //    .OrderByDescending(bpr => bpr.CreatedAt)
+                                //    .FirstOrDefaultAsync();
 
-                                var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
-                                    .Where(ls => !ls.IsCompleted && producingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == b.AccountId)
-                                    .ToListAsync();
-                                foreach (var session in listenSession)
-                                {
-                                    session.IsCompleted = true;
-                                    await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
-                                }
+                                //var listenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                                //    .Where(ls => !ls.IsCompleted && producingRequest.BookingPodcastTracks.Select(bp => bp.Id).Contains(ls.BookingPodcastTrackId) && ls.AccountId == b.AccountId)
+                                //    .ToListAsync();
+                                //foreach (var session in listenSession)
+                                //{
+                                //    session.IsCompleted = true;
+                                //    await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                                //}
 
-                                // Complete all customer listen session procedure of the producing request in cache
-                                var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(b.AccountId);
-                                foreach (var procedure in customerListenSessionCacheKey.Values)
-                                {
-                                    if (!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
-                                    {
-                                        await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(b.AccountId, procedure.Id, true);
-                                    }
-                                }
+                                //// Complete all customer listen session procedure of the producing request in cache
+                                //var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(b.AccountId);
+                                //foreach (var procedure in customerListenSessionCacheKey.Values)
+                                //{
+                                //    if (!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                                //    {
+                                //        await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(b.AccountId, procedure.Id, true);
+                                //    }
+                                //}
 
                                 var systemConfig = await GetActiveSystemConfigProfile();
                                 if(systemConfig == null)
@@ -2030,22 +2034,47 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 }
                                 var profitRate = systemConfig.BookingConfig.ProfitRate;
                                 var depositRate = systemConfig.BookingConfig.DepositRate;
-                                var Amount = b.Price * (decimal)depositRate ;
-                                var newRequestData = new JObject
+
+                                if(b.AccountId == parameter.PodcasterId)
                                 {
-                                    { "BookingId", b.Id },
-                                    { "Amount", Amount },
-                                    { "AccountId", b.AccountId },
-                                    { "PodcasterId", b.PodcastBuddyId },
-                                    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
-                                };
-                                var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.PaymentProcessingDomain,
-                                    requestData: newRequestData,
-                                    sagaInstanceId: null,
-                                    messageName: "booking-refund-flow");
-                                await _messagingService.SendSagaMessageAsync(startSecondSagaTriggerMessage, b.Id.ToString());
-                                _logger.LogInformation("Booking refund message send successfully for BookingId: {BookingId}", b.Id);
+                                    var compensationAmount = b.Price * (decimal)depositRate - b.Price * (decimal)profitRate;
+                                    var compensationMessageName = "booking-deposit-compensation-flow";
+                                    var compensationRequestData = new JObject
+                                    {
+                                        { "BookingId", b.Id },
+                                        { "Profit", b.Price * (decimal)profitRate },
+                                        { "Amount", compensationAmount },
+                                        { "AccountId", b.AccountId },
+                                        { "PodcasterId", b.PodcastBuddyId },
+                                        { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositCompensation }
+                                    };
+                                    var compensationStartSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                        requestData: compensationRequestData,
+                                        sagaInstanceId: null,
+                                        messageName: compensationMessageName);
+                                    await _messagingService.SendSagaMessageAsync(compensationStartSagaTriggerMessage, b.Id.ToString());
+                                    _logger.LogInformation("Booking deposit compensation message send successfully for BookingId: {BookingId}", b.Id);
+                                }
+                                else
+                                {
+                                    var Amount = b.Price * (decimal)depositRate;
+                                    var newRequestData = new JObject
+                                    {
+                                        { "BookingId", b.Id },
+                                        { "Amount", Amount },
+                                        { "AccountId", b.AccountId },
+                                        { "PodcasterId", b.PodcastBuddyId },
+                                        { "TransactionTypeId", (int)TransactionTypeEnum.BookingDepositRefund }
+                                    };
+                                    var startSecondSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.PaymentProcessingDomain,
+                                        requestData: newRequestData,
+                                        sagaInstanceId: null,
+                                        messageName: "booking-refund-flow");
+                                    await _messagingService.SendSagaMessageAsync(startSecondSagaTriggerMessage, b.Id.ToString());
+                                    _logger.LogInformation("Booking refund message send successfully for BookingId: {BookingId}", b.Id);
+                                }
                             }
                         }
                     }
@@ -3808,10 +3837,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         var existingListenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
                             .Where(bptls => bptls.AccountId == accountId && !bptls.IsCompleted)
                             .ToListAsync();
-                        foreach (var bptls in existingListenSession)
+                        if (existingListenSession != null)
                         {
-                            bptls.IsCompleted = true;
-                            await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bptls.Id, bptls);
+                            foreach (var bptls in existingListenSession)
+                            {
+                                bptls.IsCompleted = true;
+                                await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bptls.Id, bptls);
+                            }
                         }
 
                         var bookingPodcastTrack = await _bookingPodcastTrackGenericRepository.FindByIdAsync(nextListenObj.ListenObjectId,
@@ -3991,6 +4023,97 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var newResponseData = new JObject
                     {
                         { "ErrorMessage", "Complete All User Booking Producing Listen Sessions failed, error: " + ex.Message }
+                    };
+                    var newMessageName = command.MessageName + ".failed";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogError("Complete All User Booking Producing Listen Sessions failed for SagaId: {SagaId}. Error: {error}", command.SagaInstanceId, ex.StackTrace);
+                }
+            }
+        }
+        public async Task RemovePodcasterBookingTracksListenSessionTerminatePodcasterForceAsync(RemovePodcasterBookingTracksListenSessionTerminatePodcasterForceParameterDTO parameter, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var messageName = command.MessageName;
+                    var sagaId = command.SagaInstanceId;
+                    var flowName = command.FlowName;
+                    var responseData = command.LastStepResponseData;
+
+                    var bookings = await _bookingGenericRepository.FindAll()
+                        .Include(b => b.BookingProducingRequests)
+                            .ThenInclude(bp => bp.BookingPodcastTracks) // Fix: Include the missing navigation property
+                        .Where(b => b.PodcastBuddyId == parameter.PodcasterId || b.AccountId == parameter.PodcasterId)
+                        .ToListAsync();
+
+                    if (bookings.Any()) // Fix: Use Any() instead of null check
+                    {
+                        foreach (var booking in bookings)
+                        {
+                            var finishedProducingRequests = booking.BookingProducingRequests
+                                .Where(bp => bp.FinishedAt != null)
+                                .ToList();
+                            foreach (var producingRequest in finishedProducingRequests)
+                            {
+                                var trackIds = producingRequest.BookingPodcastTracks.Select(bp => bp.Id).ToList();
+                                if (trackIds.Any())
+                                {
+                                    // Complete listen sessions
+                                    var listenSessions = await _bookingPodcastTrackListenSessionGenericRepository.FindAll()
+                                        .Where(ls => !ls.IsCompleted
+                                                    && trackIds.Contains(ls.BookingPodcastTrackId)
+                                                    && (ls.AccountId == booking.AccountId || ls.AccountId == parameter.PodcasterId))
+                                        .ToListAsync();
+
+                                    foreach (var session in listenSessions)
+                                    {
+                                        session.IsCompleted = true;
+                                        await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(session.Id, session);
+                                    }
+                                    // Complete customer listen session procedure in cache
+                                    var customerListenSessionProcedure = await _customerListenSessionProcedureCachingService
+                                        .GetActiveProcedureByCustomerIdAsync(booking.AccountId);
+
+                                    if (customerListenSessionProcedure != null
+                                        && !customerListenSessionProcedure.IsCompleted
+                                        && customerListenSessionProcedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                                    {
+                                        await _customerListenSessionProcedureCachingService
+                                            .MarkProcedureCompletedAsync(booking.AccountId, customerListenSessionProcedure.Id, true);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    await transaction.CommitAsync();
+                    
+                    var newResponseData = command.RequestData;
+                    var newMessageName = command.MessageName + ".success";
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.BookingManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: newResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: newMessageName);
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage, command.SagaInstanceId.ToString());
+                    _logger.LogInformation("Successfully Remove Podcaster Booking Tracks Listen Session Terminate Podcaster Force for SagaId: {SagaId}", command.SagaInstanceId);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error occurred while Remove Podcaster Booking Tracks Listen Session Terminate Podcaster Force for Podcaster: {PodcasterId}", parameter.PodcasterId);
+                    var newResponseData = new JObject
+                    {
+                        { "ErrorMessage", "Remove Podcaster Booking Tracks Listen Session Terminate Podcaster Force failed, error: " + ex.Message }
                     };
                     var newMessageName = command.MessageName + ".failed";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(

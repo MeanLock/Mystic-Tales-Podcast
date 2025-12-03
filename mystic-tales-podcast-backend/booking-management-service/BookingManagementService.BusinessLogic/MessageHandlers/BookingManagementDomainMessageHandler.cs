@@ -15,6 +15,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingDepositPayment;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.ProcessBookingPayTheRestPayment;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RejectBooking;
+using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.RemovePodcasterBookingTracksListenSessionTerminatePodcasterForce;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.SubmitBookingTrack;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateBookingListenSessionDuration;
@@ -237,20 +238,20 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "booking-track-preview-flow.failed"
             );
         }
-        [MessageHandler("terminate-booking-of-podcaster", SAGA_TOPIC)]
-        public async Task HandleTerminateBookingOfPodcasterAsync(string key, string messageJson)
-        {
-            await ExecuteSagaCommandMessageAsync(
-                messageJson,
-                async (command) =>
-                {
-                    var parameter = command.RequestData.ToObject<TerminateBookingOfPodcasterParameterDTO>();
-                    await _bookingService.TerminateBookingOfPodcasterAsync(parameter, command);
-                },
-                responseTopic: SAGA_TOPIC,
-                failedEmitMessage: "terminate-booking-of-podcaster.failed"
-            );
-        }
+        //[MessageHandler("terminate-booking-of-podcaster", SAGA_TOPIC)]
+        //public async Task HandleTerminateBookingOfPodcasterAsync(string key, string messageJson)
+        //{
+        //    await ExecuteSagaCommandMessageAsync(
+        //        messageJson,
+        //        async (command) =>
+        //        {
+        //            var parameter = command.RequestData.ToObject<TerminateBookingOfPodcasterParameterDTO>();
+        //            await _bookingService.TerminateBookingOfPodcasterAsync(parameter, command);
+        //        },
+        //        responseTopic: SAGA_TOPIC,
+        //        failedEmitMessage: "terminate-booking-of-podcaster.failed"
+        //    );
+        //}
         [MessageHandler("validate-booking-cancellation", SAGA_TOPIC)]
         public async Task HandleValidateBookingProducingRequestCancellationAsync(string key, string messageJson)
         {
@@ -321,7 +322,7 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "complete-all-user-booking-producing-listen-sessions.failed"
             );
         }
-        [MessageHandler("process-booking-deposit-payment",SAGA_TOPIC)]
+        [MessageHandler("process-booking-deposit-payment", SAGA_TOPIC)]
         public async Task HandlerProcessBookingDepositPaymentAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -335,7 +336,7 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 failedEmitMessage: "process-booking-deposit-payment.failed"
             );
         }
-        [MessageHandler("process-booking-pay-the-rest-payment",SAGA_TOPIC)]
+        [MessageHandler("process-booking-pay-the-rest-payment", SAGA_TOPIC)]
         public async Task HandleProcessBookingPayTheRestPaymentAsync(string key, string messageJson)
         {
             await ExecuteSagaCommandMessageAsync(
@@ -347,6 +348,20 @@ namespace BookingManagementService.BusinessLogic.MessageHandlers
                 },
                 responseTopic: SAGA_TOPIC,
                 failedEmitMessage: "process-booking-pay-the-rest-payment.failed"
+            );
+        }
+        [MessageHandler("remove-podcaster-booking-tracks-listen-session-terminate-podcaster-force", SAGA_TOPIC)]
+        public async Task HandleRemovePodcasterBookingTracksListenSessionTerminatePodcasterForceAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson,
+                async (command) =>
+                {
+                    var parameter = command.RequestData.ToObject<RemovePodcasterBookingTracksListenSessionTerminatePodcasterForceParameterDTO>();
+                    await _bookingService.RemovePodcasterBookingTracksListenSessionTerminatePodcasterForceAsync(parameter, command);
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "remove-podcaster-booking-tracks-listen-session-terminate-podcaster-force.failed"
             );
         }
     }
