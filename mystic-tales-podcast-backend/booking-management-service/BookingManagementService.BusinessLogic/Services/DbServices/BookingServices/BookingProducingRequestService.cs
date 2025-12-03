@@ -112,7 +112,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     .Include(b => b.BookingProducingRequests));
 
                 bool isLastestProducingRequest = true;
-                if (account.RoleId == (int)RoleEnum.Customer && !account.HasVerifiedPodcasterProfile && !account.PodcasterProfileIsBuddy)
+                if (account.RoleId == (int)RoleEnum.Customer && booking.AccountId == account.Id)
                 {
                     if (booking.BookingProducingRequests.OrderByDescending(bp => bp.CreatedAt).Where(bp => bp.FinishedAt != null).FirstOrDefault()?.Id != bookingProducingRequest.Id)
                     {

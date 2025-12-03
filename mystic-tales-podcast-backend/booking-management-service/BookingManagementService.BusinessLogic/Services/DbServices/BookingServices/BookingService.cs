@@ -182,7 +182,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         PodcastBuddy = new AccountSnippetResponseDTO
                         {
                             Id = podcaster.Id,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
@@ -298,7 +298,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     PodcastBuddy = new PodcastBuddySnippetResponseDTO
                     {
                         Id = podcastBuddy.Id,
-                        FullName = podcastBuddy.FullName,
+                        FullName = podcastBuddy.PodcasterProfile.Name,
                         Email = podcastBuddy.Email,
                         Description = podcastBuddy.PodcasterProfile?.Description ?? string.Empty,
                         MainImageFileKey = podcastBuddy.MainImageFileKey,
@@ -635,7 +635,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         PodcastBuddy = new AccountSnippetResponseDTO
                         {
                             Id = podcaster.Id,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
@@ -727,7 +727,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         PodcastBuddy = new AccountSnippetResponseDTO
                         {
                             Id = podcaster.Id,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
@@ -2401,7 +2401,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         PodcastBuddy = new AccountSnippetResponseDTO
                         {
                             Id = podcaster.Id,
-                            FullName = podcaster.FullName,
+                            FullName = podcaster.PodcasterProfileName,
                             Email = podcaster.Email,
                             MainImageFileKey = podcaster.MainImageFileKey
                         },
@@ -2532,7 +2532,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     PodcastBuddy = new PodcastBuddySnippetResponseDTO
                     {
                         Id = podcastBuddy.Id,
-                        FullName = podcastBuddy.FullName,
+                        FullName = podcastBuddy.PodcasterProfile.Name,
                         Email = podcastBuddy.Email,
                         Description = podcastBuddy.PodcasterProfile?.Description ?? string.Empty,
                         MainImageFileKey = podcastBuddy.MainImageFileKey,
@@ -2633,7 +2633,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         result.Add(new PodcastBuddySnippetResponseDTO
                         {
                             Id = podcastReal.Id,
-                            FullName = podcastReal.FullName,
+                            FullName = podcastReal.PodcasterProfile.Name,
                             Email = podcastReal.Email,
                             Description = podcastReal.PodcasterProfile?.Description ?? string.Empty,
                             MainImageFileKey = podcastReal.MainImageFileKey,
@@ -2708,7 +2708,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     PodcastBuddy = new PodcastBuddySnippetResponseDTO
                     {
                         Id = podcaster.Id,
-                        FullName = podcaster.FullName,
+                        FullName = podcaster.PodcasterProfile.Name,
                         Email = podcaster.Email,
                         Description = podcaster.PodcasterProfile?.Description ?? string.Empty,
                         MainImageFileKey = podcaster.MainImageFileKey,
