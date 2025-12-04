@@ -87,7 +87,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
                     actualCategory = category.ToString()
                 });
             }
-            
+
             var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
 
             if (account.RoleId == (int)RoleEnum.Customer || account.RoleId == (int)RoleEnum.Staff)

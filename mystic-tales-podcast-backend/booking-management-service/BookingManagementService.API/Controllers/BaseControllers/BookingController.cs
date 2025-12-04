@@ -973,5 +973,20 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             }
             );
         }
+        //[HttpGet("tracks/{BookingPodcastTrackId}")]
+        //[Authorize(Policy = "AdminOrStaffOrCustomer.BasicAccess")]
+        //public async Task<IActionResult> GetBookingPodcastTrackById([FromRoute] Guid BookingPodcastTrackId)
+        //{
+        //    var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+        //    var result = await _bookingService.GetBookingPodcastTrackByIdAsync(BookingPodcastTrackId, account);
+        //    //if (result == null)
+        //    //{
+        //    //    return NotFound($"Booking Podcast Track with ID {BookingPodcastTrackId} not found.");
+        //    //}
+        //    return Ok(new
+        //    {
+        //        BookingPodcastTrack = result
+        //    });
+        //}
     }
 }

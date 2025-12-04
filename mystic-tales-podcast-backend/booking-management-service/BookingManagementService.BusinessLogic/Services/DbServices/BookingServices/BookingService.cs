@@ -475,6 +475,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     //    _logger.LogError($"PodcasterProfile: {podcaster.HasVerifiedPodcasterProfile}. PodcastBuddy: {podcaster.PodcasterProfileIsBuddy}. PodcastVerified: {podcaster.PodcasterProfileIsVerified}");
                     //    throw new HttpRequestException($"Podcaster with Id {parameter.PodcastBuddyId} does not qualify to request booking");
                     //}
+                    if(parameter.DeadlineDayCount == 0)
+                    {
+                        throw new HttpRequestException("Deadline day count can not be zero");
+                    }
 
                     var newBooking = new Booking
                     {
@@ -2978,7 +2982,6 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         {
             try
             {
-
                 BookingIncomeTotalStatisticReportResponseDTO statisticResult = new BookingIncomeTotalStatisticReportResponseDTO();
                 if (statisticEnum == StatisticsReportPeriodEnum.Daily)
                 {
@@ -3001,7 +3004,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     DateOnly endDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetLastDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
                     var previousStartDateOfMonth = startDateOfMonth.AddMonths(-1);
                     var previousEndDateOfMonth = endDateOfMonth.AddMonths(-1);
-
+                     
                     var currentTotalAmount = await CalculateSystemIncome(startDateOfMonth, endDateOfMonth);
                     var previousTotalAmount = await CalculateSystemIncome(previousStartDateOfMonth, previousEndDateOfMonth);
 
@@ -3584,15 +3587,15 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             throw new HttpRequestException("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
                         }
-                        if (currentBookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
-                        {
-                            if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
-                            {
-                                throw new HttpRequestException("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
-                            }
-                            bookingPodcastTrack.RemainingPreviewListenSlot = bookingPodcastTrack.RemainingPreviewListenSlot - 1;
-                            await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
-                        }
+                        //if (currentBookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
+                        //{
+                        //    if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
+                        //    {
+                        //        throw new HttpRequestException("You have used up all your preview listen slots for podcast track with id " + podcastTrackId);
+                        //    }
+                        //    bookingPodcastTrack.RemainingPreviewListenSlot = bookingPodcastTrack.RemainingPreviewListenSlot - 1;
+                        //    await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
+                        //}
                     }
 
                     await transaction.CommitAsync();
