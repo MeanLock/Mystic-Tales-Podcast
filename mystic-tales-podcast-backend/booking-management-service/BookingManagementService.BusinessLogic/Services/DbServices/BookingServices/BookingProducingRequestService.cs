@@ -754,11 +754,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     );
 
                     bookingProducingRequest.IsAccepted = parameter.IsAccepted;
-                    bookingProducingRequest.Deadline = _dateHelper.GetNowByAppTimeZone().AddDays((double)bookingProducingRequest.DeadlineDays);
                     bookingProducingRequest = await _bookingProducingRequestGenericRepository.UpdateAsync(bookingProducingRequest.Id, bookingProducingRequest);
 
-                    booking.Deadline = DateOnly.FromDateTime(bookingProducingRequest.Deadline.Value);
-                    await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
 
                     if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.ProducingRequested)
                     {
@@ -771,6 +768,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 BookingStatusId = (int)BookingStatusEnum.Producing,
                                 CreatedAt = _dateHelper.GetNowByAppTimeZone()
                             });
+
+                            bookingProducingRequest.Deadline = _dateHelper.GetNowByAppTimeZone().AddDays((double)bookingProducingRequest.DeadlineDays);
+                            bookingProducingRequest = await _bookingProducingRequestGenericRepository.UpdateAsync(bookingProducingRequest.Id, bookingProducingRequest);
+
+                            booking.Deadline = DateOnly.FromDateTime(bookingProducingRequest.Deadline.Value);
+                            await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
                         }
                         else
                         {

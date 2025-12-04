@@ -587,6 +587,16 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
 
+                    var staffAccount = await _accountCachingService.GetAccountStatusCacheById(parameter.AccountId);
+                    if(staffAccount == null || staffAccount.RoleId != (int)RoleEnum.Staff)
+                    {
+                        throw new Exception($"Staff account with Id: {parameter.AccountId} not found or is not a staff account");
+                    }
+                    if(staffAccount.DeactivatedAt != null)
+                    {
+                        throw new Exception($"Staff account with Id: {parameter.AccountId} is deactivated at {staffAccount.DeactivatedAt}, cannot be assigned to dmca accusation");
+                    }
+
                     var dmcaAccusation = await _dmcaAccusationGenericRepository.FindByIdAsync(parameter.DMCAAccusationId);
                     dmcaAccusation.AssignedStaff = parameter.AccountId;
                     dmcaAccusation.UpdatedAt = _dateHelper.GetNowByAppTimeZone();

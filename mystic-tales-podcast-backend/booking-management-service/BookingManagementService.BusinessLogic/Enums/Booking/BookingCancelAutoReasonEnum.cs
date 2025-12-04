@@ -19,10 +19,10 @@ namespace BookingManagementService.BusinessLogic.Enums.Booking
         {
             return reason switch
             {
-                BookingCancelAutoReasonEnum.ExpiredPreview => "Customer đã vượt quá thời hạn xem preview",
-                BookingCancelAutoReasonEnum.PodcastBuddyNoResponse => "Podcaster không phản hồi kịp trong thời gian quy định",
-                BookingCancelAutoReasonEnum.TerminatePodcasterGiven => "Podcaster đã bị terminate",
-                BookingCancelAutoReasonEnum.TerminatePodcasterTaken => "Customer đã bị terminate",
+                BookingCancelAutoReasonEnum.ExpiredPreview => "Track Previewing duration has expired",
+                BookingCancelAutoReasonEnum.PodcastBuddyNoResponse => "Podcaster has not response in time",
+                BookingCancelAutoReasonEnum.TerminatePodcasterGiven => "Podcaster has been terminate",
+                BookingCancelAutoReasonEnum.TerminatePodcasterTaken => "Customer has been terminate",
                 _ => "Unknown reason"
             };
         }

@@ -2772,8 +2772,8 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 }
                                 podcasterId = temp.PodcasterId;
                             }
-                            int incomeTakenDelayDays = config.IncomeTakenDelayDays;
-                            //int incomeTakenDelayDays = 0;
+                            //int incomeTakenDelayDays = config.IncomeTakenDelayDays;
+                            int incomeTakenDelayDays = 0;
                             decimal profitRate = (decimal)config.ProfitRate;
                             var originalPrice = podcastSubscription.PodcastSubscriptionCycleTypePrices
                                         .Where(psct => psct.SubscriptionCycleTypeId == registration.SubscriptionCycleTypeId)
@@ -4369,7 +4369,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     .Where(psr => DateOnly.FromDateTime(psr.LastPaidAt) >= startDate && DateOnly.FromDateTime(psr.LastPaidAt) <= endDate && psr.IsIncomeTaken);
                 foreach (var registration in registrations)
                 {
-                    var subscriptionRegistrations = await GetPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                    var subscriptionRegistrations = await GetSystemPodcastSubscriptionTransactionByRegistrationId(registration.Id);
                     totalIncome += subscriptionRegistrations != null ? subscriptionRegistrations.Where(st => DateOnly.FromDateTime(st.CreatedAt) >= startDate && DateOnly.FromDateTime(st.CreatedAt) <= endDate).Sum(bt => bt.Amount) : 0;
                 }
             }

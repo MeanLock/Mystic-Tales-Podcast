@@ -2981,14 +2981,15 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 .Include(b => b.BookingStatusTrackings))
                 .Where(b => (b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Completed ||
                 b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledManually ||
-                b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledAutomatically ||
-                b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.QuotationRejected
+                b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledAutomatically)
                 && (startDate <= DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) &&
-                DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) <= endDate))).ToListAsync();
+                DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) <= endDate)).ToListAsync();
             foreach (var booking in bookingList)
             {
+                Console.WriteLine("Booking ID: " + booking.Id);
                 var bookingTransactions = await GetSystemBookingTransactionByBookingId(booking.Id);
                 totalIncome += bookingTransactions != null ? bookingTransactions.Sum(bt => bt.Amount) : 0;
+                Console.WriteLine("Total Income so far: " + totalIncome);
             }
             return totalIncome;
         }
@@ -3000,14 +3001,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 .Include(b => b.BookingStatusTrackings))
                 .Where(b => (b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Completed ||
                 b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledManually ||
-                b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledAutomatically
+                b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledAutomatically )
                 && (startDate <= DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) &&
                 DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) <= endDate)
-                && b.PodcastBuddyId == accountId)).ToListAsync();
+                && b.PodcastBuddyId == accountId).ToListAsync();
             foreach (var booking in bookingList)
             {
+                Console.WriteLine("Booking ID: " + booking.Id);
                 var bookingTransactions = await GetBookingTransactionByBookingId(booking.Id);
                 totalIncome += bookingTransactions != null ? bookingTransactions.Sum(bt => bt.Amount) : 0;
+                Console.WriteLine("Total Income so far: " + totalIncome);
             }
             return totalIncome;
         }
@@ -3095,7 +3098,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         new BatchQueryItem
                         {
-                            Key = "bookingTransaction",
+                            Key = "podcasterIncomeTransactions",
                             QueryType = "findall",
                             EntityType = "BookingTransaction",
                                 Parameters = JObject.FromObject(new
@@ -3103,22 +3106,52 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     where = new
                                     {
                                         BookingId = bookingId,
-                                        TransactionTypeId = new List<int> {
-                                            (int)TransactionTypeEnum.PodcasterBookingIncome,
-                                            (int)TransactionTypeEnum.BookingDepositCompensation
-                                        },
+                                        TransactionTypeId = (int)TransactionTypeEnum.PodcasterBookingIncome,
                                         TransactionStatusId = (int)TransactionStatusEnum.Success
                                     }
-
                                 })
+                        },
+                        // Query 2: BookingDepositCompensation
+                        new BatchQueryItem
+                        {
+                            Key = "compensationTransactions",
+                            QueryType = "findall",
+                            EntityType = "BookingTransaction",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    BookingId = bookingId,
+                                    TransactionTypeId = (int)TransactionTypeEnum.BookingDepositCompensation,
+                                    TransactionStatusId = (int)TransactionStatusEnum.Success
+                                }
+                            })
                         }
                     }
                 };
                 var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
 
-                return result.Results?["bookingTransaction"] is JArray bookingArray && bookingArray.Count >= 0
-                    ? bookingArray.ToObject<List<BookingTransactionDTO>>()
-                    : null;
+                // Combine results from both queries
+                var combinedTransactions = new List<BookingTransactionDTO>();
+
+                // Add results from first query
+                if (result.Results?["podcasterIncomeTransactions"] is JArray incomeArray)
+                {
+                    var incomeTransactions = incomeArray.ToObject<List<BookingTransactionDTO>>();
+                    if (incomeTransactions != null)
+                        combinedTransactions.AddRange(incomeTransactions);
+                }
+
+                // Add results from second query
+                if (result.Results?["compensationTransactions"] is JArray compensationArray)
+                {
+                    var compensationTransactions = compensationArray.ToObject<List<BookingTransactionDTO>>();
+                    if (compensationTransactions != null)
+                        combinedTransactions.AddRange(compensationTransactions);
+                }
+
+                return combinedTransactions.Count > 0 ? combinedTransactions : null;
+
             }
             catch (Exception ex)
             {
@@ -3140,18 +3173,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             Key = "bookingTransaction",
                             QueryType = "findall",
                             EntityType = "BookingTransaction",
-                                Parameters = JObject.FromObject(new
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
                                 {
-                                    where = new
-                                    {
-                                        BookingId = bookingId,
-                                        TransactionTypeId = new List<int> {
-                                            (int)TransactionTypeEnum.SystemBookingIncome
-                                        },
-                                        TransactionStatusId = (int)TransactionStatusEnum.Success
-                                    }
+                                    BookingId = bookingId,
+                                    TransactionTypeId = (int)TransactionTypeEnum.SystemBookingIncome,
+                                    TransactionStatusId = (int)TransactionStatusEnum.Success
+                                }
 
-                                })
+                            })
                         }
                     }
                 };
