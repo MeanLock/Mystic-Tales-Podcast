@@ -85,7 +85,7 @@ namespace BookingManagementService.API.Controllers.ReportControllers
 
             return Ok(bookingIncomeStatistic);
         }
-        [HttpGet("\"statistics/summary/system/total")]
+        [HttpGet("statistics/summary/system/total")]
         [Authorize(Policy = "Admin.BasicAccess")]
         public async Task<IActionResult> GetSystemTotalBookingStatisticsAsync([FromQuery] StatisticsReportPeriodEnum? report_period = null)
         {
