@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
 using SubscriptionService.BusinessLogic.DTOs.Account;
-using SubscriptionService.BusinessLogic.DTOs.Booking.ListItems;
 using SubscriptionService.BusinessLogic.DTOs.Cache;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.ActivatePodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.MessageQueue.SubscriptionManagementDomain.CAcceptPodcastSubscriptionNewestVersion;
@@ -26,7 +25,7 @@ using SubscriptionService.BusinessLogic.DTOs.Podcast;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.Details;
 using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems;
-using SubscriptionService.BusinessLogic.DTOs.PodcastSubscriptionTransaction;
+using SubscriptionService.BusinessLogic.DTOs.Report;
 using SubscriptionService.BusinessLogic.DTOs.Snippet;
 using SubscriptionService.BusinessLogic.DTOs.Subscription;
 using SubscriptionService.BusinessLogic.DTOs.SystemConfiguration;
@@ -4325,6 +4324,73 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             {
                 _logger.LogError(ex, "Error occurred while GetPodcastSubscriptionIncomeStatisticByPodcasterIdAsync for PodcasterId: {PodcasterId}");
                 throw new HttpRequestException($"Error while retrieving Podcast Subscription Income Statistic for PodcasterId: {ex.Message}");
+            }
+        }
+        public async Task<PodcastSubscriptionTotalIncomeStatisticReportResponseDTO> GetTotalSystemPodcastSubscriptionIncomeStatisticAsync(StatisticsReportPeriodEnum statisticEnum)
+        {
+            try
+            {
+                PodcastSubscriptionTotalIncomeStatisticReportResponseDTO statisticResult = new PodcastSubscriptionTotalIncomeStatisticReportResponseDTO();
+                if (statisticEnum == StatisticsReportPeriodEnum.Daily)
+                {
+                    DateOnly today = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone());
+                    DateOnly previousDay = today.AddDays(-1);
+                    var currentTotalAmount = await CalculateSystemIncome(today, today);
+                    var previousTotalAmount = await CalculateSystemIncome(previousDay, previousDay);
+
+                    statisticResult = new PodcastSubscriptionTotalIncomeStatisticReportResponseDTO
+                    {
+                        TotalPodcastSubscriptionIncomeAmount = currentTotalAmount,
+                        TotalPodcastSubscriptionIncomePercentChange = previousTotalAmount == 0 ? 100 : Math.Round(((double)(currentTotalAmount - previousTotalAmount) / (double)previousTotalAmount * 100), 2, MidpointRounding.AwayFromZero),
+                    };
+
+                    return statisticResult;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Monthly)
+                {
+                    DateOnly startDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetLastDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    var previousStartDateOfMonth = startDateOfMonth.AddMonths(-1);
+                    var previousEndDateOfMonth = endDateOfMonth.AddMonths(-1);
+
+                    var currentTotalAmount = await CalculateSystemIncome(startDateOfMonth, endDateOfMonth);
+                    var previousTotalAmount = await CalculateSystemIncome(previousStartDateOfMonth, previousEndDateOfMonth);
+
+                    statisticResult = new PodcastSubscriptionTotalIncomeStatisticReportResponseDTO
+                    {
+                        TotalPodcastSubscriptionIncomeAmount = currentTotalAmount,
+                        TotalPodcastSubscriptionIncomePercentChange = previousTotalAmount == 0 ? 100 : Math.Round(((double)(currentTotalAmount - previousTotalAmount) / (double)previousTotalAmount * 100), 2, MidpointRounding.AwayFromZero),
+                    };
+
+                    return statisticResult;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Yearly)
+                {
+                    DateOnly startDateOfYear = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfYear = DateOnly.FromDateTime(_dateHelper.GetLastDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    var previousStartDateOfYear = startDateOfYear.AddYears(-1);
+                    var previousEndDateOfYear = endDateOfYear.AddYears(-1);
+
+                    var currentTotalAmount = await CalculateSystemIncome(startDateOfYear, endDateOfYear);
+                    var previousTotalAmount = await CalculateSystemIncome(previousStartDateOfYear, previousEndDateOfYear);
+
+                    statisticResult = new PodcastSubscriptionTotalIncomeStatisticReportResponseDTO
+                    {
+                        TotalPodcastSubscriptionIncomeAmount = currentTotalAmount,
+                        TotalPodcastSubscriptionIncomePercentChange = previousTotalAmount == 0 ? 100 : Math.Round(((double)(currentTotalAmount - previousTotalAmount) / (double)previousTotalAmount * 100), 2, MidpointRounding.AwayFromZero),
+                    };
+
+                    return statisticResult;
+                }
+                else
+                {
+                    throw new HttpRequestException("Selected Period Enum is not Supported");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving total system podcast subscription income statistic report for PodcasterId: {PodcasterId}");
+                throw new HttpRequestException($"Error while retrieving total system Podcast Subscription Income Statistic for PodcasterId: {ex.Message}");
             }
         }
         private async Task<decimal> CalculateIncome(int accountId, DateOnly startDate, DateOnly endDate)

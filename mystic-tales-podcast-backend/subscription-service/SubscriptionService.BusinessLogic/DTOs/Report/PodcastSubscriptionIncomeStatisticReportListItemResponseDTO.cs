@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SubscriptionService.BusinessLogic.DTOs.Booking.ListItems
+namespace SubscriptionService.BusinessLogic.DTOs.Report
 {
     public class PodcastSubscriptionIncomeStatisticReportListItemResponseDTO
     {

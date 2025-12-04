@@ -24,6 +24,7 @@ using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagement
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.TerminateBookingOfPodcaster;
 using BookingManagementService.BusinessLogic.DTOs.MessageQueue.BookingManagementDomain.UpdateBookingListenSessionDuration;
 using BookingManagementService.BusinessLogic.DTOs.ProducingRequest.ListItems;
+using BookingManagementService.BusinessLogic.DTOs.Report;
 using BookingManagementService.BusinessLogic.DTOs.Snippet;
 using BookingManagementService.BusinessLogic.DTOs.SystemConfiguration;
 using BookingManagementService.BusinessLogic.DTOs.Transaction;
@@ -2971,6 +2972,74 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             {
                 _logger.LogError(ex, "Error occurred while getting booking income statistic report for Period: {Period}", statisticEnum.ToString());
                 throw new HttpRequestException("Error occurred while retrieving booking income statistic report, error: " + ex.Message);
+            }
+        }
+        public async Task<BookingIncomeTotalStatisticReportResponseDTO> GetTotalSystemBookingIncomeStatisticAsync(StatisticsReportPeriodEnum statisticEnum)
+        {
+            try
+            {
+
+                BookingIncomeTotalStatisticReportResponseDTO statisticResult = new BookingIncomeTotalStatisticReportResponseDTO();
+                if (statisticEnum == StatisticsReportPeriodEnum.Daily)
+                {
+                    DateOnly today = DateOnly.FromDateTime(_dateHelper.GetNowByAppTimeZone());
+                    DateOnly previousDay = today.AddDays(-1);
+                    var currentTotalAmount = await CalculateSystemIncome(today, today);
+                    var previousTotalAmount = await CalculateSystemIncome(previousDay, previousDay);
+
+                    statisticResult = new BookingIncomeTotalStatisticReportResponseDTO
+                    {
+                        TotalBookingIncomeAmount = currentTotalAmount,
+                        TotalBookingIncomePercentChange = previousTotalAmount == 0 ? 100 : Math.Round(((double)(currentTotalAmount - previousTotalAmount) / (double)previousTotalAmount * 100), 2, MidpointRounding.AwayFromZero),
+                    };
+
+                    return statisticResult;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Monthly)
+                {
+                    DateOnly startDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetLastDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
+                    var previousStartDateOfMonth = startDateOfMonth.AddMonths(-1);
+                    var previousEndDateOfMonth = endDateOfMonth.AddMonths(-1);
+
+                    var currentTotalAmount = await CalculateSystemIncome(startDateOfMonth, endDateOfMonth);
+                    var previousTotalAmount = await CalculateSystemIncome(previousStartDateOfMonth, previousEndDateOfMonth);
+
+                    statisticResult = new BookingIncomeTotalStatisticReportResponseDTO
+                    {
+                        TotalBookingIncomeAmount = currentTotalAmount,
+                        TotalBookingIncomePercentChange = previousTotalAmount == 0 ? 100 : Math.Round(((double)(currentTotalAmount - previousTotalAmount) / (double)previousTotalAmount * 100), 2, MidpointRounding.AwayFromZero),
+                    };
+
+                    return statisticResult;
+                }
+                else if (statisticEnum == StatisticsReportPeriodEnum.Yearly)
+                {
+                    DateOnly startDateOfYear = DateOnly.FromDateTime(_dateHelper.GetFirstDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    DateOnly endDateOfYear = DateOnly.FromDateTime(_dateHelper.GetLastDayOfYearByDate(_dateHelper.GetNowByAppTimeZone()));
+                    var previousStartDateOfYear = startDateOfYear.AddYears(-1);
+                    var previousEndDateOfYear = endDateOfYear.AddYears(-1);
+
+                    var currentTotalAmount = await CalculateSystemIncome(startDateOfYear, endDateOfYear);
+                    var previousTotalAmount = await CalculateSystemIncome(previousStartDateOfYear, previousEndDateOfYear);
+
+                    statisticResult = new BookingIncomeTotalStatisticReportResponseDTO
+                    {
+                        TotalBookingIncomeAmount = currentTotalAmount,
+                        TotalBookingIncomePercentChange = previousTotalAmount == 0 ? 100 : Math.Round(((double)(currentTotalAmount - previousTotalAmount) / (double)previousTotalAmount * 100), 2, MidpointRounding.AwayFromZero),
+                    };
+
+                    return statisticResult;
+                }
+                else
+                {
+                    throw new HttpRequestException("Selected Period Enum is not Supported");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting total system booking income statistic report for Period: {Period}", statisticEnum.ToString());
+                throw new HttpRequestException("Error occurred while retrieving total system booking income statistic report, error: " + ex.Message);
             }
         }
         private async Task<decimal> CalculateSystemIncome(DateOnly startDate, DateOnly endDate)

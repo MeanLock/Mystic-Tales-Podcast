@@ -97,5 +97,21 @@ namespace SubscriptionService.API.Controllers.ReportControllers
 
             return Ok(podcastSubscriptionIncomeStatistic);
         }
+        [HttpGet("statistics/summary/system/total")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> GetTotalSystemPodcastSubscriptionStatisticAsync(
+            [FromQuery] StatisticsReportPeriodEnum? report_period = null)
+        {
+            if (!report_period.HasValue)
+            {
+                return BadRequest("ReportPeriod is required.");
+            }
+            var totalPodcastSubscriptionIncomeStatistic = await _podcastSubscriptionService.GetTotalSystemPodcastSubscriptionIncomeStatisticAsync(report_period.Value);
+
+            return Ok(new
+            {
+                TotalPodcastSubscriptionStatisticReport = totalPodcastSubscriptionIncomeStatistic
+            });
+        }
     }
 }

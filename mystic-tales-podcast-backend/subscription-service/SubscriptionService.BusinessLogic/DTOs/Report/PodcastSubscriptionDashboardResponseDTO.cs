@@ -1,4 +1,4 @@
-﻿using SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems;
+﻿using SubscriptionService.BusinessLogic.DTOs.Report;
 using System;
 using System.Collections.Generic;
 using System.Linq;
