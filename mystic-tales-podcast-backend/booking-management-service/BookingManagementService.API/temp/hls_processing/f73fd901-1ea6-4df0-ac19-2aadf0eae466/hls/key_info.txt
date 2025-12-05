@@ -1,0 +1,2 @@
+e4b86d94-d051-4001-803c-c095cbe7a399
+S:\vscode\MY PROJECT\Mystic Tales Podcast\Mystic-Tales-Podcast\mystic-tales-podcast-backend\booking-management-service\BookingManagementService.API\temp/hls_processing\f73fd901-1ea6-4df0-ac19-2aadf0eae466\hls\enc.key

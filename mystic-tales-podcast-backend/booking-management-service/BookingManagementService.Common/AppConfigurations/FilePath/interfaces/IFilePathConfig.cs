@@ -14,5 +14,6 @@
         string BOOKING_TEMP_FILE_PATH { get; set; }
         string DMCA_ACCUSATION_FILE_PATH { get; set; }
         string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
+        string HLS_PROCESSING_LOCAL_TEMP_FILE_PATH { get; set; }
     }
 }

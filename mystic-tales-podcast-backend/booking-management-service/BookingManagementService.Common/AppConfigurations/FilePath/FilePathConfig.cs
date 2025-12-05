@@ -17,6 +17,7 @@ namespace BookingManagementService.Common.AppConfigurations.FilePath
         public string BOOKING_TEMP_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
+        public string HLS_PROCESSING_LOCAL_TEMP_FILE_PATH { get; set; }
         
     }
     public class FilePathConfig : IFilePathConfig
@@ -33,7 +34,8 @@ namespace BookingManagementService.Common.AppConfigurations.FilePath
         public string BOOKING_TEMP_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_FILE_PATH { get; set; }
         public string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
-        
+        public string HLS_PROCESSING_LOCAL_TEMP_FILE_PATH { get; set; }
+
         public FilePathConfig(IConfiguration configuration)
         {
 
@@ -50,6 +52,7 @@ namespace BookingManagementService.Common.AppConfigurations.FilePath
             BOOKING_TEMP_FILE_PATH = filePaths.BOOKING_TEMP_FILE_PATH;
             DMCA_ACCUSATION_FILE_PATH = filePaths.DMCA_ACCUSATION_FILE_PATH;
             DMCA_ACCUSATION_TEMP_FILE_PATH = filePaths.DMCA_ACCUSATION_TEMP_FILE_PATH;
+            HLS_PROCESSING_LOCAL_TEMP_FILE_PATH = filePaths.HLS_PROCESSING_LOCAL_TEMP_FILE_PATH;
         }
 
     }

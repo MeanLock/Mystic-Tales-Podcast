@@ -6,6 +6,9 @@ using FFMpegCore;
 using FFMpegCore.Enums;
 using System.Text;
 using BookingManagementService.Infrastructure.Helpers.AudioHelpers;
+using System.Diagnostics;
+using Microsoft.AspNetCore.Hosting;
+using BookingManagementService.Common.AppConfigurations.FilePath.interfaces;
 
 namespace BookingManagementService.Infrastructure.Services.Audio.Hls
 {
@@ -14,12 +17,21 @@ namespace BookingManagementService.Infrastructure.Services.Audio.Hls
         private readonly ILogger<FFMpegCoreHlsService> _logger;
         private readonly IHlsConfig _hlsConfig;
         private readonly AudioFormatDetectorHelper _audioFormatDetectorHelper;
+        private readonly IWebHostEnvironment _environment;
+        private readonly IFilePathConfig _filePathConfig;
 
-        public FFMpegCoreHlsService(ILogger<FFMpegCoreHlsService> logger, IHlsConfig hlsConfig)
+        public FFMpegCoreHlsService(ILogger<FFMpegCoreHlsService> logger, IHlsConfig hlsConfig, IWebHostEnvironment environment, IFilePathConfig filePathConfig)
         {
             _logger = logger;
             _hlsConfig = hlsConfig;
             _audioFormatDetectorHelper = new AudioFormatDetectorHelper(logger as ILogger<AudioFormatDetectorHelper>);
+            _environment = environment;
+            _filePathConfig = filePathConfig;
+        }
+
+        public string GetProjectRootPath()
+        {
+            return AppContext.BaseDirectory;
         }
 
         /// <summary>
@@ -46,12 +58,12 @@ namespace BookingManagementService.Infrastructure.Services.Audio.Hls
                 if (!audioStream.CanSeek)
                 {
                     _logger.LogInformation("Input stream is not seekable (likely S3 HashStream or network stream). Copying to MemoryStream...");
-                    
+
                     // Copy to MemoryStream for seekable operations
                     var memoryStream = new MemoryStream();
                     await audioStream.CopyToAsync(memoryStream, cancellationToken);
                     memoryStream.Position = 0; // Reset to beginning
-                    
+
                     processStream = memoryStream;
                     _logger.LogInformation($"Copied {memoryStream.Length} bytes to MemoryStream");
                 }
@@ -59,7 +71,7 @@ namespace BookingManagementService.Infrastructure.Services.Audio.Hls
                 {
                     _logger.LogInformation("Input stream is seekable, using directly");
                     processStream = audioStream;
-                    
+
                     // Ensure stream is at beginning
                     if (processStream.Position != 0)
                     {
@@ -69,7 +81,7 @@ namespace BookingManagementService.Infrastructure.Services.Audio.Hls
 
                 // ✅ STEP 2: Detect audio format from stream (reads first 12 bytes)
                 formatInfo = _audioFormatDetectorHelper.DetectFormatFromStream(processStream);
-                
+
                 // After detection, reset position for subsequent reads
                 processStream.Position = 0;
 
@@ -97,7 +109,8 @@ namespace BookingManagementService.Infrastructure.Services.Audio.Hls
                 _logger.LogInformation($"Quality Impact: {qualityImpact}");
 
                 // Create temporary working directory
-                workingDir = Path.Combine(Path.GetTempPath(), "hls_processing", Guid.NewGuid().ToString());
+                // workingDir = Path.Combine(Path.GetTempPath(), "hls_processing", Guid.NewGuid().ToString());
+                workingDir = Path.Combine(_environment.ContentRootPath, _filePathConfig.HLS_PROCESSING_LOCAL_TEMP_FILE_PATH, Guid.NewGuid().ToString());
                 Directory.CreateDirectory(workingDir);
 
                 // ✅ STEP 5: Save stream with correct extension (DYNAMIC)
@@ -117,9 +130,9 @@ namespace BookingManagementService.Infrastructure.Services.Audio.Hls
 
                 // ✅ STEP 6: Create HLS segments with format-aware strategy
                 var hlsResult = await CreateHlsSegmentsAsync(
-                    tempAudioFile, 
-                    workingDir, 
-                    segmentDuration, 
+                    tempAudioFile,
+                    workingDir,
+                    segmentDuration,
                     formatInfo,  // ← Pass format info
                     cancellationToken);
 
@@ -297,7 +310,8 @@ namespace BookingManagementService.Infrastructure.Services.Audio.Hls
 
         /// <summary>
         /// Run FFmpeg to convert audio to HLS format with encryption
-        /// ✅ REFACTORED: Now uses dynamic codec strategy based on input format
+        /// ✅ FIXED: Use Process directly + skip video streams (-vn flag)
+        /// Root cause: FFMpegCore wrapper bug + album art in MP3 causing timestamp issues
         /// </summary>
         private async Task<bool> RunFfmpegHlsConversion(
             string audioFilePath,
@@ -305,47 +319,89 @@ namespace BookingManagementService.Infrastructure.Services.Audio.Hls
             string segmentPattern,
             string keyInfoPath,
             int segmentDuration,
-            AudioFormatInfo inputFormat,  // ← NEW PARAMETER
+            AudioFormatInfo inputFormat,
             CancellationToken cancellationToken)
         {
             try
             {
                 _logger.LogInformation($"Starting FFmpeg HLS conversion for input: {audioFilePath}");
 
-                // ✅ Get codec strategy based on input format
                 var (codecArg, bitrateArg, shouldCopyCodec) = HlsCodecStrategy.GetCodecStrategy(inputFormat);
+                _logger.LogInformation($"FFmpeg codec strategy: codec={codecArg}, bitrate={bitrateArg ?? "N/A"}");
 
-                _logger.LogInformation($"FFmpeg codec strategy: codec={codecArg}, bitrate={bitrateArg ?? "N/A"}, copy={shouldCopyCodec}");
+                // ⭐ Build FFmpeg command manually (bypass FFMpegCore wrapper bug)
+                var arguments = new List<string>
+        {
+            "-i", $"\"{audioFilePath}\"",
+            
+            // ⭐⭐⭐ CRITICAL FIX: Skip video streams
+            // Album art in MP3/M4A files causes FFmpeg to encode video,
+            // which makes HLS calculate timestamps based on video (1 frame = 0.000011s)
+            // instead of audio duration. This causes #EXTINF:0.000011 bug.
+            "-vn",
+            
+            // Audio codec settings
+            "-c:a", codecArg,
+            "-b:a", bitrateArg ?? "192k",  // Fallback if null
+            "-ar", "44100",
+            "-ac", "2",
+            
+            // HLS format
+            "-f", "hls",
+            "-hls_time", segmentDuration.ToString(),
+            "-hls_list_size", "0",
+            "-hls_key_info_file", $"\"{keyInfoPath}\"",
+            "-hls_playlist_type", "vod",
+            "-hls_flags", "independent_segments",
+            "-hls_segment_filename", $"\"{segmentPattern}\"",
+            
+            // Output
+            $"\"{playlistPath}\"",
+            "-y"
+        };
 
-                var ffOptions = new FFOptions
+                var argumentString = string.Join(" ", arguments);
+                _logger.LogDebug($"FFmpeg command: ffmpeg {argumentString}");
+
+                // ⭐ Use Process directly instead of FFMpegCore (wrapper has bugs)
+                var processStartInfo = new ProcessStartInfo
                 {
-                    BinaryFolder = Path.GetDirectoryName(_hlsConfig.FfmpegPath) ?? "",
-                    TemporaryFilesFolder = Path.GetTempPath()
+                    FileName = string.IsNullOrEmpty(_hlsConfig.FfmpegPath) ? "ffmpeg" : _hlsConfig.FfmpegPath,
+                    Arguments = argumentString,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(audioFilePath)
                 };
 
-                // ✅ Build FFmpeg arguments with dynamic codec
-                var ffmpegArgs = FFMpegArguments
-                    .FromFileInput(audioFilePath)
-                    .OutputToFile(playlistPath, overwrite: true, options => options
-                        .WithCustomArgument($"-hls_time {segmentDuration}")
-                        .WithCustomArgument($"-hls_key_info_file \"{keyInfoPath}\"")
-                        .WithCustomArgument("-hls_playlist_type vod")
-                        .WithCustomArgument($"-hls_segment_filename \"{segmentPattern}\"")
-                        .WithCustomArgument($"-c:a {codecArg}")  // ← DYNAMIC CODEC
-                        .WithCustomArgument(bitrateArg != null ? $"-b:a {bitrateArg}" : "")); // ← DYNAMIC BITRATE
+                using var process = new Process { StartInfo = processStartInfo };
 
-                var success = await ffmpegArgs
-                    .CancellableThrough(cancellationToken)
-                    .ProcessAsynchronously(throwOnError: false, ffMpegOptions: ffOptions);
+                var errorBuilder = new StringBuilder();
 
-                if (success)
+                process.ErrorDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        errorBuilder.AppendLine(e.Data);
+                        _logger.LogTrace($"FFmpeg: {e.Data}");
+                    }
+                };
+
+                process.Start();
+                process.BeginErrorReadLine();
+
+                await process.WaitForExitAsync(cancellationToken);
+
+                if (process.ExitCode == 0)
                 {
                     _logger.LogInformation("FFmpeg HLS conversion completed successfully");
                     return true;
                 }
                 else
                 {
-                    _logger.LogError("FFmpeg HLS conversion failed");
+                    _logger.LogError($"FFmpeg failed with exit code {process.ExitCode}");
+                    _logger.LogError($"FFmpeg error output:\n{errorBuilder}");
                     return false;
                 }
             }
@@ -368,7 +424,8 @@ namespace BookingManagementService.Infrastructure.Services.Audio.Hls
                 var ffOptions = new FFOptions
                 {
                     BinaryFolder = Path.GetDirectoryName(_hlsConfig.FfmpegPath) ?? "",
-                    TemporaryFilesFolder = Path.GetTempPath()
+                    // TemporaryFilesFolder = Path.GetTempPath()
+                    TemporaryFilesFolder = Path.Combine(_environment.ContentRootPath, _filePathConfig.HLS_PROCESSING_LOCAL_TEMP_FILE_PATH)
                 };
 
                 // Use FFMpegCore to analyze the media file
