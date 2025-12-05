@@ -586,6 +586,20 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         await transaction.RollbackAsync();
                     }
+
+                    foreach (var processedFile in processedFiles)
+                    {
+                        try
+                        {
+                            await _fileIOHelper.DeleteFileAsync(processedFile);
+                            _logger.LogInformation("Cleaned up processed file: {FilePath}", processedFile);
+                        }
+                        catch (Exception deleteEx)
+                        {
+                            _logger.LogWarning(deleteEx, "Failed to clean up processed file: {FilePath}", processedFile);
+                        }
+                    }
+
                     _logger.LogError(ex, "Error occurred while creating booking for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject
                     {

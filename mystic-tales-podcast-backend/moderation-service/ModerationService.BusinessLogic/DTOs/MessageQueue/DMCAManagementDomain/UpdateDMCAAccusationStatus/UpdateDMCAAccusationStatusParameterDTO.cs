@@ -13,5 +13,6 @@ namespace ModerationService.BusinessLogic.DTOs.MessageQueue.DMCAManagementDomain
         public int DMCAAccusationId { get; set; }
         public int DMCAAccusationAction { get; set; }
         public int? DMCAAccusationTakenDownReasonEnum { get; set; }
+        public List<string> AttachmentFileKeys { get; set; } = new List<string>();
     }
 }

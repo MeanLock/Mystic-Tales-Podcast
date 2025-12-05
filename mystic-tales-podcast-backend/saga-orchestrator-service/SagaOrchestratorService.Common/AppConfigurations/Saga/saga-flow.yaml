@@ -9287,17 +9287,20 @@ flows:
           - AccountId
           - DMCAAccusationId
           - DMCAAccusationAction
-          - DMCAAccusationTakenDownReasonEnum   
+          - DMCAAccusationTakenDownReasonEnum  
+          - AttachmentFileKeys
         next-request-data:
           - AccountId
           - DMCAAccusationId
           - DMCAAccusationAction
           - DMCAAccusationTakenDownReasonEnum
+          - AttachmentFileKeys
         response-data:
           - AccountId
           - DMCAAccusationId
           - DMCAAccusationAction
           - DMCAAccusationTakenDownReasonEnum
+          - AttachmentFileKeys
         onSuccess:
           emit: "update-dmca-accusation-status.success"
           topic: "dmca-management-domain"

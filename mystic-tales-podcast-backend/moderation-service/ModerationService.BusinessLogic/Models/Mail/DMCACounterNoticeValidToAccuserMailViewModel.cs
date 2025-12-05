@@ -12,5 +12,6 @@ namespace ModerationService.BusinessLogic.Models.Mail
         public string AccuserFullName { get; set; } = null!;
         public DateTime ValidatedAt { get; set; }
         public int TimeToResponse { get; set; }
+        public List<string> AttachmentFileUrls { get; set; } = new List<string>();
     }
 }

@@ -645,6 +645,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
+                var processedFiles = new List<string>();
                 try
                 {
                     var messageName = command.MessageName;
@@ -736,6 +737,24 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage, command.SagaInstanceId.ToString());
                             _logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
+                            List<string> attachmentFileUrls = new List<string>();
+                            foreach (var attachmentFile in parameter.AttachmentFileKeys)
+                            {
+                                var folderPath = _filePathConfig.DMCA_ACCUSATION_FILE_PATH + "\\" + dmcaAccusation.Id + "\\" + "mailing_files";
+                                if (attachmentFile != null && attachmentFile != "")
+                                {
+                                    var attachmentFileKey = FilePathHelper.CombinePaths(folderPath, $"{Guid.NewGuid()}_dmca_notice{FilePathHelper.GetExtension(attachmentFile)}");
+                                    await _fileIOHelper.CopyFileToFileAsync(attachmentFile, attachmentFileKey);
+                                    processedFiles.Add(attachmentFileKey);
+                                    await _fileIOHelper.DeleteFileAsync(attachmentFile);
+                                    var url = await _fileIOHelper.GeneratePresignedUrlAsync(attachmentFileKey, ConvertDaysToSeconds(_dmcaAccusationConfig.DMCANoticeResponseTime));
+                                    if (url != null)
+                                    {
+                                        attachmentFileUrls.Add(url);
+                                    }
+                                }
+                            }
+
                             //Send Confirm email to Accuser
                             var accuserMailSendingRequestData = JObject.FromObject(new
                             {
@@ -770,7 +789,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         PodcasterEmail = podcaster.Email,
                                         PodcasterFullName = podcaster.FullName,
                                         TimeToResponse = 14,
-                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone()
+                                        ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
+                                        AttachmentFileUrls = attachmentFileUrls
                                     }
                                 }
                             });
@@ -838,6 +858,24 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             //await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage2);
                             //_logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
+                            List<string> attachmentFileUrls2 = new List<string>();
+                            foreach (var attachmentFile in parameter.AttachmentFileKeys)
+                            {
+                                var folderPath = _filePathConfig.DMCA_ACCUSATION_FILE_PATH + "\\" + dmcaAccusation.Id + "\\" + "mailing_files";
+                                if (attachmentFile != null && attachmentFile != "")
+                                {
+                                    var attachmentFileKey = FilePathHelper.CombinePaths(folderPath, $"{Guid.NewGuid()}_counter_notice{FilePathHelper.GetExtension(attachmentFile)}");
+                                    await _fileIOHelper.CopyFileToFileAsync(attachmentFile, attachmentFileKey);
+                                    processedFiles.Add(attachmentFileKey);
+                                    await _fileIOHelper.DeleteFileAsync(attachmentFile);
+                                    var url = await _fileIOHelper.GeneratePresignedUrlAsync(attachmentFileKey, ConvertDaysToSeconds(_dmcaAccusationConfig.DMCANoticeResponseTime));
+                                    if (url != null)
+                                    {
+                                        attachmentFileUrls2.Add(url);
+                                    }
+                                }
+                            }
+
                             //Send Email to Accuser
                             var accuserMailSendingRequestData2 = JObject.FromObject(new
                             {
@@ -850,7 +888,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                         AccuserEmail = dmcaAccusation.AccuserEmail,
                                         AccuserFullName = dmcaAccusation.AccuserFullName,
                                         ValidatedAt = _dateHelper.GetNowByAppTimeZone(),
-                                        TimeToResponse = 14
+                                        TimeToResponse = 14,
+                                        AttachmentFileUrls = attachmentFileUrls2
                                     }
                                 }
                             });
@@ -940,6 +979,24 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                             //await _messagingService.SendSagaMessageAsync(sagaTakeDownStartSagaTriggerMessage3);
                             //_logger.LogInformation("Started content dmca takedown flow for DMCA Accusation Id: {DMCAAccusationId}", dmcaAccusation.Id);
 
+                            List<string> attachmentFileUrls3 = new List<string>();
+                            foreach (var attachmentFile in parameter.AttachmentFileKeys)
+                            {
+                                var folderPath = _filePathConfig.DMCA_ACCUSATION_FILE_PATH + "\\" + dmcaAccusation.Id + "\\" + "mailing_files";
+                                if (attachmentFile != null && attachmentFile != "")
+                                {
+                                    var attachmentFileKey = FilePathHelper.CombinePaths(folderPath, $"{Guid.NewGuid()}_lawsuit_document{FilePathHelper.GetExtension(attachmentFile)}");
+                                    await _fileIOHelper.CopyFileToFileAsync(attachmentFile, attachmentFileKey);
+                                    processedFiles.Add(attachmentFileKey);
+                                    await _fileIOHelper.DeleteFileAsync(attachmentFile);
+                                    var url = await _fileIOHelper.GeneratePresignedUrlAsync(attachmentFileKey, ConvertDaysToSeconds(_dmcaAccusationConfig.DMCANoticeResponseTime));
+                                    if (url != null)
+                                    {
+                                        attachmentFileUrls3.Add(url);
+                                    }
+                                }
+                            }
+
                             //Send Confirm Email to Accuser
                             var accuserMailSendingRequestData3 = JObject.FromObject(new
                             {
@@ -972,7 +1029,8 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                                     MailObject = new DMCALawsuitProofValidToAccusedMailViewModel
                                     {
                                         PodcasterEmail = podcaster.Email,
-                                        PodcasterFullName = podcaster.FullName
+                                        PodcasterFullName = podcaster.FullName,
+                                        AttachmentFileUrls = attachmentFileUrls3
                                     }
                                 }
                             });
@@ -1033,7 +1091,26 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, "Error occurred while Updating DMCA Accusation for SagaId: {SagaId}", command.SagaInstanceId);
+
+                    foreach (var processedFile in processedFiles)
+                    {
+                        try
+                        {
+                            await _fileIOHelper.DeleteFileAsync(processedFile);
+                            _logger.LogInformation("Cleaned up processed file: {FilePath}", processedFile);
+                        }
+                        catch (Exception deleteEx)
+                        {
+                            _logger.LogWarning(deleteEx, "Failed to clean up processed file: {FilePath}", processedFile);
+                        }
+                    }
+
+                    foreach (var attachmentFile in parameter.AttachmentFileKeys)
+                    {
+                        await _fileIOHelper.DeleteFileAsync(attachmentFile);
+                    }
+
+                        _logger.LogError(ex, "Error occurred while Updating DMCA Accusation for SagaId: {SagaId}", command.SagaInstanceId);
                     var newResponseData = new JObject{
                         { "ErrorMessage", "Update DMCA Accusation failed, error: " + ex.Message }
                     };
@@ -4812,6 +4889,62 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                 _logger.LogError(ex, "Error occurred while getting Podcast Show with Episodes for Show Id: {PodcastShowId}", podcastShowId);
                 throw new HttpRequestException("Get Podcast Show with Episodes for Show Id failed, error: " + ex.Message);
             }
+        }
+        public bool IsValidFile(string fileName, long fileSizeBytes, string mimeType)
+        {
+            var rule = new FileValidationRule
+            {
+                MaxSizeBytes = 52428800,
+                AllowedExtensions = new string[]
+                    {
+                        ".pdf",
+                        ".doc",
+                        ".docx",
+                        ".xls",
+                        ".xlsx",
+                        ".txt",
+                        ".csv",
+                        ".wav",
+                        ".flac",
+                        ".mp3",
+                        ".zip",
+                        ".rar"
+                    },
+                AllowedMimeTypes = new string[]
+                    {
+                        "application/pdf",
+                        "application/msword",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "application/vnd.ms-excel",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "text/plain",
+                        "text/csv",
+                        "audio/wav",
+                        "audio/flac",
+                        "audio/mpeg",
+                        "application/zip",
+                        "application/x-rar-compressed"
+                    }
+            };
+
+            // Check file size
+            if (fileSizeBytes > rule.MaxSizeBytes)
+                return false;
+
+            // Check file extension
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            if (!rule.AllowedExtensions.Contains(extension))
+                return false;
+
+            // Check MIME type
+            //if (!rule.AllowedMimeTypes.Contains(mimeType.ToLowerInvariant()))
+            //    return false;
+
+            return true;
+        }
+        private int ConvertDaysToSeconds(int days)
+        {
+            return days * 86400; // 24 hours * 60 minutes * 60 seconds
         }
     }
 }

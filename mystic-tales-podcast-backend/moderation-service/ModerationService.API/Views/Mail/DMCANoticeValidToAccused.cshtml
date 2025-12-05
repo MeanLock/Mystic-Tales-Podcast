@@ -206,7 +206,28 @@
                 </p>
                 <div class="verify-code">@Model.text</div>
             </div> *@
-            
+
+                <div class="verification-section">
+                    <div class="verification-title">Attachment File Urls</div>
+                    <div class="verify-code">
+                        @if (Model.AttachmentFileUrls != null && Model.AttachmentFileUrls.Any())
+                        {
+                            <ul style="text-align: left; padding-left: 20px;">
+                                @foreach (var fileUrl in Model.AttachmentFileUrls)
+                                {
+                                    <li style="margin-bottom: 5px;">
+                                        <a href="@fileUrl" target="_blank" style="color: #fff; text-decoration: underline; word-break: break-all;">@fileUrl</a>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div style="color: #d0d0d0;">No attachment files available</div>
+                        }
+                    </div>
+                </div>
+
             @* <div class="info-box">
                 <strong>Important Note:</strong><br/>
                 • This verification code is valid for 15 minutes<br/>

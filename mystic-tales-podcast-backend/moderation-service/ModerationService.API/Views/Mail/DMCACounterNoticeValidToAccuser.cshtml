@@ -198,14 +198,27 @@
             <p class="message">
                 Our staff has reject your dmca notice with this reason: <strong>@Model.InvalidReason</strong>, this was validated at @Model.CompletedAt.ToString("f").
             </p>  *@
-            
-            @* <div class="verification-section">
-                <div class="verification-title">Account Verification Code</div>
-                <p style="color: #d0d0d0; margin-bottom: 20px;">
-                    Enter this code on the verification page to complete your registration
-                </p>
-                <div class="verify-code">@Model.text</div>
-            </div> *@
+
+                <div class="verification-section">
+                    <div class="verification-title">Attachment File Urls</div>
+                    <div class="verify-code">
+                        @if (Model.AttachmentFileUrls != null && Model.AttachmentFileUrls.Any())
+                        {
+                            <ul style="text-align: left; padding-left: 20px;">
+                                @foreach (var fileUrl in Model.AttachmentFileUrls)
+                                {
+                                    <li style="margin-bottom: 5px;">
+                                        <a href="@fileUrl" target="_blank" style="color: #fff; text-decoration: underline; word-break: break-all;">@fileUrl</a>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <div style="color: #d0d0d0;">No attachment files available</div>
+                        }
+                    </div>
+                </div>
             
             @* <div class="info-box">
                 <strong>Important Note:</strong><br/>

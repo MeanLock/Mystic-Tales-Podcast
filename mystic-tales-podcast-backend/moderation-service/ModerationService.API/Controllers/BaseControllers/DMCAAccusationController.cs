@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using ModerationService.API.Filters.ExceptionFilters;
 using ModerationService.BusinessLogic.DTOs.Cache;
 using ModerationService.BusinessLogic.DTOs.CounterNotice;
+using ModerationService.BusinessLogic.DTOs.DMCAAccusation;
 using ModerationService.BusinessLogic.DTOs.DMCANotice;
 using ModerationService.BusinessLogic.DTOs.DMCAReport;
 using ModerationService.BusinessLogic.DTOs.LawsuitProof;
@@ -495,16 +496,48 @@ namespace ModerationService.API.Controllers.BaseControllers
         public async Task<IActionResult> UpdateDMCAAccusationById(
             [FromRoute] int DMCAAccusationId,
             [FromQuery] DMCAAccusationQueryEnum DMCAAccusationAction,
-            [FromQuery] DMCATakeDownReasonEnum DMCAAccusationTakenDownReasonEnum)
+            [FromQuery] DMCATakeDownReasonEnum DMCAAccusationTakenDownReasonEnum,
+            [FromForm] DMCAAccusationStatusUpdateRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var loginAccountId = account.Id;
+
+            foreach (var attachmentFile in request.AttachmentFiles)
+            {
+                var isValidAudioFile = _dmcaAccusationService.IsValidFile(attachmentFile.FileName, attachmentFile.Length, attachmentFile.ContentType);
+                if (!isValidAudioFile)
+                {
+                    return BadRequest($"Invalid attachment file '{attachmentFile.FileName}'. Please ensure all audio files have correct type and size.");
+                }
+            }
+
+            var attachmentFileKeys = new List<string>();
+            //var requirementSubmission = bookingRequirementIdList;
+
+            // Process all audio files and prepare track submission items
+            foreach (var attachmentFile in request.AttachmentFiles)
+            {
+                string newAttachmentFileName = $"{Guid.NewGuid()}_{attachmentFile.FileName}";
+                Console.WriteLine($"Generated new attachment file name: {newAttachmentFileName}");
+
+                using (var memoryStream = attachmentFile.OpenReadStream())
+                {
+                    await _fileIOHelper.UploadBinaryFileWithStreamAsync(memoryStream, _filePathConfig.DMCA_ACCUSATION_TEMP_FILE_PATH, newAttachmentFileName);
+                }
+
+                var attachmentFileKey = FilePathHelper.CombinePaths(_filePathConfig.DMCA_ACCUSATION_TEMP_FILE_PATH, newAttachmentFileName);
+
+                Console.WriteLine($"Uploaded attachment file name: {System.IO.Path.GetFileNameWithoutExtension(attachmentFile.FileName)}");
+                attachmentFileKeys.Add(attachmentFileKey);
+            }
+
             var requestData = new JObject
             {
                 { "AccountId", loginAccountId },
                 { "DMCAAccusationId", DMCAAccusationId },
                 { "DMCAAccusationAction", (int)DMCAAccusationAction },
-                { "DMCAAccusationTakenDownReasonEnum", (int)DMCAAccusationTakenDownReasonEnum }
+                { "DMCAAccusationTakenDownReasonEnum", (int)DMCAAccusationTakenDownReasonEnum },
+                { "AttachmentFileKeys", JArray.FromObject(attachmentFileKeys) }
             };
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
                 topic: SAGA_TOPIC,
