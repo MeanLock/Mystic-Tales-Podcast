@@ -12,16 +12,19 @@ namespace BookingManagementService.Common.AppConfigurations.BusinessSetting
     {
         public int SessionExpirationMinutes { get; set; }
         public int SessionAdditionalUpdateBufferExpirationMinutes { get; set; }
+        public int SessionAudioUrlExpirationSeconds { get; set; }
     }
     public class BookingListenSessionConfig : IBookingListenSessionConfig
     {
         public int SessionExpirationMinutes { get; set; }
         public int SessionAdditionalUpdateBufferExpirationMinutes { get; set; }
+        public int SessionAudioUrlExpirationSeconds { get; set; }
         public BookingListenSessionConfig(IConfiguration configuration)
         {
             var bookingListenSessionConfig = configuration.GetSection("BusinessSettings:BookingListenSession").Get<BookingListenSessionConfigModel>();
             SessionExpirationMinutes = bookingListenSessionConfig.SessionExpirationMinutes;
             SessionAdditionalUpdateBufferExpirationMinutes = bookingListenSessionConfig.SessionAdditionalUpdateBufferExpirationMinutes;
+            SessionAudioUrlExpirationSeconds = bookingListenSessionConfig.SessionAudioUrlExpirationSeconds;
         }
     }
 }

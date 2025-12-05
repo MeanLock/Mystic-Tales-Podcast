@@ -10,5 +10,6 @@ namespace BookingManagementService.Common.AppConfigurations.BusinessSetting.inte
     {
         int SessionExpirationMinutes { get; set; }
         int SessionAdditionalUpdateBufferExpirationMinutes { get; set; }
+        int SessionAudioUrlExpirationSeconds { get; set; }
     }
 }

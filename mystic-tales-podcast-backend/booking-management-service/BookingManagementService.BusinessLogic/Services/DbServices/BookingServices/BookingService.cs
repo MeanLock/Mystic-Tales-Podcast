@@ -252,9 +252,9 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
                 var podcastBuddy = await GetPodcaster(booking.PodcastBuddyId);
                 AccountStatusCache? assignedStaff = null;
-                if(booking.AssignedStaffId != null)
+                if (booking.AssignedStaffId != null)
                 {
-                    assignedStaff =  await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                    assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
                 }
 
                 if (podcastBuddy == null)
@@ -269,7 +269,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 var lastestProducingRequest = booking.BookingProducingRequests?.Where(bp => bp.FinishedAt != null).OrderByDescending(bp => bp.CreatedAt).FirstOrDefault();
 
                 var lastestBookingPodcastTracks = new List<BookingPodcastTrackListItemResponseDTO>();
-                if(lastestProducingRequest != null)
+                if (lastestProducingRequest != null)
                 {
                     lastestBookingPodcastTracks = lastestProducingRequest.BookingPodcastTracks.Select(bpt => new BookingPodcastTrackListItemResponseDTO
                     {
@@ -436,12 +436,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         },
                     })
                     .ToListAsync();
-                if(podcastBookingTones != null)
+                if (podcastBookingTones != null)
                 {
                     result = podcastBookingTones;
                 }
                 return result;
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving podcast booking tones for PodcasterId: {AccountId}", accountId);
                 throw new HttpRequestException($"Retrieving Podcast Booking Tones for PodcasterId {accountId} failed. Error: {ex.Message}");
@@ -475,7 +476,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     //    _logger.LogError($"PodcasterProfile: {podcaster.HasVerifiedPodcasterProfile}. PodcastBuddy: {podcaster.PodcasterProfileIsBuddy}. PodcastVerified: {podcaster.PodcasterProfileIsVerified}");
                     //    throw new HttpRequestException($"Podcaster with Id {parameter.PodcastBuddyId} does not qualify to request booking");
                     //}
-                    if(parameter.DeadlineDayCount == 0)
+                    if (parameter.DeadlineDayCount == 0)
                     {
                         throw new HttpRequestException("Deadline day count can not be zero");
                     }
@@ -891,7 +892,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     var currentStatus = booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).First().BookingStatusId;
-                    if(currentStatus < (int)BookingStatusEnum.QuotationRejected)
+                    if (currentStatus < (int)BookingStatusEnum.QuotationRejected)
                     {
                         var newBookingStatusTracking = new BookingStatusTracking
                         {
@@ -962,7 +963,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var responseData = command.LastStepResponseData;
 
                     var systemConfig = await GetActiveSystemConfigProfile();
-                    if(systemConfig == null)
+                    if (systemConfig == null)
                     {
                         throw new Exception("System config not found");
                     }
@@ -986,16 +987,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         var newBookingStatusId = 0;
                         if (currentStatus < (int)BookingStatusEnum.QuotationRejected)
                         {
-                            if(parameter.AccountId == booking.AccountId)
+                            if (parameter.AccountId == booking.AccountId)
                                 newBookingStatusId = (int)BookingStatusEnum.QuotationCancelled;
-                            else if(parameter.AccountId == booking.PodcastBuddyId)
+                            else if (parameter.AccountId == booking.PodcastBuddyId)
                                 newBookingStatusId = (int)BookingStatusEnum.QuotationRejected;
                             else
                                 throw new Exception("Only customer or podcast buddy can manually cancel booking in Quotation status");
                         }
                         else if (currentStatus == (int)BookingStatusEnum.Producing)
                         {
-                            if(booking.AccountId != parameter.AccountId)
+                            if (booking.AccountId != parameter.AccountId)
                                 throw new Exception("Only customer can manually cancel booking in Producing status");
                             if (booking.BookingProducingRequests.Count() == 1 && booking.BookingProducingRequests.Select(b => b.Deadline).FirstOrDefault() <= _dateHelper.GetNowByAppTimeZone())
                                 newBookingStatusId = (int)BookingStatusEnum.CancelledManually;
@@ -1022,7 +1023,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         if (newBookingStatusId == (int)BookingStatusEnum.CancelledManually)
                         {
-                            if(booking.Price == null)
+                            if (booking.Price == null)
                                 throw new Exception("Booking Price is null, cannot process refund");
                             var profitRate = systemConfig.BookingConfig.ProfitRate;
                             var depositRate = systemConfig.BookingConfig.DepositRate;
@@ -1427,7 +1428,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     var podcaster = await GetPodcaster(booking.PodcastBuddyId);
-                    if(podcaster == null)
+                    if (podcaster == null)
                     {
                         throw new Exception($"Podcaster with ID {booking.PodcastBuddyId} not found");
                     }
@@ -2015,7 +2016,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             };
                             await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
                             b.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-                            if(b.AccountId == parameter.PodcasterId)
+                            if (b.AccountId == parameter.PodcasterId)
                                 b.BookingAutoCancelReason = BookingCancelAutoReasonEnum.TerminatePodcasterTaken.GetDescription();
                             else
                                 b.BookingAutoCancelReason = BookingCancelAutoReasonEnum.TerminatePodcasterGiven.GetDescription();
@@ -2050,14 +2051,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 //}
 
                                 var systemConfig = await GetActiveSystemConfigProfile();
-                                if(systemConfig == null)
+                                if (systemConfig == null)
                                 {
                                     throw new Exception("System configuration not found");
                                 }
                                 var profitRate = systemConfig.BookingConfig.ProfitRate;
                                 var depositRate = systemConfig.BookingConfig.DepositRate;
 
-                                if(b.AccountId == parameter.PodcasterId)
+                                if (b.AccountId == parameter.PodcasterId)
                                 {
                                     var compensationAmount = b.Price * (decimal)depositRate - b.Price * (decimal)profitRate;
                                     var compensationMessageName = "booking-deposit-compensation-flow";
@@ -2171,7 +2172,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                     await _podcastBuddyBookingToneRepository.DeletePodcastBuddyBookingTone(existingBookingPodcastTones);
 
-                    if(parameter.PodcastToneIds != null || parameter.PodcastToneIds.Count() > 0)
+                    if (parameter.PodcastToneIds != null || parameter.PodcastToneIds.Count() > 0)
                     {
                         foreach (var podcastToneId in parameter.PodcastToneIds)
                         {
@@ -2263,7 +2264,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         if (booking.Price.HasValue)
                         {
-                            var Amount = booking.Price * (decimal)depositRate - booking.Price * (decimal)profitRate ;
+                            var Amount = booking.Price * (decimal)depositRate - booking.Price * (decimal)profitRate;
                             var compensationMessageName = "booking-deposit-compensation-flow";
                             var newRequestData = new JObject
                             {
@@ -2345,7 +2346,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
 
                         if (booking.Price.HasValue)
                         {
-                            var Amount = booking.Price * (decimal)depositRate ;
+                            var Amount = booking.Price * (decimal)depositRate;
                             var newRequestData = new JObject
                             {
                                 { "BookingId", booking.Id },
@@ -2404,7 +2405,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
                     var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
                     AccountStatusCache? assignedStaff = null;
-                    if(booking.AssignedStaffId.HasValue)
+                    if (booking.AssignedStaffId.HasValue)
                     {
                         assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
                     }
@@ -2491,7 +2492,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 if (booking == null)
                     return null;
 
-                if(booking.BookingStatusTrackings
+                if (booking.BookingStatusTrackings
                     .OrderByDescending(bst => bst.CreatedAt)
                     .FirstOrDefault()
                     .BookingStatusId != (int)BookingStatusEnum.Completed)
@@ -2711,7 +2712,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     throw new HttpRequestException($"Podcaster with ID {booking.PodcastBuddyId} not found");
                 }
                 AccountStatusCache? assignedStaff = null;
-                if(booking.AssignedStaffId.HasValue)
+                if (booking.AssignedStaffId.HasValue)
                 {
                     assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
                 }
@@ -3004,7 +3005,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     DateOnly endDateOfMonth = DateOnly.FromDateTime(_dateHelper.GetLastDayOfMonthByDate(_dateHelper.GetNowByAppTimeZone()));
                     var previousStartDateOfMonth = startDateOfMonth.AddMonths(-1);
                     var previousEndDateOfMonth = endDateOfMonth.AddMonths(-1);
-                     
+
                     var currentTotalAmount = await CalculateSystemIncome(startDateOfMonth, endDateOfMonth);
                     var previousTotalAmount = await CalculateSystemIncome(previousStartDateOfMonth, previousEndDateOfMonth);
 
@@ -3073,7 +3074,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 .Include(b => b.BookingStatusTrackings))
                 .Where(b => (b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.Completed ||
                 b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledManually ||
-                b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledAutomatically )
+                b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().BookingStatusId == (int)BookingStatusEnum.CancelledAutomatically)
                 && (startDate <= DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) &&
                 DateOnly.FromDateTime(b.BookingStatusTrackings.OrderByDescending(bs => bs.CreatedAt).First().CreatedAt) <= endDate)
                 && b.PodcastBuddyId == accountId).ToListAsync();
@@ -3115,7 +3116,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 return result.Results?["podcaster"] is JArray podcasterArray && podcasterArray.Count > 0
                    ? podcasterArray.First.ToObject<PodcasterDTO>()
                    : null;
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 _logger.LogError(ex, "Error occurred while querying podcaster for AccountId: {AccountId}", accountId);
@@ -3153,7 +3155,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 return result.Results?["activeSystemConfigProfile"] is JArray configArray && configArray.Count > 0
                     ? configArray.First.ToObject<SystemConfigProfileDTO>()
                     : null;
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
                 _logger.LogError(ex, "Error occurred while querying active system config profile");
@@ -3331,7 +3334,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             throw new HttpRequestException("Podcast track with id " + podcastTrackId + " does not belong to the current producing request of booking with id " + bookingId);
                         }
-                        if(currentBookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
+                        if (currentBookingStatusId == (int)BookingStatusEnum.TrackPreviewing)
                         {
                             if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
                             {
@@ -3493,7 +3496,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         },
                         AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
                                 ? await _fileIOHelper.GeneratePresignedUrlAsync(
-                                    bookingPodcastTrack.AudioFileKey
+                                    bookingPodcastTrack.AudioFileKey, _bookingListenSessionConfig.SessionAudioUrlExpirationSeconds
                                 )
                                 : null,
                         PlaylistFileKey = playlistFileKey
@@ -3692,7 +3695,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         },
                         AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
                                 ? await _fileIOHelper.GeneratePresignedUrlAsync(
-                                    bookingPodcastTrack.AudioFileKey
+                                    bookingPodcastTrack.AudioFileKey, _bookingListenSessionConfig.SessionAudioUrlExpirationSeconds
                                 )
                                 : null,
                         PlaylistFileKey = playlistFileKey
@@ -3732,13 +3735,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         includeFunc: bpts => bpts.Include(bpts => bpts.BookingPodcastTrack)
                         .ThenInclude(bpt => bpt.BookingProducingRequest)
                     );
-                    if(bookingPodcastTrackListenSession == null)
+                    if (bookingPodcastTrackListenSession == null)
                     {
                         throw new Exception("BookingPodcastTrackListenSession not found for Id: " + parameter.BookingPodcastTrackListenSessionId);
                     }
 
                     var check = await CheckListenerCanListenToTrackIgnorePreviewingAsync(parameter.ListenerId, bookingPodcastTrackListenSession.BookingPodcastTrack.Id);
-                    if(check == false)
+                    if (check == false)
                     {
                         bookingPodcastTrackListenSession.IsCompleted = true;
                         await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bookingPodcastTrackListenSession.Id, bookingPodcastTrackListenSession);
@@ -3826,7 +3829,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     if (procedure.PlayOrderMode.Equals(CustomerListenSessionProcedurePlayOrderModeEnum.Sequential.ToString()))
                     {
                         var currentListenObj = procedure.ListenObjectsSequentialOrder.Where(o => o.ListenObjectId.Equals(listenSession.BookingPodcastTrackId)).FirstOrDefault();
-                        if(currentListenObj == null)
+                        if (currentListenObj == null)
                         {
                             throw new HttpRequestException("Current listen session's track is not found in the procedure's listen object queue");
                         }
@@ -3834,7 +3837,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             await _customerListenSessionProcedureCachingService.MarkAllProceduresCompletedAsync(accountId);
                             await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(accountId, procedureId, false);
-                            if(navigateType == ListenSessionNavigateTypeEnum.Next)
+                            if (navigateType == ListenSessionNavigateTypeEnum.Next)
                             {
                                 nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable && o.Order > currentListenObj.Order).FirstOrDefault();
                                 if (nextListenObj == null)
@@ -3842,7 +3845,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                     nextListenObj = procedure.ListenObjectsSequentialOrder.OrderBy(o => o.Order).Where(o => o.IsListenable).FirstOrDefault();
                                 }
                             }
-                            else if(navigateType == ListenSessionNavigateTypeEnum.Previous)
+                            else if (navigateType == ListenSessionNavigateTypeEnum.Previous)
                             {
                                 nextListenObj = procedure.ListenObjectsSequentialOrder.OrderByDescending(o => o.Order).Where(o => o.IsListenable && o.Order < currentListenObj.Order).FirstOrDefault();
                                 if (nextListenObj == null)
@@ -3851,7 +3854,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                 }
                             }
                         }
-                        else if(procedure.ListenObjectsSequentialOrder.Count(o => o.IsListenable) == 1)
+                        else if (procedure.ListenObjectsSequentialOrder.Count(o => o.IsListenable) == 1)
                         {
                             if (procedure.ListenObjectsSequentialOrder.Where(o => o.ListenObjectId.Equals(listenSession.BookingPodcastTrackId) && o.IsListenable).IsNullOrEmpty())
                             {
@@ -3884,7 +3887,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     else if (procedure.PlayOrderMode.Equals(CustomerListenSessionProcedurePlayOrderModeEnum.Random.ToString()))
                     {
                         var currentListenObj = procedure.ListenObjectsRandomOrder.Where(o => o.ListenObjectId.Equals(listenSession.BookingPodcastTrackId)).FirstOrDefault();
-                        if(currentListenObj == null)
+                        if (currentListenObj == null)
                         {
                             throw new HttpRequestException("Current listen session's track is not found in the procedure's listen object queue");
                         }
@@ -3939,7 +3942,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(accountId, procedureId, false);
                         }
                     }
-                    
+
 
                     if (nextListenObj == null)
                     {
@@ -3975,13 +3978,13 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         ).FirstOrDefaultAsync();
 
                         Console.WriteLine("---- BookingPodcastTrack Id to navigate to: " + bookingPodcastTrack.Id);
-                        
-                        if(booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != (int)BookingStatusEnum.Completed)
+
+                        if (booking.BookingStatusTrackings.OrderByDescending(b => b.CreatedAt).FirstOrDefault().BookingStatusId != (int)BookingStatusEnum.Completed)
                         {
                             bookingPodcastTrack.RemainingPreviewListenSlot -= 1;
                             await _bookingPodcastTrackGenericRepository.UpdateAsync(bookingPodcastTrack.Id, bookingPodcastTrack);
                         }
-                        
+
                         var newListenSession = new BookingPodcastTrackListenSession
                         {
                             AccountId = accountId,
@@ -4024,7 +4027,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             },
                             AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
                                     ? await _fileIOHelper.GeneratePresignedUrlAsync(
-                                        bookingPodcastTrack.AudioFileKey
+                                        bookingPodcastTrack.AudioFileKey, _bookingListenSessionConfig.SessionAudioUrlExpirationSeconds
                                     )
                                     : null,
                             PlaylistFileKey = playlistFileKey
@@ -4111,7 +4114,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         }
 
                         var procedure = await _customerListenSessionProcedureCachingService.GetActiveProcedureByCustomerIdAsync(parameter.AccountId);
-                        if(procedure != null)
+                        if (procedure != null)
                         {
                             if (procedure.SourceDetail.Type == CustomerListenSessionProcedureSourceDetailTypeEnum.BookingProducingTracks.ToString() && !procedure.IsCompleted)
                             {
@@ -4121,7 +4124,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     }
 
                     await transaction.CommitAsync();
-                    
+
                     var newResponseData = command.RequestData;
                     var newMessageName = command.MessageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
@@ -4212,7 +4215,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         }
                     }
                     await transaction.CommitAsync();
-                    
+
                     var newResponseData = command.RequestData;
                     var newMessageName = command.MessageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
@@ -4301,12 +4304,12 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 var bookingStatus = booking.BookingStatusTrackings
                     .OrderByDescending(bst => bst.CreatedAt)
                     .FirstOrDefault().BookingStatusId;
-                
+
                 if (bookingStatus != (int)BookingStatusEnum.TrackPreviewing && bookingStatus != (int)BookingStatusEnum.Completed)
                 {
                     return false;
                 }
-                if(bookingStatus == (int)BookingStatusEnum.TrackPreviewing)
+                if (bookingStatus == (int)BookingStatusEnum.TrackPreviewing)
                 {
                     if (bookingPodcastTrack.RemainingPreviewListenSlot <= 0)
                     {
@@ -4317,7 +4320,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .Where(bpr => bpr.FinishedAt != null)
                         .OrderByDescending(bpr => bpr.CreatedAt)
                         .FirstOrDefault();
-                if(currentBookingProducingRequest != null)
+                if (currentBookingProducingRequest != null)
                     if (producingRequest.Id != currentBookingProducingRequest.Id)
                         return false;
 
@@ -4345,30 +4348,30 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         includeFunc: b => b
                             .Include(b => b.BookingStatusTrackings)
                     );
-                    if(booking == null)
+                    if (booking == null)
                     {
                         throw new Exception("Booking not found for Id: " + parameter.BookingId);
                     }
                     var currentBookingStatus = booking.BookingStatusTrackings
                         .OrderByDescending(bst => bst.CreatedAt)
                         .FirstOrDefault().BookingStatusId;
-                    if(currentBookingStatus != (int)BookingStatusEnum.QuotationDealing)
+                    if (currentBookingStatus != (int)BookingStatusEnum.QuotationDealing)
                     {
                         throw new Exception("Booking is not in QuotationDealing status, cannot process deposit payment");
                     }
 
-                    if(booking.AccountId != parameter.AccountId)
+                    if (booking.AccountId != parameter.AccountId)
                     {
                         throw new Exception("Booking does not belong to the account, cannot process deposit payment");
                     }
 
                     var config = await GetActiveSystemConfigProfile();
-                    if(config == null)
+                    if (config == null)
                     {
                         throw new Exception("System configuration not found");
                     }
                     var depositRate = config.BookingConfig.DepositRate;
-                    var depositAmount = booking.Price * (decimal)depositRate ;
+                    var depositAmount = booking.Price * (decimal)depositRate;
 
                     var paymentRequestData = new JObject
                     {
@@ -4553,7 +4556,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         {
             try
             {
-                foreach(var item in list)
+                foreach (var item in list)
                 {
                     var track = await _bookingPodcastTrackGenericRepository.FindAll(
                         predicate: bpt => bpt.Id == item.ListenObjectId,
@@ -4568,7 +4571,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         .Where(bpr => bpr.FinishedAt != null)
                         .OrderByDescending(bpr => bpr.CreatedAt)
                         .FirstOrDefault();
-                    if(lastestProducingRequest.Id != track.BookingProducingRequestId)
+                    if (lastestProducingRequest.Id != track.BookingProducingRequestId)
                     {
                         item.IsListenable = false;
                         continue;
