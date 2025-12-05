@@ -28,7 +28,6 @@ export type PodcasterUI = {
   IsFollowedByCurrentUser: boolean;
 };
 
-
 export type PodcasterDetailsFromAPI = {
   AccountId: number;
   Name: string;
@@ -59,6 +58,37 @@ export type PodcasterDetailsUI = {
   IsBuddy: boolean;
   IsFollowedByCurrentUser: boolean;
   ReviewList: PodcasterReviewUI[];
+};
+
+export type PodcastBuddyDetails = {
+  PodcastBuddyProfile: {
+    AccountId: number;
+    Name: string;
+    Description: string;
+    AverageRating: number;
+    RatingCount: number;
+    TotalFollow: number;
+    ListenCount: number;
+    PricePerBookingWord: number;
+    BuddyAudioFileKey: string;
+    IsVerified: boolean;
+    IsFollowedByCurrentUser: boolean;
+  };
+  ReviewList: {
+    Id: string;
+    Title: string;
+    Content: string;
+    Rating: number;
+    Account: {
+      Id: number;
+      FullName: string;
+      Email: string;
+      MainImageFileKey: string;
+    };
+    PodcastBuddyId: number;
+    DeletedAt: string;
+    UpdatedAt: string;
+  }[];
 };
 
 export type PodcasterProfile = {

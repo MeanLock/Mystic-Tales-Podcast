@@ -1,5 +1,27 @@
 import { appApi } from "@/core/api/appApi";
-import type { EpisodeFromAPI } from "@/core/types/episode";
+import type {
+  EpisodeDetailsFromAPI,
+  EpisodeFromAPI,
+} from "@/core/types/episode";
+
+export type ListenHistory = {
+  PodcastEpisode: {
+    Id: string;
+    Name: string;
+    Description: string;
+    MainImageFileKey: string;
+    ReleaseDate: string;
+    IsReleased: boolean;
+    AudioLength: number;
+  };
+  Podcaster: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
+  CreatedAt: string;
+};
 
 const episodeApi = appApi.injectEndpoints({
   endpoints: (build) => ({
@@ -38,7 +60,30 @@ const episodeApi = appApi.injectEndpoints({
         authMode: "required",
       }),
     }),
+    getEpisodeDetails: build.query<
+      { Episode: EpisodeDetailsFromAPI },
+      { PodcastEpisodeId: string }
+    >({
+      query: ({ PodcastEpisodeId }) => ({
+        url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
+
+    getListenHistory: build.query<{ PodcastEpisodeListenHistory: ListenHistory[] }, void>({
+      query: () => ({
+        url: `/api/podcast-service/api/episodes/listen-sessions/podcast-episode-listen-history`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
-export const { useSaveEpisodeMutation, useGetSavedEpisodesQuery } = episodeApi;
+export const {
+  useSaveEpisodeMutation,
+  useGetSavedEpisodesQuery,
+  useGetEpisodeDetailsQuery,
+  useGetListenHistoryQuery,
+} = episodeApi;

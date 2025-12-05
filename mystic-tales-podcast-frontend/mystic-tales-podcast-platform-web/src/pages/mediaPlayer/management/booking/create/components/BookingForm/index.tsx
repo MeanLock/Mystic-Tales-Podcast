@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQuill } from "react-quilljs";
 import "quill/dist/quill.snow.css";
-import type {
-  PodcastBookingToneType,
-  PodcastBuddyUI,
-} from "@/core/types/booking";
+import type { PodcastBookingTone } from "@/core/types/booking";
+import type { PodcastBuddyDetails } from "@/core/types/podcaster";
+import { useGetBookingTonesOfPodcastBuddyQuery } from "@/core/services/booking/booking.service";
+import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 
 type BookingRequirementInfo = {
   Name: string;
@@ -17,7 +17,7 @@ type BookingRequirementInfo = {
 };
 
 interface BookingFormProps {
-  selectedBuddy: PodcastBuddyUI;
+  selectedBuddy: PodcastBuddyDetails;
   Title: string;
   Description: string;
   // callbacks should accept the new value so parent setState receives it
@@ -30,6 +30,8 @@ interface BookingFormProps {
   onCreateNewRequirementInfo: (newReq: BookingRequirementInfo) => void;
   // parent expects a single-updated requirement so we notify with the updated item
   onUpdateRequirementInfo: (updatedReq: BookingRequirementInfo) => void;
+  // notify parent when a requirement is deleted
+  onDeleteRequirementInfo: (order: number) => void;
   BookingRequirementFiles: File[];
   onUploadNewFile: (file: File | null) => void;
   // (removed unused onUpdateFile prop)
@@ -227,21 +229,21 @@ const RequirementItem = ({
           {isEditing ? (
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+              className="px-4 py-2 bg-green-500/20 text-green-100 rounded hover:bg-green-600 transition"
             >
               Save
             </button>
           ) : (
             <button
               onClick={() => setIsEditing(true)}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+              className="px-4 py-2 bg-blue-500/20 text-blue-100 rounded hover:bg-blue-600 transition"
             >
               Update
             </button>
           )}
           <button
             onClick={() => onDelete(localData.Order)}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+            className="px-4 py-2 bg-red-500/20 text-red-100 rounded hover:bg-red-600 transition"
           >
             Delete
           </button>
@@ -298,7 +300,7 @@ const RequirementItem = ({
               className="w-full p-2 bg-white/10 border border-white/30 rounded text-white outline-none"
             >
               <option value="">Select a tone</option>
-              {availableTones.map((tone: PodcastBookingToneType) => (
+              {availableTones.map((tone: PodcastBookingTone) => (
                 <option key={tone.Id} value={tone.Id} className="bg-gray-800">
                   {tone.Name}
                 </option>
@@ -432,6 +434,7 @@ const BookingForm = ({
   onDeadlineDayCountChange,
   onCreateNewRequirementInfo,
   onUpdateRequirementInfo,
+  onDeleteRequirementInfo,
   BookingRequirementFiles,
   onUploadNewFile,
   onSubmit,
@@ -454,6 +457,13 @@ const BookingForm = ({
     },
     theme: "snow",
   });
+
+  // HOOKS
+  const { data: availableBookingTonesOfPodcastBuddy } =
+    useGetBookingTonesOfPodcastBuddyQuery(
+      { PodcastBuddyId: selectedBuddy.PodcastBuddyProfile.AccountId! },
+      { skip: !selectedBuddy }
+    );
 
   useEffect(() => {
     if (quill) {
@@ -541,6 +551,8 @@ const BookingForm = ({
   const handleDeleteRequirement = (order: number) => {
     setRequirements(requirements.filter((r) => r.Order !== order));
     setFiles(files.filter((f) => !f.name.startsWith(`${order}.`)));
+    // Notify parent to sync deletion
+    onDeleteRequirementInfo(order);
   };
 
   const handleFileUpload = (order: number, file: File | null) => {
@@ -553,6 +565,39 @@ const BookingForm = ({
     } else {
       setFiles(files.filter((f) => !f.name.startsWith(`${order}.`)));
     }
+  };
+
+  // Helper function to check if a requirement is complete
+  const isRequirementComplete = (req: BookingRequirementInfo): boolean => {
+    if (!req.Name.trim()) return false;
+    if (!req.Description.trim() || req.Description === "<p><br></p>")
+      return false;
+    if (!req.PodcastBookingToneId) return false;
+    if (!req.ContentType) return false;
+
+    if (req.ContentType === "link") {
+      return !!req.ContentValue?.trim();
+    }
+    if (req.ContentType === "script") {
+      return !!req.ContentValue?.trim() && req.ContentValue !== "<p><br></p>";
+    }
+    if (req.ContentType === "file") {
+      return !!files.find((f) => f.name.startsWith(`${req.Order}.`));
+    }
+
+    return false;
+  };
+
+  // Check if form is valid for submission
+  const isFormValid = (): boolean => {
+    // Check if basic fields are filled
+    if (!title.trim()) return false;
+    if (!Description.trim() || Description === "<p><br></p>") return false;
+    if (deadline < 1) return false;
+
+    // Check if at least one requirement is complete
+    if (requirements.length === 0) return false;
+    return requirements.some((req) => isRequirementComplete(req));
   };
 
   return (
@@ -617,17 +662,23 @@ const BookingForm = ({
           <div className="flex flex-col mb-4 gap-3">
             <div className="w-full flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Requirements</h2>
-              <button
-                onClick={onSubmit}
-                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-              >
-                SUBMIT
-              </button>
+              {/* Only appear when form is valid */}
+              {isFormValid() && (
+                // <button
+                //   onClick={onSubmit}
+                //   className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                // >
+                //   SUBMIT
+                // </button>
+                <LiquidButton onClick={onSubmit} variant="submit">
+                  <p>SUBMIT</p>
+                </LiquidButton>
+              )}
             </div>
             <div>
               <button
                 onClick={handleAddRequirement}
-                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+                className="px-6 font-poppins py-2 text-white rounded transition-all duration-700 ease-out bg-gradient-to-r from-[#56CCF2]/40 to-[#2F80ED]/40 hover:from-[#56CCF2]/60 hover:to-[#2F80ED]/60 hover:-translate-y-0.5"
               >
                 + Add Requirement
               </button>
@@ -635,24 +686,27 @@ const BookingForm = ({
           </div>
 
           <div className="space-y-4">
-            {requirements.map((req, idx) => (
-              <RequirementItem
-                key={req.Order}
-                requirement={req}
-                index={idx}
-                availableTones={
-                  selectedBuddy.PodcastBuddyProfile.PodcastBuddyBookingTone
-                }
-                onUpdate={handleUpdateRequirement}
-                onDelete={handleDeleteRequirement}
-                onFileUpload={(file: File | null) =>
-                  handleFileUpload(req.Order, file)
-                }
-                existingFile={files.find((f) =>
-                  f.name.startsWith(`${req.Order}.`)
-                )}
-              />
-            ))}
+            {[...requirements]
+              .sort((a, b) => b.Order - a.Order)
+              .map((req, idx) => (
+                <RequirementItem
+                  key={req.Order}
+                  requirement={req}
+                  index={idx}
+                  availableTones={
+                    availableBookingTonesOfPodcastBuddy?.PodcastBookingToneList ??
+                    []
+                  }
+                  onUpdate={handleUpdateRequirement}
+                  onDelete={handleDeleteRequirement}
+                  onFileUpload={(file: File | null) =>
+                    handleFileUpload(req.Order, file)
+                  }
+                  existingFile={files.find((f) =>
+                    f.name.startsWith(`${req.Order}.`)
+                  )}
+                />
+              ))}
           </div>
         </div>
       </div>

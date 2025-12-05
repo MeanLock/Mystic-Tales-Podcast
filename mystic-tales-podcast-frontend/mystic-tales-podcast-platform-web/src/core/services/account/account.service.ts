@@ -99,6 +99,17 @@ export const accountApi = appApi.injectEndpoints({
       },
       invalidatesTags: ["Account"],
     }),
+
+    checkUserPodcastListenSlot: build.query<number, void>({
+      query: () => ({
+        url: "/api/user-service/api/accounts/me",
+        method: "GET",
+        authMode: "required",
+      }),
+      transformResponse: (response: { Account: AccountMeFromApi }) => {
+        return response.Account.PodcastListenSlot;
+      },
+    }),
   }),
 });
 
@@ -107,4 +118,5 @@ export const {
   useUpdateAccountMeQuery,
   useGetAccountInformationsQuery,
   useUpdateAccountInformationsMutation,
+  useLazyCheckUserPodcastListenSlotQuery
 } = accountApi;

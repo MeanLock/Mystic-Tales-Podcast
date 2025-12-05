@@ -1,4 +1,7 @@
-import { useGetSavedEpisodesQuery } from "@/core/services/episode/episode.service";
+import {
+  useGetSavedEpisodesQuery,
+  useSaveEpisodeMutation,
+} from "@/core/services/episode/episode.service";
 import type { EpisodeFromAPI, EpisodeUI } from "@/core/types/episode";
 import {
   resolveFiles,
@@ -23,8 +26,15 @@ const fileResolve: FileResolveConfig[] = [
 const SavedPage = () => {
   const [savedEpisodes, setSavedEpisodes] = useState<EpisodeUI[]>([]);
 
-  const { data: savedEpisodesDataRaw, isLoading: isLoadingSavedEpisodes } =
-    useGetSavedEpisodesQuery();
+  const {
+    data: savedEpisodesDataRaw,
+    isLoading: isLoadingSavedEpisodes,
+    refetch: refetchSavedEpisodes,
+  } = useGetSavedEpisodesQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   useEffect(() => {
     const resolveFile = async () => {
@@ -44,8 +54,21 @@ const SavedPage = () => {
     };
     resolveFile();
   }, [savedEpisodesDataRaw, isLoadingSavedEpisodes]);
+
+  const [unsaveEpisode] = useSaveEpisodeMutation();
+  const handleUnSaveEpisode = async (podcastEpisodeId: string) => {
+    try {
+      await unsaveEpisode({
+        PodcastEpisodeId: podcastEpisodeId,
+        IsSave: false,
+      }).unwrap();
+      await refetchSavedEpisodes();
+    } catch (error) {
+      console.error("Failed to unsave episode:", error);
+    }
+  };
   return (
-    <div className="">
+    <div className="w-full h-full gap-10 flex flex-col">
       <h1 className="m-8 text-7xl font-bold font-poppins text-white mb-4">
         Saved Episodes
       </h1>
@@ -58,9 +81,13 @@ const SavedPage = () => {
           No saved episodes yet.
         </div>
       ) : (
-        <div className="grid mx-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid mx-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10">
           {savedEpisodes.map((ep) => (
-            <EpisodeCard key={ep.Id} episode={ep} />
+            <EpisodeCard
+              key={ep.Id}
+              episode={ep}
+              handleUnSaveEpisode={handleUnSaveEpisode}
+            />
           ))}
         </div>
       )}

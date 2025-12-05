@@ -57,7 +57,7 @@ export const playerApi = appApi.injectEndpoints({
         ListenSessionProcedure: ListenSessionProcedure;
       },
       {
-        BookingId: string;
+        BookingId: number;
         BookingPodcastTrackId: string;
       }
     >({
@@ -319,6 +319,6 @@ export const {
   useUpdatePlayModeMutation,
   useNavigateBookingTrackInProcedureMutation,
   useNavigateEpisodeInProcedureMutation,
-  useGetBookingLatestSessionQuery,
-  useGetEpisodeLatestSessionQuery,
+  useLazyGetBookingLatestSessionQuery,
+  useLazyGetEpisodeLatestSessionQuery,
 } = playerApi;

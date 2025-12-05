@@ -19,7 +19,6 @@ import { store, persistor } from "./redux/store.ts";
 import MediaPlayerLayout from "./layouts/mediaPlayer/index.tsx";
 import DiscoveryPage from "./pages/mediaPlayer/discovery/index.tsx";
 import TrendingPage from "./pages/mediaPlayer/trending/index.tsx";
-import PlayerCore from "./core/services/player/playerCore.tsx";
 import CategoryPage from "./pages/mediaPlayer/category/index.tsx";
 import CategoryDetailsPage from "./pages/mediaPlayer/category/details/index.tsx";
 import SearchPage from "./pages/mediaPlayer/search/index.tsx";
@@ -42,6 +41,11 @@ import CreateBookingPage from "./pages/mediaPlayer/management/booking/create/ind
 import BecomePodcaster from "./pages/mediaPlayer/management/profile/becomePodcaster/index.tsx";
 import PaymentResultPage from "./pages/mediaPlayer/management/transaction/payment-result/index.tsx";
 import ErrorModal from "./components/ErrorModal.tsx";
+import CompletedBookingsPage from "./pages/mediaPlayer/management/booking/completed/index.tsx";
+import CompletedBookingDetailsPage from "./pages/mediaPlayer/management/booking/completed/details/index.tsx";
+import EpisodeListPage from "./pages/mediaPlayer/episodes/index.tsx";
+import EpisodeDetailsPage from "./pages/mediaPlayer/episodes/details/index.tsx";
+import AlertModal from "./components/alert/AlertModal.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -119,8 +123,8 @@ createRoot(document.getElementById("root")!).render(
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
-          <PlayerCore />
-          <ErrorModal />
+          {/* <ErrorModal /> */}
+          <AlertModal />
           <BrowserRouter>
             <Routes>
               {/* 1️⃣ NORMAL LAYOUT */}
@@ -159,8 +163,14 @@ createRoot(document.getElementById("root")!).render(
                 />
                 <Route path="channels/:id" element={<ChannelDetailsPage />} />
                 <Route path="shows/:id" element={<ShowDetailsPage />} />
+
+                <Route path="episodes" element={<EpisodeListPage />} />
+                <Route path="episodes/details/:id" element={<EpisodeDetailsPage />} />
                 {/* Library */}
-                <Route path="library/listening-history" element={<RecentPage />} />
+                <Route
+                  path="library/listening-history"
+                  element={<RecentPage />}
+                />
                 <Route path="library/saved" element={<SavedPage />} />
                 <Route
                   path="library/subscribed-channels"
@@ -178,6 +188,10 @@ createRoot(document.getElementById("root")!).render(
                 {/* Management */}
                 <Route path="management/bookings" element={<BookingsPage />} />
                 <Route
+                  path="management/completed-bookings"
+                  element={<CompletedBookingsPage />}
+                />
+                <Route
                   path="management/bookings/create"
                   element={<CreateBookingPage />}
                 />
@@ -185,6 +199,10 @@ createRoot(document.getElementById("root")!).render(
                 <Route
                   path="management/bookings/:id"
                   element={<BookingDetailsPage />}
+                />
+                <Route
+                  path="management/completed-bookings/:id"
+                  element={<CompletedBookingDetailsPage />}
                 />
                 <Route
                   path="management/transactions/top-up"

@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// @ts-nocheck
-
 import type { PodcastBookingToneCategoryType } from "@/core/types/booking";
 import { useEffect, useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
@@ -9,6 +6,10 @@ import {
   resolveFiles,
   type FileResolveConfig,
 } from "@/core/utils/fileResolver.util";
+import {
+  useGetBookingPublicSourceQuery,
+  useLazyGetBookingPublicSourceQuery,
+} from "@/core/services/file/file.service";
 
 const FileConfig: FileResolveConfig[] = [
   {
@@ -38,24 +39,6 @@ interface RequirementCardProps {
   };
 }
 
-type RequirementInfoUI = {
-  Id: string;
-  BookingId: number;
-  Name: string;
-  Description: string;
-  RequirementDocumentFileUrl: string | null; // absolute url
-  Order: number;
-  WordCount: number;
-  PodcastBookingTone: {
-    Id: string;
-    Name: string;
-    Description: string;
-    PodcastBookingToneCategory: PodcastBookingToneCategoryType;
-    CreatedAt: string;
-    UpdatedAt: string;
-  };
-};
-
 function renderDescriptionHTML(description: string | null) {
   if (!description) return "";
 
@@ -76,16 +59,16 @@ function renderDescriptionHTML(description: string | null) {
     .trim();
 
   // --- Tạo HTML ---
-  let html = `<strong>${cleanDescription}</strong>`;
+  let html = `<p><strong>Description: </strong>${cleanDescription}</p>`;
 
   if (link) {
     html += `
-    <p><strong>Link</strong>: <a href="${link}" target="_blank" rel="noopener noreferrer">${link}</a></p>`;
+    <p style="margin-top: 10px"><strong>Link</strong>: <a href="${link}" target="_blank" rel="noopener noreferrer">${link}</a></p>`;
   }
 
   if (scriptContent) {
     html += `
-    <p>• Script:</p>
+    <p style="font-weight: bold; margin-top: 10px">Script:</p>
     <div style="margin-top: 10px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background-color: #f9f9f9;">
       ${scriptContent}
     </div>
@@ -99,27 +82,23 @@ const RequirementCard = ({ requirement }: RequirementCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isResolveLoading, setIsResolveLoading] = useState(false);
   const [isResolveError, setIsResolveError] = useState(false);
-  const [finalRequirementInfo, setFinalRequirementInfo] = useState<any>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+
+  const [triggerResolveFile] = useLazyGetBookingPublicSourceQuery();
 
   useEffect(() => {
     const resolveRequirementFile = async () => {
-      console.log(
-        `[RequirementCard] 🔄 Starting resolve for requirement #${requirement.Order}`,
-        requirement
-      );
+      if (isDetailOpen === false) return;
       setIsResolveLoading(true);
       try {
-        const { resolvedData: resolvedRequirementsRaw } = await resolveFiles(
-          requirement,
-          FileConfig
-        );
-
-        const requirementWithFileUrl = resolvedRequirementsRaw as any;
-        console.log(
-          `[RequirementCard] ✅ Resolved requirement #${requirement.Order}`,
-          requirementWithFileUrl
-        );
-        setFinalRequirementInfo(requirementWithFileUrl);
+        if (!requirement.RequirementDocumentFileKey) {
+          setIsResolveLoading(false);
+          return;
+        }
+        const resolveFile = await triggerResolveFile({
+          FileKey: requirement.RequirementDocumentFileKey,
+        }).unwrap();
+        setFileUrl(resolveFile.FileUrl || null);
         setIsResolveLoading(false);
       } catch (error) {
         console.error(
@@ -131,9 +110,7 @@ const RequirementCard = ({ requirement }: RequirementCardProps) => {
       }
     };
     resolveRequirementFile();
-    // Chỉ chạy 1 lần khi component mount, không phụ thuộc vào isDetailOpen
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isDetailOpen]);
 
   return (
     <div className="w-full">
@@ -170,21 +147,35 @@ const RequirementCard = ({ requirement }: RequirementCardProps) => {
               transition={{ duration: 0.2, ease: "easeInOut" }}
               className="bg-white shadow-2xl rounded-b-md p-5 text-black overflow-hidden"
             >
-              <p className="font-semibold mb-2">{finalRequirementInfo.Name}</p>
+              <p className="font-bold">Name:</p>
+              <p className="mb-2">{requirement.Name}</p>
               <div
                 dangerouslySetInnerHTML={{
-                  __html: renderDescriptionHTML(
-                    finalRequirementInfo.Description
-                  ),
+                  __html: renderDescriptionHTML(requirement.Description),
                 }}
               />
 
-              {finalRequirementInfo.RequirementDocumentFileUrl && (
+              {/* Phân loại file requirement url */}
+              {/* Nếu là docx thì cho nút tải về */}
+              {/* Nếu là pdf thì dùng iframe hiển thị, và có nút tải về */}
+              {fileUrl && fileUrl.includes(".pdf") && (
                 <iframe
-                  src={finalRequirementInfo.RequirementDocumentFileUrl}
+                  src={fileUrl}
                   rel="noopener noreferrer"
-                  className="w-full mt-10 min-h-[800px]"
+                  className="w-full mt-5 min-h-[800px]"
                 />
+              )}
+              {fileUrl && fileUrl.includes(".docx") && (
+                <div className="w-1/2">
+                  <iframe
+                    src={fileUrl}
+                    rel="noopener noreferrer"
+                    className="w-full mt-2 h-0"
+                  />
+                  <p className="text-zinc-300 font-semibold">
+                    Requirement Document Downloaded
+                  </p>
+                </div>
               )}
             </motion.div>
           )}

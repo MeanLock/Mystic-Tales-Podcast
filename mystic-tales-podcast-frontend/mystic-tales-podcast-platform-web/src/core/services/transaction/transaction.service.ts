@@ -18,6 +18,17 @@ type AccountBalanceTransaction = {
   ChangedAt: string | null;
 };
 
+export type WithdrawalRequest = {
+  Id: string;
+  Amount: number;
+  TransferReceiptImageFileKey: string;
+  RejectReason: string;
+  IsRejected: boolean;
+  CompletedAt: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+};
+
 const transactionApi = appApi.injectEndpoints({
   endpoints: (build) => ({
     createPaymentLink: build.mutation<
@@ -101,7 +112,16 @@ const transactionApi = appApi.injectEndpoints({
       }),
     }),
 
-    
+    getWithdrawalRequestHistory: build.query<
+      { AccountBalanceWithdrawalRequestList: WithdrawalRequest[] },
+      void
+    >({
+      query: () => ({
+        url: `/api/transaction-service/api/account-balance-transactions/balance-withdrawal-request`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
@@ -109,5 +129,5 @@ export const {
   useCreatePaymentLinkMutation,
   useCreateWithdrawRequestMutation,
   useGetTransactionHistoryQuery,
-
+  useGetWithdrawalRequestHistoryQuery,
 } = transactionApi;

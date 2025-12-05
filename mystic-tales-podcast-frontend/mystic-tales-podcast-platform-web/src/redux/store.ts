@@ -4,6 +4,9 @@ import { appApi } from "@/core/api/appApi";
 import authReducer from "./slices/authSlice/authSlice";
 import mediaPlayerReducer from "./slices/mediaPlayerSlice/mediaPlayerSlice";
 import errorReducer from "./slices/errorSlice/errorSlice";
+import alertReducer from "./slices/alertSlice/alertSlice";
+
+import seeMoreEpisodeReducer from "./slices/seeMoreEpisodeSlice/seeMoreEpisodeSlice";
 // ⬇️ redux-persist
 import storage from "redux-persist/lib/storage"; // web: localStorage
 import {
@@ -24,6 +27,8 @@ const rootReducer = combineReducers({
   auth: authReducer,
   player: mediaPlayerReducer,
   error: errorReducer,
+  seeMoreEpisode: seeMoreEpisodeReducer,
+  alert: alertReducer,
   // ...reducers khác
 });
 

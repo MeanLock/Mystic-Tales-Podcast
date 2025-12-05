@@ -66,6 +66,8 @@ import {
   useReportShowMutation,
 } from "@/core/services/report/report.service";
 import EpisodeCard from "./components/EpisodeCard";
+import { MdKeyboardArrowRight } from "react-icons/md";
+import { setSeeMoreEpisodeData } from "@/redux/slices/seeMoreEpisodeSlice/seeMoreEpisodeSlice";
 
 const ShowFileConfig: FileResolveConfig[] = [
   {
@@ -293,6 +295,22 @@ const ShowDetailsPage = () => {
       );
 
       const data = resolvedShow as unknown as { Show: ShowDetailsUI };
+
+      // Sort episodes: newest first by SeasonNumber, EpisodeOrder, then ReleaseDate
+      if (data.Show && Array.isArray(data.Show.EpisodeList)) {
+        const sortedEpisodes = [...data.Show.EpisodeList].sort((a, b) => {
+          const seasonDiff = (b.SeasonNumber ?? 0) - (a.SeasonNumber ?? 0);
+          if (seasonDiff !== 0) return seasonDiff;
+
+          const orderDiff = (b.EpisodeOrder ?? 0) - (a.EpisodeOrder ?? 0);
+          if (orderDiff !== 0) return orderDiff;
+
+          const aTime = a.CreatedAt ? new Date(a.CreatedAt).getTime() : 0;
+          const bTime = b.CreatedAt ? new Date(b.CreatedAt).getTime() : 0;
+          return bTime - aTime;
+        });
+        data.Show.EpisodeList = sortedEpisodes;
+      }
 
       // Process subscription data
       if (activeSubscriptionRaw && activeSubscriptionRaw.PodcastSubscription) {
@@ -612,6 +630,17 @@ const ShowDetailsPage = () => {
     }
   };
 
+  const handleSeeMoreEpisodeFromShow = () => {
+    if (!showDetailsRaw) return;
+    dispatch(
+      setSeeMoreEpisodeData({
+        title: `Episodes from ${show?.Name}`,
+        episodes: showDetailsRaw.Show.EpisodeList,
+      })
+    );
+    navigate(`/media-player/episodes`);
+  };
+
   // RENDER
   if (isShowDetailsLoading || isFileResolving) {
     return (
@@ -886,9 +915,23 @@ const ShowDetailsPage = () => {
 
       {/* Episodes Section */}
       <div>
-        <h2 className="text-2xl font-medium mb-8 mt-12 px-12 ">Episodes</h2>
+        <div className="w-full flex items-center justify-between px-12 mb-8 mt-12">
+          <h2 className="text-2xl font-medium">
+            Episodes ({show.EpisodeList.length})
+          </h2>
+          <div
+            onClick={() => handleSeeMoreEpisodeFromShow()}
+            className="flex items-center gap-2 hover:underline cursor-pointer"
+          >
+            <p className="font-poppins">See more</p>
+            <MdKeyboardArrowRight />
+          </div>
+        </div>
         <div className="space-y-10 px-3">
-          {show.EpisodeList.map((episode) => (
+          {/* {show.EpisodeList.map((episode) => (
+            <EpisodeCard key={episode.Id} episode={episode} />
+          ))} */}
+          {show.EpisodeList.slice(0, 5).map((episode) => (
             <EpisodeCard key={episode.Id} episode={episode} />
           ))}
         </div>

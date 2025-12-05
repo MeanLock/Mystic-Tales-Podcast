@@ -1,5 +1,6 @@
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 import { Card, CardContent } from "@/components/ui/card";
-import type { ShowUI } from "@/core/types/show";
+import type { ShowFromAPI, ShowUI } from "@/core/types/show";
 import { useNavigate } from "react-router-dom";
 
 interface CardProps {
@@ -14,7 +15,7 @@ interface CardProps {
   };
 }
 
-const ShowCard = ({ card }: { card: ShowUI }) => {
+const ShowCard = ({ card }: { card: ShowFromAPI }) => {
   const navigate = useNavigate();
   return (
     <Card
@@ -22,9 +23,15 @@ const ShowCard = ({ card }: { card: ShowUI }) => {
       className="bg-transparent border-none shadow-sm p-1 transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >
       <CardContent className="flex flex-col aspect-square items-start justify-between text-card-foreground bg-transparent p-2 rounded-lg">
-        <img
+        {/* <img
           src={card.ImageUrl}
           className="w-full h-full aspect-square object-cover rounded-lg mb-2"
+        /> */}
+        <AutoResolveImage
+          FileKey={card.MainImageFileKey}
+          type="PodcastPublicSource"
+          Name={card.Name || "show-image"}
+          imgClassName="w-full h-full aspect-square object-cover rounded-lg mb-2"
         />
 
         <div className="w-full overflow-ellipsis">

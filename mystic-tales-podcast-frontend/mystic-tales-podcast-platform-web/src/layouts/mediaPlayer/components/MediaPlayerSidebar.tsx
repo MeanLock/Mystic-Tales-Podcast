@@ -24,7 +24,7 @@ import {
 } from "react-icons/md";
 import { PiHandWithdrawBold } from "react-icons/pi";
 import { MdOutlineSubscriptions } from "react-icons/md";
-import { AiOutlineHome } from "react-icons/ai";
+import { AiOutlineFileDone, AiOutlineHome } from "react-icons/ai";
 import { TbCoinFilled } from "react-icons/tb";
 import { MdOutlineNavigateNext } from "react-icons/md";
 
@@ -173,12 +173,6 @@ const mocksuggesstionContents: ContentRealtimeResponse[] = [
   },
 ];
 
-const mockAutocompleteKeywords: string[] = [
-  "Truyện Ma",
-  "Truyện Ma Kinh Dị",
-  "Truyện Ma ông út đánh ma dú dài",
-];
-
 const navItems = [
   {
     title: "Explore",
@@ -291,9 +285,24 @@ const navItems = [
         iconActive: <PiReceipt color="#fff" size={15} />,
         iconWhenSmall: <PiReceipt color="#333" size={11} />,
         name: "Bookings",
-        to: "/media-player/management/bookings",
-        isSubItemsContain: false,
-        subItems: [],
+        to: "",
+        isSubItemsContain: true,
+        subItems: [
+          {
+            icon: <PiReceipt color="#fff" size={9} />,
+            iconActive: <PiReceipt color="#aae339" size={9} />,
+            iconWhenSmall: <PiReceipt color="#333" size={9} />,
+            name: "Bookings Management",
+            to: "/media-player/management/bookings",
+          },
+          {
+            icon: <AiOutlineFileDone color="#fff" size={9} />,
+            iconActive: <AiOutlineFileDone color="#aae339" size={9} />,
+            iconWhenSmall: <AiOutlineFileDone color="#333" size={9} />,
+            name: "Completed Bookings",
+            to: "/media-player/management/completed-bookings",
+          },
+        ],
       },
       {
         icon: <TbTransactionDollar color="#fff" size={11} />,
@@ -687,19 +696,19 @@ const MediaPlayerSidebar = () => {
         >
           <div className="flex items-center justify-center">
             {isResolveLoading ? (
-              <Skeleton className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full" />
+              <Skeleton className="md:w-8 md:h-8 sm:w-8 sm:h-8 w-8 h-8 rounded-full" />
             ) : (
               <img
                 src={userWithImageUrl.ImageUrl || "/images/unknown/user.png"}
-                className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full aspect-square object-cover"
+                className="md:w-10 md:h-10 sm:w-8 sm:h-8 w-8 h-8 rounded-full aspect-square object-cover"
               />
             )}
           </div>
           <div className="hidden md:inline-block">
-            <p className="font-bold text-white text-[12px] line-clamp-1">
+            <p className="font-bold text-white text-[12px] line-clamp-1 max-w-[120px]">
               {userWithImageUrl.FullName}
             </p>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 max-w-[150px]">
               <TbCoinFilled color="#aae339" size={14} />
               <p className="text-sm font-semibold text-mystic-green line-clamp-1">
                 {userWithImageUrl.Balance.toLocaleString("vn")}

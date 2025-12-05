@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// @ts-nocheck
-
 import type {
+  PodcastBookingTone,
   PodcastBookingToneCategoryType,
-  PodcastBookingToneType,
   PodcastBuddyUI,
 } from "@/core/types/booking";
 import { useEffect, useState } from "react";
@@ -12,15 +9,20 @@ import { IoIosArrowRoundBack } from "react-icons/io";
 import { TbCoinFilled } from "react-icons/tb";
 import "./style.css";
 import BuddyCard from "./components/BuddyCard";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import type { PodcastBuddyDetails } from "@/core/types/podcaster";
+// import AutoResolveImageBackground from "./components/AutoResolveImage";
+import TonePill from "./components/TonePill";
+import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 
 interface PodcastBuddySelectProps {
   buddies: PodcastBuddyUI[];
   selectedBuddy: PodcastBuddyUI | null;
+  selectedBuddyDetails: PodcastBuddyDetails | null | undefined;
   onSelectBuddy: (buddy: PodcastBuddyUI | null) => void;
-  availableBookingTones: PodcastBookingToneType[];
-  selectedBookingTone: PodcastBookingToneType | null;
-  onSelectBookingTone: (tone: PodcastBookingToneType | null) => void;
+  availableBookingTones: PodcastBookingTone[];
+  selectedBookingTone: PodcastBookingTone | null;
+  onSelectBookingTone: (tone: PodcastBookingTone | null) => void;
   availableBookingToneCategories: PodcastBookingToneCategoryType[];
   selectedBookingToneCategory: PodcastBookingToneCategoryType | null;
   onSelectBookingToneCategory: (
@@ -31,6 +33,7 @@ interface PodcastBuddySelectProps {
 const PodcastBuddySelectComponent = ({
   buddies,
   selectedBuddy,
+  selectedBuddyDetails,
   onSelectBuddy,
   availableBookingTones,
   availableBookingToneCategories,
@@ -45,12 +48,9 @@ const PodcastBuddySelectComponent = ({
     useState<PodcastBookingToneCategoryType | null>(
       selectedBookingToneCategory
     );
-  const [availableBookingTonesLocal, setAvailableBookingTonesLocal] = useState<
-    PodcastBookingToneType[]
-  >(availableBookingTones);
   const [selectedToneLocal, setSelectedToneLocal] =
-    useState<PodcastBookingToneType | null>(selectedBookingTone);
-  const [buddiesLocal, setBuddiesLocal] = useState<PodcastBuddyUI[]>(buddies);
+    useState<PodcastBookingTone | null>(selectedBookingTone);
+  // const [buddiesLocal, setBuddiesLocal] = useState<PodcastBuddyUI[]>(buddies);
 
   // HOOKS
   const navigate = useNavigate();
@@ -76,33 +76,22 @@ const PodcastBuddySelectComponent = ({
     setSelectedToneLocal(selectedBookingTone);
   }, [selectedBookingTone]);
 
-  // Re-filter tones when category changes from parent
-  useEffect(() => {
-    if (selectedBookingToneCategory) {
-      const filteredTones = availableBookingTones.filter(
-        (tone) =>
-          tone.PodcastBookingToneCategory.Id === selectedBookingToneCategory.Id
-      );
-      setAvailableBookingTonesLocal(filteredTones);
-    } else {
-      setAvailableBookingTonesLocal(availableBookingTones);
-    }
-  }, [selectedBookingToneCategory, availableBookingTones]);
+  // Sync buddies from parent when data changes (parent fetches by selected tone)
+  // useEffect(() => {
+  //   setBuddiesLocal(buddies);
+  // }, [buddies, selectedBookingTone]);
 
-  // Re-filter buddies when tone changes from parent (FIX: này là chỗ quan trọng nhất!)
-  useEffect(() => {
-    if (selectedBookingTone) {
-      const filteredBuddies = buddies.filter((buddy) =>
-        (buddy.PodcastBuddyProfile.PodcastBuddyBookingTone || []).some(
-          (tone) => tone.Id === selectedBookingTone.Id
-        )
-      );
-      setBuddiesLocal(filteredBuddies);
-    } else {
-      setBuddiesLocal(buddies);
-    }
-  }, [selectedBookingTone, buddies]);
+  // FUNCTIONS
+  // Lọc danh sách Podcast Buddies dựa trên Podcast Booking Tone đã chọn
+  const filteredBookingTones = () => {
+    if (!selectedBookingToneCategory) return availableBookingTones;
+    if (!availableBookingTones) return [];
 
+    return availableBookingTones.filter(
+      (tone) =>
+        tone.PodcastBookingToneCategory.Id === selectedBookingToneCategory.Id
+    );
+  };
   const handleChooseAgain = (fromStep: number) => {
     if (fromStep === 4) {
       onSelectBuddy(null);
@@ -121,28 +110,15 @@ const PodcastBuddySelectComponent = ({
   };
 
   const handleSetToneCategory = () => {
-    const filteredTones = availableBookingTones.filter(
-      (tone) =>
-        tone.PodcastBookingToneCategory.Id === selectedToneCategoryLocal?.Id
-    );
-    setAvailableBookingTonesLocal(filteredTones);
     onSelectBookingToneCategory(selectedToneCategoryLocal);
   };
 
   const handleSetTone = () => {
     if (!selectedToneLocal) {
-      setBuddiesLocal(buddies);
       onSelectBookingTone(null);
       return;
     }
-
-    const filteredBuddies = buddies.filter((buddy) =>
-      (buddy.PodcastBuddyProfile.PodcastBuddyBookingTone || []).some(
-        (tone) => tone.Id === selectedToneLocal.Id
-      )
-    );
-
-    setBuddiesLocal(filteredBuddies);
+    // Let parent trigger API fetch for buddies by tone
     onSelectBookingTone(selectedToneLocal);
   };
 
@@ -165,7 +141,7 @@ const PodcastBuddySelectComponent = ({
         <div className="w-full h-[400px] bg-white/20 flex flex-col">
           <div className="flex flex-col items-center justify-center h-[100px] ">
             <p className="font-bold text-2xl">
-              Select Booking Tone To Continue
+              Select Booking Tone Category To Continue
             </p>
             <p className="font-semibold text-[#d9d9d9]">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit.
@@ -189,13 +165,12 @@ const PodcastBuddySelectComponent = ({
 
           <div className="h-[70px] py-2 w-full flex items-center justify-center">
             {selectedToneCategoryLocal && (
-              <div
+              <LiquidButton
                 onClick={() => handleSetToneCategory()}
-                className="cursor-pointer bg-transparent text-xl w-50 h-10/12 rounded-sm transition-all duration-500 ease-in-out hover:bg-black hover:-translate-y-1 border-2 border-mystic-green text-mystic-green flex items-center justify-center gap-2"
+                variant="minimalRoundedMd"
               >
-                <p className="font-bold">Next</p>
-                <FaArrowRightLong />
-              </div>
+                <p>Next</p>
+              </LiquidButton>
             )}
           </div>
         </div>
@@ -211,43 +186,43 @@ const PodcastBuddySelectComponent = ({
               Lorem ipsum dolor sit amet, consectetur adipiscing elit.
             </p>
           </div>
-          <div className="scrollbar-hide px-5 w-full h-[230px] overflow-y-auto grid md:grid-cols-4 grid-cols-2 gap-2">
-            {availableBookingTonesLocal.map((tone) => (
-              <div
-                key={tone.Id}
-                className={`flex h-[50px] shadow-[10px_10px_15px_rgba(42,42,42,0.5)]  items-center justify-center rounded-full cursor-pointer transition-all duration-500 hover:-translate-y-1 ${
-                  selectedToneLocal?.Id === tone.Id
-                    ? "bg-mystic-green text-black hover:text-black"
-                    : "text-white border hover:border-2 hover:border-mystic-green hover:text-mystic-green shadow-[inset_2px_2px_2.84px_rgba(255,255,255,0.5),inset_5.68px_5.68px_25.55px_rgba(255,255,255,0.5),inset_-2px_-2px_2.84px_rgba(255,255,255,0.5)]"
-                }`}
-                onClick={() => setSelectedToneLocal(tone)}
-              >
-                <p className="text-xs font-bold text-center">{tone.Name}</p>
-              </div>
+          <div className="scrollbar-hide px-5 py-5 w-full h-[230px] overflow-y-auto grid md:grid-cols-4 grid-cols-2 gap-5">
+            {filteredBookingTones().map((tone, index) => (
+              <TonePill
+                onSelect={(selectedTone) => setSelectedToneLocal(selectedTone)}
+                key={`${tone.Id}-${index}`}
+                bookingTone={tone}
+                isSelected={selectedToneLocal?.Id === tone.Id}
+              />
             ))}
           </div>
           <div className="px-5 h-[70px] flex items-center justify-between">
-            <div
+            <LiquidButton
               onClick={() => handleChooseAgain(2)}
-              className="cursor-pointer border-2  px-5 py-2 rounded-sm border-mystic-green text-mystic-green transition-all duration-500 ease-in-out hover:bg-mystic-green hover:text-black hover:-translate-y-1 font-semibold flex items-center justify-center gap-1"
+              variant="minimalRoundedMd"
             >
-              <FaArrowLeftLong />
               <p>Back</p>
-            </div>
+            </LiquidButton>
             {selectedToneLocal !== null && (
-              <div
+              // <div
+              //   onClick={() => handleSetTone()}
+              //   className="cursor-pointer border-2  px-5 py-2 rounded-sm border-mystic-green text-mystic-green transition-all duration-500 ease-in-out hover:bg-mystic-green hover:text-black hover:-translate-y-1 font-semibold flex items-center justify-center gap-1"
+              // >
+              //   <FaArrowRightLong />
+              //   <p>Next</p>
+              // </div>
+              <LiquidButton
                 onClick={() => handleSetTone()}
-                className="cursor-pointer border-2  px-5 py-2 rounded-sm border-mystic-green text-mystic-green transition-all duration-500 ease-in-out hover:bg-mystic-green hover:text-black hover:-translate-y-1 font-semibold flex items-center justify-center gap-1"
+                variant="minimalRoundedMd"
               >
-                <FaArrowRightLong />
                 <p>Next</p>
-              </div>
+              </LiquidButton>
             )}
           </div>
         </div>
       )}
 
-      {step === 3 && (
+      {step === 3 && buddies && (
         <div className="w-full py-3 h-[400px] bg-white/20 flex flex-col items-center justify-center">
           <div className="flex flex-col items-center justify-center h-[100px]">
             <p className="font-bold text-2xl">Select Your Podcaster Now!</p>
@@ -256,10 +231,10 @@ const PodcastBuddySelectComponent = ({
             </p>
           </div>
           <div className="scrollbar-hide w-full h-[230px] overflow-y-auto mt-5 p-5 grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5">
-            {buddiesLocal.length > 0 ? (
-              buddiesLocal.map((buddy) => (
+            {buddies.length > 0 ? (
+              buddies.map((buddy) => (
                 <BuddyCard
-                  key={buddy.PodcastBuddyProfile.AccountId}
+                  key={buddy.Id}
                   buddy={buddy}
                   onViewDetails={handleViewPodcasterDetails}
                   onSelectBuddy={onSelectBuddy}
@@ -272,22 +247,21 @@ const PodcastBuddySelectComponent = ({
             )}
           </div>
           <div className="h-[70px] px-5 w-full flex items-center justify-between">
-            <div
+            <LiquidButton
               onClick={() => handleChooseAgain(3)}
-              className="cursor-pointer border-2  px-5 py-2 rounded-sm border-mystic-green text-mystic-green transition-all duration-500 ease-in-out hover:bg-mystic-green hover:text-black hover:-translate-y-1 font-semibold flex items-center justify-center gap-1"
+              variant="minimalRoundedMd"
             >
-              <FaArrowLeftLong />
               <p>Back</p>
-            </div>
+            </LiquidButton>
           </div>
         </div>
       )}
 
-      {step === 4 && selectedBuddy && (
+      {step === 4 && selectedBuddy && selectedBuddyDetails && (
         <div className="w-full h-[400px] flex px-10 relative overflow-hidden">
           <img
-            src={selectedBuddy.PodcastBuddyProfile.ImageUrl}
-            alt={selectedBuddy.PodcastBuddyProfile.Name}
+            src={selectedBuddy.ImageUrl}
+            alt={selectedBuddy.FullName}
             className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110 opacity-80"
             style={{ transformOrigin: "center" }}
           />
@@ -295,41 +269,45 @@ const PodcastBuddySelectComponent = ({
           <div className="relative z-10 w-full flex items-center gap-10">
             <div className="w-[312px] h-[312px] rounded-full overflow-hidden shadow-xl">
               <img
-                src={selectedBuddy.PodcastBuddyProfile.ImageUrl}
-                alt={selectedBuddy.PodcastBuddyProfile.Name}
+                src={selectedBuddy.ImageUrl}
+                alt={selectedBuddy.FullName}
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="flex-1 flex flex-col justify-start text-white gap-3">
-              <p className="text-[96px] font-bold p-0 m-0">
-                {selectedBuddy.PodcastBuddyProfile?.Name.toLocaleUpperCase()}
+              <p className="text-[96px] font-bold p-0 m-0 line-clamp-1">
+                {selectedBuddyDetails.PodcastBuddyProfile.Name.toLocaleUpperCase()}
               </p>
               <p className="font-poppins font-bold text-gray-300">
-                {selectedBuddy.PodcastBuddyProfile.TotalFollow.toLocaleString()}{" "}
+                {selectedBuddyDetails.PodcastBuddyProfile.TotalFollow.toLocaleString()}{" "}
                 Followers
               </p>
-              <p className="text-sm text-gray-400 mt-2 line-clamp-4 w-2/3">
-                {selectedBuddy.PodcastBuddyProfile.Description}
-              </p>
+              <div
+                className="text-sm text-gray-400 mt-2 line-clamp-4 w-2/3"
+                dangerouslySetInnerHTML={{
+                  __html:
+                    selectedBuddyDetails.PodcastBuddyProfile.Description || "",
+                }}
+              />
               <div className="w-full flex items-center mt-5">
-                <div
+                <LiquidButton
                   onClick={() => handleChooseAgain(4)}
-                  className="cursor-pointer border-2 p-2 rounded-sm border-mystic-green text-mystic-green transition-all duration-500 ease-in-out hover:bg-mystic-green hover:text-black hover:-translate-y-1 font-semibold flex items-center justify-center gap-1"
+                  variant="minimalRoundedMd"
                 >
-                  <IoIosArrowRoundBack size={18} />
                   <p>Choose Another</p>
-                </div>
+                </LiquidButton>
               </div>
             </div>
             <div className="absolute bottom-5 right-2">
-              <div className="border-2 border-mystic-green  text-mystic-green shadow-2xl px-4 py-2  flex items-center justify-center gap-1">
+              <div className="border-2 border-mystic-green rounded-md  text-mystic-green shadow-2xl px-4 py-2  flex items-center justify-center gap-1">
                 <p className="font-bold text-xl">
                   {(
-                    selectedBuddy.PodcastBuddyProfile.PricePerBookingWord * 1000
+                    selectedBuddyDetails.PodcastBuddyProfile
+                      .PricePerBookingWord * 1000
                   ).toLocaleString()}
                 </p>
                 <TbCoinFilled />
-                <p className="font-semibold text-sm ">/1000 words</p>
+                <p className="font-semibold text-sm "> / 1000 words</p>
               </div>
             </div>
           </div>

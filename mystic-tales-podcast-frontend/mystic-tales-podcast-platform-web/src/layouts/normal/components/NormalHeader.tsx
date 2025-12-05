@@ -147,7 +147,10 @@ const NormalHeader = () => {
       {/* Login Button or Profile Picture */}
       <div className="flex items-center justify-center">
         {user ? (
-          <div className="flex items-center gap-5 cursor-pointer">
+          <div
+            onClick={() => navigate(`/media-player/management/profile`)}
+            className="flex items-center gap-5 cursor-pointer"
+          >
             <div>
               <img
                 src={userWithImageUrl?.ImageUrl}
