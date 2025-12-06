@@ -129,7 +129,7 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
     dispatch(
       setEpisodesData({
         episodes: episodes as EpisodeFromShow[],
-        title: `Show: ${episodes[0]?.PodcastShow?.Name || "Episodes"}`,
+        title: `${episodes[0]?.PodcastShow?.Name || "Episodes"}`,
         from: "ShowDetails",
       })
     );
@@ -141,6 +141,7 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
     <View className="w-full">
       <Pressable
         style={style.borderBottom}
+        onPress={() => handleViewMoreEpisodesFromShow()}
         className="w-full flex-row items-center justify-between pb-6"
       >
         <Text className="text-[30px] font-bold text-white">Episodes</Text>

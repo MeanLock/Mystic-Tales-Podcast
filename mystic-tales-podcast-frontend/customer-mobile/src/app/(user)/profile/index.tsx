@@ -771,7 +771,7 @@ const ProfilePage = () => {
               onPress={handleApplyToBePodcaster}
             >
               <Ionicons name="mic-outline" size={20} color="white" />
-              <Text style={styles.buttonText}>Apply to be Podcaster</Text>
+              <Text  style={[styles.buttonText, { color: "#fff" }]}>Apply to be Podcaster</Text>
             </TouchableOpacity>
           )}
 
