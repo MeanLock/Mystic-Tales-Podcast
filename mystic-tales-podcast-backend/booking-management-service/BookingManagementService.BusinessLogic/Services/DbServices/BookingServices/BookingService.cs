@@ -1844,7 +1844,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             //var randomIndex = random.Next(array.Count);
             //return array[randomIndex];
 
-            var assignedStaffIds = await _bookingGenericRepository.FindAll()
+            var assignedStaffIds = await _bookingGenericRepository.FindAll(
+                includeFunc: function => function.Include(b => b.BookingStatusTrackings))
+                .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId != null &&
+                    !new[] {
+                        (int)BookingStatusEnum.Completed,
+                        (int)BookingStatusEnum.QuotationCancelled,
+                        (int)BookingStatusEnum.QuotationRejected,
+                        (int)BookingStatusEnum.CancelledManually,
+                        (int)BookingStatusEnum.CancelledAutomatically
+                    }.Contains(b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId))
                 .Select(pbrrs => pbrrs.AssignedStaffId)
                 .ToListAsync();
 

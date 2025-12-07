@@ -1265,6 +1265,7 @@ namespace ModerationService.BusinessLogic.Services.DbServices.ReportServices
             //return array[randomIndex];
 
             var assignedStaffIds = await _podcastShowReportReviewSessionGenericRepository.FindAll()
+                .Where(psr => psr.IsResolved == null)
                 .Select(pbrrs => pbrrs.AssignedStaff)
                 .ToListAsync();
 
