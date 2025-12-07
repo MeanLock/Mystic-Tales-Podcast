@@ -14,6 +14,7 @@ import { RootState } from "@/src/store/store";
 import { BlurView } from "expo-blur";
 import { View } from "@/src/components/ui/View";
 import AutoResolvingImageBackground from "@/src/components/autoResolveImage/AutoResolveImageBackground";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 
 export interface MediaPlayerModalRef {
   present: () => void;
@@ -26,11 +27,12 @@ interface MediaPlayerModalProps {
 }
 
 const customBackgroundSheet = () => {
-  const playerState = useSelector((state: RootState) => state.player);
-  if (playerState.currentAudio?.MainImageFileKey) {
+  const {state: uiState} = usePlayer();
+  
+  if (uiState.currentAudio?.image) {
     return (
       <AutoResolvingImageBackground
-        FileKey={playerState.currentAudio.MainImageFileKey}
+        FileKey={uiState.currentAudio.image}
         type="PodcastPublicSource"
         style={styles.backgroundImage}
       >

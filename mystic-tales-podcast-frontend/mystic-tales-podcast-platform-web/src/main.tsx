@@ -46,6 +46,7 @@ import CompletedBookingDetailsPage from "./pages/mediaPlayer/management/booking/
 import EpisodeListPage from "./pages/mediaPlayer/episodes/index.tsx";
 import EpisodeDetailsPage from "./pages/mediaPlayer/episodes/details/index.tsx";
 import AlertModal from "./components/alert/AlertModal.tsx";
+import AccountBalanceChangePage from "./pages/mediaPlayer/management/transaction/account-balance/index.tsx";
 
 // Hệ thống route
 // 1. Normal Layout: có header sticky ở giữa.
@@ -165,7 +166,10 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="shows/:id" element={<ShowDetailsPage />} />
 
                 <Route path="episodes" element={<EpisodeListPage />} />
-                <Route path="episodes/details/:id" element={<EpisodeDetailsPage />} />
+                <Route
+                  path="episodes/details/:id"
+                  element={<EpisodeDetailsPage />}
+                />
                 {/* Library */}
                 <Route
                   path="library/listening-history"
@@ -219,6 +223,14 @@ createRoot(document.getElementById("root")!).render(
                 <Route
                   path="management/transactions/subscriptions"
                   element={<ManagementSubscriptionsPage />}
+                />
+                <Route
+                  path="management/transactions/subscriptions"
+                  element={<ManagementSubscriptionsPage />}
+                />
+                <Route
+                  path="management/transactions/account-balance"
+                  element={<AccountBalanceChangePage />}
                 />
               </Route>
             </Routes>

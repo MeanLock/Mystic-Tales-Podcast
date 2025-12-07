@@ -14,7 +14,7 @@ type SubscriptionApiResponse = {
   };
 };
 
-type SubscriptionBenefit = {
+export type SubscriptionBenefit = {
   Id: number;
   Name: string;
 };
@@ -287,5 +287,6 @@ export const {
   useCancelSubscriptionRegistrationMutation,
   useMakeDecisionOnAcceptingNewestVersionMutation,
   useGetRegistrationDetailsQuery,
+  useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery,
   useLazyGetIsHasNonQuotaAccessQuery,
 } = subscriptionApi;

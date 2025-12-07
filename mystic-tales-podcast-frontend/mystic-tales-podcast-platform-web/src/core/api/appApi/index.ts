@@ -31,7 +31,10 @@ const modeAwareBaseQuery: BaseQueryFn<
     body?: any;
     params?: any;
     authMode?: AuthMode;
-    responseHandler?: "json" | "text";
+    responseHandler?:
+      | "json"
+      | "text"
+      | ((response: Response) => Promise<unknown>);
     headers?: Record<string, string>;
   },
   unknown,

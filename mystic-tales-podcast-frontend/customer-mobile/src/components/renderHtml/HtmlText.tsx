@@ -43,10 +43,12 @@ const HtmlText: React.FC<HtmlTextProps> = ({
     return screenWidth - 32;
   }, [maxWidth, screenWidth]);
 
+  const calculatedLineHeight = lineHeight ?? fontSize * 1.4;
+
   const baseStyle: TextStyle = {
     color,
     fontSize,
-    lineHeight: lineHeight ?? fontSize * 1.4,
+    lineHeight: calculatedLineHeight,
   };
 
   // 👉 Gộp baseStyle + textStyle và cast sang MixedStyleDeclaration
@@ -56,8 +58,19 @@ const HtmlText: React.FC<HtmlTextProps> = ({
     [baseStyle, textStyle]
   );
 
+  // Calculate max height based on numberOfLines
+  const maxHeight = numberOfLines
+    ? numberOfLines * calculatedLineHeight
+    : undefined;
+
   return (
-    <View style={[styles.container, style, { maxWidth: contentWidth }]}>
+    <View
+      style={[
+        styles.container,
+        style,
+        { maxWidth: contentWidth, maxHeight, overflow: "hidden" },
+      ]}
+    >
       <RenderHtml
         contentWidth={contentWidth}
         source={{ html }}
@@ -85,11 +98,31 @@ const HtmlText: React.FC<HtmlTextProps> = ({
             marginBottom: 2,
           },
           a: {
-            color: "#2563EB",
-            textDecorationLine: "underline",
+            color: color,
+            textDecorationLine: "none",
+          },
+          strong: {
+            fontWeight: "400",
+          },
+          b: {
+            fontWeight: "400",
+          },
+          em: {
+            fontStyle: "normal",
+          },
+          i: {
+            fontStyle: "normal",
+          },
+          u: {
+            textDecorationLine: "none",
           },
         }}
         systemFonts={[...defaultSystemFonts, "System"]}
+        renderersProps={{
+          a: {
+            onPress: () => {}, // Disable link press
+          },
+        }}
       />
     </View>
   );

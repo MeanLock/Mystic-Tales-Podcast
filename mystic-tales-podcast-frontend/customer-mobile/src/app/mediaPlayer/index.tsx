@@ -37,13 +37,31 @@ import {
   setUIPlayOrderMode,
 } from "@/src/features/mediaPlayer/playerSlice";
 import { usePlayerNavigate } from "@/src/core/services/player/usePlayerNavigate";
-import { useUpdatePlayModeMutation } from "@/src/core/services/player/playerService";
+import {
+  useUpdateBookingTrackLastDurationMutation,
+  useUpdateEpisodeLastDurationMutation,
+  useUpdatePlayModeMutation,
+} from "@/src/core/services/player/playerService";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
+import {
+  SubscriptionBenefit,
+  useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery,
+} from "@/src/core/services/subscription/subscription.service";
+import { setDataAndShowAlert } from "@/src/features/alert/alertSlice";
+import { playerEngine } from "@/src/core/services/player/playerEngine";
 
-const MainAudioCard = ({ audio }: { audio: CurrentAudio }) => {
+export type CurrentTrack = {
+  id: string;
+  name: string;
+  image?: string;
+  podcasterName?: string;
+} | null;
+
+const MainAudioCard = ({ audio }: { audio: CurrentTrack }) => {
   return (
     <View style={styles.currentAudioCardContainer}>
       <AutoResolvingImage
-        FileKey={audio?.MainImageFileKey || ""}
+        FileKey={audio?.image || ""}
         type="PodcastPublicSource"
         style={styles.currentAudioCardImage}
       />
@@ -55,10 +73,10 @@ const MainAudioCard = ({ audio }: { audio: CurrentAudio }) => {
           numberOfLines={1}
           className="text-[#fff] font-semibold text-[16px]"
         >
-          {audio?.Name}
+          {audio?.name}
         </Text>
         <Text className="text-[#BFC0BA] text-[12px]">
-          {audio?.PodcasterName}
+          {audio?.podcasterName}
         </Text>
       </View>
 
@@ -72,114 +90,117 @@ const MainAudioCard = ({ audio }: { audio: CurrentAudio }) => {
 };
 
 const MediaPlayerContent = () => {
-  const playerState = useSelector((state: RootState) => state.player);
-  const dispatch = useDispatch();
-  const { canNavigate, navigateNext, navigatePrevious } = usePlayerNavigate();
+  const {
+    state: uiState,
+    play,
+    pause,
+    seekTo,
+    checkIsNaviableInProcedure,
+    navigateInBookingTracks,
+    navigateInSpecifyShows,
+    navigateInSavedEpisodes,
+  } = usePlayer();
 
-  const duration =
-    playerState.playbackDuration ?? playerState.currentAudio?.AudioLength ?? 0;
+  const player = useSelector((state: RootState) => state.player);
 
-  const position = playerState.playbackPosition ?? 0;
+  const duration = uiState.duration ?? 0;
+
+  const position = uiState.currentTime;
 
   const clampedPos = Math.min(Math.max(position, 0), duration);
   const remaining = Math.max(duration - clampedPos, 0);
-  const progressPct = duration > 0 ? (clampedPos / duration) * 100 : 0;
 
+  // STATES
+  const [isAutoPlay, setIsAutoPlayState] = useState<boolean>(false);
+  const [playOrderMode, setPlayOrderModeState] = useState<
+    "Sequential" | "Random"
+  >("Sequential");
+  // HOOKS
+
+  useEffect(() => {
+    if (!player.listenSessionProcedure) return;
+    setIsAutoPlayState(player.listenSessionProcedure.IsAutoPlay);
+    setPlayOrderModeState(
+      player.listenSessionProcedure.PlayOrderMode as "Sequential" | "Random"
+    );
+  }, [player.listenSessionProcedure]);
+  // FUNCTIONS
   const handlePausePress = () => {
-    dispatch(pauseAudio());
+    pause();
   };
 
   const handlePlayPress = () => {
-    if (!playerState.listenSessionProcedure || !playerState.currentAudio) {
-      return;
-    }
-    dispatch(
-      playAudio({
-        sourceType: playerState.listenSessionProcedure.SourceDetail.Type,
-        audioId: playerState.currentAudio.Id,
-      })
-    );
+    play();
   };
+
+  const dispatch = useDispatch();
 
   const [updatePlayMode] = useUpdatePlayModeMutation();
 
-  const setIsAutoPlay = (isAutoPlay: boolean) => {
-    const restoreValue = playerState.playMode.isAutoPlay;
-
-    if (!playerState.listenSessionProcedure) return;
-    if (!playerState.listenSessionProcedure.PlayOrderMode) return;
-
-    dispatch(setUIIsAutoPlay(isAutoPlay));
-    // Gọi API cập nhật ngầm
-    try {
-      updatePlayMode({
-        IsAutoPlay: isAutoPlay,
-        PlayOrderMode: playerState.listenSessionProcedure.PlayOrderMode,
-        CustomerListenSessionProcedureId: playerState.listenSessionProcedure.Id,
-      }).unwrap();
-    } catch (error) {
-      // Nếu lỗi thì restore lại giá trị cũ
-      dispatch(setUIIsAutoPlay(restoreValue));
+  const handleNavigate = async (navigateType: "Next" | "Previous") => {
+    if (!player.listenSessionProcedure || !player.listenSession) {
+      return;
+    }
+    if (uiState.sourceType === "SpecifyShowEpisodes") {
+      const ls = player.listenSession as ListenSessionEpisodes;
+      await navigateInSpecifyShows(
+        navigateType,
+        ls,
+        player.listenSessionProcedure
+      );
+    } else if (uiState.sourceType === "SavedEpisodes") {
+      const ls = player.listenSession as ListenSessionEpisodes;
+      await navigateInSavedEpisodes(
+        navigateType,
+        ls,
+        player.listenSessionProcedure
+      );
+    } else {
+      const ls = player.listenSession as ListenSessionBookingTracks;
+      await navigateInBookingTracks(
+        navigateType,
+        ls,
+        player.listenSessionProcedure
+      );
     }
   };
 
-  const setPlayOrderMode = (mode: "Sequential" | "Random") => {
-    const restoreValue = playerState.listenSessionProcedure?.PlayOrderMode;
-    if (!playerState.listenSessionProcedure) return;
-    dispatch(setUIPlayOrderMode(mode));
-    // Gọi API cập nhật ngầm
-    try {
-      updatePlayMode({
-        IsAutoPlay: playerState.playMode.isAutoPlay,
-        PlayOrderMode: mode,
-        CustomerListenSessionProcedureId: playerState.listenSessionProcedure.Id,
-      }).unwrap();
-    } catch (error) {
-      // Nếu lỗi thì restore lại giá trị cũ
-      if (restoreValue) {
-        dispatch(setUIPlayOrderMode(restoreValue));
-      }
-    }
+  const handleToggleAutoPlay = async (newValue: boolean) => {
+    // 1. Cập nhật UI ngay
+    const restoreValue = isAutoPlay;
+    setIsAutoPlayState(newValue);
+    playerEngine.setAutoPlay(newValue);
+
+    // 2. Gọi API cập nhật ngầm
+    if (!player.listenSessionProcedure) return;
+    updatePlayMode({
+      IsAutoPlay: newValue,
+      PlayOrderMode: player.listenSessionProcedure.PlayOrderMode,
+      CustomerListenSessionProcedureId: player.listenSessionProcedure.Id,
+    })
+      .unwrap()
+      .catch(() => {
+        setIsAutoPlayState(restoreValue);
+        playerEngine.setAutoPlay(restoreValue);
+      });
   };
 
-  // SỬA LẠI LOGIC: Disable nút Next nếu
-  // player.playMode.isNextSessionNull === true (không có audio tiếp theo)
-  // Và
-  // player.listenSessionProcedure.ListenObjectsSequentialOrder có số lượng các item có
-  // const canNavigate = () => {
-  //   if (!playerState.listenSessionProcedure || !playerState.listenSession) {
-  //     return false;
-  //   }
+  const handleSetPlayOrderMode = (mode: "Sequential" | "Random") => {
+    const restoreMode = playOrderMode;
+    if (mode === playOrderMode) return;
+    setPlayOrderModeState(mode);
 
-  //   if (playerState.playMode.isNextSessionNull) {
-  //     let availableAudioCount = 0;
-  //     if (
-  //       playerState.listenSessionProcedure &&
-  //       playerState.listenSessionProcedure.ListenObjectsRandomOrder &&
-  //       playerState.listenSessionProcedure.ListenObjectsRandomOrder.length > 0
-  //     ) {
-  //       const availableAudio =
-  //         playerState.listenSessionProcedure?.ListenObjectsRandomOrder.map(
-  //           (item) => item.IsListenable
-  //         );
-  //       availableAudioCount = availableAudio?.length ?? 0;
-  //     } else if (
-  //       playerState.listenSessionProcedure &&
-  //       playerState.listenSessionProcedure.ListenObjectsSequentialOrder &&
-  //       playerState.listenSessionProcedure.ListenObjectsSequentialOrder.length >
-  //         0
-  //     ) {
-  //       const availableAudio =
-  //         playerState.listenSessionProcedure.ListenObjectsSequentialOrder.map(
-  //           (item) => item.IsListenable
-  //         );
-  //       availableAudioCount = availableAudio?.length ?? 0;
-  //     }
-  //     return availableAudioCount > 0;
-  //   } else {
-  //     return true;
-  //   }
-  // };
+    if (!player.listenSessionProcedure) return;
+    updatePlayMode({
+      IsAutoPlay: player.listenSessionProcedure.IsAutoPlay,
+      PlayOrderMode: mode,
+      CustomerListenSessionProcedureId: player.listenSessionProcedure.Id,
+    })
+      .unwrap()
+      .catch(() => {
+        setPlayOrderModeState(restoreMode);
+      });
+  };
 
   return (
     <View style={styles.container}>
@@ -187,13 +208,13 @@ const MediaPlayerContent = () => {
         <View style={styles.currentContainer}>
           <View style={styles.imageContainer}>
             <AutoResolvingImage
-              FileKey={playerState.currentAudio?.MainImageFileKey || ""}
+              FileKey={uiState.currentAudio?.image || ""}
               type="PodcastPublicSource"
               style={styles.image}
             />
           </View>
 
-          <MainAudioCard audio={playerState.currentAudio} />
+          <MainAudioCard audio={uiState.currentAudio} />
         </View>
       </View>
       <View style={styles.actionContainer}>
@@ -209,20 +230,16 @@ const MediaPlayerContent = () => {
             minimumTrackTintColor="#fff"
             maximumTrackTintColor="rgba(217,217,217,0.3)"
             thumbTintColor="#fff"
-            onValueChange={(val) => {
-              // chỉ update UI (redux) để thanh chạy mượt, không gọi engine
-              // dispatch(seekPreview({ position: val }));
-            }}
             onSlidingComplete={(val) => {
               // seek thật: lúc này middleware sẽ gọi engine.seek duy nhất 1 lần
-              dispatch(seekTo({ position: val }));
+              seekTo(val);
             }}
           />
 
           {/* Thời gian */}
-          <View className="w-full justify-between items-center flex-row">
-            <Text>{formatAudioLength(clampedPos)}</Text>
-            <Text>-{formatAudioLength(remaining)}</Text>
+          <View className="w-full justify-between items-center flex-row ">
+            <Text className="text-white">{formatAudioLength(clampedPos)}</Text>
+            <Text className="text-white">-{formatAudioLength(remaining)}</Text>
           </View>
         </View>
 
@@ -232,17 +249,24 @@ const MediaPlayerContent = () => {
           className="w-full py-5 flex-row items-center justify-center"
         >
           <Pressable
-            onPress={() => canNavigate && navigatePrevious()}
-            disabled={!canNavigate}
-            style={{ opacity: canNavigate ? 1 : 0.4 }}
+            onPress={() => handleNavigate("Previous")}
+            disabled={!checkIsNaviableInProcedure()}
           >
-            <Foundation name="previous" color="#d9d9d9" size={30} />
+            <Foundation
+              name="previous"
+              color={
+                checkIsNaviableInProcedure()
+                  ? "white"
+                  : "rgba(217, 217, 217, 0.4)"
+              }
+              size={30}
+            />
           </Pressable>
           {/* === NEW: tua -10s === */}
-          <Pressable onPress={() => dispatch(seekBy({ delta: -10 }))}>
+          <Pressable onPress={() => seekTo(Math.max(clampedPos - 10, 0))}>
             <MaterialCommunityIcons name="rewind-10" color="#fff" size={25} />
           </Pressable>
-          {playerState.playMode.playStatus === "play" ? (
+          {uiState.isPlaying ? (
             <Pressable
               onPress={() => {
                 handlePausePress();
@@ -260,7 +284,9 @@ const MediaPlayerContent = () => {
             </Pressable>
           )}
           {/* === NEW: tua +10s === */}
-          <Pressable onPress={() => dispatch(seekBy({ delta: +10 }))}>
+          <Pressable
+            onPress={() => seekTo(Math.min(clampedPos + 10, duration))}
+          >
             <MaterialCommunityIcons
               name="fast-forward-10"
               color="#fff"
@@ -268,11 +294,18 @@ const MediaPlayerContent = () => {
             />
           </Pressable>
           <Pressable
-            onPress={() => canNavigate && navigateNext()}
-            disabled={!canNavigate}
-            style={{ opacity: canNavigate ? 1 : 0.4 }}
+            onPress={() => handleNavigate("Next")}
+            disabled={!checkIsNaviableInProcedure()}
           >
-            <Foundation name="next" color="#d9d9d9" size={30} />
+            <Foundation
+              name="next"
+              color={
+                checkIsNaviableInProcedure()
+                  ? "white"
+                  : "rgba(217, 217, 217, 0.4)"
+              }
+              size={30}
+            />
           </Pressable>
         </View>
 
@@ -282,37 +315,37 @@ const MediaPlayerContent = () => {
           className="w-full h-[100px] flex-row items-center justify-center "
         >
           <Pressable
-            onPress={() => setIsAutoPlay(false)}
-            disabled={!canNavigate}
-            style={{ opacity: canNavigate ? 1 : 0.4 }}
+            onPress={() => handleToggleAutoPlay(!isAutoPlay)}
+            disabled={!checkIsNaviableInProcedure()}
+            style={{ opacity: checkIsNaviableInProcedure() ? 1 : 0.4 }}
           >
             <MaterialIcons
               name="auto-awesome"
-              color={playerState.playMode.isAutoPlay ? "#aee339" : "#d9d9d9"}
-              size={20}
+              color={isAutoPlay ? "#aee339" : "#d9d9d9"}
+              size={30}
             />
           </Pressable>
           <Pressable
-            onPress={() => setIsAutoPlay(false)}
-            disabled={!canNavigate}
-            style={{ opacity: canNavigate ? 1 : 0.4 }}
+            onPress={() => handleSetPlayOrderMode("Sequential")}
+            disabled={!checkIsNaviableInProcedure()}
+            style={{ opacity: checkIsNaviableInProcedure() ? 1 : 0.4 }}
             className="ml-10"
           >
             <Foundation
               name="loop"
-              color={playerState.playMode.isAutoPlay ? "#aee339" : "#d9d9d9"}
-              size={20}
+              color={playOrderMode === "Sequential" ? "#aee339" : "#d9d9d9"}
+              size={25}
             />
           </Pressable>
           <Pressable
-            onPress={() => setIsAutoPlay(false)}
-            disabled={!canNavigate}
-            style={{ opacity: canNavigate ? 1 : 0.4 }}
+            onPress={() => handleSetPlayOrderMode("Random")}
+            disabled={!checkIsNaviableInProcedure()}
+            style={{ opacity: checkIsNaviableInProcedure() ? 1 : 0.4 }}
           >
             <FontAwesome5
               name="random"
-              color={playerState.playMode.isAutoPlay ? "#aee339" : "#d9d9d9"}
-              size={20}
+              color={playOrderMode === "Random" ? "#aee339" : "#d9d9d9"}
+              size={25}
             />
           </Pressable>
         </View>

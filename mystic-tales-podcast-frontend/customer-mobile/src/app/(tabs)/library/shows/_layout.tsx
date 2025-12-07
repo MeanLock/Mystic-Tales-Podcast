@@ -80,7 +80,7 @@ export default function LibraryShowLayout() {
           name="index"
           options={({ navigation }) => ({
             headerShown: true,
-            headerTitle: "My Shows",
+            headerTitle: Platform.OS === "ios" ? "My Shows" : "",
             headerLeft: () => (
               <Pressable
                 onPress={() => navigation.goBack()}

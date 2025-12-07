@@ -19,6 +19,7 @@ import { TbTransactionDollar } from "react-icons/tb";
 import {
   MdNotificationsNone,
   MdNotificationsPaused,
+  MdOutlineAccountBalanceWallet,
   MdOutlinePayments,
   MdSaveAlt,
 } from "react-icons/md";
@@ -332,6 +333,20 @@ const navItems = [
             iconWhenSmall: <MdOutlineSubscriptions color="#333" size={9} />,
             name: "Subscriptions",
             to: "/media-player/management/transactions/subscriptions",
+          },
+          {
+            icon: <MdOutlineSubscriptions color="#fff" size={9} />,
+            iconActive: <MdOutlineSubscriptions color="#aae339" size={9} />,
+            iconWhenSmall: <MdOutlineSubscriptions color="#333" size={9} />,
+            name: "Subscriptions",
+            to: "/media-player/management/transactions/subscriptions",
+          },
+          {
+            icon: <MdOutlineAccountBalanceWallet color="#fff" size={9} />,
+            iconActive: <MdOutlineAccountBalanceWallet color="#aae339" size={9} />,
+            iconWhenSmall: <MdOutlineAccountBalanceWallet color="#333" size={9} />,
+            name: "Account Balance",
+            to: "/media-player/management/transactions/account-balance",
           },
         ],
       },

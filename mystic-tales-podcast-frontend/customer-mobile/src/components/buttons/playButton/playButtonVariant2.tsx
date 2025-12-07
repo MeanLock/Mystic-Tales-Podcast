@@ -4,6 +4,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { EqualizerVariant1 } from "../../equalizer/Variant1";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 
 interface PlayButtonProps {
   episodeId: string;
@@ -50,10 +51,8 @@ const PlayButtonVariant2 = ({
 
   // HOOKS
   const dispatch = useDispatch();
-  if (
-    player.playMode.playStatus === "play" &&
-    player.currentAudio?.Id === episodeId
-  ) {
+  const { checkIsCurrentPlay } = usePlayer();
+  if (checkIsCurrentPlay(episodeId)) {
     return (
       <Pressable
         style={style.playButton}

@@ -14,6 +14,7 @@ import {
   setEpisodesData,
 } from "@/src/features/episode/episodeSlice";
 import { playAudio } from "@/src/features/mediaPlayer/playerSlice";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 
 interface EpisodeListProps {
   episodes: EpisodeFromShow[];
@@ -63,15 +64,13 @@ const formatDate = (dateString: string): string => {
 // Episode Component
 const EpisodeComponent = ({ episode }: { episode: EpisodeFromShow }) => {
   const router = useRouter();
-  const dispatch = useDispatch();
+
+  const { listenFromEpisode } = usePlayer();
+
   const handlePlayEpisode = () => {
-    dispatch(
-      playAudio({
-        sourceType: "SpecifyShowEpisodes",
-        audioId: episode.Id,
-      })
-    );
+    listenFromEpisode(episode.Id, "SpecifyShowEpisodes");
   };
+
   return (
     <Pressable
       onPress={() => router.push(`/(content)/episodes/details/${episode.Id}`)}
@@ -135,7 +134,7 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
     dispatch(
       setEpisodesData({
         episodes: episodes as EpisodeFromShow[],
-        title: `Show: ${episodes[0]?.PodcastShow?.Name || "Episodes"}`,
+        title: `${episodes[0]?.PodcastShow?.Name || "Episodes"}`,
         from: "ShowDetails",
       })
     );

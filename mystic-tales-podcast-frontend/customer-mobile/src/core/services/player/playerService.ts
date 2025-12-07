@@ -69,7 +69,7 @@ export const playerApi = appApi.injectEndpoints({
         ListenSessionProcedure: ListenSessionProcedure;
       },
       {
-        BookingId: string;
+        BookingId: number;
         BookingPodcastTrackId: string;
       }
     >({
@@ -213,40 +213,25 @@ export const playerApi = appApi.injectEndpoints({
         },
         api
       ) {
-        try {
-          const result = await api
-            .dispatch(
-              appApi.endpoints.kickoffThenWait.initiate({
-                kickoff: {
-                  url: `/api/podcast-service/api/episodes/listen-sessions/${PodcastEpisodeListenSessionId}/last-duration-seconds/${LastListenDurationSeconds}`,
-                  method: "PUT",
-                  body: {
-                    CurrentPodcastSubscriptionRegistrationBenefitList,
-                  },
-                  authMode: "required",
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/podcast-service/api/episodes/listen-sessions/${PodcastEpisodeListenSessionId}/last-duration-seconds/${LastListenDurationSeconds}`,
+                method: "PUT",
+                body: {
+                  CurrentPodcastSubscriptionRegistrationBenefitList,
                 },
-                poll: {
-                  intervalMs: 1000,
-                  maxAttempts: 30,
-                },
-              })
-            )
-            .unwrap();
-
-          // Saga success -> trả data
-          return { data: result as { Message: string } };
-        } catch (e: any) {
-          // e ở đây chính là ApiErrorModel mà kickoffThenWait trả ra (hoặc throw từ pollSagaResult)
-          const apiErr: ApiErrorModel = e?.kind
-            ? e
-            : {
-                kind: "UNKNOWN",
-                message: e?.message ?? "Unknown saga error",
-                details: e,
-              };
-
-          return { error: apiErr };
-        }
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as { Message: string } };
       },
     }),
 
@@ -262,35 +247,22 @@ export const playerApi = appApi.injectEndpoints({
         { BookingPodcastTrackListenSessionId, LastListenDurationSeconds },
         api
       ) {
-        try {
-          const result = await api
-            .dispatch(
-              appApi.endpoints.kickoffThenWait.initiate({
-                kickoff: {
-                  url: `/api/booking-management-service/api/bookings/listen-sessions/${BookingPodcastTrackListenSessionId}/last-duration-seconds/${LastListenDurationSeconds}`,
-                  method: "PUT",
-                  authMode: "required",
-                },
-                poll: {
-                  intervalMs: 1000,
-                  maxAttempts: 30,
-                },
-              })
-            )
-            .unwrap();
-          return { data: result as any };
-        } catch (e: any) {
-          // e ở đây chính là ApiErrorModel mà kickoffThenWait trả ra (hoặc throw từ pollSagaResult)
-          const apiErr: ApiErrorModel = e?.kind
-            ? e
-            : {
-                kind: "UNKNOWN",
-                message: e?.message ?? "Unknown saga error",
-                details: e,
-              };
-
-          return { error: apiErr };
-        }
+        const result = await api
+          .dispatch(
+            appApi.endpoints.kickoffThenWait.initiate({
+              kickoff: {
+                url: `/api/booking-management-service/api/bookings/listen-sessions/${BookingPodcastTrackListenSessionId}/last-duration-seconds/${LastListenDurationSeconds}`,
+                method: "PUT",
+                authMode: "required",
+              },
+              poll: {
+                intervalMs: 1000,
+                maxAttempts: 30,
+              },
+            })
+          )
+          .unwrap();
+        return { data: result as { Message: string } };
       },
     }),
 
@@ -378,4 +350,6 @@ export const {
   useNavigateEpisodeInProcedureMutation,
   useGetBookingLatestSessionQuery,
   useGetEpisodeLatestSessionQuery,
+  useLazyGetBookingLatestSessionQuery,
+  useLazyGetEpisodeLatestSessionQuery,
 } = playerApi;

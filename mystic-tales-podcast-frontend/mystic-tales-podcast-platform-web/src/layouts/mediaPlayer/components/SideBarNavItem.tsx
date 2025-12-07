@@ -2,6 +2,8 @@ import type React from "react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MdOutlineNavigateNext } from "react-icons/md";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 
 interface SubItem {
   icon: React.ReactNode;
@@ -39,7 +41,7 @@ export const SidebarNavItems: React.FC<SidebarNavItemsProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-
+  const user = useSelector((state: RootState) => state.auth.user);
   const toggleExpand = (itemName: string) => {
     setExpandedItems((prev) =>
       prev.includes(itemName)
@@ -209,12 +211,26 @@ export const SidebarNavItems: React.FC<SidebarNavItemsProps> = ({
         );
       })}
 
-      <p
-        onClick={() => navigate("/become-podcaster")}
-        className="text-mystic-green hidden md:inline-block hover:underline font-poppins italic cursor-pointer"
-      >
-        Become Podcaster
-      </p>
+      {user?.IsPodcaster ? (
+        <p
+          onClick={() =>
+            window.open(
+              `${import.meta.env.VITE_PUBLIC_PODCASTER_WEB_URL}`,
+              "_blank"
+            )
+          }
+          className="text-mystic-green hidden md:inline-block hover:underline font-poppins italic cursor-pointer"
+        >
+          Podcaster Studio Website
+        </p>
+      ) : (
+        <p
+          onClick={() => navigate("/become-podcaster")}
+          className="text-mystic-green hidden md:inline-block hover:underline font-poppins italic cursor-pointer"
+        >
+          Become Podcaster
+        </p>
+      )}
     </div>
   );
 };

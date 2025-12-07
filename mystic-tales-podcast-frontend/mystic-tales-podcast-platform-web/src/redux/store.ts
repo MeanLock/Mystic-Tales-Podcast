@@ -48,7 +48,22 @@ export const store = configureStore({
     gDM({
       // Bỏ qua các action không tuần tự của redux-persist để tránh warning
       serializableCheck: {
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        ignoredActions: [
+          FLUSH,
+          REHYDRATE,
+          PAUSE,
+          PERSIST,
+          PURGE,
+          REGISTER,
+          // 👇 thêm các action nội bộ của RTK Query
+          "appApi/executeQuery/fulfilled",
+          "appApi/executeQuery/pending",
+          "appApi/executeQuery/rejected",
+          "appApi/executeMutation/fulfilled",
+          "appApi/executeMutation/pending",
+          "appApi/executeMutation/rejected",
+        ],
+        ignoredPaths: ["appApi.queries", "appApi.mutations"],
       },
     }).concat(appApi.middleware),
 });

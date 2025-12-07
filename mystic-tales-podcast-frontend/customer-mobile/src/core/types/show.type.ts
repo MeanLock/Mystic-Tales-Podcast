@@ -51,6 +51,61 @@ export type Show = {
   };
 };
 
+export type ShowFromChannel = {
+  Id: string;
+  Name: string;
+  Description: string;
+  Language: string;
+  ReleaseDate: string;
+  IsReleased: boolean;
+  Copyright: string;
+  UploadFrequency: string;
+  RatingCount: number;
+  AverageRating: number;
+  MainImageFileKey: string;
+  TrailerAudioFileKey: string;
+  TotalFollow: number;
+  ListenCount: number;
+  EpisodeCount: number;
+  Podcaster: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
+  PodcastCategory: {
+    Id: number;
+    Name: string;
+  };
+  PodcastSubCategory: {
+    Id: number;
+    Name: string;
+    PodcastCategoryId: number;
+  };
+  PodcastShowSubscriptionType: {
+    Id: number;
+    Name: string;
+  };
+  PodcastChannel: {
+    Id: string;
+    Name: string;
+    MainImageFileKey: string;
+  };
+  Hashtags: [
+    {
+      Id: number;
+      Name: string;
+    }
+  ];
+  TakenDownReason: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  CurrentStatus: {
+    Id: number;
+    Name: string;
+  };
+};
+
 export type ShowDetails = {
   Id: string;
   Name: string;

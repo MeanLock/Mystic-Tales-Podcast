@@ -1,4 +1,5 @@
 import { appApi } from "@/core/api/appApi";
+import type { BalanceChange } from "@/core/types/transaction";
 
 const BASE_WEB_URL =
   import.meta.env.VITE_PUBLIC_WEB_URL ?? "http://localhost:5173";
@@ -122,6 +123,19 @@ const transactionApi = appApi.injectEndpoints({
         authMode: "required",
       }),
     }),
+
+    getAccountBalanceChangeHistory: build.query<
+      {
+        BalanceChangeHistory: BalanceChange[];
+      },
+      void
+    >({
+      query: () => ({
+        url: `/api/transaction-service/api/account-balance-transactions/balance-change-history`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
@@ -130,4 +144,5 @@ export const {
   useCreateWithdrawRequestMutation,
   useGetTransactionHistoryQuery,
   useGetWithdrawalRequestHistoryQuery,
+  useGetAccountBalanceChangeHistoryQuery,
 } = transactionApi;

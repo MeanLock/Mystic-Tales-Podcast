@@ -455,6 +455,7 @@ export default function ShowDetailsScreen() {
               </Pressable>
             </Modal>
           )}
+        <View className="h-36" />
       </ScrollView>
     );
   }
