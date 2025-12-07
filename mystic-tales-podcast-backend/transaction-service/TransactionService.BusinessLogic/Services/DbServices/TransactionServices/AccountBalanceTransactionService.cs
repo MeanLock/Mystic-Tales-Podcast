@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction;
 using TransactionService.BusinessLogic.DTOs.AccountBalanceTransaction.ListItems;
+using TransactionService.BusinessLogic.DTOs.Booking;
 using TransactionService.BusinessLogic.DTOs.Booking.ListItems;
 using TransactionService.BusinessLogic.DTOs.Cache;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.AccountBalanceCreatePaymentLink;
@@ -20,6 +21,7 @@ using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.ConfirmPaymentRollback;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateAccountBalanceTransactionRollback;
 using TransactionService.BusinessLogic.DTOs.MessageQueue.PaymentProcessingDomain.CreateWithdrawalRequest;
+using TransactionService.BusinessLogic.DTOs.PodcastSubscription;
 using TransactionService.BusinessLogic.DTOs.Snippet;
 using TransactionService.BusinessLogic.DTOs.Transaction;
 using TransactionService.BusinessLogic.Enums;
@@ -28,6 +30,8 @@ using TransactionService.BusinessLogic.Enums.Kafka;
 using TransactionService.BusinessLogic.Enums.Transaction;
 using TransactionService.BusinessLogic.Helpers.DateHelpers;
 using TransactionService.BusinessLogic.Helpers.FileHelpers;
+using TransactionService.BusinessLogic.Models.CrossService;
+using TransactionService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using TransactionService.BusinessLogic.Services.DbServices.MiscServices;
 using TransactionService.BusinessLogic.Services.MessagingServices.interfaces;
 using TransactionService.Common.AppConfigurations.BusinessSetting.interfaces;
@@ -49,6 +53,8 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
         private readonly ILogger<AccountBalanceTransactionService> _logger;
         private readonly IGenericRepository<AccountBalanceTransaction> _accountBalanceTransactionGenericRepository;
         private readonly IGenericRepository<AccountBalanceWithdrawalRequest> _accountBalanceWithdrawalRequestGenericRepository;
+        private readonly IGenericRepository<PodcastSubscriptionTransaction> _podcastSubscriptionTransactionGenericRepository;
+        private readonly IGenericRepository<BookingTransaction> _bookingTransactionGenericRepository;
 
         private readonly IFileValidationConfig _fileValidationConfig;
         private readonly IFilePathConfig _filePathConfig;
@@ -57,6 +63,7 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
 
         private readonly AccountCachingService _accountCachingService;
 
+        private readonly HttpServiceQueryClient _httpServiceQueryClient;
         private readonly KafkaProducerService _kafkaProducerService;
         private readonly IMessagingService _messagingService;
         private readonly DateHelper _dateHelper;
@@ -65,11 +72,14 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             ILogger<AccountBalanceTransactionService> logger,
             IGenericRepository<AccountBalanceTransaction> accountBalanceTransactionGenericRepository,
             IGenericRepository<AccountBalanceWithdrawalRequest> accountBalanceWithdrawalRequestGenericRepository,
+            IGenericRepository<PodcastSubscriptionTransaction> podcastSubscriptionTransactionGenericRepository,
+            IGenericRepository<BookingTransaction> bookingTransactionGenericRepository,
             IFileValidationConfig fileValidationConfig,
             IFilePathConfig filePathConfig,
             FileIOHelper fileIOHelper,
             IPayosConfig payosConfig,
             AccountCachingService accountCachingService,
+            HttpServiceQueryClient httpServiceQueryClient,
             KafkaProducerService kafkaProducerService,
             IMessagingService messagingService,
             DateHelper dateHelper)
@@ -78,11 +88,14 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
             _logger = logger;
             _accountBalanceTransactionGenericRepository = accountBalanceTransactionGenericRepository;
             _accountBalanceWithdrawalRequestGenericRepository = accountBalanceWithdrawalRequestGenericRepository;
+            _podcastSubscriptionTransactionGenericRepository = podcastSubscriptionTransactionGenericRepository;
+            _bookingTransactionGenericRepository = bookingTransactionGenericRepository;
             _fileValidationConfig = fileValidationConfig;
             _filePathConfig = filePathConfig;
             _fileIOHelper = fileIOHelper;
             _payosConfig = payosConfig;
             _accountCachingService = accountCachingService;
+            _httpServiceQueryClient = httpServiceQueryClient;
             _kafkaProducerService = kafkaProducerService;
             _messagingService = messagingService;
             _dateHelper = dateHelper;
@@ -816,6 +829,138 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 throw new HttpRequestException($"Error while retrieving Podcast Subscription Income Statistic for PodcasterId: {ex.Message}");
             }
         }
+        public async Task<List<BalanceChangeHistoryListItemResponseDTO>> GetAllBalanceChangeTransactionsAsync(int accountId)
+        {
+            try
+            {
+                List<BalanceChangeHistoryListItemResponseDTO> balanceChangeHistoryList = new List<BalanceChangeHistoryListItemResponseDTO>();
+                // Get Account Balance Transactions
+                var accountBalanceTransactions = await _accountBalanceTransactionGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(a => a.TransactionType)
+                    .Include(a => a.TransactionStatus))
+                    .Where(abt => abt.AccountId == accountId
+                        && (abt.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceDeposits
+                            || abt.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceWithdrawal))
+                    .OrderByDescending(abt => abt.CreatedAt)
+                    .Select(a => new BalanceChangeHistoryListItemResponseDTO
+                    {
+                        Amount = a.Amount,
+                        TransactionType = new TransactionTypeResponseDTO
+                        {
+                            Id = a.TransactionType.Id,
+                            Name = a.TransactionType.Name
+                        },
+                        TransactionStatus = new TransactionStatusResponseDTO
+                        {
+                            Id = a.TransactionStatus.Id,
+                            Name = a.TransactionStatus.Name
+                        },
+                        IsReceived = a.TransactionTypeId == (int)TransactionTypeEnum.AccountBalanceDeposits ? true : false,
+                        CompletedAt = a.UpdatedAt
+                    })
+                    .ToListAsync();
+                balanceChangeHistoryList.AddRange(accountBalanceTransactions);
+
+                var podcastSubscriptionRegistrations = await GetPodcastSubscriptionRegistrationByAccountId(accountId);
+                var bookings = await GetBookingsByAccountId(accountId);
+
+                // Get Podcast Subscription Transactions
+                foreach (var registration in podcastSubscriptionRegistrations)
+                {
+                    var podcastSubscriptionTransactionList = await _podcastSubscriptionTransactionGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(pst => pst.TransactionType)
+                        .Include(pst => pst.TransactionStatus))
+                        .Where(pst => pst.PodcastSubscriptionRegistrationId == registration.Id &&
+                        (pst.TransactionTypeId == (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment ||
+                        pst.TransactionTypeId == (int)TransactionTypeEnum.CustomerSubscriptionCyclePaymentRefund) &&
+                        pst.TransactionStatusId == (int)TransactionStatusEnum.Success)
+                        .Select(pst => new BalanceChangeHistoryListItemResponseDTO
+                        {
+                            Amount = pst.Amount,
+                            TransactionType = new TransactionTypeResponseDTO
+                            {
+                                Id = pst.TransactionType.Id,
+                                Name = pst.TransactionType.Name
+                            },
+                            TransactionStatus = new TransactionStatusResponseDTO
+                            {
+                                Id = pst.TransactionStatus.Id,
+                                Name = pst.TransactionStatus.Name
+                            },
+                            IsReceived = pst.TransactionTypeId == (int)TransactionTypeEnum.CustomerSubscriptionCyclePayment ? true : false,
+                            CompletedAt = pst.UpdatedAt
+                        })
+                        .ToListAsync();
+                    balanceChangeHistoryList.AddRange(podcastSubscriptionTransactionList);
+                }
+
+                // Get Booking Transactions
+                foreach (var booking in bookings)
+                {
+                    var bookingTransactionList = await _bookingTransactionGenericRepository.FindAll(
+                        includeFunc: function => function
+                        .Include(bt => bt.TransactionType)
+                        .Include(bt => bt.TransactionStatus))
+                        .Where(bt => bt.BookingId == booking.Id &&
+                        (bt.TransactionTypeId == (int)TransactionTypeEnum.BookingDeposit ||
+                        bt.TransactionTypeId == (int)TransactionTypeEnum.BookingDepositRefund ||
+                        bt.TransactionTypeId == (int)TransactionTypeEnum.BookingPayTheRest) &&
+                        bt.TransactionStatusId == (int)TransactionStatusEnum.Success)
+                        .Select(bt => new BalanceChangeHistoryListItemResponseDTO
+                        {
+                            Amount = bt.Amount,
+                            TransactionType = new TransactionTypeResponseDTO
+                            {
+                                Id = bt.TransactionType.Id,
+                                Name = bt.TransactionType.Name
+                            },
+                            TransactionStatus = new TransactionStatusResponseDTO
+                            {
+                                Id = bt.TransactionStatus.Id,
+                                Name = bt.TransactionStatus.Name
+                            },
+                            IsReceived = (bt.TransactionTypeId == (int)TransactionTypeEnum.BookingDepositRefund) ? true : false,
+                            CompletedAt = bt.UpdatedAt
+                        })
+                        .ToListAsync();
+                    balanceChangeHistoryList.AddRange(bookingTransactionList);
+                }
+
+                // Get Account Balance Withdrawal Requests
+                var withdrawalRequests = await _accountBalanceWithdrawalRequestGenericRepository.FindAll()
+                    .Where(abwr => abwr.AccountId == accountId && abwr.IsRejected.HasValue && !abwr.IsRejected.Value)
+                    .OrderByDescending(abwr => abwr.CreatedAt)
+                    .Select(abwr => new BalanceChangeHistoryListItemResponseDTO
+                    {
+                        Amount = abwr.Amount,
+                        TransactionType = new TransactionTypeResponseDTO
+                        {
+                            Id = (int)TransactionTypeEnum.AccountBalanceWithdrawal,
+                            Name = "Account Balance Withdrawal"
+                        },
+                        TransactionStatus = new TransactionStatusResponseDTO
+                        {
+                            Id = abwr.IsRejected == false ? (int)TransactionStatusEnum.Success : (int)TransactionStatusEnum.Cancelled,
+                            Name = abwr.IsRejected == false ? "Success" : "Cancelled"
+                        },
+                        IsReceived = false,
+                        CompletedAt = abwr.CompletedAt.HasValue ? abwr.CompletedAt.Value : abwr.CreatedAt
+                    })
+                    .ToListAsync();
+                balanceChangeHistoryList.AddRange(withdrawalRequests);
+
+                return balanceChangeHistoryList
+                    .OrderByDescending(bch => bch.CompletedAt)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving all balance change transactions");
+                throw new HttpRequestException("An error occurred while retrieving all balance change transactions.");
+            }
+        }
         private async Task<decimal> CalculateDepositAmount(DateOnly startDate, DateOnly endDate, int? accountId = null)
         {
             decimal totalIncome = 0;
@@ -868,6 +1013,78 @@ namespace TransactionService.BusinessLogic.Services.DbServices.TransactionServic
                 .AnyAsync(a => a.OrderCode == result.ToString()));
     
             return result;
+        }
+        public async Task<List<BookingDTO>?> GetBookingsByAccountId(int accountId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "bookings",
+                            QueryType = "findall",
+                            EntityType = "Booking",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    AccountId = accountId
+                                }
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("BookingManagementService", batchRequest);
+
+                return result.Results?["bookings"] is JArray bookingArray && bookingArray.Count >= 0
+                    ? bookingArray.ToObject<List<BookingDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query booking with accountId: {AccountId}", accountId);
+                throw new HttpRequestException($"Error while querying booking for accountId: {accountId}. Error: {ex.Message}");
+            }
+        }
+        public async Task<List<PodcastSubscriptionRegistrationDTO>?> GetPodcastSubscriptionRegistrationByAccountId(int accountId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastSubscriptionRegistration",
+                            QueryType = "findall",
+                            EntityType = "PodcastSubscriptionRegistration",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    AccountId = accountId
+                                }
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("SubscriptionService", batchRequest);
+
+                return result.Results?["podcastSubscriptionRegistration"] is JArray podcastSubscriptionRegistrationArray && podcastSubscriptionRegistrationArray.Count >= 0
+                    ? podcastSubscriptionRegistrationArray.ToObject<List<PodcastSubscriptionRegistrationDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast subscription registration with accountId: {AccountId}", accountId);
+                throw new HttpRequestException($"Error while querying podcast subscription registration for accountId: {accountId}. Error: {ex.Message}");
+            }
         }
     }
 }

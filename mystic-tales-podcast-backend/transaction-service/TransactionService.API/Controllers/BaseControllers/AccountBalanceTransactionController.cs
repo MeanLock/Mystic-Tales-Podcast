@@ -280,5 +280,19 @@ namespace TransactionService.API.Controllers.BaseControllers
                 }
             );
         }
+        [HttpGet("balance-change-history")]
+        [Authorize(Policy = "Customer.BasicAccess")]
+        public async Task<IActionResult> GetAllAccountBalanceTransactions()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            var accountId = account.Id;
+            var transactions = await _accountBalanceTransactionService.GetAllBalanceChangeTransactionsAsync(accountId);
+            return Ok(
+                new
+                {
+                    BalanceChangeHistory = transactions
+                }
+            );
+        }
     }
 }
