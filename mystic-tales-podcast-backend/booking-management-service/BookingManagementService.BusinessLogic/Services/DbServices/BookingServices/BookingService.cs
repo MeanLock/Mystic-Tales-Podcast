@@ -3746,13 +3746,14 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
             {
+                var transactionComplete = false;
                 try
                 {
                     var messageName = command.MessageName;
                     var sagaId = command.SagaInstanceId;
                     var flowName = command.FlowName;
                     var responseData = command.LastStepResponseData;
-
+                    
                     var bookingPodcastTrackListenSession = await _bookingPodcastTrackListenSessionGenericRepository.FindByIdAsync(
                         id: parameter.BookingPodcastTrackListenSessionId,
                         includeFunc: bpts => bpts.Include(bpts => bpts.BookingPodcastTrack)
@@ -3768,6 +3769,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     {
                         bookingPodcastTrackListenSession.IsCompleted = true;
                         await _bookingPodcastTrackListenSessionGenericRepository.UpdateAsync(bookingPodcastTrackListenSession.Id, bookingPodcastTrackListenSession);
+                        transactionComplete = true;
+                        await transaction.CommitAsync();
                         throw new Exception("This audio track is no longer eligible for listening");
                     }
 
@@ -3806,7 +3809,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
+                    if (!transactionComplete)
+                    {
+                        await transaction.RollbackAsync();
+                    }
                     _logger.LogError(ex, "Error occurred while updating booking listen session duration for BookingPodcastTrackListenSessionId: {BookingPodcastTrackListenSessionId}", parameter.BookingPodcastTrackListenSessionId);
                     var newResponseData = new JObject
                     {

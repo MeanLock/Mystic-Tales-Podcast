@@ -50,6 +50,7 @@ using SubscriptionService.Infrastructure.Services.Kafka;
 using System.Security.Principal;
 using System.Threading.Channels;
 using System.Transactions;
+using static System.Net.WebRequestMethods;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServices
@@ -233,6 +234,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     podcastSubscription = await _podcastSubscriptionGenericRepository.CreateAsync(newPodcastSubscription);
                     foreach (var cycleTypePrice in parameter.PodcastSubscriptionCycleTypePriceList)
                     {
+                        if(cycleTypePrice.Price <= 0)
+                        {
+                            throw new Exception($"Price for SubscriptionCycleTypeId: {cycleTypePrice.SubscriptionCycleTypeId} cannot be negative or 0.");
+                        }
                         var newCycleTypePrice = new PodcastSubscriptionCycleTypePrice
                         {
                             PodcastSubscriptionId = podcastSubscription.Id,
@@ -481,6 +486,20 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         //}
                     }
 
+                    var previousCycleTypePriceList = existPodcastSubscription.PodcastSubscriptionCycleTypePrices
+                        .Where(ctp => ctp.Version == existPodcastSubscription.CurrentVersion && ctp.PodcastSubscriptionId == existPodcastSubscription.Id)
+                        .Select(ctp => ctp.SubscriptionCycleTypeId)
+                        .ToList()
+                        .ToHashSet();
+                    var newCycleTypePriceIds = parameter.PodcastSubscriptionCycleTypePriceList
+                        .Select(ctp => ctp.SubscriptionCycleTypeId)
+                        .ToHashSet();
+                    if (!previousCycleTypePriceList.IsSubsetOf(newCycleTypePriceIds))
+                    {
+                        var missingCycleTypeIds = previousCycleTypePriceList.Except(newCycleTypePriceIds).ToList();
+                        throw new Exception($"The following cycle type IDs from the previous version are missing: {string.Join(", ", missingCycleTypeIds)}. All previous cycle types must be included in the update.");
+                    }
+
                     //if (show.Count > 0 && show.HasValues)
                     //{
                     //    var status = show["PodcastShowStatusTracking"].OrderByDescending(x => x["CreatedAt"]).First();
@@ -501,7 +520,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     //        throw new Exception($"Podcast Channel with Id: {podcastSubscription.PodcastChannelId} is not elligle for creating subscription");
                     //    }
                     //}
-
+                    var previousVersion = existPodcastSubscription.CurrentVersion;
+                    Console.WriteLine("Previous Version: " + previousVersion);
+                    bool isMonthlyChanged = false;
+                    bool isAnnuallyChanged = false;
+                    bool isBenefitChanged = false;
                     existPodcastSubscription.Name = parameter.Name;
                     existPodcastSubscription.Description = parameter.Description;
                     existPodcastSubscription.CurrentVersion += 1;
@@ -510,6 +533,29 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     podcastSubscription = await _podcastSubscriptionGenericRepository.UpdateAsync(existPodcastSubscription.Id, existPodcastSubscription);
                     foreach (var cycleTypePrice in parameter.PodcastSubscriptionCycleTypePriceList)
                     {
+                        if (cycleTypePrice.Price <= 0)
+                        {
+                            throw new Exception($"Price for SubscriptionCycleTypeId: {cycleTypePrice.SubscriptionCycleTypeId} cannot be negative or 0.");
+                        }
+                        var previousCycleTypePrice = await _podcastSubscriptionCycleTypePriceGenericRepository.FindAll()
+                            .Where(pct => pct.Version == previousVersion && pct.SubscriptionCycleTypeId == cycleTypePrice.SubscriptionCycleTypeId && pct.PodcastSubscriptionId == podcastSubscription.Id)
+                            .FirstOrDefaultAsync();
+                        
+                        if(previousCycleTypePrice != null)
+                        {
+                            Console.WriteLine("Comparing previous price: " + previousCycleTypePrice.Price + " with new price: " + cycleTypePrice.Price);
+                            if (previousCycleTypePrice.Price != cycleTypePrice.Price)
+                            {
+                                if(cycleTypePrice.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Monthly)
+                                {
+                                    isMonthlyChanged = true;
+                                }
+                                if (cycleTypePrice.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Annually)
+                                {
+                                    isAnnuallyChanged = true;
+                                }
+                            }
+                        }
                         var newCycleTypePrice = new PodcastSubscriptionCycleTypePrice
                         {
                             PodcastSubscriptionId = podcastSubscription.Id,
@@ -541,7 +587,25 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         //    benefitMappings.Add(benefitMappingResult);
                         //}
                     }
+                    var previousBenefitMappings = await _podcastSubscriptionBenefitMappingGenericRepository.FindAll()
+                        .Where(bm => bm.PodcastSubscriptionId == podcastSubscription.Id && bm.Version == previousVersion)
+                        .Select(bm => bm.PodcastSubscriptionBenefitId)
+                        .ToListAsync();
+                    var currentBenefitMappings = await _podcastSubscriptionBenefitMappingGenericRepository.FindAll()
+                        .Where(bm => bm.PodcastSubscriptionId == podcastSubscription.Id && bm.Version == podcastSubscription.CurrentVersion)
+                        .Select(bm => bm.PodcastSubscriptionBenefitId)
+                        .ToListAsync();
 
+                    var previousBenefitsSet = previousBenefitMappings.ToHashSet();
+                    var currentBenefitsSet = currentBenefitMappings.ToHashSet();
+
+                    // Check if the sets are different
+                    if (!previousBenefitsSet.SetEquals(currentBenefitsSet))
+                    {
+                        isBenefitChanged = true;
+                    }
+
+                    Console.WriteLine($"isMonthlyChanged: {isMonthlyChanged}, isAnnuallyChanged: {isAnnuallyChanged}, isBenefitChanged: {isBenefitChanged}");
                     var updatedSubscription = new PodcastSubscriptionListItemResponseDTO
                     {
                         Id = podcastSubscription.Id,
@@ -593,38 +657,110 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
 
                     foreach (var registration in updateRegistrations)
                     {
-                        registration.IsAcceptNewestVersionSwitch = false;
-                        registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
-
-                        var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
-
-                        // Send Email to Customer about New Version Availability
-                        var newVersionMailSendingRequestData = JObject.FromObject(new
+                        if (isBenefitChanged)
                         {
-                            SendSubscriptionServiceEmailInfo = new
-                            {
-                                MailTypeName = "PodcastSubscriptionNewVersion",
-                                ToEmail = account.Email,
-                                MailObject = new PodcastSubscriptionNewVersionMailViewModel
-                                {
-                                    CustomerFullName = account.FullName,
-                                    PodcastSubscription = updatedSubscription,
-                                    PodcastSubscriptionCycleTypePriceList = updateCycleList,
-                                    PodcastSubscriptionBenefitList = updateMappingList,
-                                    CreatedDate = _dateHelper.GetNowByAppTimeZone()
-                                }
-                            }
-                        });
-                        var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                            topic: KafkaTopicEnum.SubscriptionManagementDomain,
-                            requestData: newVersionMailSendingRequestData,
-                            sagaInstanceId: null,
-                            messageName: "subscription-service-mail-sending-flow");
-                        await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+                            registration.IsAcceptNewestVersionSwitch = false;
+                            registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
 
+                            var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+
+                            // Send Email to Customer about New Version Availability
+                            var newVersionMailSendingRequestData = JObject.FromObject(new
+                            {
+                                SendSubscriptionServiceEmailInfo = new
+                                {
+                                    MailTypeName = "PodcastSubscriptionNewVersion",
+                                    ToEmail = account.Email,
+                                    MailObject = new PodcastSubscriptionNewVersionMailViewModel
+                                    {
+                                        CustomerFullName = account.FullName,
+                                        PodcastSubscription = updatedSubscription,
+                                        PodcastSubscriptionCycleTypePriceList = updateCycleList,
+                                        PodcastSubscriptionBenefitList = updateMappingList,
+                                        CreatedDate = _dateHelper.GetNowByAppTimeZone()
+                                    }
+                                }
+                            });
+                            var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                requestData: newVersionMailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "subscription-service-mail-sending-flow");
+                            await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+                        }
+                        else
+                        {
+                            if(registration.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Monthly && isMonthlyChanged)
+                            {
+                                registration.IsAcceptNewestVersionSwitch = false;
+                                registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+
+                                var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+
+                                // Send Email to Customer about New Version Availability
+                                var newVersionMailSendingRequestData = JObject.FromObject(new
+                                {
+                                    SendSubscriptionServiceEmailInfo = new
+                                    {
+                                        MailTypeName = "PodcastSubscriptionNewVersion",
+                                        ToEmail = account.Email,
+                                        MailObject = new PodcastSubscriptionNewVersionMailViewModel
+                                        {
+                                            CustomerFullName = account.FullName,
+                                            PodcastSubscription = updatedSubscription,
+                                            PodcastSubscriptionCycleTypePriceList = updateCycleList,
+                                            PodcastSubscriptionBenefitList = updateMappingList,
+                                            CreatedDate = _dateHelper.GetNowByAppTimeZone()
+                                        }
+                                    }
+                                });
+                                var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                    requestData: newVersionMailSendingRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "subscription-service-mail-sending-flow");
+                                await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                            } else if (registration.SubscriptionCycleTypeId == (int)SubscriptionTypeCycleEnum.Annually && isAnnuallyChanged)
+                            {
+                                registration.IsAcceptNewestVersionSwitch = false;
+                                registration.UpdatedAt = _dateHelper.GetNowByAppTimeZone();
+
+                                var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+
+                                // Send Email to Customer about New Version Availability
+                                var newVersionMailSendingRequestData = JObject.FromObject(new
+                                {
+                                    SendSubscriptionServiceEmailInfo = new
+                                    {
+                                        MailTypeName = "PodcastSubscriptionNewVersion",
+                                        ToEmail = account.Email,
+                                        MailObject = new PodcastSubscriptionNewVersionMailViewModel
+                                        {
+                                            CustomerFullName = account.FullName,
+                                            PodcastSubscription = updatedSubscription,
+                                            PodcastSubscriptionCycleTypePriceList = updateCycleList,
+                                            PodcastSubscriptionBenefitList = updateMappingList,
+                                            CreatedDate = _dateHelper.GetNowByAppTimeZone()
+                                        }
+                                    }
+                                });
+                                var customerMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                    topic: KafkaTopicEnum.SubscriptionManagementDomain,
+                                    requestData: newVersionMailSendingRequestData,
+                                    sagaInstanceId: null,
+                                    messageName: "subscription-service-mail-sending-flow");
+                                await _messagingService.SendSagaMessageAsync(customerMailSendingFlow);
+
+                            } else
+                            {
+                                if(registration.IsAcceptNewestVersionSwitch != false)
+                                    registration.CurrentVersion = podcastSubscription.CurrentVersion;
+                            }
+                        }
                         await _podcastSubscriptionRegistrationGenericRepository.UpdateAsync(registration.Id, registration);
-                        
                     }
+
 
                     await transaction.CommitAsync();
                     var newResponseData = new JObject
@@ -1003,6 +1139,14 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 throw new HttpRequestException($"An Active Podcast Subscription exists for Podcast Channel Id: {show.PodcastChannelId}. Please subscribe to the channel subscription instead.");
                             }
                         }
+                    }
+
+                    var cycleTypePrice = await _podcastSubscriptionCycleTypePriceGenericRepository.FindAll()
+                        .FirstOrDefaultAsync(ptcp => ptcp.PodcastSubscriptionId == parameter.PodcastSubscriptionId
+                            && ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId);
+                    if(cycleTypePrice == null)
+                    {
+                        throw new Exception($"No Podcast Subscription Cycle Type Price exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId} and SubscriptionCycleType Id: {parameter.SubscriptionCycleTypeId}");
                     }
 
                     var newRegistration = new PodcastSubscriptionRegistration
