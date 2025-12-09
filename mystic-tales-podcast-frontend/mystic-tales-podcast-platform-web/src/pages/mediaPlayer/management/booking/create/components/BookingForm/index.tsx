@@ -211,12 +211,52 @@ const RequirementItem = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const ext = file.name.split(".").pop();
-      const newFileName = `${localData.Order}.${ext}`;
-      const renamedFile = new File([file], newFileName, { type: file.type });
-      onFileUpload(renamedFile);
+    if (!file) return;
+
+    // Validate file type
+    const allowedExtensions = [
+      "pdf",
+      "doc",
+      "docx",
+      "xls",
+      "xlsx",
+      "txt",
+      "csv",
+      "wav",
+      "flac",
+      "mp3",
+      "zip",
+      "rar",
+    ];
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!ext || !allowedExtensions.includes(ext)) {
+      setErrors({
+        ...errors,
+        File: "Invalid file type. Allowed: PDF, DOC, DOCX, XLS, XLSX, TXT, CSV, WAV, FLAC, MP3, ZIP, RAR",
+      });
+      e.target.value = "";
+      return;
     }
+
+    // Validate file size (max 50MB)
+    const maxSizeInBytes = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSizeInBytes) {
+      setErrors({
+        ...errors,
+        File: "File size exceeds 50MB. Please upload a smaller file.",
+      });
+      e.target.value = "";
+      return;
+    }
+
+    // Clear file error if validation passes
+    const newErrors = { ...errors };
+    delete newErrors.File;
+    setErrors(newErrors);
+
+    const newFileName = `${localData.Order}.${ext}`;
+    const renamedFile = new File([file], newFileName, { type: file.type });
+    onFileUpload(renamedFile);
   };
 
   return (
@@ -376,7 +416,7 @@ const RequirementItem = ({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".txt,.pdf,.doc,.docx"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.wav,.flac,.mp3,.zip,.rar"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -388,6 +428,10 @@ const RequirementItem = ({
                     ? `Change file: ${existingFile.name}`
                     : "Upload file"}
                 </button>
+                <p className="text-white/60 text-xs mt-2">
+                  Allowed: PDF, DOC, DOCX, XLS, XLSX, TXT, CSV, WAV, FLAC, MP3,
+                  ZIP, RAR (Max 50MB)
+                </p>
                 {errors.File && (
                   <p className="text-red-400 text-xs mt-1">{errors.File}</p>
                 )}

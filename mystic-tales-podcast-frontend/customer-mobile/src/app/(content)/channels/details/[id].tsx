@@ -2,15 +2,25 @@ import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingI
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
 import {
+  useFavoriteChannelMutation,
   useGetActiveChannelSubscriptionQuery,
   useGetChannelDetailsQuery,
+  useUnfavoriteChannelMutation,
 } from "@/src/core/services/channel/channel.service";
-import { useGetCustomerRegistrationInfoFromChannelQuery } from "@/src/core/services/subscription/subscription.service";
+import {
+  useGetCustomerRegistrationInfoFromChannelQuery,
+  useSubscribePodcastSubscriptionMutation,
+  useUnsubscribePodcastSubscriptionMutation,
+} from "@/src/core/services/subscription/subscription.service";
 import { ChannelDetails } from "@/src/core/types/channel.type";
-import { SubscriptionDetails } from "@/src/core/types/subscription.type";
+import {
+  SubscriptionCycleType,
+  SubscriptionDetails,
+} from "@/src/core/types/subscription.type";
 import {
   Entypo,
   Feather,
+  FontAwesome5,
   FontAwesome6,
   Ionicons,
   MaterialCommunityIcons,
@@ -27,202 +37,20 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import ShowCarousel from "./components/ShowCarousel";
 import MixxingText from "@/src/components/ui/MixxingText";
 import RatingAndReview from "./components/RatingAndReview";
 import HtmlText from "@/src/components/renderHtml/HtmlText";
-
-// Mock
-// const channelDetails: ChannelDetails = {
-//   Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-//   Name: "The Art of Samurice",
-//   Description: "",
-//   BackgroundImageFileKey:
-//     "https://i.pinimg.com/1200x/bc/79/53/bc7953940f9e6f3206e2474b95c16a23.jpg",
-//   MainImageFileKey:
-//     "https://i.pinimg.com/736x/7c/16/96/7c169655ab155702cfcb5294eb4471aa.jpg",
-//   TotalFavorite: 0,
-//   ListenCount: 0,
-//   ShowCount: 0,
-//   Podcaster: {
-//     Id: 0,
-//     FullName: "string",
-//     Email: "string",
-//     MainImageFileKey: "string",
-//   },
-//   PodcastCategory: {
-//     Id: 0,
-//     Name: "string",
-//     MainImageFileKey: "string",
-//   },
-//   PodcastSubCategory: {
-//     Id: 0,
-//     Name: "string",
-//     PodcastCategoryId: 0,
-//   },
-//   Hashtags: [
-//     {
-//       Id: 0,
-//       Name: "string",
-//     },
-//   ],
-//   CreatedAt: "2025-12-07T04:04:51.478Z",
-//   UpdatedAt: "2025-12-07T04:04:51.478Z",
-//   CurrentStatus: {
-//     Id: 0,
-//     Name: "string",
-//   },
-//   PodcastSubscriptionList: [
-//     {
-//       Id: 0,
-//       Name: "string",
-//       Description: "string",
-//       PodcastChannelId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-//       PodcastShowId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-//       IsActive: false,
-//       CurrentVersion: 0,
-//       DeletedAt: "2025-12-07T04:04:51.478Z",
-//       CreatedAt: "2025-12-07T04:04:51.478Z",
-//       UpdatedAt: "2025-12-07T04:04:51.478Z",
-//       PodcastSubscriptionCycleTypePriceList: [
-//         {
-//           PodcastSubscriptionId: 0,
-//           SubscriptionCycleType: {
-//             Id: 0,
-//             Name: "string",
-//           },
-//           Version: 0,
-//           Price: 0,
-//           CreatedAt: "2025-12-07T04:04:51.478Z",
-//           UpdatedAt: "2025-12-07T04:04:51.478Z",
-//         },
-//       ],
-//       PodcastSubscriptionBenefitMappingList: [
-//         {
-//           PodcastSubscriptionId: 0,
-//           PodcastSubscriptionBenefit: {
-//             Id: 0,
-//             Name: "string",
-//           },
-//           Version: 0,
-//           CreatedAt: "2025-12-07T04:04:51.479Z",
-//           UpdatedAt: "2025-12-07T04:04:51.479Z",
-//         },
-//       ],
-//     },
-//   ],
-//   ShowList: [
-//     {
-//       Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-//       Name: "string",
-//       Description: "string",
-//       Language: "string",
-//       ReleaseDate: "2025-12-07T04:04:51.479Z",
-//       IsReleased: true,
-//       Copyright: "string",
-//       UploadFrequency: "string",
-//       RatingCount: 0,
-//       AverageRating: 0,
-//       MainImageFileKey: "string",
-//       TrailerAudioFileKey: "string",
-//       TotalFollow: 0,
-//       ListenCount: 0,
-//       EpisodeCount: 0,
-//       Podcaster: {
-//         Id: 0,
-//         FullName: "string",
-//         Email: "string",
-//         MainImageFileKey: "string",
-//       },
-//       PodcastCategory: {
-//         Id: 0,
-//         Name: "string",
-//         MainImageFileKey: "string",
-//       },
-//       PodcastSubCategory: {
-//         Id: 0,
-//         Name: "string",
-//         PodcastCategoryId: 0,
-//       },
-//       PodcastShowSubscriptionType: {
-//         Id: 0,
-//         Name: "string",
-//       },
-//       PodcastChannel: {
-//         Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-//         Name: "string",
-//         Description: "string",
-//         MainImageFileKey: "string",
-//       },
-//       Hashtags: [
-//         {
-//           Id: 0,
-//           Name: "string",
-//         },
-//       ],
-//       TakenDownReason: "string",
-//       CreatedAt: "2025-12-07T04:04:51.479Z",
-//       UpdatedAt: "2025-12-07T04:04:51.479Z",
-//       CurrentStatus: {
-//         Id: 0,
-//         Name: "string",
-//       },
-//     },
-//   ],
-//   IsFavoritedByCurrentUser: true,
-// };
-
-// const activeSubscription: SubscriptionDetails = {
-//   Id: 0,
-//   Name: "Learning to be a Samurai",
-//   Description: null,
-//   PodcastChannelId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-//   PodcastShowId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-//   IsActive: false,
-//   CurrentVersion: 0,
-//   DeletedAt: "2025-12-07T05:06:33.134Z",
-//   CreatedAt: "2025-12-07T05:06:33.134Z",
-//   UpdatedAt: "2025-12-07T05:06:33.134Z",
-//   PodcastSubscriptionCycleTypePriceList: [
-//     {
-//       PodcastSubscriptionId: 0,
-//       SubscriptionCycleType: {
-//         Id: 1,
-//         Name: "Monthly",
-//       },
-//       Version: 0,
-//       Price: 20000000,
-//       CreatedAt: "2025-12-07T05:06:33.134Z",
-//       UpdatedAt: "2025-12-07T05:06:33.134Z",
-//     },
-//     {
-//       PodcastSubscriptionId: 0,
-//       SubscriptionCycleType: {
-//         Id: 2,
-//         Name: "Annually",
-//       },
-//       Version: 0,
-//       Price: 129900000,
-//       CreatedAt: "2025-12-07T05:06:33.134Z",
-//       UpdatedAt: "2025-12-07T05:06:33.134Z",
-//     },
-//   ],
-//   PodcastSubscriptionBenefitMappingList: [
-//     {
-//       PodcastSubscriptionId: 0,
-//       PodcastSubscriptionBenefit: {
-//         Id: 1,
-//         Name: "Non-Quota Listening",
-//       },
-//       Version: 0,
-//       CreatedAt: "2025-12-07T05:06:33.134Z",
-//       UpdatedAt: "2025-12-07T05:06:33.134Z",
-//     },
-//   ],
-//   PodcastSubscriptionRegistrationList: null,
-// };
+import { useDispatch, useSelector } from "react-redux";
+import { setDataAndShowAlert } from "@/src/features/alert/alertSlice";
+import { RootState } from "@/src/store/store";
+import {
+  registerAlertAction,
+  unregisterAlertAction,
+} from "@/src/components/alert/GlobalAlert";
 
 type ShowByCategory = {
   Category: {
@@ -264,43 +92,58 @@ const renderSubscriptionPriceInfo = (subscription: SubscriptionDetails) => {
 
 export default function ChannelDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-
+  const user = useSelector((state: RootState) => state.auth.user);
   // STATES
   const [isUserSubscribed, setIsUserSubscribed] = useState(false);
+  const [isNewVersionAvailable, setIsNewVersionAvailable] = useState(false);
   const [isUserFavorited, setIsUserFavorited] = useState(false);
   const [isSubscriptionOptionsVisible, setIsSubscriptionOptionsVisible] =
+    useState(false);
+  const [versionCompareModalVisible, setVersionCompareModalVisible] =
     useState(false);
   const [selectedSubscriptionOption, setSelectedSubscriptionOption] =
     useState<number>(1);
   const [showByCategories, setShowByCategories] = useState<ShowByCategory[]>(
     []
   );
+  const [selectedCycle, setSelectedCycle] = useState<SubscriptionCycleType>({
+    Id: 1,
+    Name: "Monthly",
+  });
 
   // HOOKS
   const router = useRouter();
-  const { data: channelDetails, isLoading: isChannelDetailsLoading } =
-    useGetChannelDetailsQuery(
-      { ChannelId: id! },
-      {
-        skip: !id,
-        refetchOnFocus: true,
-        refetchOnMountOrArgChange: true,
-        refetchOnReconnect: true,
-      }
-    );
-  const { data: activeSubscription, isLoading: isActiveSubscriptionLoading } =
-    useGetActiveChannelSubscriptionQuery(
-      { ChannelId: id! },
-      {
-        skip: !id,
-        refetchOnFocus: true,
-        refetchOnMountOrArgChange: true,
-        refetchOnReconnect: true,
-      }
-    );
+  const dispatch = useDispatch();
+  const {
+    data: channelDetails,
+    isLoading: isChannelDetailsLoading,
+    refetch: refetchChannelDetails,
+  } = useGetChannelDetailsQuery(
+    { ChannelId: id! },
+    {
+      skip: !id,
+      refetchOnFocus: true,
+      refetchOnMountOrArgChange: true,
+      refetchOnReconnect: true,
+    }
+  );
+  const {
+    data: activeSubscription,
+    isLoading: isActiveSubscriptionLoading,
+    refetch: refetchActiveSubscription,
+  } = useGetActiveChannelSubscriptionQuery(
+    { ChannelId: id! },
+    {
+      skip: !id,
+      refetchOnFocus: true,
+      refetchOnMountOrArgChange: true,
+      refetchOnReconnect: true,
+    }
+  );
   const {
     data: customerRegistrationInfo,
     isLoading: isUserRegistrationInfoLoading,
+    refetch: refetchUserRegistrationInfo,
   } = useGetCustomerRegistrationInfoFromChannelQuery(
     { PodcastChannelId: id! },
     {
@@ -310,6 +153,12 @@ export default function ChannelDetailsScreen() {
       refetchOnReconnect: true,
     }
   );
+  const [unSubcribe] = useUnsubscribePodcastSubscriptionMutation();
+  const [subcribe, { isLoading: isSubscribing }] =
+    useSubscribePodcastSubscriptionMutation();
+  const [favorite] = useFavoriteChannelMutation();
+  const [unFavorite] = useUnfavoriteChannelMutation();
+
   useEffect(() => {
     if (
       !channelDetails ||
@@ -336,8 +185,12 @@ export default function ChannelDetailsScreen() {
               .PodcastSubscriptionId
         ) {
           setIsUserSubscribed(true);
-        } else {
-          setIsUserSubscribed(false);
+        }
+        if (
+          customerRegistrationInfo.PodcastSubscriptionRegistration
+            .IsAcceptNewestVersionSwitch === false
+        ) {
+          setIsNewVersionAvailable(true);
         }
       }
 
@@ -378,10 +231,58 @@ export default function ChannelDetailsScreen() {
   ]);
 
   // FUNCTIONS
+  const onChangeCycleView = (option: number) => {
+    const cycle =
+      activeSubscription?.PodcastSubscription.PodcastSubscriptionCycleTypePriceList.find(
+        (cycle) => cycle.SubscriptionCycleType.Id === option
+      );
+    if (cycle) {
+      setSelectedCycle(cycle.SubscriptionCycleType);
+    }
+  };
+
+  const getSelectedCyclePrice = (cycleId: number) => {
+    if (
+      !activeSubscription ||
+      !activeSubscription.PodcastSubscription
+        .PodcastSubscriptionCycleTypePriceList
+    ) {
+      return 0;
+    }
+    const priceObj =
+      activeSubscription.PodcastSubscription.PodcastSubscriptionCycleTypePriceList.find(
+        (price) => price.SubscriptionCycleType.Id === cycleId
+      );
+    return priceObj ? priceObj.Price : 0;
+  };
+
   const handleToggleFavorite = async (shouldFavorite: boolean) => {
     const restoreValue = isUserFavorited;
     // Gọi API để thêm hoặc bỏ yêu thích channel
     setIsUserFavorited(shouldFavorite);
+    if (shouldFavorite) {
+      try {
+        await favorite({
+          PodcastChannelId: channelDetails?.Channel.Id!,
+        }).unwrap();
+        await refetchChannelDetails();
+        await refetchUserRegistrationInfo();
+        await refetchActiveSubscription();
+      } catch (error) {
+        setIsUserFavorited(restoreValue);
+      }
+    } else {
+      try {
+        await unFavorite({
+          PodcastChannelId: channelDetails?.Channel.Id!,
+        }).unwrap();
+        await refetchChannelDetails();
+        await refetchUserRegistrationInfo();
+        await refetchActiveSubscription();
+      } catch (error) {
+        setIsUserFavorited(restoreValue);
+      }
+    }
   };
 
   if (isChannelDetailsLoading || !channelDetails) {
@@ -394,6 +295,161 @@ export default function ChannelDetailsScreen() {
       </View>
     );
   }
+
+  const handleConfirmUnSubscribe = async () => {
+    if (
+      !customerRegistrationInfo ||
+      !customerRegistrationInfo.PodcastSubscriptionRegistration
+    ) {
+      dispatch(
+        setDataAndShowAlert({
+          type: "error",
+          description: "You have not subscribed to any subscription yet.",
+          isCloseable: true,
+          isFunctional: false,
+          title: "Unsubscribe Failed",
+          autoCloseDuration: 10,
+        })
+      );
+      return;
+    }
+    // Gọi API để huỷ đăng ký
+    try {
+      await unSubcribe({
+        PodcastSubscriptionRegistrationId:
+          customerRegistrationInfo.PodcastSubscriptionRegistration.Id,
+      }).unwrap();
+      setIsUserSubscribed(false);
+
+      // Register action handler
+      const actionId = "unsubscribe-success";
+      registerAlertAction(actionId, async () => {
+        router.reload();
+        unregisterAlertAction(actionId);
+      });
+
+      dispatch(
+        setDataAndShowAlert({
+          type: "success",
+          description: "You have successfully unsubscribed.",
+          isCloseable: true,
+          isFunctional: true,
+          title: "Unsubscribe Successful",
+          autoCloseDuration: 2000,
+          functionalButtonText: "Got it",
+          actionId,
+        })
+      );
+    } catch (error) {
+      dispatch(
+        setDataAndShowAlert({
+          type: "error",
+          description:
+            "An error occurred while unsubscribing. Please try again later.",
+          isCloseable: true,
+          isFunctional: false,
+          title: "Unsubscribe Failed",
+          autoCloseDuration: 10,
+        })
+      );
+    }
+  };
+
+  const handleUnSubscribe = () => {
+    if (!isUserSubscribed) return;
+
+    // Register action handler
+    const actionId = "confirm-unsubscribe";
+    registerAlertAction(actionId, () => {
+      handleConfirmUnSubscribe();
+      unregisterAlertAction(actionId);
+    });
+
+    dispatch(
+      setDataAndShowAlert({
+        type: "warning",
+        title: "Confirm Unsubscribe",
+        description:
+          "Are you sure you want to unsubscribe from this subscription?",
+        isCloseable: true,
+        isFunctional: true,
+        functionalButtonText: "Yes",
+        actionId,
+      })
+    );
+  };
+
+  const handleSubscription = async () => {
+    if (!activeSubscription || !activeSubscription.PodcastSubscription) {
+      return;
+    }
+    if (isUserSubscribed) {
+      dispatch(
+        setDataAndShowAlert({
+          type: "info",
+          title: "Already Subscribed",
+          description: "You are already subscribed to this channel.",
+          isCloseable: true,
+          isFunctional: false,
+        })
+      );
+      return;
+    }
+    if (!user) {
+      dispatch(
+        setDataAndShowAlert({
+          type: "warning",
+          title: "Login Required",
+          description: "Please log in to subscribe to a podcast channel.",
+          isCloseable: true,
+          isFunctional: false,
+        })
+      );
+      return;
+    }
+    try {
+      await subcribe({
+        PodcastSubscriptionId: activeSubscription.PodcastSubscription.Id,
+        CycleTypeId: selectedCycle.Id,
+      }).unwrap();
+
+      // Register action handler
+      const actionId = "subscribe-success";
+      registerAlertAction(actionId, async () => {
+        router.reload();
+        unregisterAlertAction(actionId);
+      });
+
+      dispatch(
+        setDataAndShowAlert({
+          type: "success",
+          description: "You have successfully subscribed.",
+          isCloseable: true,
+          isFunctional: true,
+          title: "Subscription Successful",
+          autoCloseDuration: 2000,
+          functionalButtonText: "Got it",
+          actionId,
+        })
+      );
+    } catch (error) {
+      dispatch(
+        setDataAndShowAlert({
+          type: "error",
+          description:
+            "An error occurred while subscribing. Please try again later.",
+          isCloseable: true,
+          isFunctional: false,
+          title: "Subscription Failed",
+          autoCloseDuration: 10,
+        })
+      );
+    }
+  };
+
+  const handleViewNewVersion = () => {
+    setVersionCompareModalVisible(true);
+  };
 
   return (
     <ScrollView
@@ -454,17 +510,6 @@ export default function ChannelDetailsScreen() {
                 />
               )}
             </Pressable>
-            <RNView style={styles.actionButton}>
-              {Platform.OS === "ios" ? (
-                <Feather name="more-horizontal" size={24} color="white" />
-              ) : (
-                <MaterialCommunityIcons
-                  name="dots-vertical"
-                  size={15}
-                  color="#fff"
-                />
-              )}
-            </RNView>
           </RNView>
         </View>
         <View className="absolute inset-0 flex items-center justify-center z-30 gap-2">
@@ -514,7 +559,7 @@ export default function ChannelDetailsScreen() {
               </RNView>
               <RNView className="flex-1 flex flex-row p-2 items-center justify-end">
                 <Pressable
-                  onPress={() => alert("alo")}
+                  onPress={() => setIsSubscriptionOptionsVisible(true)}
                   className="bg-white rounded-full px-3 py-2"
                 >
                   <Text className="text-[#252525] font-semibold text-sm">
@@ -524,19 +569,52 @@ export default function ChannelDetailsScreen() {
               </RNView>
             </BlurView>
           )}
+
+        {isUserSubscribed &&
+          customerRegistrationInfo &&
+          !isNewVersionAvailable && (
+            <RNView
+              style={{ elevation: 10 }}
+              className="absolute bottom-10 rounded-lg left-7 right-7 flex items-center justify-center bg-white gap-2 backdrop-blur-md p-1 z-40"
+            >
+              <Pressable
+                onPress={() => handleUnSubscribe()}
+                className="w-full h-full flex items-center justify-center p-2"
+              >
+                <Text className="text-black font-bold text-lg">
+                  Cancel Subscription
+                </Text>
+              </Pressable>
+            </RNView>
+          )}
+        {isUserSubscribed &&
+          customerRegistrationInfo &&
+          isNewVersionAvailable && (
+            <RNView
+              style={{ elevation: 10 }}
+              className="absolute bottom-10 rounded-lg left-7 right-7 flex items-center justify-center bg-white gap-2 backdrop-blur-md p-1 z-40"
+            >
+              <Pressable
+                onPress={() => handleViewNewVersion()}
+                className="w-full h-full flex items-center justify-center p-2"
+              >
+                <Text className="text-black font-bold text-lg">
+                  New Version Available
+                </Text>
+              </Pressable>
+            </RNView>
+          )}
       </View>
 
       {/* SHOW LIST */}
       <RNView className="px-4 mt-6 mb-10">
         {showByCategories.map((sbc, index) => (
-          <>
-            <ShowCarousel
-              key={sbc.Category.Id - index}
-              variant="normal"
-              title={sbc.Category.Name}
-              shows={sbc.ShowList}
-            />
-          </>
+          <ShowCarousel
+            key={sbc.Category.Id - index}
+            variant="normal"
+            title={sbc.Category.Name}
+            shows={sbc.ShowList}
+          />
         ))}
       </RNView>
 
@@ -551,6 +629,139 @@ export default function ChannelDetailsScreen() {
           color="#fff"
         />
       </RNView>
+
+      {activeSubscription && activeSubscription.PodcastSubscription && (
+        <Modal
+          transparent={true}
+          visible={isSubscriptionOptionsVisible}
+          animationType="fade"
+          onRequestClose={() => setIsSubscriptionOptionsVisible(false)}
+        >
+          {/* Overlay tối */}
+          <Pressable
+            style={styles.overlay}
+            onPress={() => setIsSubscriptionOptionsVisible(false)} // bấm ngoài để đóng
+          >
+            {/* Chặn sự kiện bấm lan xuống overlay */}
+            <Pressable style={styles.dialog} onPress={() => {}}>
+              <Text style={styles.subscriptionTitle} numberOfLines={1}>
+                {activeSubscription?.PodcastSubscription.Name}
+              </Text>
+              <Text style={styles.message} numberOfLines={3}>
+                {activeSubscription?.PodcastSubscription.Description}
+              </Text>
+              <View className="w-full px-1 mb-2 flex items-center justify-center">
+                <View className="w-full h-[1px] bg-[#D9D9D9]" />
+              </View>
+              <View className="w-full flex flex-col gap-6 py-2">
+                <View className="flex flex-row items-center justify-start gap-3">
+                  {activeSubscription?.PodcastSubscription.PodcastSubscriptionCycleTypePriceList.map(
+                    (cycle) => (
+                      <Pressable
+                        key={cycle.SubscriptionCycleType.Id}
+                        onPress={() =>
+                          onChangeCycleView(cycle.SubscriptionCycleType.Id)
+                        }
+                        className={`${
+                          selectedCycle.Id === cycle.SubscriptionCycleType.Id
+                            ? "bg-[#AEE339] "
+                            : "border border-[#AEE339] "
+                        } px-3 py-1 rounded-full text-sm font-medium`}
+                      >
+                        <Text
+                          className={`${
+                            selectedCycle.Id === cycle.SubscriptionCycleType.Id
+                              ? "text-black"
+                              : "text-[#AEE339]"
+                          }`}
+                        >
+                          {cycle.SubscriptionCycleType.Name}
+                        </Text>
+                      </Pressable>
+                    )
+                  )}
+                </View>
+
+                {/* Benefit List */}
+                <View className="w-full flex flex-col items-start justify-between gap-2">
+                  <Text className="text-lg font-semibold text-[#D9D9D9]">
+                    Includes
+                  </Text>
+                  {activeSubscription.PodcastSubscription.PodcastSubscriptionBenefitMappingList.map(
+                    (benefit) => (
+                      <View
+                        key={
+                          benefit.PodcastSubscriptionId -
+                          benefit.PodcastSubscriptionBenefit.Id
+                        }
+                        className="flex flex-row items-center justify-start gap-4"
+                      >
+                        <FontAwesome5
+                          name="check-circle"
+                          size={18}
+                          color="#aee339"
+                        />
+                        <Text className="text-white">
+                          {benefit.PodcastSubscriptionBenefit.Name}
+                        </Text>
+                      </View>
+                    )
+                  )}
+                </View>
+
+                <View className="flex flex-col items-start gap-1">
+                  <Text className="text-[#D9D9D9] text-2xl font-semibold">
+                    {getSelectedCyclePrice(selectedCycle.Id).toLocaleString()} đ
+                  </Text>
+                  <Text className="text-sm font-semibold text-[#9CA3AF]">
+                    per user /{selectedCycle.Name}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.buttonsRow}>
+                <Pressable
+                  style={[styles.button, styles.subscriptionButton]}
+                  className="flex items-center justify-center"
+                  onPress={() => handleSubscription()}
+                >
+                  <Text style={styles.subscriptionText}>
+                    {isSubscribing ? "Processing..." : "Subscribe Now"}
+                  </Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
+
+      {activeSubscription &&
+        activeSubscription.PodcastSubscription &&
+        customerRegistrationInfo &&
+        customerRegistrationInfo.PodcastSubscriptionRegistration && (
+          <Modal
+            transparent={true}
+            visible={versionCompareModalVisible}
+            animationType="fade"
+            onRequestClose={() => setVersionCompareModalVisible(false)}
+          >
+            {/* Overlay tối */}
+            <Pressable
+              style={styles.overlay}
+              onPress={() => setVersionCompareModalVisible(false)} // bấm ngoài để đóng
+            >
+              {/* Chặn sự kiện bấm lan xuống overlay */}
+              <Pressable style={styles.dialog} onPress={() => {}}>
+                <Text style={styles.subscriptionTitle} numberOfLines={1}>
+                  New Subscription Version Available
+                </Text>
+                <Text className="text-center">
+                  If you don't update, the subscription will be expired at the
+                  end of next moth.
+                </Text>
+              </Pressable>
+            </Pressable>
+          </Modal>
+        )}
     </ScrollView>
   );
 }
@@ -592,5 +803,97 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
     borderRadius: 8,
     elevation: 5,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dialog: {
+    width: "80%",
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: "#141414",
+  },
+  subscriptionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#aee339",
+    marginBottom: 6,
+  },
+  subscriptionContentContainer: {
+    width: "100%",
+    marginLeft: 2,
+    marginRight: 2,
+    backgroundColor: "#1f2937",
+  },
+  message: {
+    fontSize: 12,
+    color: "#e5e7eb",
+    textAlign: "left",
+    marginBottom: 16,
+  },
+  buttonsRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 10,
+  },
+  button: {
+    width: "100%",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  normalCycleButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#aee339",
+  },
+  normalCycleText: {
+    color: "#aee339",
+  },
+  selectedCyclePriceText: {
+    fontSize: 40,
+    lineHeight: 40, // quan trọng: cho lineHeight = fontSize
+    fontWeight: "600",
+    color: "#aee339",
+  },
+  activeCycleButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#aee339",
+    backgroundColor: "#aee339",
+  },
+  activeCycleText: {
+    color: "black",
+  },
+  cancelButton: {
+    backgroundColor: "#374151",
+  },
+  confirmButton: {
+    backgroundColor: "#ef4444",
+  },
+  cancelText: {
+    color: "#e5e7eb",
+    fontSize: 14,
+  },
+  confirmText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  subscriptionButton: {
+    backgroundColor: "#aee339",
+  },
+  subscriptionText: {
+    color: "black",
+    fontWeight: "600",
+    fontSize: 14,
   },
 });

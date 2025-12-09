@@ -20,6 +20,21 @@ export default function ChannelsScreen() {
 
   const { data: favoriteChannels, isLoading: isLoadingFavoriteChannels } =
     useGetFavoritedChannelsQuery();
+
+  const { data: subscribedContents, isLoading: isLoadingSubscribedChannels } =
+    useGetSubscribedContentsQuery();
+
+  if (isLoadingFavoriteChannels || isLoadingSubscribedChannels) {
+    return (
+      <View style={style.centerContainer}>
+        <ActivityIndicator size="large" color="#AEE339" />
+        <Text style={{ color: "#AEE339", fontSize: 16, fontWeight: "bold" }}>
+          Loading Channels...
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <Animated.ScrollView
       onScroll={onScroll}
@@ -41,13 +56,15 @@ export default function ChannelsScreen() {
         <>
           <View className="w-full flex flex-col items-start gap-1">
             {favoriteChannels.ChannelList.map((item, index) => (
-              <ChannelRowCard key={index} channel={item} />
+              <ChannelRowCard key={`Favorties-${item.Id}`} channel={item} />
             ))}
           </View>
         </>
       ) : (
-        <View style={style.centerContainer}>
-          <Text style={{ color: "#aee339", fontSize: 20, fontWeight: "bold" }}>
+        <View className="w-full h-56 flex items-center justify-center">
+          <Text
+            style={{ color: "#aee339", fontSize: 12, fontWeight: "medium" }}
+          >
             No Followed Show Available Now
           </Text>
         </View>
@@ -56,6 +73,24 @@ export default function ChannelsScreen() {
       <Text className="text-white font-bold text-2xl mt-10 mb-10">
         Subscribed Shows
       </Text>
+      {subscribedContents &&
+      subscribedContents.PodcastChannelList.length > 0 ? (
+        <>
+          <View className="w-full flex flex-col items-start gap-1">
+            {subscribedContents.PodcastChannelList.map((item, index) => (
+              <ChannelRowCard key={`Subscribed-${item.Id}`} channel={item} />
+            ))}
+          </View>
+        </>
+      ) : (
+        <View className="w-full h-56 flex items-center justify-center">
+          <Text
+            style={{ color: "#aee339", fontSize: 12, fontWeight: "medium" }}
+          >
+            No Subscribed Shows Available Now
+          </Text>
+        </View>
+      )}
       <View style={{ height: tabBarHeight + 50 }}></View>
     </Animated.ScrollView>
   );

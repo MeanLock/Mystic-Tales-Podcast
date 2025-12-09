@@ -905,6 +905,7 @@ const ProfilePage = () => {
           </View>
         </View>
       </Modal>
+      <View style={{ height: 50 }} />
     </ScrollView>
   );
 };

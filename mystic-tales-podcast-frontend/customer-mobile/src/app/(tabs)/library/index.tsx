@@ -38,9 +38,9 @@ const tabNavigation = [
     to: "channels",
   },
   {
-    title: "Favorites",
-    iconName: "favorite",
-    to: "favorites",
+    title: "Followed Podcasters",
+    iconName: "people",
+    to: "podcasters",
   },
   {
     title: "Saved",
@@ -83,8 +83,8 @@ const TabComponent = ({
         case "channels":
           router.push("/library/channels");
           break;
-        case "favorites":
-          router.push("/library/favorites");
+        case "podcasters":
+          router.push("/library/podcasters");
           break;
         case "saved":
           router.push("/library/saved");

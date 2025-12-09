@@ -40,84 +40,13 @@ import ShowDetailsPage from "./pages/mediaPlayer/shows/details/index.tsx";
 import CreateBookingPage from "./pages/mediaPlayer/management/booking/create/index.tsx";
 import BecomePodcaster from "./pages/mediaPlayer/management/profile/becomePodcaster/index.tsx";
 import PaymentResultPage from "./pages/mediaPlayer/management/transaction/payment-result/index.tsx";
-import ErrorModal from "./components/ErrorModal.tsx";
 import CompletedBookingsPage from "./pages/mediaPlayer/management/booking/completed/index.tsx";
 import CompletedBookingDetailsPage from "./pages/mediaPlayer/management/booking/completed/details/index.tsx";
 import EpisodeListPage from "./pages/mediaPlayer/episodes/index.tsx";
 import EpisodeDetailsPage from "./pages/mediaPlayer/episodes/details/index.tsx";
 import AlertModal from "./components/alert/AlertModal.tsx";
 import AccountBalanceChangePage from "./pages/mediaPlayer/management/transaction/account-balance/index.tsx";
-
-// Hệ thống route
-// 1. Normal Layout: có header sticky ở giữa.
-// - /home (HomePage): Trang Home chính, landing page
-
-// - /faqs (FAQPage): Trang FAQs, các câu hỏi thường gặp
-
-// - /explore (ExplorePage): Trang Explore, khám phá
-
-// - /about (AboutPage): Trang About Us.
-
-//-----------------------------------------------------------------------------------------
-//-----------------------------------------------------------------------------------------
-//-----------------------------------------------------------------------------------------
-
-// 2. Auth Layout: Layout cơ bản, không tùy chỉnh gì cả
-// - /auth/login (LoginPage): Trang Đăng Nhập.
-
-// - /auth/register (RegisterPage): Trang Đăng Ký, handle Verification Code trong đây luôn.
-
-// - /auth/forgot-password/step-[ste] (ForgotPasswordPage): Trang Forgot Password.
-
-//-----------------------------------------------------------------------------------------
-//-----------------------------------------------------------------------------------------
-//-----------------------------------------------------------------------------------------
-
-// 3. Media Player Layout: Layout gồm sidebar bên trái, MediaPlayerControlBar ở dưới, content ở bên phải
-// - /media-player/discovery (DiscoveryPage): Trang Discovery, Gợi ý các channels/shows/episodes/podcasters từ các hành vi cũ
-
-// - /media-player/trending (TrendingPage): Trang để các trending shows, các top shows/episodes/categories.
-
-// - /media-player/search
-
-// - /media-player/categories (categoriesPage): Trang để search & filter, đi từ filter categories trước sau đó mới đến search.
-//    -- /media-player/categories/[id] (categoriesDetailsPage): Trang show các sub-categories thuộc categories đó và các episodes liên quan.
-
-// - /media-player/podcasters (PodcasterPage): Trang show tất cả các Podcasters, filter theo categories và search, sort
-//    -- /media-player/podcasters/[id] (PodcasterDetailsPage): Tại đây có nút booking, danh sách các channels, shows của podcaster.
-
-// - /media-player/channels (ChannelsPage): Danh sách các shows của kênh, vẫn có thể lọc được, search & sort
-//    -- /media-player/channels/[id] (ChannelDetailsPage): Danh sách các shows bên trong, giá subscription, informations, ...
-//        --- /media-player/channels/[id]/shows
-
-// - /media-player/shows (ShowsPage): Danh sách các shows, vẫn có thể lọc được, search & sort
-//    -- /media-player/shows/[id] (ShowDetailsPage): Danh sách các episodes bên trong, giá subscription, ...
-//        --- /media-player/shows/[id]/episodes
-
-// - /media-player/episodes (EpisodesPage): Cần phải biết được từ 1 show nào hoặc top episodes mới qua được.
-//    -- /media-player/episodes/[id] (EpisodeDetailsPage): Nhấn vào có thông tin, review...
-
-// - /media-player/library/recent (RecentPage): Danh sách tiếp tục xem các shows, ...
-
-// - /media-player/library/saved (SavedEpisodesPage): Danh sách các episodes đã saved.
-
-// - /media-player/library/subscribed-channels (subscribedChannelsPage): Danh sách các channels đã subscribed.
-
-// - /media-player/library/subscribed-shows (subscribedShowsPage): Danh sách các shows đã subscribed.
-
-// - /media-player/library/followed-podcasters (FollowedPodcastersPage): Danh sách các podcasters đã followed
-
-// - /media-player/management/bookings (BookingsPage): Danh sách các bookings của bản thân.
-//    -- /media-player/management/bookings/[id] (BookingDetailsPage): Chi tiết thông tin của 1 booking.
-
-// - /media-player/management/transactions (TransactionsLayout): Layout nhỏ để quản lý các transactions, có các tabs và content ở bên dưới ứng với tab
-//    -- /media-player/management/transactions/payment-confirmation (PaymentConfirmationPage): Trang hiển thị thông tin chi tiết của payment và đợi xác nhận thanh toán để thanh toán
-//    -- /media-player/management/transactions/payment-result (PaymentResultPage): Trang hiển thị kết quả giao dịch
-//    -- /media-player/management/transactions/top-up (TopUpPage): Nạp tiền, coi lịch sử nạp vào ví
-//    -- /media-player/management/transactions/withdraw (WithDrawPage): Tạo yêu cầu rút tiền, coi lịch sử & trạng thái của các requests
-//    -- /media-player/management/transactions/subscriptions (subscriptionsPaymentPage): Quản lý các gói subscriptions, un-scribe 1 gói, xem thông tin các gói sắp tới phải trả, xem thay đổi của 1 gói subscription.
-
-// - /media-player/management/profile (ProfilePage): Quản lý profile
+import ProtectedRoute from "./route/ProtectedRoute.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -134,7 +63,12 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/faqs" element={<FAQPage />} />
                 <Route path="/about" element={<AboutPage />} />
-                <Route path="/become-podcaster" element={<BecomePodcaster />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route
+                    path="/become-podcaster"
+                    element={<BecomePodcaster />}
+                  />
+                </Route>
               </Route>
 
               {/* 2️⃣ AUTH LAYOUT */}
@@ -170,68 +104,71 @@ createRoot(document.getElementById("root")!).render(
                   path="episodes/details/:id"
                   element={<EpisodeDetailsPage />}
                 />
-                {/* Library */}
-                <Route
-                  path="library/listening-history"
-                  element={<RecentPage />}
-                />
-                <Route path="library/saved" element={<SavedPage />} />
-                <Route
-                  path="library/subscribed-channels"
-                  element={<SubscribedChannelsPage />}
-                />
-                <Route
-                  path="library/subscribed-shows"
-                  element={<SubscribedShowsPage />}
-                />
-                <Route
-                  path="library/followed-podcasters"
-                  element={<FollowedPodcastersPage />}
-                />
-
-                {/* Management */}
-                <Route path="management/bookings" element={<BookingsPage />} />
-                <Route
-                  path="management/completed-bookings"
-                  element={<CompletedBookingsPage />}
-                />
-                <Route
-                  path="management/bookings/create"
-                  element={<CreateBookingPage />}
-                />
-                <Route path="management/profile" element={<ProfilePage />} />
-                <Route
-                  path="management/bookings/:id"
-                  element={<BookingDetailsPage />}
-                />
-                <Route
-                  path="management/completed-bookings/:id"
-                  element={<CompletedBookingDetailsPage />}
-                />
-                <Route
-                  path="management/transactions/top-up"
-                  element={<TopUpPage />}
-                />
-                <Route
-                  path="management/transactions/payment-result"
-                  element={<PaymentResultPage />}
-                />
-                <Route
-                  path="management/transactions/withdraw"
-                  element={<WithDrawPage />}
-                />
-                <Route
-                  path="management/transactions/subscriptions"
-                  element={<ManagementSubscriptionsPage />}
-                />
-                <Route
-                  path="management/transactions/subscriptions"
-                  element={<ManagementSubscriptionsPage />}
-                />
-                <Route
-                  path="management/transactions/account-balance"
-                  element={<AccountBalanceChangePage />}
-                />
+                {/* Protected Route */}
+                <Route element={<ProtectedRoute />}>
+                  <Route
+                    path="library/listening-history"
+                    element={<RecentPage />}
+                  />
+                  <Route path="library/saved" element={<SavedPage />} />
+                  <Route
+                    path="library/subscribed-channels"
+                    element={<SubscribedChannelsPage />}
+                  />
+                  <Route
+                    path="library/subscribed-shows"
+                    element={<SubscribedShowsPage />}
+                  />
+                  <Route
+                    path="library/followed-podcasters"
+                    element={<FollowedPodcastersPage />}
+                  />
+                  <Route
+                    path="management/bookings"
+                    element={<BookingsPage />}
+                  />
+                  <Route
+                    path="management/completed-bookings"
+                    element={<CompletedBookingsPage />}
+                  />
+                  <Route
+                    path="management/bookings/create"
+                    element={<CreateBookingPage />}
+                  />
+                  <Route path="management/profile" element={<ProfilePage />} />
+                  <Route
+                    path="management/bookings/:id"
+                    element={<BookingDetailsPage />}
+                  />
+                  <Route
+                    path="management/completed-bookings/:id"
+                    element={<CompletedBookingDetailsPage />}
+                  />
+                  <Route
+                    path="management/transactions/top-up"
+                    element={<TopUpPage />}
+                  />
+                  <Route
+                    path="management/transactions/payment-result"
+                    element={<PaymentResultPage />}
+                  />
+                  <Route
+                    path="management/transactions/withdraw"
+                    element={<WithDrawPage />}
+                  />
+                  <Route
+                    path="management/transactions/subscriptions"
+                    element={<ManagementSubscriptionsPage />}
+                  />
+                  <Route
+                    path="management/transactions/subscriptions"
+                    element={<ManagementSubscriptionsPage />}
+                  />
+                  <Route
+                    path="management/transactions/account-balance"
+                    element={<AccountBalanceChangePage />}
+                  />
+                </Route>
               </Route>
             </Routes>
           </BrowserRouter>

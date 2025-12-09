@@ -140,6 +140,7 @@ const topShowData = [
 
 const HomePage = () => {
   const navigate = useNavigate();
+
   return (
     <div className="w-full flex flex-col items-center">
       {/* Banner */}

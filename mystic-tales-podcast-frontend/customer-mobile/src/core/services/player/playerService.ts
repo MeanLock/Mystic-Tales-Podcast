@@ -196,7 +196,7 @@ export const playerApi = appApi.injectEndpoints({
 
     // Update episode listen session last duration seconds
     updateEpisodeLastDuration: build.mutation<
-      { Message: string },
+      { Message: string } | undefined,
       {
         PodcastEpisodeListenSessionId: string;
         LastListenDurationSeconds: number;
@@ -231,13 +231,13 @@ export const playerApi = appApi.injectEndpoints({
             })
           )
           .unwrap();
-        return { data: result as { Message: string } };
+        return { data: result as { Message: string } | undefined };
       },
     }),
 
     // Update booking track listen session last duration seconds
     updateBookingTrackLastDuration: build.mutation<
-      { Message: string },
+      { Message: string } | undefined,
       {
         BookingPodcastTrackListenSessionId: string;
         LastListenDurationSeconds: number;
@@ -262,7 +262,7 @@ export const playerApi = appApi.injectEndpoints({
             })
           )
           .unwrap();
-        return { data: result as { Message: string } };
+        return { data: result as { Message: string } | undefined };
       },
     }),
 

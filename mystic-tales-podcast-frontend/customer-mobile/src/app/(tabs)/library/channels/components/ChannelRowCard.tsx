@@ -3,14 +3,13 @@ import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
 import { Channel } from "@/src/core/types/channel.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import { Pressable, StyleSheet } from "react-native";
 
 const ChannelRowCard = ({ channel }: { channel: Channel }) => {
+  const router = useRouter();
   return (
-    <View
-      style={styles.rowContainer}
-      className="transition-all hover:scale-110 duration-500 ease-out"
-    >
+    <View style={styles.rowContainer}>
       <View>
         <AutoResolvingImage
           FileKey={channel.MainImageFileKey}
@@ -26,7 +25,17 @@ const ChannelRowCard = ({ channel }: { channel: Channel }) => {
       </View>
       <View className="flex h-full items-center justify-center">
         {/* Navigate Icon */}
-        <MaterialCommunityIcons name="chevron-right" size={24} color="white" />
+        <Pressable
+          onPress={() =>
+            router.push(`/(content)/channels/details/${channel.Id}`)
+          }
+        >
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color="white"
+          />
+        </Pressable>
       </View>
     </View>
   );
@@ -36,6 +45,7 @@ export default ChannelRowCard;
 const styles = StyleSheet.create({
   rowContainer: {
     width: "100%",
+    height: 120,
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,

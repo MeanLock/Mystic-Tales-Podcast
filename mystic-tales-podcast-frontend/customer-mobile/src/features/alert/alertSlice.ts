@@ -12,7 +12,7 @@ export interface AlertState {
   isFunctional: boolean;
   functionalButtonText?: string;
   autoCloseDuration?: number;
-  onClickAction?: () => void;
+  actionId?: string;
 }
 
 const initialState: AlertState = {
@@ -24,7 +24,7 @@ const initialState: AlertState = {
   isFunctional: false,
   functionalButtonText: undefined,
   autoCloseDuration: undefined,
-  onClickAction: undefined,
+  actionId: undefined,
 };
 
 type ShowAlertPayload = {
@@ -35,7 +35,7 @@ type ShowAlertPayload = {
   isFunctional: boolean;
   functionalButtonText?: string;
   autoCloseDuration?: number;
-  onClickAction?: () => void;
+  actionId?: string;
 };
 
 const alertSlice = createSlice({
@@ -49,9 +49,10 @@ const alertSlice = createSlice({
       state.type = action.payload.type;
       state.isCloseable = action.payload.isCloseable;
       state.isFunctional = action.payload.isFunctional;
-      state.functionalButtonText = action.payload.functionalButtonText || "Close";
+      state.functionalButtonText =
+        action.payload.functionalButtonText || "Close";
       state.autoCloseDuration = action.payload.autoCloseDuration || undefined;
-      state.onClickAction = action.payload.onClickAction || undefined;
+      state.actionId = action.payload.actionId || undefined;
     },
 
     hideAlert(state) {
@@ -63,7 +64,7 @@ const alertSlice = createSlice({
       state.isFunctional = false;
       state.functionalButtonText = undefined;
       state.autoCloseDuration = undefined;
-      state.onClickAction = undefined;
+      state.actionId = undefined;
     },
   },
 });

@@ -68,6 +68,7 @@ import {
 import EpisodeCard from "./components/EpisodeCard";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { setSeeMoreEpisodeData } from "@/redux/slices/seeMoreEpisodeSlice/seeMoreEpisodeSlice";
+import { useLazyGetPodcastPublicSourceQuery } from "@/core/services/file/file.service";
 
 const ShowFileConfig: FileResolveConfig[] = [
   {
@@ -184,6 +185,12 @@ const ShowDetailsPage = () => {
   );
   const [isFollowed, setIsFollowed] = useState(false);
 
+  // TRAILER AUDIO
+  const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
+  const [trailerAudio, setTrailerAudio] = useState<HTMLAudioElement | null>(
+    null
+  );
+
   // REPORT
   const [reportShowDialog, setReportShowDialog] = useState(false);
   const [isShowAlreadyReported, setIsShowAlreadyReported] = useState(false);
@@ -240,6 +247,7 @@ const ShowDetailsPage = () => {
   const [unFollowShow, { isLoading: isUnFollowing }] =
     useUnFollowShowMutation();
 
+  const [getTrailerAudioUrl] = useLazyGetPodcastPublicSourceQuery();
   useEffect(() => {
     const resolveData = async () => {
       if (!id) {
@@ -641,6 +649,70 @@ const ShowDetailsPage = () => {
     navigate(`/media-player/episodes`);
   };
 
+  const handlePlayTrailerAudio = async () => {
+    if (!show || !show.TrailerAudioFileKey) return;
+
+    try {
+      // If already playing, stop it
+      if (isPlayingTrailer && trailerAudio) {
+        trailerAudio.pause();
+        trailerAudio.currentTime = 0;
+        setIsPlayingTrailer(false);
+        setTrailerAudio(null);
+        return;
+      }
+
+      // Get audio URL and play
+      const { data } = await getTrailerAudioUrl({
+        FileKey: show.TrailerAudioFileKey,
+      });
+
+      if (data && data.FileUrl) {
+        const audio = new Audio(data.FileUrl);
+
+        // Set up event listeners
+        audio.addEventListener("ended", () => {
+          setIsPlayingTrailer(false);
+          setTrailerAudio(null);
+        });
+
+        audio.addEventListener("error", () => {
+          setIsPlayingTrailer(false);
+          setTrailerAudio(null);
+          dispatch(
+            setError({
+              message: "Failed to play trailer audio",
+              autoClose: 10,
+            })
+          );
+        });
+
+        setTrailerAudio(audio);
+        setIsPlayingTrailer(true);
+        await audio.play();
+      }
+    } catch (error) {
+      setIsPlayingTrailer(false);
+      setTrailerAudio(null);
+      dispatch(
+        setError({
+          message: `Error while playing trailer audio: ${error}`,
+          autoClose: 20,
+        })
+      );
+    }
+  };
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (trailerAudio) {
+        trailerAudio.pause();
+        trailerAudio.currentTime = 0;
+      }
+    };
+  }, [trailerAudio]);
+
   // RENDER
   if (isShowDetailsLoading || isFileResolving) {
     return (
@@ -726,17 +798,39 @@ const ShowDetailsPage = () => {
 
           {/* Action Buttons */}
           <div className="flex w-full items-center justify-between">
-            {isUserSubscribed ? (
-              <Button className="bg-mystic-green hover:bg-lime-400 transition-all duration-700 ease-out  hover:-translate-y-1 cursor-pointer  text-black font-semibold px-6 py-2 rounded-sm">
-                <FaPlay />
-                Latest Episode
-              </Button>
-            ) : (
-              <Button className="bg-mystic-green hover:bg-lime-400 transition-all duration-700 ease-out  hover:-translate-y-1 cursor-pointer  text-black font-semibold px-6 py-2 rounded-sm">
-                <FaPlay />
-                Trailer Audio
-              </Button>
-            )}
+            <Button
+              onClick={() => handlePlayTrailerAudio()}
+              disabled={!show.TrailerAudioFileKey}
+              className={`${
+                isPlayingTrailer
+                  ? "bg-white hover:bg-gray-100"
+                  : "bg-mystic-green hover:bg-lime-400"
+              } transition-all duration-300 ease-out hover:-translate-y-1 cursor-pointer text-black font-semibold px-6 py-2 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0`}
+            >
+              {isPlayingTrailer ? (
+                <>
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Stop Trailer
+                </>
+              ) : (
+                <>
+                  <FaPlay className="mr-2" />
+                  {show.TrailerAudioFileKey
+                    ? "Play Trailer"
+                    : "No Trailer Available"}
+                </>
+              )}
+            </Button>
             <div className="flex items-center gap-5">
               {isUserSubscribed ? (
                 <LiquidButton

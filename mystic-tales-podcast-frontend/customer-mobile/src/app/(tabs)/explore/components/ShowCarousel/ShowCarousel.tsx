@@ -30,7 +30,7 @@ const ShowCarousel = ({ variant, title, shows }: ShowCarouselProps) => {
   const renderItem = ({ item }: { item: Show }) => {
     return <ShowCard key={item.Id} show={item} />;
   };
-  console.log("ShowCarousel shows:", shows);
+
   return (
     <View className="gap-5 mb-10">
       {/* Title */}

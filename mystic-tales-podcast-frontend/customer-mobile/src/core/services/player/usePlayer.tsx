@@ -21,6 +21,10 @@ import { playerEngine, PlayerTrack, PlayerUiState } from "./playerEngine";
 import { useRouter } from "expo-router";
 import { setDataAndShowAlert } from "@/src/features/alert/alertSlice";
 import {
+  registerAlertAction,
+  unregisterAlertAction,
+} from "@/src/components/alert/GlobalAlert";
+import {
   ListenSession,
   ListenSessionBookingTracks,
   ListenSessionEpisodes,
@@ -38,6 +42,12 @@ export function usePlayer() {
 
   const dispatch = useDispatch();
   const router = useRouter();
+
+  const actionId = "login-required-booking";
+  registerAlertAction(actionId, () => {
+    router.push("/(auth)/login");
+    unregisterAlertAction(actionId);
+  });
 
   // RTK Query HOOKS
   const [triggerGetBenefitList] =
@@ -101,9 +111,7 @@ export function usePlayer() {
             isFunctional: true,
             functionalButtonText: "Log In",
             autoCloseDuration: 5,
-            onClickAction: () => {
-              router.push("/(auth)/login");
-            },
+            actionId,
           })
         );
         return;
@@ -227,6 +235,12 @@ export function usePlayer() {
   const continueListenFromEpisode = useCallback(
     async (episodeId: string, continue_listen_session_id: string) => {
       if (!user) {
+        const actionId = "login-required-continue-episode";
+        registerAlertAction(actionId, () => {
+          router.push("/(auth)/login");
+          unregisterAlertAction(actionId);
+        });
+
         dispatch(
           setDataAndShowAlert({
             title: "Login Required",
@@ -236,9 +250,7 @@ export function usePlayer() {
             isFunctional: true,
             functionalButtonText: "Log In",
             autoCloseDuration: 5,
-            onClickAction: () => {
-              router.push("/(auth)/login");
-            },
+            actionId,
           })
         );
         return;
@@ -488,9 +500,7 @@ export function usePlayer() {
             isFunctional: true,
             functionalButtonText: "Log In",
             autoCloseDuration: 5,
-            onClickAction: () => {
-              router.push("/(auth)/login");
-            },
+            actionId,
           })
         );
         return;

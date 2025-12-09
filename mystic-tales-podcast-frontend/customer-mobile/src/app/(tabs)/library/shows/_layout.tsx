@@ -104,19 +104,6 @@ export default function LibraryShowLayout() {
                 </Text>
               </Pressable>
             ),
-            headerRight: () => (
-              <Pressable
-                onPress={openMenu}
-                hitSlop={10}
-                style={{
-                  padding: 4,
-                  borderRadius: 9999,
-                  backgroundColor: "#333",
-                }}
-              >
-                <MaterialIcons name="more-horiz" size={22} color="#AEE339" />
-              </Pressable>
-            ),
           })}
         />
       </Stack>
