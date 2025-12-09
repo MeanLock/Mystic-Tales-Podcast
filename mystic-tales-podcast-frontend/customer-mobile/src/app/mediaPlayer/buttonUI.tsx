@@ -85,18 +85,18 @@ const PlayerButtonUI = () => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    height: 70,
+    height: 60,
     alignItems: "center",
   },
   imageContainer: {
-    height: 60,
-    width: 60,
+    height: 45,
+    width: 45,
     alignItems: "center",
     justifyContent: "center",
   },
   image: {
-    height: 50,
-    width: 50,
+    height: 40,
+    width: 40,
     borderRadius: 8,
     resizeMode: "cover",
   },

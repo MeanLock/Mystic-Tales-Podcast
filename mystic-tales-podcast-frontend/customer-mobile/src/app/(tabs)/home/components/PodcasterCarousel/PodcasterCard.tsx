@@ -18,7 +18,12 @@ const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
   const router = useRouter();
 
   return (
-    <Pressable onPress={() => router.push(`/(content)/podcasters/details/${podcaster.Id}`)} style={styles.card}>
+    <Pressable
+      onPress={() =>
+        router.push(`/(content)/podcasters/details/${podcaster.Id}`)
+      }
+      style={styles.card}
+    >
       {/* Profile Image */}
       <View style={styles.imageContainer}>
         {/* <Image source={{ uri: podcaster.MainImageFileKey }} style={styles.image} /> */}
@@ -37,7 +42,7 @@ const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
         >
           {podcaster.FullName}
         </Text>
-        <Text className="text-gray-400 text-center text-xs">
+        <Text numberOfLines={1} className="text-gray-400 text-center text-xs">
           {podcaster.Email}
         </Text>
       </View>

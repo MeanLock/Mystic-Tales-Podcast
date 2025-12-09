@@ -8,7 +8,7 @@ interface ShowCardVariant1Props {
   show: Show;
 }
 
-const ShowCardVariant1 = ({ show }: ShowCardVariant1Props) => {
+const ShowCard = ({ show }: ShowCardVariant1Props) => {
   const router = useRouter();
 
   return (
@@ -23,13 +23,13 @@ const ShowCardVariant1 = ({ show }: ShowCardVariant1Props) => {
         key={show.Id}
         style={styles.image}
       />
-      <View className="absolute inset-0 bg-black/40 bg-opacity-40 justify-end p-2">
+      {/* <View className="absolute inset-0 bg-black/10 bg-opacity-40 justify-end p-2">
         <Text className="text-white ">{show.Name}</Text>
-      </View>
+      </View> */}
     </Pressable>
   );
 };
-export default ShowCardVariant1;
+export default ShowCard;
 
 const styles = StyleSheet.create({
   card: {

@@ -9,6 +9,7 @@ import {
 } from "@/src/core/services/channel/channel.service";
 import {
   useGetCustomerRegistrationInfoFromChannelQuery,
+  useMakeDecisionOnAcceptingNewestVersionMutation,
   useSubscribePodcastSubscriptionMutation,
   useUnsubscribePodcastSubscriptionMutation,
 } from "@/src/core/services/subscription/subscription.service";
@@ -158,6 +159,8 @@ export default function ChannelDetailsScreen() {
     useSubscribePodcastSubscriptionMutation();
   const [favorite] = useFavoriteChannelMutation();
   const [unFavorite] = useUnfavoriteChannelMutation();
+  const [acceptNewVersion, { isLoading: isAcceptingNewVersion }] =
+    useMakeDecisionOnAcceptingNewestVersionMutation();
 
   useEffect(() => {
     if (
@@ -187,6 +190,9 @@ export default function ChannelDetailsScreen() {
           setIsUserSubscribed(true);
         }
         if (
+          customerRegistrationInfo.PodcastSubscriptionRegistration
+            .CurrentVersion !==
+            activeSubscription?.PodcastSubscription.CurrentVersion &&
           customerRegistrationInfo.PodcastSubscriptionRegistration
             .IsAcceptNewestVersionSwitch === false
         ) {
@@ -451,6 +457,50 @@ export default function ChannelDetailsScreen() {
     setVersionCompareModalVisible(true);
   };
 
+  const handleAcceptNewVersion = async () => {
+    if (
+      !customerRegistrationInfo ||
+      !customerRegistrationInfo.PodcastSubscriptionRegistration
+    ) {
+      return;
+    }
+    try {
+      await acceptNewVersion({
+        PodcastSubscriptionRegistrationId:
+          customerRegistrationInfo.PodcastSubscriptionRegistration.Id,
+        IsAccepted: true,
+      }).unwrap();
+
+      // Success alert
+      dispatch(
+        setDataAndShowAlert({
+          type: "success",
+          description: "You have accepted the newest version.",
+          isCloseable: true,
+          isFunctional: false,
+          title: "Accepted New Version",
+          autoCloseDuration: 2000,
+        })
+      );
+      setIsNewVersionAvailable(false);
+      setVersionCompareModalVisible(false);
+      refetchActiveSubscription();
+      refetchUserRegistrationInfo();
+    } catch (error) {
+      dispatch(
+        setDataAndShowAlert({
+          type: "error",
+          description:
+            "An error occurred while accepting the newest version. Please try again later.",
+          isCloseable: true,
+          isFunctional: false,
+          title: "Accept New Version Failed",
+          autoCloseDuration: 10,
+        })
+      );
+    }
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -587,6 +637,7 @@ export default function ChannelDetailsScreen() {
               </Pressable>
             </RNView>
           )}
+
         {isUserSubscribed &&
           customerRegistrationInfo &&
           isNewVersionAvailable && (
@@ -750,14 +801,85 @@ export default function ChannelDetailsScreen() {
               onPress={() => setVersionCompareModalVisible(false)} // bấm ngoài để đóng
             >
               {/* Chặn sự kiện bấm lan xuống overlay */}
-              <Pressable style={styles.dialog} onPress={() => {}}>
+              <Pressable style={styles.dialogCompare} onPress={() => {}}>
                 <Text style={styles.subscriptionTitle} numberOfLines={1}>
                   New Subscription Version Available
                 </Text>
-                <Text className="text-center">
+                <Text className="text-start">
                   If you don't update, the subscription will be expired at the
                   end of next moth.
                 </Text>
+
+                {/* Compare */}
+                <View className="mt-5 flex flex-row items-start justify-between px-2">
+                  <View className="flex flex-col items-start gap-1">
+                    <Text className="text-sm font-bold text-white">
+                      Your Subscription
+                    </Text>
+                    <Text className="text-lg font-bold text-white">
+                      {customerRegistrationInfo.PodcastSubscriptionRegistration
+                        .Price
+                        ? customerRegistrationInfo.PodcastSubscriptionRegistration.Price.toLocaleString()
+                        : "100,000"}{" "}
+                      đ
+                    </Text>
+                    <View className="gap-2 mt-2">
+                      {customerRegistrationInfo.PodcastSubscriptionRegistration.PodcastSubscriptionBenefitList.map(
+                        (benefit) => (
+                          <View>
+                            <Text className="text-white text-xs">
+                              {benefit.Name}
+                            </Text>
+                          </View>
+                        )
+                      )}
+                    </View>
+                  </View>
+                  <View className="flex flex-col items-start gap-1">
+                    <Text className="text-sm font-bold text-[#aee339]">
+                      New Subscription
+                    </Text>
+                    <Text className="text-lg font-bold text-[#aee339]">
+                      {activeSubscription.PodcastSubscription.PodcastSubscriptionCycleTypePriceList.find(
+                        (price) =>
+                          price.SubscriptionCycleType.Id ===
+                          customerRegistrationInfo
+                            .PodcastSubscriptionRegistration
+                            ?.SubscriptionCycleType.Id
+                      )?.Price.toLocaleString()}
+                      đ
+                    </Text>
+                    <View className="gap-2 mt-2">
+                      {activeSubscription.PodcastSubscription.PodcastSubscriptionBenefitMappingList.map(
+                        (benefit) => (
+                          <View>
+                            <Text className="text-white text-xs">
+                              {benefit.PodcastSubscriptionBenefit.Name}
+                            </Text>
+                          </View>
+                        )
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Actions */}
+                <View className="w-full gap-3 py-4 flex flex-row items-center justify-between mt-5">
+                  <Pressable
+                    className="w-1/3 py-2 flex items-center justify-center border-2 rounded-md border-zinc-600"
+                    onPress={() => setVersionCompareModalVisible(false)}
+                  >
+                    <Text className="text-zinc-400">Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    className="flex-1 py-2 flex items-center justify-center border-2 rounded-md border-[#aee339]"
+                    onPress={() => handleAcceptNewVersion()}
+                  >
+                    <Text className="text-[#aee339]">
+                      {isAcceptingNewVersion ? "Accepting..." : "Accept"}
+                    </Text>
+                  </Pressable>
+                </View>
               </Pressable>
             </Pressable>
           </Modal>
@@ -812,6 +934,12 @@ const styles = StyleSheet.create({
   },
   dialog: {
     width: "80%",
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: "#141414",
+  },
+  dialogCompare: {
+    width: "90%",
     padding: 16,
     borderRadius: 20,
     backgroundColor: "#141414",

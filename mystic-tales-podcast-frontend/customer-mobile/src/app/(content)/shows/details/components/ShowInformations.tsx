@@ -1,6 +1,6 @@
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
-import { Platform, Pressable, StyleSheet } from "react-native";
+import { Platform, Pressable, StyleSheet, View as RNView } from "react-native";
 
 import { useState, useEffect } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -25,6 +25,9 @@ const ShowInformations = ({
   onCancelSubscription,
   isFollowed,
   onFollowToggle,
+  isNewVersionAvailable,
+  customerRegistrationInfo,
+  handleViewNewVersion,
 }: {
   show: ShowDetails;
   activeSubscription: SubscriptionDetails | null;
@@ -33,6 +36,9 @@ const ShowInformations = ({
   onCancelSubscription: () => void;
   isFollowed: boolean;
   onFollowToggle: (isFollowed: boolean) => void;
+  isNewVersionAvailable: boolean;
+  customerRegistrationInfo: any;
+  handleViewNewVersion: () => void;
 }) => {
   // HOOKS
   const router = useRouter();
@@ -368,28 +374,42 @@ const ShowInformations = ({
         {!isSubscribed &&
           activeSubscription &&
           calculateSubscription(activeSubscription)}
-        {activeSubscription &&
-          (!isSubscribed ? (
-            <View className="w-full px-[10px] flex items-center justify-center my-3">
-              <Pressable
-                onPress={() => setIsSubscriptionInformationsModalVisible(true)}
-                style={style.coloredButton}
-              >
-                <Text className="font-extrabold text-black">Subscribe Now</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View className="w-full px-[10px] flex items-center justify-center my-3">
-              <Pressable
-                onPress={() => onCancelSubscription()}
-                style={style.coloredButton}
-              >
-                <Text className="font-extrabold text-black">
-                  Cancel Subscription
-                </Text>
-              </Pressable>
-            </View>
-          ))}
+        {activeSubscription && !isSubscribed && (
+          <View className="w-full px-[10px] flex items-center justify-center my-3">
+            <Pressable
+              onPress={() => setIsSubscriptionInformationsModalVisible(true)}
+              style={style.coloredButton}
+            >
+              <Text className="font-extrabold text-black">Subscribe Now</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {isSubscribed && customerRegistrationInfo && !isNewVersionAvailable && (
+          <View className="w-full px-[10px] flex items-center justify-center my-3">
+            <Pressable
+              onPress={() => onCancelSubscription()}
+              style={style.coloredButton}
+            >
+              <Text className="font-extrabold text-black">
+                Cancel Subscription
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {isSubscribed && customerRegistrationInfo && isNewVersionAvailable && (
+          <View className="w-full px-[10px] flex items-center justify-center my-3">
+            <Pressable
+              onPress={() => handleViewNewVersion()}
+              style={style.coloredButton}
+            >
+              <Text className="font-extrabold text-black">
+                New Version Available
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </View>
   );
