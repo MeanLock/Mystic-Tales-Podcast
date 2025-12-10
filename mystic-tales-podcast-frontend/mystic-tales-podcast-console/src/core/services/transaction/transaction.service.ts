@@ -2,6 +2,7 @@ import { AxiosInstance } from "axios";
 import { callAxiosRestApi } from "../../api/rest-api/main/api-call";
 
 const BASE_URL = "transaction-service/api/account-balance-transactions";
+const DASHBOARD_URL = "transaction-service/api/report/account-balance-transactions";
 
 export const getTransactionList = async (instance: AxiosInstance) => {
 
@@ -13,7 +14,16 @@ export const getTransactionList = async (instance: AxiosInstance) => {
 
     return response;
 }
+export const getReceiptUrl = async (instance: AxiosInstance, fileKey: string) => {
 
+    const response = await callAxiosRestApi({
+        instance: instance,
+        method: "get",
+        url: `${BASE_URL}/transfer-receipt-image/get-file-url/${fileKey}`,
+    });
+
+    return response;
+}
 export const confirmTransaction = async (
     instance: AxiosInstance,
     transactionId: string,
@@ -36,6 +46,16 @@ export const confirmTransaction = async (
         method: "put",
         url: `${BASE_URL}/balance-withdrawal/${transactionId}/confirm/${isReject}`,
         data: formData,
+    });
+
+    return response;
+}
+
+export const getSummaryBalance = async (instance: AxiosInstance, reportPeriod: string) => {
+    const response = await callAxiosRestApi({
+        instance: instance,
+        method: "get",
+        url: `${DASHBOARD_URL}/statistics/summary/system?report_period=${reportPeriod}`,
     });
 
     return response;

@@ -9,32 +9,36 @@ import {
   Tooltip,
   Legend,
 } from "chart.js"
-import { getPeriodicProfitTransactionReport } from "../../../../core/services/statistic/transaction-statistics/transaction-statistics.service"
-import { adminAxiosInstance } from "../../../../core/api/rest-api/config/instances/v2"
-import { PeriodicProfit } from "../../../../core/types/statistics"
-import { formatDate } from "../../../../core/utils/date.util"
-import SurveyTalkLoading from "../../../components/common/loading"
-import Loading from "../../../components/common/loading"
+import { getSummarySubscription } from "@/core/services/subscription/subscription.service"
+import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
+import Loading from "@/views/components/common/loading"
+import { formatDate } from "@/core/utils/date.util"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
+export type SubscriptionProfit = {
+  StartDate: string; 
+  EndDate: string;   
+  Amount: number;
+};
 
-export function RevenueChart({ activeTab }: { activeTab: string }) {
-  const [revenueData, setRevenueData] = useState<PeriodicProfit[]>([])
+export function SubscriptionRevenueChart({ activeTab }: { activeTab: string }) {
+  const [revenueData, setRevenueData] = useState<SubscriptionProfit[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
-  const getLabel = (item: PeriodicProfit, index: number) => {
+  const getLabel = (item: SubscriptionProfit, index: number) => {
     switch (activeTab) {
       case 'Daily':
       case 'Weekly':
         return formatDate(item.StartDate);
       case 'Monthly':
-        return `Tuần ${index + 1}`;
-      case 'Yearly':
-        return `Tháng ${index + 1}`;
+        return `Week ${index + 1}`;
+       case 'Yearly':
+        return new Date(item.StartDate).toLocaleString('en-US', { month: 'short' });
       default:
         return '';
     }
   }
+
 
   const isCurrentPeriod = (startDate: string, endDate: string) => {
     const currentDate = new Date();
@@ -49,14 +53,14 @@ export function RevenueChart({ activeTab }: { activeTab: string }) {
     return currentDate >= start && currentDate <= end;
   }
 
-  const getTooltipLabel = (item: PeriodicProfit) => {
-    const revenue = item.Revenue.toLocaleString('vi-VN') + ' Points';
+  const getTooltipLabel = (item: SubscriptionProfit) => {
+    const revenue = item.Amount.toLocaleString('vi-VN') + ' Points';
 
     if (activeTab === 'Daily' || activeTab === 'Weekly') {
-      return `Doanh thu: ${revenue}`;
+      return `Revenue: ${revenue}`;
     }
 
-    return `${formatDate(item.StartDate)} - ${formatDate(item.EndDate)} - Doanh thu: ${revenue}`;
+    return `${formatDate(item.StartDate)} - ${formatDate(item.EndDate)} - Revenue: ${revenue}`;
   }
 
   const calculateStepSize = (values: number[]) => {
@@ -76,7 +80,7 @@ export function RevenueChart({ activeTab }: { activeTab: string }) {
     const fetchRevenue = async () => {
       try {
         setIsLoading(true)
-        const res = await getPeriodicProfitTransactionReport(adminAxiosInstance, activeTab)
+        const res = await getSummarySubscription(loginRequiredAxiosInstance, activeTab)
         if (res.success && res.data) {
           setRevenueData(res.data)
         }
@@ -91,20 +95,21 @@ export function RevenueChart({ activeTab }: { activeTab: string }) {
   }, [activeTab])
 
   const labels = revenueData.map((item, index) => getLabel(item, index))
-  const dataValues = revenueData.map((item) => item.Revenue)
+  const dataValues = revenueData.map((item) => item.Amount)
   const backgroundColors = revenueData.map(item =>
-    isCurrentPeriod(item.StartDate, item.EndDate) ? '#3E5DAB' : '#8CA4E0'
+    isCurrentPeriod(item.StartDate, item.EndDate) ? '#AEE339' : '#AEE339'
   )
 
   const data = {
     labels,
     datasets: [
       {
-        label: "Doanh thu",
+        label: "Revenue",
         data: dataValues,
         backgroundColor: backgroundColors,
-        borderRadius: 2,
-        maxBarThickness: 60,
+        borderRadius: 6,
+        maxBarThickness: 56,
+        borderWidth: 1,
       },
     ],
   }
@@ -113,14 +118,14 @@ export function RevenueChart({ activeTab }: { activeTab: string }) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false,
-      },
+      legend: { display: false },
       tooltip: {
+        backgroundColor: 'rgba(40, 40, 40, 1)',
+        titleColor: '#AEE339',
+        bodyColor: '#d9d9d9',
+        borderWidth: 1,
         callbacks: {
-          label: (context: any) => {
-            return getTooltipLabel(revenueData[context.dataIndex]);
-          }
+          label: (context: any) => getTooltipLabel(revenueData[context.dataIndex])
         }
       }
     },
@@ -129,24 +134,24 @@ export function RevenueChart({ activeTab }: { activeTab: string }) {
         beginAtZero: true,
         ticks: {
           stepSize: calculateStepSize(dataValues),
-          callback: (value: any) => value / 1000 + "k",
+          color: '#262626',
+          callback: (value: any) => value / 1000 + 'k',
         },
         grid: {
-          color: "#dee2e6",
+          color: '#d9d9d9',
         },
       },
       x: {
-        grid: {
-          display: false,
-        },
+        ticks: { color: '#262626' },
+        grid: { display: false },
       },
     },
   }
 
   return (
-    <div style={{ height: "350px" }}>
+    <div style={{ height: '350px', position: 'relative' }}>
       {isLoading ? (
-         <div className="flex justify-content-center align-items-center h-150" >
+         <div className="flex justify-center items-center " >
               <Loading />
             </div>
       ) : (

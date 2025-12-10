@@ -93,9 +93,9 @@ const ShowInfo = () => {
     const [isPublishing, setIsPublishing] = useState<boolean>(false);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const navigate = useNavigate();
-    
+
     const [initialLoading, setInitialLoading] = useState(true);
-const [refreshing, setRefreshing] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [releaseDate, setReleaseDate] = useState<string>(() => {
@@ -134,36 +134,36 @@ const [refreshing, setRefreshing] = useState(false);
         placeholder: 'Add description...'
     });
 
-  const fetchShowDetail = async (opts: { initial?: boolean } = {}) => {
-  opts.initial ? setInitialLoading(true) : setRefreshing(true);
-  try {
-    const res = await getShowDetail(loginRequiredAxiosInstance, id);
-    if (res.success && res.data) {
-      const s = res.data.Show;
-      setShowDetail(s);
-      setOriginalShow(prev => prev ?? s);
-      setSelectedHashtags(s.Hashtags.map((h: any) => ({ id: h.Id, name: h.Name })));
-      setFormData({
-        Name: s.Name,
-        Copyright: s.Copyright,
-        Language: s.Language || 'English',
-        UploadFrequency: s.UploadFrequency || 'Daily',
-        PodcastShowSubscriptionTypeId: s.PodcastShowSubscriptionType?.Id || 1,
-        Description: s.Description || '',
-        PodcasterId: authSlice.user?.Id || 0,
-        PodcastCategoryId: s.PodcastCategory?.Id || 0,
-        PodcastSubCategoryId: s.PodcastSubCategory?.Id || 0,
-        HashtagIds: s.Hashtags?.map((h: any) => h.Id) || []
-      });
-    } else {
-      console.error('API Error:', res.message);
-    }
-  } catch (e) {
-    console.error('fetchShowDetail error', e);
-  } finally {
-    opts.initial ? setInitialLoading(false) : setRefreshing(false);
-  }
-};
+    const fetchShowDetail = async (opts: { initial?: boolean } = {}) => {
+        opts.initial ? setInitialLoading(true) : setRefreshing(true);
+        try {
+            const res = await getShowDetail(loginRequiredAxiosInstance, id);
+            if (res.success && res.data) {
+                const s = res.data.Show;
+                setShowDetail(s);
+                setOriginalShow(prev => prev ?? s);
+                setSelectedHashtags(s.Hashtags.map((h: any) => ({ id: h.Id, name: h.Name })));
+                setFormData({
+                    Name: s.Name,
+                    Copyright: s.Copyright,
+                    Language: s.Language || 'English',
+                    UploadFrequency: s.UploadFrequency || 'Daily',
+                    PodcastShowSubscriptionTypeId: s.PodcastShowSubscriptionType?.Id || 1,
+                    Description: s.Description || '',
+                    PodcasterId: authSlice.user?.Id || 0,
+                    PodcastCategoryId: s.PodcastCategory?.Id || 0,
+                    PodcastSubCategoryId: s.PodcastSubCategory?.Id || 0,
+                    HashtagIds: s.Hashtags?.map((h: any) => h.Id) || []
+                });
+            } else {
+                console.error('API Error:', res.message);
+            }
+        } catch (e) {
+            console.error('fetchShowDetail error', e);
+        } finally {
+            opts.initial ? setInitialLoading(false) : setRefreshing(false);
+        }
+    };
 
     const fetchCategory = async () => {
         setLoading(true);
@@ -182,10 +182,10 @@ const [refreshing, setRefreshing] = useState(false);
         }
     }
 
-  useEffect(() => {
-  fetchShowDetail({ initial: true });
-  fetchCategory();
-}, [id]);
+    useEffect(() => {
+        fetchShowDetail({ initial: true });
+        fetchCategory();
+    }, [id]);
 
     useEffect(() => {
         if (!quill) return;
@@ -287,10 +287,10 @@ const [refreshing, setRefreshing] = useState(false);
         [nameChanged, descriptionChanged, categoryChanged, hashtagsChanged, imageChanged, languageChanged, uploadFrequencyChanged, subscriptionTypeChanged, copyrightChanged]
     );
     const handleSave = async () => {
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
         if (!showDetail || !isDirty) return;
         try {
             setIsSaving(true);
@@ -342,10 +342,10 @@ const [refreshing, setRefreshing] = useState(false);
     };
 
     const handleDelete = async () => {
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
         const alert = await confirmAlert("Are you sure to DELETE this Show, Episodes under this show will be deleted as well");
         if (!alert.isConfirmed) return;
         try {
@@ -364,7 +364,8 @@ const [refreshing, setRefreshing] = useState(false);
             await startPolling(sagaId, loginRequiredAxiosInstance, {
                 onSuccess: () => {
                     toast.success(`Show deleted successfully.`)
-
+                    navigate('/show');
+                    navigate(0);
                 },
                 onFailure: (err) => toast.error(err || "Saga failed!"),
                 onTimeout: () => toast.error("System not responding, please try again."),
@@ -376,11 +377,11 @@ const [refreshing, setRefreshing] = useState(false);
         }
     };
 
-    const handlePublish = async (isPublish: boolean) => { 
-              if (authSlice.user?.ViolationLevel > 0) {
-                toast.error('Your account is currently under violation !!');
-                return;
-            }
+    const handlePublish = async (isPublish: boolean) => {
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
         console.log(releaseDate)
         if (showDetail.CurrentStatus.Id === 1) {
             toast.warning("At least one Episode must be published before publishing the Show.");
@@ -420,6 +421,17 @@ const [refreshing, setRefreshing] = useState(false);
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Invalid file type. Allowed: JPG, JPEG, PNG, GIF, WEBP, SVG');
+                return;
+            }
+
+            const maxSize = 3 * 1024 * 1024;
+            if (file.size > maxSize) {
+                toast.error('Image file size must be less than 3MB');
+                return;
+            }
             setMainImageFile(file);
         }
     };
@@ -541,14 +553,14 @@ const [refreshing, setRefreshing] = useState(false);
     return (
         <ShowInfoViewContext.Provider value={{ handleDataChange: fetchShowDetail, channel: showDetail.PodcastChannel ? showDetail.PodcastChannel : null }}>
             <div className="show-info-page">
-                     {showDetail.CurrentStatus?.Id === 5 && (
-                <div
-                    className="flex items-center  px-3 py-2 mt-6 mb-10"
-                    style={{ width: "fit-content" }}
-                >
-                  
-                </div>
-            )}
+                {showDetail.CurrentStatus?.Id === 5 && (
+                    <div
+                        className="flex items-center  px-3 py-2 mt-6 mb-10"
+                        style={{ width: "fit-content" }}
+                    >
+
+                    </div>
+                )}
                 {showDetail.TakenDownReason && (
                     <div className="flex items-center gap-2 bg-red-100 border border-red-400  rounded px-3 py-2 mb-3" style={{ width: "fit-content" }}>
                         <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -559,96 +571,103 @@ const [refreshing, setRefreshing] = useState(false);
                         </span>
                     </div>
                 )}
-                {showDetail.CurrentStatus?.Id !== 4 && showDetail.CurrentStatus?.Id !== 5 && (
-                    <div className="show-info-page__actions">
-                        <Button
-                            className="show-info-page__action-btn show-info-page__action-btn--remove"
-                            variant="outlined"
-                            startIcon={<X size={15} />}
-                            onClick={() => handleDelete()}
-                        >
-                            {isDeleting ? 'Deleting...' : 'Delete'}
-                        </Button>
-                        {(showDetail.CurrentStatus?.Id === 1 || showDetail.CurrentStatus?.Id === 2) && (
-                            <Modal_Button
-                                className="show-info-page__action-btn show-info-page__action-btn--unpublish"
-                                content="Publish"
-                                variant="outlined"
-                                size='sm'
-                            >
-                                <div className="flex flex-col gap-4 p-8 ">
-                                    <TextField
-                                        label="Release Date"
-                                        value={releaseDate}
-                                        variant="standard"
-                                        type='date'
-                                        required
-                                        onChange={(e) => setReleaseDate(e.target.value)}
-                                        className="show-info-page__input show-info-page__input--name"
-                                        inputProps={{
-                                            min: new Date().toISOString().split('T')[0]
-                                        }}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': { borderColor: '#999999 !important' },
-                                                '&:hover fieldset': { borderColor: '#999999 !important' },
-                                                '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
-                                            },
-                                        }}
-                                    />
-                                    <Button
-                                        className="show-info-page__action-btn show-info-page__action-btn--save "
-                                        onClick={() => handlePublish(true)}
-                                        disabled={isPublishing || !releaseDate}
-                                    >
-                                        {isPublishing ? "Publishing..." : "Confirm"}
-                                    </Button>
-                                </div>
-                            </Modal_Button>
-                        )}
 
-                        {showDetail.CurrentStatus?.Id === 3 && (
+                <div className="show-info-page__actions">
+                    <Button
+                        className="show-info-page__action-btn show-info-page__action-btn--remove"
+                        variant="outlined"
+                        startIcon={<X size={15} />}
+                        onClick={() => handleDelete()}
+                        disabled={isSaving || isDeleting || isPublishing}
+                    >
+                        {isDeleting ? 'Deleting...' : 'Delete'}
+                    </Button>
+                    {showDetail.CurrentStatus?.Id !== 4 && showDetail.CurrentStatus?.Id !== 5 && (
+                        <>
+                            {(showDetail.CurrentStatus?.Id === 1 || showDetail.CurrentStatus?.Id === 2) && (
+                                <Modal_Button
+                                    className="show-info-page__action-btn show-info-page__action-btn--unpublish"
+                                    content="Publish"
+                                    variant="outlined"
+                                    size='sm'
+                                    disabled={isSaving || isDeleting || isPublishing}
+                                >
+                                    <div className="flex flex-col gap-4 p-8 ">
+                                        <TextField
+                                            label="Release Date"
+                                            value={releaseDate}
+                                            variant="standard"
+                                            type='date'
+                                            required
+                                            onChange={(e) => setReleaseDate(e.target.value)}
+                                            className="show-info-page__input show-info-page__input--name"
+                                            inputProps={{
+                                                min: new Date().toISOString().split('T')[0]
+                                            }}
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    '& fieldset': { borderColor: '#999999 !important' },
+                                                    '&:hover fieldset': { borderColor: '#999999 !important' },
+                                                    '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
+                                                },
+                                            }}
+                                        />
+                                        <Button
+                                            className="show-info-page__action-btn show-info-page__action-btn--save "
+                                            onClick={() => handlePublish(true)}
+                                            disabled={isPublishing || !releaseDate}
+                                        >
+                                            {isPublishing ? "Publishing..." : "Confirm"}
+                                        </Button>
+                                    </div>
+                                </Modal_Button>
+                            )}
+
+                            {showDetail.CurrentStatus?.Id === 3 && (
+                                <Button
+                                    variant="outlined"
+                                    className="show-info-page__action-btn show-info-page__action-btn--unpublish"
+                                    onClick={() => handlePublish(false)}
+                                    disabled={isSaving || isDeleting || isPublishing}
+                                >
+                                    {isPublishing ? 'Unpublishing...' : 'Unpublish'}
+                                </Button>
+                            )}
+                            {showDetail.PodcastChannel ? (
+                                <Modal_Button
+                                    className="show-info-page__action-btn show-info-page__action-btn--unpublish"
+                                    content="Update Channel"
+                                    variant="outlined"
+                                    disabled={isSaving || isDeleting || isPublishing}
+                                    size='sm'
+                                >
+                                    <AssignChannelModal onclose={() => { }} />
+                                </Modal_Button>
+                            ) : (
+                                <Modal_Button
+                                    className="show-info-page__action-btn show-info-page__action-btn--unpublish"
+                                    content="Assign to Channel"
+                                    variant="outlined"
+                                    size='sm'
+                                    disabled={isSaving || isDeleting || isPublishing}
+                                >
+                                    <AssignChannelModal onclose={() => { }} />
+                                </Modal_Button>
+                            )}
+
                             <Button
-                                variant="outlined"
-                                className="show-info-page__action-btn show-info-page__action-btn--unpublish"
-                                onClick={() => handlePublish(false)}
-                                disabled={isPublishing}
+                                variant="contained"
+                                className="show-info-page__action-btn show-info-page__action-btn--save"
+                                onClick={handleSave}
+                                disabled={!isDirty || isSaving || isDeleting || isPublishing}
+
                             >
-                                {isPublishing ? 'Unpublishing...' : 'Unpublish'}
+                                {isSaving ? 'Saving...' : 'Save'}
                             </Button>
-                        )}
-                        {showDetail.PodcastChannel ? (
-                            <Modal_Button
-                                className="show-info-page__action-btn show-info-page__action-btn--unpublish"
-                                content="Update Channel"
-                                variant="outlined"
-                                disabled={isSaving || isDeleting || isPublishing}
-                                size='sm'
-                            >
-                                <AssignChannelModal onclose={() => { }} />
-                            </Modal_Button>
-                        ) : (
-                            <Modal_Button
-                                className="show-info-page__action-btn show-info-page__action-btn--unpublish"
-                                content="Assign to Channel"
-                                variant="outlined"
-                                size='sm'
-                            >
-                                <AssignChannelModal onclose={() => { }} />
-                            </Modal_Button>
-                        )}
+                        </>
+                    )}
+                </div>
 
-                        <Button
-                            variant="contained"
-                            className="show-info-page__action-btn show-info-page__action-btn--save"
-                            onClick={handleSave}
-                            disabled={!isDirty || isSaving || isDeleting || isPublishing}
-
-                        >
-                            {isSaving ? 'Saving...' : 'Save'}
-                        </Button>
-                    </div>
-                )}
 
                 <div className="show-info-page__content">
                     <div className="show-info-page__form">
@@ -1035,7 +1054,7 @@ const [refreshing, setRefreshing] = useState(false);
                             type="file"
                             ref={fileInputRef}
                             onChange={handleImageUpload}
-                            accept="image/*"
+                            accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
                             style={{ display: 'none' }}
                         />
 
@@ -1063,9 +1082,7 @@ const [refreshing, setRefreshing] = useState(false);
                                                 {showDetail.Name}
                                             </Typography>
                                             <Typography variant="body2" className="show-info-page__preview-subtitle"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: (showDetail.Description || 'Description')
-                                                }}
+
                                             >
                                             </Typography>
                                         </div>

@@ -348,7 +348,6 @@ const ShowDetailView = () => {
 
                 {/* Right Sidebar */}
                 <div className="show-detail__sidebar">
-                    {/* Show Information */}
                     <div className="show-detail__info-card">
                         <h4 className="show-detail__info-title">Show Information</h4>
                         <div className="show-detail__info-list">

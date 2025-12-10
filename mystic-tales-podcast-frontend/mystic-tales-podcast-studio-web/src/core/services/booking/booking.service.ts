@@ -3,6 +3,7 @@ import { AxiosInstance } from "axios";
 import { callAxiosRestApi } from "../../api/rest-api/main/api-call";
 
 const BASE_URL = "booking-management-service/api/bookings";
+const DASHBOARD_URL = "booking-management-service/api/report/bookings";
 
 export const getBookingList = async (instance: AxiosInstance ) => {
     const response = await callAxiosRestApi({
@@ -10,6 +11,15 @@ export const getBookingList = async (instance: AxiosInstance ) => {
         method: "get",
         url: `${BASE_URL}/podcaster`,
     }, "");
+
+    return response;
+}
+export const getSummaryBooking = async (instance: AxiosInstance, reportPeriod: string) => {
+    const response = await callAxiosRestApi({
+        instance: instance,
+        method: "get",
+        url: `${DASHBOARD_URL}/statistics/summary/me?report_period=${reportPeriod}`,
+    });
 
     return response;
 }

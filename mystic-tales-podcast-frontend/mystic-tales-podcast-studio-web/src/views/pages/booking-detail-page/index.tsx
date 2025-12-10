@@ -269,7 +269,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
             await startPolling(sagaId, loginRequiredAxiosInstance, {
                 onSuccess: () => {
                     toast.success(`Cancel Successfully, please wait Staff to review`);
-                    navigate(0);
+                    //navigate(0);
                 },
                 onFailure: (err) => toast.error(err || "Saga failed!"),
                 onTimeout: () => toast.error("System not responding, please try again."),

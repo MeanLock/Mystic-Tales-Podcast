@@ -12,13 +12,11 @@ const ProtectedRoute = ({
 }) => {
   const token = useSelector((state: RootState) => state.auth.token);
 
-  // Nếu chưa đăng nhập, chuyển hướng đến trang login
   if (!token) {
     localStorage.setItem("redirectUrl", redirectUrl);
     return <Navigate to="/login" />;
   }
 
-  // Nếu đã đăng nhập, hiển thị route tương ứng
   return <div className="w-full mt-10">{element}</div>;
 };
 

@@ -1,7 +1,8 @@
 
 import { AxiosInstance } from "axios";
 import { callAxiosRestApi } from "../../api/rest-api/main/api-call";
-
+import test from "@/assets/nhoXOA2.jpg";
+import { urlToFile } from "@/core/utils/image.util";
 const BASE_URL = "podcast-service/api/channels";
 
 export const getChannelList = async (instance: AxiosInstance ) => {
@@ -33,6 +34,7 @@ export const createChannel = async (instance: AxiosInstance,
             HashtagIds: number[],
         }
         MainImageFile?: File
+        BackgroundImageFile?: File
     } | any) => {
 
     const formData = new FormData();
@@ -40,7 +42,10 @@ export const createChannel = async (instance: AxiosInstance,
     if (payload.MainImageFile) {
         formData.append("MainImageFile", payload.MainImageFile);
     }
-
+    if (payload.BackgroundImageFile) {
+        formData.append("BackgroundImageFile", payload.BackgroundImageFile);
+    }
+    
     const response = await callAxiosRestApi({
         instance: instance,
         method: "post",
@@ -62,6 +67,7 @@ export const updateChannel = async (instance: AxiosInstance,
             HashtagIds: number[],
         }
         MainImageFile?: File
+        BackgroundImageFile?: File
     } | any) => {
 
     const formData = new FormData();
@@ -69,7 +75,9 @@ export const updateChannel = async (instance: AxiosInstance,
     if (payload.MainImageFile) {
         formData.append("MainImageFile", payload.MainImageFile);
     }
-
+    if (payload.BackgroundImageFile)
+        formData.append("BackgroundImageFile", payload.BackgroundImageFile);
+    
     const response = await callAxiosRestApi({
         instance: instance,
         method: "put",

@@ -8,7 +8,7 @@ import { JwtUtil } from "../../../core/utils/jwt.util"
 import { publicAxiosInstance } from "../../../core/api/rest-api/config/instances/v2"
 import { login } from "../../../core/services/auth/auth.service"
 import { toast } from "react-toastify"
-import logo from "../../../assets/brand/logo.png"
+import logo from "../../../assets/brand/logoMTP2.png"
 import "./styles.scss"
 import { useSagaPolling } from "@/hooks/useSagaPolling"
 import { getCapacitorDevice } from "@/core/utils/device.util"
@@ -35,7 +35,7 @@ const Login = () => {
       if (user.role_id == 3) {
         navigate("/dashboard")
       } else if (user.role_id == 2) {
-        navigate("/community-survey")
+        navigate("/staff/publish-review-sessions")
       }
       toast.success("Login successfully!")
     },
@@ -172,7 +172,6 @@ const Login = () => {
                 </span>
                 <input
                   ref={email}
-                  type="email"
                   className="login-form__input form-control"
                   placeholder="Nhập email"
                   required

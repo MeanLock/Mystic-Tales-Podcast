@@ -41,11 +41,11 @@ export const _podcasterNav: {
       icon: React.createElement(Money, { size: 24 }),
       path: "/withdrawal",
     },
-    {
-      label: "Copyright",
-      icon: React.createElement(Copyright, { size: 24 }),
-      path: "/copyright",
-    },
+    // {
+    //   label: "Copyright",
+    //   icon: React.createElement(Copyright, { size: 24 }),
+    //   path: "/copyright",
+    // },
   ];
 
 export const _channelDetailNav: {

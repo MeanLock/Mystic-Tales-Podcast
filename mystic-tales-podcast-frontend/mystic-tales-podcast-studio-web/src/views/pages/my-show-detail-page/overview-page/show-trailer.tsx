@@ -51,7 +51,7 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
     const [hasChanges, setHasChanges] = useState(false);
     const [uploadedFile, setUploadedFile] = useState<File | null>();
     const [isSeeking, setIsSeeking] = useState(false);
-     
+
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
 
@@ -70,7 +70,7 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
                     setAudioUrl(fileurl.data.FileUrl);
                     const dummyFile = new File([], 'MTP_Existing_trailer.mp3', { type: 'audio/mpeg' });
                     setUploadedFile(dummyFile);
-                } 
+                }
 
             } else {
                 console.error('API Error:', res.message);
@@ -227,6 +227,12 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
+        const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!ext || !allowedExtensions.includes(ext)) {
+            toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
+            return;
+        }
         if (file.size > 15 * 1024 * 1024) {
             toast.error("File size exceeds 15MB limit.");
             return;
@@ -265,10 +271,10 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
     const handleBrowseClick = () => fileInputRef.current?.click();
 
     const handleUploadTrailer = async () => {
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
         try {
             setUploading(true);
             console.log('Uploading trailer with file:', uploadedFile);
@@ -296,7 +302,7 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
             setUploading(false);
         }
     };
-    if(loading){
+    if (loading) {
         return (
             <div className=" flex justify-center items-center mt-20">
                 <Loading />
@@ -392,12 +398,12 @@ const ShowTrailer: React.FC<ShowTrailerProps> = ({
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept="audio/*"
+                            accept=".wav,.flac,.mp3,.m4a,.aac"
                             onChange={handleFileSelect}
                             className="show-trailer__upload-input"
                         />
                     </div>
-                    {(uploadedFile && uploadedFile.name !== 'MTP_Existing_trailer.mp3')  && (
+                    {(uploadedFile && uploadedFile.name !== 'MTP_Existing_trailer.mp3') && (
                         <div className="show-trailer__file-info">
                             <div className="show-trailer__file-box">
                                 <div className="show-trailer__file-row">

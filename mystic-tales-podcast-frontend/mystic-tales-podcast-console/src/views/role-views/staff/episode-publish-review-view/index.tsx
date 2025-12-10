@@ -70,8 +70,7 @@ const state_creator = (table: any[], navigate: any) => {
                             break;
 
                         case 'Accepted':
-                            color = '#a8e02eff';
-                            bg = 'rgba(174, 227, 57, 0.2)'; // xanh primary
+                           color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)'; 
                             break;
 
                         case 'Discard':

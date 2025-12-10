@@ -7,46 +7,7 @@ import { formatDate } from "../../../../../core/utils/date.util"
 import { getBuddyReports } from "@/core/services/report/BuddyReport.service"
 import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
 import Loading from "@/views/components/common/loading"
-export const mockList: any = {
-    BuddyReportList: [
-        {
-            Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            Content: "This episode contains inappropriate language.",
-            AccountId: 101,
-            PodcastBuddyId: "c7e3c9e0-12b4-45d1-bb25-91ffb44d8f6a",
-            PodcastBuddyReportType: {
-                Id: 1,
-                Name: "Scam / Fraud"
-            },
-            ResolvedAt: "2025-10-10T10:07:05.532Z",
-            CreatedAt: "2025-10-10T09:45:12.210Z",
-        },
-        {
-            Id: "c2a34b12-0b92-4f78-9fd3-914e0d567a01",
-            Content: "Reported due to misleading information.",
-            AccountId: 102,
-            PodcastBuddyId: "a7b2e6b9-5f41-4a1e-80c2-26d37f6a6a90",
-            PodcastBuddyReportType: {
-                Id: 2,
-                Name: "Spam"
-            },
-            ResolvedAt: "2025-10-09T15:22:40.100Z",
-            CreatedAt: "2025-10-09T13:00:00.000Z",
-        },
-        {
-            Id: "f6c71c2e-8a93-47df-bd51-f60aee1df6c9",
-            Content: "Contains copyrighted background music.",
-            AccountId: 103,
-            PodcastBuddyId: "9c73b3d0-1c41-4a8e-9d8c-11c5e6c74a01",
-            PodcastBuddyReportType: {
-                Id: 4,
-                Name: "Hate Speech"
-            },
-            ResolvedAt: "",
-            CreatedAt: "2025-10-10T08:15:42.200Z",
-        },
-    ],
-};
+
 ModuleRegistry.registerModules([AllCommunityModule])
 
 interface BuddyReportViewProps { }

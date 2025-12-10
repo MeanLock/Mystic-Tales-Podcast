@@ -11,7 +11,6 @@ import {
 import './styles.scss';
 import { ArrowBack } from '@mui/icons-material';
 import EpisodeInfo from './episode-info';
-import EpisodeAudio from './epsiode-audio';
 import EpisodeLicense from './episode-license';
 import { X } from 'lucide-react';
 import { useSagaPolling } from '@/core/hooks/useSagaPolling';
@@ -25,6 +24,7 @@ import Modal_Button from '@/views/components/common/modal/ModalButton';
 import Loading from '@/views/components/common/loading';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/rootReducer';
+import EpisodeAudio from './epsiode-audio';
 
 
 interface EpisodeDetailViewProps { }

@@ -59,6 +59,7 @@ export default function Explore() {
               <MixxingText originalText="Popular Shows" coloredText="Popular" />
             }
             shows={trendingData.PopularShows.ShowList}
+            titleString="Popular Shows"
           />
         )}
 
@@ -68,6 +69,7 @@ export default function Explore() {
             variant="normal"
             title={<MixxingText originalText="Hot Shows" coloredText="Hot" />}
             shows={trendingData.HotShows.ShowList}
+            titleString="Hot Shows"
           />
         )}
 
@@ -82,6 +84,7 @@ export default function Explore() {
               />
             }
             variant="normal"
+            titleString="Popular Channels"
           />
         )}
 
@@ -93,6 +96,7 @@ export default function Explore() {
               <MixxingText originalText="Hot Channels" coloredText="Hot" />
             }
             variant="normal"
+            titleString="Hot Channels"
           />
         )}
 
@@ -130,6 +134,7 @@ export default function Explore() {
             title={
               <MixxingText originalText="New Episodes" coloredText="New" />
             }
+            titleString="New Episodes"
           />
         )}
 
@@ -143,6 +148,7 @@ export default function Explore() {
                 coloredText="Popular"
               />
             }
+            titleString="Popular Episodes"
           />
         )}
 
@@ -159,6 +165,7 @@ export default function Explore() {
                 />
               }
               shows={trendingData.Category1.ShowList}
+              titleString={trendingData.Category1.PodcastCategory.Name}
             />
           )}
         {trendingData.Category2 &&
@@ -173,6 +180,7 @@ export default function Explore() {
                 />
               }
               shows={trendingData.Category2.ShowList}
+              titleString={trendingData.Category2.PodcastCategory.Name}
             />
           )}
         {trendingData.Category3 &&
@@ -187,6 +195,7 @@ export default function Explore() {
                 />
               }
               shows={trendingData.Category3.ShowList}
+              titleString={trendingData.Category3.PodcastCategory.Name}
             />
           )}
         {trendingData.Category4 &&
@@ -201,6 +210,7 @@ export default function Explore() {
                 />
               }
               shows={trendingData.Category4.ShowList}
+              titleString={trendingData.Category4.PodcastCategory.Name}
             />
           )}
         {trendingData.Category5 &&
@@ -215,6 +225,7 @@ export default function Explore() {
                 />
               }
               shows={trendingData.Category5.ShowList}
+              titleString={trendingData.Category5.PodcastCategory.Name}
             />
           )}
         {trendingData.Category6 &&
@@ -229,6 +240,7 @@ export default function Explore() {
                 />
               }
               shows={trendingData.Category6.ShowList}
+              titleString={trendingData.Category6.PodcastCategory.Name}
             />
           )}
         <View style={{ height: tabBarHeight + 50 }}></View>

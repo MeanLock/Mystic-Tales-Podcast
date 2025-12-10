@@ -99,6 +99,18 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
             .map((req: any) => req.Name);
     };
     const handleFileChange = (requirementId: string, file: File | null) => {
+        if (file) {
+               const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!ext || !allowedExtensions.includes(ext)) {
+            toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
+            return;
+        }
+        if (file.size > 150 * 1024 * 1024) {
+            toast.error('Audio file size must be less than 150MB');
+            return;
+        }
+        }
         setReuploadFiles(prev => ({ ...prev, [requirementId]: file }));
     };
     const requiredRequirementIds: string[] = React.useMemo(() => {
@@ -414,7 +426,7 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
                                             {context.CurrentStatus !== "Producing Requested" && data.IsAccepted !== false && (
                                                 <Button variant="outlined" component="label" startIcon={<CloudUpload />} sx={{ color: "#ff9800", borderColor: "#ff9800", textTransform: "none", borderRadius: "10px", padding: "10px 20px", fontWeight: 600, mt: 2, "&:hover": { backgroundColor: "rgba(255, 152, 0, 0.1)", borderColor: "#ff9800" } }}>
                                                     Re-upload Audio
-                                                    <input type="file" hidden accept="audio/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileChange(track.BookingRequirementId, file); }} />
+                                                    <input type="file" hidden accept=".wav,.flac,.mp3,.m4a,.aac" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileChange(track.BookingRequirementId, file); }} />
                                                 </Button>
                                             )}
                                         </>

@@ -88,7 +88,7 @@ const AppSidebar = () => {
                 <img src={logo} alt="Logo" className="sidebar-brand-full" />
                 <div className="sidebar-brand-text ms-2  d-flex flex-column justify-content-center">
                   <span className="text-white">Mystics Tale</span>
-                  <span className="fw-bold sidebar-brand-role mt-1">Admin</span>
+                  <span className="fw-bold sidebar-brand-role mt-1">{authSlice.user?.role_id === '3' ? 'Admin' : 'Staff'}</span>
                 </div>
               </div>
             )}

@@ -51,7 +51,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
             },
              {
                 headerName: "Staff",
-                field: "Staff.FullName",
+                field: "AssignedStaff.Email",
                 cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
             },
             {
@@ -118,8 +118,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                             break;
 
                         case 'Completed':
-                            color = '#AEE339';
-                            bg = 'rgba(174, 227, 57, 0.2)'; // xanh primary
+                            color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)';
                             break;
 
                         case 'Customer Cancel Request':

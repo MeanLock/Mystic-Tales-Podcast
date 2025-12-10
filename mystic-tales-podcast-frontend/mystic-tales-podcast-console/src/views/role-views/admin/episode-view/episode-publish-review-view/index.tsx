@@ -37,7 +37,7 @@ const state_creator = (table: any[], navigate: any) => {
                 filter: false
             },
             { headerName: "Podcast Episode ", field: "PodcastEpisode.Name", flex: 1.5 },
-             { headerName: "Assigned Staff ", field: "AssignedStaff.FullName"},
+             { headerName: "Assigned Staff ", field: "AssignedStaff.Email"},
             { headerName: "Note", field: "Note", flex: 0.8 ,valueGetter: (params: any) => (params.data.Note ? params.data.Note : '---')},
             { headerName: "Re-Review Count", field: "ReReviewCount", flex: 0.8 },
             {

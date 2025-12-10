@@ -1,4 +1,4 @@
-import React, { FC } from 'react'
+import React, { FC, useEffect } from 'react'
 import {
   CAvatar,
   CBadge,
@@ -25,10 +25,13 @@ import { AuthState } from '../../../../../redux/auth/auth.slice'
 import { avatar8 } from '../../../../../assets/images'
 import AvatarInput from '@/views/components/common/avatar'
 import Image from '@/views/components/common/image'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/redux/root-reducer'
 
 type UserType = AuthState['user']
 
 const AppHeaderDropdown : FC<{ user: AuthState['user'] }> = ({user}) => {
+   
   return (
     <CDropdown variant="nav-item">
       <CDropdownToggle className="py-0 pe-0" caret={false}>

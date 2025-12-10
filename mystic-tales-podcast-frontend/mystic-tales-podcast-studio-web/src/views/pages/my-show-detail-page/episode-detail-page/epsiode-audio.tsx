@@ -1,7 +1,7 @@
 import type React from "react"
-import { useContext, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import WaveSurfer from "wavesurfer.js"
-import { Music, Download, Play, Minus, CloudUpload } from "lucide-react"
+import { Music, Download, Play, Minus, CloudUpload, Delete } from "lucide-react"
 import { ArrowCounterClockwise, Database, FolderSimple, Plus, Question } from "phosphor-react"
 import { IconButton, MenuItem, Modal, Select, Skeleton, Tooltip } from "@mui/material"
 import ghost from "../../../../assets/ghost.mp3"
@@ -19,9 +19,13 @@ import { Episode } from "@/core/types/episode"
 import { getEpisodeDetail } from "@/core/services/episode/episode.service"
 import Loading from "@/views/components/common/loading"
 import Modal_Button from "@/views/components/common/modal/ModalButton"
-import { buildEpisodeAudioFileName } from "@/core/utils/audio.util"
+import { buildEpisodeAudioFileName, secondsToTime } from "@/core/utils/audio.util"
 import { confirmAlert } from "@/core/utils/alert.util"
 import { EpisodeDetailViewContext } from "."
+import { SmartAudioPlayer } from "@/views/components/common/audio"
+import SequencerTimeline from "./components/SequencerTimeline"
+import SequencerRuler from "./components/SequencerRuler"
+import { buffer } from "stream/consumers"
 interface EpisodeAudioProps {
     initialAudio?: string
 }
@@ -97,12 +101,40 @@ const MOOD_OPTIONS = [
     { value: 'Mysterious', label: 'Mysterious' },
     { value: 'Eerie', label: ' Eerie' },
 ]
+
+interface Clip {
+    id: string
+    name: string
+    fileKey: string
+    file: File
+    buffer: AudioBuffer
+    duration: number
+    start: number
+    trimStart: number
+    trimEnd: number
+    track: number
+    volume?: number
+
+    fadeInSec?: number
+    fadeOutSec?: number
+}
+
+
+let _ac: AudioContext
+const getAC = () => {
+    if (!_ac) _ac = new (window.AudioContext || (window as any).webkitAudioContext)()
+    return _ac
+}
+let currentSegment: { src: AudioBufferSourceNode | null; clipId: string | null } = { src: null, clipId: null }
+
+
 const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     const { episodeId } = useParams<{ episodeId: string }>();
     const ctx = useContext(EpisodeDetailViewContext);
     const authSlice = ctx?.authSlice;
     const episodeDetail = ctx?.episodeDetail;
     const refreshEpisode = ctx?.refreshEpisode;
+    
     // ============ REFS ============
     const waveformRefOriginal = useRef<HTMLDivElement>(null)
     const waveformRefPreview = useRef<HTMLDivElement>(null)
@@ -133,10 +165,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
 
     // Sidebar state
     const [backgroundSounds, setBackgroundSounds] = useState<BackgroundSound[]>([])
-    const [selectedBgSound, setSelectedBgSound] = useState<string>("")
-    const [bgInfo, setBgInfo] = useState<BackgroundSound | null>(null)
-    const [bgSoundFile, setBgSoundFile] = useState<string | null>(null)
-    const [bgSoundVolume, setBgSoundVolume] = useState(0)
     const [showBgSoundSelector, setShowBgSoundSelector] = useState(false)
     const [showMoodSelector, setShowMoodSelector] = useState(false)
 
@@ -152,8 +180,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         fileSize: number;
         eq: Record<string, number>;
         mood: string;
-        bg: string;
-        vol: number;
     } | null>(null);
 
     const [loading, setLoading] = useState(false);
@@ -210,20 +236,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         fetchBackgroundSounds()
     }, [episodeDetail?.AudioFileKey]);
 
-    const fetchBackgroundSoundAudio = async (fileKey: string) => {
-        const bgSound = backgroundSounds.find(bg => bg.AudioFileKey === fileKey) || null;
-        setBgInfo(bgSound);
-        try {
-            setSelectedBgSound(fileKey);
-            const response = await getBackgroundSoundFile(loginRequiredAxiosInstance, fileKey)
-            if (response.success && response.data) {
-                setBgSoundFile(response.data.FileUrl)
-            }
-        } catch (error) {
-            console.error('Error fetching PDF:', error)
-            toast.error('Failed to load PDF')
-        }
-    }
+
 
     const handlePresetChange = (preset: string) => {
         setSelectedPreset(preset)
@@ -232,14 +245,631 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     const handleMoodChange = (mood: string) => {
         setSelectedMood(mood)
     }
+    // ============ Background merge ============
+
+    const timelineScrollRef = useRef<HTMLDivElement>(null)
+
+    const progressBarRefSequencer = useRef<HTMLDivElement>(null)
+    const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+    const rulerScrollRef = useRef<HTMLDivElement>(null) 
+
+    // Sequencer state
+    const [clips, setClips] = useState<Clip[]>([])
+    const [pixelsPerSecond, setPPS] = useState(30) 
+
+    const [isPlayingSequencer, setIsPlayingSequencer] = useState(false)
+    const [playhead, setPlayhead] = useState(0)
+    const [trackVolumes, setTrackVolumes] = useState([1, 1])
+
+    // Audio context refs for sequencer
+    const acRef = useRef<AudioContext | null>(null)
+    const startWallClockRef = useRef(0)
+    const startPlayheadRef = useRef(0)
+    const activeNodesRef = useRef<Array<{ src: AudioBufferSourceNode }>>([])
+    const rafRef = useRef<number | undefined>(undefined)
+    const trackGainsRef = useRef<Array<{ gain: GainNode }>>([])
+    const rowH = 120 
+
+    const [segmentPlayingClipId, setSegmentPlayingClipId] = useState<string | null>(null);
+
+
+
+    const ensureTrackGains = useCallback(() => {
+        const ac = acRef.current || getAC()
+        while (trackGainsRef.current.length < 2) {
+            const gain = ac.createGain()
+            gain.gain.value = 1
+            gain.connect(ac.destination)
+            trackGainsRef.current.push({ gain })
+        }
+        trackGainsRef.current[0].gain.gain.value = trackVolumes[0] ?? 1
+        trackGainsRef.current[1].gain.gain.value = trackVolumes[1] ?? 1
+    }, [trackVolumes])
+
+    // Stop all audio nodes
+    const stopAll = useCallback(() => {
+        activeNodesRef.current.forEach(({ src }) => {
+            try {
+                src.stop()
+            } catch { }
+        })
+        activeNodesRef.current = []
+        if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }, [])
+
+    const findAvailablePosition = useCallback((newDuration: number, existingBgClips: Clip[]) => {
+        if (existingBgClips.length === 0) {
+            return 0 // No existing clips, start at beginning
+        }
+
+        // Sort existing clips by start time
+        const sortedClips = existingBgClips
+            .map(clip => ({
+                start: clip.start,
+                end: clip.start + Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
+            }))
+            .sort((a, b) => a.start - b.start)
+
+        // Check if we can fit at the beginning
+        // if (sortedClips[0].start >= newDuration) {
+        //     return 0
+        // }
+
+        // Check gaps between clips
+        for (let i = 0; i < sortedClips.length - 1; i++) {
+            const gapStart = sortedClips[i].end
+            const gapEnd = sortedClips[i + 1].start
+            const gapSize = gapEnd - gapStart
+
+            if (gapSize >= newDuration) {
+                return gapStart
+            }
+        }
+
+        // Place after the last clip
+        const lastClipEnd = sortedClips[sortedClips.length - 1].end
+        return lastClipEnd
+    }, [])
+
+    const fetchTrackAudioUrl = useCallback(async (fileKey: string) => {
+        try {
+            const res: any = await getBackgroundSoundFile(loginRequiredAxiosInstance, fileKey);
+            if (res?.success && res?.data?.FileUrl) {
+                return { success: true, data: { FileUrl: res.data.FileUrl } };
+            }
+            return { success: false, message: typeof res?.message === 'string' ? res.message : 'Unable to fetch audio URL' };
+        } catch (e: any) {
+            return { success: false, message: e?.message || 'Error fetching audio URL' };
+        }
+    }, []);
+    const getTotalBackgroundVisibleSeconds = useCallback(() => {
+        return clips
+            .filter(c => c.track === 1)
+            .reduce((sum, c) => sum + Math.max(0, c.duration - c.trimStart - c.trimEnd), 0);
+    }, [clips]);
+
+    const computeBgGaps = useCallback((originalDurationSec: number) => {
+        const existing = clips
+            .filter(c => c.track === 1)
+            .map(c => {
+                const vis = Math.max(0, c.duration - c.trimStart - c.trimEnd)
+                return { start: c.start, end: c.start + vis }
+            })
+            .sort((a, b) => a.start - b.start)
+
+        const gaps: Array<{ start: number; end: number; size: number }> = []
+        // Gap đầu từ 0 → clip đầu tiên
+        if (existing.length === 0) {
+            gaps.push({ start: 0, end: originalDurationSec, size: originalDurationSec })
+            return gaps
+        }
+        if (existing[0].start > 0) {
+            gaps.push({ start: 0, end: existing[0].start, size: existing[0].start - 0 })
+        }
+        // Gaps giữa các clip
+        for (let i = 0; i < existing.length - 1; i++) {
+            const gapStart = existing[i].end
+            const gapEnd = existing[i + 1].start
+            if (gapEnd > gapStart) {
+                gaps.push({ start: gapStart, end: gapEnd, size: gapEnd - gapStart })
+            }
+        }
+        // Gap cuối từ sau clip cuối → hết original
+        const lastEnd = existing[existing.length - 1].end
+        if (originalDurationSec > lastEnd) {
+            gaps.push({ start: lastEnd, end: originalDurationSec, size: originalDurationSec - lastEnd })
+        }
+        return gaps
+    }, [clips])
+
+    // const handleAddBackgroundToSequencer = useCallback(async (bgSound: BackgroundSound) => {
+
+    //     if (!uploadedFile) return
+
+    //     try {
+    //         const ac = acRef.current || getAC()
+    //         acRef.current = ac
+    //         const res = await fetchTrackAudioUrl(bgSound.AudioFileKey)
+    //         if (!res.success) {
+    //             toast.error("Không lấy được file âm thanh");
+    //             return;
+    //         }
+    //         const audioUrl = res.data.FileUrl;
+
+    //         const response = await fetch(audioUrl);
+    //         const arrayBuffer = await response.arrayBuffer();
+    //         const buffer = await ac.decodeAudioData(arrayBuffer.slice(0));
+
+
+    //         const originalClip = clips.find(c => c.track === 0);
+    //         const originalDurationSec = originalClip?.duration ?? 0;
+    //         const currentBgTotal = getTotalBackgroundVisibleSeconds();
+
+    //         console.log("Original Duration:", originalDurationSec, "Current BG Total:", currentBgTotal);
+    //         const gaps = computeBgGaps(originalDurationSec)
+
+    //         if (gaps.length === 0) {
+    //             toast.error("No available gap to place background")
+    //             return
+    //         }
+
+    //         // 3. Tìm thời điểm đặt clip
+    //         const existingBgClips = clips.filter(c => c.track === 1);
+    //         const optimalStart = findAvailablePosition(buffer.duration, existingBgClips);
+    //         const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+    //         const file = new File([blob], bgSound.Name, { type: 'audio/mpeg' });
+    //         if ((originalDurationSec - optimalStart) >= buffer.duration) {
+    //             const newClip: Clip = {
+    //                 id: `${bgSound.Id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    //                 name: bgSound.Name,
+    //                 file,
+    //                 fileKey: bgSound.AudioFileKey,
+    //                 buffer,
+    //                 duration: buffer.duration,
+    //                 start: optimalStart,
+    //                 trimStart: 0,
+    //                 trimEnd: 0,
+    //                 track: 1, // Background track
+    //                 volume: -5, // Default volume -5dB for background
+
+    //                 fadeInSec: 0.5,
+    //                 fadeOutSec: 0.5,
+    //             }
+
+    //             setClips(prev => [...prev, newClip])
+    //             setShowBgSoundSelector(true)
+    //             toast.success(`Added ${bgSound.Name} to sequencer at ${Math.floor(optimalStart)}s`)
+    //             return;
+    //         } else if ((originalDurationSec - optimalStart) < buffer.duration && (originalDurationSec - optimalStart) >= 5) {
+    //             const remainingSec = Math.max(0, originalDurationSec - optimalStart); // khoảng trống còn lại
+    //             const visibleDur = remainingSec; // hiển thị đúng bằng khoảng trống
+    //             const trimStart = 0;
+    //             const trimEnd = Math.max(0, buffer.duration - visibleDur); // cắt bên phải
+    //             const newClip: Clip = {
+    //                 id: `${bgSound.Id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    //                 name: bgSound.Name,
+    //                 file,
+    //                 fileKey: bgSound.AudioFileKey,
+    //                 buffer,
+    //                 duration: buffer.duration,
+    //                 start: optimalStart,
+    //                 trimStart,
+    //                 trimEnd,
+    //                 track: 1,
+    //                 volume: -5,
+    //                 fadeInSec: 0.5,
+    //                 fadeOutSec: 0.5,
+    //             };
+    //             const existingBgClips = clips.filter(c => c.track === 1);
+    //             const newEnd = optimalStart + visibleDur;
+    //             const hasConflict = existingBgClips.some(c => {
+    //                 const cVis = Math.max(0, c.duration - c.trimStart - c.trimEnd);
+    //                 const cStart = c.start;
+    //                 const cEnd = c.start + cVis;
+    //                 return !(newEnd <= cStart || optimalStart >= cEnd);
+    //             });
+    //             if (hasConflict) {
+    //                 toast.error("Cannot add: it would overlap another background sound");
+    //                 return;
+    //             }
+    //             setClips(prev => [...prev, newClip])
+    //             setShowBgSoundSelector(true)
+    //             toast.success(`Added ${bgSound.Name} trimmed to ${visibleDur.toFixed(1)}s at ${Math.floor(optimalStart)}s`);
+    //             return;
+    //         } else if (
+    //             (originalDurationSec - optimalStart) < 5
+    //         ) {
+    //             toast.error('Not enough space to add this background sound.')
+    //             return;
+    //         }
+
+    //     } catch (error) {
+    //         console.error('Failed to load background sound:', error)
+    //         toast.error('Failed to load background sound')
+    //     }
+    // }, [uploadedFile, clips, findAvailablePosition])
+
+    const handleAddBackgroundToSequencer = useCallback(async (bgSound: BackgroundSound) => {
+        if (!uploadedFile) return;
+
+        try {
+            const ac = acRef.current || getAC();
+            acRef.current = ac;
+            const res = await fetchTrackAudioUrl(bgSound.AudioFileKey);
+            if (!res.success) {
+                toast.error("Không lấy được file âm thanh");
+                return;
+            }
+            const audioUrl = res.data.FileUrl;
+
+            const response = await fetch(audioUrl);
+            const arrayBuffer = await response.arrayBuffer();
+            const buffer = await ac.decodeAudioData(arrayBuffer.slice(0));
+
+            const originalClip = clips.find(c => c.track === 0);
+            const originalDurationSec = originalClip?.duration ?? 0;
+
+            // Chỉ tìm background xa nhất hoặc đặt ở 0
+            const existingBgClips = clips.filter(c => c.track === 1);
+            let optimalStart = 0;
+            if (existingBgClips.length > 0) {
+                // luôn đặt sau clip background cuối
+                const sorted = existingBgClips
+                    .map(c => ({
+                        start: c.start,
+                        end: c.start + Math.max(0, c.duration - c.trimStart - c.trimEnd)
+                    }))
+                    .sort((a, b) => a.start - b.start);
+                optimalStart = sorted[sorted.length - 1].end;
+            }
+
+            // Kiểm tra có đủ chỗ không
+            const spaceAvailable = originalDurationSec - optimalStart;
+            if (spaceAvailable < 5) {
+                toast.error('Not enough space after the last background (min 5s required).');
+                return;
+            }
+
+            const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+            const file = new File([blob], bgSound.Name, { type: 'audio/mpeg' });
+
+            if (spaceAvailable >= buffer.duration) {
+                // Đủ chỗ cho cả clip
+                const newClip: Clip = {
+                    id: `${bgSound.Id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    name: bgSound.Name,
+                    file,
+                    fileKey: bgSound.AudioFileKey,
+                    buffer,
+                    duration: buffer.duration,
+                    start: optimalStart,
+                    trimStart: 0,
+                    trimEnd: 0,
+                    track: 1,
+                    volume: -5,
+                    fadeInSec: 0.5,
+                    fadeOutSec: 0.5,
+                };
+                setClips(prev => [...prev, newClip]);
+                setShowBgSoundSelector(true);
+                toast.success(`Added ${bgSound.Name} to sequencer at ${Math.floor(optimalStart)}s`);
+            } else {
+                // Trim bên phải để vừa khoảng còn lại
+                const visibleDur = spaceAvailable;
+                const trimEnd = Math.max(0, buffer.duration - visibleDur);
+                const newClip: Clip = {
+                    id: `${bgSound.Id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    name: bgSound.Name,
+                    file,
+                    fileKey: bgSound.AudioFileKey,
+                    buffer,
+                    duration: buffer.duration,
+                    start: optimalStart,
+                    trimStart: 0,
+                    trimEnd,
+                    track: 1,
+                    volume: -5,
+                    fadeInSec: 0.5,
+                    fadeOutSec: 0.5,
+                };
+                setClips(prev => [...prev, newClip]);
+                setShowBgSoundSelector(true);
+                toast.success(`Added ${bgSound.Name} trimmed to ${visibleDur.toFixed(1)}s at ${Math.floor(optimalStart)}s`);
+            }
+        } catch (error) {
+            console.error('Failed to load background sound:', error);
+            toast.error('Failed to load background sound');
+        }
+    }, [uploadedFile, clips]);
+
+
+
+    // Sequencer playback functions
+    const originalDuration = useMemo(() => {
+        const clip = clips.find((c) => c.track === 0)
+        return clip ? clip.duration : 30
+    }, [clips])
+
+    const totalLengthSec = useMemo(() => {
+        const mx = clips.reduce((m, c) => {
+            const vis = Math.max(0, c.duration - c.trimStart - c.trimEnd)
+            return Math.max(m, c.start + vis)
+        }, originalDuration)
+        return Math.max(mx, originalDuration)
+    }, [clips, originalDuration])
+
+    const computeDynamicFades = (clipsIn: Clip[]) => {
+        const DEFAULT = 0.5, BUTT_HALF = 0.25, EPS = 1e-6;
+        const bg = clipsIn
+            .filter(c => c.track === 1)
+            .map(c => {
+                const vis = Math.max(0, c.duration - c.trimStart - c.trimEnd);
+                return { id: c.id, start: c.start, end: c.start + vis, vis };
+            })
+            .sort((a, b) => a.start - b.start);
+
+        const map = new Map<string, { fi: number; fo: number }>();
+        // mặc định: 0.5s ở hai đầu
+        bg.forEach(seg => map.set(seg.id, { fi: DEFAULT, fo: DEFAULT }));
+
+        // chỉ điều chỉnh khi sát nhau (butt-join)
+        for (let i = 0; i < bg.length - 1; i++) {
+            const a = bg[i], b = bg[i + 1];
+            const gap = Math.max(0, b.start - a.end);
+            if (gap <= EPS) {
+                // A.fo = 0.25s, B.fi = 0.25s
+                map.set(a.id, { fi: map.get(a.id)!.fi, fo: BUTT_HALF });
+                map.set(b.id, { fi: BUTT_HALF, fo: map.get(b.id)!.fo });
+            }
+            // Không có else: các trường hợp khác giữ DEFAULT
+        }
+
+        // Debug optional
+        bg.forEach(s => {
+            const v = map.get(s.id)!;
+            console.log(`(${s.id}) fi=${v.fi.toFixed(3)}s, fo=${v.fo.toFixed(3)}s`);
+        });
+
+        return map;
+    }
+
+    const scheduleFrom = useCallback((fromSec: number) => {
+        const ac = acRef.current || getAC()
+        ensureTrackGains()
+
+        stopAll()
+
+        startWallClockRef.current = ac.currentTime
+        startPlayheadRef.current = fromSec
+
+        const fadeMap = computeDynamicFades(clips)
+
+        for (let t = 0; t < 2; t++) {
+            const tGain = trackGainsRef.current[t]?.gain || ac.destination
+            const tClips = clips.filter((c) => c.track === t)
+
+            const scheduleClipAt = (clip: Clip, offsetSec: number) => {
+                const playStart = clip.start + offsetSec
+                const clipVis = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
+                const playEnd = playStart + clipVis
+                if (clipVis <= 0) return
+                if (fromSec < playEnd) {
+                    const when = Math.max(0, playStart - fromSec)
+                    const offset = Math.max(0, fromSec - playStart) + clip.trimStart
+                    let dur = clipVis - Math.max(0, fromSec - playStart)
+                    if (dur <= 0) return
+
+                    const src = ac.createBufferSource()
+                    src.buffer = clip.buffer
+
+                    if (clip.track === 1) {
+                        const clipGain = ac.createGain()
+                        const linearBase = Math.pow(10, (clip.volume ?? -5) / 20)
+
+                        // Lấy fade động, không dựa state
+                        let { fi, fo } = fadeMap.get(clip.id) ?? { fi: 0.5, fo: 0.5 }
+                        fi = Math.max(0, Math.min(fi, dur))
+                        fo = Math.max(0, Math.min(fo, dur))
+                        const totalFade = fi + fo
+                        if (totalFade > dur && totalFade > 0) {
+                            const scale = dur / totalFade
+                            fi *= scale
+                            fo *= scale
+                        }
+
+                        clipGain.gain.value = 0
+                        src.connect(clipGain)
+                        clipGain.connect(tGain)
+
+                        const startTime = ac.currentTime + when
+                        const endTime = startTime + dur
+                        console.log('[Schedule BG]', {
+                            name: clip.name,
+                            fi: fi.toFixed(3),
+                            fo: fo.toFixed(3),
+                            linearBase: linearBase.toFixed(3),
+                        })
+                        if (fi > 0) {
+                            clipGain.gain.cancelScheduledValues(startTime)
+                            clipGain.gain.setValueAtTime(0, startTime)
+                            clipGain.gain.linearRampToValueAtTime(linearBase, startTime + fi)
+                        } else {
+                            clipGain.gain.setValueAtTime(linearBase, startTime)
+                        }
+                        if (fo > 0) {
+                            const fadeOutStart = Math.max(startTime, endTime - fo)
+                            clipGain.gain.setValueAtTime(linearBase, fadeOutStart)
+                            clipGain.gain.linearRampToValueAtTime(0.0001, endTime)
+                        }
+                    } else {
+                        src.connect(tGain)
+                    }
+
+                    try {
+                        src.start(ac.currentTime + when, offset, Math.max(0, dur))
+                        activeNodesRef.current.push({ src })
+                    } catch { }
+                }
+            }
+
+            tClips.forEach((c) => scheduleClipAt(c, 0))
+        }
+
+        const tick = () => {
+            const elapsed = ac.currentTime - startWallClockRef.current
+            const ph = startPlayheadRef.current + elapsed
+            setPlayhead(ph)
+            if (ph >= totalLengthSec) {
+                setIsPlayingSequencer(false)
+                setPlayhead(0)
+                return
+            }
+            rafRef.current = requestAnimationFrame(tick)
+        }
+        rafRef.current = requestAnimationFrame(tick)
+    }, [clips, totalLengthSec, ensureTrackGains, stopAll])
+
+    const handleSequencerPlay = useCallback(() => {
+        if (isPlayingSequencer) return
+        getAC().resume()
+        setIsPlayingSequencer(true)
+        scheduleFrom(playhead)
+    }, [isPlayingSequencer, playhead, scheduleFrom])
+
+    const handleSequencerPause = useCallback(() => {
+        setIsPlayingSequencer(false)
+        stopAll()
+    }, [stopAll])
+
+    const handleSequencerStop = useCallback(() => {
+        handleSequencerPause()
+        setPlayhead(0)
+    }, [handleSequencerPause])
+
+    useEffect(() => {
+        ensureTrackGains()
+    }, [ensureTrackGains])
+
+    useEffect(() => () => stopAll(), [stopAll])
+
+    // Auto-scroll timeline to follow playhead
+    useEffect(() => {
+        if (isPlayingSequencer && timelineScrollRef.current) {
+            const scrollContainer = timelineScrollRef.current
+            const playheadPosition = playhead * pixelsPerSecond
+            const containerWidth = scrollContainer.clientWidth
+            const scrollLeft = scrollContainer.scrollLeft
+
+            // Scroll if playhead is near the right edge or out of view
+            if (playheadPosition > scrollLeft + containerWidth - 200) {
+                scrollContainer.scrollTo({
+                    left: playheadPosition - containerWidth / 2,
+                    behavior: 'smooth'
+                })
+            }
+        }
+    }, [playhead, isPlayingSequencer, pixelsPerSecond])
+
+    useEffect(() => {
+        const rulerEl = rulerScrollRef.current;
+        const timelineEl = timelineScrollRef.current;
+        if (!rulerEl || !timelineEl) return;
+
+        let isSyncing = false;
+
+        const onRulerScroll = () => {
+            if (isSyncing) return;
+            isSyncing = true;
+            timelineEl.scrollLeft = rulerEl.scrollLeft;
+            requestAnimationFrame(() => { isSyncing = false; });
+        };
+
+        const onTimelineScroll = () => {
+            if (isSyncing) return;
+            isSyncing = true;
+            rulerEl.scrollLeft = timelineEl.scrollLeft;
+            requestAnimationFrame(() => { isSyncing = false; });
+        };
+
+        rulerEl.addEventListener('scroll', onRulerScroll, { passive: true });
+        timelineEl.addEventListener('scroll', onTimelineScroll, { passive: true });
+
+        return () => {
+            rulerEl.removeEventListener('scroll', onRulerScroll);
+            timelineEl.removeEventListener('scroll', onTimelineScroll);
+        };
+    }, [showBgSoundSelector]);
+
+
+    const buildBgMergePayload = useCallback(() => {
+        if (!showBgSoundSelector) return null;
+        const bgClips = clips.filter(c => c.track === 1);
+        if (bgClips.length === 0) return null;
+
+        const ranges = bgClips
+            .map((clip) => {
+                const visibleDur = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd);
+                return {
+                    VolumeGainDb: Number.isFinite(clip.volume as number) ? Number((clip.volume as number).toFixed(1)) : -5,
+                    BackgroundSoundTrackFileKey: clip.fileKey,
+                    BackgroundCutStartSecond: Number(clip.trimStart.toFixed(3)),
+                    BackgroundCutEndSecond: Number((clip.duration - clip.trimEnd).toFixed(3)),
+                    OriginalMergeStartSecond: Number(clip.start.toFixed(3)),
+                    OriginalMergeEndSecond: Number((clip.start + visibleDur).toFixed(3)),
+                };
+            })
+            .sort((a, b) => a.OriginalMergeStartSecond - b.OriginalMergeStartSecond);
+
+        return { TimeRangeMergeBackgrounds: ranges };
+    }, [clips, showBgSoundSelector]);
+
+    // Signature để theo dõi thay đổi background merge
+    const bgMergeSig = useMemo(() => {
+        const payload = buildBgMergePayload();
+        return payload ? JSON.stringify(payload) : null;
+    }, [buildBgMergePayload]);
+
+    useEffect(() => {
+        if (!uploadedFile) return
+
+        const loadOriginalAudio = async () => {
+            try {
+                const ac = getAC()
+                acRef.current = ac
+
+                const buffer = await ac.decodeAudioData(await uploadedFile.arrayBuffer())
+                const originalClip: Clip = {
+                    id: `${uploadedFile.name}-${Date.now()}-0`,
+                    name: uploadedFile.name,
+                    file: uploadedFile,
+                    fileKey: "",
+                    buffer,
+                    duration: buffer.duration,
+                    start: 0,
+                    trimStart: 0,
+                    trimEnd: 0,
+                    track: 0, // Original track
+                }
+
+                setClips(prev => {
+                    const filtered = prev.filter(c => c.track !== 0)
+                    return [...filtered, originalClip]
+                })
+
+            } catch (error) {
+                console.error("Failed to load original audio:", error)
+            }
+        }
+        loadOriginalAudio()
+    }, [uploadedFile])
 
     // ============ CHANGE TRACKING FOR PREVIEW ============
+
     const baselineRef = useRef<{
         eqConfig: Record<string, number>
         selectedMood: string
-        selectedBgSound: string
-        bgSoundVolume: number
         moodEnabled: boolean
+        bgSig: string | null
     } | null>(null)
     const [baselineTick, setBaselineTick] = useState(0)
 
@@ -250,9 +880,8 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             baselineRef.current = {
                 eqConfig: { ...eqConfig },
                 selectedMood,
-                selectedBgSound,
-                bgSoundVolume,
                 moodEnabled: showMoodSelector,
+                bgSig: null,
             }
         }
         setBaselineTick((t) => t + 1)
@@ -270,15 +899,18 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         if (!audioUrl) return false
         const base = baselineRef.current
         if (!base) return false
-        return (
+        const eqOrMoodChanged =
             !isEqEqual(eqConfig, base.eqConfig) ||
             selectedMood !== base.selectedMood ||
-            selectedBgSound !== base.selectedBgSound ||
-            bgSoundVolume !== base.bgSoundVolume ||
             showMoodSelector !== base.moodEnabled
-        )
-    }, [audioUrl, eqConfig, selectedMood, selectedBgSound, bgSoundVolume, showMoodSelector, baselineTick])
+
+        const bgChanged = (base.bgSig ?? null) !== (bgMergeSig ?? null)
+
+        return eqOrMoodChanged || bgChanged
+    }, [audioUrl, eqConfig, selectedMood, showMoodSelector, bgMergeSig, baselineTick])
+
     // ============ WAVEFORM INITIALIZATION ============
+
     useEffect(() => {
         if (!waveformRefOriginal.current) return
 
@@ -456,17 +1088,21 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         setSelectedPreset("Flat");
         setSelectedMood("");
         setShowMoodSelector(false);
-        setSelectedBgSound("");
-        setBgSoundFile(null);
-        setBgSoundVolume(0);
         setShowBgSoundSelector(false);
+
+        setClips([]);
 
     };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
+        const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!ext || !allowedExtensions.includes(ext)) {
+            toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
+            return;
+        }
 
         if (file.size > 150 * 1024 * 1024) {
             toast.error("File size exceeds 150MB limit.");
@@ -515,10 +1151,9 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             fileSize: uploadedFile.size,
             eq: eqConfig,
             mood: selectedMood,
-            bg: selectedBgSound,
-            vol: bgSoundVolume,
+
         };
-    }, [uploadedFile, eqConfig, selectedMood, selectedBgSound, bgSoundVolume]);
+    }, [uploadedFile, eqConfig, selectedMood]);
 
     const hasUnsavedPreview = useMemo(() => {
         if (!previewReady || !lastPreviewSignature || !currentSignature) return false;
@@ -526,9 +1161,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             lastPreviewSignature.fileName !== currentSignature.fileName ||
             lastPreviewSignature.fileSize !== currentSignature.fileSize ||
             !isEqEqual(lastPreviewSignature.eq, currentSignature.eq) ||
-            lastPreviewSignature.mood !== currentSignature.mood ||
-            lastPreviewSignature.bg !== currentSignature.bg ||
-            lastPreviewSignature.vol !== currentSignature.vol;
+            lastPreviewSignature.mood !== currentSignature.mood
         return diff;
     }, [previewReady, lastPreviewSignature, currentSignature]);
 
@@ -547,14 +1180,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         }
     }
 
-    const handleAddBackgroundSound = () => {
-        if (showBgSoundSelector) {
-            setSelectedBgSound("")
-            setBgSoundFile(null)
-            setBgSoundVolume(0)
-        }
-        setShowBgSoundSelector(!showBgSoundSelector)
-    }
 
     const handleAddMood = () => {
         setShowMoodSelector((prev) => {
@@ -569,12 +1194,14 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     }
 
     const handlePreview = async () => {
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
         if (!uploadedFile) return;
         setPreviewLoading(true)
+        const bgPayload = buildBgMergePayload();
+        console.log("Background Merge Payload:", bgPayload)
         const payload = {
             GeneralTuningProfileRequestInfo: {
                 EqualizerProfile: {
@@ -591,10 +1218,8 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                         Bass: eqConfig.Bass
                     }
                 },
-                BackgroundMergeProfile: {
-                    BackgroundSoundTrackFileKey: selectedBgSound,
-                    VolumeGainDb: bgSoundVolume
-                },
+                BackgroundMergeProfile: null,
+                MultipleTimeRangeBackgroundMergeProfile: bgPayload, // null nếu đóng / không có clip
                 AITuningProfile: null,
             },
             AudioFile: uploadedFile
@@ -609,7 +1234,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             setPreviewUrl(url);
             setPreviewFile(file);
             setPreviewReady(true);
-            setLastPreviewSignature(currentSignature); // chốt snapshot
+            setLastPreviewSignature(currentSignature);
         } else {
             toast.error(response.message.content || "Thất bại, vui lòng thử lại !")
         }
@@ -617,19 +1242,19 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         baselineRef.current = {
             eqConfig: { ...eqConfig },
             selectedMood,
-            selectedBgSound,
-            bgSoundVolume,
             moodEnabled: showMoodSelector,
+            bgSig: bgMergeSig ?? null,
+
         }
         setBaselineTick((t) => t + 1)
-        console.log('Previewing audio...', { eqConfig, selectedMood, selectedBgSound, bgSoundVolume })
+        console.log('Previewing audio...', { eqConfig, selectedMood })
     }
 
     const performSave = async (fileToSave: File) => {
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
         try {
             setSaving(true);
             const payload = { AudioFile: fileToSave };
@@ -660,10 +1285,10 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
     };
 
     const handleSaveClick = async () => {
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
         if (episodeDetail && episodeDetail.CurrentStatus.Id === 5) {
             toast.error("Cannot change audio for Published episodes, please Unpublish first");
             return;
@@ -730,11 +1355,14 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
             setCurrentTimeOriginal(0);
         }
     };
+    const hasAnyBg = useMemo(() => clips.some(c => c.track === 1), [clips])
+
     const previewDisabled =
         !uploadedFile ||
         previewLoading ||
         saving ||
-        !hasPreviewChanges;
+        !hasPreviewChanges ||
+        (showBgSoundSelector && !hasAnyBg && !hasPreviewChanges)
 
 
     const saveDisabled = useMemo(() => {
@@ -763,13 +1391,13 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         return `${head}...${tail}${ext}`;
     };
 
-    if (!episodeDetail) {
-        return (
-            <div className="flex justify-center items-center h-100">
-                <Loading />
-            </div>
-        );
-    }
+    // if (!episodeDetail) {
+    //     return (
+    //         <div className="flex justify-center items-center h-100">
+    //             <Loading />
+    //         </div>
+    //     );
+    // }
     return (
         <div className="episode-audio">
 
@@ -844,6 +1472,329 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                     </div>
                 )}
 
+                {/* Audio Sequencer */}
+                {showBgSoundSelector && uploadedFile && (
+                    <div className="episode-audio__sequencer-container">
+                        <div className="episode-audio__sequencer-header">
+                            <h3 className="text-lg font-semibold text-white mb-4">Background Sounds Merge</h3>
+                            <p className="text-sm text-gray-400 mb-4">
+                                Drag and trim background sounds on the timeline. Multiple backgrounds cannot overlap in time.
+                            </p>
+                        </div>
+                        <div className="ml-4 flex items-center gap-2">
+                            <label className="text-sm">Zoom</label>
+                            <input
+                                type="range"
+                                min="1"
+                                max="50"
+                                value={pixelsPerSecond}
+                                onChange={(e) => setPPS(Number.parseInt(e.target.value))}
+                                className="accent-emerald-600"
+                            />
+                            <span className="text-xs text-slate-400">{pixelsPerSecond}px/s</span>
+                            <button
+                                onClick={() => {
+                                    console.log('=== SEQUENCER CLIP INFO ===')
+                                    const originalClip = clips.find(c => c.track === 0)
+                                    const bgClips = clips.filter(c => c.track === 1)
+
+                                    if (originalClip) {
+                                        console.log(' ORIGINAL AUDIO:')
+                                        console.log(`  File: ${originalClip.name}`)
+                                        console.log(`  Duration: ${secondsToTime(originalClip.duration)} (${originalClip.duration.toFixed(2)}s)`)
+                                        console.log(`  Timeline Start: ${secondsToTime(originalClip.start)} (${originalClip.start.toFixed(2)}s)`)
+                                        console.log(`  Timeline End: ${secondsToTime(originalClip.start + originalClip.duration)} (${(originalClip.start + originalClip.duration).toFixed(2)}s)`)
+                                    }
+
+                                    bgClips.forEach((clip, idx) => {
+                                        const visibleDur = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
+                                        console.log(`\n BACKGROUND ${idx + 1}:`)
+                                        console.log(`  File: ${clip.name}`)
+                                        console.log(`  Full Duration: ${secondsToTime(clip.duration)} (${clip.duration.toFixed(2)}s)`)
+                                        console.log(`  Visible Duration: ${secondsToTime(visibleDur)} (${visibleDur.toFixed(2)}s)`)
+                                        console.log(`  Timeline Start: ${secondsToTime(clip.start)} (${clip.start.toFixed(2)}s)`)
+                                        console.log(`  Timeline End: ${secondsToTime(clip.start + visibleDur)} (${(clip.start + visibleDur).toFixed(2)}s)`)
+                                        console.log(`  Trim Start: ${secondsToTime(clip.trimStart)} (${clip.trimStart.toFixed(2)}s)`)
+                                        console.log(`  Trim End: ${secondsToTime(clip.trimEnd)} (${clip.trimEnd.toFixed(2)}s)`)
+
+                                        // Show volume for background clips
+                                        if (clip.track === 1 && clip.volume !== undefined) {
+                                            console.log(`  Volume: ${clip.volume.toFixed(1)} dB`)
+                                        }
+
+                                        if (originalClip) {
+                                            console.log(`  Position in Original: ${secondsToTime(clip.start)} → ${secondsToTime(clip.start + visibleDur)}`)
+                                        }
+                                    })
+
+                                    console.log('\n=== END CLIP INFO ===')
+                                }}
+                                className="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 transition-all text-xs flex items-center gap-1"
+                                title="Show clip timeline info in console"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="16" x2="12" y2="12" />
+                                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                                </svg>
+                                Info
+                            </button>
+                        </div>
+                        {/* Sequencer Controls */}
+                        <div className="w-full text-slate-100 p-4 flex flex-col gap-3 select-none bg-slate-900 rounded">
+                            {/* Toolbar */}
+
+                            {/* Tracks */}
+                            <div className="relative border border-slate-800 rounded overflow-hidden">
+                                {/* Track headers */}
+                                <div className="bg-slate-900 border-b border-slate-800">
+                                    {/* Original track */}
+                                    {/* <div className="flex items-center gap-3 px-3" style={{ height: rowH, borderBottom: "1px solid #0b1320" }}>
+                                        <div className="text-xs w-20 font-semibold">Original</div>
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-xs">Vol</label>
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={1}
+                                                step={0.01}
+                                                value={trackVolumes[0] ?? 1}
+                                                onChange={(e) => {
+                                                    const v = Number.parseFloat(e.target.value)
+                                                    setTrackVolumes([v, trackVolumes[1]])
+                                                }}
+                                            />
+                                        </div>
+                                    </div> */}
+
+                                    {/* Background track */}
+                                    {/* <div className="flex items-center gap-3 px-3" style={{ height: rowH, borderBottom: "1px solid #0b1320" }}>
+                                        <div className="text-xs w-20 font-semibold">Background</div>
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-xs">Vol</label>
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={1}
+                                                step={0.01}
+                                                value={trackVolumes[1] ?? 1}
+                                                onChange={(e) => {
+                                                    const v = Number.parseFloat(e.target.value)
+                                                    setTrackVolumes([trackVolumes[0], v])
+                                                }}
+                                            />
+                                        </div>
+                                    </div> */}
+                                </div>
+
+                                {/* Timeline body - với container có scroll để giới hạn chiều rộng */}
+                                <div
+                                    className="max-w-full"
+                                    ref={timelineScrollRef}
+                                    style={{
+                                        overflowX: 'hidden', // NEW: hide timeline scrollbar
+                                    }}
+                                >
+                                    <SequencerTimeline
+                                        clips={clips}
+                                        setClips={setClips}
+                                        pixelsPerSecond={pixelsPerSecond}
+                                        rowH={rowH}
+                                        totalLengthSec={totalLengthSec}
+                                        playhead={playhead}
+                                        selectedClipId={selectedClipId}
+                                        onSelectClip={(id: string) => setSelectedClipId(id)}
+                                    />
+                                </div>
+
+                            </div>
+
+                            {/* Ruler - với scroll tương tự */}
+                            <div className="overflow-x-auto max-w-full"
+                                ref={rulerScrollRef}  // NEW
+
+                                style={{
+                                    scrollbarWidth: 'thin',
+                                    scrollbarColor: 'rgba(173, 227, 57, 0.71) rgba(23, 23, 23, 0.4)'
+                                }}
+                            >
+                                <SequencerRuler
+                                    totalLengthSec={totalLengthSec}
+                                    pixelsPerSecond={pixelsPerSecond}
+                                    playhead={playhead}
+                                />
+                            </div>
+                        </div>
+
+                        <header className="flex flex-wrap items-center gap-3">
+                            <IconButton onClick={isPlayingSequencer ? handleSequencerPause : handleSequencerPlay} className="episode-audio__play-btn">
+                                {isPlayingSequencer ? <Pause /> : <PlayArrow />}
+                            </IconButton>
+                            <IconButton onClick={() => handleSequencerStop()} className="episode-audio__play-btn">
+                                <ArrowCounterClockwise size={26} weight="bold" />
+                            </IconButton>
+                            <span className="episode-audio__time-display">{secondsToTime(playhead)}</span>
+                            <div
+                                className="episode-audio__progress-bar"
+                                ref={progressBarRefSequencer}
+                                onMouseDown={(e) => {
+                                    if (!progressBarRefSequencer.current) return
+                                    const rect = progressBarRefSequencer.current.getBoundingClientRect()
+                                    const percent = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1)
+                                    const newTime = percent * totalLengthSec
+                                    setPlayhead(newTime)
+                                }}
+                                onClick={(e) => {
+                                    if (!progressBarRefSequencer.current) return
+                                    const rect = progressBarRefSequencer.current.getBoundingClientRect()
+                                    const percent = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1)
+                                    const newTime = percent * totalLengthSec
+                                    setPlayhead(newTime)
+                                }}
+                            >
+                                <div
+                                    className="episode-audio__progress-fill"
+                                    style={{
+                                        width: `${(playhead / totalLengthSec) * 100}%`,
+                                    }}
+                                />
+                                <div
+                                    className="episode-audio__progress-thumb"
+                                    style={{
+                                        left: `${(playhead / totalLengthSec) * 100}%`,
+                                    }}
+                                />
+                            </div>
+
+                            <div className="episode-audio__controls-right">
+                                <span className="episode-audio__time-display">{secondsToTime(totalLengthSec)}</span>
+                            </div>
+                        </header>
+
+
+                        {selectedClipId && clips.find(c => c.id === selectedClipId && c.track === 1) && (() => {
+                            const selectedClip = clips.find(c => c.id === selectedClipId)!;
+                            const visibleDur = Math.max(0, selectedClip.duration - selectedClip.trimStart - selectedClip.trimEnd);
+                            const isPlaying = segmentPlayingClipId === selectedClip.id; // cần tách state này ra ngoài ClipRnd
+
+                            return (
+                                <div className="mt-4 p-3 rounded border border-slate-700 bg-slate-800">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-semibold text-white">Selected:</span>
+                                            <span className="text-sm text-[#AEE339]" title={selectedClip.name}>{selectedClip.name}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {/* Play/Stop */}
+                                            <IconButton
+                                                onClick={() => {
+                                                    const from = selectedClip.trimStart;
+                                                    const dur = visibleDur;
+                                                    if (isPlaying) {
+                                                        // stop
+                                                        if (currentSegment.src && currentSegment.clipId === selectedClip.id) {
+                                                            try { currentSegment.src.stop() } catch { }
+                                                            currentSegment = { src: null, clipId: null };
+                                                        }
+                                                        setSegmentPlayingClipId(null);
+                                                    } else {
+                                                        // play
+                                                        const ac = getAC();
+                                                        if (currentSegment.src) {
+                                                            try { currentSegment.src.stop() } catch { }
+                                                            currentSegment = { src: null, clipId: null };
+                                                            setSegmentPlayingClipId(null);
+                                                        }
+                                                        try {
+                                                            const source = ac.createBufferSource();
+                                                            source.buffer = selectedClip.buffer;
+                                                            const gain = ac.createGain();
+                                                            const linearBase = Math.pow(10, (selectedClip.volume ?? -5) / 20);
+                                                            gain.gain.value = 0;
+                                                            source.connect(gain).connect(ac.destination);
+                                                            source.start(0, from, dur);
+
+                                                            // fade
+                                                            const fi = 0.5, fo = 0.5;
+                                                            const now = ac.currentTime;
+                                                            const segStart = now;
+                                                            const segEnd = now + dur;
+                                                            if (fi > 0) {
+                                                                gain.gain.setValueAtTime(0, segStart);
+                                                                gain.gain.linearRampToValueAtTime(linearBase, segStart + Math.min(fi, dur));
+                                                            } else {
+                                                                gain.gain.setValueAtTime(linearBase, segStart);
+                                                            }
+                                                            if (fo > 0) {
+                                                                const fadeOutStart = Math.max(segStart, segEnd - fo);
+                                                                gain.gain.setValueAtTime(linearBase, fadeOutStart);
+                                                                gain.gain.linearRampToValueAtTime(0.0001, segEnd);
+                                                            }
+
+                                                            currentSegment = { src: source, clipId: selectedClip.id };
+                                                            setSegmentPlayingClipId(selectedClip.id);
+                                                            source.onended = () => {
+                                                                if (currentSegment.src === source) {
+                                                                    currentSegment = { src: null, clipId: null };
+                                                                }
+                                                                setSegmentPlayingClipId(null);
+                                                            };
+                                                        } catch (e) {
+                                                            toast.info(`Playing segment ${from.toFixed(2)}s → ${(from + dur).toFixed(2)}s`);
+                                                        }
+                                                    }
+                                                }}
+                                                size="small"
+                                                sx={{ color: '#AEE339', '&:hover': { color: '#7BA225' } }}
+                                                title={isPlaying ? "Stop segment" : "Play segment"}
+                                            >
+                                                {isPlaying ? <Pause /> : <PlayArrow />}
+                                            </IconButton>
+
+                                            {/* Delete */}
+                                            <IconButton
+                                                onClick={() => {
+                                                    setClips(prev => prev.filter(c => c.id !== selectedClip.id));
+                                                    setSelectedClipId(null);
+                                                }}
+                                                size="small"
+                                                sx={{ color: '#888', '&:hover': { color: '#f44336' } }}
+                                                title="Delete clip"
+                                            >
+                                                <Delete />
+                                            </IconButton>
+                                        </div>
+                                    </div>
+
+                                    {/* Volume slider */}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-xs text-slate-300">Volume</span>
+                                            <span className="text-xs text-slate-400">{(selectedClip.volume ?? -5).toFixed(1)} dB</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min={-20}
+                                            max={10}
+                                            step={0.5}
+                                            value={selectedClip.volume ?? -5}
+                                            onChange={(e) => {
+                                                const newVolume = Number.parseFloat(e.target.value);
+                                                setClips(prev => prev.map(c =>
+                                                    c.id === selectedClip.id ? { ...c, volume: newVolume } : c
+                                                ));
+                                            }}
+                                            className="episode-audio__volume-slider is-active"
+                                        />
+                                        <div className="flex justify-between text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                            <span>-20</span><span>0</span><span>+10</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                )}
                 {/* Preview Audio Section */}
                 {previewUrl && (
                     <div className="episode-audio__player-section">
@@ -888,7 +1839,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                         </div>
                     </div>
                 )}
-
                 {/* EQ Table Section */}
                 {audioUrl && (
                     <div className="episode-audio__eq-table">
@@ -919,7 +1869,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                     </div>
                 )}
 
-                {/* Empty State */}
                 {!audioUrl && (
                     <div className="episode-audio__empty-state">
                         <div className="episode-audio__empty-state__icon">
@@ -932,7 +1881,6 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
 
             {/* ============ SIDEBAR (RIGHT) ============ */}
             <div className="episode-audio__sidebar">
-                {/* Audio Upload */}
                 <div className="episode-audio__upload-box">
                     <h3 className="episode-audio__section-title">Audio Upload</h3>
                     {episodeDetail && episodeDetail.CurrentStatus?.Id !== 8 && (
@@ -949,7 +1897,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept="audio/*"
+                                accept=".wav,.flac,.mp3,.m4a,.aac"
                                 onChange={handleFileSelect}
                                 className="episode-audio__upload-input"
                             />
@@ -965,7 +1913,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                                     className="episode-audio__file-info__label"
                                     title={uploadedFile.name}
                                 >
-                                    {shortenFileName(uploadedFile.name, 40)}
+                                    {shortenFileName(uploadedFile.name, 30)}
                                 </span>
                                 <IconButton
                                     size="small"
@@ -1077,7 +2025,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                         </div>
                         <IconButton
                             className="episode-audio__add-btn"
-                            onClick={handleAddBackgroundSound}
+                            onClick={() => setShowBgSoundSelector(!showBgSoundSelector)}
                             title={showBgSoundSelector ? "Close" : "Add background sound"}
                             aria-label={showBgSoundSelector ? "Close background sound" : "Add background sound"}
                             disabled={!audioUrl}
@@ -1087,87 +2035,120 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                     </div>
 
                     {showBgSoundSelector && (
-                        <>
-                            <Select
-                                variant="outlined"
-                                className="episode-audio__selector"
-                                value={selectedBgSound}
-                                displayEmpty
-                                onChange={(e) => fetchBackgroundSoundAudio(e.target.value)}
-                                disabled={!audioUrl}
-                                sx={{
-                                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--border-grey)' },
-                                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--primary-green)' },
-                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--primary-green)' },
-                                    '& .MuiSelect-icon': { color: 'var(--primary-green)' },
+                        <div className="mt-3">
+                            <div
+                                className="grid grid-cols-1 gap-2 mb-3"
+                                style={{
+                                    maxHeight: '400px',
+                                    overflowY: 'auto',
+                                    paddingRight: '4px',
+                                    scrollbarWidth: 'thin',
+                                    scrollbarColor: 'rgba(173, 227, 57, 0.71) rgba(23, 23, 23, 0.4)'
                                 }}
                             >
-                                <MenuItem value="">
-                                    <p style={{ color: 'var(--third-grey)' }}>Select A sound...</p>
-                                </MenuItem>
                                 {backgroundSounds.map((bg) => (
-                                    <MenuItem
+                                    <button
                                         key={bg.Id}
-                                        value={bg.AudioFileKey}
-                                        sx={{
-                                            '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-
+                                        className="px-3 py-2 text-xs rounded transition-all text-white border"
+                                        style={{
+                                            background: 'rgba(23, 23, 23, 0.6)',
+                                            borderColor: 'rgba(174, 227, 57, 0.2)',
                                         }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'rgba(174, 227, 57, 0.15)'
+                                            e.currentTarget.style.borderColor = 'rgba(174, 227, 57, 0.4)'
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'rgba(23, 23, 23, 0.6)'
+                                            e.currentTarget.style.borderColor = 'rgba(174, 227, 57, 0.2)'
+                                        }}
+                                        onClick={() => handleAddBackgroundToSequencer(bg)}
+                                        title={`Add ${bg.Name}`}
                                     >
-                                        {bg.Name}
-                                    </MenuItem>
+                                        <div className="flex flex-col mt-4 gap-4">
+                                            <div className="flex gap-4">
+                                                <Image
+                                                    mainImageFileKey={`${bg?.MainImageFileKey || ''}`}
+                                                    alt={'Background Sound Image'}
+                                                    className="w-12 h-12 object-cover rounded-sm"
+                                                />
+                                                <div className="flex flex-col items-start">
+                                                    <p className="text-[#aee339] font-medium text-sm">{bg?.Name}</p>
+                                                    <p className="text-[#d9d9d9] text-left font-light text-xs">{bg?.Description}</p>
+                                                </div>
+                                            </div>
+
+                                            <SmartAudioPlayer
+                                                audioId={bg.AudioFileKey}
+                                                fetchUrlFunction={fetchTrackAudioUrl}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </button>
                                 ))}
+                            </div>
 
-                            </Select>
+                            {clips.filter(c => c.track === 1).length > 0 && (
+                                <div className="mt-4 pt-3 border-t" style={{ borderColor: 'rgba(174, 227, 57, 0.15)' }}>
+                                    <h4 className="text-sm font-medium mb-3 text-white flex items-center gap-2">
+                                        <span style={{ color: '#999' }}>Background Volumes</span>
+                                        <Tooltip placement="top" title="Adjust volume for each background before merging">
+                                            <Question color="var(--third-grey)" size={14} />
+                                        </Tooltip>
+                                    </h4>
+                                    {clips.filter(c => c.track === 1).map((clip) => {
+                                        const isActive = selectedClipId === clip.id;
+                                        return (
+                                            <div
+                                                key={clip.id}
+                                                className="mb-3 p-2 rounded"
+                                                style={{
+                                                    background: 'rgba(23, 23, 23, 0.4)',
 
-                            {selectedBgSound && (
-                                <div className="episode-audio__background-sound-volume pt-4">
-
-                                    <div className="episode-audio__volume-label gap-3">
-                                        <div>
-                                            <span> Volume: </span>
-                                            <span>  {bgSoundVolume.toFixed(1)} dB</span>
-                                        </div>
-                                        <Tooltip placement="top-start" title="Adjust background sound volume after merging (recommended: -1 dB to -8 dB)">
-                                            <Question color="var(--third-grey)" size={16} />
-                                        </Tooltip >
-                                    </div>
-                                    <input
-                                        type="range"
-                                        className="episode-audio__volume-slider"
-                                        min="-10"
-                                        max="10"
-                                        step="0.1"
-                                        value={bgSoundVolume}
-                                        onChange={(e) => setBgSoundVolume(Number.parseFloat(e.target.value))}
-                                        disabled={!audioUrl}
-                                        style={
-                                            {
-                                                "--value": `${((bgSoundVolume + 20) / 20) * 100}%`,
-                                            } as React.CSSProperties
-                                        }
-                                    />
+                                                }}
+                                                onClick={() => setSelectedClipId(clip.id)}
+                                            >
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-xs text-white truncate max-w-[120px]" title={clip.name}
+                                                        style={{
+                                                            color: isActive ? ' #AEE339' : 'white',  // NEW: highlight waveform
+                                                            fontWeight: isActive ? '600' : '400',
+                                                        }}
+                                                    >
+                                                        {clip.name}
+                                                    </span>
+                                                    <span className="text-xs" style={{ color: isActive ? ' #AEE339' : '#888' }}>
+                                                        {(clip.volume ?? -5).toFixed(1)} dB
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={-20}
+                                                    max={10}
+                                                    step={0.5}
+                                                    value={clip.volume ?? 0}
+                                                    onChange={(e) => {
+                                                        const newVolume = Number.parseFloat(e.target.value)
+                                                        setClips(prev => prev.map(c =>
+                                                            c.id === clip.id ? { ...c, volume: newVolume } : c
+                                                        ))
+                                                    }}
+                                                    onFocus={() => setSelectedClipId(clip.id)} // focus slider -> chọn clip
+                                                    className={`episode-audio__volume-slider ${isActive ? 'is-active' : ''}`}
+                                                />
+                                                <div className="flex justify-between text-xs mt-1" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                    <span>-20</span><span>0</span><span>+10</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             )}
-
-                            {selectedBgSound && (
-                                <div className="flex flex-col mt-4 gap-4">
-                                    <div className="flex  gap-4">
-                                        <Image mainImageFileKey={`${bgInfo?.MainImageFileKey || ''}`} alt={'Background Sound Image'} className="w-12 h-12 object-cover rounded-sm" />
-                                        <div className="flex flex-col items-start">
-                                            <p className="text-[#aee339] font-medium text-sm">{bgInfo?.Name}</p>
-                                            <p className="text-[#d9d9d9] font-light text-xs">{bgInfo?.Description}</p>
-                                        </div>
-
-                                    </div>
-
-                                    <audio controls src={bgSoundFile || undefined} controlsList="nodownload noplaybackrate" />
-
-                                </div>
-                            )}
-                        </>
+                        </div>
                     )}
                 </div>
+
+
                 {previewLoading || saving ? (
                     <div className="flex justify-center items-center m-8 ">
                         <Loading2 title="Audio Processing" />

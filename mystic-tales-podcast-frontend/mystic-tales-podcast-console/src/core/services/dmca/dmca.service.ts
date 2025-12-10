@@ -73,17 +73,30 @@ export const assignStaff = async (instance: AxiosInstance, accountId: Number, DM
 
     return response;
 };
-export const updateStatus = async (instance: AxiosInstance, status: String, DMCAAccusationId: Number, DMCAAccusationTakenDownReasonEnum?: string) => {
+export const updateStatus = async (instance: AxiosInstance, status: String, DMCAAccusationId: Number, DMCAAccusationTakenDownReasonEnum?: string,
+    payload?: {
+        AttachmentFiles?: File[];
+    }
+) => {
 
     if (DMCAAccusationTakenDownReasonEnum) {
+        const formData = new FormData();
+
+        if (payload && payload.AttachmentFiles && payload.AttachmentFiles.length > 0) {
+            payload.AttachmentFiles.forEach((file) => {
+                formData.append("AttachmentFiles", file);
+            });
+        }
         const response = await callAxiosRestApi({
             instance: instance,
             method: "put",
             url: `${BASE_URL}/${DMCAAccusationId}?DMCAAccusationAction=${status}&DMCAAccusationTakenDownReasonEnum=${DMCAAccusationTakenDownReasonEnum}`,
+            data: formData
         });
 
         return response;
-    }else{
+        
+    } else {
         const response = await callAxiosRestApi({
             instance: instance,
             method: "put",

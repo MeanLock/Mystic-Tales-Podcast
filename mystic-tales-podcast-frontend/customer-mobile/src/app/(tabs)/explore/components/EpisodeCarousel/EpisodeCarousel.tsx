@@ -1,13 +1,17 @@
 import React, { useMemo } from "react";
 import { EpisodeCardWithImageProps } from "@/src/types/episode";
-import { FlatList, StyleSheet, View, Dimensions } from "react-native";
+import { FlatList, StyleSheet, View, Dimensions, Pressable } from "react-native";
 import EpisodeCard from "./EpisodeCard";
 import { Text } from "@/src/components/ui/Text";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Episode } from "@/src/core/types/episode.type";
+import { useDispatch } from "react-redux";
+import { useRouter } from "expo-router";
+import { setEpisodesData } from "@/src/features/episode/episodeSlice";
 
 interface EpisodeCarouselProps {
   title: React.ReactNode;
+  titleString?: string;
   episodes: Episode[];
 }
 
@@ -16,7 +20,8 @@ const ITEM_HEIGHT = 80; // Height of each episode card
 const ITEM_VERTICAL_SPACING = 14; // Vertical spacing between cards in a column
 const itemsPerColumn = 3; // Number of items per column
 
-const EpisodeCarousel = ({ title, episodes }: EpisodeCarouselProps) => {
+
+const EpisodeCarousel = ({ title, episodes, titleString }: EpisodeCarouselProps) => {
   // Organize episodes into groups for the grid layout
   const gridData = useMemo(() => {
     // Group episodes into columns (3 items per column)
@@ -44,18 +49,35 @@ const EpisodeCarousel = ({ title, episodes }: EpisodeCarouselProps) => {
       ))}
     </View>
   );
-
+  const dispatch = useDispatch(); //thịnh
+  const router = useRouter();
+  const handleViewMoreEpisodesFromFeed = () => {
+    // Implement navigation or action to view more episodes from the show
+    dispatch(
+      setEpisodesData({
+        episodes: episodes as Episode[],
+        title: `${titleString}`,
+        from: "Feed",
+      })
+    );
+    // Navigate to the episodes list page
+    router.push(`/(content)/episodes`);
+  };
   return (
     <View className="gap-5 mb-10">
       {/* Title with See More */}
-      <View className="flex flex-row items-center justify-between w-full">
-        {title}
+      <Pressable
+        onPress={() => handleViewMoreEpisodesFromFeed()}
+      >
+        <View className="flex flex-row items-center justify-between w-full">
+          {title}
 
-        <View className="flex flex-row justify-center items-center gap-2">
-          <Text className="text-white font-medium p-0">See more</Text>
-          <MaterialIcons name="arrow-circle-right" size={16} color={"#fff"} />
+          <View className="flex flex-row justify-center items-center gap-2">
+            <Text className="text-white font-medium p-0">See more</Text>
+            <MaterialIcons name="arrow-circle-right" size={16} color={"#fff"} />
+          </View>
         </View>
-      </View>
+      </Pressable>
 
       {/* Episodes Grid FlatList */}
       <FlatList

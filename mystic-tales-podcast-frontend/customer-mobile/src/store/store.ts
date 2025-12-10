@@ -5,8 +5,14 @@ import authReducer from "../features/auth/authSlice";
 import downloadsReducer from "../features/download/downloadSlice";
 import alertReducer from "../features/alert/alertSlice";
 import episodeReducer from "../features/episode/episodeSlice";
+<<<<<<< HEAD
 import channelReducer from "../features/channel/channelSlice";
 import showReducer from "../features/show/showSlice";
+=======
+import showReducer from "../features/show/showSlice";
+import channelReducer from "../features/channel/channelSlice";
+
+>>>>>>> d24514da2d90e35a15e7a4d1b3dcfeff93364c25
 // persist
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -32,8 +38,13 @@ const rootReducer = combineReducers({
   player: playerReducer,
   alert: alertReducer,
   episode: episodeReducer,
+<<<<<<< HEAD
   channel: channelReducer,
   show: showReducer,
+=======
+  show: showReducer,  
+  channel: channelReducer,
+>>>>>>> d24514da2d90e35a15e7a4d1b3dcfeff93364c25
   [appApi.reducerPath]: appApi.reducer, // <-- thay baseApi bằng appApi
 });
 

@@ -9,8 +9,8 @@
 // import ghost from "../../../../assets/ghost.mp3"
 // import { PlayArrow, Pause } from "@mui/icons-material"
 // import { toast } from "react-toastify"
-// import { AudioTuning } from "@/core/services/account/account.service"
 // import { loginRequiredAxiosInstance, publicAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
+// import { audioTuning } from "@/core/services/episode/audio.service"
 // interface EpisodeAudioProps {
 //     initialAudio?: string
 // }
@@ -162,7 +162,7 @@
 //     const startWallClockRef = useRef(0)
 //     const startPlayheadRef = useRef(0)
 //     const activeNodesRef = useRef<Array<{ src: AudioBufferSourceNode }>>([])
-//     const rafRef = useRef<number | undefined>()
+//     const rafRef = useRef<number | undefined>(undefined)
 //     const trackGainsRef = useRef<Array<{ gain: GainNode }>>([])
 
 //     const rowH = 120 // Tăng từ 90 lên 120 để hiển thị waveform rõ hơn
@@ -792,7 +792,7 @@
 //             AudioFile: uploadedFile
 //         }
 //         console.log("Audio Tuning Payload:", payload)
-//         const response = await AudioTuning(loginRequiredAxiosInstance, payload)
+//         const response = await audioTuning(loginRequiredAxiosInstance,"hihi", payload)
 //         console.log("Audio Tuning Response:", response)
 //         if (response.success && response.data) {
 //             const blob = response.data;
@@ -954,12 +954,12 @@
 //                 {/* Audio Sequencer */}
 //                 {showSequencer && uploadedFile && (
 //                     <div className="episode-audio__sequencer-container">
-//                         {/* <div className="episode-audio__sequencer-header">
+//                         <div className="episode-audio__sequencer-header">
 //                         <h3 className="text-lg font-semibold text-white mb-4">Audio Sequencer</h3>
 //                         <p className="text-sm text-gray-400 mb-4">
 //                             Drag and trim background sounds on the timeline. Multiple backgrounds cannot overlap in time.
 //                         </p>
-//                     </div> */}
+//                     </div>
 //                         <div className="ml-4 flex items-center gap-2">
 //                             <label className="text-sm">Zoom</label>
 //                             <input
@@ -1708,7 +1708,6 @@
 //             interact: false,
 //             hideScrollbar: true,
 //             minPxPerSec: 10,
-//             partialRender: true,
 //         })
 //         wsRef.current = ws
 //         ws.loadBlob(clip.file).catch(() => { })

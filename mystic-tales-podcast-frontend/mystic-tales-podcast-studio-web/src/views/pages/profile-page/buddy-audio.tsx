@@ -217,6 +217,12 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
+        const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!ext || !allowedExtensions.includes(ext)) {
+            toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
+            return;
+        }
         if (file.size > 15 * 1024 * 1024) {
             toast.error("File size exceeds 15MB limit.");
             return;
@@ -386,7 +392,7 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept="audio/*"
+                            accept=".wav,.flac,.mp3,.m4a,.aac"
                             onChange={handleFileSelect}
                             className="show-trailer__upload-input"
                         />

@@ -156,7 +156,7 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
 
     const handleSave = async () => {
         let payload;
-        if (authSlice.user?.ViolationLevel >0){
+        if (authSlice.user?.ViolationLevel > 0) {
             toast.error('Your account is currently under violation. You cannot create a new show.');
             return;
         }
@@ -234,6 +234,17 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Invalid file type. Allowed: JPG, JPEG, PNG, GIF, WEBP, SVG');
+                return;
+            }
+
+            const maxSize = 3 * 1024 * 1024;
+            if (file.size > maxSize) {
+                toast.error('Image file size must be less than 3MB');
+                return;
+            }
             setMainImageFile(file);
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -614,7 +625,7 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
                         type="file"
                         ref={fileInputRef}
                         onChange={handleImageUpload}
-                        accept="image/*"
+                        accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
                         style={{ display: 'none' }}
                     />
                 </div>

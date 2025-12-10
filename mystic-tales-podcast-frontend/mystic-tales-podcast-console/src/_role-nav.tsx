@@ -89,13 +89,13 @@ const get_roleNav = (role_id: number, account_id: number) => {
 
       },
 
-{
-  component: CNavItem,
-    name: 'Transactions',
-      to: '/transactions/table',
-        icon: <PaidOutlinedIcon sx={{ fontSize: 29 }} />,
+// {
+//   component: CNavItem,
+//     name: 'Transactions',
+//       to: '/transactions/table',
+//         icon: <PaidOutlinedIcon sx={{ fontSize: 29 }} />,
 
-      }
+//       }
 
     ],
 // admin: 3
