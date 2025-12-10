@@ -1,3 +1,5 @@
+import type { EpisodeFromAPI, EpisodeUI } from "./episode";
+
 export type ShowFromAPI = {
   Id: string;
   Name: string;
@@ -204,45 +206,7 @@ export type ShowDetailsFromAPI = {
       UpdatedAt: string;
     }[];
   }[];
-  EpisodeList: [
-    {
-      Id: string;
-      Name: string;
-      Description: string;
-      ExplicitContent: boolean;
-      ReleaseDate: string;
-      EpisodeOrder: number;
-      IsReleased: boolean;
-      MainImageFileKey: string;
-      AudioFileKey: string;
-      AudioFileSize: number;
-      AudioLength: number;
-      PodcastEpisodeSubscriptionType: {
-        Id: number;
-        Name: string;
-      };
-      PodcastShow: {
-        Id: string;
-        Name: string;
-        MainImageFileKey: string;
-      };
-      Hashtags: {
-        Id: number;
-        Name: string;
-      }[];
-      SeasonNumber: number;
-      TotalSave: number;
-      ListenCount: number;
-      IsAudioPublishable: boolean;
-      TakenDownReason: string;
-      CreatedAt: string;
-      UpdatedAt: string;
-      CurrentStatus: {
-        Id: number;
-        Name: string;
-      };
-    }
-  ];
+  EpisodeList: EpisodeFromAPI[];
 };
 export type ShowDetailsUI = {
   Id: string;
@@ -343,43 +307,5 @@ export type ShowDetailsUI = {
       UpdatedAt: string;
     }[];
   }[];
-  EpisodeList: [
-    {
-      Id: string;
-      Name: string;
-      Description: string;
-      ExplicitContent: boolean;
-      ReleaseDate: string;
-      EpisodeOrder: number;
-      IsReleased: boolean;
-      ImageUrl: string;
-      AudioFileKey: string;
-      AudioFileSize: number;
-      AudioLength: number;
-      PodcastEpisodeSubscriptionType: {
-        Id: number;
-        Name: string;
-      };
-      PodcastShow: {
-        Id: string;
-        Name: string;
-        ImageUrl: string;
-      };
-      Hashtags: {
-        Id: number;
-        Name: string;
-      }[];
-      SeasonNumber: number;
-      TotalSave: number;
-      ListenCount: number;
-      IsAudioPublishable: boolean;
-      TakenDownReason: string;
-      CreatedAt: string;
-      UpdatedAt: string;
-      CurrentStatus: {
-        Id: number;
-        Name: string;
-      };
-    }
-  ];
+  EpisodeList: EpisodeUI[];
 };

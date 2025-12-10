@@ -55,6 +55,7 @@ export const accountApi = appApi.injectEndpoints({
 
         return { error: { kind: "NETWORK_ERROR", message: "No data" } as any };
       },
+      providesTags: ["Account"],
     }),
     getAccountInformations: build.query<{ Account: AccountMeFromApi }, void>({
       async queryFn(_arg, api, _extraOptions, baseQuery) {
@@ -96,6 +97,18 @@ export const accountApi = appApi.injectEndpoints({
           .unwrap();
         return { data: result as any };
       },
+      invalidatesTags: ["Account"],
+    }),
+
+    checkUserPodcastListenSlot: build.query<number, void>({
+      query: () => ({
+        url: "/api/user-service/api/accounts/me",
+        method: "GET",
+        authMode: "required",
+      }),
+      transformResponse: (response: { Account: AccountMeFromApi }) => {
+        return response.Account.PodcastListenSlot;
+      },
     }),
   }),
 });
@@ -105,4 +118,5 @@ export const {
   useUpdateAccountMeQuery,
   useGetAccountInformationsQuery,
   useUpdateAccountInformationsMutation,
+  useLazyCheckUserPodcastListenSlotQuery
 } = accountApi;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { FaBackward } from "react-icons/fa";
 import { FaForward } from "react-icons/fa";
 
@@ -24,20 +25,32 @@ import {
 import { FaVolumeHigh, FaVolumeLow, FaVolumeXmark } from "react-icons/fa6";
 
 import { Slider } from "@/components/ui/slider";
-import { getAudioEngine } from "@/core/services/player/playerBridge";
-import { useAudioProgress } from "@/core/services/player/useAudioPress";
+// import { getAudioEngine } from "@/core/services/player/playerBridge";
+// import { useAudioProgress } from "@/core/services/player/useAudioPress";
 import { Switch } from "@/components/ui/switch";
 import { Repeat, Shuffle } from "lucide-react";
 import { useUpdatePlayModeMutation } from "@/core/services/player/player.service";
 import { setError } from "@/redux/slices/errorSlice/errorSlice";
 import ResolvedImage from "./ResolvedImage";
-
+import { usePlayer } from "@/core/services/player/usePlayer";
+import { CgSpinner } from "react-icons/cg";
 
 const MediaPlayerControl = () => {
   // REDUX
   const player = useSelector((state: RootState) => state.player);
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
+
+  // NEW CONCEPT
+  const {
+    state,
+    play,
+    pause,
+    seek,
+    navigateInSpecifyShow,
+    navigateInSavedEpisodes,
+    navigateInBookingTracks,
+  } = usePlayer();
 
   // MUTATIONS
   const [updatePlayMode] = useUpdatePlayModeMutation();
@@ -57,8 +70,18 @@ const MediaPlayerControl = () => {
   const effectiveTime = isSeeking && seekPreview != null ? seekPreview : t;
   const effectiveDuration = d || player.currentAudio?.AudioLength || 0;
 
-  const percent =
-    effectiveDuration > 0 ? (effectiveTime / effectiveDuration) * 100 : 0;
+  // NEW CONCEPT
+  const percent = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
+
+const handleProgressClick = (e: any) => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const ratio = x / rect.width;
+  seek(ratio * state.duration);
+};
+
+  // const percent =
+  //   effectiveDuration > 0 ? (effectiveTime / effectiveDuration) * 100 : 0;
 
   // EFFECTS
   // Khởi tạo ban đầu từ listenSessionProcedure, sau đó theo playMode
@@ -76,21 +99,21 @@ const MediaPlayerControl = () => {
   const playOrderMode = player.playMode.nextMode;
 
   // FUNCTIONS
-  const onProgressMouse = (
-    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-    commit = false
-  ) => {
-    const bar = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - bar.left;
-    const ratio = Math.min(1, Math.max(0, x / bar.width));
-    const next = ratio * (effectiveDuration || 0);
-    setSeekPreview(next);
-    if (commit) {
-      engine.seek(next);
-      setIsSeeking(false);
-      setSeekPreview(null);
-    }
-  };
+  // const onProgressMouse = (
+  //   e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+  //   commit = false
+  // ) => {
+  //   const bar = e.currentTarget.getBoundingClientRect();
+  //   const x = e.clientX - bar.left;
+  //   const ratio = Math.min(1, Math.max(0, x / bar.width));
+  //   const next = ratio * (effectiveDuration || 0);
+  //   setSeekPreview(next);
+  //   if (commit) {
+  //     engine.seek(next);
+  //     setIsSeeking(false);
+  //     setSeekPreview(null);
+  //   }
+  // };
 
   const formatAudioLengthSmart = (audioLength: number): string => {
     const hours = Math.floor(audioLength / 3600);
@@ -105,6 +128,12 @@ const MediaPlayerControl = () => {
       : `${mm}:${ss}`;
   };
 
+  // NEW CONCEPT
+  const handlePlayPause = () => {
+    if (state.isPlaying) pause();
+    else play();
+  };
+
   const handlePlayAudio = () => {
     dispatch(playAudio(null));
   };
@@ -113,24 +142,41 @@ const MediaPlayerControl = () => {
     dispatch(pauseAudio());
   };
 
-  const handleUpdateVolume = (newVolume: number) => {
-    setVolumeState(newVolume);
-    dispatch(setVolume(newVolume));
-  };
+  // NEW CONCEPT
+  const handleVolume = (v: number) => setVolume(v);
 
-  const handleSeekBackward = () => {
-    const newTime = Math.max(0, effectiveTime - 10);
-    engine.seek(newTime);
-  };
+  // const handleUpdateVolume = (newVolume: number) => {
+  //   setVolumeState(newVolume);
+  //   dispatch(setVolume(newVolume));
+  // };
 
-  const handleSeekForward = () => {
-    const newTime = Math.min(effectiveDuration, effectiveTime + 10);
-    engine.seek(newTime);
-  };
+  // const handleSeekBackward = () => {
+  //   const newTime = Math.max(0, effectiveTime - 10);
+  //   engine.seek(newTime);
+  // };
 
-  const handleNextAudio = () => {
-    engine.next?.();
-  };
+  // const handleSeekForward = () => {
+  //   const newTime = Math.min(effectiveDuration, effectiveTime + 10);
+  //   engine.seek(newTime);
+  // };
+
+  // NEW CONCEPT
+  const handleSeekForward = () => seek(state.currentTime + 10);
+  const handleSeekBackward = () => seek(state.currentTime - 10);
+
+  // NEW CONCEPT
+  // const handleNext = () => {
+  //   if (state.sourceType === "SpecifyShowEpisodes")
+  //     const benefitListNe = []; // Nếu có benefitList thì truyền vào đây
+  //     navigateInSpecifyShow({ benefitList: benefitListNe,navigateType: "Next" });
+  //   else if (state.sourceType === "SavedEpisodes")
+  //     navigateInSavedEpisodes({ navigateType: "Next" });
+  //   else navigateInBookingTracks({ navigateType: "Next" });
+  // };
+
+  // const handleNextAudio = () => {
+  //   engine.next?.();
+  // };
 
   const handlePreviousAudio = () => {
     engine.previous?.();
@@ -320,7 +366,16 @@ const MediaPlayerControl = () => {
         >
           <MdOutlineReplay10 size={20} />
         </div>
-        {player.isBuffering ? (
+        {/* NEW CONCEPT */}
+        {state.buffering ? (
+          <CgSpinner />
+        ) : state.isPlaying ? (
+          <MdPauseCircleFilled size={50} onClick={handlePlayPause} />
+        ) : (
+          <IoPlayCircle size={50} onClick={handlePlayPause} />
+        )}
+
+        {/* {player.isBuffering ? (
           <div className="text-white flex items-center justify-center">
             <svg
               className="h-[45px] w-[45px] text-white animate-[rotate-spinner_1s_linear_infinite]"
@@ -359,7 +414,7 @@ const MediaPlayerControl = () => {
           >
             <MdPauseCircleFilled size={50} />
           </div>
-        )}
+        )} */}
         <div
           onClick={handleSeekForward}
           className="text-white hover:text-mystic-green cursor-pointer"

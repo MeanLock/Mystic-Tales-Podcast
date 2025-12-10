@@ -1,0 +1,44 @@
+.swal2-dark-popup {
+  border: 1px solid #2d2d2d;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  border-radius: 14px;
+  padding: 18px 20px;
+      z-index: 99999 !important;
+
+}
+.swal2-dark-icon {
+  filter: drop-shadow(0 0 4px rgba(255,180,0,.25));
+}
+.swal2-btn-confirm,
+.swal2-btn-cancel {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing:.5px;
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background .15s;
+  margin: 0 6px;
+}
+.swal2-btn-confirm {
+  background: linear-gradient(90deg,#7BA225,#AEE339);
+  color:#0e0e0e;
+}
+.swal2-btn-confirm:hover {
+  filter: brightness(1.1);
+}
+.swal2-btn-cancel {
+  background:#2d2d2d;
+  color:#ddd;
+}
+.swal2-btn-cancel:hover {
+  background:#3a3a3a;
+}
+.swal2-container {
+    z-index: 99999 !important;
+}
+
+.swal2-popup {
+    z-index: 99999 !important;
+}

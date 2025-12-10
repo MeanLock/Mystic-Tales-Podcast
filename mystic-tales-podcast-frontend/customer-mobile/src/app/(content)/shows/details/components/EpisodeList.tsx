@@ -4,33 +4,20 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Image, Pressable, StyleSheet } from "react-native";
 import { useMemo } from "react";
 import { useRouter } from "expo-router";
-
-type Episode = {
-  Id: string;
-  Name: string;
-  Description: string;
-  ExplicitContent: boolean;
-  ReleaseDate: string;
-  IsReleased: boolean;
-  ImageUrl: string;
-  AudioFileKey: string;
-  AudioFileSize: number;
-  AudioLength: number;
-  AudioFingerprint: string;
-  PodcastEpisodeSubscriptionType: { Id: number; Name: string };
-  PodcastShowId: string;
-  SeasonNumber: number;
-  TotalSave: number;
-  ListenCount: number;
-  IsAudioPublishable: boolean;
-  TakenDownReason: string | null;
-  DeletedAt: string | null;
-  CreatedAt: string;
-  UpdatedAt: string;
-};
+import { EpisodeFromShow } from "@/src/core/types/episode.type";
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
+import PlayButtonVariant1 from "@/src/components/buttons/playButton/playButtonVariant1";
+import PlayButtonVariant2 from "@/src/components/buttons/playButton/playButtonVariant2";
+import { useDispatch } from "react-redux";
+import {
+  setEpisodes,
+  setEpisodesData,
+} from "@/src/features/episode/episodeSlice";
+import { playAudio } from "@/src/features/mediaPlayer/playerSlice";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 
 interface EpisodeListProps {
-  episodes: Episode[];
+  episodes: EpisodeFromShow[];
 }
 
 // Format date based on time difference
@@ -73,38 +60,16 @@ const formatDate = (dateString: string): string => {
 };
 
 // Format audio length from seconds to human-readable format
-const formatAudioLength = (seconds: number): string => {
-  if (!seconds || seconds <= 0) {
-    return "0 sec";
-  }
-
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-
-  // Format based on the length:
-  // 1. If hours > 0: "X hours Y mins"
-  // 2. If only minutes > 0: "X mins Y secs"
-  // 3. If only seconds > 0: "X secs"
-
-  if (hours > 0) {
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ${
-      minutes > 0 ? `${minutes} ${minutes === 1 ? "min" : "mins"}` : ""
-    }`.trim();
-  } else if (minutes > 0) {
-    return `${minutes} ${minutes === 1 ? "min" : "mins"} ${
-      remainingSeconds > 0
-        ? `${remainingSeconds} ${remainingSeconds === 1 ? "sec" : "secs"}`
-        : ""
-    }`.trim();
-  } else {
-    return `${remainingSeconds} ${remainingSeconds === 1 ? "sec" : "secs"}`;
-  }
-};
 
 // Episode Component
-const EpisodeComponent = ({ episode }: { episode: Episode }) => {
+const EpisodeComponent = ({ episode }: { episode: EpisodeFromShow }) => {
   const router = useRouter();
+
+  const { listenFromEpisode } = usePlayer();
+
+  const handlePlayEpisode = () => {
+    listenFromEpisode(episode.Id, "SpecifyShowEpisodes");
+  };
 
   return (
     <Pressable
@@ -114,28 +79,25 @@ const EpisodeComponent = ({ episode }: { episode: Episode }) => {
       <View className="w-[70%] justify-between">
         <Text style={style.dateText}>{formatDate(episode.ReleaseDate)}</Text>
         <View className="w-full gap-2">
-          <Text numberOfLines={2} className="font-bold text-white text-[20px]">
+          <Text className="text-white text-[20px] font-bold" numberOfLines={2}>
             {episode.Name}
           </Text>
           <Text numberOfLines={3}>{episode.Description}</Text>
         </View>
         <View className="w-full items-start mt-5">
-          <Pressable style={style.playButton} className="w-8/12">
-            <MaterialIcons name="play-arrow" size={15} color={"#AEE339"} />
-            <Text
-              numberOfLines={1}
-              className="text-[10px] font-bold text-[#AEE339]"
-            >
-              {formatAudioLength(episode.AudioLength)}
-            </Text>
-          </Pressable>
+          <PlayButtonVariant2
+            episodeId={episode.Id}
+            audioLength={episode.AudioLength}
+            onPlayPress={() => handlePlayEpisode()}
+          />
         </View>
       </View>
       <View className="flex-1  min-w-[51px] items-end justify-between mt-1">
         <View>
-          <Image
-            source={{ uri: episode.ImageUrl }}
-            className="w-[80px] h-[80px]"
+          <AutoResolvingImage
+            FileKey={episode.MainImageFileKey}
+            type="PodcastPublicSource"
+            style={{ width: 80, height: 80 }}
           />
         </View>
         <View>
@@ -165,13 +127,28 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
     );
   }, [episodes]);
 
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const handleViewMoreEpisodesFromShow = () => {
+    // Implement navigation or action to view more episodes from the show
+    dispatch(
+      setEpisodesData({
+        episodes: episodes as EpisodeFromShow[],
+        title: `${episodes[0]?.PodcastShow?.Name || "Episodes"}`,
+        from: "ShowDetails",
+      })
+    );
+    // Navigate to the episodes list page
+    router.push(`/(content)/episodes`);
+  };
+
   return (
     <View className="w-full">
       <Pressable
         style={style.borderBottom}
         className="w-full flex-row items-center justify-between pb-6"
       >
-        <Text className="text-[30px] font-bold">Episodes</Text>
+        <Text className="text-[30px] font-bold text-white">Episodes</Text>
         <View style={style.iconContainer}>
           <MaterialIcons name="keyboard-arrow-right" color={"#fff"} size={25} />
         </View>
@@ -184,7 +161,10 @@ const EpisodeList = ({ episodes }: EpisodeListProps) => {
 
       {/* Show "See all" button if there are more than 4 episodes */}
       {episodes.length > 4 && (
-        <Pressable className="w-full flex flex-row items-center justify-between py-3">
+        <Pressable
+          onPress={() => handleViewMoreEpisodesFromShow()}
+          className="w-full flex flex-row items-center justify-between py-3"
+        >
           <Text className="font-bold text-[#AEE339]">
             See all ({episodes.length})
           </Text>

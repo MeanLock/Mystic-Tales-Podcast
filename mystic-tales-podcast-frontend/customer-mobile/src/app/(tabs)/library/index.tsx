@@ -19,6 +19,7 @@ import { RootState } from "@/src/store/store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { useWindowDimensions } from "react-native";
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 
 // Helper function to check if an icon exists
 const isValidMaterialIcon = (name: string): boolean => {
@@ -37,9 +38,9 @@ const tabNavigation = [
     to: "channels",
   },
   {
-    title: "Favorites",
-    iconName: "favorite",
-    to: "favorites",
+    title: "Followed Podcasters",
+    iconName: "people",
+    to: "podcasters",
   },
   {
     title: "Saved",
@@ -82,11 +83,11 @@ const TabComponent = ({
         case "channels":
           router.push("/library/channels");
           break;
-        case "favorites":
-          router.push("/library/favorites");
+        case "podcasters":
+          router.push("/library/podcasters");
           break;
         case "saved":
-          router.push("/library/downloads");
+          router.push("/library/saved");
           break;
         case "bookings":
           router.push("/library/bookings");
@@ -196,15 +197,20 @@ const Header = ({ scrollY }: { scrollY: Animated.Value }) => {
           {/* User badge or login button */}
           {authState.user ? (
             <Pressable style={headerStyles.userBadge} onPress={goToProfile}>
-              <Image
+              {/* <Image
                 source={{
                   uri:
                     authState.user.MainImageFileKey ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      authState.user.Fullname
+                      authState.user.FullName
                     )}`,
                 }}
                 style={headerStyles.userAvatar}
+              /> */}
+              <AutoResolvingImage
+                FileKey={authState.user.MainImageFileKey}
+                style={headerStyles.userAvatar}
+                type="AccountPublicSource"
               />
             </Pressable>
           ) : (

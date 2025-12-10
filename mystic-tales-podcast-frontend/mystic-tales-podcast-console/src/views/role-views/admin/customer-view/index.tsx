@@ -6,67 +6,14 @@ import { AllCommunityModule, ColDef, ModuleRegistry } from 'ag-grid-community';
 import CustomerUpdate from './CustomerUpdate';
 import { Eye } from 'phosphor-react';
 import Modal_Button from '../../../components/common/modal/ModalButton';
-import { Account, CustomerList } from '../../../../core/types';
+import { Account } from '../../../../core/types';
 import { getCustomerAccounts } from '../../../../core/services/account/account.service';
 import { adminAxiosInstance } from '../../../../core/api/rest-api/config/instances/v2';
-import SurveyTalkLoading from '../../../components/common/loading';
 import AvatarInput from '../../../components/common/avatar';
 import { formatDate } from '../../../../core/utils/date.util';
+import Loading from '@/views/components/common/loading';
 
-export const mockCustomerList: CustomerList = {
-  CustomerList: [
-    {
-      Id: 1,
-      Email: "user1@example.com",
-      Role: { Id: 1, Name: "Customer" },
-      Fullname: "Nguyen Van A",
-      Dob: "1995-05-20",
-      Gender: "Male",
-      Address: "123 Main Street, Hanoi",
-      Phone: "0123456789",
-      Balance: 100000,
-      MainImageFileKey: "https://picsum.photos/200/200?1",
-      IsVerified: true,
-      GoogleId: "google-1111",
-      VerifyCode: "ABC123",
-      PodcastListenSlot: 10,
-      ViolationPoint: 2,
-      ViolationLevel: 1,
-      LastViolationPointChanged: "2025-10-04T07:54:49.276Z",
-      LastViolationLevelChanged: "2025-10-04T07:54:49.276Z",
-      LastPodcastListenSlotChanged: "2025-10-04T07:54:49.276Z",
-      DeactivatedAt: "2025-10-04T07:54:49.276Z",
-      CreatedAt: "2025-10-04T07:54:49.276Z",
-      UpdatedAt: "2025-10-04T07:54:49.276Z",
-      IsBeingPunish: true,
-    },
-    {
-      Id: 2,
-      Email: "user2@example.com",
-      Role: { Id: 2, Name: "Admin" },
-      Fullname: "Tran Thi B",
-      Dob: "1998-12-15",
-      Gender: "Female",
-      Address: "456 Nguyen Trai, HCMC",
-      Phone: "0987654321",
-      Balance: 250000,
-      MainImageFileKey: "https://picsum.photos/200/200?2",
-      IsVerified: false,
-      GoogleId: "google-2222",
-      VerifyCode: "XYZ456",
-      PodcastListenSlot: 15,
-      ViolationPoint: 0,
-      ViolationLevel: 0,
-      LastViolationPointChanged: "2025-10-04T07:54:49.276Z",
-      LastViolationLevelChanged: "2025-10-04T07:54:49.276Z",
-      LastPodcastListenSlotChanged: "2025-10-04T07:54:49.276Z",
-      DeactivatedAt: null,
-      CreatedAt: "2025-10-04T07:54:49.276Z",
-      UpdatedAt: "2025-10-04T07:54:49.276Z",
-      IsBeingPunish: false,
-    },
-  ]
-};
+
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 interface CustomerViewProps { }
@@ -80,18 +27,18 @@ interface GridState {
 
 export const CustomerViewContext = createContext<CustomerViewContextProps | null>(null);
 
-const state_creator = (table: Account[]) => {
-  const state = {
+const  state_creator = (table: Account[]) => {
+  const  state  = {
     columnDefs: [
       { headerName: "ID", field: "Id", flex: 0.4 },
       {
         headerName: "Avatar", flex: 0.5,
-        cellRenderer: (params: { data: Account }) => {
+        cellRenderer:  (params: { data: Account })  => {
           return (
-            <AvatarInput size={50} src={params.data.MainImageFileKey ?? ''} />)
+            <AvatarInput size={50} fileKey={params.data.MainImageFileKey ?? ''} />)
         },
       },
-      { headerName: "Fullname", field: "Fullname" },
+      { headerName: "Full Name", field: "FullName" },
       { headerName: "Email", field: "Email" },
       { headerName: "Gender", field: "Gender", flex: 0.6 },
       {
@@ -145,7 +92,7 @@ const state_creator = (table: Account[]) => {
           const Modal_props = {
             updateForm: <CustomerUpdate account={params.data} onClose={() => { }} />,
             title: 'Customer [ID: #' + params.data.Id + ']',
-            button: <Eye size={27} color='var(--secondary-green)'/>,
+            button: <Eye size={27} color='var(--secondary-green)' />,
             update_button_color: 'white'
           }
           return (
@@ -175,26 +122,23 @@ const CustomerView: FC<CustomerViewProps> = () => {
   let [state, setState] = useState<GridState | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // const handleDataChange = async () => {
-  //   setIsLoading(true);
-  //   try {
-  //     const accountList = await getCustomerAccounts(adminAxiosInstance);
-  //     if (accountList.success) {
-  //       setState(state_creator(accountList.data.Accounts));
-  //     } else {
-  //       console.error('API Error:', accountList.message);
-  //     }
-  //   } catch (error) {
-  //     console.error('Lỗi khi fetch customer accounts:', error);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // }
   const handleDataChange = async () => {
-    setIsLoading(false);
-    setState(state_creator(mockCustomerList.CustomerList));
-
+    setIsLoading(true);
+    try {
+      const accountList = await getCustomerAccounts(adminAxiosInstance);
+      console.log("Fetched customer accounts:", accountList);
+      if (accountList.success) {
+        setState(state_creator(accountList.data.CustomerList));
+      } else {
+        console.error('API Error:', accountList.message);
+      }
+    } catch (error) {
+      console.error('Lỗi khi fetch customer accounts:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }
+
   useEffect(() => {
     handleDataChange()
   }, [])
@@ -215,7 +159,9 @@ const CustomerView: FC<CustomerViewProps> = () => {
       <CRow >
         <CCol xs={12}>
           {isLoading ? (
-            <SurveyTalkLoading />
+            <div className="flex justify-content-center align-items-center h-150" >
+              <Loading />
+            </div>
           ) : (
             <div
               id="customer-table"

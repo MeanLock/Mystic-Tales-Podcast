@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 
 import PdfSigning from "./components/PdfSigning";
 import { Loader2 } from "lucide-react";
-import { useGetBasicFileQuery } from "@/core/services/file/commitmentFile.service";
+import {
+  useGetBasicFileQuery,
+  useUploadSignImageMutation,
+} from "@/core/services/file/commitmentFile.service";
 import { accountApi } from "@/core/services/account/account.service";
 
 export type BecomePodcasterApiPayload = {
@@ -67,27 +70,82 @@ const ScriptEditor = ({
 const BecomePodcaster = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [finalFile, setFinalFile] = useState<File | null>(null);
-
+  const [signatureFormData, setSignatureFormData] = useState<FormData | null>(
+    null
+  );
   // Use RTKQuery to get Basic File first
-  const { data: basicFileData, isLoading: isBasicFileLoading } =
-    useGetBasicFileQuery();
+  const { data: pdfBytes, isLoading } = useGetBasicFileQuery();
+  const [uploadSignImage] = useUploadSignImageMutation();
+
+  // State để lưu file PDF đã được ký từ backend
+  const [signedPdfBytes, setSignedPdfBytes] = useState<ArrayBuffer | null>(
+    null
+  );
 
   // Use RTKQuery mutation for podcaster apply
   const [podcasterApply, { isLoading: isApplying }] =
     accountApi.usePodcasterApplyMutation();
 
-  useEffect(() => {
-    if (basicFileData && basicFileData.FileUrl) {
-      console.log("Basic commitment file url:", basicFileData.FileUrl);
+  const handleSignChange = async (data: FormData | null) => {
+    if (data) {
+      try {
+        console.log("Sending signature to backend...");
+        const signedPdf = await uploadSignImage({ formData: data }).unwrap();
+        console.log("Signed PDF received:", signedPdf);
+
+        // Lưu file PDF đã ký để hiển thị
+        setSignedPdfBytes(signedPdf);
+
+        // Tạo File từ signed PDF và lưu vào signatureFormData để submit
+        const signedBlob = new Blob([signedPdf], { type: "application/pdf" });
+        const signedFile = new File([signedBlob], "signed_commitment.pdf", {
+          type: "application/pdf",
+        });
+        const finalFormData = new FormData();
+        finalFormData.append("SignatureImage", signedFile);
+        setSignatureFormData(finalFormData);
+
+        console.log("Received signed PDF from backend");
+        alert("Chữ ký đã được gắn vào file thành công!");
+      } catch (error: any) {
+        console.error("Error uploading signature image:", error);
+        console.error("Error details:", {
+          message: error?.message,
+          status: error?.status,
+          data: error?.data,
+        });
+        alert(
+          "Lỗi khi gắn chữ ký vào PDF: " +
+            (error?.message || JSON.stringify(error))
+        );
+        setSignatureFormData(null);
+      }
+    } else {
+      // Nếu xoá chữ ký, reset về PDF gốc
+      setSignedPdfBytes(null);
+      setSignatureFormData(null);
     }
-  }, [basicFileData]);
+  };
+
+  useEffect(() => {
+    if (pdfBytes) {
+      console.log("Basic commitment file bytes received");
+      // DOWNLOAD LUÔN
+      // const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      // const url = URL.createObjectURL(blob);
+      // const a = document.createElement("a");
+      // a.href = url;
+      // a.download = "commitment-document.pdf";
+      // a.click();
+      // URL.revokeObjectURL(url);
+    }
+  }, [pdfBytes]);
 
   // Callback nhận file PDF đã ký từ PdfSigning component
-  const handlePdfSaved = (file: File) => {
-    setFinalFile(file);
-    console.log("PDF đã được ký và lưu:", file);
-  };
+  // const handlePdfSaved = (file: File) => {
+  //   setFinalFile(file);
+  //   console.log("PDF đã được ký và lưu:", file);
+  // };
 
   // FUNCTIONS
   const handleSubmitApply = async () => {
@@ -101,7 +159,7 @@ const BecomePodcaster = () => {
       return;
     }
 
-    if (!finalFile) {
+    if (!signedPdfBytes) {
       alert("Vui lòng ký vào file cam kết trước khi submit!");
       return;
     }
@@ -116,19 +174,21 @@ const BecomePodcaster = () => {
         "PodcasterProfileCreateInfo",
         JSON.stringify(PodcasterProfileCreateInfo)
       );
-      formData.append("CommitmentDocumentFile", finalFile);
 
-      // Gọi RTKQuery mutation
+      // Tạo File từ signedPdfBytes (ArrayBuffer) để gửi về backend
+      const signedPdfBlob = new Blob([signedPdfBytes], {
+        type: "application/pdf",
+      });
+      const signedPdfFile = new File([signedPdfBlob], "signed_commitment.pdf", {
+        type: "application/pdf",
+      });
+      formData.append("CommitmentDocumentFile", signedPdfFile);
+
       const result = await podcasterApply({
         applyPodcasterFormData: formData,
       }).unwrap();
 
       alert("Đăng ký thành công! " + result.Message);
-
-      // Reset form sau khi thành công
-      setName("");
-      setDescription("");
-      setFinalFile(null);
     } catch (error: any) {
       console.error("Error applying:", error);
       alert("Có lỗi xảy ra: " + (error?.message || "Không xác định"));
@@ -165,15 +225,15 @@ const BecomePodcaster = () => {
           Please read the terms in the file carefully and sign to confirm
         </p>
 
-        {isBasicFileLoading ? (
+        {isLoading ? (
           <div className="flex items-center gap-2 text-white">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4" />
             <span>Đang tải file cam kết...</span>
           </div>
-        ) : basicFileData ? (
+        ) : pdfBytes ? (
           <PdfSigning
-            FileUrl={basicFileData.FileUrl}
-            onSave={handlePdfSaved}
+            FileBytes={signedPdfBytes || pdfBytes}
+            onSignChange={handleSignChange}
           />
         ) : (
           <p className="text-red-400">Không thể tải file cam kết</p>
@@ -182,7 +242,7 @@ const BecomePodcaster = () => {
 
       <Button
         onClick={handleSubmitApply}
-        disabled={isApplying || !finalFile}
+        disabled={isApplying || !signedPdfBytes}
         className="bg-mystic-green hover:bg-mystic-green/80 px-8 py-6 text-lg"
       >
         {isApplying ? (
@@ -195,9 +255,9 @@ const BecomePodcaster = () => {
         )}
       </Button>
 
-      {finalFile && (
+      {signedPdfBytes && (
         <p className="text-mystic-green text-sm">
-          ✓ File đã được ký: {finalFile.name}
+          ✓ File cam kết đã được ký thành công
         </p>
       )}
     </div>

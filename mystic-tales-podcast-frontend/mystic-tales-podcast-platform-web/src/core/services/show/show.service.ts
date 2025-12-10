@@ -10,7 +10,7 @@ const showApi = appApi.injectEndpoints({
       { podcasterId: number }
     >({
       query: ({ podcasterId }) => ({
-        url: `/api/podcast-service/api/shows?podcasterId=${podcasterId}`,
+        url: `/api/podcast-service/api/shows?podcaster_id=${podcasterId}`,
         method: "GET",
         authMode: "public",
       }),

@@ -102,7 +102,7 @@ const getMetricsForPeriod = (
             summaryProfit?.TotalRevenue,
             summaryProfit?.PercentChange,
             comparisonPeriod,
-            (val) => `${formatValue(val)} VND`
+            (val) => `${formatValue(val)} Points`
         ),
         createMetric(
             `Người dùng mới ${titlePrefix}`,

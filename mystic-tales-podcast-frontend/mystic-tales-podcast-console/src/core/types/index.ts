@@ -6,7 +6,7 @@ export type Account = {
   Id: number;
   Email: string;
   Role: Role;
-  Fullname: string;
+  FullName: string;
   Dob: string;
   Gender: string;
   Address: string;
@@ -22,36 +22,50 @@ export type Account = {
   LastViolationPointChanged: string;
   LastViolationLevelChanged: string;
   LastPodcastListenSlotChanged: string;
-  DeactivatedAt: string | null;
+  DeactivatedAt?: string | null;
   CreatedAt: string;
   UpdatedAt: string;
-  IsBeingPunish: boolean;
 };
 
-export type CustomerList = {
-  CustomerList: Account[];
-};
-export type StaffList = {
-  StaffList: Account[];
-};
-export type PodcasterList = {
-  PodcasterList: Account[];
-};
+
 export type PodcasterProfile = {
   AccountId: number;
-  Description: string;
+  Name: string;
+  Description?: string | null;
   AverageRating: number;
   RatingCount: number;
-  CommitmentDocumentFileKey?: string;
-  BuddyAudioFileUrl?: string;
+  TotalFollow: number;
+  ListenCount: number;
+  CommitmentDocumentFileKey: string | null;
+  BuddyAudioFileKey: string | null;
   OwnedBookingStorageSize: number;
   UsedBookingStorageSize: number;
+  PricePerBookingWord: number;
   IsVerified: boolean;
   CreatedAt: string;
   UpdatedAt: string;
 }
 export type Podcaster = {
-  Account: Account;
+  Id: number;
+  Email: string;
+  Role: Role;
+  FullName: string;
+  Dob: string;
+  Gender: string;
+  Address: string;
+  Phone: string;
+  Balance: number;
+  MainImageFileKey: string;
+  IsVerified: boolean;
+  PodcastListenSlot: number;
+  ViolationPoint: number;
+  ViolationLevel: number;
+  LastViolationPointChanged: string;
+  LastViolationLevelChanged: string;
+  LastPodcastListenSlotChanged: string;
+  DeactivatedAt?: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
   PodcasterProfile: PodcasterProfile;
 }
 
@@ -60,32 +74,46 @@ export type AssignedStaff = {
   Id: number;
   FullName: string;
   Email: string;
+  MainImageFileKey: string;
 };
 export type PodcastEpisode = {
   Id: string;
-  Title: string;
+  Name: string;
+  MainImageFileKey: string;
 };
 export type PodcastShow = {
   Id: string;
   Name: string;
+  MainImageFileKey: string;
 };
 export type DMCAAccusation = {
   Id: number;
+  AccuserEmail: string;
+  AccuserPhone: string;
+  AccuserFullName: string;
   PodcastShow: PodcastShow;
   PodcastEpisode: PodcastEpisode;
   AssignedStaff: AssignedStaff;
-  LastLawsuitCheckingAlertAt: string;
+  CurrentStatus: CurrentStatus;
   CreatedAt: string;
   UpdatedAt: string;
 };
+export type CurrentStatus = {
+  Id: Number;
+  Name: string;
+};
 export type DMCAAccusationDetail = {
   Id: number;
-  PodcastShowId: string;
-  PodcastEpisodeId: string | null;
-  AssignedStaff: number | null;
-  LastLawsuitCheckingAlertAt: string | null;
+  AccuserEmail: string;
+  AccuserPhone: string;
+  AccuserFullName: string;
+  DismissReason: string;
+  PodcastShow: PodcastShow;
+  PodcastEpisode: PodcastEpisode;
+  AssignedStaff: AssignedStaff;
+  CurrentStatus: CurrentStatus;
   CreatedAt: string;
-  UpdatedAt: string | null; 
+  UpdatedAt: string;
   DMCANotice?: DMCANotice;
   CounterNotice?: CounterNotice;
   LawsuitProof?: LawsuitProof;
@@ -170,3 +198,8 @@ export type LawsuitProof = {
   UpdatedAt: string;
   LawsuitProofAttachFileList: LawsuitProofAttachFile[];
 };
+
+export interface HashtagOption {
+    id: number;
+    name: string;
+}

@@ -1,0 +1,120 @@
+.booking-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 65px);
+    overflow: hidden; // chặn scroll toàn trang
+
+    &__header {
+        padding: 2.7rem 2.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+
+        @media (max-width: 900px) {
+            gap: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+            padding: 1.2rem 1rem 0;
+        }
+    }
+
+    &__title {
+        font-weight: 700 !important;
+        font-size: 32px;
+        word-break: break-word;
+        line-height: 1.1;
+        font-family: 'inter', sans-serif !important;
+        letter-spacing: 1px;
+
+        @media (max-width: 900px) {
+            font-size: 3rem !important;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+
+        @media (max-width: 600px) {
+            font-size: 2rem !important;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+
+    }
+
+    &__btn {
+        &--add {
+            text-transform: none !important;
+            border-radius: 4px !important;
+            padding: 6px 16px !important;
+            font-weight: 700 !important;
+            background-color: var(--primary-green) !important;
+            color: #000 !important;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            &:hover {
+                transform: translateY(-3px);
+            }
+
+            @media (max-width: 900px) {
+                width: 50%;
+                padding: 8px 0 !important;
+                font-size: 0.95rem !important;
+                margin: 0 auto;
+                margin-bottom: 0.5rem;
+            }
+
+            @media (max-width: 600px) {
+                width: 100%;
+                padding: 8px 0 !important;
+                font-size: 0.95rem !important;
+                margin: 0 auto;
+                margin-bottom: 0.5rem;
+            }
+        }
+    }
+}
+
+#booking-table {
+
+    .ag-header-cell-text {
+        color: var(--white-75);
+    }
+
+    .ag-header-container {
+        background-color: var(--primary-grey);
+    }
+
+    .ag-icon {
+        color: var(--primary-green);
+    }
+
+    .ag-header-cell-resize::after {
+        background-color: var(--primary-green);
+    }
+    .ag-header {
+        font-size: 0.8rem;
+        font-weight: 400;
+    }
+
+    .ag-root-wrapper {
+        border: 0.5px solid var(--secondary-grey);
+        border-left: none;
+        border-radius: 0rem;
+        border-right: none;
+    }
+
+    .ag-body-container {
+        background-color: var(--primary-grey);
+
+    }
+
+    .ag-paging-panel {
+        height: 5.2rem;
+        padding-right: 3rem;
+    }
+}

@@ -14,6 +14,7 @@ import { adminAxiosInstance } from "../../../../core/api/rest-api/config/instanc
 import { PeriodicProfit } from "../../../../core/types/statistics"
 import { formatDate } from "../../../../core/utils/date.util"
 import SurveyTalkLoading from "../../../components/common/loading"
+import Loading from "../../../components/common/loading"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -49,7 +50,7 @@ export function RevenueChart({ activeTab }: { activeTab: string }) {
   }
 
   const getTooltipLabel = (item: PeriodicProfit) => {
-    const revenue = item.Revenue.toLocaleString('vi-VN') + ' VND';
+    const revenue = item.Revenue.toLocaleString('vi-VN') + ' Points';
 
     if (activeTab === 'Daily' || activeTab === 'Weekly') {
       return `Doanh thu: ${revenue}`;
@@ -145,7 +146,9 @@ export function RevenueChart({ activeTab }: { activeTab: string }) {
   return (
     <div style={{ height: "350px" }}>
       {isLoading ? (
-        <SurveyTalkLoading />
+         <div className="flex justify-content-center align-items-center h-150" >
+              <Loading />
+            </div>
       ) : (
         <Bar data={data} options={options} />
       )}

@@ -19,12 +19,13 @@ import { TbTransactionDollar } from "react-icons/tb";
 import {
   MdNotificationsNone,
   MdNotificationsPaused,
+  MdOutlineAccountBalanceWallet,
   MdOutlinePayments,
   MdSaveAlt,
 } from "react-icons/md";
 import { PiHandWithdrawBold } from "react-icons/pi";
 import { MdOutlineSubscriptions } from "react-icons/md";
-import { AiOutlineHome } from "react-icons/ai";
+import { AiOutlineFileDone, AiOutlineHome } from "react-icons/ai";
 import { TbCoinFilled } from "react-icons/tb";
 import { MdOutlineNavigateNext } from "react-icons/md";
 
@@ -58,126 +59,6 @@ import {
 } from "@/core/services/search/search.service";
 import { Input } from "@/components/ui/input";
 import { LucideFileAudio } from "lucide-react";
-
-const mocksuggesstionContents: ContentRealtimeResponse[] = [
-  // 1 — Episode
-  {
-    Episode: {
-      Id: "ep1",
-      Description: "An exciting episode about technology.",
-      Name: "The Future of Tech",
-      IsReleased: true,
-      ReleaseDate: "2023-10-01T10:00:00Z",
-      MainImageFileKey:
-        "https://i.pinimg.com/736x/6d/fc/98/6dfc98d4b99f8a5cd34f39a3ade230a5.jpg",
-    },
-    Show: null,
-  },
-
-  // 2 — Show
-  {
-    Show: {
-      Id: "show1",
-      Description: "A podcast about daily news and events.",
-      Name: "Daily News Roundup",
-      MainImageFileKey:
-        "https://i.pinimg.com/736x/12/45/98/124598c3ef4f1b3af3120048d964eab0.jpg",
-      IsReleased: true,
-      ReleaseDate: "2023-09-10T08:00:00Z",
-    },
-    Episode: null,
-  },
-
-  // 3 — Episode
-  {
-    Episode: {
-      Id: "ep2",
-      Description: "Exploring the mysteries of the ocean.",
-      Name: "Into The Deep Sea",
-      IsReleased: true,
-      ReleaseDate: "2023-07-18T09:30:00Z",
-      MainImageFileKey:
-        "https://i.pinimg.com/736x/96/cc/f0/96ccf014f1afc8b6d7c35f3e3c0fa0b3.jpg",
-    },
-    Show: null,
-  },
-
-  // 4 — Show
-  {
-    Show: {
-      Id: "show2",
-      Description: "Stories behind the most iconic movies ever made.",
-      Name: "Cinema Legends",
-      MainImageFileKey:
-        "https://i.pinimg.com/736x/46/84/3b/46843b9f2bb286a7a3cd8be6b23607b5.jpg",
-      IsReleased: true,
-      ReleaseDate: "2022-05-12T00:00:00Z",
-    },
-    Episode: null,
-  },
-
-  // 5 — Episode
-  {
-    Episode: {
-      Id: "ep3",
-      Description: "A deep dive into how AI is shaping the world.",
-      Name: "AI and Society",
-      IsReleased: true,
-      ReleaseDate: "2024-01-20T14:00:00Z",
-      MainImageFileKey:
-        "https://i.pinimg.com/736x/aa/07/2d/aa072d662735bb21f1ed4d610d112cf0.jpg",
-    },
-    Show: null,
-  },
-
-  // 6 — Show
-  {
-    Show: {
-      Id: "show3",
-      Description: "A lifestyle podcast covering health and wellness.",
-      Name: "Mind & Body Weekly",
-      MainImageFileKey:
-        "https://i.pinimg.com/736x/19/76/6c/19766c7b8ad0df7f42e852ccfa324f25.jpg",
-      IsReleased: true,
-      ReleaseDate: "2023-02-14T07:00:00Z",
-    },
-    Episode: null,
-  },
-
-  // 7 — Episode
-  {
-    Episode: {
-      Id: "ep4",
-      Description: "Tips to improve productivity every day.",
-      Name: "Productivity Hacks 101",
-      IsReleased: true,
-      ReleaseDate: "2023-04-22T13:15:00Z",
-      MainImageFileKey:
-        "https://i.pinimg.com/736x/72/2f/04/722f04dd1d34a8fdaa88840935fc8cda.jpg",
-    },
-    Show: null,
-  },
-
-  // 8 — Show
-  {
-    Show: {
-      Id: "show4",
-      Description: "True crime stories that shocked the world.",
-      Name: "Crime Files",
-      MainImageFileKey:
-        "https://i.pinimg.com/736x/37/c3/1b/37c31b3fe35eede81dd3538f6c9c264e.jpg",
-      IsReleased: true,
-      ReleaseDate: "2021-12-01T00:00:00Z",
-    },
-    Episode: null,
-  },
-];
-
-const mockAutocompleteKeywords: string[] = [
-  "Truyện Ma",
-  "Truyện Ma Kinh Dị",
-  "Truyện Ma ông út đánh ma dú dài",
-];
 
 const navItems = [
   {
@@ -291,9 +172,24 @@ const navItems = [
         iconActive: <PiReceipt color="#fff" size={15} />,
         iconWhenSmall: <PiReceipt color="#333" size={11} />,
         name: "Bookings",
-        to: "/media-player/management/bookings",
-        isSubItemsContain: false,
-        subItems: [],
+        to: "",
+        isSubItemsContain: true,
+        subItems: [
+          {
+            icon: <PiReceipt color="#fff" size={9} />,
+            iconActive: <PiReceipt color="#aae339" size={9} />,
+            iconWhenSmall: <PiReceipt color="#333" size={9} />,
+            name: "Bookings Management",
+            to: "/media-player/management/bookings",
+          },
+          {
+            icon: <AiOutlineFileDone color="#fff" size={9} />,
+            iconActive: <AiOutlineFileDone color="#aae339" size={9} />,
+            iconWhenSmall: <AiOutlineFileDone color="#333" size={9} />,
+            name: "Completed Bookings",
+            to: "/media-player/management/completed-bookings",
+          },
+        ],
       },
       {
         icon: <TbTransactionDollar color="#fff" size={11} />,
@@ -323,6 +219,24 @@ const navItems = [
             iconWhenSmall: <MdOutlineSubscriptions color="#333" size={9} />,
             name: "Subscriptions",
             to: "/media-player/management/transactions/subscriptions",
+          },
+          {
+            icon: <MdOutlineSubscriptions color="#fff" size={9} />,
+            iconActive: <MdOutlineSubscriptions color="#aae339" size={9} />,
+            iconWhenSmall: <MdOutlineSubscriptions color="#333" size={9} />,
+            name: "Subscriptions",
+            to: "/media-player/management/transactions/subscriptions",
+          },
+          {
+            icon: <MdOutlineAccountBalanceWallet color="#fff" size={9} />,
+            iconActive: (
+              <MdOutlineAccountBalanceWallet color="#aae339" size={9} />
+            ),
+            iconWhenSmall: (
+              <MdOutlineAccountBalanceWallet color="#333" size={9} />
+            ),
+            name: "Account Balance",
+            to: "/media-player/management/transactions/account-balance",
           },
         ],
       },
@@ -448,14 +362,11 @@ const MediaPlayerSidebar = () => {
     if (suggestionContentData) {
       setSuggesstionContents(suggestionContentData.SearchItemList);
       // Push thêm mockdata vào
-      setSuggesstionContents([
-        ...suggestionContentData.SearchItemList,
-        ...mocksuggesstionContents,
-      ]);
+      setSuggesstionContents([...suggestionContentData.SearchItemList]);
     } else {
       setSuggesstionContents([]);
       // Push thêm mockdata vào
-      setSuggesstionContents([...mocksuggesstionContents]);
+      setSuggesstionContents([]);
     }
   }, [keyword, suggestionKeywordData, suggestionContentData]);
 
@@ -664,9 +575,11 @@ const MediaPlayerSidebar = () => {
                 }}
                 onContentClick={(content) => {
                   if (content.Show) {
-                    navigate(`/media-player/show/${content.Show.Id}`);
+                    navigate(`/media-player/shows/${content.Show.Id}`);
                   } else if (content.Episode) {
-                    navigate(`/media-player/episode/${content.Episode.Id}`);
+                    navigate(
+                      `/media-player/episodes/details/${content.Episode.Id}`
+                    );
                   }
                   setShowSearchSuggestion(false);
                 }}
@@ -687,19 +600,19 @@ const MediaPlayerSidebar = () => {
         >
           <div className="flex items-center justify-center">
             {isResolveLoading ? (
-              <Skeleton className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full" />
+              <Skeleton className="md:w-8 md:h-8 sm:w-8 sm:h-8 w-8 h-8 rounded-full" />
             ) : (
               <img
                 src={userWithImageUrl.ImageUrl || "/images/unknown/user.png"}
-                className="md:w-10 md:h-10 sm:w-9 sm:h-9 w-8 h-8 rounded-full aspect-square object-cover"
+                className="md:w-10 md:h-10 sm:w-8 sm:h-8 w-8 h-8 rounded-full aspect-square object-cover"
               />
             )}
           </div>
           <div className="hidden md:inline-block">
-            <p className="font-bold text-white text-[12px] line-clamp-1">
+            <p className="font-bold text-white text-[12px] line-clamp-1 max-w-[120px]">
               {userWithImageUrl.FullName}
             </p>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 max-w-[150px]">
               <TbCoinFilled color="#aae339" size={14} />
               <p className="text-sm font-semibold text-mystic-green line-clamp-1">
                 {userWithImageUrl.Balance.toLocaleString("vn")}

@@ -1,42 +1,16 @@
 import { createContext, type FC, useEffect, useMemo, useState } from "react"
 import "./styles.scss"
 import { AgGridReact } from "ag-grid-react"
-import { CButton, CCard, CCol, CFormInput, CRow, CSpinner } from "@coreui/react"
+import { CButton, CButtonGroup, CCard, CCol, CFormInput, CRow, CSpinner } from "@coreui/react"
 import { AllCommunityModule, ColDef, ModuleRegistry } from "ag-grid-community"
-import { managerAxiosInstance } from "../../../../../core/api/rest-api/config/instances/v2/manager-axios-instance"
-import SurveyTalkLoading from "../../../../components/common/loading"
 import { formatDate } from "../../../../../core/utils/date.util"
-export const mockList: any = {
-    BuddyReportReviewSessionList: [
-        {
-            Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            PodcastBuddyId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            AssignedStaff: 201,
-            ResolvedViolationPoint: 1,
-            IsResolved: true,
-            CreatedAt: "2025-10-10T10:24:13.336Z",
-            UpdatedAt: "2025-10-10T10:26:42.100Z",
-        },
-        {
-            Id: "e7b13b77-8f10-4d95-9e54-2f00a8b0a888",
-            PodcastBuddyId: "c7e3c9e0-12b4-45d1-bb25-91ffb44d8f6a",
-            AssignedStaff: 202,
-            ResolvedViolationPoint: null,
-            IsResolved: false,
-            CreatedAt: "2025-10-09T16:30:05.120Z",
-            UpdatedAt: "2025-10-09T18:02:10.000Z",
-        },
-        {
-            Id: "b8f64a92-dc23-4b1e-97c1-9b9186f27d44",
-            PodcastBuddyId: "9c73b3d0-1c41-4a8e-9d8c-11c5e6c74a01",
-            AssignedStaff: 203,
-            ResolvedViolationPoint: 2,
-            IsResolved: true,
-            CreatedAt: "2025-10-08T09:12:44.230Z",
-            UpdatedAt: "2025-10-08T10:00:00.000Z",
-        },
-    ],
-};
+import { getBuddyReviewSession } from "@/core/services/report/BuddyReport.service"
+import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
+import BuddyReportDetail from "./BuddyReportDetail"
+import { Eye } from "phosphor-react"
+import Modal_Button from "@/views/components/common/modal/ModalButton"
+import Loading from "../../../../components/common/loading"
+
 ModuleRegistry.registerModules([AllCommunityModule])
 
 interface BuddyReportReviewViewProps { }
@@ -54,21 +28,32 @@ const state_creator = (table: any[]) => {
         columnDefs: [
             {
                 headerName: "No.",
-                flex: 0.2,
                 valueGetter: (params: any) => {
                     return params.node.rowIndex + 1; // Hiển thị số thứ tự từ 1
                 },
+                flex: 0.4,
                 cellClass: '',
                 sortable: false,
                 filter: false
             },
-            { headerName: "Assigned Staff", field: "AssignedStaff", flex: 0.8 },
-            { headerName: "Podcast Buddy ID", field: "PodcastBuddyId", flex: 0.8 },
-            { headerName: "Resolved Violation Point", field: "ResolvedViolationPoint", flex: 0.8 },
+            { headerName: "Assigned Staff", field: "AssignedStaff.FullName", flex: 1.2 },
+            { headerName: "Podcast Buddy ", field: "PodcastBuddy.FullName", flex: 1.2 },
+            { headerName: "Resolved Violation Point", field: "ResolvedViolationPoint", flex: 1.2 },
+            {
+                headerName: "Created At",
+                field: "CreatedAt",
+                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
+
+            },
+            {
+                headerName: "Updated At",
+                field: "UpdatedAt",
+                valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
+
+            },
             {
                 headerName: "Status",
                 cellClass: 'd-flex align-items-center',
-                flex: 0.7,
                 cellRenderer: (params: { data: any }) => {
                     let status = {
                         title: '',
@@ -78,6 +63,16 @@ const state_creator = (table: any[]) => {
                         status = {
                             title: 'Resolved',
                             color: 'success',
+                        };
+                    } else if (params.data.IsResolved === false) {
+                        status = {
+                            title: 'Rejected',
+                            color: 'danger',
+                        };
+                    } else if (params.data.IsResolved === null) {
+                        status = {
+                            title: 'Unresolved',
+                            color: 'warning',
                         };
                     } else {
                         status = {
@@ -96,20 +91,34 @@ const state_creator = (table: any[]) => {
                     );
                 },
             },
-            {
-                headerName: "Created At",
-                field: "CreatedAt",
-                flex: 0.5,
-                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
 
-            },
             {
-                headerName: "Updated At",
-                field: "UpdatedAt",
-                flex: 0.5,
-                valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
+                headerName: "",
+                cellClass: 'd-flex justify-content-center py-0',
+                cellRenderer: (params: { data: any }) => {
+                    const Modal_props = {
+                        detailForm: <BuddyReportDetail podcastBuddyReportReviewSessionId={params.data.Id} onClose={() => { }} />,
+                        title: '',
+                        button: <Eye size={27} color='var(--secondary-green)' />,
+                        update_button_color: 'white'
+                    }
+                    if (params.data.IsResolved !== null) return <></>;
 
-            },
+                    return (
+
+                        <CButtonGroup style={{ width: '100%', height: "100%" }} role="group" aria-label="Basic mixed styles example">
+                            <Modal_Button
+                                disabled={false}
+                                title={Modal_props.title}
+                                content={Modal_props.button}
+                                color={Modal_props.update_button_color} >
+                                {Modal_props.detailForm}
+                            </Modal_Button>
+                        </CButtonGroup>
+                    )
+
+                },
+            }
         ],
         rowData: table
 
@@ -123,26 +132,22 @@ const BuddyReportReviewView: FC<BuddyReportReviewViewProps> = () => {
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // const handleDataChange = async () => {
-    //   setIsLoading(true);
-    //   try {
-    //     const accountList = await getCustomerAccounts(adminAxiosInstance);
-    //     if (accountList.success) {
-    //       setState(state_creator(accountList.data.Accounts));
-    //     } else {
-    //       console.error('API Error:', accountList.message);
-    //     }
-    //   } catch (error) {
-    //     console.error('Lỗi khi fetch customer accounts:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // }
     const handleDataChange = async () => {
-        setIsLoading(false);
-        setState(state_creator(mockList.BuddyReportReviewSessionList));
-
+        setIsLoading(true);
+        try {
+            const reportList = await getBuddyReviewSession(adminAxiosInstance);
+            if (reportList.success) {
+                setState(state_creator(reportList.data.BuddyReportReviewSessionList));
+            } else {
+                console.error('API Error:', reportList.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch buddy reports:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }
+
     useEffect(() => {
         handleDataChange()
     }, [])
@@ -167,7 +172,9 @@ const BuddyReportReviewView: FC<BuddyReportReviewViewProps> = () => {
             <CRow >
                 <CCol xs={12}>
                     {isLoading ? (
-                        <SurveyTalkLoading />
+                        <div className="flex justify-content-center align-items-center h-150" >
+                            <Loading />
+                        </div>
                     ) : (
                         <div
                             id="customer-table"

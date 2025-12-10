@@ -66,6 +66,9 @@ import {
   useReportShowMutation,
 } from "@/core/services/report/report.service";
 import EpisodeCard from "./components/EpisodeCard";
+import { MdKeyboardArrowRight } from "react-icons/md";
+import { setSeeMoreEpisodeData } from "@/redux/slices/seeMoreEpisodeSlice/seeMoreEpisodeSlice";
+import { useLazyGetPodcastPublicSourceQuery } from "@/core/services/file/file.service";
 
 const ShowFileConfig: FileResolveConfig[] = [
   {
@@ -182,6 +185,12 @@ const ShowDetailsPage = () => {
   );
   const [isFollowed, setIsFollowed] = useState(false);
 
+  // TRAILER AUDIO
+  const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
+  const [trailerAudio, setTrailerAudio] = useState<HTMLAudioElement | null>(
+    null
+  );
+
   // REPORT
   const [reportShowDialog, setReportShowDialog] = useState(false);
   const [isShowAlreadyReported, setIsShowAlreadyReported] = useState(false);
@@ -238,6 +247,7 @@ const ShowDetailsPage = () => {
   const [unFollowShow, { isLoading: isUnFollowing }] =
     useUnFollowShowMutation();
 
+  const [getTrailerAudioUrl] = useLazyGetPodcastPublicSourceQuery();
   useEffect(() => {
     const resolveData = async () => {
       if (!id) {
@@ -293,6 +303,22 @@ const ShowDetailsPage = () => {
       );
 
       const data = resolvedShow as unknown as { Show: ShowDetailsUI };
+
+      // Sort episodes: newest first by SeasonNumber, EpisodeOrder, then ReleaseDate
+      if (data.Show && Array.isArray(data.Show.EpisodeList)) {
+        const sortedEpisodes = [...data.Show.EpisodeList].sort((a, b) => {
+          const seasonDiff = (b.SeasonNumber ?? 0) - (a.SeasonNumber ?? 0);
+          if (seasonDiff !== 0) return seasonDiff;
+
+          const orderDiff = (b.EpisodeOrder ?? 0) - (a.EpisodeOrder ?? 0);
+          if (orderDiff !== 0) return orderDiff;
+
+          const aTime = a.CreatedAt ? new Date(a.CreatedAt).getTime() : 0;
+          const bTime = b.CreatedAt ? new Date(b.CreatedAt).getTime() : 0;
+          return bTime - aTime;
+        });
+        data.Show.EpisodeList = sortedEpisodes;
+      }
 
       // Process subscription data
       if (activeSubscriptionRaw && activeSubscriptionRaw.PodcastSubscription) {
@@ -612,6 +638,81 @@ const ShowDetailsPage = () => {
     }
   };
 
+  const handleSeeMoreEpisodeFromShow = () => {
+    if (!showDetailsRaw) return;
+    dispatch(
+      setSeeMoreEpisodeData({
+        title: `Episodes from ${show?.Name}`,
+        episodes: showDetailsRaw.Show.EpisodeList,
+      })
+    );
+    navigate(`/media-player/episodes`);
+  };
+
+  const handlePlayTrailerAudio = async () => {
+    if (!show || !show.TrailerAudioFileKey) return;
+
+    try {
+      // If already playing, stop it
+      if (isPlayingTrailer && trailerAudio) {
+        trailerAudio.pause();
+        trailerAudio.currentTime = 0;
+        setIsPlayingTrailer(false);
+        setTrailerAudio(null);
+        return;
+      }
+
+      // Get audio URL and play
+      const { data } = await getTrailerAudioUrl({
+        FileKey: show.TrailerAudioFileKey,
+      });
+
+      if (data && data.FileUrl) {
+        const audio = new Audio(data.FileUrl);
+
+        // Set up event listeners
+        audio.addEventListener("ended", () => {
+          setIsPlayingTrailer(false);
+          setTrailerAudio(null);
+        });
+
+        audio.addEventListener("error", () => {
+          setIsPlayingTrailer(false);
+          setTrailerAudio(null);
+          dispatch(
+            setError({
+              message: "Failed to play trailer audio",
+              autoClose: 10,
+            })
+          );
+        });
+
+        setTrailerAudio(audio);
+        setIsPlayingTrailer(true);
+        await audio.play();
+      }
+    } catch (error) {
+      setIsPlayingTrailer(false);
+      setTrailerAudio(null);
+      dispatch(
+        setError({
+          message: `Error while playing trailer audio: ${error}`,
+          autoClose: 20,
+        })
+      );
+    }
+  };
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (trailerAudio) {
+        trailerAudio.pause();
+        trailerAudio.currentTime = 0;
+      }
+    };
+  }, [trailerAudio]);
+
   // RENDER
   if (isShowDetailsLoading || isFileResolving) {
     return (
@@ -697,17 +798,39 @@ const ShowDetailsPage = () => {
 
           {/* Action Buttons */}
           <div className="flex w-full items-center justify-between">
-            {isUserSubscribed ? (
-              <Button className="bg-mystic-green hover:bg-lime-400 transition-all duration-700 ease-out  hover:-translate-y-1 cursor-pointer  text-black font-semibold px-6 py-2 rounded-sm">
-                <FaPlay />
-                Latest Episode
-              </Button>
-            ) : (
-              <Button className="bg-mystic-green hover:bg-lime-400 transition-all duration-700 ease-out  hover:-translate-y-1 cursor-pointer  text-black font-semibold px-6 py-2 rounded-sm">
-                <FaPlay />
-                Trailer Audio
-              </Button>
-            )}
+            <Button
+              onClick={() => handlePlayTrailerAudio()}
+              disabled={!show.TrailerAudioFileKey}
+              className={`${
+                isPlayingTrailer
+                  ? "bg-white hover:bg-gray-100"
+                  : "bg-mystic-green hover:bg-lime-400"
+              } transition-all duration-300 ease-out hover:-translate-y-1 cursor-pointer text-black font-semibold px-6 py-2 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0`}
+            >
+              {isPlayingTrailer ? (
+                <>
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Stop Trailer
+                </>
+              ) : (
+                <>
+                  <FaPlay className="mr-2" />
+                  {show.TrailerAudioFileKey
+                    ? "Play Trailer"
+                    : "No Trailer Available"}
+                </>
+              )}
+            </Button>
             <div className="flex items-center gap-5">
               {isUserSubscribed ? (
                 <LiquidButton
@@ -886,9 +1009,23 @@ const ShowDetailsPage = () => {
 
       {/* Episodes Section */}
       <div>
-        <h2 className="text-2xl font-medium mb-8 mt-12 px-12 ">Episodes</h2>
+        <div className="w-full flex items-center justify-between px-12 mb-8 mt-12">
+          <h2 className="text-2xl font-medium">
+            Episodes ({show.EpisodeList.length})
+          </h2>
+          <div
+            onClick={() => handleSeeMoreEpisodeFromShow()}
+            className="flex items-center gap-2 hover:underline cursor-pointer"
+          >
+            <p className="font-poppins">See more</p>
+            <MdKeyboardArrowRight />
+          </div>
+        </div>
         <div className="space-y-10 px-3">
-          {show.EpisodeList.map((episode) => (
+          {/* {show.EpisodeList.map((episode) => (
+            <EpisodeCard key={episode.Id} episode={episode} />
+          ))} */}
+          {show.EpisodeList.slice(0, 5).map((episode) => (
             <EpisodeCard key={episode.Id} episode={episode} />
           ))}
         </div>

@@ -80,7 +80,7 @@ export default function LibraryShowLayout() {
           name="index"
           options={({ navigation }) => ({
             headerShown: true,
-            headerTitle: "My Shows",
+            headerTitle: Platform.OS === "ios" ? "My Shows" : "",
             headerLeft: () => (
               <Pressable
                 onPress={() => navigation.goBack()}
@@ -102,19 +102,6 @@ export default function LibraryShowLayout() {
                 >
                   Library
                 </Text>
-              </Pressable>
-            ),
-            headerRight: () => (
-              <Pressable
-                onPress={openMenu}
-                hitSlop={10}
-                style={{
-                  padding: 4,
-                  borderRadius: 9999,
-                  backgroundColor: "#333",
-                }}
-              >
-                <MaterialIcons name="more-horiz" size={22} color="#AEE339" />
               </Pressable>
             ),
           })}

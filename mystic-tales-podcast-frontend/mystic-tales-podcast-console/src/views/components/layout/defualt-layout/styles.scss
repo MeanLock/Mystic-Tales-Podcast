@@ -1,4 +1,5 @@
 .app-sidebar {
+
     background-color: var(--primary-grey);
     --cui-sidebar-narrow-width: 5rem;
 
@@ -57,6 +58,16 @@
         }
     }
 
+    .sidebar-nav {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+            display: none;
+        }
+    }
 
     &__nav {
         padding: 1rem;
@@ -69,6 +80,16 @@
             color: white;
             gap: 1.5rem;
             transition: all 0.3s ease;
+            overflow-y: auto; // vẫn scroll được
+            -ms-overflow-style: none; // IE/Edge
+            scrollbar-width: none;
+
+            &::-webkit-scrollbar {
+                // Chrome/Safari
+                width: 0;
+                height: 0;
+                display: none;
+            }
 
             svg {
                 transition: all 0.3s ease;
@@ -128,9 +149,10 @@
                     .nav-text {
                         color: var(--primary-green);
                     }
-                       &::after {
-                    background-color: var(--primary-green);
-                }
+
+                    &::after {
+                        background-color: var(--primary-green);
+                    }
                 }
 
                 &.active {
@@ -252,6 +274,7 @@
 .app-sidebar.sidebar-narrow+.wrapper .body .app-content-container {
     padding-left: 2.5rem;
     /* sidebar narrow width (≈5rem) + small gap */
+
 }
 
 

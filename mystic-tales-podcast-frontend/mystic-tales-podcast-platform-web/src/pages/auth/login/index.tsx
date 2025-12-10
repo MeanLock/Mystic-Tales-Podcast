@@ -49,6 +49,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BackgroundGradient } from "@/components/ui/shadcn-io/background-gradient";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 // no direct redux dispatch needed here; auth service handles storing token/user
 
 /** Zod schema: email hợp lệ, password tối thiểu 8 ký tự,
@@ -77,9 +79,15 @@ const LoginPage = () => {
   const [loginGoogle, { isLoading: isGoogleLoading }] =
     useLoginGoogleMutation();
   const [deviceInfo, setDeviceInfo] = useState<any>(null);
+  const user = useSelector((state: RootState) => state.auth.user);
+
   // HOOKS
   useEffect(() => {
     getCapacitorDevice().then(setDeviceInfo);
+    if (user) {
+      // nếu đã login thì chuyển hướng sang trang chính
+      navigate("/media-player/discovery");
+    }
   }, []);
 
   const [responseError, setResponseError] = useState<ErrorResponse>({

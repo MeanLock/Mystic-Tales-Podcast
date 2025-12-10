@@ -1,6 +1,7 @@
 // ...existing code...
+import { User } from "@/src/core/types/account.type";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { User } from "@/src/types/user";
+
 
 type AuthType = { user: User | null; accessToken: string | null };
 

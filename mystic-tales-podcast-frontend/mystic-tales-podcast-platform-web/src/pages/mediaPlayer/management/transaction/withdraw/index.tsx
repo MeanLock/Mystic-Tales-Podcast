@@ -1,6 +1,7 @@
 import {
   useCreateWithdrawRequestMutation,
   useGetTransactionHistoryQuery,
+  useGetWithdrawalRequestHistoryQuery,
 } from "@/core/services/transaction/transaction.service";
 import type { RootState } from "@/redux/store";
 import { useEffect, useState } from "react";
@@ -19,14 +20,20 @@ const WithDrawPage = () => {
   const [error, setError] = useState<string>("");
 
   // HOOKS
+  // const {
+  //   data: withdrawHistoryData,
+  //   isLoading: isHistoryLoading,
+  //   refetch,
+  // } = useGetTransactionHistoryQuery(
+  //   { getEnum: "MoneyOut" },
+  //   { skip: viewMode !== "history" }
+  // );
+
   const {
     data: withdrawHistoryData,
     isLoading: isHistoryLoading,
     refetch,
-  } = useGetTransactionHistoryQuery(
-    { getEnum: "MoneyOut" },
-    { skip: viewMode !== "history" }
-  );
+  } = useGetWithdrawalRequestHistoryQuery();
 
   const [createWithdrawRequest, { isLoading: isCreatingWithdrawRequest }] =
     useCreateWithdrawRequestMutation();
@@ -69,7 +76,6 @@ const WithDrawPage = () => {
 
     try {
       const result = await createWithdrawRequest({ Amount: amount }).unwrap();
-      alert(result.Message || "Withdraw request submitted successfully!");
       setAmount(0);
       setError("");
       setViewMode("history");
@@ -214,9 +220,10 @@ const WithDrawPage = () => {
                 <p className="text-white/60">Loading transaction history...</p>
               </div>
             ) : withdrawHistoryData &&
-              withdrawHistoryData.AccountBalanceTransactionList.length > 0 ? (
+              withdrawHistoryData.AccountBalanceWithdrawalRequestList.length >
+                0 ? (
               <div className="space-y-3">
-                {withdrawHistoryData.AccountBalanceTransactionList.map(
+                {withdrawHistoryData.AccountBalanceWithdrawalRequestList.map(
                   (transaction) => (
                     <div
                       key={transaction.Id}
@@ -234,23 +241,25 @@ const WithDrawPage = () => {
                             <p>
                               Type:{" "}
                               <span className="text-white/80">
-                                {transaction.TransactionType.Name}
+                                Withdrawal Request
                               </span>
                             </p>
                             <p>
                               Status:{" "}
                               <span
                                 className={`font-semibold ${
-                                  transaction.TransactionStatus.Name ===
-                                  "Success"
+                                  transaction.CompletedAt
                                     ? "text-mystic-green"
-                                    : transaction.TransactionStatus.Name ===
-                                      "Pending"
+                                    : !transaction.IsRejected
                                     ? "text-yellow-400"
                                     : "text-[#FEA863]"
                                 }`}
                               >
-                                {transaction.TransactionStatus.Name}
+                                {transaction.CompletedAt
+                                  ? "Completed"
+                                  : !transaction.IsRejected
+                                  ? "Pending"
+                                  : "Rejected"}
                               </span>
                             </p>
                           </div>

@@ -7,15 +7,14 @@ import type {
   PodcastSubscriptionRegistrationFromAPI,
   SubscriptionDetails,
 } from "@/core/types/subscription";
-import { url } from "zod";
 
 type SubscriptionApiResponse = {
   PodcastSubscriptionRegistration?: {
-    PodcastSubscriptionBenefit?: SubscriptionBenefit[];
+    PodcastSubscriptionBenefitList?: SubscriptionBenefit[];
   };
 };
 
-type SubscriptionBenefit = {
+export type SubscriptionBenefit = {
   Id: number;
   Name: string;
 };
@@ -155,7 +154,7 @@ const subscriptionApi = appApi.injectEndpoints({
 
         const benefits =
           response?.PodcastSubscriptionRegistration
-            ?.PodcastSubscriptionBenefit ?? [];
+            ?.PodcastSubscriptionBenefitList ?? [];
 
         console.log("Fetched Benefits:", benefits);
 
@@ -271,4 +270,5 @@ export const {
   useCancelSubscriptionRegistrationMutation,
   useMakeDecisionOnAcceptingNewestVersionMutation,
   useGetRegistrationDetailsQuery,
+  useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery,
 } = subscriptionApi;

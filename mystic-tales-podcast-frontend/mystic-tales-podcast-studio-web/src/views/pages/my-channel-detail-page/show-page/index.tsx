@@ -6,7 +6,13 @@ import { Button, CircularProgress, Grid, IconButton, Rating, Typography } from "
 import { formatDate } from "@/core/utils/date.util"
 import { Eye } from 'phosphor-react';
 import { Add } from '@mui/icons-material';
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
+import { getChannelDetail } from "@/core/services/channel/channel.service"
+import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances/v2/login-required-axios-instance"
+import Image from "@/views/components/common/image"
+import Modal_Button from "@/views/components/common/modal/ModalButton"
+import ShowCreate from "./ShowCreateModal"
+import { renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
 
 export const mockChannelShowList: any = {
     ChannelShowList: [
@@ -72,7 +78,7 @@ export const mockChannelShowList: any = {
                 Name: "Published "
             }
         },
-       
+
     ]
 };
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -96,6 +102,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                 headerName: "Show",
                 flex: 2,
                 cellClass: 'd-flex align-items-center',
+                tooltipValueGetter: (params: any) => `Id: ${params.data?.Id ?? ''}`,
                 cellRenderer: (params: any) => {
                     return (
                         <div style={{
@@ -105,16 +112,10 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                             padding: '8px 0',
                             width: '100%'
                         }}>
-                            <img
-                                src={`https://picsum.photos/300/300?random=${params.node.rowIndex}`}
+                            <Image
+                                mainImageFileKey={params.data.MainImageFileKey}
                                 alt={params.data.Name}
-                                style={{
-                                    width: '70px',
-                                    height: '70px',
-                                    borderRadius: '8px',
-                                    objectFit: 'cover',
-                                    flexShrink: 0
-                                }}
+                                className="w-[60px] h-[60px] rounded-[8px] object-cover flex-shrink-0"
                             />
                             <div style={{
                                 flex: 1,
@@ -132,7 +133,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                                 }}>
                                     {params.data.Name}
                                 </div>
-                                <div style={{
+                                {/* <div style={{
                                     fontSize: '0.6rem',
                                     color: 'var(--white-75)',
                                     lineHeight: '1.5',
@@ -142,8 +143,8 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                                     WebkitLineClamp: 2,
                                     WebkitBoxOrient: 'vertical'
                                 }}>
-                                    {params.data.Description}
-                                </div>
+                                    {renderDescriptionHTML(params.data.Description)}
+                                </div> */}
                             </div>
                         </div>
                     );
@@ -187,10 +188,9 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
             },
 
             {
-                headerName: "Recently Updated",
-                field: "UpdatedAt",
+                headerName: "Subscription",
+                field: "PodcastShowSubscriptionType.Name",
                 cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-                valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
 
             },
             {
@@ -206,21 +206,15 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 flex: 1.1,
                 cellRenderer: (params: any) => {
-                    const status = params.data?.CurrentStatus?.Name?.trim() || '';
+                    const status = params.data?.CurrentStatus?.Name || '';
                     let color = '#888';
                     let bg = 'transparent';
                     switch (status) {
                         case 'Draft':
                             color = '#9e9e9e'; bg = 'rgba(158,158,158,0.15)'; // xám trung tính sáng
                             break;
-                        case 'Pending Review':
+                        case 'Ready To Release':
                             color = '#ffb300'; bg = 'rgba(255, 179, 0, 0.15)'; // vàng cam tươi
-                            break;
-                        case 'Pending Edit Required':
-                            color = '#f06292'; bg = 'rgba(240, 98, 146, 0.15)'; // hồng sáng
-                            break;
-                        case 'Ready to Release':
-                            color = '#61a7f2ff'; bg = 'rgba(41, 182, 246, 0.15)'; // xanh trời tươi
                             break;
                         case 'Published':
                             color = '#AEE339'; bg = 'rgba(174, 227, 57, 0.2)'; // xanh primary của bạn
@@ -296,6 +290,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
 
 
 const ChannelShowView: FC<ChannelShowViewProps> = () => {
+    const { id } = useParams<{ id: string }>();
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const navigate = useNavigate();
@@ -311,28 +306,28 @@ const ChannelShowView: FC<ChannelShowViewProps> = () => {
             gridRef.current.columnApi.autoSizeColumns(allColumnIds, false);
         }
     }, [state]);
-    // const handleDataChange = async () => {
-    //   setIsLoading(true);
-    //   try {
-    //     const accountList = await getCustomerAccounts(adminAxiosInstance);
-    //     if (accountList.success) {
-    //       setState(state_creator(accountList.data.Accounts));
-    //     } else {
-    //       console.error('API Error:', accountList.message);
-    //     }
-    //   } catch (error) {
-    //     console.error('Lỗi khi fetch customer accounts:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // }
-    const handleDataChange = async () => {
-        setIsLoading(false);
-        setState(state_creator(mockChannelShowList.ChannelShowList, navigate));
 
+    const fetchChannelDetail = async () => {
+        setIsLoading(true);
+        try {
+            const res = await getChannelDetail(loginRequiredAxiosInstance, id);
+            console.log("Fetched channel detail:", res.data.Channel);
+            if (res.success && res.data) {
+                const ch = res.data.Channel;
+                setState(state_creator(ch.ShowList, navigate));
+
+            } else {
+                console.error('API Error:', res.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch channel list:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }
+
     useEffect(() => {
-        handleDataChange()
+        fetchChannelDetail()
     }, [])
 
     const defaultColDef = useMemo(() => {
@@ -348,7 +343,7 @@ const ChannelShowView: FC<ChannelShowViewProps> = () => {
     }, [])
 
     return (
-        <ChannelShowViewContext.Provider value={{ handleDataChange }}>
+        <ChannelShowViewContext.Provider value={{ handleDataChange: fetchChannelDetail }}>
             <div
                 className="channel-show"
             >
@@ -356,13 +351,16 @@ const ChannelShowView: FC<ChannelShowViewProps> = () => {
                     <Typography variant="h4" className="channel-show__title" >
                         Shows on Channel <span className="text-primary ">({state?.rowData?.length || 0})</span>
                     </Typography>
-                    <Button
-                        variant="contained"
+
+                    <Modal_Button
                         className="channel-show__btn--add"
+                        content="New Show"
+                        variant="contained"
+                        size='lg'
                         startIcon={<Add />}
                     >
-                        Add Show
-                    </Button>
+                        <ShowCreate />
+                    </Modal_Button>
                 </div>
 
                 <div
@@ -395,6 +393,7 @@ const ChannelShowView: FC<ChannelShowViewProps> = () => {
                             paginationPageSize={10}
                             paginationPageSizeSelector={[10, 16, 24, 32]}
                             domLayout="normal"
+                            tooltipShowDelay={0}
                         />
                     )}
                 </div>

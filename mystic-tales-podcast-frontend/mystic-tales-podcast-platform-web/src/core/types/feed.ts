@@ -273,7 +273,17 @@ export type HotShowsUI = {
 };
 
 export type NewEpisodes = {
-  EpisodeList: EpisodeFromAPI[];
+  EpisodeList: EpisodeFromTrending[];
+};
+
+export type EpisodeFromTrending = {
+  Id: string;
+  Name: string;
+  Description: string;
+  MainImageFileKey: string;
+  IsReleased: boolean;
+  ReleaseDate: string;
+  AudioLength: number;
 };
 
 export type NewEpisodesUI = {

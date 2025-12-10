@@ -22,7 +22,7 @@ createRoot(document.getElementById("root")!).render(
         <PersistGate loading={null} persistor={persistor}>
           <GoogleOAuthProvider
             clientId={
-              "41387618387-k6pvfem2g06avjs3a9ri7k4g5uapskjt.apps.googleusercontent.com"
+              "1050992099919-sr1eikt6f232885198as96ub9fo9hkea.apps.googleusercontent.com"
             }
           >
             <QueryClientProvider client={queryClient}>

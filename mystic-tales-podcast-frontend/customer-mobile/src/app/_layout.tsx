@@ -23,25 +23,18 @@ import SetUp from "./setUp";
 import { PersistGate } from "redux-persist/integration/react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { Text } from "../components/ui/Text";
-import { View } from "../components/ui/View";
-
-import {
-  Animated,
-  Image,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-} from "react-native";
+import { Animated, Image, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import MediaPlayerContent from "./mediaPlayer";
 import PlayerButtonUI from "./mediaPlayer/buttonUI";
 import MediaPlayerModal, {
   MediaPlayerModalRef,
 } from "./mediaPlayer/mediaPlayerModal";
 import { Audio } from "expo-av";
+import { GlobalAlert } from "../components/alert/GlobalAlert";
+import UpdateAccountMeHook from "./UpdateAccountMeHook";
+import { usePlayer } from "../core/services/player/usePlayer";
+import useUpdateLastDurationListener from "../core/services/player/useUpdateLastDuration";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -94,7 +87,9 @@ function RootLayoutNav() {
           }}
         >
           <SetUp />
-
+          {/* <PlayerCore /> */}
+          <UpdateAccountMeHook />
+          <GlobalAlert />
           <ThemeProvider
             value={useColorScheme() === "dark" ? DarkTheme : DefaultTheme}
           >
@@ -163,9 +158,14 @@ function AppBody() {
 
   // derive from Redux: hide button when player stopped
   const playStatus = useSelector(
-    (s: RootState) => s.player.playerMode.playStatus
+    (s: RootState) => s.player.playMode.playStatus
   );
-  const isPlayerStopped = playStatus === "stop";
+  const { state: UiState } = usePlayer();
+
+  // Auto-update last duration every 2 seconds when playing
+  useUpdateLastDurationListener();
+
+  const isPlayerStopped = UiState.currentAudio === null;
 
   const isButtonVisible = isButtonVisibleLocal && !isPlayerStopped;
 
@@ -181,7 +181,7 @@ function AppBody() {
         <Stack.Screen name="(content)" options={{ headerShown: false }} />
         <Stack.Screen name="(user)" options={{ headerShown: false }} />
       </Stack>
-    
+
       {isButtonVisible && (
         <Animated.View
           style={{

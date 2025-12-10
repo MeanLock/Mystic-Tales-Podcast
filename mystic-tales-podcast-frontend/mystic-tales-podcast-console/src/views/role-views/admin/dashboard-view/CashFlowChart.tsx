@@ -35,8 +35,8 @@ export function CashFlowChart({ activeTab }: { activeTab: string }) {
   }
 
  const getTooltipLabel = (item: PeriodicAccountBalanceCount) => {
-  const moneyIn = item.DepositTransactionAmount.toLocaleString('vi-VN') + ' VND';
-  const moneyOut = item.WithdrawalTransactionAmount.toLocaleString('vi-VN') + ' VND';
+  const moneyIn = item.DepositTransactionAmount.toLocaleString('vi-VN') + ' Points';
+  const moneyOut = item.WithdrawalTransactionAmount.toLocaleString('vi-VN') + ' Points';
   if (activeTab === 'Daily' || activeTab === 'Weekly') {
     //console.log("Daily or Weekly data:", moneyIn);
     return [

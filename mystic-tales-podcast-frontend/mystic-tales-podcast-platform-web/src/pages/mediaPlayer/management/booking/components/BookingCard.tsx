@@ -13,84 +13,84 @@ const RenderStatus = (status: BookingStatusType) => {
   switch (status.Id) {
     case 1: {
       return (
-        <div className="bg-[#C5A7CD]/40 px-2 py-1 rounded-full text-[#f5ddfc] flex items-center justify-center text-sm">
+        <div className="bg-[#C5A7CD]/40 px-2 py-1 rounded-full text-[#f5ddfc] flex items-center justify-center text-sm line-clamp-1">
           <p>{status.Name}</p>
         </div>
       );
     }
     case 2: {
       return (
-        <div className="bg-[#74B8CE]/40 px-2 py-1 rounded-full text-[#90e0fb] flex items-center justify-center text-sm">
+        <div className="bg-[#74B8CE]/40 px-2 py-1 rounded-full text-[#90e0fb] flex items-center justify-center text-sm line-clamp-1">
           <p>{status.Name}</p>
         </div>
       );
     }
     case 3: {
       return (
-        <div className="bg-[#F86247]/20 px-2 py-1 rounded-full text-[#fea595] flex items-center justify-center text-sm">
+        <div className="bg-[#F86247]/20 px-2 py-1 rounded-full text-[#fea595] flex items-center justify-center text-sm line-clamp-1">
           <p>{status.Name}</p>
         </div>
       );
     }
     case 4: {
       return (
-        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#ff7d73] flex items-center justify-center text-sm">
+        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#ff7d73] flex items-center justify-center text-sm line-clamp-1">
           <p>{status.Name}</p>
         </div>
       );
     }
     case 5: {
       return (
-        <div className="bg-[#d1b236]/20 px-2 py-1 rounded-full text-[#ffe371] flex items-center justify-center text-sm">
+        <div className="bg-[#d1b236]/20 px-2 py-1 rounded-full text-[#ffe371] flex items-center justify-center text-sm line-clamp-1">
           <p>{status.Name}</p>
         </div>
       );
     }
     case 6: {
       return (
-        <div className="bg-indigo-300/20 px-2 py-1 rounded-full text-indigo-100 flex items-center justify-center text-sm">
+        <div className="bg-indigo-300/20 px-2 py-1 rounded-full text-indigo-100 flex items-center justify-center text-sm line-clamp-1">
           <p>{status.Name}</p>
         </div>
       );
     }
     case 7: {
       return (
-        <div className="bg-[#8d45db]/20 px-2 py-1 rounded-full text-[#d5affd] flex items-center justify-center text-sm">
+        <div className="bg-[#8d45db]/20 px-2 py-1 rounded-full text-[#d5affd] flex items-center justify-center text-sm line-clamp-1">
           <p>{status.Name}</p>
         </div>
       );
     }
     case 8: {
       return (
-        <div className="bg-green-500/20 px-2 py-1 rounded-full text-green-300 flex items-center justify-center text-sm">
+        <div className="bg-green-500/20 px-2 py-1 rounded-full text-green-300 flex items-center justify-center text-sm line-clamp-1">
           <p>{status.Name}</p>
         </div>
       );
     }
     case 9: {
       return (
-        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#f7a6a0] flex items-center justify-center text-sm">
-          <p>Cancelled by You</p>
+        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#f7a6a0] flex items-center justify-center text-sm line-clamp-1">
+          <p>Cancel Request (By You)...</p>
         </div>
       );
     }
     case 10: {
       return (
-        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#f7a6a0] flex items-center justify-center text-sm">
-          <p>Cancelled by Buddy</p>
+        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#f7a6a0] flex items-center justify-center text-sm line-clamp-1">
+          <p>Cancel Request (By Buddy)...</p>
         </div>
       );
     }
     case 11: {
       return (
-        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#f7a6a0] flex items-center justify-center text-sm">
+        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#f7a6a0] flex items-center justify-center text-sm line-clamp-1">
           <p>Cancelled Automatically</p>
         </div>
       );
     }
     case 12: {
       return (
-        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#f7a6a0] flex items-center justify-center text-sm">
+        <div className="bg-[#d14136]/30 px-2 py-1 rounded-full text-[#f7a6a0] flex items-center justify-center text-sm line-clamp-1">
           <p>Cancelled Manually</p>
         </div>
       );

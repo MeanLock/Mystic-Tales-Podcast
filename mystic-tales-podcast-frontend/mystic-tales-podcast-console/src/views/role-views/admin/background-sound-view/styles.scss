@@ -103,18 +103,18 @@
     }
 
     &__image-container {
-        position: relative;
-        flex-shrink: 0;
-        width: 200px;
-        // height: 200px;
-        overflow: hidden;
-        background: #f8f9fa;
+   width: 200px;
+    height: 200px; // Thêm dòng này để luôn vuông
+    overflow: hidden;
+    background: #f8f9fa;
+    position: relative;
+    flex-shrink: 0;
     }
 
     &__image {
         width: 100%;
-        height: 100%;
-        object-fit: cover;
+    height: 100%;
+    object-fit: cover;
     }
 
     &__play-btn {
@@ -158,6 +158,7 @@
         font-weight: 700;
         color: #282828;
         margin: 0 0 0.75rem 0;
+        font-family: 'inter', sans-serif;
     }
 
     &__description {
@@ -166,6 +167,8 @@
         line-height: 1.6;
         margin: 0 0 1rem 0;
         flex: 1;
+                font-family: 'inter', sans-serif;
+
     }
 
     &__meta {

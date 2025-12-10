@@ -1,12 +1,11 @@
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
+import { Show } from "@/src/core/types/show.type";
 import { useRouter } from "expo-router";
-import { Image, Pressable, StyleSheet } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface ShowCardVariant1Props {
   // Define any props if needed in the future
-  show: {
-    Id: number;
-    ImageUrl: string;
-  };
+  show: Show;
 }
 
 const ShowCardVariant1 = ({ show }: ShowCardVariant1Props) => {
@@ -18,7 +17,15 @@ const ShowCardVariant1 = ({ show }: ShowCardVariant1Props) => {
       key={show.Id}
       style={styles.card}
     >
-      <Image source={{ uri: show.ImageUrl }} style={styles.image} />
+      <AutoResolvingImage
+        FileKey={show.MainImageFileKey}
+        type="PodcastPublicSource"
+        key={show.Id}
+        style={styles.image}
+      />
+      <View className="absolute inset-0 bg-black/40 bg-opacity-40 justify-end p-2">
+        <Text className="text-white ">{show.Name}</Text>
+      </View>
     </Pressable>
   );
 };
@@ -31,6 +38,7 @@ const styles = StyleSheet.create({
     width: 142,
     height: 142,
     borderRadius: 8,
+    position: "relative",
   },
   image: {
     width: "100%",

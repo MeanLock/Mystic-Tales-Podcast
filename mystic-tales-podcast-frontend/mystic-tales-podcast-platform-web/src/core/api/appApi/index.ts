@@ -6,8 +6,7 @@ import { prepareAuthHeaders } from "./modes";
 import { pollSagaResult } from "./polling";
 
 /** Thay theo backend thực tế của bạn */
-export const BASE_URL =
-  import.meta.env.VITE_PUBLIC_API_URL ?? "https://65662aa8a6e5.ngrok-free.app";
+export const BASE_URL = import.meta.env.VITE_PUBLIC_API_URL;
 
 /** raw baseQuery (fetchBaseQuery) */
 const rawBaseQuery = fetchBaseQuery({
@@ -31,7 +30,10 @@ const modeAwareBaseQuery: BaseQueryFn<
     body?: any;
     params?: any;
     authMode?: AuthMode;
-    responseHandler?: "json" | "text";
+    responseHandler?:
+      | "json"
+      | "text"
+      | ((response: Response) => Promise<unknown>);
     headers?: Record<string, string>;
   },
   unknown,
@@ -102,6 +104,7 @@ const modeAwareBaseQuery: BaseQueryFn<
 export const appApi = createApi({
   reducerPath: "appApi",
   baseQuery: modeAwareBaseQuery,
+  tagTypes: ["Account"],
   endpoints: (build) => ({
     /** MẪU 1: Hỏi kết quả Saga 1 lần (không poll) — dùng khi bạn tự poll bên ngoài */
     getSagaResultOnce: build.query<

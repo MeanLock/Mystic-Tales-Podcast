@@ -1,37 +1,31 @@
 import { useCallback } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setChannelContext, setShowContext, setUserContext, } from '../../redux/navigation/navigationSlice';
-import { _channelDetailNav, _podcasterNav, _showDetailNav } from '../../router/_roleNav';
+import { RootState } from '@/redux/rootReducer';
 
 export const useNavigationContext = () => {
   const dispatch = useDispatch();
+  const authUser = useSelector((state: RootState) => state.auth.user);
 
   const switchToUserContext = (user: any) => {
-    dispatch(setUserContext({ user, navItems: _podcasterNav }));
+    // only store serializable user context
+    dispatch(setUserContext({ user }));
   };
 
   const switchToChannelContext = (channel: any) => {
-    const navItemsWithId = _channelDetailNav.map(item => ({
-      ...item,
-      path: item.path.replace(':id', channel.id) // Thay thế :id bằng ID thực tế
-    }));
-    dispatch(setChannelContext({ channel, navItems: navItemsWithId }));
+    dispatch(setChannelContext({ channel }));
   };
   const switchToShowContext = (show: any) => {
-    const navItemsWithId = _showDetailNav.map(item => ({
-      ...item,
-      path: item.path.replace(':id', show.id) // Thay thế :id bằng ID thực tế
-    }));
-    dispatch(setShowContext({ show, navItems: navItemsWithId }));
+    dispatch(setShowContext({ show }));
   };
 
-  const switchContextByType = (contextInfo: { type: string; id: string; basePath: string }) => {
+const switchContextByType = (contextInfo: { type: string; id: string; basePath: string; name?: string; avatar?: string }) => {
     switch (contextInfo.type) {
       case 'channel':
         const channelInfo = {
           id: contextInfo.id,
-          name: `Channel ${contextInfo.id}`,
-          avatar: `https://picsum.photos/300/300?random=${contextInfo.id}`
+          name: contextInfo.name || `Unknown Channel`,
+          avatar: contextInfo.avatar 
         };
         switchToChannelContext(channelInfo);
         break;
@@ -39,18 +33,20 @@ export const useNavigationContext = () => {
       case 'show':
         const showInfo = {
           id: contextInfo.id,
-          name: `Show ${contextInfo.id}`,
-          avatar: `https://picsum.photos/300/300?random=${contextInfo.id}`
+          name: contextInfo.name || `Unknown Show`,
+          avatar: contextInfo.avatar 
         };
         switchToShowContext(showInfo);
         break;
 
       default:
+        if (!authUser) return;
         const user = {
-          id: "u_1",
-          name: "SAMURICE",
-          email: "samurice@gmail.com",
-          avatar: "https://lumiere-a.akamaihd.net/v1/images/a_avatarpandorapedia_neytiri_16x9_1098_01_0e7d844a.jpeg?region=420%2C0%2C1080%2C1080",
+          id: 'user',
+          type: 'user',
+          name: authUser.PodcasterProfile?.Name || authUser.FullName || authUser.Name,
+          email: authUser.Email,
+          avatar: authUser.MainImageFileKey,
         };
         switchToUserContext(user);
         break;

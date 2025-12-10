@@ -11,16 +11,24 @@ import Typography from '@mui/material/Typography';
 import { useDispatch } from 'react-redux';
 import { useGoogleLogin } from '@react-oauth/google';
 import { CssBaseline } from '@mui/material';
-import { publicAxiosInstance } from '../../../core/api/rest-api/config/instances/v2';
+import { loginRequiredAxiosInstance, publicAxiosInstance } from '../../../core/api/rest-api/config/instances/v2';
 import { callAxiosRestApi } from '../../../core/api/rest-api/main/api-call';
-import { setAuthToken } from '../../../redux/auth/authSlice';
+import { clearAuthToken, setAuthToken } from '../../../redux/auth/authSlice';
 import { errorAlert } from '../../../core/utils/alert.util';
-import AppTheme from '../../components/common/mui-ui/AppTheme';
 import { GoogleIcon } from '../../components/common/mui-ui/MuiUiCustomIcons';
 import { SignInContainer } from './SignInContainer';
 import { Card } from './Card';
 import logo from "../../../assets/login.png"
 import './styles.scss'
+import { PasswordSharp } from '@mui/icons-material';
+import { login, loginGoogle } from '@/core/services/auth/auth.service';
+import { toast } from 'react-toastify';
+import { JwtUtil } from '@/core/utils/jwt.util';
+import { useSagaPolling } from '@/core/hooks/useSagaPolling';
+import { useNavigate } from 'react-router-dom';
+import { get } from 'lodash';
+import { getAccountProfile } from '@/core/services/account/account.service';
+import { getCapacitorDevice } from '@/core/utils/device.util';
 interface LoginPageProps {
     disableCustomTheme?: boolean;
 }
@@ -32,20 +40,26 @@ const LoginPage: FC<LoginPageProps> = (props) => {
     // STATES
     const [manualLoading, setManualLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
-    const [membernameError, setMembernameError] = useState(false);
-    const [membernameErrorMessage, setMembernameErrorMessage] = useState('');
+    const [emailError, setMembernameError] = useState(false);
+    const [emailErrorMessage, setMembernameErrorMessage] = useState('');
     const [passwordError, setPasswordError] = useState(false);
     const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
-
-    const [membername, setMembername] = useState<string>('');
+    const navigate = useNavigate();
+    const [user, setUser] = useState<any>(null);
+    const [email, setMembername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
+    const { startPolling } = useSagaPolling({
+        timeoutSeconds: 120,
+        intervalSeconds: 0.5,
+    })
+    const deviceInfo = getCapacitorDevice();
 
     const validateInputs = () => {
         let isValid = true;
 
-        if (!membername) {
+        if (!email) {
             setMembernameError(true);
-            setMembernameErrorMessage('membername or email required.');
+            setMembernameErrorMessage('email or email required.');
             isValid = false;
         } else {
             setMembernameError(false);
@@ -72,38 +86,74 @@ const LoginPage: FC<LoginPageProps> = (props) => {
         }
 
         const login_info = {
-            membername: membername,
+            email: email,
             password: password
         }
-        const login_result = await callAxiosRestApi({
-            instance: publicAxiosInstance,
-            method: 'post',
-            url: '/Member/login',
-            data: login_info
-        }, "Login Manual");
+        try {
+            const response = await login(publicAxiosInstance, {
+                email: login_info.email,
+                password: login_info.password,
+                DeviceInfo: await deviceInfo
+            })
 
-        if (login_result.success) {
-            const token = login_result.data.auth.token;
-            const user = login_result.data.auth.member;
-
-            const redirectUrl = localStorage.getItem('redirectUrl');
-            if (redirectUrl) {
-                localStorage.removeItem('redirectUrl');
-                window.location.href = redirectUrl;
-            } else {
-                window.location.href = '/';
+            const sagaId = response?.data?.SagaInstanceId
+            if (!sagaId) {
+                toast.error("Login failed.")
+                setManualLoading(false);
+                return
             }
+            await startPolling(sagaId, publicAxiosInstance, {
+                onSuccess: async (data) => {
+                    const token = data?.AccessToken
+                    if (!token) {
+                        toast.error("Token not found.");
+                        return;
+                    }
+                    const decode = JwtUtil.decodeToken(token)
+                    if (decode?.role_id !== "1") {
+                        toast.error("You do not have permission to access the Studio");
+                        return;
+                    }
 
-            dispatch(setAuthToken({
-                token: token,
-                user: user,
-            }))
-        } else if (!login_result.isAppError) {
-            errorAlert(login_result.message.content || "Login failed. Please try again.");
+                    dispatch(setAuthToken({ token }));
+                    await new Promise((r) => setTimeout(r, 100));
+
+                    const res = await getAccountProfile(loginRequiredAxiosInstance);
+
+                    if (!res?.success) {
+                        toast.error("Login failed.");
+                        return;
+                    }
+
+                    const account = res.data?.Account;
+                    if (!account || account.IsPodcaster !== true) {
+                        dispatch(clearAuthToken());
+                        toast.error("You do not have permission to access the Studio.");
+                        return;
+                    }
+
+                    dispatch(setAuthToken({ token, user: account }));
+                    setUser(account);
+                    navigate("/");
+                    toast.success("Login successfully!");
+                },
+                onFailure: (err: any) => toast.error(err || "Saga failed!"),
+                onTimeout: () => toast.error("System not responding, please try again."),
+            })
+        } catch (err) {
+            toast.error("Lỗi kết nối máy chủ.")
+        } finally {
+            setManualLoading(false);
         }
-        setManualLoading(false);
-
     }
+
+    const handleLogout = () => {
+        dispatch(clearAuthToken())
+    }
+
+    useEffect(() => {
+        handleLogout()
+    }, [])
 
     const handleLoginGoogleOAuth2 = useGoogleLogin(
         {
@@ -111,47 +161,76 @@ const LoginPage: FC<LoginPageProps> = (props) => {
             onSuccess: async codeResponse => {
                 // console.log('Login Successsss:', codeResponse);
                 const authorizationCode = codeResponse.code;
+                // const login_result = await callAxiosRestApi({
+                //     instance: publicAxiosInstance,
+                //     method: 'post',
+                //     url: 'user-service/api/auth/login-google',
+                //     data: {
+                //         GoogleAuth: {
+                //             AuthorizationCode: authorizationCode,
+                //             RedirectUri: import.meta.env.VITE_BASE_URL
+                //         },
+                //         DeviceInfo: {
+                //             DeviceId: 'da27b241-85ab-4269-9fa4-f44d81cd65ac',
+                //             Platform: 'web',
+                //             OSName: 'windows'
+                //         }
 
-                // console.log("authorization_code", authorizationCode)
+                //     }
+                // }, "Login with Google");
 
-                const login_result = await callAxiosRestApi({
-                    instance: publicAxiosInstance,
-                    method: 'post',
-                    url: '/auth/google/login-authorization-code-flow',
-                    data: {
-                        authorizationCode: authorizationCode,
-                        redirectUri: import.meta.env.VITE_BASE_URL
-                    }
-                }, "Login with Google");
+                const response = await loginGoogle(publicAxiosInstance, {
+                    AuthorizationCode: authorizationCode,
+                    RedirectUri: import.meta.env.VITE_BASE_URL,
+                    DeviceInfo: await deviceInfo
+                })
 
-
-
-                if (login_result.success) {
-
-                    const token = login_result.data.auth.token;
-                    const user = login_result.data.auth.member;
-
-                    const redirectUrl = localStorage.getItem('redirectUrl');
-                    if (redirectUrl) {
-                        localStorage.removeItem('redirectUrl');
-                        window.location.href = redirectUrl;
-                    } else {
-                        window.location.href = '/';
-                    }
-                    dispatch(setAuthToken({
-                        token: token,
-                        user: user,
-                    }))
-                } else {
-                    // instantAlertMaker('error', 'Login failed', login_result.error);
-                    console.log("ERROR", login_result.message.content)
+                const sagaId = response?.data?.SagaInstanceId
+                if (!sagaId) {
+                    toast.error("Login failed.")
+                    setManualLoading(false);
+                    return
                 }
+                await startPolling(sagaId, publicAxiosInstance, {
+                    onSuccess: async (data) => {
+                        const token = data?.AccessToken
+                        if (!token) {
+                            toast.error("Token not found.");
+                            return;
+                        }
+                        const decode = JwtUtil.decodeToken(token)
+                        if (decode?.role_id !== "1") {
+                            toast.error("You do not have permission to access the Studio");
+                            return;
+                        }
 
-                setGoogleLoading(false)
+                        dispatch(setAuthToken({ token }));
+                        await new Promise((r) => setTimeout(r, 100));
 
+                        const res = await getAccountProfile(loginRequiredAxiosInstance);
+
+                        if (!res?.success) {
+                            toast.error("Login failed.");
+                            return;
+                        }
+
+                        const account = res.data?.Account;
+                        if (!account || account.IsPodcaster !== true) {
+                            dispatch(clearAuthToken());
+                            toast.error("You do not have permission to access the Studio.");
+                            return;
+                        }
+
+                        dispatch(setAuthToken({ token, user: account }));
+                        setUser(account);
+                        navigate("/");
+                        toast.success("Login successfully!");
+                    },
+                    onFailure: (err: any) => toast.error(err || "Saga failed!"),
+                    onTimeout: () => toast.error("System not responding, please try again."),
+                })
             },
             onError: error => {
-                // instantAlertMaker('error', 'Login failed', error);
                 alert("Error: " + error.error)
                 console.log("Error", error)
             }
@@ -172,84 +251,92 @@ const LoginPage: FC<LoginPageProps> = (props) => {
                 minHeight: '100vh',
                 width: '100vw'
             }}
-        >        <AppTheme {...props}>
-                <CssBaseline enableColorScheme />
-                <SignInContainer direction="column" justifyContent="space-between">
-                    <Card variant="outlined" className="login-card">
-                        <img src={logo || "/placeholder.svg"} alt="Logo" />
-                        <Box className="login-text my-6">
-                            <p className="login-text-title">Mystic Tales Podcast</p>
-                            <p className="login-text-subtitle">STUDIO</p>
-                        </Box>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                width: '100%',
-                                gap: 2,
-                            }}
-                        >
-                            <FormControl>
-                                <FormLabel className="text-left" htmlFor="email">Email</FormLabel>
-                                <TextField
-                                    error={membernameError}
-                                    helperText={membernameErrorMessage}
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    placeholder="Please enter your email"
-                                    autoComplete="email"
-                                    autoFocus
-                                    required
-                                    fullWidth
-                                    variant="outlined"
-                                    color={membernameError ? 'error' : 'primary'}
-                                    onChange={(e) => setMembername(e.target.value)}
-                                />
-                            </FormControl>
-                            <FormControl >
-                                <FormLabel className="text-left" htmlFor="password">Password</FormLabel>
-                                <TextField
-                                    error={passwordError}
-                                    helperText={passwordErrorMessage}
-                                    name="password"
-                                    placeholder="•••••••••"
-                                    type="password"
-                                    id="password"
-                                    autoComplete="current-password"
-                                    autoFocus
-                                    required
-                                    fullWidth
-                                    variant="outlined"
-                                    color={passwordError ? 'error' : 'primary'}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                            </FormControl>
-
-                            <Button
+        >
+            <CssBaseline enableColorScheme />
+            <SignInContainer direction="column" justifyContent="space-between">
+                <Card variant="outlined" className="login-card">
+                    <img src={logo || "/placeholder.svg"} alt="Logo" />
+                    <Box className="login-text my-6">
+                        <p className="login-text-title">Mystic Tales Podcast</p>
+                        <p className="login-text-subtitle">STUDIO</p>
+                    </Box>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            width: '100%',
+                            gap: 2,
+                        }}
+                    >
+                        <FormControl>
+                            <FormLabel className="text-left" htmlFor="email">Email</FormLabel>
+                            <TextField
+                                error={emailError}
+                                helperText={emailErrorMessage}
+                                id="email"
+                                type="email"
+                                name="email"
+                                placeholder="Please enter your email"
+                                autoComplete="email"
+                                autoFocus
+                                required
                                 fullWidth
-                                variant="contained"
-                                onClick={handleLoginManual}
-                                loading={manualLoading}
-                            >
-                                Sign in
-                            </Button>
-                        </Box>
-                        <Divider>or</Divider>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                variant="outlined"
+                                size="small" // Thêm dòng này để thu nhỏ chiều cao
+                                color={emailError ? 'error' : 'primary'}
+                                onChange={(e) => setMembername(e.target.value)}
+                                InputProps={{
+                                    sx: { height: 42 } // Tuỳ chỉnh chiều cao nếu muốn nhỏ hơn nữa
+                                }}
+                            />
+                        </FormControl>
+                        <FormControl >
+                            <FormLabel className="text-left" htmlFor="password">Password</FormLabel>
+                            <TextField
+                                error={passwordError}
+                                helperText={passwordErrorMessage}
+                                name="password"
+                                placeholder="•••••••••"
+                                type="password"
+                                id="password"
+                                autoComplete="current-password"
+                                autoFocus
+                                required
+                                fullWidth
+                                variant="outlined"
+                                size="small"
+                                color={passwordError ? 'error' : 'primary'}
+                                onChange={(e) => setPassword(e.target.value)}
+                                InputProps={{
+                                    sx: { height: 42 } // Tuỳ chỉnh chiều cao nếu muốn nhỏ hơn nữa
+                                }}
+                            />
+                        </FormControl>
+
+                        <Button
+                            fullWidth
+                            variant="contained"
+                            onClick={handleLoginManual}
+                            disabled={manualLoading}
+                        >
+                            {manualLoading ? 'Signing in...' : 'Sign in'}
+                        </Button>
+                    </Box>
+                    <Divider>or</Divider>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <Button
                             fullWidth
                             variant="outlined"
                             onClick={() => handleGoogleLogin()}
                             startIcon={<GoogleIcon />}
+                            disabled={googleLoading || manualLoading}
                             loading={googleLoading}
                         >
                             Sign in with Google
                         </Button>
                     </Box>
-                    </Card>
-                </SignInContainer>
-            </AppTheme>
+                </Card>
+            </SignInContainer>
         </div>
     );
 }

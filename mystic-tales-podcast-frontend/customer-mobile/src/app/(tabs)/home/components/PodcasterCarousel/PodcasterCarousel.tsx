@@ -8,32 +8,9 @@ interface PodcasterCarouselProps {
   title: React.ReactNode;
   podcasters: {
     Id: number;
+    FullName: string;
     Email: string;
-    Role: {
-      Id: number;
-      Name: string;
-    };
-    Fullname: string;
-    Dob: string;
-    Gender: string;
-    Address: string;
-    Phone: string;
-    Balance: number;
-    ImageUrl: string;
-    IsVerified: boolean;
-    GoogleId: string;
-    VerifyCode: string;
-    PodcastListenSlot: number;
-    ViolationPoint: number;
-    ViolationLevel: number;
-    LastViolationPointChanged: string;
-    LastViolationLevelChanged: string;
-    LastPodcastListenSlotChanged: string;
-    DeactivatedAt: string;
-    CreatedAt: string;
-    UpdatedAt: string;
-    IsBeingPunish: boolean;
-    Followers?: number; // Added for mock followers count
+    MainImageFileKey: string;
   }[];
 }
 

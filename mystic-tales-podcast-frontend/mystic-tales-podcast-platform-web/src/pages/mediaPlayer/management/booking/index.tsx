@@ -21,26 +21,103 @@ import { useNavigate } from "react-router-dom";
 
 const ITEMS_PER_PAGE = 4;
 
+const BookingStatusesForFilter = [
+  { id: 1, name: "Quotation Request" },
+  { id: 2, name: "Quotation Dealing" },
+  { id: 3, name: "Quotation Rejected" },
+  { id: 4, name: "Quotation Cancelled" },
+  { id: 5, name: "Producing" },
+  { id: 6, name: "Track Previewing" },
+  { id: 7, name: "Producing Requested" },
+  { id: 8, name: "Completed" },
+  { id: 10, name: "Customer Cancel Request" },
+  { id: 11, name: "Cancelled Automatically" },
+  { id: 12, name: "Cancelled Manually" },
+];
 const BookingsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<
+    number | null
+  >(null);
 
-  // 🟢 Gọi API thật
-  const { data: bookings, isLoading, error } = useGetBookingsQuery();
+  // 🟢 Gọi API thật với refetch on mount và focus
+  const {
+    data: bookings,
+    isLoading,
+    error,
+  } = useGetBookingsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   const navigate = useNavigate();
+
+  // Định nghĩa thứ tự ưu tiên cho status
+  const statusPriority: Record<number, number> = {
+    6: 0,
+    2: 1,
+    3: 2,
+    10: 3,
+    11: 4,
+    8: 5,
+    5: 6,
+    4: 7,
+    7: 8,
+    12: 9,
+    // Các status khác sẽ có priority thấp hơn
+  };
+
+  // Sắp xếp bookings theo thứ tự ưu tiên
+  const sortedBookings =
+    bookings?.BookingList.slice().sort((a, b) => {
+      const priorityA = statusPriority[a.CurrentStatus.Id] ?? 999;
+      const priorityB = statusPriority[b.CurrentStatus.Id] ?? 999;
+      return priorityA - priorityB;
+    }) ?? [];
+
+  // Apply filters và search
+  const filteredBookings = sortedBookings.filter((booking) => {
+    // Filter by status
+    if (
+      selectedStatusFilter !== null &&
+      booking.CurrentStatus.Id !== selectedStatusFilter
+    ) {
+      return false;
+    }
+
+    // Search by title (case insensitive)
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      const titleMatch = booking.Title.toLowerCase().includes(query);
+      const podcasterMatch =
+        booking.PodcastBuddy?.FullName?.toLowerCase().includes(query);
+      if (!titleMatch && !podcasterMatch) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
   // 🧮 Xử lý phân trang
-  const totalItems = bookings?.BookingList.length ?? 0;
+  const totalItems = filteredBookings.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentBookings =
-    bookings?.BookingList.slice(startIndex, endIndex) ?? [];
+  const currentBookings = filteredBookings.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
+
+  // Reset về trang 1 khi filter hoặc search thay đổi
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedStatusFilter]);
 
   const handleCreateBooking = () => {
     localStorage.removeItem("selectedPodcaster");
@@ -54,14 +131,64 @@ const BookingsPage = () => {
         Bookings
       </div>
 
-      {/* ACTION BAR */}
-      <div className="h-16 bg-white text-black flex items-center px-6 font-bold text-lg shadow-[5px_5px_10px_#0000005c]">
-        <ShowOnHoverButton
-          Icon={RiFileAddFill}
-          onClick={() => handleCreateBooking()}
-          text="Create New Booking"
-          bgColor="#1b81cf"
-        />
+      {/* ACTION BAR: FILTER HERE, SEARCH BY NAME HERE */}
+      <div className="h-16 mb-5 bg-white//10 text-black flex items-center justify-between px-6 font-medium shadow-md">
+        <div className="flex items-center gap-4 w-full">
+          {/* Search Input */}
+          <input
+            type="text"
+            placeholder="Search by title or podcaster..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 placeholder:text-white placeholder:font-light bg-transparent"
+          />
+
+          {/* Status Filter */}
+          <select
+            value={selectedStatusFilter ?? ""}
+            onChange={(e) =>
+              setSelectedStatusFilter(
+                e.target.value ? Number(e.target.value) : null
+              )
+            }
+            className="px-2 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-[1px] focus:ring-white bg-transparent text-white placeholder:text-white placeholder:font-light"
+          >
+            <option value="" className="text-[#252525]">
+              All Statuses
+            </option>
+            {BookingStatusesForFilter.map((status) => (
+              <option
+                className="text-[#252525]"
+                key={status.id}
+                value={status.id}
+              >
+                {status.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Clear Filters Button */}
+          {(searchQuery || selectedStatusFilter !== null) && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedStatusFilter(null);
+              }}
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+            >
+              Clear Filters
+            </button>
+          )}
+
+          <div className="flex-1 flex items-center justify-end">
+            <ShowOnHoverButton
+              Icon={RiFileAddFill}
+              onClick={() => handleCreateBooking()}
+              text="Create New Booking"
+              bgColor="#1b81cf"
+            />
+          </div>
+        </div>
       </div>
 
       {/* MAIN CONTENT */}

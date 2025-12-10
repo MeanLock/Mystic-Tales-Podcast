@@ -1,5 +1,6 @@
 import { appApi } from "@/core/api/appApi";
 import type {
+  PodcastBuddyDetails,
   PodcasterDetailsFromAPI,
   PodcasterFromApi,
 } from "@/core/types/podcaster";
@@ -82,6 +83,16 @@ const podcasterApi = appApi.injectEndpoints({
         return { data: result as any };
       },
     }),
+    getPodcastBuddyDetails: build.query<
+      PodcastBuddyDetails,
+      { AccountId: number }
+    >({
+      query: ({ AccountId }) => ({
+        url: `/api/user-service/api/accounts/podcast-buddies/${AccountId}`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
@@ -91,4 +102,5 @@ export const {
   useFollowPodcasterMutation,
   useUnFollowPodcasterMutation,
   useGetPodcastersQuery,
+  useGetPodcastBuddyDetailsQuery,
 } = podcasterApi;

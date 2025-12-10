@@ -4,62 +4,13 @@ import { AgGridReact } from "ag-grid-react"
 import { CButton, CButtonGroup, CCard, CCol, CFormInput, CRow, CSpinner } from "@coreui/react"
 import { AllCommunityModule, ColDef, ModuleRegistry } from "ag-grid-community"
 import { formatDate } from "@/core/utils/date.util"
-import SurveyTalkLoading from "@/views/components/common/loading"
 import Modal_Button from "@/views/components/common/modal/ModalButton"
 import { Eye } from "phosphor-react"
 import EpisodeReportDetail from "./EpisodeReportDetail"
-export const mockList: any = {
-    EpisodeReportReviewSessionList: [
-        {
-            Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            PodcastEpisode: {
-                Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                Title: "Episode 1"
-            },
-            AssignedStaff: {
-                Id: 201,
-                FullName: "Nguyen Van Thinh",
-                Email: "string",
-                MainImageFileKey: "string"
-            },
-            IsResolved: true,
-            CreatedAt: "2025-10-10T10:24:13.336Z",
-            UpdatedAt: "2025-10-10T10:26:42.100Z",
-        },
-        {
-            Id: "e7b13b77-8f10-4d95-9e54-2f00a8b0a888",
-             PodcastEpisode: {
-                Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                Title: "Episode 2"
-            },
-           AssignedStaff: {
-                Id: 201,
-                FullName: "Nguyen Van B",
-                Email: "string",
-                MainImageFileKey: "string"
-            },
-            IsResolved: false,
-            CreatedAt: "2025-10-09T16:30:05.120Z",
-            UpdatedAt: "2025-10-09T18:02:10.000Z",
-        },
-        {
-            Id: "b8f64a92-dc23-4b1e-97c1-9b9186f27d44",
-            PodcastEpisode: {
-                Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                Title: "Episode 3"
-            },
-           AssignedStaff: {
-                Id: 203,
-                FullName: "Nguyen Van C",
-                Email: "string",
-                MainImageFileKey: "string"
-            },
-            IsResolved: null,
-            CreatedAt: "2025-10-08T09:12:44.230Z",
-            UpdatedAt: "2025-10-08T10:00:00.000Z",
-        },
-    ],
-};
+import { getEpisodeReviewSession } from "@/core/services/report/EpisodeReport.service"
+import { staffAxiosInstance } from "@/core/api/rest-api/config/instances/v2/staff-axios-instance"
+import Loading from "@/views/components/common/loading"
+
 ModuleRegistry.registerModules([AllCommunityModule])
 
 interface EpisodeReportReviewViewProps { }
@@ -85,7 +36,7 @@ const state_creator = (table: any[]) => {
                 sortable: false,
                 filter: false
             },
-            { headerName: "Podcast Episode ", field: "PodcastEpisode.Title" },
+            { headerName: "Podcast Episode ", field: "PodcastEpisode.Name" },
             {
                 headerName: "Created At",
                 field: "CreatedAt",
@@ -149,6 +100,7 @@ const state_creator = (table: any[]) => {
                         button: <Eye size={27} color='var(--secondary-green)' />,
                         update_button_color: 'white'
                     }
+                    if (params.data.IsResolved !== null) return <></>;
                     return (
 
                         <CButtonGroup style={{ width: '100%', height: "100%" }} role="group" aria-label="Basic mixed styles example">
@@ -178,26 +130,22 @@ const EpisodeReportReviewView: FC<EpisodeReportReviewViewProps> = () => {
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // const handleDataChange = async () => {
-    //   setIsLoading(true);
-    //   try {
-    //     const accountList = await getCustomerAccounts(adminAxiosInstance);
-    //     if (accountList.success) {
-    //       setState(state_creator(accountList.data.Accounts));
-    //     } else {
-    //       console.error('API Error:', accountList.message);
-    //     }
-    //   } catch (error) {
-    //     console.error('Lỗi khi fetch customer accounts:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // }
     const handleDataChange = async () => {
-        setIsLoading(false);
-        setState(state_creator(mockList.EpisodeReportReviewSessionList));
-
+        setIsLoading(true);
+        try {
+            const reportList = await getEpisodeReviewSession(staffAxiosInstance);
+            if (reportList.success) {
+                setState(state_creator(reportList.data.EpisodeReportReviewSessionList));
+            } else {
+                console.error('API Error:', reportList.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch episode reports:', error);
+        } finally {
+            setIsLoading(false);
+        }
     }
+
     useEffect(() => {
         handleDataChange()
     }, [])
@@ -222,7 +170,9 @@ const EpisodeReportReviewView: FC<EpisodeReportReviewViewProps> = () => {
             <CRow >
                 <CCol xs={12}>
                     {isLoading ? (
-                        <SurveyTalkLoading />
+                        <div className="flex justify-content-center align-items-center h-150" >
+                            <Loading />
+                        </div>
                     ) : (
                         <div
                             id="customer-table"

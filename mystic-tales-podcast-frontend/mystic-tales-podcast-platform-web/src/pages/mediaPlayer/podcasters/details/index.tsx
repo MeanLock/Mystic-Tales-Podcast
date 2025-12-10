@@ -14,6 +14,7 @@ import type { ShowUI } from "@/core/types/show";
 import type {
   PodcasterDetailsUI,
   PodcasterReviewUI,
+  PodcasterUI,
 } from "@/core/types/podcaster";
 import type { PodcastCategory } from "@/core/types/podcastCategory";
 import ShowsByCategoryCarousel from "./components/ShowsByCategoryCarousel";
@@ -39,6 +40,7 @@ import {
 } from "@/core/mockData/podcasterDetails.mockdata";
 import RatingChart from "./components/RatingChart";
 import ReviewCard from "./components/ReviewCard";
+import type { PodcastBuddyUI } from "@/core/types/booking";
 
 const PodcasterFileConfig: FileResolveConfig[] = [
   {
@@ -247,10 +249,15 @@ const PodcasterDetailsPage = () => {
     if (!podcaster) {
       return;
     } else {
-      const payload = {
+      const payload: PodcastBuddyUI = {
         Id: podcaster.AccountId,
         FullName: podcaster.Name,
         ImageUrl: podcaster.ImageUrl,
+        AverageRating: podcaster.AverageRating,
+        TotalBookingCompleted: 0,
+        TotalFollow: 0,
+        PriceBookingPerWord: 0,
+        Email: "",
       };
       try {
         localStorage.setItem("selectedPodcaster", JSON.stringify(payload));
