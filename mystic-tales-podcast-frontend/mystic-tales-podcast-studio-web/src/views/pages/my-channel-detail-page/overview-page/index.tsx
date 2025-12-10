@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
-import 'quill/dist/quill.snow.css';
+// import 'quill/dist/quill.snow.css';
 import './styles.scss';
 import { get, isEqual } from 'lodash';
 import { getChannelDetail, publishChannel, updateChannel } from '@/core/services/channel/channel.service';
