@@ -1,5 +1,5 @@
 import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
-import { verifyPodcaster } from "@/core/services/account/account.service"
+import { updateLevel, verifyPodcaster } from "@/core/services/account/account.service"
 import { getBuddyCommitment, getPublicSource, getPublicSourcePodcast } from "@/core/services/file/file.service"
 import type { Account, Podcaster, PodcasterProfile } from "@/core/types"
 import { confirmAlert } from "@/core/utils/alert.util"
@@ -25,6 +25,9 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
   const [showPdf, setShowPdf] = React.useState(false);
   const [verifying, setVerifying] = React.useState(false);
   const [showAudioPlayer, setShowAudioPlayer] = React.useState(false);
+  const [showResolvePopup, setShowResolvePopup] = React.useState(false)
+  const [violationLevel, setViolationLevel] = React.useState(account.ViolationLevel.toString())
+  const [loading, setLoading] = React.useState(false)
   const { startPolling } = useSagaPolling({
     timeoutSeconds: 15,
     intervalSeconds: 0.5,
@@ -79,6 +82,48 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
       toast.error("Error verifying Podcaster Apply");
     }
   };
+
+  const handleResolveSubmit = async () => {
+
+    if (!violationLevel.trim()) {
+      toast.error("Please enter violation level")
+      return
+    }
+
+    const violationLevelNum = Number(violationLevel)
+    if (isNaN(violationLevelNum) || violationLevelNum < 0) {
+      toast.error("Please enter a valid violation level")
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await updateLevel(adminAxiosInstance, account.Id, violationLevelNum);
+      const sagaId = res?.data?.SagaInstanceId
+
+      await startPolling(sagaId, adminAxiosInstance, {
+        onSuccess: () => {
+          toast.success(`Set violation level successfully`)
+          setShowResolvePopup(false)
+          setViolationLevel("")
+          onClose()
+          context?.handleDataChange();
+        },
+        onFailure: (err: any) => toast.error(err || "Saga failed!"),
+        onTimeout: () => toast.error("System not responding, please try again."),
+      })
+
+    } catch (error) {
+      console.error("Failed to set violation level:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleClosePopup = () => {
+    setShowResolvePopup(false)
+    setViolationLevel("")
+  }
+
   if (!podcasterProfile) {
     return <div className="podcaster-profile__loading">
       Loading podcaster profile...</div>
@@ -110,7 +155,9 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
         <div className="podcaster-profile__grid">
           <div className="podcaster-profile__section">
             <h3 className="podcaster-profile__section-title">Description</h3>
-            <div className="podcaster-profile__description">{renderDescriptionHTML(podcasterProfile.Description)}</div>
+            <div className="podcaster-profile__description"
+              dangerouslySetInnerHTML={{ __html: renderDescriptionHTML(podcasterProfile.Description) }}
+            ></div>
           </div>
           <div className="podcaster-profile__section">
             <h3 className="podcaster-profile__section-title">Rating & Reviews</h3>
@@ -218,7 +265,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
 
       </div>
 
-      {podcasterProfile.IsVerified === null && (
+      {podcasterProfile.IsVerified === null ? (
         <div className="mt-6 ">
           <div className="podcaster-profile__verification-actions flex gap-4">
             <button
@@ -236,6 +283,75 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
             >
               Reject Application
             </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 ">
+          <div className="podcaster-profile__verification-actions flex gap-4">
+            <button
+              className="podcaster-profile__btn podcaster-profile__btn--update"
+              onClick={() => setShowResolvePopup(true)}
+              disabled={verifying}
+            >
+              Update Violation Level
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showResolvePopup && (
+        <div className="resolve-popup-overlay" onClick={handleClosePopup}>
+          <div className="resolve-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="resolve-popup__header">
+              <h4 className="resolve-popup__title">Update Violation Level</h4>
+              <button
+                className="resolve-popup__close-btn"
+                onClick={handleClosePopup}
+                type="button"
+              >
+                ×
+              </button>
+            </div>
+            <div className="resolve-popup__body">
+              <div className="resolve-popup__field">
+                <label className="resolve-popup__label">
+                  Violation Level <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="4"
+                  step="1"
+                  className="resolve-popup__input"
+                  placeholder="Enter violation level"
+                  value={violationLevel}
+                  onChange={(e) => setViolationLevel(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleResolveSubmit()
+                    }
+                  }}
+                />
+              </div>
+              <div className="resolve-popup__actions">
+                <button
+                  type="button"
+                  className="resolve-popup__btn resolve-popup__btn--cancel"
+                  onClick={handleClosePopup}
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="resolve-popup__btn resolve-popup__btn--resolve"
+                  onClick={handleResolveSubmit}
+                  disabled={loading}
+                >
+                  {loading ? "Submitting..." : "Submit"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

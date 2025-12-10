@@ -53,6 +53,15 @@ export const deactivateAccount = async (instance: AxiosInstance, accountId: numb
 
     return response;
 };
+export const updateLevel = async (instance: AxiosInstance, accountId: number, ViolationLevel: number) => {
+    const response = await callAxiosRestApi({
+        instance: instance,
+        method: "put",
+        url: `${BASE_URL}/accounts/${accountId}/violation-level/${ViolationLevel }`,
+    });
+
+    return response;
+};
 
 export const updateAccount = async (instance: AxiosInstance, accountId: number,
     payload: {

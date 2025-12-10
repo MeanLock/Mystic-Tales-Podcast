@@ -22,6 +22,7 @@ import Image from '@/views/components/common/image';
 import RequirementFileDetailModal from './RequirementFileDetailModal';
 import { set } from 'lodash';
 import { CButton } from '@coreui/react';
+import ProducingRequestModal from './ProducingRequestModal';
 
 
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -123,36 +124,38 @@ const useProducingRequestColumnDefs = () => {
                 );
             },
         },
-        // {
-        //     headerName: "",
-        //     cellClass: 'd-flex justify-content-center py-0',
-        //     cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-        //     cellRenderer: (params: { data: any }) => {
-        //         const Modal_props = {
-        //             updateForm: <ProducingRequestModal
-        //                 bookingProducingRequestId={params.data?.Id}
-        //                 onClose={() => { }}
-        //             />,
-        //             button: <Eye size={27} color='var(--white-75)' />,
-        //         }
-        //         return (
-        //             <IconButton >
-        //                 <Modal_Button
-        //                     className="booking-detail__view-btn"
-        //                     disabled={false}
-        //                     content={Modal_props.button}
-        //                 >
-        //                     {Modal_props.updateForm}
-        //                 </Modal_Button>
-        //             </IconButton>
+        {
+            headerName: "",
+            cellClass: 'd-flex justify-content-center py-0',
+            cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+            cellRenderer: (params: { data: any }) => {
+                const Modal_props = {
+                    updateForm: <ProducingRequestModal
+                        bookingProducingRequestId={params.data?.Id}
+                        onClose={() => { }}
+                    />,
+                    button: <Eye size={27} color='var(--secondary-green)' />,
+                }
+                return (
+                    <IconButton >
+                        <Modal_Button
+                            className="booking-detail__view-btn"
+                            disabled={false}
+                            content={Modal_props.button}
+                            title='Producing Request Detail'
+                            size='lg'
+                        >
+                            {Modal_props.updateForm}
+                        </Modal_Button>
+                    </IconButton>
 
-        //         )
-        //     },
-        //     flex: 0.5,
-        //     filter: false,
-        //     resizable: false,
-        //     sortable: false,
-        // }
+                )
+            },
+            flex: 0.5,
+            filter: false,
+            resizable: false,
+            sortable: false,
+        }
     ]), []);
     return columnDefs;
 }

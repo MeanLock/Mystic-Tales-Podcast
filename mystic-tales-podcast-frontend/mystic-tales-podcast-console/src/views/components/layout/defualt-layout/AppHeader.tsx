@@ -88,6 +88,7 @@ const AppHeader = () => {
 
   const handleLogout = () => {
     dispatch(clearAuthToken());
+    window.location.href = '/login';
   }
 
 

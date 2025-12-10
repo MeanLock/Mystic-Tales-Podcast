@@ -111,6 +111,7 @@ const ChannelDetailView = () => {
                         <Typography variant="h5" className="channel-detail__section-title">
                             About This Channel
                         </Typography>
+                        
                         <div
                             className="channel-detail__description"
                             dangerouslySetInnerHTML={{ __html: channelDetail.Description }}

@@ -14,6 +14,7 @@ import { confirmAlert } from "@/core/utils/alert.util"
 import { Modal } from "react-bootstrap"
 import Modal_Button from "@/views/components/common/modal/ModalButton"
 import ReportModal from "./ReportModal"
+import ValidModal from "./ValidModal"
 
 
 
@@ -39,20 +40,7 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
     const [viewingNoticeFile, setViewingNoticeFile] = useState<{ id: number, url: string } | null>(null)
     const [viewingCounterFile, setViewingCounterFile] = useState<{ id: number, url: string } | null>(null)
     const [viewingLawsuitFile, setViewingLawsuitFile] = useState<{ id: number, url: string } | null>(null)
-    // Valid DMCA Notice reason selection
-    const VALID_TAKEDOWN_REASONS = [
-        'DuplicateContent',
-        'RestrictedTermsViolation',
-        'ExplicitOrAdultContent',
-        'HateSpeech',
-        'HarassmentAbuse',
-        'PrivacyViolation',
-        'Impersonation',
-        'MisinformationFalseClaims',
-        'PromotingIllegalActivity',
-        'LawsuitDMCA',
-    ] as const
-    const [selectedValidReason, setSelectedValidReason] = useState<string>('DuplicateContent')
+
 
     const fetchDMCAAccusation = async () => {
         if (id) {
@@ -168,33 +156,6 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
         } catch (error) {
             console.error('Error downloading file:', error)
             toast.error('Failed to download file')
-        }
-    }
-    const handleVerify = async (status: string, DMCAAccusationTakenDownReasonEnum?: string) => {
-        const alert = await confirmAlert("Are you sure to confirm ?");
-        if (!alert.isConfirmed) return;
-        setIsSubmitting(true);
-
-        try {
-            const response = await updateStatus(staffAxiosInstance, status, Number(id), DMCAAccusationTakenDownReasonEnum)
-            const sagaId = response?.data?.SagaInstanceId
-            if (!sagaId) {
-                toast.error("Verify failed, please try again.")
-                return
-            }
-            await startPolling(sagaId, staffAxiosInstance, {
-                onSuccess: () => {
-                    toast.success('Verify successfully')
-                    fetchDMCAAccusation()
-                },
-                onFailure: (err: any) => toast.error(err || "Saga failed!"),
-                onTimeout: () => toast.error("System not responding, please try again."),
-            })
-        } catch (error) {
-            console.error('Error verifying status:', error)
-            toast.error('Failed to verify status')
-        } finally {
-            setIsSubmitting(false);
         }
     }
     const handleCancelReport = async () => {
@@ -448,25 +409,14 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                     <div className="w-full flex flex-col gap-4 justify-center items-center border-t border-[#f0f0f0] pt-4 mt-3">
                                         <span className="notice_value">Please verify DMCA Notice</span>
                                         <div className="flex gap-4">
-                                            <div className="flex items-center gap-3 border-r pr-4 border-[#282828]">
-                                                <select
-                                                    className="form-select"
-                                                    value={selectedValidReason}
-                                                    onChange={(e) => setSelectedValidReason(e.target.value)}
-                                                    style={{ maxWidth: '280px' }}
-                                                >
-                                                    {VALID_TAKEDOWN_REASONS.map((r) => (
-                                                        <option key={r} value={r}>{r}</option>
-                                                    ))}
-                                                </select>
-                                                <button
-                                                    className="dmca-detail__document-btn dmca-detail__document-btn--download font-medium"
-                                                    onClick={() => handleVerify("VALID_DMCA_NOTICE", selectedValidReason)}
-                                                    disabled={isSubmitting}
-                                                >
-                                                    {isSubmitting ? "Validating..." : "Valid"}
-                                                </button>
-                                            </div>
+                                            <Modal_Button
+                                                disabled={isSubmitting}
+                                                size="sm"
+                                                content="Valid"
+                                                className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
+                                            >
+                                                <ValidModal onClose={() => { }} status="VALID_DMCA_NOTICE" />
+                                            </Modal_Button>
                                             <Modal_Button
                                                 disabled={isSubmitting}
                                                 size="lg"
@@ -510,13 +460,14 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                             <div className="w-full flex flex-col gap-4 justify-center items-center border-t border-[#f0f0f0] pt-4 mt-3">
                                                 <span className="notice_value">Report Rejected, Please verify DMCA Notice Again</span>
                                                 <div className="flex gap-4">
-                                                    <button
-                                                        className="dmca-detail__document-btn dmca-detail__document-btn--download font-medium"
-                                                        onClick={() => handleVerify("VALID_DMCA_NOTICE")}
+                                                    <Modal_Button
                                                         disabled={isSubmitting}
+                                                        size="sm"
+                                                        content="Valid"
+                                                        className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
                                                     >
-                                                        {isSubmitting ? "Validating..." : "Valid"}
-                                                    </button>
+                                                        <ValidModal onClose={() => { }} status="VALID_DMCA_NOTICE" />
+                                                    </Modal_Button>
                                                     <Modal_Button
                                                         size="lg"
                                                         content="Invalid"
@@ -619,14 +570,15 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                 {((DMCAAccusation.CounterNotice.IsValid === null && reportList.length <= 0) || (DMCAAccusation.CounterNotice.IsValid === null && reportList.length > 0 && reportList[0].DmcaAccusationConclusionReportType.Id !== 2) || (reportList.length > 0 && reportList[0].CancelledAt !== null && reportList[0].DmcaAccusationConclusionReportType.Id === 2)) && DMCAAccusation.CurrentStatus.Id !== 10 && DMCAAccusation.CurrentStatus.Id !== 11 ? (
                                     <div className="w-full flex flex-col gap-4 justify-center items-center border-t border-[#f0f0f0] pt-4 mt-3">
                                         <span className="notice_value">Please verify Counter Notice</span>
-                                        <div className="flex gap-4">
-                                            <button
-                                                className="dmca-detail__document-btn dmca-detail__document-btn--download font-medium"
-                                                onClick={() => handleVerify("VALID_DMCA_COUNTER_NOTICE")}
+                                        <div className="flex gap-4">                                          
+                                               <Modal_Button
                                                 disabled={isSubmitting}
+                                                size="sm"
+                                                content="Valid"
+                                                className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
                                             >
-                                                {isSubmitting ? "Validating..." : "Valid"}
-                                            </button>
+                                                <ValidModal onClose={() => { }} status="VALID_DMCA_COUNTER_NOTICE" />
+                                            </Modal_Button>
                                             <Modal_Button
                                                 size="lg"
                                                 content="Invalid"
@@ -669,13 +621,14 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                             <div className="w-full flex flex-col gap-4 justify-center items-center border-t border-[#f0f0f0] pt-4 mt-3">
                                                 <span className="notice_value">Report Rejected, Please verify Counter Notice Again</span>
                                                 <div className="flex gap-4">
-                                                    <button
-                                                        className="dmca-detail__document-btn dmca-detail__document-btn--download font-medium"
-                                                        onClick={() => handleVerify("VALID_DMCA_COUNTER_NOTICE")}
-                                                        disabled={isSubmitting}
-                                                    >
-                                                        {isSubmitting ? "Validating..." : "Valid"}
-                                                    </button>
+                                                       <Modal_Button
+                                                disabled={isSubmitting}
+                                                size="sm"
+                                                content="Valid"
+                                                className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
+                                            >
+                                                <ValidModal onClose={() => { }} status="VALID_DMCA_COUNTER_NOTICE" />
+                                            </Modal_Button>
                                                     <Modal_Button
                                                         size="lg"
                                                         content="Invalid"
@@ -789,13 +742,14 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                     <div className="w-full flex flex-col gap-4 justify-center items-center border-t border-[#f0f0f0] pt-4 mt-3">
                                         <span className="notice_value">Please verify Lawsuit Proof</span>
                                         <div className="flex gap-4">
-                                            <button
-                                                className="dmca-detail__document-btn dmca-detail__document-btn--download font-medium"
-                                                onClick={() => handleVerify("VALID_LAWSUIT_PROOF")}
+                                                   <Modal_Button
                                                 disabled={isSubmitting}
+                                                size="sm"
+                                                content="Valid"
+                                                className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
                                             >
-                                                {isSubmitting ? "Validating..." : "Valid"}
-                                            </button>
+                                                <ValidModal onClose={() => { }} status="VALID_LAWSUIT_PROOF" />
+                                            </Modal_Button>
                                             <Modal_Button
                                                 size="lg"
                                                 content="Invalid"
@@ -838,13 +792,14 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                             <div className="w-full flex flex-col gap-4 justify-center items-center border-t border-[#f0f0f0] pt-4 mt-3">
                                                 <span className="notice_value">Report Rejected, Please verify Lawsuit Proof Again</span>
                                                 <div className="flex gap-4">
-                                                    <button
-                                                        className="dmca-detail__document-btn dmca-detail__document-btn--download font-medium"
-                                                        onClick={() => handleVerify("VALID_LAWSUIT_PROOF")}
-                                                        disabled={isSubmitting}
-                                                    >
-                                                        {isSubmitting ? "Validating..." : "Valid"}
-                                                    </button>
+                                                    <Modal_Button
+                                                disabled={isSubmitting}
+                                                size="sm"
+                                                content="Valid"
+                                                className="dmca-detail__document-btn flex items-center dmca-detail__document-btn--download font-medium"
+                                            >
+                                                <ValidModal onClose={() => { }} status="VALID_LAWSUIT_PROOF" />
+                                            </Modal_Button>
                                                     <Modal_Button
                                                         size="lg"
                                                         content="Invalid"
