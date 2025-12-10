@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
-// import 'quill/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 import logo from '../../../../assets/logoMTP.jpg';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/rootReducer';

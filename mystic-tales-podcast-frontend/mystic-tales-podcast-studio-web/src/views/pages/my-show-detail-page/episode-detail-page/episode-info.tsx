@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { Add, Explicit, PublishedWithChangesOutlined } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
-// import 'quill/dist/quill.snow.css';
+ import 'quill/dist/quill.snow.css';
 import Modal_Button from '@/views/components/common/modal/ModalButton';
 import { useParams } from 'react-router-dom';
 import { Episode } from '@/core/types/episode';

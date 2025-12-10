@@ -23,7 +23,7 @@ import Slider from 'react-slick';
 
 import { Add } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
-// import 'quill/dist/quill.snow.css';
+ import 'quill/dist/quill.snow.css';
 import './styles.scss';
 import { useNavigate, useParams } from 'react-router-dom';
 import { deleteShow, getShowDetail, publishShow, updateShow } from '@/core/services/show/show.service';
