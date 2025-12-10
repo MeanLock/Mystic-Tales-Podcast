@@ -38,7 +38,7 @@ export const SmartAudioPlayer: React.FC<SmartAudioPlayerProps> = ({
         ref={audioRef}
         src={currentUrl || ''}
         controls
-        controlsList="nodownload"
+        controlsList="nodownload noplaybackrate"
         style={{ width: '100%' }}
       />
       <div className="status" style={{ marginTop: 10, fontSize: 12, color: '#666' }}>

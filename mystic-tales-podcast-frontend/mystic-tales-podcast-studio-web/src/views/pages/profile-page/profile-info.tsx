@@ -20,6 +20,7 @@ import {
     Skeleton,
     Collapse,
     InputBase,
+    InputAdornment,
 } from '@mui/material';
 import { ExpandMore, ExpandLess, Search } from '@mui/icons-material';
 
@@ -335,7 +336,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                             PricePerBookingWord: profileData.PodcasterProfile.PricePerBookingWord,
                             IsBuddy: profileData.PodcasterProfile.IsBuddy,
                         }));
-                        dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: profileData.PodcasterProfile.IsBuddy } }));
+                        dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: profileData.PodcasterProfile.IsBuddy, PricePerBookingWord: profileData.PodcasterProfile.PricePerBookingWord } }));
 
                         await refreshProfile?.();
 
@@ -415,9 +416,16 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
 
                     <div className="profile-info-page__row">
                         <TextField
-                            label="Price Per Booking Word"
+                            label="Price Per Booking Word "
                             value={profileData.PodcasterProfile.PricePerBookingWord}
                             variant="standard"
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end" sx={{ whiteSpace: 'nowrap' }}>
+                                        <Typography variant="body2" sx={{ color: '#999999' }}>/ 1000 Words</Typography>
+                                    </InputAdornment>
+                                ),
+                            }}
                             type="number"
                             onChange={(e) => {
                                 let val = e.target.value;

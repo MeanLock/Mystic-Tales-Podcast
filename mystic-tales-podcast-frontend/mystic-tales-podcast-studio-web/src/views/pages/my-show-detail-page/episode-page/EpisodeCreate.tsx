@@ -65,7 +65,7 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(false);
     const [showList, setShowList] = useState<any[]>([]);
-    
+
     const navigate = useNavigate();
     const hasShowContext = navigation.currentContext.type === 'Show' ? true : false;
 
@@ -131,10 +131,10 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
     }, [quill]);
 
     const handleSave = async () => {
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
         try {
             setLoading(true);
             if (!formData.Name.trim()) {
@@ -174,7 +174,7 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
                         onClose();
                         if (hasShowContext) {
                             context?.handleDataChange();
-                        }else{
+                        } else {
                             navigate(`/show/${data.PodcastShowId}/episode/${data.PodcastEpisodeId}`);
                         }
                         toast.success(`Episode created successfully!`);
@@ -197,6 +197,17 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Invalid file type. Allowed: JPG, JPEG, PNG, GIF, WEBP, SVG');
+                return;
+            }
+
+            const maxSize = 3 * 1024 * 1024;
+            if (file.size > maxSize) {
+                toast.error('Image file size must be less than 3MB');
+                return;
+            }
             setMainImageFile(file);
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -574,7 +585,7 @@ const EpisodeCreate = ({ onClose }: { onClose?: () => void }) => {
                         type="file"
                         ref={fileInputRef}
                         onChange={handleImageUpload}
-                        accept="image/*"
+                        accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
                         style={{ display: 'none' }}
                     />
                 </div>

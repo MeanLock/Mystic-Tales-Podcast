@@ -359,7 +359,6 @@ const ChannelSubscription: FC<ChannelSubscriptionProps> = () => {
     const monthlyPrice = getMaxVersionPrice("Monthly");
     const annuallyPrice = getMaxVersionPrice("Annually");
 
-    // Calculate monthly equivalent for annual plan
     const monthlyEquivalent = Math.round(annuallyPrice / 12)
     const savings = monthlyPrice * 12 - annuallyPrice
 
