@@ -1,45 +1,16 @@
-import { createContext, type FC, useEffect, useMemo, useState } from "react"
+import { createContext, type FC, use, useEffect, useMemo, useState } from "react"
 import "./styles.scss"
 import { AgGridReact } from "ag-grid-react"
-import { CButton, CCol, CFormInput, CRow, CSpinner } from "@coreui/react"
+import { CButton, CButtonGroup, CCol, CFormInput, CRow, CSpinner } from "@coreui/react"
 import { AllCommunityModule, ColDef, ModuleRegistry } from "ag-grid-community"
-import { managerAxiosInstance } from "../../../../../core/api/rest-api/config/instances/v2/manager-axios-instance"
-import SurveyTalkLoading from "../../../../components/common/loading"
-import { formatDate } from "../../../../../core/utils/date.util"
-export const mockReviewSessionList: any = {
-    ReviewSessionList: [
-        {
-            Id: 1,
-            AssignedStaffId: 101,
-            PodcastEpisodeId: "ep_001",
-            Note: "Kiểm tra chất lượng âm thanh lần đầu.",
-            ReReviewCount: 0,
-            Deadline: "2025-10-12T10:31:58.311Z",
-            CreatedAt: "2025-10-09T10:31:58.311Z",
-            UpdatedAt: "2025-10-09T10:31:58.311Z",
-        },
-        {
-            Id: 2,
-            AssignedStaffId: 102,
-            PodcastEpisodeId: "ep_002",
-            Note: "Cần xem xét lại nội dung có bản quyền.",
-            ReReviewCount: 1,
-            Deadline: "2025-10-15T10:31:58.311Z",
-            CreatedAt: "2025-10-09T10:31:58.311Z",
-            UpdatedAt: "2025-10-09T10:31:58.311Z",
-        },
-        {
-            Id: 3,
-            AssignedStaffId: 103,
-            PodcastEpisodeId: "ep_003",
-            Note: "Rà soát lại transcript để tránh lỗi chính tả.",
-            ReReviewCount: 2,
-            Deadline: "2025-10-20T10:31:58.311Z",
-            CreatedAt: "2025-10-09T10:31:58.311Z",
-            UpdatedAt: "2025-10-09T10:31:58.311Z",
-        },
-    ],
-};
+import { formatDate } from "@/core/utils/date.util"
+import { Eye } from "phosphor-react"
+import Loading from "@/views/components/common/loading"
+import { getEpisodePublishList } from "@/core/services/ReviewSession/review-session.service"
+import { staffAxiosInstance } from "@/core/api/rest-api/config/instances/v2/staff-axios-instance"
+import { useNavigate } from "react-router-dom"
+import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
+
 ModuleRegistry.registerModules([AllCommunityModule])
 
 interface EpisodePublishRequestReviewViewProps { }
@@ -52,21 +23,22 @@ interface GridState {
 }
 export const EpisodePublishRequestReviewViewContext = createContext<EpisodePublishRequestReviewViewContextProps | null>(null)
 
-const state_creator = (table: any[]) => {
+const state_creator = (table: any[], navigate: any) => {
     const state = {
         columnDefs: [
             {
                 headerName: "No.",
-                flex: 0.2,
+                flex: 0.3,
                 valueGetter: (params: any) => {
                     return params.node.rowIndex + 1; // Hiển thị số thứ tự từ 1
                 },
                 cellClass: '',
                 sortable: false,
                 filter: false
-            }, { headerName: "Assigned Staff ID", field: "AssignedStaffId", flex: 0.8 },
-            { headerName: "Podcast Episode ID", field: "PodcastEpisodeId", flex: 0.8 },
-            { headerName: "Note", field: "Note", flex: 0.8 },
+            },
+            { headerName: "Podcast Episode ", field: "PodcastEpisode.Name", flex: 1.5 },
+             { headerName: "Assigned Staff ", field: "AssignedStaff.Email"},
+            { headerName: "Note", field: "Note", flex: 0.8 ,valueGetter: (params: any) => (params.data.Note ? params.data.Note : '---')},
             { headerName: "Re-Review Count", field: "ReReviewCount", flex: 0.8 },
             {
                 headerName: "Deadline",
@@ -75,20 +47,76 @@ const state_creator = (table: any[]) => {
                 valueGetter: (params: any) => formatDate(params.data.Deadline),
 
             },
-            {
-                headerName: "Created At",
-                field: "CreatedAt",
-                flex: 0.5,
-                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
+              {
+                headerName: "Status",
+                cellClass: 'd-flex align-items-center justify-content-center',
+                cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                flex: 1.1,
+                cellRenderer: (params: any) => {
+                    const status = params.data?.CurrentStatus?.Name || '';
+                    let color = '#888';
+                    let bg = 'transparent';
 
+                    switch (status) {
+                        case 'Pending Review':
+
+                            color = '#ffb300';
+                            bg = 'rgba(255, 179, 0, 0.15)'; // vàng cam
+                            break;
+
+                        case 'Accepted':
+                            color = '#a8e02eff';
+                            bg = 'rgba(174, 227, 57, 0.2)'; // xanh primary
+                            break;
+
+                        case 'Discard':
+                        case 'Rejected':
+                            color = '#ef5350';
+                            bg = 'rgba(239, 83, 80, 0.15)'; // đỏ
+                            break;
+
+                        default:
+                            color = '#9e9e9e';
+                            bg = 'rgba(158, 158, 158, 0.15)'; // xám nếu không khớp
+                    }
+
+                    return (
+                        <span
+                            style={{
+                                display: 'inline-block',
+                                minWidth: 100,
+                                padding: '0 10px',
+                                borderRadius: 50,
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                color,
+                                background: bg,
+                                textAlign: 'center',
+                                border: `1.5px solid ${color}`,
+                            }}
+                        >
+                            {status === 'Podcast Buddy Cancel Request' ? 'Buddy Cancel Request' : status}
+                        </span>
+                    );
+                },
             },
-            {
-                headerName: "Updated At",
-                field: "UpdatedAt",
-                flex: 0.5,
-                valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
-
-            }
+           {
+        headerName: "Actions",
+        cellClass: "d-flex justify-content-center py-0",
+        flex: 0.5,
+        cellRenderer: (params: any) => {
+          const PublishReviewSessionId = params.data.Id
+          return (
+            <div className="d-flex gap-2 align-items-center h-100">
+              <CButton
+                onClick={() => navigate("/episode/publish-review-sessions/" + PublishReviewSessionId)}
+              >
+                <Eye size={27} color='var(--secondary-green)' />
+              </CButton>
+            </div>
+          )
+        },
+      },
         ],
         rowData: table
 
@@ -101,27 +129,24 @@ const state_creator = (table: any[]) => {
 const EpisodePublishRequestReviewView: FC<EpisodePublishRequestReviewViewProps> = () => {
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-
-    // const handleDataChange = async () => {
-    //   setIsLoading(true);
-    //   try {
-    //     const accountList = await getCustomerAccounts(adminAxiosInstance);
-    //     if (accountList.success) {
-    //       setState(state_creator(accountList.data.Accounts));
-    //     } else {
-    //       console.error('API Error:', accountList.message);
-    //     }
-    //   } catch (error) {
-    //     console.error('Lỗi khi fetch customer accounts:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // }
+    const navigate = useNavigate();
     const handleDataChange = async () => {
+      setIsLoading(true);
+      try {
+        const res = await getEpisodePublishList(adminAxiosInstance);
+        console.log('Episode Publish Review Sessions:', res.data);
+        if (res.success) {
+          setState(state_creator(res.data.ReviewSessionList,navigate));
+        } else {
+          console.error('API Error:', res.message);
+        }
+      } catch (error) {
+        console.error('Lỗi khi fetch customer accounts:', error);
+      } finally {
         setIsLoading(false);
-        setState(state_creator(mockReviewSessionList.ReviewSessionList));
-
+      }
     }
+
     useEffect(() => {
         handleDataChange()
     }, [])
@@ -140,14 +165,13 @@ const EpisodePublishRequestReviewView: FC<EpisodePublishRequestReviewViewProps> 
 
     return (
         <EpisodePublishRequestReviewViewContext.Provider value={{ handleDataChange }}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="fw-semibold" style={{ color: "var(--primary-grey)" }}>Episode Publish Request Review Sessions</h4>
-
-            </div>
+            <h3 className="mb-4 fw-bold" style={{ color: 'var(--primary-grey)', borderBottom: '2px solid var(--primary-grey)', paddingBottom: '0.7rem' }}>Publish Request</h3>
             <CRow >
                 <CCol xs={12}>
                     {isLoading ? (
-                        <SurveyTalkLoading />
+                       <div className="flex justify-content-center align-items-center h-150" >
+                            <Loading />
+                        </div>
                     ) : (
                         <div
                             id="customer-table"

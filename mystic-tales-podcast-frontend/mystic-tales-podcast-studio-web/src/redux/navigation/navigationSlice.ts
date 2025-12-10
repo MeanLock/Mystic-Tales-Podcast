@@ -10,17 +10,11 @@ export interface NavigationState {
     email?: string;
     type?: string;
   } | null;
-  navItems: Array<{
-    label: string;
-    icon: JSX.Element;
-    path: string;
-  }>;
 }
 
 const initialState: NavigationState = {
   contextType: 'user',
   currentContext: null,
-  navItems: []
 };
 
 const navigationSlice = createSlice({
@@ -34,13 +28,14 @@ const navigationSlice = createSlice({
         email: string;
         avatar?: string;
       };
-      navItems: Array<{ label: string; icon: JSX.Element; path: string; }>;
     }>) => {
-      state.contextType = 'user';
-      state.currentContext = {
-        ...action.payload.user,
-      };
-      state.navItems = action.payload.navItems;
+      // replace state to drop any stray keys (e.g., legacy navItems)
+      return {
+        contextType: 'user',
+        currentContext: {
+          ...action.payload.user,
+        }
+      } as NavigationState as any;
     },
 
     setChannelContext: (state, action: PayloadAction<{
@@ -49,14 +44,14 @@ const navigationSlice = createSlice({
         name: string;
         avatar?: string;
       };
-      navItems: Array<{ label: string; icon: JSX.Element; path: string; }>;
     }>) => {
-      state.contextType = 'channel';
-      state.currentContext = {
-        ...action.payload.channel,
-        type: 'Channel'
-      };
-      state.navItems = action.payload.navItems;
+      return {
+        contextType: 'channel',
+        currentContext: {
+          ...action.payload.channel,
+          type: 'Channel'
+        }
+      } as NavigationState as any;
     },
 
      setShowContext: (state, action: PayloadAction<{
@@ -65,19 +60,19 @@ const navigationSlice = createSlice({
         name: string;
         avatar?: string;
       };
-      navItems: Array<{ label: string; icon: JSX.Element; path: string; }>;
     }>) => {
-      state.contextType = 'show';
-      state.currentContext = {
-        ...action.payload.show,
-        type: 'Show'
-      };
-      state.navItems = action.payload.navItems;
+      return {
+        contextType: 'show',
+        currentContext: {
+          ...action.payload.show,
+          type: 'Show'
+        }
+      } as NavigationState as any;
     },
 
-    clearContext: (state) => {
-      state.currentContext = null;
-      state.navItems = [];
+    clearContext: () => {
+      // reset to initialState (ensures removal of any non-serializable legacy fields)
+      return initialState;
     }
   }
 });

@@ -1,42 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use, useContext, FC } from 'react';
 import {
+    Box,
+    Typography,
     TextField,
     Button,
-    Typography,
-    Box,
-    IconButton,
-    Chip,
     Divider,
+    IconButton,
     InputAdornment,
+    Chip,
+    FormControlLabel,
+    Checkbox,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Collapse
 } from '@mui/material';
-import { Add, Delete } from '@mui/icons-material';
-import './modal-styles.scss';
-
-/**
- * SubscriptionModal Component
- * Supports both CREATE and UPDATE operations
- * 
- * CREATE mode requires: PodcastChannelId
- * UPDATE mode requires: PodcastSubscriptionId (from subscription prop)
- * 
- * API Payload:
- * {
- *   "PodcastSubscriptionCreateInfo": {
- *     "Name": "string",
- *     "Description": "string",
- *     "PodcastSubscriptionCycleTypePriceCreateInfoList": [
- *       { "SubscriptionCycleTypeId": 0, "Price": 0 }
- *     ],
- *     "PodcastSubscriptionBenefitMappingCreateInfoList": [0]
- *   }
- * }
- */
+import { Add, Delete, ExpandMore, ExpandLess } from '@mui/icons-material';
+import { useSagaPolling } from '@/core/hooks/useSagaPolling';
+import { activeSubscription, addChannelSubscription, deleteSubscription, getSubscriptionDetail, updateSubscription } from '@/core/services/subscription/subscription.service';
+import { loginRequiredAxiosInstance } from '@/core/api/rest-api/config/instances/v2';
+import { toast } from 'react-toastify';
+import { ChannelSubscriptionContext } from '.';
+import { set, update } from 'lodash';
+import Loading from '@/views/components/common/loading';
+import { confirmAlert } from '@/core/utils/alert.util';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/rootReducer';
 
 interface SubscriptionModalProps {
-    subscription?: any; // If provided, it's UPDATE mode
-    podcastChannelId?: string; // Required for CREATE mode
+    subscription?: any;
+    podcastChannelId?: string;
     onClose?: () => void;
-    onSave?: (data: any) => void;
 }
 
 interface CycleTypePrice {
@@ -44,69 +42,111 @@ interface CycleTypePrice {
     Price: number;
 }
 
-// Mock available cycle types
 const availableCycleTypes = [
     { Id: 1, Name: "Monthly" },
     { Id: 2, Name: "Annually" },
 ];
 
-// Mock available benefits
 const availableBenefits = [
     { Id: 1, Name: "Non-Quota Listening" },
     { Id: 2, Name: "Subscriber-Only Shows" },
     { Id: 3, Name: "Subscriber-Only Episodes" },
-    { Id: 4, Name: "Shows/Episodes Early Access" },
-    { Id: 5, Name: "Ad-Free Experience" },
-    { Id: 6, Name: "Download Episodes" },
+    { Id: 4, Name: "Bonus Episodes" },
+    { Id: 5, Name: "Shows/Episodes Early Access" },
+    { Id: 6, Name: "Archive Episodes Access" },
 ];
 
-const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
+const SubscriptionModal: FC<SubscriptionModalProps> = ({
     subscription,
     podcastChannelId,
-    onClose,
-    onSave
+    onClose
 }) => {
     const isUpdateMode = !!subscription;
+    const authSlice = useSelector((state: RootState) => state.auth);
+    const context = useContext(ChannelSubscriptionContext);
+    const [cycleTypePrices, setCycleTypePrices] = useState<CycleTypePrice[]>([]);
+    const [selectedBenefits, setSelectedBenefits] = useState<number[]>([]);
+    const [showPriceHistory, setShowPriceHistory] = useState(false);
+    const [showBenefitHistory, setShowBenefitHistory] = useState(false);
+    const [showRegistrations, setShowRegistrations] = useState(false);
+    const [registrations, setRegistrations] = useState<any[]>([]);
+    const [activating, setActivating] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [fetchingRegistrations, setFetchingRegistrations] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const { startPolling } = useSagaPolling({
+        timeoutSeconds: 10,
+        intervalSeconds: 0.5,
+    })
+    const [originalCycleTypeIds, setOriginalCycleTypeIds] = useState<number[]>([]);
 
-    // Form state
     const [formData, setFormData] = useState({
         name: '',
         description: '',
     });
-
-    const [cycleTypePrices, setCycleTypePrices] = useState<CycleTypePrice[]>([]);
-    const [selectedBenefits, setSelectedBenefits] = useState<number[]>([]);
+    const fetchRegistrations = async () => {
+        if (isUpdateMode) {
+            setFetchingRegistrations(true);
+            try {
+                const response = await getSubscriptionDetail(loginRequiredAxiosInstance, subscription.Id);
+                console.log("Fetched subscription registrations:", response.data.PodcastSubscriptionRegistrationList);
+                if (response.success && response.data) {
+                    setRegistrations(response.data.PodcastSubscription.PodcastSubscriptionRegistrationList || []);
+                }
+            } catch (error) {
+                console.error('Error fetching subscription details:', error);
+            } finally {
+                setFetchingRegistrations(false);
+            }
+        }
+    };
 
     useEffect(() => {
         if (isUpdateMode && subscription) {
-            // Populate form for UPDATE mode
+            fetchRegistrations();
             setFormData({
                 name: subscription.Name || '',
                 description: subscription.Description || '',
             });
 
-            // Map existing cycle type prices
-            const existingPrices = subscription.PodcastSubscriptionCycleTypePriceList?.map((item: any) => ({
-                SubscriptionCycleTypeId: item.SubscriptionCycleType.Id,
-                Price: item.Price,
-            })) || [];
-            setCycleTypePrices(existingPrices);
+            const allPrices = subscription.PodcastSubscriptionCycleTypePriceList || [];
+            if (allPrices.length > 0) {
+                const maxVersion = Math.max(...allPrices.map((item: any) => item.Version));
+                const currentPrices = allPrices.filter((item: any) => item.Version === maxVersion);
+                const existingPrices = currentPrices.map((item: any) => ({
+                    SubscriptionCycleTypeId: item.SubscriptionCycleType.Id,
+                    Price: item.Price,
+                }));
+                setCycleTypePrices(existingPrices);
+                setOriginalCycleTypeIds(existingPrices.map(p => p.SubscriptionCycleTypeId));
 
-            // Map existing benefits
-            const existingBenefits = subscription.PodcastSubscriptionBenefitMappingList?.map(
-                (item: any) => item.PodcastSubscriptionBenefit.Id
-            ) || [];
-            setSelectedBenefits(existingBenefits);
+            } else {
+                setCycleTypePrices([]);
+                setOriginalCycleTypeIds([]);
+            }
+
+            const allBenefits = subscription.PodcastSubscriptionBenefitMappingList || [];
+            if (allBenefits.length > 0) {
+                const maxVersion = Math.max(...allBenefits.map((item: any) => item.Version));
+                const currentBenefits = allBenefits.filter((item: any) => item.Version === maxVersion);
+                const existingBenefits = currentBenefits.map((item: any) => item.PodcastSubscriptionBenefit.Id);
+                setSelectedBenefits(existingBenefits);
+            } else {
+                setSelectedBenefits([]);
+            }
         } else {
-            // Initialize empty form for CREATE mode
             setFormData({
                 name: '',
                 description: '',
             });
             setCycleTypePrices([]);
             setSelectedBenefits([]);
+            setOriginalCycleTypeIds([]);
+
         }
     }, [subscription, isUpdateMode]);
+
+
 
     const handleAddCycleTypePrice = (cycleTypeId: number) => {
         if (!cycleTypePrices.find(p => p.SubscriptionCycleTypeId === cycleTypeId)) {
@@ -134,8 +174,22 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         }
     };
 
-    const handleSave = () => {
-        // Prepare API payload
+    const handleSave = async () => {
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
+        const invalidPrices = cycleTypePrices.filter(p => p.Price <= 0);
+        if (invalidPrices.length > 0) {
+            toast.error('All cycle type prices must be greater than 0');
+            return;
+        }
+        if (selectedBenefits.length === 0) {
+            toast.error('Please select at least one benefit for the subscription.');
+            return;
+        }
+        setLoading(true);
+
         const payload: any = {
             PodcastSubscriptionCreateInfo: {
                 Name: formData.name,
@@ -144,20 +198,160 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 PodcastSubscriptionBenefitMappingCreateInfoList: selectedBenefits,
             }
         };
-
+        const payloadUpdate: any = {
+            PodcastSubscriptionUpdateInfo: {
+                Name: formData.name,
+                Description: formData.description,
+                PodcastSubscriptionCycleTypePriceUpdateInfoList: cycleTypePrices,
+                PodcastSubscriptionBenefitMappingUpdateInfoList: selectedBenefits,
+            }
+        };
         if (isUpdateMode) {
-            payload.PodcastSubscriptionId = subscription.Id;
+            try {
+                const res = await updateSubscription(loginRequiredAxiosInstance, subscription.Id, payloadUpdate);
+                const sagaId = res?.data?.SagaInstanceId
+                if (!sagaId) {
+                    toast.error("Update subscription failed, please try again.")
+                    return
+                }
+                await startPolling(sagaId, loginRequiredAxiosInstance, {
+                    onSuccess: async () => {
+                        onClose();
+                        await context?.handleDataChange();
+                        toast.success(`Subscription updated successfully!`);
+                    },
+                    onFailure: (err) => toast.error(err || "Saga failed!"),
+                    onTimeout: () => toast.error("System not responding, please try again."),
+                })
+            } catch (error) {
+                console.error('Error updating subscription:', error);
+                toast.error('Failed to update subscription');
+            } finally {
+                setLoading(false);
+            }
         } else {
-            payload.PodcastChannelId = podcastChannelId;
+            try {
+                const res = await addChannelSubscription(loginRequiredAxiosInstance, podcastChannelId, payload);
+                const sagaId = res?.data?.SagaInstanceId
+                if (!sagaId) {
+                    toast.error("Create subscription failed, please try again.")
+                    return
+                }
+                await startPolling(sagaId, loginRequiredAxiosInstance, {
+                    onSuccess: async () => {
+                        onClose();
+                        await context?.handleDataChange();
+                        toast.success(`Subscription created successfully!`);
+                    },
+                    onFailure: (err) => toast.error(err || "Saga failed!"),
+                    onTimeout: () => toast.error("System not responding, please try again."),
+                })
+            } catch (error) {
+                console.error('Error creating subscription:', error);
+                toast.error('Failed to create subscription');
+            } finally {
+                setLoading(false);
+            }
         }
+    };
 
-        console.log(isUpdateMode ? 'Updating subscription:' : 'Creating subscription:', payload);
-        onSave?.(payload);
-        onClose?.();
+    const handleActivate = async (isActive: boolean) => {
+        setActivating(true);
+        try {
+            const res = await activeSubscription(loginRequiredAxiosInstance, subscription.Id, isActive);
+            const sagaId = res?.data?.SagaInstanceId
+            if (!sagaId) {
+                toast.error("Activate subscription failed, please try again.")
+                return
+            }
+            await startPolling(sagaId, loginRequiredAxiosInstance, {
+                onSuccess: () => {
+                    onClose();
+                    context?.handleDataChange();
+                    toast.success(`Subscription activated successfully!`);
+                },
+                onFailure: (err) => toast.error(err || "Saga failed!"),
+                onTimeout: () => toast.error("System not responding, please try again."),
+            })
+        } catch (error) {
+            console.error('Error creating subscription:', error);
+            toast.error('Failed to create subscription');
+        } finally {
+            setActivating(false);
+        }
+    };
+    const handleDelete = async () => {
+        const alert = await confirmAlert("Are you sure to DELETE this subscription?");
+        if (!alert.isConfirmed) return;
+        setDeleting(true);
+        try {
+            const res = await deleteSubscription(loginRequiredAxiosInstance, subscription.Id);
+            const sagaId = res?.data?.SagaInstanceId
+            if (!sagaId) {
+                toast.error("Delete subscription failed, please try again.")
+                return
+            }
+            await startPolling(sagaId, loginRequiredAxiosInstance, {
+                onSuccess: async () => {
+                    onClose();
+                    await context?.handleDataChange();
+                    toast.success(`Subscription deleted successfully!`);
+                },
+                onFailure: (err) => toast.error(err || "Saga failed!"),
+                onTimeout: () => toast.error("System not responding, please try again."),
+            })
+        } catch (error) {
+            console.error('Error deleting subscription:', error);
+            toast.error('Failed to delete subscription');
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const getCycleTypeName = (id: number) => {
         return availableCycleTypes.find(ct => ct.Id === id)?.Name || 'Unknown';
+    };
+
+    const getBenefitName = (id: number) => {
+        return availableBenefits.find(b => b.Id === id)?.Name || 'Unknown';
+    };
+
+    const formatDate = (dateStr: string) => {
+        return new Date(dateStr).toLocaleString('vi-VN');
+    };
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    };
+
+    // Get all price versions grouped by cycle type
+    const getPriceHistory = () => {
+        if (!subscription?.PodcastSubscriptionCycleTypePriceList) return [];
+        const grouped: Record<number, any[]> = {};
+        subscription.PodcastSubscriptionCycleTypePriceList.forEach((item: any) => {
+            const typeId = item.SubscriptionCycleType.Id;
+            if (!grouped[typeId]) grouped[typeId] = [];
+            grouped[typeId].push(item);
+        });
+        // Sort each group by version descending
+        Object.keys(grouped).forEach(key => {
+            grouped[parseInt(key)].sort((a, b) => b.Version - a.Version);
+        });
+        return grouped;
+    };
+
+    // Get all benefit versions
+    const getBenefitHistory = () => {
+        if (!subscription?.PodcastSubscriptionBenefitMappingList) return [];
+        const allVersions: Record<number, any[]> = {};
+        subscription.PodcastSubscriptionBenefitMappingList.forEach((item: any) => {
+            if (!allVersions[item.Version]) allVersions[item.Version] = [];
+            allVersions[item.Version].push(item);
+        });
+        return Object.keys(allVersions)
+            .map(v => parseInt(v))
+            .sort((a, b) => b - a)
+            .map(v => ({ version: v, benefits: allVersions[v] }));
     };
 
     return (
@@ -211,8 +405,66 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
             {/* Pricing Section */}
             <Box mb={3}>
-                <Typography variant="subtitle1" fontWeight={600} mb={2} sx={{ color: '#fff' }}>
-                    Pricing Plans
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                    <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#fff' }}>
+                        Pricing Plans
+                    </Typography>
+                    {isUpdateMode && subscription?.PodcastSubscriptionCycleTypePriceList?.length > 0 && (
+                        <Button
+                            size="small"
+                            onClick={() => setShowPriceHistory(!showPriceHistory)}
+                            sx={{ color: 'var(--primary-green)' }}
+                            endIcon={showPriceHistory ? <ExpandLess /> : <ExpandMore />}
+                        >
+                            {showPriceHistory ? 'Hide' : 'Show'} Price History
+                        </Button>
+                    )}
+                </Box>
+
+                {/* Price History Table */}
+                {isUpdateMode && showPriceHistory && (
+                    <Box mb={3} sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                        {Object.entries(getPriceHistory()).map(([typeId, versions]: [string, any[]]) => (
+                            <Box key={typeId} mb={2}>
+                                <Typography variant="caption" sx={{ color: '#aaa', mb: 1, display: 'block' }}>
+                                    {getCycleTypeName(parseInt(typeId))} Price History:
+                                </Typography>
+                                <TableContainer component={Paper} sx={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                                    <Table size="small">
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Version</TableCell>
+                                                <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Price</TableCell>
+                                                <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Created At</TableCell>
+                                                <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Updated At</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {versions.map((item: any, idx: number) => (
+                                                <TableRow key={idx} sx={{ backgroundColor: item.Version === subscription?.CurrentVersion ? 'rgba(174, 227, 57, 0.1)' : 'transparent' }}>
+                                                    <TableCell sx={{ color: '#fff' }}>
+                                                        <Box display="flex" alignItems="center" gap={1}>
+                                                            {item.Version}
+                                                            {item.Version === subscription?.CurrentVersion && (
+                                                                <Chip label="Current" size="small" sx={{ backgroundColor: 'var(--primary-green)', color: '#000', height: '20px' }} />
+                                                            )}
+                                                        </Box>
+                                                    </TableCell>
+                                                    <TableCell sx={{ color: '#fff' }}>{formatCurrency(item.Price)}</TableCell>
+                                                    <TableCell sx={{ color: '#aaa', fontSize: '0.8rem' }}>{formatDate(item.CreatedAt)}</TableCell>
+                                                    <TableCell sx={{ color: '#aaa', fontSize: '0.8rem' }}>{formatDate(item.UpdatedAt)}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </Box>
+                        ))}
+                    </Box>
+                )}
+
+                <Typography variant="caption" sx={{ color: '#aaa', display: 'block', mb: 2 }}>
+                    {isUpdateMode ? 'You are editing the latest version. Changes will create a new version.' : 'Set up pricing plans for your subscription.'}
                 </Typography>
 
                 <Box display="flex" gap={1} mb={2} flexWrap="wrap">
@@ -239,45 +491,54 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </Box>
 
                 <Box display="flex" flexDirection="column" gap={2}>
-                    {cycleTypePrices.map((cyclePrice) => (
-                        <Box
-                            key={cyclePrice.SubscriptionCycleTypeId}
-                            display="flex"
-                            alignItems="center"
-                            gap={2}
-                            p={2}
-                            className="pricing-container"
-                        >
-                            <Typography sx={{ minWidth: '100px', color: '#fff' }}>
-                                {getCycleTypeName(cyclePrice.SubscriptionCycleTypeId)}
-                            </Typography>
-                            <TextField
-                                type="number"
-                                value={cyclePrice.Price}
-                                onChange={(e) => handlePriceChange(cyclePrice.SubscriptionCycleTypeId, parseFloat(e.target.value) || 0)}
-                                size="small"
-                                fullWidth
-                                InputProps={{
-                                    endAdornment: <InputAdornment position="end">VND</InputAdornment>,
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        color: '#fff',
-                                        '& fieldset': { borderColor: '#444' },
-                                        '&:hover fieldset': { borderColor: '#666' },
-                                        '&.Mui-focused fieldset': { borderColor: 'var(--primary-green)' }
-                                    }
-                                }}
-                            />
-                            <IconButton
-                                onClick={() => handleRemoveCycleTypePrice(cyclePrice.SubscriptionCycleTypeId)}
-                                size="small"
-                                sx={{ color: '#f44336' }}
+                    {cycleTypePrices.map((cyclePrice) => {
+                        // NEW: Check if this is an original cycle type
+                        const isOriginal = isUpdateMode && originalCycleTypeIds.includes(cyclePrice.SubscriptionCycleTypeId);
+
+                        return (
+                            <Box
+                                key={cyclePrice.SubscriptionCycleTypeId}
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                                p={2}
+                                className="pricing-container"
                             >
-                                <Delete />
-                            </IconButton>
-                        </Box>
-                    ))}
+                                <Typography sx={{ minWidth: '100px', color: '#fff' }}>
+                                    {getCycleTypeName(cyclePrice.SubscriptionCycleTypeId)}
+                                </Typography>
+                                <TextField
+                                    type="number"
+                                    value={cyclePrice.Price}
+                                    onChange={(e) => handlePriceChange(cyclePrice.SubscriptionCycleTypeId, parseFloat(e.target.value) || 0)}
+                                    size="small"
+                                    fullWidth
+                                    InputProps={{
+                                        endAdornment: <InputAdornment position="end">VND</InputAdornment>,
+                                    }}
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            color: '#fff',
+                                            '& fieldset': { borderColor: cyclePrice.Price <= 0 ? '#f44336' : '#444' },
+                                            '&:hover fieldset': { borderColor: cyclePrice.Price <= 0 ? '#f44336' : '#666' },
+                                            '&.Mui-focused fieldset': { borderColor: cyclePrice.Price <= 0 ? '#f44336' : 'var(--primary-green)' }
+                                        },
+                                    }}
+                                />
+                                {/* NEW: Conditionally show delete button */}
+                                {!isOriginal && (
+                                    <IconButton
+                                        onClick={() => handleRemoveCycleTypePrice(cyclePrice.SubscriptionCycleTypeId)}
+                                        size="small"
+                                        sx={{ color: '#f44336' }}
+                                    >
+                                        <Delete />
+                                    </IconButton>
+                                )}
+
+                            </Box>
+                        );
+                    })}
                 </Box>
             </Box>
 
@@ -285,9 +546,71 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
             {/* Benefits Section */}
             <Box mb={3}>
-                <Typography variant="subtitle1" fontWeight={600} mb={2} sx={{ color: '#fff' }}>
-                    Benefits
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                    <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#fff' }}>
+                        Benefits
+                    </Typography>
+                    {isUpdateMode && subscription?.PodcastSubscriptionBenefitMappingList?.length > 0 && (
+                        <Button
+                            size="small"
+                            onClick={() => setShowBenefitHistory(!showBenefitHistory)}
+                            sx={{ color: 'var(--primary-green)' }}
+                            endIcon={showBenefitHistory ? <ExpandLess /> : <ExpandMore />}
+                        >
+                            {showBenefitHistory ? 'Hide' : 'Show'} Benefit History
+                        </Button>
+                    )}
+                </Box>
+
+                {/* Benefit History Table */}
+                {isUpdateMode && showBenefitHistory && (
+                    <Box mb={3} sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                        <TableContainer component={Paper} sx={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Version</TableCell>
+                                        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Benefits</TableCell>
+                                        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Created At</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {getBenefitHistory().map((versionData: any, idx: number) => (
+                                        <TableRow key={idx} sx={{ backgroundColor: versionData.version === subscription?.CurrentVersion ? 'rgba(174, 227, 57, 0.1)' : 'transparent' }}>
+                                            <TableCell sx={{ color: '#fff' }}>
+                                                <Box display="flex" alignItems="center" gap={1}>
+                                                    {versionData.version}
+                                                    {versionData.version === subscription?.CurrentVersion && (
+                                                        <Chip label="Current" size="small" sx={{ backgroundColor: 'var(--primary-green)', color: '#000', height: '20px' }} />
+                                                    )}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell sx={{ color: '#fff' }}>
+                                                <Box display="flex" flexWrap="wrap" gap={0.5}>
+                                                    {versionData.benefits.map((b: any, bidx: number) => (
+                                                        <Chip key={bidx} label={b.PodcastSubscriptionBenefit.Name} size="small"
+                                                            sx={{
+                                                                backgroundColor: 'transparent',
+                                                                color: 'var(--primary-green)',
+                                                            }} />
+                                                    ))}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell sx={{ color: '#aaa', fontSize: '0.8rem' }}>
+                                                {versionData.benefits[0] ? formatDate(versionData.benefits[0].CreatedAt) : 'N/A'}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Box>
+                )}
+
+                <Typography variant="caption" sx={{ color: '#aaa', display: 'block', mb: 2 }}>
+                    {isUpdateMode ? 'You are editing the latest version. Changes will create a new version.' : 'Select benefits for your subscribers.'}
                 </Typography>
+
                 <Box display="flex" flexWrap="wrap" gap={1}>
                     {availableBenefits.map((benefit) => (
                         <Chip
@@ -307,15 +630,176 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </Box>
             </Box>
 
+            {/* Registration List Section */}
+            {isUpdateMode && registrations.length > 0 && (
+                <>
+                    <Divider sx={{ borderColor: '#333', mb: 3 }} />
+                    <Box mb={3}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#fff' }}>
+                                Subscribers ({registrations.length})
+                            </Typography>
+                            <Button
+                                size="small"
+                                onClick={() => setShowRegistrations(!showRegistrations)}
+                                sx={{ color: 'var(--primary-green)' }}
+                                endIcon={showRegistrations ? <ExpandLess /> : <ExpandMore />}
+                            >
+                                {showRegistrations ? 'Hide' : 'Show'} Details
+                            </Button>
+                        </Box>
+
+                        <Collapse in={showRegistrations}>
+                            <TableContainer component={Paper} sx={{ backgroundColor: 'rgba(255,255,255,0.05)', maxHeight: '400px', overflow: 'auto' }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Customer</TableCell>
+                                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Cycle Type</TableCell>
+                                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Version</TableCell>
+                                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Switch Version</TableCell>
+                                            {/* <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Status</TableCell> */}
+                                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Last Paid</TableCell>
+                                            <TableCell sx={{ color: '#fff', fontWeight: 600 }}>Cancelled</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {registrations.map((reg: any, idx: number) => (
+                                            <TableRow key={idx}>
+                                                <TableCell sx={{ color: '#fff' }}>{reg.Account.FullName}</TableCell>
+                                                <TableCell sx={{ color: '#fff' }}>{reg.SubscriptionCycleType?.Name || 'N/A'}</TableCell>
+                                                <TableCell sx={{ color: '#fff' }}>
+                                                    <Chip
+                                                        label={`v${reg.CurrentVersion}`}
+                                                        size="small"
+                                                        sx={{
+                                                            backgroundColor: reg.CurrentVersion === subscription?.CurrentVersion ? 'var(--primary-green)' : '#555',
+                                                            color: reg.CurrentVersion === subscription?.CurrentVersion ? '#000' : '#fff'
+                                                        }}
+                                                    />
+                                                </TableCell>
+                                                <TableCell sx={{ color: '#fff' }}>
+                                                    <Chip
+                                                        label={reg.IsAcceptNewestVersionSwitch === null ? 'Pending' : reg.IsAcceptNewestVersionSwitch ? 'Yes' : 'No'}
+                                                        size="small"
+                                                        sx={{
+                                                            backgroundColor: reg.IsAcceptNewestVersionSwitch === null ? '#ff9800' : reg.IsAcceptNewestVersionSwitch ? '#4caf50' : '#f44336',
+                                                            color: '#fff'
+                                                        }}
+                                                    />
+                                                </TableCell>
+                                                {/* <TableCell sx={{ color: '#fff' }}>
+                                                                                                <Chip
+                                                                                                    label={reg.IsIncomeTaken ? '' : 'Not Yet'}
+                                                                                                    size="small"
+                                                                                                    sx={{
+                                                                                                        backgroundColor: reg.IsIncomeTaken ? '#2196f3' : '#f44336',
+                                                                                                        color: '#fff'
+                                                                                                    }}
+                                                                                                />
+                                                                                            </TableCell> */}
+                                                <TableCell sx={{ color: '#aaa', fontSize: '0.75rem' }}>
+                                                    {reg.LastPaidAt ? formatDate(reg.LastPaidAt) : 'N/A'}
+                                                </TableCell>
+                                                <TableCell sx={{ color: '#aaa', fontSize: '0.75rem' }}>
+                                                    {reg.CancelledAt ? formatDate(reg.CancelledAt) : 'Active'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Collapse>
+                    </Box>
+                </>
+            )}
+
             {/* Actions */}
             <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
-                <Button onClick={onClose} sx={{ color: '#888' }}>
-                    Cancel
-                </Button>
+                {isUpdateMode && (
+                    <Button
+                        onClick={handleDelete}
+                        disabled={deleting || loading || activating}
+                        sx={{
+                            borderRadius: '8px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid #f44336',
+                            color: '#f44336',
+                            fontWeight: 600,
+                            '&:hover': {
+                                backgroundColor: 'transparent',
+                                border: '1px solid #f44336',
+                                color: '#f44336',
+
+                            },
+                            '&:disabled': {
+                                backgroundColor: '#333',
+                                border: '1px solid #333',
+                                color: '#666',
+                            }
+                        }}
+                    >
+                        {deleting ? 'Deleting...' : 'Delete'}
+                    </Button>
+                )}
+
+                {isUpdateMode && subscription && !subscription.IsActive && (
+                    <Button
+                        onClick={() => handleActivate(true)}
+                        disabled={activating || loading}
+                        sx={{
+                            borderRadius: '8px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--primary-green)',
+                            color: 'var(--primary-green)',
+                            fontWeight: 600,
+                            '&:hover': {
+                                backgroundColor: 'transparent',
+                                border: '1px solid var(--primary-green)',
+                                color: 'var(--primary-green)',
+                            },
+                            '&:disabled': {
+                                backgroundColor: '#333',
+                                border: '1px solid #333',
+                                color: '#666',
+                            }
+                        }}
+                    >
+                        {activating ? 'Activating...' : 'Activate'}
+                    </Button>
+                )}
+
+                {isUpdateMode && subscription && subscription.IsActive && (
+                    <Button
+                        onClick={() => handleActivate(false)}
+                        disabled={activating || loading || deleting}
+                        sx={{
+                            borderRadius: '8px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--primary-green)',
+                            color: 'var(--primary-green)',
+                            fontWeight: 600,
+                            '&:hover': {
+                                backgroundColor: 'transparent',
+                                border: '1px solid var(--primary-green)',
+                                color: 'var(--primary-green)',
+                            },
+                            '&:disabled': {
+                                backgroundColor: '#333',
+                                border: '1px solid #333',
+                                color: '#666',
+                            }
+                        }}
+                    >
+                        {activating ? 'Inactivating...' : 'Inactive'}
+                    </Button>
+                )}
+
+
                 <Button
                     onClick={handleSave}
                     variant="contained"
-                    disabled={!formData.name || cycleTypePrices.length === 0}
+                    disabled={!formData.name || cycleTypePrices.length === 0 || selectedBenefits.length === 0 || loading || activating}
                     sx={{
                         backgroundColor: 'var(--primary-green)',
                         color: '#000',
@@ -329,11 +813,15 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                         }
                     }}
                 >
-                    {isUpdateMode ? 'Update' : 'Create'}
+                    {loading
+                        ? (isUpdateMode ? 'Updating...' : 'Creating...')
+                        : (isUpdateMode ? 'Update' : 'Create')}
+
                 </Button>
             </Box>
         </Box>
     );
 };
+
 
 export default SubscriptionModal;

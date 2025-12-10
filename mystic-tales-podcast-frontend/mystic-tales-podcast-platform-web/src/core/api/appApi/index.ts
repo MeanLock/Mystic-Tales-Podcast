@@ -102,6 +102,7 @@ const modeAwareBaseQuery: BaseQueryFn<
 export const appApi = createApi({
   reducerPath: "appApi",
   baseQuery: modeAwareBaseQuery,
+  tagTypes: ["Account"],
   endpoints: (build) => ({
     /** MẪU 1: Hỏi kết quả Saga 1 lần (không poll) — dùng khi bạn tự poll bên ngoài */
     getSagaResultOnce: build.query<

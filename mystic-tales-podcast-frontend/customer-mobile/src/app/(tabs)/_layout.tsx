@@ -140,11 +140,11 @@ export default function TabLayout() {
           <Tabs.Screen
             name="explore"
             options={{
-              title: "Explore",
+              title: "Trending",
               headerShown: false,
               tabBarIcon: ({ color }) => (
                 <MaterialIcons
-                  name="explore"
+                  name="trending-up"
                   size={28}
                   style={{ marginBottom: -3 }}
                   color={color}

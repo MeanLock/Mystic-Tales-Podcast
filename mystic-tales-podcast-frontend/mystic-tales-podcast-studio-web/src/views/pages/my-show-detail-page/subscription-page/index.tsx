@@ -1,4 +1,4 @@
-import { FC, useEffect, useMemo, useRef, useState } from "react"
+import { createContext, FC, useEffect, useMemo, useRef, useState } from "react"
 import RevenueChart from "./revenue-chart"
 import "./styles.scss"
 import { Button, CircularProgress, IconButton, Typography } from "@mui/material"
@@ -9,162 +9,53 @@ import { AgGridReact } from "ag-grid-react"
 import { AllCommunityModule, ColDef, ModuleRegistry } from "ag-grid-community"
 import { Eye } from "phosphor-react"
 import { formatDate } from "@/core/utils/date.util"
-export const mockdata = {
-    PodcastSubscriptionList: [
-        {
-            Id: 1,
-            Name: "Basic Plan",
-            Description: "Access to general episodes with ads.Access to general episodes with ads.Access to general episodes with ads.",
-            IsActive: true,
-            CurrentVersion: 1,
-            DeletedAt: null,
-            CreatedAt: "2025-10-18T09:25:11.730Z",
-            UpdatedAt: "2025-10-18T09:25:11.730Z",
-            PodcastSubscriptionCycleTypePriceList: [
-                {
-                    PodcastSubscriptionId: 1,
-                    SubscriptionCycleType: {
-                        Id: 1,
-                        Name: "Monthly",
-                    },
-                    Version: 1,
-                    Price: 300000,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-                {
-                    PodcastSubscriptionId: 1,
-                    SubscriptionCycleType: {
-                        Id: 2,
-                        Name: "Annually",
-                    },
-                    Version: 1,
-                    Price: 1200000,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-            ],
-            PodcastSubscriptionBenefitMappingList: [
-                {
-                    PodcastSubscriptionId: 1,
-                    PodcastSubscriptionBenefit: {
-                        Id: 1,
-                        Name: "Non-Quota Listening",
-                    },
-                    Version: 1,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-                {
-                    PodcastSubscriptionId: 1,
-                    PodcastSubscriptionBenefit: {
-                        Id: 2,
-                        Name: "Subscriber-Only Shows",
-                    },
-                    Version: 1,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-                {
-                    PodcastSubscriptionId: 1,
-                    PodcastSubscriptionBenefit: {
-                        Id: 3,
-                        Name: "Subscriber-Only Episodes",
-                    },
-                    Version: 1,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-                {
-                    PodcastSubscriptionId: 1,
-                    PodcastSubscriptionBenefit: {
-                        Id: 3,
-                        Name: "Subscriber-Only Episodes",
-                    },
-                    Version: 1,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-                {
-                    PodcastSubscriptionId: 1,
-                    PodcastSubscriptionBenefit: {
-                        Id: 3,
-                        Name: "Shows/Episodes Early Access",
-                    },
-                    Version: 1,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-                {
-                    PodcastSubscriptionId: 1,
-                    PodcastSubscriptionBenefit: {
-                        Id: 3,
-                        Name: "Shows/Episodes Early Access",
-                    },
-                    Version: 1,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-            ],
-        },
-        {
-            Id: 2,
-            Name: "Premium Plan",
-            Description: "Ad-free listening and bonus episodes.",
-            IsActive: false,
-            CurrentVersion: 1,
-            DeletedAt: null,
-            CreatedAt: "2025-10-18T09:25:11.730Z",
-            UpdatedAt: "2025-10-18T09:25:11.730Z",
-            PodcastSubscriptionCycleTypePriceList: [
-                {
-                    PodcastSubscriptionId: 2,
-                    SubscriptionCycleType: {
-                        Id: 1,
-                        Name: "Monthly",
-                    },
-                    Version: 1,
-                    Price: 500000,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-            ],
-            PodcastSubscriptionBenefitMappingList: [
-                {
-                    PodcastSubscriptionId: 2,
-                    PodcastSubscriptionBenefit: {
-                        Id: 3,
-                        Name: "Subscriber-Only Episodes",
-                    },
-                    Version: 1,
-                    CreatedAt: "2025-10-18T09:25:11.730Z",
-                    UpdatedAt: "2025-10-18T09:25:11.730Z",
-                },
-            ],
-        },
+import { useParams } from "react-router-dom"
+import { getShowDetail } from "@/core/services/show/show.service"
+import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
+import Modal_Button from "@/views/components/common/modal/ModalButton"
+import SubscriptionModal from "./SubscriptionModal"
+import Loading from "@/views/components/common/loading"
 
-    ],
-}
 
 interface Subscription {
     Id: number
     Name: string
     Description: string
     IsActive: boolean
+    CurrentVersion: number
     PodcastSubscriptionCycleTypePriceList: Array<{
         SubscriptionCycleType: { Id: number; Name: string }
         Price: number
+        Version: number
     }>
     PodcastSubscriptionBenefitMappingList: Array<{
-        PodcastSubscriptionBenefit: { Name: string }
+        PodcastSubscriptionBenefit: { Id: number; Name: string }
+        Version: number
+    }>
+    PodcastSubscriptionRegistrationList: Array<{
+        Id: string
+        AccountId: number
+        PodcastSubscriptionId: number
+        SubscriptionCycleType: { Id: number; Name: string }
+        CurrentVersion: number
+        IsAcceptNewestVersionSwitch: boolean
+        IsIncomeTaken: boolean
+        LastPaidAt: string | null
+        CancelledAt: string | null
+        CreatedAt: string
+        UpdatedAt: string
     }>
 }
+
 ModuleRegistry.registerModules([AllCommunityModule])
 
 interface ShowSubscriptionProps { }
 interface ShowSubscriptionContextProps {
     handleDataChange: () => void
 }
+
+export const ShowSubscriptionContext = createContext<ShowSubscriptionContextProps | null>(null)
+
 interface GridState {
     columnDefs: ColDef[];
     rowData: any[];
@@ -173,12 +64,12 @@ interface GridState {
 const state_creator = (table: any[]) => {
     const state = {
         columnDefs: [
-
             {
                 headerName: "Subscription",
                 flex: 2,
                 cellClass: 'd-flex align-items-center',
                 cellStyle: { display: 'flex', alignItems: 'center' },
+                tooltipValueGetter: (params: any) => `Id: ${params.data?.Id ?? ''}`,
                 cellRenderer: (params: any) => {
                     return (
                         <div style={{
@@ -218,7 +109,10 @@ const state_creator = (table: any[]) => {
                 cellClass: 'd-flex align-items-center',
                 cellStyle: { display: 'flex', alignItems: 'center' },
                 cellRenderer: (params: any) => {
-                    const monthlyPlan = params.data.PodcastSubscriptionCycleTypePriceList?.find((p: any) => p.SubscriptionCycleType.Name === "Monthly");
+                    const monthlyPlans = params.data.PodcastSubscriptionCycleTypePriceList?.filter((p: any) => p.SubscriptionCycleType.Name === "Monthly") || [];
+                    if (monthlyPlans.length === 0) return <span style={{ color: 'var(--white-75)', fontSize: '0.7rem' }}>N/A</span>;
+                    const maxVersion = Math.max(...monthlyPlans.map((p: any) => p.Version));
+                    const monthlyPlan = monthlyPlans.find((p: any) => p.Version === maxVersion);
                     if (!monthlyPlan) return <span style={{ color: 'var(--white-75)', fontSize: '0.7rem' }}>N/A</span>;
 
                     return (
@@ -251,7 +145,10 @@ const state_creator = (table: any[]) => {
                 cellClass: 'd-flex align-items-center   ',
                 cellStyle: { display: 'flex', alignItems: 'center', },
                 cellRenderer: (params: any) => {
-                    const annuallyPlan = params.data.PodcastSubscriptionCycleTypePriceList?.find((p: any) => p.SubscriptionCycleType.Name === "Annually");
+                    const annuallyPlans = params.data.PodcastSubscriptionCycleTypePriceList?.filter((p: any) => p.SubscriptionCycleType.Id === 2) || [];
+                    if (annuallyPlans.length === 0) return <span style={{ color: 'var(--white-75)', fontSize: '0.7rem' }}>--</span>;
+                    const maxVersion = Math.max(...annuallyPlans.map((p: any) => p.Version));
+                    const annuallyPlan = annuallyPlans.find((p: any) => p.Version === maxVersion);
                     if (!annuallyPlan) return <span style={{ color: 'var(--white-75)', fontSize: '0.7rem' }}>--</span>;
 
                     return (
@@ -266,7 +163,7 @@ const state_creator = (table: any[]) => {
                                 color: 'var(--white-75)',
                                 lineHeight: '1.2'
                             }}>
-                                 Price: {annuallyPlan.Price.toLocaleString("vi-VN")} VND
+                                Price: {annuallyPlan.Price.toLocaleString("vi-VN")} VND
                             </div>
                             <div style={{
                                 fontSize: '0.7rem',
@@ -284,19 +181,22 @@ const state_creator = (table: any[]) => {
                 cellClass: 'd-flex align-items-center ',
                 cellStyle: { display: 'flex', alignItems: 'center' },
                 cellRenderer: (params: any) => {
-                    const benefitCount = params.data.PodcastSubscriptionBenefitMappingList?.length || 0;
+                    const benefits = params.data.PodcastSubscriptionBenefitMappingList || [];
+                    if (benefits.length === 0) return <div style={{ fontSize: '0.8rem' }}>0</div>;
+                    const maxVersion = Math.max(...benefits.map((b: any) => b.Version));
+                    const currentBenefits = benefits.filter((b: any) => b.Version === maxVersion);
                     return (
                         <div style={{
                             fontSize: '0.8rem'
                         }}>
-                            {benefitCount}
+                            {currentBenefits.length}
                         </div>
                     );
                 }
             },
             {
                 headerName: "Updated At",
-                cellStyle: { display: 'flex', alignItems: 'center', fontSize:'0.8rem' },
+                cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.8rem' },
 
                 valueGetter: (params: { data: any }) => formatDate(params.data.UpdatedAt),
             },
@@ -349,9 +249,24 @@ const state_creator = (table: any[]) => {
                 cellClass: 'd-flex justify-content-center py-0',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 cellRenderer: (params: { data: any }) => {
+                    const Modal_props = {
+                        updateForm: <SubscriptionModal
+                            subscription={params.data}
+                            onClose={() => { }}
+
+                        />,
+                        button: <Eye size={27} color='var(--white-75)' />,
+                    }
                     return (
                         <IconButton >
-                            <Eye size={27} color='var(--white-75)' />
+                            <Modal_Button
+                                className="bg-none"
+                                disabled={false}
+                                content={Modal_props.button}
+                                size="lg"
+                            >
+                                {Modal_props.updateForm}
+                            </Modal_Button>
                         </IconButton>
 
                     )
@@ -368,19 +283,40 @@ const state_creator = (table: any[]) => {
     }
     return state
 }
+
 const ShowSubscription: FC<ShowSubscriptionProps> = () => {
-    const [activeSubscriptions, setActiveSubscriptions] = useState<Subscription[]>([])
+    const { id } = useParams<{ id: string }>();
+    
+    const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+    const [activeSubscription, setActiveSubscription] = useState<Subscription | null>(null)
     let [state, setState] = useState<GridState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
 
-    useEffect(() => {
-        const active = mockdata.PodcastSubscriptionList.filter((sub) => sub.IsActive)
-        setActiveSubscriptions(active)
-        setIsLoading(false);
-        setState(state_creator(mockdata.PodcastSubscriptionList));
+    const fetchSubscriptionList = async () => {
+        setIsLoading(true);
+        try {
+            const res = await getShowDetail(loginRequiredAxiosInstance, id);
+            console.log("Fetched subscription list:", res.data.Show.PodcastSubscriptionList);
+            if (res.success && res.data) {
+                const ch = res.data.Show;
+                setSubscriptions(ch.PodcastSubscriptionList);
+                setState(state_creator(ch.PodcastSubscriptionList));
+                const active = ch.PodcastSubscriptionList.find((sub) => sub.IsActive)
+                setActiveSubscription(active)
+            } else {
+                console.error('API Error:', res.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch show subscription list:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
-    }, [])
+    useEffect(() => {
+        fetchSubscriptionList();
+    }, [id])
 
     const defaultColDef = useMemo(() => {
         return {
@@ -393,118 +329,150 @@ const ShowSubscription: FC<ShowSubscriptionProps> = () => {
             editable: false
         };
     }, [])
-    if (activeSubscriptions.length === 0) {
+
+    if (subscriptions.length === 0) {
         return (
             <div className="pt-30">
                 <EmptyComponent item="Subscription" subtitle="Try adjusting your search terms or filters" />
-                <Button
+                <Modal_Button
+                    className=" show-subscription__btn h-1/2 text-black font-bold rounded-lg normal-case "
+                    content="Add Subscription"
                     variant="contained"
+                    size="md"
                     startIcon={<Add />}
-                    sx={{
-                        backgroundColor: 'var(--primary-green)',
-                        color: '#000',
-                        fontWeight: 'bold',
-                        borderRadius: '8px',
-                        textTransform: 'none',
-                        '&:hover': { backgroundColor: '#8bc34a' }
-                    }}
                 >
-                    Add Subscription
-                </Button>
+                    <SubscriptionModal
+                        podcastShowId={id}
+                        onClose={() => { }}
+                    />
+                </Modal_Button>
+
             </div>
         )
     }
 
-    const activeSubscription = activeSubscriptions[0]
+    const getMaxVersionPrice = (cycleTypeName: string) => {
+        const prices = activeSubscription?.PodcastSubscriptionCycleTypePriceList.filter(
+            (p) => p.SubscriptionCycleType.Name === cycleTypeName
+        ) || [];
+        if (prices.length === 0) return 0;
+        const maxVersion = Math.max(...prices.map(p => p.Version));
+        return prices.find(p => p.Version === maxVersion)?.Price || 0;
+    };
 
-    const monthlyPrice =
-        activeSubscription.PodcastSubscriptionCycleTypePriceList.find((p) => p.SubscriptionCycleType.Name === "Monthly")
-            ?.Price || 0
-    const annuallyPrice =
-        activeSubscription.PodcastSubscriptionCycleTypePriceList.find((p) => p.SubscriptionCycleType.Name === "Annually")
-            ?.Price || 0
+    const monthlyPrice = getMaxVersionPrice("Monthly");
+    const annuallyPrice = getMaxVersionPrice("Annually");
 
-    // Calculate monthly equivalent for annual plan
     const monthlyEquivalent = Math.round(annuallyPrice / 12)
     const savings = monthlyPrice * 12 - annuallyPrice
 
 
 
     return (
-        <div>
+        <ShowSubscriptionContext.Provider value={{ handleDataChange: fetchSubscriptionList }}>
             <div className="show-subscription">
-                <Typography variant="h4" className="show-subscription__title" >
-                    Show Subscriptions
-                </Typography>
+                <div className="flex justify-between">
+                    <Typography variant="h4" className="show-subscription__title" >
+                        Show Subscriptions
+                    </Typography>
+                    <Modal_Button
+                        className="show-subscription__btn h-1/2 text-black font-bold rounded-lg normal-case  "
+                        content="Add Subscription"
+                        variant="contained"
+                        size="md"
+                        startIcon={<Add />}
+                    >
+                        <SubscriptionModal
+                            podcastShowId={id}
+                            onClose={() => { }}
+
+                        />
+                    </Modal_Button>
+                </div>
+
+
+
                 <div className="show-subscription__container">
-                    {/* Left Section - Subscription Details */}
-                    <div className="show-subscription__left">
-                        <div className="subscription-card">
-                            <div className="subscription-card__header">
-                                <h2 className="subscription-card__name">{activeSubscription.Name}</h2>
-                                <span className="subscription-card__badge">Active</span>
-                            </div>
+                    {activeSubscription ? (
+                        <div className="show-subscription__left">
+                            <div className="subscription-card">
+                                <div className="subscription-card__header">
+                                    <h2 className="subscription-card__name">{activeSubscription.Name}</h2>
+                                    <span className="subscription-card__badge">Active</span>
+                                </div>
 
-                            <div className="subscription-card__description">{activeSubscription.Description}</div>
+                                <div className="subscription-card__description">{activeSubscription.Description}</div>
 
-                            <div className="subscription-card__pricing-section">
-                                <h3 className="subscription-card__pricing-title">Pricing Options</h3>
-                                <div className="subscription-card__pricing-options">
-                                    {/* Monthly Option */}
-                                    <div className="pricing-option">
-                                        <div className="pricing-option__header">
-                                            <span className="pricing-option__cycle">Monthly</span>
+                                <div className="subscription-card__pricing-section">
+                                    <h3 className="subscription-card__pricing-title">Pricing Options</h3>
+                                    <div className="subscription-card__pricing-options">
+                                        {/* Monthly Option */}
+                                        <div className="pricing-option">
+                                            <div className="pricing-option__header">
+                                                <span className="pricing-option__cycle">Monthly</span>
+                                            </div>
+                                            <div className="pricing-option__price">
+                                                <span className="pricing-option__amount">{monthlyPrice.toLocaleString("vi-VN")}</span>
+                                                <span className="pricing-option__currency">VND</span>
+                                            </div>
+                                            <div className="pricing-option__period">per month</div>
                                         </div>
-                                        <div className="pricing-option__price">
-                                            <span className="pricing-option__amount">{monthlyPrice.toLocaleString("vi-VN")}</span>
-                                            <span className="pricing-option__currency">VND</span>
-                                        </div>
-                                        <div className="pricing-option__period">per month</div>
-                                    </div>
 
-                                    {/* Annual Option */}
-                                    <div className="pricing-option pricing-option--featured">
-                                        <div className="pricing-option__header">
-                                            <span className="pricing-option__cycle">Annually</span>
-                                            {savings > 0 && (
-                                                <span className="pricing-option__badge">
-                                                    Save {Math.round((savings / (monthlyPrice * 12)) * 100)}%
-                                                </span>
-                                            )}
+                                        {/* Annual Option */}
+                                        <div className="pricing-option pricing-option--featured">
+                                            <div className="pricing-option__header">
+                                                <span className="pricing-option__cycle">Annually</span>
+                                                {savings > 0 && (
+                                                    <span className="pricing-option__badge">
+                                                        Save {Math.round((savings / (monthlyPrice * 12)) * 100)}%
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="pricing-option__price">
+                                                <span className="pricing-option__amount">{annuallyPrice.toLocaleString("vi-VN")}</span>
+                                                <span className="pricing-option__currency">VND</span>
+                                            </div>
+                                            <div className="pricing-option__period">{monthlyEquivalent.toLocaleString("vi-VN")} VND/month</div>
                                         </div>
-                                        <div className="pricing-option__price">
-                                            <span className="pricing-option__amount">{annuallyPrice.toLocaleString("vi-VN")}</span>
-                                            <span className="pricing-option__currency">VND</span>
-                                        </div>
-                                        <div className="pricing-option__period">{monthlyEquivalent.toLocaleString("vi-VN")} VND/month</div>
                                     </div>
                                 </div>
+
                             </div>
 
+                            <div className="subscription-card__benefits">
+                                <h3 className="subscription-card__benefits-title">Benefits</h3>
+                                <ul className="subscription-card__benefits-list">
+                                    {(() => {
+                                        const benefits = activeSubscription.PodcastSubscriptionBenefitMappingList || [];
+                                        if (benefits.length === 0) return null;
+                                        const maxVersion = Math.max(...benefits.map(b => b.Version));
+                                        const currentBenefits = benefits.filter(b => b.Version === maxVersion);
+                                        return currentBenefits.map((benefit, idx) => (
+                                            <li key={idx} className="subscription-card__benefit-item">
+                                                <span className="subscription-card__benefit-icon">
+                                                    <VerifiedIcon fontSize="small" />
+                                                </span>
+                                                {benefit.PodcastSubscriptionBenefit.Name}
+                                            </li>
+                                        ));
+                                    })()}
+                                </ul>
+                            </div>
                         </div>
-
-                        <div className="subscription-card__benefits">
-                            <h3 className="subscription-card__benefits-title">Benefits</h3>
-                            <ul className="subscription-card__benefits-list">
-                                {activeSubscription.PodcastSubscriptionBenefitMappingList.map((benefit, idx) => (
-                                    <li key={idx} className="subscription-card__benefit-item">
-                                        <span className="subscription-card__benefit-icon">
-                                            <VerifiedIcon fontSize="small" />
-                                        </span>
-                                        {benefit.PodcastSubscriptionBenefit.Name}
-                                    </li>
-                                ))}
-                            </ul>
+                   ) : (
+                        <div className="show-subscription__left">
+                            <EmptyComponent  subtitle="No Active Subscription Is Available" />
                         </div>
-                    </div>
+                    )}
 
                     {/* Right Section - Revenue Chart */}
                     <div className="show-subscription__right">
-                        <RevenueChart />
+                        <RevenueChart showId={id || ''} />
                     </div>
                 </div>
 
             </div>
+
             <div
                 id="subscription-table"
                 style={{
@@ -520,7 +488,7 @@ const ShowSubscription: FC<ShowSubscriptionProps> = () => {
                             height: "100%",
                         }}
                     >
-                        <CircularProgress />
+                        <Loading />
                     </div>
                 ) : (
                     <AgGridReact
@@ -533,10 +501,11 @@ const ShowSubscription: FC<ShowSubscriptionProps> = () => {
                         paginationPageSize={10}
                         paginationPageSizeSelector={[10, 16, 24, 32]}
                         domLayout="autoHeight"
+                        tooltipShowDelay={0}
                     />
                 )}
             </div>
-        </div>
+        </ShowSubscriptionContext.Provider>
     )
 }
 

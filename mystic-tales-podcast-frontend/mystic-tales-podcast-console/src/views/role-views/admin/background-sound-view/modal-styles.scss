@@ -50,7 +50,13 @@
             color: #6c757d;
         }
     }
-
+    &__audio-preview {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    &__audio-actions {
+        margin-top: 0.5rem;
+}
     &__textarea {
         resize: vertical;
         min-height: 100px;

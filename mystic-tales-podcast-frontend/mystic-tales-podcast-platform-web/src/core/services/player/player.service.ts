@@ -31,30 +31,23 @@ export const playerApi = appApi.injectEndpoints({
         SourceType,
         CurrentPodcastSubscriptionRegistrationBenefitList,
         continue_listen_session_id,
-      }) => {
-        const deviceToken =
-          localStorage.getItem("device_info_token") ||
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJEZXZpY2VJZCI6ImRhMjdiMjQxLTg1YWItNDI2OS05ZmE0LWY0NGQ4MWNkNjVhYyIsIlBsYXRmb3JtIjoid2ViIiwiT1NOYW1lIjoid2luZG93cyIsImV4cCI6Nzc2MzkwNDkzMH0.BCZR_7ETUKEZZFNhnD8wBZlKdo6QGs0Rxpeta6mQDaw";
-
-        console.log("DeviceToken:", deviceToken);
-
-        return {
-          url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}/listen${
-            continue_listen_session_id
-              ? `?continue_listen_session_id=${continue_listen_session_id}`
-              : ""
-          }`,
-          method: "POST",
-          authMode: "required" as const,
-          body: {
-            SourceType,
-            CurrentPodcastSubscriptionRegistrationBenefitList,
-          },
-          headers: {
-            "X-DeviceInfo-Token": deviceToken,
-          },
-        };
-      },
+      }) => ({
+        url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}/listen${
+          continue_listen_session_id
+            ? `?continue_listen_session_id=${continue_listen_session_id}`
+            : ""
+        }`,
+        method: "POST",
+        authMode: "required",
+        body: {
+          SourceType,
+          CurrentPodcastSubscriptionRegistrationBenefitList,
+        },
+        headers: {
+          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
+        },
+      }),
+      invalidatesTags: ["Account"],
     }),
 
     // Listen to a booking track, get listen session and procedure
@@ -79,6 +72,7 @@ export const playerApi = appApi.injectEndpoints({
           "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
         },
       }),
+      invalidatesTags: ["Account"],
     }),
 
     // Navigate listen to next/previous episode in procedure
@@ -116,6 +110,7 @@ export const playerApi = appApi.injectEndpoints({
           "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
         },
       }),
+      invalidatesTags: ["Account"],
     }),
 
     // Navigate listen to next/previous booking tracks in procedure
@@ -151,6 +146,7 @@ export const playerApi = appApi.injectEndpoints({
           "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
         },
       }),
+      invalidatesTags: ["Account"],
     }),
 
     // Update episode listen session last duration seconds

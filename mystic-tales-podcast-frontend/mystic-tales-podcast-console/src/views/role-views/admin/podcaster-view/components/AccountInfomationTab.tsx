@@ -1,14 +1,21 @@
 
 
-import type { Account } from "@/core/types"
+import type { Account, Podcaster } from "@/core/types"
 import type React from "react"
-import { useContext, useRef } from "react"
+import { useContext, useEffect, useRef, useState } from "react"
 import { CButton, CCol, CForm, CFormInput, CFormFeedback, CFormLabel, CFormSelect } from "@coreui/react"
 import { PodcasterViewContext } from ".."
-import { formatDate } from "@/core/utils/date.util"
+import { formatDate, fromInputDateToISO, } from "@/core/utils/date.util"
+import { deactivateAccount, updateAccount } from "@/core/services/account/account.service"
+import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v1/admin-instance"
+import { toast } from "react-toastify"
+import { useSagaPolling } from "@/hooks/useSagaPolling"
+import { PencilSimple } from "phosphor-react"
+import Image from "@/views/components/common/image"
+import { confirmAlert } from "@/core/utils/alert.util"
 
 interface AccountInfomationProps {
-    account: Account
+    account: Podcaster
     onClose: () => void
 }
 
@@ -19,64 +26,125 @@ const AccountInfomationTab: React.FC<AccountInfomationProps> = ({ account, onClo
     const gender = useRef<HTMLSelectElement>(null)
     const phone = useRef<HTMLInputElement>(null)
     const address = useRef<HTMLInputElement>(null)
-    const handleSubmit = async (event: React.FormEvent) => {
-        // event.preventDefault();
-        // const data = {
-        //   FullName: fullname.current?.value,
-        //   Dob: dob.current?.value,
-        //   Gender: gender.current?.value,
-        //   Address: address.current?.value,
-        //   Phone: phone.current?.value,
-        // };
-        // try {
-        //   const res = await updateAccount(adminAxiosInstance, account.Id, data);
-        //   if (res.success) {
-        //     onClose();
-        //     context?.handleDataChange();
-        //     toast.success(`Account ${account.Id} updated successfully!`);
-        //   }
-        // } catch (error) {
-        //   console.error("Error deactivating account:", error);
-        // }
-    }
-    const handleDeactivate = async (event: React.FormEvent, isDeactivate: boolean) => {
-        // event.preventDefault();
-        // try {
-        //   const res = await deactivateAccount(adminAxiosInstance, account.Id, isDeactivate);
-        //   if (res.success) {
-        //     onClose();
-        //     context?.handleDataChange();
-        //     toast.success(`Account ${isDeactivate ? 'deactivated' : 'activated'} successfully!`);
-        //   }
-        // } catch (error) {
-        //   console.error("Error deactivating account:", error);
-        // }
-    }
+    const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const { startPolling } = useSagaPolling({
+        timeoutSeconds: 5,
+        intervalSeconds: 0.5,
+    })
 
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        const data = {
+            FullName: fullname.current?.value,
+            Dob: fromInputDateToISO(dob.current?.value)!,
+            Gender: gender.current?.value,
+            Address: address.current?.value,
+            Phone: phone.current?.value,
+        };
+        try {
+            const res = await updateAccount(adminAxiosInstance, account.Id, {
+                AccountUpdateInfo: data,
+                MainImageFile: mainImageFile || null,
+            });
+            const sagaId = res?.data?.SagaInstanceId
+            if (!sagaId) {
+                toast.error("Update account failed, please try again.")
+                return
+            }
+            await startPolling(sagaId, adminAxiosInstance, {
+                onSuccess: () => {
+                    onClose();
+                    context?.handleDataChange();
+                    toast.success(`Account ${account.Id} updated successfully!`);
+                },
+                onFailure: (err: any) => toast.error(err || "Saga failed!"),
+                onTimeout: () => toast.error("System not responding, please try again."),
+            })
+        } catch (error) {
+            toast.error("Error updating account");
+        }
+    };
+
+
+    const handleDeactivate = async (event: React.FormEvent, isDeactivate: boolean) => {
+        event.preventDefault();
+        const alert = confirmAlert(`Are you sure to ${isDeactivate ? "deactivate" : "activate"} this account?`);
+            if (!(await alert).isConfirmed) return;
+        try {
+            const res = await deactivateAccount(adminAxiosInstance, account.Id, isDeactivate);
+            const sagaId = res?.data?.SagaInstanceId
+            if (!sagaId) {
+                toast.error("Deactivate account failed, please try again.")
+                return
+            }
+            await startPolling(sagaId, adminAxiosInstance, {
+                onSuccess: () => {
+                    onClose();
+                    context?.handleDataChange();
+                    toast.success(`Account ${isDeactivate ? 'deactivated' : 'activated'} successfully!`);
+                },
+                onFailure: (err) => toast.error(err || "Saga failed!"),
+                onTimeout: () => toast.error("System not responding, please try again."),
+            })
+        } catch (err) {
+            toast.error("Error deactivating account");
+        }
+    };
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        setMainImageFile(file);
+    };
+    useEffect(() => {
+        if (!mainImageFile) {
+            setPreviewUrl(null)
+            return
+        }
+        const url = URL.createObjectURL(mainImageFile)
+        setPreviewUrl(url)
+        return () => {
+            URL.revokeObjectURL(url)
+        }
+    }, [mainImageFile])
     return (
         <div className="account-info">
             <div className="account-info__header">
                 <div className="account-info__profile">
-                    <img src={account.MainImageFileKey || "/placeholder.svg"} alt="Avatar" className="account-info__avatar" />
+                    <div className="account-info__avatar-wrapper" style={{ position: "relative", display: "inline-block" }}>
+                        {previewUrl ? (
+                            <img
+                                src={previewUrl}
+                                alt="Avatar preview"
+                                className="account-info__avatar"
+                            />
+                        ) : (
+                            <Image mainImageFileKey={account.MainImageFileKey} className="account-info__avatar" />
+                        )}
+                        <label htmlFor="avatar-upload" className="account-info__avatar-upload-label">
+                            <PencilSimple size={22} weight="bold" />
+                            <input
+                                id="avatar-upload"
+                                type="file"
+                                accept="image/"
+                                onChange={handleImageChange}
+                                className="account-info__avatar-input"
+                                style={{ display: "none" }}
+                            />
+                        </label>
+                    </div>
                     <div className="account-info__identity">
-                        <h2 className="account-info__name">{account.Fullname || "N/A"}</h2>
+                        <h2 className="account-info__name">{account.FullName || "N/A"}</h2>
                         <p className="account-info__email">{account.Email}</p>
                         <div className="account-info__role-badge">{account.Role?.Name || "N/A"}</div>
                     </div>
                 </div>
-
                 <div className="account-info__status-group">
                     <div className="account-info__status-label">Account Verification Status</div>
                     <div className={`account-info__badge account-info__badge--${account.IsVerified ? "verified" : "unverified"}`}>
                         <span className="account-info__badge-dot"></span>
                         {account.IsVerified ? "Account Verified" : "Account Not Verified"}
                     </div>
-                    {account.IsBeingPunish && (
-                        <div className="account-info__badge account-info__badge--warning">
-                            <span className="account-info__badge-dot"></span>
-                            Being Punished
-                        </div>
-                    )}
+
                     {account.DeactivatedAt && (
                         <div className="account-info__badge account-info__badge--danger">
                             <span className="account-info__badge-dot"></span>
@@ -93,14 +161,14 @@ const AccountInfomationTab: React.FC<AccountInfomationProps> = ({ account, onClo
                         <CCol md={8}>
                             <div className="account-info__field">
                                 <CFormLabel htmlFor="fullname" className="account-info__label">
-                                    Full Name *
+                                    Full Name 
                                 </CFormLabel>
                                 <CFormInput
                                     type="text"
                                     id="fullname"
-                                    defaultValue={account.Fullname}
+                                    defaultValue={account.FullName}
                                     ref={fullname}
-                                    required
+                                    disabled
                                     className="account-info__input"
                                 />
                                 <CFormFeedback valid>Looks good!</CFormFeedback>
@@ -109,14 +177,14 @@ const AccountInfomationTab: React.FC<AccountInfomationProps> = ({ account, onClo
                         <CCol md={4}>
                             <div className="account-info__field">
                                 <CFormLabel htmlFor="dob" className="account-info__label">
-                                    Date of Birth *
+                                    Date of Birth 
                                 </CFormLabel>
                                 <CFormInput
                                     type="date"
                                     id="dob"
                                     defaultValue={account.Dob}
                                     ref={dob}
-                                    required
+                                    disabled
                                     className="account-info__input"
                                 />
                                 <CFormFeedback valid>Looks good!</CFormFeedback>
@@ -125,13 +193,13 @@ const AccountInfomationTab: React.FC<AccountInfomationProps> = ({ account, onClo
                         <CCol md={4}>
                             <div className="account-info__field">
                                 <CFormLabel htmlFor="gender" className="account-info__label">
-                                    Gender *
+                                    Gender 
                                 </CFormLabel>
                                 <CFormSelect
                                     id="gender"
                                     ref={gender}
                                     defaultValue={account.Gender}
-                                    required
+                                    disabled
                                     className="account-info__input"
                                 >
                                     <option value="Male">Male</option>
@@ -144,14 +212,14 @@ const AccountInfomationTab: React.FC<AccountInfomationProps> = ({ account, onClo
                         <CCol md={4}>
                             <div className="account-info__field">
                                 <CFormLabel htmlFor="phone" className="account-info__label">
-                                    Phone Number *
+                                    Phone Number 
                                 </CFormLabel>
                                 <CFormInput
                                     type="tel"
                                     id="phone"
                                     defaultValue={account.Phone}
                                     ref={phone}
-                                    required
+                                    disabled
                                     className="account-info__input"
                                 />
                                 <CFormFeedback valid>Looks good!</CFormFeedback>
@@ -165,7 +233,7 @@ const AccountInfomationTab: React.FC<AccountInfomationProps> = ({ account, onClo
                                 <CFormInput
                                     type="text"
                                     id="balance"
-                                    defaultValue={`${account.Balance || 0} VND`}
+                                    defaultValue={`${account.Balance || 0} Points`}
                                     disabled
                                     className="account-info__input account-info__input--disabled"
                                 />
@@ -174,14 +242,14 @@ const AccountInfomationTab: React.FC<AccountInfomationProps> = ({ account, onClo
                         <CCol md={12}>
                             <div className="account-info__field">
                                 <CFormLabel htmlFor="address" className="account-info__label">
-                                    Address *
+                                    Address 
                                 </CFormLabel>
                                 <CFormInput
                                     type="text"
                                     id="address"
                                     defaultValue={account.Address}
                                     ref={address}
-                                    required
+                                    disabled
                                     className="account-info__input"
                                 />
                                 <CFormFeedback valid>Looks good!</CFormFeedback>
@@ -268,9 +336,9 @@ const AccountInfomationTab: React.FC<AccountInfomationProps> = ({ account, onClo
                     >
                         {account.DeactivatedAt === null ? "Deactivate Account" : "Activate Account"}
                     </CButton>
-                    <CButton className="account-info__btn account-info__btn--update" type="submit" onClick={handleSubmit}>
+                    {/* <CButton className="account-info__btn account-info__btn--update" type="submit" onClick={handleSubmit}>
                         Update Information
-                    </CButton>
+                    </CButton> */}
                 </div>
             </CForm>
         </div>

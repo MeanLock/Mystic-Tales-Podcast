@@ -4,28 +4,29 @@ const Dashboard = lazy(() => import("../views/pages/dashboard"));
 const MyChannels = lazy(() => import("../views/pages/my-channel-page"));
 const MyShows = lazy(() => import("../views/pages/my-show-page"));
 const Profile = lazy(() => import("../views/pages/profile-page"));
+const BookingPage = lazy(() => import("../views/pages/booking-page"));
+const BookingDetailPage = lazy(() => import("../views/pages/booking-detail-page"));
+
 const ChannelDashboard = lazy(() => import("../views/pages/my-channel-detail-page/dashboard-page"));
 const ChannelOverview = lazy(() => import("../views/pages/my-channel-detail-page/overview-page"));
 const ChannelShow = lazy(() => import("../views/pages/my-channel-detail-page/show-page"));
 const ChannelSubscription = lazy(() => import("../views/pages/my-channel-detail-page/subscription-page"));
-
 const ShowOverview = lazy(() => import("../views/pages/my-show-detail-page/overview-page"));
 const ShowSubscription = lazy(() => import("../views/pages/my-show-detail-page/subscription-page"));
 const ShowEpisode = lazy(() => import("../views/pages/my-show-detail-page/episode-page"));
 
 const EpisodeDetail = lazy(() => import("../views/pages/my-show-detail-page/episode-detail-page"));
 
-const hls = lazy(() => import("../views/pages/hls"));
+const WithdrawalPage = lazy(() => import("../views/pages/withdrawal"));
 
 const routes = [
   { path: '/dashboard', exact: true, name: 'Dashboard', element: Dashboard },
-  { path: '/earn', exact: true, name: 'Earn', element: () => <div>Earn Page</div> },
+  { path: '/withdrawal', exact: true, name: 'Withdrawal', element: WithdrawalPage },
   { path: '/copyright', exact: true, name: 'Copyright', element: () => <div>Copyright Page</div> },
   { path: '/channel', exact: true, name: 'My Channels', element: MyChannels },
   { path: '/show', exact: true, name: 'My Shows', element: MyShows },
   { path: '/profile', exact: true, name: 'Profile', element: Profile },
 
-  { path: '/hls', exact: true, name: 'HLS', element: hls },
 
   { path: '/channel/:id/dashboard', exact: true, name: 'Channel Dashboard', element: ChannelDashboard },
   { path: '/channel/:id/overview', exact: true, name: 'Channel Overview', element: ChannelOverview },
@@ -41,7 +42,8 @@ const routes = [
   { path: '/show/:id/episode', exact: true, name: 'Show Episodes', element: ShowEpisode },
   { path: '/show/:id/episode/:episodeId', exact: true, name: 'Episode Detail', element: EpisodeDetail },
 
-  { path: '/booking-management', exact: true, name: 'Booking Management', element: () => <div>Booking Management Page</div> },
+  { path: '/booking/table', exact: true, name: 'Booking Management', element: BookingPage },
+  { path: '/booking/:id', exact: true, name: 'Booking Detail', element: BookingDetailPage },
 ]
 
 export default routes

@@ -8,70 +8,12 @@ import { formatDate } from "../../../../core/utils/date.util"
 import { ShowReportReviewViewContext } from "."
 import type { ShowReportReviewSession } from "@/core/types/show-report"
 import { CheckCircle, XCircle, Clock, User, Calendar, FileText } from "phosphor-react"
+import { getShowReviewSessionDetail, resolveShowReviewSession } from "@/core/services/report/ShowReport.Service"
+import { staffAxiosInstance } from "@/core/api/rest-api/config/instances/v2/staff-axios-instance"
+import { confirmAlert } from "@/core/utils/alert.util"
+import { useSagaPolling } from "@/hooks/useSagaPolling"
 
-export const mockDetail: any = {
-  ShowReportReviewSession: {
-    Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    PodcastShow: {
-      Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      Name: "Mindful Talks - Season 1",
-    },
-    AssignedStaff: {
-      Id: 501,
-      FullName: "Alice Nguyen",
-    },
-    IsResolved: null,
-    CreatedAt: "2025-10-10T12:21:26.284Z",
-    UpdatedAt: "2025-10-10T13:05:10.100Z",
-    ShowReportList: [
-      {
-        Id: "a9b1e321-6d23-4e94-bf1d-8f59ab3f86a3",
-        Content: "Contains misleading information about health topics.",
-        AccountId: 301,
-        PodcastShow: {
-          Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-          Name: "Mindful Talks - Season 1",
-        },
-        PodcastShowReportType: {
-          Id: 2,
-          Name: "Misinformation",
-        },
-        ResolvedAt: "2025-10-10T12:21:26.284Z",
-        CreatedAt: "2025-10-09T09:15:20.000Z",
-      },
-      {
-        Id: "b7c22b80-3f41-47a9-94b0-42d5df6c3b55",
-        Content: "Inappropriate advertisement inserted in mid-episode.",
-        AccountId: 302,
-        PodcastShow: {
-          Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-          Name: "Mindful Talks - Season 1",
-        },
-        PodcastShowReportType: {
-          Id: 3,
-          Name: "Inappropriate Content",
-        },
-        ResolvedAt: "2025-10-10T12:21:26.284Z",
-        CreatedAt: "2025-10-09T12:42:35.500Z",
-      },
-      {
-        Id: "b7c22b80-3f41-47a9-94b0-42d5df6c3b55",
-        Content: "Inappropriate advertisement inserted in mid-episode.",
-        AccountId: 302,
-        PodcastShow: {
-          Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-          Name: "Mindful Talks - Season 1",
-        },
-        PodcastShowReportType: {
-          Id: 3,
-          Name: "Inappropriate Content",
-        },
-        ResolvedAt: "2025-10-10T12:21:26.284Z",
-        CreatedAt: "2025-10-09T12:42:35.500Z",
-      },
-    ],
-  },
-}
+
 interface ShowReportDetailProps {
   podcastShowReportReviewSessionId: string
   onClose: () => void
@@ -81,18 +23,44 @@ const DetailForm: React.FC<ShowReportDetailProps> = ({ podcastShowReportReviewSe
   const context = useContext(ShowReportReviewViewContext)
   const [ShowReportDetail, setShowReportDetail] = useState<ShowReportReviewSession | null>(null)
   const [loading, setLoading] = useState(false)
-
+  const { startPolling } = useSagaPolling({
+    timeoutSeconds: 120,
+    intervalSeconds: 0.5,
+  })
   const fetchDetail = async (id: string) => {
-    setShowReportDetail(mockDetail.ShowReportReviewSession)
+    try {
+      const response = await getShowReviewSessionDetail(staffAxiosInstance, id);
+      if (response.success) {
+        setShowReportDetail(response.data.ShowReportReviewSession);
+      } else {
+        console.error('API Error:', response.message);
+      }
+    } catch (error) {
+      console.error('Lỗi khi fetch show reports:', error);
+    }
   }
 
   const handleAction = async (isResolved: boolean) => {
+    const alert = confirmAlert(`Are you sure you want to ${isResolved ? "REMOVE this show?" : "reject this report?"} `);
+    if (!(await alert).isConfirmed) return;
     setLoading(true)
     try {
-      // API call to update status
-      toast.success(`Report ${isResolved ? "resolved" : "rejected"} successfully`)
-      // Update local state
-      setShowReportDetail((prev) => (prev ? { ...prev, IsResolved: isResolved } : null))
+      const res = await resolveShowReviewSession(staffAxiosInstance, podcastShowReportReviewSessionId, isResolved);
+      const sagaId = res?.data?.SagaInstanceId
+      if (!sagaId) {
+        toast.success(`Report ${isResolved ? "resolved" : "rejected"} failed, please try again.`)
+        return
+      }
+      await startPolling(sagaId, staffAxiosInstance, {
+        onSuccess: async () => {
+          onClose();
+          await context?.handleDataChange();
+          toast.success(`Report ${isResolved ? "resolved" : "rejected"} successfully`)
+        },
+        onFailure: (err: any) => toast.error(err || "Saga failed!"),
+        onTimeout: () => toast.error("System not responding, please try again."),
+      })
+
     } catch (error) {
       toast.error("Failed to update report status")
     } finally {
@@ -104,21 +72,21 @@ const DetailForm: React.FC<ShowReportDetailProps> = ({ podcastShowReportReviewSe
     if (isResolved === true) {
       return (
         <div className="show-report-detail__status-badge show-report-detail__status-badge--resolved">
-            <span className="show-report-detail__status-badge-dot"></span>
+          <span className="show-report-detail__status-badge-dot"></span>
           Resolved
         </div>
       )
     } else if (isResolved === false) {
       return (
         <div className="show-report-detail__status-badge show-report-detail__status-badge--rejected">
-            <span className="show-report-detail__status-badge-dot"></span>
+          <span className="show-report-detail__status-badge-dot"></span>
           Rejected
         </div>
       )
     } else {
       return (
         <div color="warning" className="show-report-detail__status-badge show-report-detail__status-badge--pending">
-            <span className="show-report-detail__status-badge-dot"></span>
+          <span className="show-report-detail__status-badge-dot"></span>
           Pending
         </div>
       )
@@ -151,7 +119,7 @@ const DetailForm: React.FC<ShowReportDetailProps> = ({ podcastShowReportReviewSe
           </CButton>
         </div>
       )
-    } 
+    }
     return null
   }
 

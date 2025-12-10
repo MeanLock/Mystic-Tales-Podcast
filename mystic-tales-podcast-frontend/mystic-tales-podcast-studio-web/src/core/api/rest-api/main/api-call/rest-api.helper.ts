@@ -45,7 +45,7 @@ export async function callAxiosRestApi({
 
         if (axios.isAxiosError(error)) {
             if (error.response) {
-                errorMessage = error.response.data?.message || `Lỗi API: ${error.response.status}`;
+                errorMessage = error.response.data ||error.response.data?.message  || `Lỗi API: ${error.response.status}`;
             } else if (error.request) {
                 errorMessage = "Không có phản hồi từ server";
             } else {

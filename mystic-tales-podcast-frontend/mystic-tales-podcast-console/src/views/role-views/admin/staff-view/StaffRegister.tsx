@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef, FormEvent } from "react";
+import React, { useContext, useState, useRef, FormEvent, useEffect } from "react";
 import {
   CButton,
   CCol,
@@ -14,6 +14,10 @@ import { adminAxiosInstance } from "../../../../core/api/rest-api/config/instanc
 import { toast } from "react-toastify";
 import { StaffViewContext } from ".";
 import axios from "axios";
+import NotFound from '../../../../assets/images/notfound.png'
+import { fromInputDateToISO } from "@/core/utils/date.util";
+import { useSagaPolling } from "@/hooks/useSagaPolling";
+import { RegisterStaffAccount } from "@/core/services/auth/auth.service";
 
 interface StaffRegisterProps {
   onClose: () => void;
@@ -25,28 +29,38 @@ const StaffForm: React.FC<StaffRegisterProps> = ({ onClose }) => {
   // Form refs
   const email = useRef<HTMLInputElement>(null);
   const password = useRef<HTMLInputElement>(null);
+  const confirmPassword = useRef<HTMLInputElement>(null);
   const fullname = useRef<HTMLInputElement>(null);
   const dob = useRef<HTMLInputElement>(null);
   const gender = useRef<HTMLSelectElement>(null);
   const address = useRef<HTMLInputElement>(null);
   const phone = useRef<HTMLInputElement>(null);
-  const mainImageFile = useRef<HTMLInputElement>(null);
+  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
 
+  const { startPolling } = useSagaPolling({
+    timeoutSeconds: 5,
+    intervalSeconds: 0.5,
+  })
   // State for form validation and UI
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string>("");
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   // Handle image file selection
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setMainImageFile(file);
   };
+  useEffect(() => {
+    if (!mainImageFile) {
+      setImagePreview(null)
+      return
+    }
+    const url = URL.createObjectURL(mainImageFile)
+    setImagePreview(url)
+    return () => {
+      URL.revokeObjectURL(url)
+    }
+  }, [mainImageFile])
 
   // Validate form inputs
   const validateForm = (): boolean => {
@@ -61,11 +75,18 @@ const StaffForm: React.FC<StaffRegisterProps> = ({ onClose }) => {
       setError("Password is required");
       return false;
     }
-
-    if (password.current?.value && password.current.value.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (!password.current?.value?.trim()) {
+      setError("Password is required");
       return false;
     }
+    if (password.current?.value !== confirmPassword.current?.value) {
+      setError("Passwords do not match");
+      return false;
+    }
+    // if (password.current?.value && password.current.value.length < 6) {
+    //   setError("Password must be at least 6 characters long");
+    //   return false;
+    // }
 
     if (!fullname.current?.value?.trim()) {
       setError("Full name is required");
@@ -104,44 +125,37 @@ const StaffForm: React.FC<StaffRegisterProps> = ({ onClose }) => {
 
     setIsSubmitting(true);
     setError("");
+    const data = {
 
+      Email: email.current?.value,
+      Password: password.current?.value,
+      FullName: fullname.current?.value,
+      Dob: fromInputDateToISO(dob.current?.value)!,
+      Gender: gender.current?.value,
+      Address: address.current?.value,
+      Phone: phone.current?.value,
+    };
     try {
-      const formData = new FormData();
-      formData.append("Email", email.current?.value || "");
-      formData.append("Password", password.current?.value || "");
-      formData.append("Fullname", fullname.current?.value || "");
-      formData.append("Dob", dob.current?.value || "");
-      formData.append("Gender", gender.current?.value || "");
-      formData.append("Address", address.current?.value || "");
-      formData.append("Phone", phone.current?.value || "");
-
-      if (mainImageFile.current?.files?.[0]) {
-        formData.append("MainImageFile", mainImageFile.current.files[0]);
-      }
-
-      // const response = await adminAxiosInstance.post("/staff/register", formData, {
-      //   headers: {
-      //     "Content-Type": "multipart/form-data",
-      //   },
-      // });
-      const response = await axios.post("https://a03f85e45b62.ngrok-free.app//api/auth/register/staff", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const res = await RegisterStaffAccount(adminAxiosInstance, {
+        RegisterInfo: data,
+        MainImageFile: mainImageFile || null,
       });
-      console.log(response);
-      if (response.data.SagaInstanceId) {
-        const sagaId = response.data.SagaInstanceId
-        setSagaInstanceId(sagaId)
-        toast.success("Staff registered successfully!");
-        context?.handleDataChange();
-        onClose();
-      } else {
-        setError(response.data.message || "Registration failed");
+      const sagaId = res?.data?.SagaInstanceId
+      if (!sagaId) {
+        toast.error("Register account failed, please try again.")
+        return
       }
-    } catch (error: any) {
-      console.error("Error registering staff:", error);
-      setError(error.response?.data?.message || "An error occurred during registration");
+      await startPolling(sagaId, adminAxiosInstance, {
+        onSuccess: () => {
+          onClose();
+          context?.handleDataChange();
+          toast.success(`Account registered successfully!`);
+        },
+        onFailure: (err: any) => toast.error(err || "Saga failed!"),
+        onTimeout: () => toast.error("System not responding, please try again."),
+      })
+    } catch (error) {
+      toast.error("Error registering account");
     } finally {
       setIsSubmitting(false);
     }
@@ -158,81 +172,88 @@ const StaffForm: React.FC<StaffRegisterProps> = ({ onClose }) => {
       </div>
 
       {error && (
-        <CAlert color="danger" className="mb-4">
-          {error}
+        <CAlert color="danger" className="my-4 mx-8">
+          ⚠️ {error} !
         </CAlert>
       )}
 
       <CForm noValidate onSubmit={handleSubmit} className="staff-register__form">
         {/* Profile Image Section */}
         <div className="staff-register__section">
-          <h3 className="staff-register__section-title">Profile Image</h3>
-          <div className="staff-register__image-upload">
-            <div className="staff-register__image-preview">
-              <img
-                src={imagePreview || "/placeholder.svg"}
-                alt="Profile Preview"
-                className="staff-register__avatar"
-              />
+          <div className="flex gap-4 ">
+            <div className=" flex flex-col justify-center items-center gap-4 w-1/2 ">
+              <div className="staff-register__image-preview">
+                <img
+                  src={imagePreview || NotFound}
+                  alt="Profile Preview"
+                  className="staff-register__avatar"
+                />
+              </div>
+              <div className="staff-register__upload-controls w-2/3 ">
+                <CFormInput
+                  type="file"
+                  id="mainImageFile"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="staff-register__input"
+                />
+              </div>
             </div>
-            <div className="staff-register__upload-controls">
-              <CFormLabel htmlFor="mainImageFile" className="staff-register__label">
-                Profile Image
-              </CFormLabel>
-              <CFormInput
-                type="file"
-                id="mainImageFile"
-                ref={mainImageFile}
-                accept="image/*"
-                onChange={handleImageChange}
-                className="staff-register__input"
-              />
-            </div>
+            <CRow className="g-1 w-2/3 flex flex-col justify-center ">
+              <CCol className="w-full">
+                <div className="staff-register__field">
+                  <CFormLabel htmlFor="email" className="staff-register__label">
+                    Email
+                  </CFormLabel>
+                  <CFormInput
+                    type="email"
+                    id="email"
+                    ref={email}
+                    required
+                    placeholder="Enter email address"
+                    className="staff-register__input w-full"
+                  />
+                  <CFormFeedback valid>Looks good!</CFormFeedback>
+                </div>
+              </CCol>
+              <CCol className="w-full">
+                <div className="staff-register__field">
+                  <CFormLabel htmlFor="password" className="staff-register__label">
+                    Password
+                  </CFormLabel>
+                  <CFormInput
+                    type="password"
+                    id="password"
+                    ref={password}
+                    required
+                    placeholder="Enter password (min. 6 characters)"
+                    className="staff-register__input"
+                  />
+                  <CFormFeedback valid>Looks good!</CFormFeedback>
+                </div>
+              </CCol>
+              <CCol className="w-full">
+                <div className="staff-register__field">
+                  <CFormLabel htmlFor="password" className="staff-register__label">
+                    Confirm Password
+                  </CFormLabel>
+                  <CFormInput
+                    type="password"
+                    id="password"
+                    ref={confirmPassword}
+                    required
+                    placeholder="Enter password (min. 6 characters)"
+                    className="staff-register__input"
+                  />
+                  <CFormFeedback valid>Looks good!</CFormFeedback>
+                </div>
+              </CCol>
+            </CRow>
           </div>
-        </div>
-
-        {/* Account Credentials Section */}
-        <div className="staff-register__section">
-          <h3 className="staff-register__section-title">Account Credentials</h3>
-          <CRow className="g-3">
-            <CCol md={6}>
-              <div className="staff-register__field">
-                <CFormLabel htmlFor="email" className="staff-register__label">
-                  Email Address
-                </CFormLabel>
-                <CFormInput
-                  type="email"
-                  id="email"
-                  ref={email}
-                  required
-                  placeholder="Enter email address"
-                  className="staff-register__input"
-                />
-                <CFormFeedback valid>Looks good!</CFormFeedback>
-              </div>
-            </CCol>
-            <CCol md={6}>
-              <div className="staff-register__field">
-                <CFormLabel htmlFor="password" className="staff-register__label">
-                  Password
-                </CFormLabel>
-                <CFormInput
-                  type="password"
-                  id="password"
-                  ref={password}
-                  required
-                  placeholder="Enter password (min. 6 characters)"
-                  className="staff-register__input"
-                />
-                <CFormFeedback valid>Looks good!</CFormFeedback>
-              </div>
-            </CCol>
-          </CRow>
         </div>
 
         {/* Personal Information Section */}
         <div className="staff-register__section">
-          <h3 className="staff-register__section-title">Personal Information</h3>
           <CRow className="g-3">
             <CCol md={8}>
               <div className="staff-register__field">

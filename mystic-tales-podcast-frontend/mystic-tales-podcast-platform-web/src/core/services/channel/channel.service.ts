@@ -12,7 +12,7 @@ const channelApi = appApi.injectEndpoints({
       { podcasterId: number }
     >({
       query: ({ podcasterId }) => ({
-        url: `/api/podcast-service/api/channels?podcasterId=${podcasterId}`,
+        url: `/api/podcast-service/api/channels?podcaster_id=${podcasterId}`,
         method: "GET",
         authMode: "public",
       }),
@@ -118,5 +118,5 @@ export const {
   useGetActiveChannelSubscriptionQuery,
   useFavoriteChannelMutation,
   useUnfavoriteChannelMutation,
-  useGetFavoritedChannelsQuery
+  useGetFavoritedChannelsQuery,
 } = channelApi;

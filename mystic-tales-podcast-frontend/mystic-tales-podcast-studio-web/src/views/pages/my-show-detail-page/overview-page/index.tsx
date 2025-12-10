@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import ShowInfo from './show-info';
 import ShowTrailer from './show-trailer';
+import Loading from '@/views/components/common/loading';
 
 const ShowOverview = () => {
     const [activeTab, setActiveTab] = useState("show-info");
@@ -49,7 +50,6 @@ const ShowOverview = () => {
                     <ShowTrailer />
                 </TabPanel>
             </Box>
-
 
         </div>
     );

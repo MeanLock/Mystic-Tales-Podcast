@@ -13,11 +13,17 @@ import {
     VolumeOff,
     MusicNote,
 } from "@mui/icons-material";
-import SampleAudio from "../../../assets/Podbean_AI_test_-_Noise_Reduction_original_92vyi.mp3";
-import "./show-trailer.scss";
 import { Database, FileAudio, FolderSimple } from "phosphor-react";
 import { toast } from "react-toastify";
+import { useSagaPolling } from "@/core/hooks/useSagaPolling";
+import { getShowDetail, uploadTrailer } from "@/core/services/show/show.service";
+import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances/v2";
+import { useParams } from "react-router-dom";
+import Loading2 from "@/views/components/common/loading2";
+import { getPublicSource } from "@/core/services/file/file.service";
+import Loading from "@/views/components/common/loading";
 import { ProfileViewContext } from ".";
+import { updatePodcasterProfile } from "@/core/services/account/account.service";
 
 interface BuddyAudioProps {
     initialAudio?: string;
@@ -26,8 +32,11 @@ interface BuddyAudioProps {
 const BuddyAudio: React.FC<BuddyAudioProps> = ({
     initialAudio = "",
 }) => {
+
     const context = useContext(ProfileViewContext);
-    const profile = context?.profile ?? null;
+    const profile = context?.profile;
+    const refreshProfile = context?.refreshProfile;
+
     const waveformRef = useRef<HTMLDivElement>(null);
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,12 +47,44 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
     const [duration, setDuration] = useState(0);
     const [volume, setVolume] = useState(0.7);
     const [isMuted, setIsMuted] = useState(false);
-    const [audioUrl, setAudioUrl] = useState(initialAudio);
+    const [audioUrl, setAudioUrl] = useState("");
     const [isDragging, setIsDragging] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
-    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+    const [uploadedFile, setUploadedFile] = useState<File | null>();
     const [isSeeking, setIsSeeking] = useState(false);
-    
+
+    const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    const { startPolling } = useSagaPolling({
+        timeoutSeconds: 200,
+        intervalSeconds: 2,
+    })
+    const fetchBuddyAudio = async () => {
+        setLoading(true);
+        try {
+            const fileurl = await getPublicSource(loginRequiredAxiosInstance, profile.PodcasterProfile.BuddyAudioFileKey);
+            if (fileurl.success && fileurl.data.FileUrl) {
+                setAudioUrl(fileurl.data.FileUrl);
+                const dummyFile = new File([], 'MTP_Existing_Buddyy_Audio.mp3', { type: 'audio/mpeg' });
+                setUploadedFile(dummyFile);
+            }
+
+        } catch (error) {
+            console.error('Lỗi khi fetch show detail:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        if (!profile) return;
+        if (profile.PodcasterProfile.BuddyAudioFileKey) {
+            fetchBuddyAudio();
+        }
+    }, [profile]);
+
+
     const handleSeekMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!progressBarRef.current || !wavesurferRef.current) return;
 
@@ -97,19 +138,6 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
         };
     }, [uploadedFile]);
 
-    // Load buddy audio from context when available (fallback to sample if none)
-    useEffect(() => {
-        if (!profile) return;
-        const key = profile.PodcasterProfile?.BuddyAudioFileKey;
-        if (!uploadedFile) {
-            if (key && typeof key === 'string' && key.trim().length > 0) {
-                setAudioUrl(key);
-            } else if (!initialAudio) {
-                // fallback sample when neither context nor prop provided
-                setAudioUrl("");
-            }
-        }
-    }, [profile, uploadedFile, initialAudio]);
     useEffect(() => {
         if (!waveformRef.current) return;
 
@@ -129,9 +157,7 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
         });
 
         wavesurferRef.current = ws;
-        if (audioUrl) {
-            ws.load(audioUrl);
-        }
+        ws.load(audioUrl);
 
         ws.on("ready", () => {
             setDuration(ws.getDuration());
@@ -188,18 +214,15 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
-    const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!wavesurferRef.current || !progressBarRef.current) return;
-        const rect = progressBarRef.current.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const percent = clickX / rect.width;
-        const newTime = percent * duration;
-        wavesurferRef.current.setTime(newTime);
-        setCurrentTime(newTime);
-    };
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
+        const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!ext || !allowedExtensions.includes(ext)) {
+            toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
+            return;
+        }
         if (file.size > 15 * 1024 * 1024) {
             toast.error("File size exceeds 15MB limit.");
             return;
@@ -208,7 +231,7 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
             const url = URL.createObjectURL(file);
             setAudioUrl(url);
             setHasChanges(true);
-            setUploadedFile(file); // Lưu file
+            setUploadedFile(file);
         }
     };
 
@@ -223,8 +246,8 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files?.[0];
-        if (file.size > 50 * 1024 * 1024) {
-            toast.error("File size exceeds 50MB limit.");
+        if (file.size > 15 * 1024 * 1024) {
+            toast.error("File size exceeds 15MB limit.");
             return;
         }
         if (file && file.type.startsWith("audio/")) {
@@ -237,6 +260,49 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
 
     const handleBrowseClick = () => fileInputRef.current?.click();
 
+    const handleUploadAudio = async () => {
+        try {
+            setUploading(true);
+            const payload = {
+                PodcasterProfileUpdateInfo: {
+                    Name: profile.PodcasterProfile.Name,
+                    Description: profile.PodcasterProfile.Description || '',
+                    PricePerBookingWord: profile.PodcasterProfile.PricePerBookingWord || 1000,
+                },
+                BuddyAudioFile: uploadedFile
+            };
+            const res = await updatePodcasterProfile(loginRequiredAxiosInstance, String(profile.Id), payload);
+            const sagaId = res?.data?.SagaInstanceId
+            if (!res.success && res.message.content) {
+                toast.error(res.message.content)
+                return
+            }
+            if (!sagaId) {
+                toast.error(`Upload Audio failed, please try again.`)
+                return
+            }
+
+            await startPolling(sagaId, loginRequiredAxiosInstance, {
+                onSuccess: async () => {
+                    toast.success(`Audio uploaded successfully.`)
+                    await refreshProfile?.();
+                },
+                onFailure: (err) => toast.error(err || "Saga failed!"),
+                onTimeout: () => toast.error("System not responding, please try again."),
+            })
+        } catch (error) {
+            toast.error("Error uploading audio");
+        } finally {
+            setUploading(false);
+        }
+    };
+    if (loading) {
+        return (
+            <div className=" flex justify-center items-center mt-20">
+                <Loading />
+            </div>
+        );
+    }
     return (
         <div className="show-trailer">
             <div className="show-trailer__header">
@@ -246,14 +312,15 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
                 <Button
                     variant="contained"
                     className="show-trailer__save-btn"
-                    disabled={!hasChanges}
+                    onClick={() => handleUploadAudio()}
+                    disabled={!hasChanges || uploading}
                 >
                     Save
                 </Button>
             </div>
 
             {/* Chỉ hiển thị player khi có file */}
-            {(uploadedFile || audioUrl) && (
+            {uploadedFile && (
                 <div className="show-trailer__player">
                     <div className="show-trailer__waveform-container">
                         <div ref={waveformRef} className="show-trailer__waveform" />
@@ -302,57 +369,60 @@ const BuddyAudio: React.FC<BuddyAudioProps> = ({
                     </div>
                 </div>
             )}
-
-            {/* Upload section - full width khi chưa có file */}
-            <div className={`show-trailer__upload-section ${!uploadedFile && !audioUrl ? 'show-trailer__upload-section--no-file' : ''}`}>
-                <div
-                    className={`show-trailer__upload ${isDragging ? "show-trailer__upload--dragging" : ""} ${!uploadedFile && !audioUrl ? 'show-trailer__upload--full-width' : ''}`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={handleBrowseClick}
-                >
-                    <MusicNote className="show-trailer__upload-icon" />
-                    <Typography className="show-trailer__upload-text">
-                        Drop your audio file here
-                    </Typography>
-                    <Typography className="show-trailer__upload-subtext">
-                        or click to browse
-                    </Typography>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="audio/*"
-                        onChange={handleFileSelect}
-                        className="show-trailer__upload-input"
-                    />
+            {uploading ? (
+                <div className=" flex justify-center items-center mt-20">
+                    <Loading2 title="Uploading" />
                 </div>
-
-                {uploadedFile && (
-                    <div className="show-trailer__file-info">
-                        <div className="show-trailer__file-box">
-                            <div className="show-trailer__file-row">
-                                <FolderSimple size={20} color="#B6E04A" />
-                                <Typography variant="body2" className="show-trailer__file-name">
-                                    <strong>File Name:  </strong>{uploadedFile.name}
-                                </Typography>
-                            </div>
-                            <div className="show-trailer__file-row">
-                                <Database size={20} color="#B6E04A" />
-                                <Typography variant="body2" className="show-trailer__file-size">
-                                    <strong>Size:  </strong> {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                                </Typography>
-                            </div>
-                            <div className="show-trailer__file-row">
-                                <FileAudio size={20} color="#B6E04A" />
-                                <Typography variant="body2" className="show-trailer__file-type">
-                                    <strong>Type:  </strong>{uploadedFile.type.replace('audio/', '')}
-                                </Typography>
+            ) : (
+                <div className={`show-trailer__upload-section ${!uploadedFile ? 'show-trailer__upload-section--no-file' : ''}`}>
+                    <div
+                        className={`show-trailer__upload ${isDragging ? "show-trailer__upload--dragging" : ""} ${!uploadedFile ? 'show-trailer__upload--full-width' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={handleBrowseClick}
+                    >
+                        <MusicNote className="show-trailer__upload-icon" />
+                        <Typography className="show-trailer__upload-text">
+                            Drop your audio file here
+                        </Typography>
+                        <Typography className="show-trailer__upload-subtext">
+                            or click to browse
+                        </Typography>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".wav,.flac,.mp3,.m4a,.aac"
+                            onChange={handleFileSelect}
+                            className="show-trailer__upload-input"
+                        />
+                    </div>
+                    {(uploadedFile && uploadedFile.name !== 'MTP_Existing_Buddyy_Audio.mp3') && (
+                        <div className="show-trailer__file-info">
+                            <div className="show-trailer__file-box">
+                                <div className="show-trailer__file-row">
+                                    <FolderSimple size={20} color="#B6E04A" />
+                                    <Typography variant="body2" className="show-trailer__file-name">
+                                        <strong>File Name:  </strong>{uploadedFile.name}
+                                    </Typography>
+                                </div>
+                                <div className="show-trailer__file-row">
+                                    <Database size={20} color="#B6E04A" />
+                                    <Typography variant="body2" className="show-trailer__file-size">
+                                        <strong>Size:  </strong> {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                                    </Typography>
+                                </div>
+                                <div className="show-trailer__file-row">
+                                    <FileAudio size={20} color="#B6E04A" />
+                                    <Typography variant="body2" className="show-trailer__file-type">
+                                        <strong>Type:  </strong>{uploadedFile.type.replace('audio/', '')}
+                                    </Typography>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
