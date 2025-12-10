@@ -25,7 +25,7 @@ import {
 import { ExpandMore, ExpandLess, Search } from '@mui/icons-material';
 
 import { useQuill } from 'react-quilljs';
-// import 'quill/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 import { ProfileViewContext } from '.';
 import { useSagaPolling } from '@/core/hooks/useSagaPolling';
 import { updatePodcasterProfile } from '@/core/services/account/account.service';
