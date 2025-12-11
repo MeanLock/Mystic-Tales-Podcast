@@ -1,4 +1,4 @@
-import type { n } from "node_modules/framer-motion/dist/types.d-BJcRxCew";
+
 
 export type SubscriptionDetails = {
   Id: number;

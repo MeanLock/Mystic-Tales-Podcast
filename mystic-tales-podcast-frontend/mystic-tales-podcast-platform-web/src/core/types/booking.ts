@@ -210,7 +210,13 @@ export type BookingProducingRequestDetails = {
   BookingPodcastTracks: {
     Id: string;
     BookingId: number;
-    BookingRequirementId: string;
+    BookingRequirement: {
+      Id: string;
+      Name: string;
+      Description: string;
+      Order: number;
+      WordCount: number;
+    };
     BookingProducingRequestId: string;
     AudioFileKey: string;
     AudioFileSize: number;

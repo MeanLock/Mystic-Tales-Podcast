@@ -167,9 +167,9 @@ const ShowDetailsPage = () => {
   // STATES
   const [show, setShow] = useState<ShowDetailsUI | null>(null);
   const [isFileResolving, setIsFileResolving] = useState(false);
-  const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(
-    null
-  );
+  // const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(
+  //   null
+  // );
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -207,7 +207,7 @@ const ShowDetailsPage = () => {
   const dispatch = useDispatch();
 
   // Mutations
-  const [subscribeShow, { isLoading: isSubscribing }] =
+  const [subscribeShow] =
     useSubscribePodcastSubscriptionMutation();
   const [unsubscribeShow, { isLoading: isUnsubscribing }] =
     useUnsubscribePodcastSubscriptionMutation();
@@ -224,13 +224,11 @@ const ShowDetailsPage = () => {
 
   const {
     data: activeSubscriptionRaw,
-    isLoading: isActiveSubscriptionLoading,
     refetch: refetchActiveSubscription,
   } = useGetActiveShowSubscriptionQuery({ ShowId: id! }, { skip: !id });
 
   const {
     data: customerRegistrationInfo,
-    isLoading: isCustomerRegistrationInfoLoading,
     refetch: refetchCustomerRegistration,
   } = useGetCustomerRegistrationInfoFromShowQuery(
     { PodcastShowId: id! },
@@ -243,8 +241,8 @@ const ShowDetailsPage = () => {
     refetch: refetchShowReportTypes,
   } = useGetShowReportTypesQuery({ PodcastShowId: id! }, { skip: !id });
 
-  const [followShow, { isLoading: isFollowing }] = useFollowShowMutation();
-  const [unFollowShow, { isLoading: isUnFollowing }] =
+  const [followShow] = useFollowShowMutation();
+  const [unFollowShow] =
     useUnFollowShowMutation();
 
   const [getTrailerAudioUrl] = useLazyGetPodcastPublicSourceQuery();
@@ -1283,7 +1281,11 @@ const ShowDetailsPage = () => {
           {/* Provider */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Release Date</h3>
-            <p className="text-white text-base">{show.ReleaseDate}</p>
+            <p className="text-white text-base">
+              {show.IsReleased
+                ? show.ReleaseDate
+                : `Not Released Yet - Will be release on ${show.ReleaseDate}`}
+            </p>
           </div>
         </div>
 

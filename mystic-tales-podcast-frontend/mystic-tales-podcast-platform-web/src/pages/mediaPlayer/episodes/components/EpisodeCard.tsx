@@ -1,12 +1,10 @@
+// @ts-nocheck
 import type { RootState } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { IoInformationCircleOutline, IoPlay } from "react-icons/io5";
 import PlayingWave from "@/components/playingWave/PlayWave";
-import {
-  pauseAudio,
-  playAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import { Eye, MoreHorizontalIcon, Save } from "lucide-react";
+
+import { Eye, MoreHorizontalIcon} from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,

@@ -2,10 +2,6 @@ import type { RootState } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { IoPlay } from "react-icons/io5";
 import PlayingWave from "@/components/playingWave/PlayWave";
-import {
-  pauseAudio,
-  playAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import { MoreHorizontalIcon, Save } from "lucide-react";
 import { useState } from "react";
 import {
@@ -113,7 +109,6 @@ export function renderDescriptionHTML(description: string | null) {
 
 const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   const dispatch = useDispatch();
-  const player = useSelector((state: RootState) => state.player);
   const user = useSelector((state: RootState) => state.auth.user);
 
   const {
@@ -131,7 +126,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   const [isEpisodeAlreadyReported, setIsEpisodeAlreadyReported] =
     useState(false);
 
-  const [fetchBenefits, { isFetching: isFetchingBenefits }] =
+  const [fetchBenefits] =
     useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
   const [triggerCheckListenSlot] = useLazyCheckUserPodcastListenSlotQuery();
 
@@ -147,7 +142,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
 
   const [reportEpisode, { isLoading: isReportingEpisode }] =
     useReportEpisodeMutation();
-  const [saveEpisode, { isLoading: isSavingEpisode }] =
+  const [saveEpisode] =
     useSaveEpisodeMutation();
 
   // Auto-check if episode is already reported when data loads

@@ -1,22 +1,14 @@
 import Loading from "@/components/loading";
 import { useGetSearchResultsQuery } from "@/core/services/search/search.service";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import type { SearchResultResponseUI } from "@/core/types/search";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
 import { IoIosArrowBack } from "react-icons/io";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import { usePlayer } from "@/core/services/player/usePlayer";
+import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
+import PlayingWave from "@/components/playingWave/PlayWave";
+import { IoPlay } from "react-icons/io5";
 
-const FileConfig: FileResolveConfig[] = [
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "PodcastPublic",
-  },
-];
 
 const SearchPage = () => {
   // STATES
@@ -41,6 +33,34 @@ const SearchPage = () => {
         refetchOnMountOrArgChange: true,
       }
     );
+
+  const {
+    play,
+    pause,
+    state: uiState,
+    playEpisodeFromSpecifyShow,
+  } = usePlayer();
+  const [getBenefitList] =
+    useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
+
+  const handlePlayPause = async (episodeId: string) => {
+    if (uiState.currentAudio && uiState.currentAudio?.id === episodeId) {
+      if (uiState.isPlaying) {
+        pause();
+      } else {
+        play();
+      }
+    } else {
+      const benefitList = await getBenefitList({
+        PodcastEpisodeId: episodeId,
+      }).unwrap();
+      playEpisodeFromSpecifyShow({
+        audioId: episodeId,
+        benefitsList:
+          benefitList.CurrentPodcastSubscriptionRegistrationBenefitList || [],
+      });
+    }
+  };
 
   if (isSearchDataLoading) {
     return (
@@ -126,6 +146,7 @@ const SearchPage = () => {
               <div className="flex flex-col gap-3">
                 {searchDataRaw.TopSearchResults.map((item, index) => {
                   const content = item.Show || item.Episode;
+                  const isEpisode = !!item.Episode;
                   if (!content) return null;
                   return (
                     <div
@@ -141,11 +162,39 @@ const SearchPage = () => {
                       }}
                       className="flex items-start gap-4 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-all"
                     >
-                      <AutoResolveImage
-                        FileKey={content.MainImageFileKey}
-                        type="PodcastPublicSource"
-                        className="w-20 h-20 object-cover rounded-md flex-shrink-0"
-                      />
+                      <div className="w-20 h-20 group flex items-center justify-center relative">
+                        <AutoResolveImage
+                          FileKey={content.MainImageFileKey}
+                          type="PodcastPublicSource"
+                          className="w-20 h-20 object-cover rounded-md flex-shrink-0"
+                        />
+                        {uiState.isPlaying &&
+                        uiState.currentAudio &&
+                        uiState.currentAudio.id === content.Id && isEpisode ? (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlayPause(content.Id);
+                            }}
+                            className="absolute inset-0 bg-black/30 flex items-center justify-center"
+                          >
+                            <PlayingWave />
+                          </div>
+                        ) : isEpisode ? (
+                          <div className="absolute inset-0 bg-black/30 hidden group-hover:flex items-center justify-center">
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePlayPause(content.Id);
+                              }}
+                              className="bg-mystic-green rounded-full p-2 flex items-center justify-center"
+                            >
+                              <IoPlay color="#fff" />
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-semibold text-lg line-clamp-1">
                           {content.Name}

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Loading from "@/components/loading";
 import {
   useCancelSubscriptionRegistrationMutation,

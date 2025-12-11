@@ -3,15 +3,12 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
-import type { PodcasterFromApi, PodcasterUI } from "@/core/types/podcaster";
-import type { SearchIcon } from "lucide-react";
+import type { PodcasterFromApi } from "@/core/types/podcaster";
 import { useEffect, useState } from "react";
 import PodcasterCard from "./components/PodcasterCard";
 import Autoplay from "embla-carousel-autoplay";
-import HighlyRatedCard from "./components/HighlyRatedCard";
 import { useGetPodcastersQuery } from "@/core/services/podcasters/podcasters.service";
 import Loading from "@/components/loading";
-
 
 const PodcastersPage = () => {
   // STATES
@@ -27,12 +24,33 @@ const PodcastersPage = () => {
   // const [isFileResolving, setIsFileResolving] = useState(false);
 
   // HOOKS
-  const { data: popularPodcastersRaw, isLoading: isPopularPodcasterLoading } =
-    useGetPodcastersQuery({ queryKey: "popular" });
-  const { data: hotPodcastersRaw, isLoading: isHotPodcastersLoading } =
-    useGetPodcastersQuery({ queryKey: "hotRencently" });
-  const { data: talentedRookiesRaw, isLoading: isTalentedRookiesLoading } =
-    useGetPodcastersQuery({ queryKey: "talentedRookie" });
+  const { data: popularPodcastersRaw, isFetching: isPopularPodcasterLoading } =
+    useGetPodcastersQuery(
+      { queryKey: "popular" },
+      {
+        refetchOnFocus: true,
+        refetchOnReconnect: true,
+        refetchOnMountOrArgChange: true,
+      }
+    );
+  const { data: hotPodcastersRaw, isFetching: isHotPodcastersLoading } =
+    useGetPodcastersQuery(
+      { queryKey: "hotRencently" },
+      {
+        refetchOnFocus: true,
+        refetchOnReconnect: true,
+        refetchOnMountOrArgChange: true,
+      }
+    );
+  const { data: talentedRookiesRaw, isFetching: isTalentedRookiesLoading } =
+    useGetPodcastersQuery(
+      { queryKey: "talentedRookie" },
+      {
+        refetchOnFocus: true,
+        refetchOnReconnect: true,
+        refetchOnMountOrArgChange: true,
+      }
+    );
 
   useEffect(() => {
     const resolveData = async () => {

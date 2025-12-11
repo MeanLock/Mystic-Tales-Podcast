@@ -1,19 +1,19 @@
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 import { Card, CardContent } from "@/components/ui/card";
-import type { ShowFromAPI, ShowUI } from "@/core/types/show";
+import type { ShowFromAPI } from "@/core/types/show";
 import { useNavigate } from "react-router-dom";
 
-interface CardProps {
-  card: {
-    Id: string;
-    Name: string;
-    ImageUrl: string;
-    Podcaster: {
-      Id: number;
-      FullName: string;
-    };
-  };
-}
+// interface CardProps {
+//   card: {
+//     Id: string;
+//     Name: string;
+//     ImageUrl: string;
+//     Podcaster: {
+//       Id: number;
+//       FullName: string;
+//     };
+//   };
+// }
 
 const ShowCard = ({ card }: { card: ShowFromAPI }) => {
   const navigate = useNavigate();

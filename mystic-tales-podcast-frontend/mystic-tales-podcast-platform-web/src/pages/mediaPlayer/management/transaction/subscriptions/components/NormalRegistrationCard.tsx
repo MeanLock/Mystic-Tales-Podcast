@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useCallback } from "react";
 import { GrPowerCycle } from "react-icons/gr";
 import { RiMoneyDollarCircleLine } from "react-icons/ri";

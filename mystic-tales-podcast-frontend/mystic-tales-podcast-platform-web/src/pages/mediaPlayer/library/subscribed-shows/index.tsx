@@ -31,12 +31,20 @@ const SubscribedShowsPage = () => {
     useState<boolean>(false);
 
   // HOOKS
-  const { data: followedShowsData, isLoading: isLoadingFollowedShows } =
-    useGetFollowedShowsQuery();
+  const { data: followedShowsData, isFetching: isLoadingFollowedShows } =
+    useGetFollowedShowsQuery(undefined, {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    });
   const {
     data: subscribedContentsData,
-    isLoading: isLoadingSubscribedContents,
-  } = useGetSubscribedContentsQuery();
+    isFetching: isLoadingSubscribedContents,
+  } = useGetSubscribedContentsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   useEffect(() => {
     const resolveFileData = async () => {

@@ -44,7 +44,7 @@ const BookingsPage = () => {
   // 🟢 Gọi API thật với refetch on mount và focus
   const {
     data: bookings,
-    isLoading,
+    isFetching: isLoading,
     error,
   } = useGetBookingsQuery(undefined, {
     refetchOnMountOrArgChange: true,

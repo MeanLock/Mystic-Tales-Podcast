@@ -13,7 +13,7 @@ import ShowCard from "./components/ShowCard";
 import ShowCardWithCategory from "./components/ShowCardWithCategory";
 import EpisodeCard from "./components/EpisodeCard";
 import { useGetDiscoveryFeedQuery } from "@/core/services/feed/feed.service";
-import { useNavigate } from "react-router-dom";
+
 import type {
   BaseOnYourTaste,
   ContinueListening,

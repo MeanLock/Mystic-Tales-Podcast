@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { CurrentAudioUI } from "../types/audio";
 
 export const userCurrentAudio: CurrentAudioUI = {

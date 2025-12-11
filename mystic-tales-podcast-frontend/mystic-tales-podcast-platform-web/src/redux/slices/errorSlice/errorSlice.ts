@@ -1,5 +1,4 @@
 // src/redux/slices/errorSlice.ts
-import type { AccountMeFromApi } from "@/core/types/account";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 interface ErrorState {

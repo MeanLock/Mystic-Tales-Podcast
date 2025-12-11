@@ -1,10 +1,7 @@
 import type { PodcastBuddyUI } from "@/core/types/booking";
 import { FaEye, FaStar } from "react-icons/fa";
-import { MdFactCheck, MdOutlinePeopleAlt, MdPeopleAlt } from "react-icons/md";
+import { MdFactCheck } from "react-icons/md";
 import { TbCoinFilled } from "react-icons/tb";
-import { useNavigate } from "react-router-dom";
-import AutoResolveImageBackground from "./AutoResolveImage";
-import { FaFileCircleCheck } from "react-icons/fa6";
 import { useState } from "react";
 
 interface BuddyCardProps {

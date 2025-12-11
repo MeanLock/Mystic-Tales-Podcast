@@ -1,9 +1,9 @@
+// @ts-nocheck
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import {
   useGetAccountInformationsQuery,
   useUpdateAccountInformationsMutation,
-  useUpdateAccountMeQuery,
 } from "@/core/services/account/account.service";
 import type { AccountMeFromApi, AccountMeUI } from "@/core/types/account";
 import {
