@@ -53,7 +53,7 @@ export function BookingRevenueChart({ activeTab }: { activeTab: string }) {
     }
 
     const getTooltipLabel = (item: BookingProfit) => {
-        const revenue = item.Amount.toLocaleString('vi-VN') + ' Points';
+        const revenue = item.Amount.toLocaleString('vi-VN') + ' Coins';
 
         if (activeTab === 'Daily' || activeTab === 'Weekly') {
             return `Revenue: ${revenue}`;
