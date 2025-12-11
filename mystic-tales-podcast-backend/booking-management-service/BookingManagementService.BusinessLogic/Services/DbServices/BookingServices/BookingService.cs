@@ -3597,7 +3597,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("Podcast track with id " + podcastTrackId + " does not exist, or keyId does not match");
                     }
 
-                    var check = await CheckListenerCanListenToTrackAsync(accountId, bookingPodcastTrack.Id);
+                    var check = await CheckListenerCanListenToTrackIgnorePreviewingAsync(accountId, bookingPodcastTrack.Id);
                     if (check == false)
                     {
                         throw new HttpRequestException("You are not allowed to listen to this track");
