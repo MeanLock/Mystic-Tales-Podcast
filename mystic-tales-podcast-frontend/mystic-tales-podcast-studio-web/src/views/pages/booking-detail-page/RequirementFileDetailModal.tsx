@@ -89,7 +89,8 @@ const RequirementFileDetailModal: React.FC<RequirementFileDetailModalProps> = ({
         )}
       </Box>
       <Box>
-        <DocumentViewer url={requirementUrl} height={400} />
+          <DocumentViewer url={requirementUrl} height={400} fileKey={requirementKey} />
+        
         <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
           <Button
             variant="outlined"

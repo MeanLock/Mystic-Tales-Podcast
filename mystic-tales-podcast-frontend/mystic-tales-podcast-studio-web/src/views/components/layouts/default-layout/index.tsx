@@ -45,7 +45,7 @@ const DefaultLayout = () => {
         if (profileRes?.success) {
           const podcaster = profileRes.data?.PodcasterAccount;
           setProfile(podcaster);
-         dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: podcaster.PodcasterProfile.IsBuddy, ViolationLevel: podcaster.ViolationLevel } }));
+         dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: podcaster.PodcasterProfile.IsBuddy, ViolationLevel: podcaster.ViolationLevel, PricePerBookingWord: podcaster.PodcasterProfile.PricePerBookingWord } }));
           
           const fileKey = podcaster?.MainImageFileKey;
           if (fileKey) {
@@ -219,6 +219,7 @@ useEffect(() => {
           const nextViolation =
             pod?.ViolationLevel ??
             authSlice.user.ViolationLevel;
+
 
           // Chỉ dispatch khi có thay đổi để tránh re-render không cần thiết
           if (
