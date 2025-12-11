@@ -118,7 +118,6 @@ const episodesFileConfig: FileResolveConfig[] = [
   },
 ];
 
-
 const TrendingPage = () => {
   // STATES
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -154,8 +153,12 @@ const TrendingPage = () => {
   const [category6, setCategory6] = useState<CategoryXUI | null>(null);
 
   // HOOKS
-  const { data: trendingDataFromAPI, isLoading: isTrendingDataLoading } =
-    useGetTrendingFeedQuery();
+  const { data: trendingDataFromAPI, isFetching: isTrendingDataLoading } =
+    useGetTrendingFeedQuery(undefined, {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: true,
+    });
 
   useEffect(() => {
     const resolveEachSection = async () => {
