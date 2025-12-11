@@ -18,7 +18,8 @@ import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
-
+import { TimeUtil } from "@/core/utils/time";
+import { usePlayer } from "@/core/services/player/usePlayer";
 
 // Helper function to format duration
 const formatDuration = (seconds: number): string => {
@@ -87,8 +88,16 @@ const EpisodeDetailsPage = () => {
   const [IsSavedByCurrentUser, setIsSavedByCurrentUser] = useState(false);
 
   // HOOKS,
-  const player = useSelector((state: RootState) => state.player);
-  const dispatch = useDispatch();
+  const {
+    play,
+    pause,
+    playEpisodeFromSpecifyShow,
+    state: uiState,
+  } = usePlayer();
+  const [getBenefitList] =
+    useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
+
+  // const dispatch = useDispatch();
   const navigate = useNavigate();
   const {
     data: episodeDetailsRaw,
@@ -112,11 +121,6 @@ const EpisodeDetailsPage = () => {
 
   const [toggleSaveEpisode] = useSaveEpisodeMutation();
 
-  // Lazy queries: only trigger inside play handler
-  const [checkListenSlotTrigger] = useLazyCheckUserPodcastListenSlotQuery();
-  const [getBenefitsTrigger] =
-    useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
-
   // FUNCTIONS
   const handleToggleSaveEpisode = async (shouldSave: boolean) => {
     const restoreValue = IsSavedByCurrentUser;
@@ -135,62 +139,31 @@ const EpisodeDetailsPage = () => {
     }
   };
 
-  const handlePlayEpisodeFromShow = async () => {
-    if (!episodeDetailsRaw?.Episode?.Id) return;
-    try {
-      // Trigger lazy queries when Play is clicked
-      const listenSlotResult = await checkListenSlotTrigger().unwrap();
-      const benefitsResult = await getBenefitsTrigger({
-        PodcastEpisodeId: episodeDetailsRaw.Episode.Id,
-      }).unwrap();
-
-      if (
-        benefitsResult.CurrentPodcastSubscriptionRegistrationBenefitList
-          .length > 0
-      ) {
-        const benefitList =
-          benefitsResult.CurrentPodcastSubscriptionRegistrationBenefitList;
-        const hasListenBenefit = benefitList.some(
-          (benefit) => benefit.Id === 1
-        );
-        if (hasListenBenefit) {
-          dispatch(
-            playAudio({
-              audioId: episodeDetailsRaw.Episode.Id,
-              sourceType: "SpecifyShowEpisodes",
-            })
-          );
+  const handlePlayPause = async (audioId: string) => {
+    if (!audioId) return;
+    const benefitList = await getBenefitList({
+      PodcastEpisodeId: audioId,
+    }).unwrap();
+    if (uiState.currentAudio) {
+      if (uiState.currentAudio.id === audioId) {
+        if (uiState.isPlaying) {
+          pause();
         } else {
-          if (listenSlotResult > 0) {
-            dispatch(
-              playAudio({
-                audioId: episodeDetailsRaw.Episode.Id,
-                sourceType: "SpecifyShowEpisodes",
-              })
-            );
-          } else {
-            alert(
-              "You have no remaining podcast listen slots. Please subscribe to a podcast plan to continue listening."
-            );
-          }
+          play();
         }
       } else {
-        if (listenSlotResult > 0) {
-          dispatch(
-            playAudio({
-              audioId: episodeDetailsRaw.Episode.Id,
-              sourceType: "SpecifyShowEpisodes",
-            })
-          );
-        } else {
-          alert(
-            "You have no remaining podcast listen slots. Please subscribe to a podcast plan to continue listening."
-          );
-        }
+        playEpisodeFromSpecifyShow({
+          audioId: audioId,
+          benefitsList:
+            benefitList.CurrentPodcastSubscriptionRegistrationBenefitList || [],
+        });
       }
-    } catch (err) {
-      // Optionally surface error via toast or redux error slice
-      // console.error("Failed to check play entitlement", err);
+    } else {
+      playEpisodeFromSpecifyShow({
+        audioId: audioId,
+        benefitsList:
+          benefitList.CurrentPodcastSubscriptionRegistrationBenefitList || [],
+      });
     }
   };
 
@@ -205,7 +178,10 @@ const EpisodeDetailsPage = () => {
     );
   }
 
-  if (!episodeDetailsRaw && !isLoadingEpisodeDetails || !episodeDetailsRaw?.Episode) {
+  if (
+    (!episodeDetailsRaw && !isLoadingEpisodeDetails) ||
+    !episodeDetailsRaw?.Episode
+  ) {
     return (
       <div className="w-full h-full flex items-center justify-center flex-col gap-5">
         <p className="text-red-400 font-poppins font-light">
@@ -221,7 +197,7 @@ const EpisodeDetailsPage = () => {
     );
   } else {
     return (
-      <div className="w-full h-full flex flex-col">
+      <div className="w-full h-full flex flex-col mb-52">
         <div className="w-full flex items-center p-8">
           <div
             className="flex items-center text-white gap-2 hover:underline cursor-pointer"
@@ -251,10 +227,11 @@ const EpisodeDetailsPage = () => {
               {episodeDetailsRaw?.Episode.Podcaster.FullName}
             </p>
             {/* Play button */}
-            {player.playMode.playStatus === "play" &&
-            player.currentAudio?.Id === episodeDetailsRaw?.Episode.Id ? (
+            {uiState.isPlaying &&
+            uiState.currentAudio &&
+            uiState.currentAudio.id === episodeDetailsRaw?.Episode.Id ? (
               <div
-                onClick={() => dispatch(pauseAudio())}
+                onClick={() => handlePlayPause(episodeDetailsRaw.Episode.Id)}
                 className="mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm"
               >
                 <IoPause size={20} color="#000" />
@@ -262,7 +239,7 @@ const EpisodeDetailsPage = () => {
               </div>
             ) : (
               <div
-                onClick={() => handlePlayEpisodeFromShow()}
+                onClick={() => handlePlayPause(episodeDetailsRaw.Episode.Id)}
                 className="mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm"
               >
                 <IoPlay size={20} color="#000" />
@@ -293,10 +270,10 @@ const EpisodeDetailsPage = () => {
         </div>
 
         <div className="w-full mt-10 px-8 flex flex-col gap-3">
-          <p className="text-white font-poppins text-3xl font-bold mb-2">
+          <p className="text-white font-poppins text-3xl font-bold mb-8">
             Episode Informations
           </p>
-          <div className="w-full grid grid-cols-2 md:grid-cols-4">
+          <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-5">
             <div className="flex flex-col gap-1 font-poppins">
               <p className="text-[#D9D9D9] font-semibold">Show</p>
               <p
@@ -322,6 +299,68 @@ const EpisodeDetailsPage = () => {
                 className="text-mystic-green font-light hover:underline italic cursor-pointer"
               >
                 {episodeDetailsRaw?.Episode.Podcaster.FullName}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1 font-poppins">
+              <p className="text-[#D9D9D9] font-semibold">Episode Order</p>
+              <p className="text-white font-light">
+                {episodeDetailsRaw?.Episode.EpisodeOrder}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1 font-poppins">
+              <p className="text-[#D9D9D9] font-semibold">Season</p>
+              <p className="text-white font-light">
+                {episodeDetailsRaw?.Episode.SeasonNumber}
+              </p>
+            </div>
+
+            {episodeDetailsRaw.Episode.IsReleased ? (
+              <div className="flex flex-col gap-1 font-poppins">
+                <p className="text-[#D9D9D9] font-semibold">Released At</p>
+                <p className="text-white font-light">
+                  {TimeUtil.formatDate(
+                    episodeDetailsRaw?.Episode.ReleaseDate,
+                    "DD/MM/YYYY"
+                  )}
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1 font-poppins">
+                <p className="text-[#D9D9D9] font-semibold">Release Status</p>
+                <p className="text-[#D9D9D9] text-sm line-clamp-1 font-light">
+                  Not Yet - Will be released on{" "}
+                  {TimeUtil.formatDate(
+                    episodeDetailsRaw?.Episode.ReleaseDate,
+                    "DD/MM/YYYY"
+                  )}
+                </p>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1 font-poppins">
+              <p className="text-[#D9D9D9] font-semibold">Length</p>
+              <p className="text-white font-light">
+                {TimeUtil.formatAudioLength(
+                  episodeDetailsRaw.Episode.AudioLength || 0
+                )}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1 font-poppins">
+              <p className="text-[#D9D9D9] font-semibold">Rating</p>
+              <p className="text-white font-light">
+                {episodeDetailsRaw.Episode.ExplicitContent
+                  ? "Explicit"
+                  : "Clean"}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1 font-poppins">
+              <p className="text-[#D9D9D9] font-semibold">Listens</p>
+              <p className="text-white font-light line-clamp-1">
+                {episodeDetailsRaw.Episode.ListenCount.toLocaleString()} listens
               </p>
             </div>
           </div>

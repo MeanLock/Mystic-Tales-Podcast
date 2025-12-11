@@ -54,8 +54,20 @@ export const formatDate = (dateString: string, format: formatDateInput) => {
   }
 };
 
+const formatAudioLength = (lengthInSeconds: number) => {
+  if (isNaN(lengthInSeconds) || lengthInSeconds < 0) return "00:00";
+  const hours = Math.floor(lengthInSeconds / 3600);
+  const minutes = Math.floor((lengthInSeconds % 3600) / 60);
+  const seconds = Math.floor(lengthInSeconds % 60);
+  const hh = String(hours).padStart(2, "0");
+  const mm = String(minutes).padStart(2, "0");
+  const ss = String(seconds).padStart(2, "0");
+  return hours > 0 ? `${hh}:${mm}:${ss}` : minutes > 0 ? `${mm}:${ss}` : `00:${ss}`;
+};
+
 const TimeUtil = {
   formatDate,
+  formatAudioLength,
 };
 
 export { TimeUtil };

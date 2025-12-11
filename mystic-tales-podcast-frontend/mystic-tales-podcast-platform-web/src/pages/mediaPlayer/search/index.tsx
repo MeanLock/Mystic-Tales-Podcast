@@ -190,7 +190,7 @@ const SearchPage = () => {
                   <div
                     key={index}
                     onClick={() =>
-                      navigate(`/media-player/channel/${channel.Id}`)
+                      navigate(`/media-player/channels/${channel.Id}`)
                     }
                     className="flex items-start gap-4 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-all"
                   >
@@ -203,9 +203,7 @@ const SearchPage = () => {
                       <p className="text-white font-semibold text-lg line-clamp-1">
                         {channel.Name}
                       </p>
-                      <p className="text-gray-400 text-sm line-clamp-2 mt-1">
-                        {channel.Description}
-                      </p>
+                       <div className="text-gray-400 text-sm line-clamp-2 mt-1" dangerouslySetInnerHTML={{__html: channel.Description}}/>
                     </div>
                   </div>
                 ))}
@@ -243,9 +241,7 @@ const SearchPage = () => {
                       <p className="text-white font-semibold text-lg line-clamp-1">
                         {show.Name}
                       </p>
-                      <p className="text-gray-400 text-sm line-clamp-2 mt-1">
-                        {show.Description}
-                      </p>
+                      <div className="text-gray-400 text-sm line-clamp-2 mt-1" dangerouslySetInnerHTML={{__html: show.Description}}/>
                     </div>
                   </div>
                 ))}
@@ -284,9 +280,8 @@ const SearchPage = () => {
                       <p className="text-white font-semibold text-lg line-clamp-1">
                         {episode.Name}
                       </p>
-                      <p className="text-gray-400 text-sm line-clamp-2 mt-1">
-                        {episode.Description}
-                      </p>
+                       <div className="text-gray-400 text-sm line-clamp-2 mt-1" dangerouslySetInnerHTML={{__html: episode.Description}}/>
+
                     </div>
                   </div>
                 ))}
