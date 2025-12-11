@@ -10,7 +10,7 @@ namespace BookingManagementService.BusinessLogic.Helpers.FileHelpers
         private const string GUID_PATTERN = @"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
 
         // File extensions
-        private const string IMAGE_EXT = @"\.(jpg|jpeg|png|webp|gif|svg)$";
+        private const string IMAGE_EXT = @"\.(jpg|jpeg|png|webp|gif)$";
         private const string AUDIO_EXT = @"\.(mp3|wav|m4a|aac|flac)$";
         private const string DOCUMENT_EXT = @"\.(pdf|doc|docx|txt)$";
         private const string ARCHIVE_EXT = @"\.(zip|rar)$";
@@ -95,7 +95,7 @@ namespace BookingManagementService.BusinessLogic.Helpers.FileHelpers
                 "Booking chat message audio"
             ),
             [FileCategoryEnum.BookingRequirement] = (
-                $@"^main_files/Bookings/{INT_PATTERN}/{GUID_PATTERN}_requirement_document({DOCUMENT_EXT}|{IMAGE_EXT}|{ARCHIVE_EXT})|{AUDIO_EXT}",
+                $@"^main_files/Bookings/{INT_PATTERN}/{GUID_PATTERN}_requirement_document({DOCUMENT_EXT}|{IMAGE_EXT}|{ARCHIVE_EXT}|{AUDIO_EXT})",
                 FileAccessLevelEnum.RequiresAuth,
                 "Booking requirement attachment"
             ),
@@ -108,11 +108,6 @@ namespace BookingManagementService.BusinessLogic.Helpers.FileHelpers
                 $@"^main_files/DMCAAccusations/{INT_PATTERN}/{GUID_PATTERN}_counter_notice{DOCUMENT_EXT}",
                 FileAccessLevelEnum.RequiresOwnership,
                 "DMCA counter notice"
-            ),
-            [FileCategoryEnum.LawsuitDocument] = (
-                $@"^main_files/DMCAAccusations/{INT_PATTERN}/{GUID_PATTERN}_lawsuit_document{DOCUMENT_EXT}",
-                FileAccessLevelEnum.RequiresOwnership,
-                "Lawsuit proof document"
             ),
             [FileCategoryEnum.LawsuitDocument] = (
                 $@"^main_files/DMCAAccusations/{INT_PATTERN}/{GUID_PATTERN}_lawsuit_document{DOCUMENT_EXT}",

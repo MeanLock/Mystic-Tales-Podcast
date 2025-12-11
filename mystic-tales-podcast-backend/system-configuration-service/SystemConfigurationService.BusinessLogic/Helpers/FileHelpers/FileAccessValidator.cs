@@ -114,11 +114,6 @@ namespace SystemConfigurationService.BusinessLogic.Helpers.FileHelpers
                 FileAccessLevelEnum.RequiresOwnership,
                 "Lawsuit proof document"
             ),
-            [FileCategoryEnum.LawsuitDocument] = (
-                $@"^main_files/DMCAAccusations/{INT_PATTERN}/{GUID_PATTERN}_lawsuit_document{DOCUMENT_EXT}",
-                FileAccessLevelEnum.RequiresOwnership,
-                "Lawsuit proof document"
-            ),
 
             // ============ THÊM MỚI - REQUIRES OWNERSHIP ============
             [FileCategoryEnum.WithdrawalRequestTransferReceiptImage] = (
