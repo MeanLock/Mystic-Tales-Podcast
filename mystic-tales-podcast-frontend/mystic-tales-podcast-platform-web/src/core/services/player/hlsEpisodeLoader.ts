@@ -8,6 +8,13 @@ type EpisodeHlsOptions = HlsLoadBaseOptions & {
 };
 
 /**
+ * Đảm bảo baseUrl luôn có "/" ở cuối
+ */
+function normalizeBaseUrl(url: string): string {
+  return url.endsWith("/") ? url : `${url}/`;
+}
+
+/**
  * Load HLS cho EPISODE:
  * - Tạo Hls instance (hoặc dùng native HLS của Safari)
  * - Map key/segment theo episode API
@@ -31,7 +38,8 @@ export async function loadEpisodeHls(
     onBufferingChange,
   } = opts;
 
-  const playlistUrl = `${baseUrl}api/podcast-service/api/episodes/hls-playlist/get-file-data/${fileKey}`;
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const playlistUrl = `${normalizedBaseUrl}api/podcast-service/api/episodes/hls-playlist/get-file-data/${fileKey}`;
 
   const performSeekAndPlay = async () => {
     if (typeof seekTo === "number" && seekTo > 0) {
@@ -97,14 +105,14 @@ export async function loadEpisodeHls(
         // KEY: pattern UUID ở cuối
         if (/[0-9a-fA-F-]{36}$/.test(u)) {
           const kid = u.split("/").pop();
-          next = `${baseUrl}api/podcast-service/api/episodes/${episodeId}/hls-encryption-key/${kid}?token=${token}`;
+          next = `${normalizedBaseUrl}api/podcast-service/api/episodes/${episodeId}/hls-encryption-key/${kid}?token=${token}`;
         }
         // SEGMENT: .ts trong folder PodcastEpisodes
         else if (u.includes(".ts")) {
           const idx = url.lastIndexOf("main_files/PodcastEpisodes/");
           if (idx !== -1) {
             const segmentFileKey = url.substring(idx);
-            next = `${baseUrl}api/podcast-service/api/episodes/hls-segment/get-file-data/${segmentFileKey}`;
+            next = `${normalizedBaseUrl}api/podcast-service/api/episodes/hls-segment/get-file-data/${segmentFileKey}`;
           }
         }
 
@@ -123,6 +131,8 @@ export async function loadEpisodeHls(
 
   return new Promise<Hls>((resolve) => {
     let resolved = false;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
     const finishResolve = () => {
       if (!resolved) {
@@ -166,8 +176,23 @@ export async function loadEpisodeHls(
       if (data.fatal) {
         // Fatal: tắt spinner hiện tại, có thể implement UI error ngoài này
         onBufferingChange?.(false);
-        h.loadSource(`${playlistUrl}?t=${Date.now()}`);
-        h.startLoad();
+
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.warn(
+            `[HLS EPISODE] Retrying... (${retryCount}/${MAX_RETRIES})`
+          );
+
+          // Exponential backoff: 1s, 2s, 3s
+          setTimeout(() => {
+            h.loadSource(`${playlistUrl}?t=${Date.now()}`);
+            h.startLoad();
+          }, 1000 * retryCount);
+        } else {
+          console.error(
+            `[HLS EPISODE] Max retries (${MAX_RETRIES}) reached. Stopping.`
+          );
+        }
       }
     });
 

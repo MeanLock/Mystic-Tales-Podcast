@@ -7,6 +7,13 @@ type BookingHlsOptions = HlsLoadBaseOptions & {
   trackId: string;
 };
 
+/**
+ * Đảm bảo baseUrl luôn có "/" ở cuối
+ */
+function normalizeBaseUrl(url: string): string {
+  return url.endsWith("/") ? url : `${url}/`;
+}
+
 export async function loadBookingHls(
   opts: BookingHlsOptions
 ): Promise<Hls | null> {
@@ -22,7 +29,8 @@ export async function loadBookingHls(
     onBufferingChange,
   } = opts;
 
-  const playlistUrl = `${baseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/hls-playlist/get-file-data/${fileKey}`;
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const playlistUrl = `${normalizedBaseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/hls-playlist/get-file-data/${fileKey}`;
 
   const performSeekAndPlay = async () => {
     if (typeof seekTo === "number" && seekTo > 0) {
@@ -86,12 +94,12 @@ export async function loadBookingHls(
 
         if (/[0-9a-fA-F-]{36}$/.test(u)) {
           const kid = u.split("/").pop();
-          next = `${baseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/${trackId}/hls-encryption-key/${kid}`;
+          next = `${normalizedBaseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/${trackId}/hls-encryption-key/${kid}`;
         } else if (u.includes(".ts")) {
           const idx = url.lastIndexOf("main_files/Bookings/");
           if (idx !== -1) {
             const segmentFileKey = url.substring(idx);
-            next = `${baseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/hls-segment/get-file-data/${segmentFileKey}`;
+            next = `${normalizedBaseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/hls-segment/get-file-data/${segmentFileKey}`;
           }
         }
 
@@ -110,6 +118,8 @@ export async function loadBookingHls(
 
   return new Promise<Hls>((resolve) => {
     let resolved = false;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
     const finishResolve = () => {
       if (!resolved) {
@@ -150,8 +160,23 @@ export async function loadBookingHls(
 
       if (data.fatal) {
         onBufferingChange?.(false);
-        h.loadSource(`${playlistUrl}?t=${Date.now()}`);
-        h.startLoad();
+
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.warn(
+            `[HLS BOOKING] Retrying... (${retryCount}/${MAX_RETRIES})`
+          );
+
+          // Exponential backoff: 1s, 2s, 3s
+          setTimeout(() => {
+            h.loadSource(`${playlistUrl}?t=${Date.now()}`);
+            h.startLoad();
+          }, 1000 * retryCount);
+        } else {
+          console.error(
+            `[HLS BOOKING] Max retries (${MAX_RETRIES}) reached. Stopping.`
+          );
+        }
       }
     });
 
