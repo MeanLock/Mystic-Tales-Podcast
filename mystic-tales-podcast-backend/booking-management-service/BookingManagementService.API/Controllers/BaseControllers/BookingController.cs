@@ -638,10 +638,10 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            if (!account.HasVerifiedPodcasterProfile || !account.PodcasterProfileIsBuddy)
-            {
-                throw new HttpRequestException("Only verified podcasters can create podcast booking tones.");
-            }
+            //if (!account.HasVerifiedPodcasterProfile || !account.PodcasterProfileIsBuddy)
+            //{
+            //    throw new HttpRequestException("Only verified podcasters can create podcast booking tones.");
+            //}
 
             var requestData = new JObject
             {
