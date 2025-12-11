@@ -79,15 +79,8 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const [resetPassword, { isLoading: isResettingPassword }] =
     useUpdatePasswordMutation();
-  const [
-    updateAccountInformations,
-    {
-      isLoading: isUpdating,
-      isError: isUpdateError,
-      error: updateError,
-      isSuccess: isUpdateSuccess,
-    },
-  ] = useUpdateAccountInformationsMutation();
+  const [updateAccountInformations, { isLoading: isUpdating }] =
+    useUpdateAccountInformationsMutation();
 
   const [formState, setFormState] = useState<UpdateInformationsForm | null>(
     null
