@@ -6,16 +6,23 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetTrendingFeedQuery } from "@/core/services/feed/feed.service";
 import type {
+  CategoryX,
   CategoryXUI,
+  HotChannels,
   HotChannelsUI,
+  HotPodcasters,
   HotPodcastersUI,
+  HotShows,
   HotShowsUI,
   NewEpisodes,
   NewEpisodesUI,
+  PopularChannels,
   PopularChannelsUI,
   PopularEpisodes,
   PopularEpisodesUI,
+  PopularPodcasters,
   PopularPodcastersUI,
+  PopularShows,
   PopularShowsUI,
   TrendingDataUI,
 } from "@/core/types/feed";
@@ -125,32 +132,32 @@ const TrendingPage = () => {
   // Data For Rendering
   // Popular Podcasters
   const [popularPodcasters, setPopularPodcasters] =
-    useState<PopularPodcastersUI | null>(null);
+    useState<PopularPodcasters | null>(null);
   // Hot Podcasters
-  const [hotPodcasters, setHotPodcasters] = useState<HotPodcastersUI | null>(
+  const [hotPodcasters, setHotPodcasters] = useState<HotPodcasters | null>(
     null
   );
   // Popular Channels
   const [popularChannels, setPopularChannels] =
-    useState<PopularChannelsUI | null>(null);
+    useState<PopularChannels | null>(null);
   // Hot Channels
-  const [hotChannels, setHotChannels] = useState<HotChannelsUI | null>(null);
+  const [hotChannels, setHotChannels] = useState<HotChannels | null>(null);
   // Popular Shows
-  const [popularShows, setPopularShows] = useState<PopularShowsUI | null>(null);
+  const [popularShows, setPopularShows] = useState<PopularShows | null>(null);
   // Hot Shows
-  const [hotShows, setHotShows] = useState<HotShowsUI | null>(null);
+  const [hotShows, setHotShows] = useState<HotShows | null>(null);
   // Popular Episodes
   const [popularEpisodes, setPopularEpisodes] =
     useState<PopularEpisodes | null>(null);
   // New Episodes
   const [newEpisodes, setNewEpisodes] = useState<NewEpisodes | null>(null);
   // Categories
-  const [category1, setCategory1] = useState<CategoryXUI | null>(null);
-  const [category2, setCategory2] = useState<CategoryXUI | null>(null);
-  const [category3, setCategory3] = useState<CategoryXUI | null>(null);
-  const [category4, setCategory4] = useState<CategoryXUI | null>(null);
-  const [category5, setCategory5] = useState<CategoryXUI | null>(null);
-  const [category6, setCategory6] = useState<CategoryXUI | null>(null);
+  const [category1, setCategory1] = useState<CategoryX | null>(null);
+  const [category2, setCategory2] = useState<CategoryX | null>(null);
+  const [category3, setCategory3] = useState<CategoryX | null>(null);
+  const [category4, setCategory4] = useState<CategoryX | null>(null);
+  const [category5, setCategory5] = useState<CategoryX | null>(null);
+  const [category6, setCategory6] = useState<CategoryX | null>(null);
 
   // HOOKS
   const { data: trendingDataFromAPI, isFetching: isTrendingDataLoading } =
@@ -166,152 +173,52 @@ const TrendingPage = () => {
       setIsLoading(true);
 
       try {
-        // Resolve Popular Podcasters
-        const { resolvedData } = await resolveFiles(
-          trendingDataFromAPI.PopularPodcasters,
-          podcastersFileConfig
-        );
-        const apiData = resolvedData as unknown as PopularPodcastersUI;
-        setPopularPodcasters({
-          PodcasterList: [...apiData.PodcasterList],
-        });
-
-        // Resolve Category1
-        if (trendingDataFromAPI.Category1) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.Category1,
-            categoryFileConfig
-          );
-          const apiData = resolvedData as unknown as CategoryXUI;
-          setCategory1({
-            ...apiData,
-            ShowList: [...apiData.ShowList],
-          });
+        if (
+          trendingDataFromAPI.PopularPodcasters &&
+          trendingDataFromAPI.PopularPodcasters.PodcasterList &&
+          trendingDataFromAPI.PopularPodcasters.PodcasterList.length > 0
+        ) {
+          setPopularPodcasters(trendingDataFromAPI.PopularPodcasters);
         }
 
-        // Resolve Hot Podcasters
-        if (trendingDataFromAPI.HotPodcasters) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.HotPodcasters,
-            podcastersFileConfig
-          );
-          const apiData = resolvedData as unknown as HotPodcastersUI;
-          setHotPodcasters({
-            PodcasterList: [...apiData.PodcasterList],
-          });
+        if (
+          trendingDataFromAPI.HotPodcasters &&
+          trendingDataFromAPI.HotPodcasters.PodcasterList &&
+          trendingDataFromAPI.HotPodcasters.PodcasterList.length > 0
+        ) {
+          setHotPodcasters(trendingDataFromAPI.HotPodcasters);
         }
 
-        // Resolve Category2
-        if (trendingDataFromAPI.Category2) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.Category2,
-            categoryFileConfig
-          );
-          const apiData = resolvedData as unknown as CategoryXUI;
-          setCategory2({
-            ...apiData,
-            ShowList: [...apiData.ShowList],
-          });
+        if (
+          trendingDataFromAPI.PopularChannels &&
+          trendingDataFromAPI.PopularChannels.ChannelList &&
+          trendingDataFromAPI.PopularChannels.ChannelList.length > 0
+        ) {
+          setPopularChannels(trendingDataFromAPI.PopularChannels);
         }
 
-        // Resolve Popular Channels
-        if (trendingDataFromAPI.PopularChannels) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.PopularChannels,
-            channelsFileConfig
-          );
-          const apiData = resolvedData as unknown as PopularChannelsUI;
-          setPopularChannels({
-            ChannelList: [...apiData.ChannelList],
-          });
+        if (
+          trendingDataFromAPI.HotChannels &&
+          trendingDataFromAPI.HotChannels.ChannelList &&
+          trendingDataFromAPI.HotChannels.ChannelList.length > 0
+        ) {
+          setHotChannels(trendingDataFromAPI.HotChannels);
         }
 
-        // Resolve Category3
-        if (trendingDataFromAPI.Category3) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.Category3,
-            categoryFileConfig
-          );
-          const apiData = resolvedData as unknown as CategoryXUI;
-          setCategory3({
-            ...apiData,
-            ShowList: [...apiData.ShowList],
-          });
+        if (
+          trendingDataFromAPI.PopularShows &&
+          trendingDataFromAPI.PopularShows.ShowList &&
+          trendingDataFromAPI.PopularShows.ShowList.length > 0
+        ) {
+          setPopularShows(trendingDataFromAPI.PopularShows);
         }
 
-        // Resolve Hot Channels
-        if (trendingDataFromAPI.HotChannels) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.HotChannels,
-            channelsFileConfig
-          );
-          const apiData = resolvedData as unknown as HotChannelsUI;
-          setHotChannels({
-            ChannelList: [...apiData.ChannelList],
-          });
-        }
-
-        // Resolve Category4
-        if (trendingDataFromAPI.Category4) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.Category4,
-            categoryFileConfig
-          );
-          const apiData = resolvedData as unknown as CategoryXUI;
-          setCategory4({
-            ...apiData,
-            ShowList: [...apiData.ShowList],
-          });
-        }
-
-        // Resolve Popular Shows
-        if (trendingDataFromAPI.PopularShows) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.PopularShows,
-            showsFileConfig
-          );
-          const apiData = resolvedData as unknown as PopularShowsUI;
-          setPopularShows({
-            ShowList: [...apiData.ShowList],
-          });
-        }
-
-        // Resolve Category5
-        if (trendingDataFromAPI.Category5) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.Category5,
-            categoryFileConfig
-          );
-          const apiData = resolvedData as unknown as CategoryXUI;
-          setCategory5({
-            ...apiData,
-            ShowList: [...apiData.ShowList],
-          });
-        }
-
-        // Resolve Hot Shows
-        if (trendingDataFromAPI.HotShows) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.HotShows,
-            showsFileConfig
-          );
-          const apiData = resolvedData as unknown as HotShowsUI;
-          setHotShows({
-            ShowList: [...apiData.ShowList],
-          });
-        }
-
-        // Resolve Category6
-        if (trendingDataFromAPI.Category6) {
-          const { resolvedData } = await resolveFiles(
-            trendingDataFromAPI.Category6,
-            categoryFileConfig
-          );
-          const apiData = resolvedData as unknown as CategoryXUI;
-          setCategory6({
-            ...apiData,
-            ShowList: [...apiData.ShowList],
-          });
+        if (
+          trendingDataFromAPI.HotShows &&
+          trendingDataFromAPI.HotShows.ShowList &&
+          trendingDataFromAPI.HotShows.ShowList.length > 0
+        ) {
+          setHotShows(trendingDataFromAPI.HotShows);
         }
 
         // Resolve New Episodes
@@ -322,6 +229,49 @@ const TrendingPage = () => {
         // Resolve Popular Episodes
         if (trendingDataFromAPI.PopularEpisodes) {
           setPopularEpisodes(trendingDataFromAPI.PopularEpisodes);
+        }
+
+        if (
+          trendingDataFromAPI.Category1 &&
+          trendingDataFromAPI.Category1.ShowList.length > 0 &&
+          trendingDataFromAPI.Category1.PodcastCategory
+        ) {
+          setCategory1(trendingDataFromAPI.Category1);
+        }
+        if (
+          trendingDataFromAPI.Category2 &&
+          trendingDataFromAPI.Category2.ShowList.length > 0 &&
+          trendingDataFromAPI.Category2.PodcastCategory
+        ) {
+          setCategory2(trendingDataFromAPI.Category2);
+        }
+        if (
+          trendingDataFromAPI.Category3 &&
+          trendingDataFromAPI.Category3.ShowList.length > 0 &&
+          trendingDataFromAPI.Category3.PodcastCategory
+        ) {
+          setCategory3(trendingDataFromAPI.Category3);
+        }
+        if (
+          trendingDataFromAPI.Category4 &&
+          trendingDataFromAPI.Category4.ShowList.length > 0 &&
+          trendingDataFromAPI.Category4.PodcastCategory
+        ) {
+          setCategory4(trendingDataFromAPI.Category4);
+        }
+        if (
+          trendingDataFromAPI.Category5 &&
+          trendingDataFromAPI.Category5.ShowList.length > 0 &&
+          trendingDataFromAPI.Category5.PodcastCategory
+        ) {
+          setCategory5(trendingDataFromAPI.Category5);
+        }
+        if (
+          trendingDataFromAPI.Category6 &&
+          trendingDataFromAPI.Category6.ShowList.length > 0 &&
+          trendingDataFromAPI.Category6.PodcastCategory
+        ) {
+          setCategory6(trendingDataFromAPI.Category6);
         }
 
         console.log("✅ All trending sections resolved successfully");

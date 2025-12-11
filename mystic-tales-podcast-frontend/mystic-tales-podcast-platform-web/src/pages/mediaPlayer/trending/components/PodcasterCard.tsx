@@ -1,3 +1,4 @@
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 import { useNavigate } from "react-router-dom";
 
 interface PodcasterCardProps {
@@ -5,7 +6,7 @@ interface PodcasterCardProps {
     Id: number;
     FullName: string;
     Email: string;
-    ImageUrl: string;
+    MainImageFileKey: string;
   };
 }
 
@@ -14,9 +15,9 @@ const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
   return (
     <div onClick={() => navigate(`/media-player/podcasters/${podcaster.Id}`)} className="w-full relative flex flex-col items-center p-2 transition-all duration-500 cursor-pointer ease-out hover:scale-105 hover:-translate-y-1">
       <div className="w-full mb-3 flex items-center justify-center">
-        <img
-          src={podcaster.ImageUrl}
-          alt={podcaster.FullName}
+        <AutoResolveImage
+          FileKey={podcaster.MainImageFileKey}
+          type="AccountPublicSource"
           className="w-full aspect-square object-cover rounded-full shadow-2xl"
         />
       </div>
