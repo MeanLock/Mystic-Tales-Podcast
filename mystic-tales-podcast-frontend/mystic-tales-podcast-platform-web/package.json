@@ -50,7 +50,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
-    "onnxruntime-web": "^1.23.2",
+    "onnxruntime-web": "1.21.0",
     "pdf-lib": "^1.17.1",
     "quill": "^2.0.3",
     "react": "^19.1.1",
