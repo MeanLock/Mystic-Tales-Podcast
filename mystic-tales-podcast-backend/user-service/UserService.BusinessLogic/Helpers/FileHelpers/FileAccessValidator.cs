@@ -10,7 +10,7 @@ namespace UserService.BusinessLogic.Helpers.FileHelpers
         private const string GUID_PATTERN = @"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
 
         // File extensions
-        private const string IMAGE_EXT = @"\.(jpg|jpeg|png|webp|gif)$";
+        private const string IMAGE_EXT = @"\.(jpg|jpeg|png|webp|gif|svg)$";
         private const string AUDIO_EXT = @"\.(mp3|wav|m4a|aac|flac)$";
         private const string DOCUMENT_EXT = @"\.(pdf|doc|docx)$";
         private const string ARCHIVE_EXT = @"\.(zip|rar)$";
