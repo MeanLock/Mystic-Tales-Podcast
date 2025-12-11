@@ -27,6 +27,8 @@ import {
   setListenSessionProcedure,
 } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import type { RootState } from "@/redux/store";
+import { useLazyCheckUserPodcastListenSlotQuery } from "../account/account.service";
+import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
 
 export function usePlayer() {
   const controller = getPlayerController();
@@ -49,6 +51,7 @@ export function usePlayer() {
   const [navigateEpisode] = useNavigateEpisodeInProcedureMutation();
   const [navigateBookingTrack] = useNavigateBookingTrackInProcedureMutation();
 
+  const [getPodcastListenSlotCount] = useLazyCheckUserPodcastListenSlotQuery();
   // Update PlayMode
   const [updatePlayMode] = useUpdatePlayModeMutation();
 
@@ -75,6 +78,39 @@ export function usePlayer() {
   const playEpisodeFromSpecifyShow = useCallback(
     async (opts: { audioId: string; benefitsList: SubscriptionBenefit[] }) => {
       const { audioId, benefitsList = [] } = opts;
+      const listenSlot = await getPodcastListenSlotCount().unwrap();
+
+      if (benefitsList.length > 0) {
+        if (!benefitsList.find((b) => b.Id === 1)) {
+          if (listenSlot <= 0) {
+            dispatch(
+              showAlert({
+                type: "warning",
+                title: "Listen Slot Exceeded",
+                description:
+                  "You have used up all your free listen slots. Please wait for more slots to become available.",
+                isAutoClose: false,
+                isClosable: true,
+              })
+            );
+            return;
+          }
+        }
+      } else {
+        if (listenSlot <= 0) {
+          dispatch(
+            showAlert({
+              type: "warning",
+              title: "Listen Slot Exceeded",
+              description:
+                "You have used up all your free listen slots. Please wait for more slots to become available.",
+              isAutoClose: false,
+              isClosable: true,
+            })
+          );
+          return;
+        }
+      }
 
       const res = await listenToEpisode({
         PodcastEpisodeId: audioId,
@@ -140,6 +176,40 @@ export function usePlayer() {
     async (opts: { audioId: string; benefitsList: SubscriptionBenefit[] }) => {
       const { audioId, benefitsList } = opts;
 
+      const listenSlot = await getPodcastListenSlotCount().unwrap();
+
+      if (benefitsList.length > 0) {
+        if (!benefitsList.find((b) => b.Id === 1)) {
+          if (listenSlot <= 0) {
+            dispatch(
+              showAlert({
+                type: "warning",
+                title: "Listen Slot Exceeded",
+                description:
+                  "You have used up all your free listen slots. Please wait for more slots to become available.",
+                isAutoClose: false,
+                isClosable: true,
+              })
+            );
+            return;
+          }
+        }
+      } else {
+        if (listenSlot <= 0) {
+          dispatch(
+            showAlert({
+              type: "warning",
+              title: "Listen Slot Exceeded",
+              description:
+                "You have used up all your free listen slots. Please wait for more slots to become available.",
+              isAutoClose: false,
+              isClosable: true,
+            })
+          );
+          return;
+        }
+      }
+
       const res = await listenToEpisode({
         PodcastEpisodeId: audioId,
         SourceType: "SavedEpisodes",
@@ -159,6 +229,8 @@ export function usePlayer() {
         seekTo: 0,
         isSeekThenPlay: true,
       });
+
+      
     },
     [listenToEpisode, controller, dispatch]
   );

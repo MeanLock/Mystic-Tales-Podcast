@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/redux/store";
-import { endError } from "@/redux/slices/errorSlice/errorSlice";
 import {
   AlertDialog,
   AlertDialogAction,

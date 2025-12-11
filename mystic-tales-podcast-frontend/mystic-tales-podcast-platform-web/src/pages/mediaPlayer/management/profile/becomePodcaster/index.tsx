@@ -39,31 +39,6 @@ const ScriptEditor = ({
     theme: "snow",
   });
 
-  const user = useSelector((state: RootState) => state.auth.user);
-
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user?.IsPodcaster) {
-      dispatch(
-        showAlert({
-          type: "warning",
-          title: "Oops!",
-          description:
-            "Your account is already a podcaster. You cannot edit the description.",
-          isAutoClose: false,
-          isClosable: false,
-          functionalButtonText: "Got it",
-          isFunctional: true,
-          onClickAction: () => {
-            navigate("/media-player/management/profile");
-          },
-        })
-      );
-    }
-  }, []);
-
   useEffect(() => {
     if (quill) {
       try {
@@ -102,6 +77,32 @@ const BecomePodcaster = () => {
   const [signatureFormData, setSignatureFormData] = useState<FormData | null>(
     null
   );
+
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user?.IsPodcaster) {
+      dispatch(
+        showAlert({
+          type: "warning",
+          title: "Oops!",
+          description:
+            "Your account is already a podcaster. You cannot edit the description.",
+          isAutoClose: false,
+          isClosable: false,
+          functionalButtonText: "Got it",
+          isFunctional: true,
+          onClickAction: () => {
+            navigate("/media-player/management/profile");
+          },
+        })
+      );
+    }
+  }, []);
+
   // Use RTKQuery to get Basic File first
   const { data: pdfBytes, isLoading } = useGetBasicFileQuery();
   const [uploadSignImage] = useUploadSignImageMutation();
@@ -135,7 +136,7 @@ const BecomePodcaster = () => {
         setSignatureFormData(finalFormData);
 
         console.log("Received signed PDF from backend");
-        alert("Chữ ký đã được gắn vào file thành công!");
+        alert("Signed attach success!");
       } catch (error: any) {
         console.error("Error uploading signature image:", error);
         console.error("Error details:", {
@@ -143,10 +144,6 @@ const BecomePodcaster = () => {
           status: error?.status,
           data: error?.data,
         });
-        alert(
-          "Lỗi khi gắn chữ ký vào PDF: " +
-            (error?.message || JSON.stringify(error))
-        );
         setSignatureFormData(null);
       }
     } else {
@@ -179,17 +176,17 @@ const BecomePodcaster = () => {
   // FUNCTIONS
   const handleSubmitApply = async () => {
     if (!name.trim()) {
-      alert("Vui lòng nhập tên podcaster!");
+      alert("Please enter your podcaster name!");
       return;
     }
 
     if (!description.trim()) {
-      alert("Vui lòng nhập mô tả!");
+      alert("Please enter the podcaster description!");
       return;
     }
 
     if (!signedPdfBytes) {
-      alert("Vui lòng ký vào file cam kết trước khi submit!");
+      alert("Please sign the commitment file before submitting!");
       return;
     }
 
@@ -217,10 +214,23 @@ const BecomePodcaster = () => {
         applyPodcasterFormData: formData,
       }).unwrap();
 
-      alert("Đăng ký thành công! " + result.Message);
+      dispatch(
+        showAlert({
+          type: "success",
+          title: "Application Submitted!",
+          description:
+            "Your application to become a podcaster has been submitted successfully. We will review your application and get back to you soon.",
+          isAutoClose: false,
+          isClosable: false,
+          functionalButtonText: "OK",
+          isFunctional: true,
+          onClickAction: () => {
+            navigate("/media-player/management/profile");
+          },
+        })
+      );
     } catch (error: any) {
       console.error("Error applying:", error);
-      alert("Có lỗi xảy ra: " + (error?.message || "Không xác định"));
     }
   };
 

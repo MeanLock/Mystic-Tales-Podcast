@@ -206,7 +206,7 @@ const ProfilePage = () => {
 
   const handleApplyToBePodcaster = () => {
     // TODO: implement apply podcaster
-    navigate("/media-player/management/become-podcaster");
+    navigate("/become-podcaster");
   };
 
   const handleInputChange = (

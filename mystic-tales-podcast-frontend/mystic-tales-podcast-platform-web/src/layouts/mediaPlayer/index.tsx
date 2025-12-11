@@ -1,25 +1,42 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import MediaPlayerSidebar from "./components/MediaPlayerSidebar";
 import { useUpdateAccountMeQuery } from "@/core/services/account/account.service";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/redux/store";
 import { useEffect } from "react";
 import NewMediaPlayerControlBar from "./components/NewMediaPlayerControlBar";
 import { usePlayer } from "@/core/services/player/usePlayer";
+import { setUser, clearAuth } from "@/redux/slices/authSlice/authSlice";
 
 const MediaPlayerLayout = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
   const user = useSelector((state: RootState) => state.auth.user);
   const { playFromLatest } = usePlayer();
 
   // Chỉ polling khi user đã đăng nhập (có token)
-  useUpdateAccountMeQuery(undefined, {
+  const { data, error } = useUpdateAccountMeQuery(undefined, {
     pollingInterval: accessToken ? 1000 * 60 * 5 : 0, // 5 phút nếu có token, không poll nếu chưa login
     skip: !accessToken, // Skip query hoàn toàn nếu chưa login
-    refetchOnFocus: false, // Không refetch khi window được focus
-    refetchOnMountOrArgChange: false, // Không refetch khi component mount hoặc arg thay đổi
-    refetchOnReconnect: false, // Không refetch khi reconnect mạng
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: accessToken ? true : false,
   });
+
+  // Xử lý data và error từ updateAccountMe
+  useEffect(() => {
+    if (error) {
+      dispatch(clearAuth());
+      navigate("/auth/login");
+    }
+  }, [error, dispatch, navigate]);
+
+  useEffect(() => {
+    if (data?.Account) {
+      dispatch(setUser(data.Account));
+    }
+  }, [data, dispatch]);
 
   // Xử lý latest session khi có data - chỉ set state, playerCore sẽ xử lý việc listen
   useEffect(() => {

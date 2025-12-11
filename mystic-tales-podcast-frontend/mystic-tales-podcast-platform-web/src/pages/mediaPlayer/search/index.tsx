@@ -132,9 +132,11 @@ const SearchPage = () => {
                       key={index}
                       onClick={() => {
                         if (item.Show) {
-                          navigate(`/media-player/show/${item.Show.Id}`);
+                          navigate(`/media-player/shows/${item.Show.Id}`);
                         } else if (item.Episode) {
-                          navigate(`/media-player/episode/${item.Episode.Id}`);
+                          navigate(
+                            `/media-player/episodes/details/${item.Episode.Id}`
+                          );
                         }
                       }}
                       className="flex items-start gap-4 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-all"
@@ -148,9 +150,15 @@ const SearchPage = () => {
                         <p className="text-white font-semibold text-lg line-clamp-1">
                           {content.Name}
                         </p>
-                        <p className="text-gray-400 text-sm line-clamp-2 mt-1">
+                        {/* <p className="text-gray-400 text-sm line-clamp-2 mt-1">
                           {content.Description}
-                        </p>
+                        </p> */}
+                        <div
+                          className="text-gray-400 text-sm line-clamp-2 mt-1"
+                          dangerouslySetInnerHTML={{
+                            __html: content.Description,
+                          }}
+                        />
                         <p className="text-gray-500 text-xs mt-2">
                           {item.Show ? "Show" : "Episode"}
                         </p>
