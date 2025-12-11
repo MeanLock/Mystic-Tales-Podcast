@@ -71,7 +71,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
       }
       await startPolling(sagaId, adminAxiosInstance, {
         onSuccess: () => {
-          onClose();
+          onClose?.()
           context?.handleDataChange();
           toast.success(`Podcaster Apply ${isVerify ? 'verified' : 'rejected'} successfully!`);
         },
@@ -79,6 +79,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
         onTimeout: () => toast.error("System not responding, please try again."),
       })
     } catch (err) {
+      console.error("Error verifying Podcaster Apply:", err);
       toast.error("Error verifying Podcaster Apply");
     }
   };
@@ -105,7 +106,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
           toast.success(`Set violation level successfully`)
           setShowResolvePopup(false)
           setViolationLevel("")
-          onClose()
+          onClose?.()
           context?.handleDataChange();
         },
         onFailure: (err: any) => toast.error(err || "Saga failed!"),

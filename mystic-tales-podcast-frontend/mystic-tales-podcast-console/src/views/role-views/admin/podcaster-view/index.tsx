@@ -27,7 +27,7 @@ interface GridState {
 
 export const PodcasterViewContext = createContext<PodcasterViewContextProps | null>(null);
 
-const state_creator = (table: Podcaster[]) => {
+const state_creator = (table: Podcaster[], handleDataChange: () => void) => {
 
   const state = {
     columnDefs: [
@@ -84,7 +84,9 @@ const state_creator = (table: Podcaster[]) => {
         cellClass: 'd-flex justify-content-center py-0',
         cellRenderer: (params: { data: Podcaster }) => {
           const Modal_props = {
-            updateForm: <PodcasterDetailTab account={params.data} onClose={() => { }} />,
+            updateForm: <PodcasterDetailTab account={params.data}  onClose={() => {
+        handleDataChange(); // Refresh lại data
+      }}  />,
             title: 'Podcaster [ID: #' + params.data.Id + ']',
             button: <Eye size={27} color='var(--secondary-green)' />,
             update_button_color: 'white'
@@ -122,7 +124,7 @@ const PodcasterView: FC<PodcasterViewProps> = () => {
       const accountList = await getPodcasterAccounts(adminAxiosInstance);
       console.log("Fetched podcaster accounts:", accountList);
       if (accountList.success) {
-        setState(state_creator(accountList.data.PodcasterList));
+        setState(state_creator(accountList.data.PodcasterList, handleDataChange));
       } else {
         console.error('API Error:', accountList.message);
       }
