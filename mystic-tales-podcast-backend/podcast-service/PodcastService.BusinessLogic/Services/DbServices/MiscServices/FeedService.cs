@@ -3321,6 +3321,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 if (account != null && account.DeactivatedAt == null && account.HasVerifiedPodcasterProfile == true)
                 {
                     podcasterAccounts[id] = account;
+                    Console.WriteLine($"[ChannelSearch] Loaded podcaster profile name: {account.PodcasterProfileName} for PodcasterId: {id}");
                 }
             }
 
