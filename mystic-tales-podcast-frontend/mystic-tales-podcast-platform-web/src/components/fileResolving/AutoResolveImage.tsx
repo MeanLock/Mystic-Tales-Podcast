@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useGetAccountPublicSourceQuery,
   useGetBookingPublicSourceQuery,
@@ -25,6 +25,11 @@ interface AutoResolveImageProps {
 const AutoResolveImage = (props: AutoResolveImageProps) => {
   const { FileKey, Name, type, className, imgClassName } = props;
   const [imgErrored, setImgErrored] = useState(false);
+
+  // Reset error state khi FileKey thay đổi để không dùng trạng thái cũ
+  useEffect(() => {
+    setImgErrored(false);
+  }, [FileKey]);
 
   // Hooks are declared consistently with skip flags so only one executes
   const isAccount = type === "AccountPublicSource";

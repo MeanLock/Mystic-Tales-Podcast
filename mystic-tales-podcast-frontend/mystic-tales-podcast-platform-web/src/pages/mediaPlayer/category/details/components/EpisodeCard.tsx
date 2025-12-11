@@ -1,8 +1,8 @@
-import type { EpisodeDetailsUI } from "@/core/types/episode";
+import type { EpisodeDetailsUI, EpisodeUI } from "@/core/types/episode";
 import { FaHeadphones } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const EpisodeCard = ({ episode }: { episode: EpisodeDetailsUI }) => {
+const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";

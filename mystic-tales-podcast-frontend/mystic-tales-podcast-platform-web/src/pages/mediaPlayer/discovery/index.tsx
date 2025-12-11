@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import {
   Carousel,
   CarouselContent,
@@ -8,42 +6,28 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import Autoplay from "embla-carousel-autoplay";
 import YouMightLikeItCard from "./components/YouMightLikeItCardCarousel";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/redux/store";
 import { useEffect, useState } from "react";
 
 import { GrFormNext } from "react-icons/gr";
 import ShowCard from "./components/ShowCard";
-import ShowCardWithRating from "./components/ShowCardWithRating";
 import ShowCardWithCategory from "./components/ShowCardWithCategory";
-import { ca } from "zod/v4/locales";
 import EpisodeCard from "./components/EpisodeCard";
 import { useGetDiscoveryFeedQuery } from "@/core/services/feed/feed.service";
 import { useNavigate } from "react-router-dom";
 import type {
   BaseOnYourTaste,
-  BaseOnYourTasteUI,
   ContinueListening,
-  ContinueListeningUI,
-  DiscoveryDataFileResolved,
   HotThisWeek,
-  HotThisWeekUI,
   NewReleases,
-  NewReleasesUI,
   RandomCategory,
-  RandomCategoryUI,
   TalentedRookies,
-  TalentedRookiesUI,
   TopPodcasters,
-  TopPodcastersUI,
   TopSubCategory,
-  TopSubCategoryUI,
 } from "@/core/types/feed";
-import type { FileResolveConfig } from "@/core/utils/fileResolver.util";
-import { resolveFiles } from "@/core/utils/fileResolver.util";
-import type { ShowFromAPI, ShowUI } from "@/core/types/show";
+
+import type { ShowFromAPI } from "@/core/types/show";
 import Loading from "@/components/loading";
-import type { ChannelFromAPI, ChannelUI } from "@/core/types/channel";
+import type { ChannelFromAPI } from "@/core/types/channel";
 import ChannelCard from "./components/ChannelCard";
 import PodcasterCard from "./components/PodcasterCard";
 
@@ -78,11 +62,15 @@ const DiscoveryPage = () => {
     useState<ContinueListening | null>(null);
 
   // HOOKS
-  const navigate = useNavigate();
-
   // Fetch Discovery Data
-  const { data: discoveryData, isLoading: isDiscoveryLoading } =
-    useGetDiscoveryFeedQuery();
+  const {
+    data: discoveryData,
+    isFetching: isDiscoveryLoading,
+  } = useGetDiscoveryFeedQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true,
+  });
 
   useEffect(() => {
     const resolveEachSection = () => {
@@ -92,73 +80,41 @@ const DiscoveryPage = () => {
       try {
         // BasedOnYourTaste
         if (discoveryData.BasedOnYourTaste) {
-          // const { resolvedData } = await resolveFiles<BaseOnYourTaste>(
-          //   discoveryData.BasedOnYourTaste,
-          //   baseOnYourTasteFileConfig
-          // );
           setBaseOnYourTaste(discoveryData.BasedOnYourTaste);
         }
 
         // NewReleases
         if (discoveryData.NewReleases) {
-          // const { resolvedData } = await resolveFiles<NewReleases>(
-          //   discoveryData.NewReleases,
-          //   newReleasesFileConfig
-          // );
           setNewShows(discoveryData.NewReleases);
         }
 
         // HotThisWeek
         if (discoveryData.HotThisWeek) {
-          // const { resolvedData } = await resolveFiles<HotThisWeek>(
-          //   discoveryData.HotThisWeek,
-          //   hotThisWeekFileConfig
-          // );
           setHotThisWeek(discoveryData.HotThisWeek);
         }
 
         // TopPodcasters
         if (discoveryData.TopPodcasters) {
-          // const { resolvedData } = await resolveFiles<TopPodcasters>(
-          //   discoveryData.TopPodcasters,
-          //   topPodcastersFileConfig
-          // );
           setTopPodcasters(discoveryData.TopPodcasters);
         }
 
         // TalentedRookies
         if (discoveryData.TalentedRookies) {
-          // const { resolvedData } = await resolveFiles<TalentedRookies>(
-          //   discoveryData.TalentedRookies,
-          //   talentedRookiesFileConfig
-          // );
           setTalentedRookies(discoveryData.TalentedRookies);
         }
 
         // TopSubCategory
         if (discoveryData.TopSubCategory) {
-          // const { resolvedData } = await resolveFiles<TopSubCategory>(
-          //   discoveryData.TopSubCategory,
-          //   topSubCategoryFileConfig
-          // );
           setTopSubcategory(discoveryData.TopSubCategory);
         }
 
         // RandomCategory
         if (discoveryData.RandomCategory) {
-          // const { resolvedData } = await resolveFiles<RandomCategory>(
-          //   discoveryData.RandomCategory,
-          //   randomCategoryFileConfig
-          // );
           setRandomCategory(discoveryData.RandomCategory);
         }
 
         // ContinueListening
         if (discoveryData.ContinueListening) {
-          // const { resolvedData } = await resolveFiles<ContinueListening>(
-          //   discoveryData.ContinueListening,
-          //   continueListeningFileConfig
-          // );
           setContinueListening(discoveryData.ContinueListening);
         }
       } catch (error) {
