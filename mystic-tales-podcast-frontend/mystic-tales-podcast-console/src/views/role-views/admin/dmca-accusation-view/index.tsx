@@ -117,15 +117,16 @@ const show_state = (table: DMCAAccusation[], navigate: (path: string) => void) =
             case 'Podcaster Lawsuit Win':
             case 'Accuser Lawsuit Win':
             case 'Valid DMCA Notice':
-              color = '#Aee339'; bg = 'rgba(174, 227, 57, 0.1)'; // xanh primary của bạn
+              color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)'; // xanh primary của bạn
               break;
             case 'Invalid DMCA Notice':
             case 'Invalid Counter Notice':
             case 'Invalid Lawsuit Proof':
-            case 'Unresolved Dismissed':
-            case 'Direct Resolve Dismissed':
-            case 'Dismissed':
               color = '#ef5350'; bg = 'rgba(255, 234, 237, 0.2)'; // đỏ dịu mắt
+              break;
+               case 'Unresolved Dismissed':
+            case 'Direct Resolve Dismissed':
+              color = '#ffffffff'; bg = '#ef221eff'; // đỏ dịu mắt
               break;
             default:
               color = '#9e9e9e'; bg = 'rgba(158,158,158,0.15)'; // xám trung tính sáng
@@ -207,15 +208,17 @@ const episode_state = (table: DMCAAccusation[], navigate: (path: string) => void
             case 'Podcaster Lawsuit Win':
             case 'Accuser Lawsuit Win':
             case 'Valid DMCA Notice':
-              color = '#Aee339'; bg = 'rgba(174, 227, 57, 0.1)'; // xanh primary của bạn
+               color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)'; 
               break;
             case 'Invalid DMCA Notice':
             case 'Invalid Counter Notice':
             case 'Invalid Lawsuit Proof':
-            case 'Unresolved Dismissed':
-            case 'Direct Resolve Dismissed':
             case 'Dismissed':
               color = '#ef5350'; bg = 'rgba(255, 234, 237, 0.2)'; // đỏ dịu mắt
+              break;
+            case 'Unresolved Dismissed':
+            case 'Direct Resolve Dismissed':
+              color = '#ffffffff'; bg = '#ef221eff'; // đỏ dịu mắt
               break;
             default:
               color = '#9e9e9e'; bg = 'rgba(158,158,158,0.15)'; // xám trung tính sáng

@@ -52,7 +52,24 @@ const BgSoundModal: FC<BgSoundModalProps> = ({ soundData, onClose }) => {
     }
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0] || null;
+        const file = e.target.files?.[0];
+        if (!file) {
+            setMainImageFile(null);
+            return;
+        }
+
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+        if (!allowedTypes.includes(file.type)) {
+            toast.error('Invalid file type. Allowed: JPG, JPEG, PNG, GIF, WEBP, SVG');
+            return;
+        }
+
+        const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+        if (file.size > maxSize) {
+            toast.error('Image file size must be less than 3MB');
+            return;
+        }
+
         setMainImageFile(file);
     };
     useEffect(() => {
@@ -67,20 +84,22 @@ const BgSoundModal: FC<BgSoundModalProps> = ({ soundData, onClose }) => {
         }
     }, [mainImageFile])
 
-    const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (file) {
-            if (!file.type.startsWith('audio/')) {
-                toast.error('Please select a valid audio file')
-                return
-            }
-            if (file.size > 150 * 1024 * 1024) { // 150MB limit
-                toast.error('Audio file size must be less than 150MB')
-                return
-            }
-            setAudioFile(file)
+   const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (!ext || !allowedExtensions.includes(ext)) {
+            toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
+            return;
         }
+        if (file.size > 150 * 1024 * 1024) {
+            toast.error('Audio file size must be less than 150MB');
+            return;
+        }
+        setAudioFile(file);
     }
+}
 
     const validateForm = () => {
         if (!formData.Name.trim()) {
@@ -259,7 +278,7 @@ const BgSoundModal: FC<BgSoundModalProps> = ({ soundData, onClose }) => {
                             <label className="bg-sound-modal__upload-btn">
                                 <input
                                     type="file"
-                                    accept="image/*"
+                                    accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
                                     onChange={handleImageChange}
                                     className="d-none"
                                 />

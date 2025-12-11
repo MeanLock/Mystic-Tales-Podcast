@@ -50,6 +50,18 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ transaction, onClos
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Invalid file type. Allowed: JPG, JPEG, PNG, GIF, WEBP, SVG');
+                return;
+            }
+
+            // Validate file size (3MB max)
+            const maxSize = 3 * 1024 * 1024; // 3MB in bytes
+            if (file.size > maxSize) {
+                toast.error('Image file size must be less than 3MB');
+                return;
+            }
             setReceiptFile(file);
             const url = URL.createObjectURL(file);
             setPreviewUrl(url);
@@ -168,6 +180,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ transaction, onClos
                                 mainImageFileKey={transaction.TransferReceiptImageFileKey}
                                 alt="Transfer Receipt"
                                 className="transaction-modal__receipt-image"
+                                type="receipt"
                             />
                         </div>
                     </div>
@@ -181,7 +194,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ transaction, onClos
                             <div className="transaction-modal__upload">
                                 <input
                                     type="file"
-                                    accept="image/*"
+                                    accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
                                     onChange={handleFileChange}
                                     className="transaction-modal__file-input"
                                     id="receipt-upload"

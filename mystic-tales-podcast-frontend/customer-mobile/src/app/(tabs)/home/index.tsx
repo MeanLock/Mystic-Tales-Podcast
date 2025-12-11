@@ -65,6 +65,7 @@ export default function Home() {
               />
             }
             shows={discoveryData.BasedOnYourTaste.ShowList}
+            titleString="Base On Your Taste"
           />
         )}
 
@@ -76,6 +77,7 @@ export default function Home() {
               <MixxingText originalText="New Releases" coloredText="New" />
             }
             shows={discoveryData.NewReleases.ShowList}
+            titleString = "New Releases"
           />
         )}
 
@@ -85,6 +87,7 @@ export default function Home() {
             variant="top"
             title={<MixxingText originalText="Hot Shows" coloredText="Hot" />}
             shows={discoveryData.HotThisWeek.ShowList}
+            titleString = "Hot Shows"
           />
         )}
 
@@ -118,6 +121,7 @@ export default function Home() {
               <MixxingText originalText="Hot Channels" coloredText="Hot" />
             }
             channels={discoveryData.HotThisWeek.ChannelList}
+            titleString = "Hot Channels"
           />
         )}
 
@@ -159,6 +163,7 @@ export default function Home() {
                 />
               }
               shows={discoveryData.TopSubCategory.ShowList}
+              titleString={discoveryData.TopSubCategory.PodcastSubCategory.Name}
             />
           )}
 
@@ -177,6 +182,7 @@ export default function Home() {
                 />
               }
               shows={discoveryData.RandomCategory.ShowList}
+              titleString={discoveryData.RandomCategory.PodcastCategory.Name}
             />
           )}
 

@@ -3,6 +3,7 @@ import { AxiosInstance } from "axios";
 import { callAxiosRestApi } from "../../api/rest-api/main/api-call";
 
 const BASE_URL = "subscription-service/api/podcast-subscriptions";
+const DASHBOARD_URL = "subscription-service/api/report/podcast-subscriptions";
 
 export const getSubscriptionDetail = async (instance: AxiosInstance, subscriptionId: Number ) => {
     const response = await callAxiosRestApi({
@@ -17,7 +18,7 @@ export const getShowSubscriptionTransaction = async (instance: AxiosInstance, sh
     const response = await callAxiosRestApi({
         instance: instance,
         method: "get",
-        url: `${BASE_URL}/shows/${showId}/dashboard`,
+        url: `${DASHBOARD_URL}/shows/${showId}/dashboard`,
     }, "");
 
     return response;
@@ -26,8 +27,17 @@ export const getChannelSubscriptionTransaction = async (instance: AxiosInstance,
     const response = await callAxiosRestApi({
         instance: instance,
         method: "get",
-        url: `${BASE_URL}/channels/${channelId}/dashboard`,
+        url: `${DASHBOARD_URL}/channels/${channelId}/dashboard`,
     }, "");
+
+    return response;
+}
+export const getSummarySubscription = async (instance: AxiosInstance, reportPeriod: string) => {
+    const response = await callAxiosRestApi({
+        instance: instance,
+        method: "get",
+        url: `${DASHBOARD_URL}/statistics/summary/me?report_period=${reportPeriod}`,
+    });
 
     return response;
 }

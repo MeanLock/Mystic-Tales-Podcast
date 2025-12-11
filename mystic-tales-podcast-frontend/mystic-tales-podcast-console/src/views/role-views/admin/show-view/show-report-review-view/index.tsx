@@ -43,7 +43,7 @@ const state_creator = (table: any[]) => {
                 cellClass: 'd-flex align-items-center',
                 flex: 0.7,
                 cellRenderer: (params: { data: any }) => {
-                      let status = {
+                    let status = {
                         title: '',
                         color: '',
                     };
@@ -103,7 +103,7 @@ const state_creator = (table: any[]) => {
                         button: <Eye size={27} color='var(--secondary-green)' />,
                         update_button_color: 'white'
                     }
-                                        if (params.data.IsResolved !== null) return <></>;
+                    if (params.data.IsResolved !== null) return <></>;
 
                     return (
 

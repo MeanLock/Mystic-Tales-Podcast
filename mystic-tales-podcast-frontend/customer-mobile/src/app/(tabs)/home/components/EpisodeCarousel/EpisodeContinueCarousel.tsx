@@ -1,10 +1,13 @@
 import React, { useMemo } from "react";
-import { EpisodeCardWithImageProps } from "@/src/types/episode";
-import { FlatList, StyleSheet, View } from "react-native";
+import { EpisodeCardWithImageProps, EpisodeFromApi } from "@/src/types/episode";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "@/src/components/ui/Text";
 import { MaterialIcons } from "@expo/vector-icons";
 import EpisodeContinueListeningCard from "./EpisodeCardContinueListening";
 import { Episode } from "@/src/core/types/episode.type";
+import { useDispatch } from "react-redux";
+import { useRouter } from "expo-router";
+import { setEpisodesData } from "@/src/features/episode/episodeSlice";
 
 const ITEM_SPACING = 14; // Horizontal spacing between columns
 const ITEM_HEIGHT = 80; // Height of each episode card
@@ -67,17 +70,35 @@ const EpisodeContinueCarousel = ({
     </View>
   );
 
+  const dispatch = useDispatch();//thịnh
+  const router = useRouter();
+  const handleViewMoreEpisodesFromFeed = () => {
+    // Implement navigation or action to view more episodes from the show
+    dispatch(
+      setEpisodesData({
+        episodes: episodes.map((episode) => episode.Episode) as Episode[],
+        title: `Continue Listening`,
+        from: "Feed",
+      })
+    );
+    // Navigate to the episodes list page
+    router.push(`/(content)/episodes`);
+  };
+
   return (
     <View className="gap-5 mb-10">
       {/* Title with See More */}
-      <View className="flex flex-row items-center justify-between w-full">
-        {title}
-
-        <View className="flex flex-row justify-center items-center gap-2">
-          <Text className="text-white font-medium p-0">See more</Text>
-          <MaterialIcons name="arrow-circle-right" size={16} color={"#fff"} />
+      <Pressable
+        onPress={() => handleViewMoreEpisodesFromFeed()}
+      >
+        <View className="flex flex-row items-center justify-between w-full">
+          {title}
+          <View className="flex flex-row justify-center items-center gap-2">
+            <Text className="text-white font-medium p-0">See more</Text>
+            <MaterialIcons name="arrow-circle-right" size={16} color={"#fff"} />
+          </View>
         </View>
-      </View>
+      </Pressable>
 
       {/* Episodes Grid FlatList */}
       <FlatList

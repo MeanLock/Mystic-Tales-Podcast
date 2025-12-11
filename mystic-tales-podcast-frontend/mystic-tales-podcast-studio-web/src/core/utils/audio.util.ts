@@ -12,3 +12,12 @@ export const buildEpisodeAudioFileName = (episode: Episode, mime: string) => {
     const base = "episode_uploaded_audio";
     return `${base}${ext}`;
 };
+
+export const secondsToTime = (s: number) => {
+    if (s < 0) s = 0;
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60)
+        .toString()
+        .padStart(2, "0");
+    return `${m}:${sec}`;
+};

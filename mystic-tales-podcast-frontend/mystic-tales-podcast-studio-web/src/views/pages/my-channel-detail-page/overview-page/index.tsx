@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
-import 'quill/dist/quill.snow.css';
+ import 'quill/dist/quill.snow.css';
 import './styles.scss';
 import { get, isEqual } from 'lodash';
 import { getChannelDetail, publishChannel, updateChannel } from '@/core/services/channel/channel.service';
@@ -69,7 +69,6 @@ const ChannelOverview = () => {
     const [suggestions, setSuggestions] = useState<HashtagOption[]>([]);
     const [suggestLoading, setSuggestLoading] = useState<boolean>(false);
     const [openSuggest, setOpenSuggest] = useState<boolean>(false);
-    const [previewImage, setPreviewImage] = useState<string>('');
     const [uploadImage, setUploadImage] = useState<string | null>(null);
     const [mainImageFile, setMainImageFile] = useState<File | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
@@ -77,6 +76,10 @@ const ChannelOverview = () => {
     const [isPublishing, setIsPublishing] = useState<boolean>(false);
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [uploadBackgroundImage, setUploadBackgroundImage] = useState<string | null>(null);
+    const [backgroundImageFile, setBackgroundImageFile] = useState<File | null>(null);
+    const backgroundFileInputRef = useRef<HTMLInputElement>(null);
     const { startPolling } = useSagaPolling({
         timeoutSeconds: 20,
         intervalSeconds: 0.5,
@@ -231,8 +234,10 @@ const ChannelOverview = () => {
         return !isEqual(originalIds, currentIds);
     }, [originalChannel, selectedHashtags]);
 
-    const imageChanged = useMemo(() => !!mainImageFile, [mainImageFile]);
-
+    const imageChanged = useMemo(() =>
+        !!mainImageFile || !!backgroundImageFile,
+        [mainImageFile, backgroundImageFile]
+    );
     const isDirty = useMemo(
         () => nameChanged || descriptionChanged || categoryChanged || hashtagsChanged || imageChanged,
         [nameChanged, descriptionChanged, categoryChanged, hashtagsChanged, imageChanged]
@@ -252,6 +257,7 @@ const ChannelOverview = () => {
                     HashtagIds: selectedHashtags.map(h => h.id),
                 },
                 MainImageFile: mainImageFile || undefined,
+                BackgroundImageFile: backgroundImageFile || undefined,
             };
             const res = await updateChannel(loginRequiredAxiosInstance, String(channelDetail.Id), payload);
             const sagaId = res?.data?.SagaInstanceId
@@ -271,6 +277,7 @@ const ChannelOverview = () => {
                         Hashtags: selectedHashtags.map(h => ({ Id: h.id, Name: h.name }))
                     }));
                     setMainImageFile(null);
+                    setBackgroundImageFile(null);
                 },
                 onFailure: (err) => toast.error(err || "Saga failed!"),
                 onTimeout: () => toast.error("System not responding, please try again."),
@@ -286,10 +293,10 @@ const ChannelOverview = () => {
     const handleUnpublish = async (isPublish: boolean) => {
         const alert = await confirmAlert("Are you sure to " + (isPublish ? "publish" : "unpublish") + " this channel?");
         if (!alert.isConfirmed) return;
-               if (authSlice.user?.ViolationLevel > 0) {
-                    toast.error('Your account is currently under violation !!');
-                    return;
-                }
+        if (authSlice.user?.ViolationLevel > 0) {
+            toast.error('Your account is currently under violation !!');
+            return;
+        }
         try {
             setIsPublishing(true);
             const res = await publishChannel(loginRequiredAxiosInstance, String(channelDetail.Id), isPublish);
@@ -321,7 +328,36 @@ const ChannelOverview = () => {
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Invalid file type. Allowed: JPG, JPEG, PNG, GIF, WEBP, SVG');
+                return;
+            }
+
+            const maxSize = 3 * 1024 * 1024;
+            if (file.size > maxSize) {
+                toast.error('Image file size must be less than 3MB');
+                return;
+            }
             setMainImageFile(file);
+        }
+    };
+
+    const handleBackgroundImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Invalid file type. Allowed: JPG, JPEG, PNG, GIF, WEBP, SVG');
+                return;
+            }
+
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                toast.error('Image file size must be less than 5MB');
+                return;
+            }
+            setBackgroundImageFile(file);
         }
     };
     useEffect(() => {
@@ -335,25 +371,18 @@ const ChannelOverview = () => {
             URL.revokeObjectURL(url)
         }
     }, [mainImageFile])
-
     useEffect(() => {
-        let alive = true;
-        const load = async () => {
-            if (uploadImage) {
-                setPreviewImage(uploadImage);
-                return;
-            }
-            const key = channelDetail?.MainImageFileKey;
-            if (key) {
-                const url = await fetchImage(key);
-                if (alive) setPreviewImage(url || '');
-            } else {
-                setPreviewImage('');
-            }
-        };
-        load();
-        return () => { alive = false; };
-    }, [uploadImage, channelDetail?.MainImageFileKey]);
+        if (!backgroundImageFile) {
+            setUploadBackgroundImage(null)
+            return
+        }
+        const url = URL.createObjectURL(backgroundImageFile)
+        setUploadBackgroundImage(url)
+        return () => {
+            URL.revokeObjectURL(url)
+        }
+    }, [backgroundImageFile])
+
 
     const handleAddHashtag = async (hashtagInput: string) => {
         try {
@@ -711,6 +740,9 @@ const ChannelOverview = () => {
                     </div>
 
                     <div className="channel-overview-page__preview">
+                        <Typography variant="h6" className="channel-overview-page__preview-title">
+                            Main Image
+                        </Typography>
                         <div className="channel-overview-page__main-image-container">
                             {uploadImage ? (
                                 <img
@@ -738,43 +770,43 @@ const ChannelOverview = () => {
                             type="file"
                             ref={fileInputRef}
                             onChange={handleImageUpload}
-                            accept="image/*"
+                            accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
                             style={{ display: 'none' }}
                         />
 
                         <Typography variant="h6" className="channel-overview-page__preview-title">
-                            Preview
+                            Background Image
                         </Typography>
-                        <Card className="channel-overview-page__preview-card">
-                            <div className="channel-overview-page__preview-image-container">
-                                <CardMedia
-                                    component="img"
-                                    image={previewImage}
-                                    alt={channelDetail.Name}
-                                    className="channel-overview-page__preview-bg-image"
+                        <div className="channel-overview-page__main-image-container">
+                            {uploadBackgroundImage ? (
+                                <img
+                                    src={uploadBackgroundImage}
+                                    alt="Background Preview"
+                                    className="channel-overview-page__main-image-file"
                                 />
-                                <div className="channel-overview-page__preview-overlay">
-                                    <div className="channel-overview-page__preview-content">
-                                        <img
-                                            src={previewImage}
-                                            className="channel-overview-page__preview-avatar"
-                                        />
-                                        <div className="channel-overview-page__preview-info">
-                                            <Typography variant="h6" className="channel-overview-page__preview-name">
-                                                {channelDetail.Name}
-                                            </Typography>
-                                            <Typography variant="body2" className="channel-overview-page__preview-subtitle"
-                                                dangerouslySetInnerHTML={{
-                                                    __html: (channelDetail.Description || 'Description')
-                                                }}
-                                            >
-                                            </Typography>
+                            ) : (
+                                <Image
+                                    mainImageFileKey={channelDetail.BackgroundImageFileKey}
+                                    alt={`${channelDetail.Name} Background`}
+                                    className="channel-overview-page__main-image-file"
+                                />
+                            )}
 
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
+                            <Button
+                                className="channel-overview-page__change-artwork-btn"
+                                onClick={() => backgroundFileInputRef.current?.click()}
+                            >
+                                Change Artwork
+                            </Button>
+                        </div>
+
+                        <input
+                            type="file"
+                            ref={backgroundFileInputRef}
+                            onChange={handleBackgroundImageUpload}
+                            accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
+                            style={{ display: 'none' }}
+                        />
                     </div>
                 </div>
             </div>

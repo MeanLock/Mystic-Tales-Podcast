@@ -13,7 +13,6 @@ import DefaultLayoutContent from './DefaultLayoutContent';
 import { set } from '@/redux/ui/uiSlice';
 import { useNavigationContext } from '@/core/hooks/useNavigationContext';
 import { _podcasterNav } from '@/router/_roleNav';
-import { get } from 'lodash';
 import { getPodcasterProfile } from '@/core/services/account/account.service';
 import { loginRequiredAxiosInstance } from '@/core/api/rest-api/config/instances/v2';
 import { getPublicSource } from '@/core/services/file/file.service';
@@ -166,6 +165,8 @@ useEffect(() => {
               name: channel?.Name,
               avatar: channel?.MainImageFileKey
             });
+          }else {
+            navigate('/channel');
           }
         } catch (e) {
           console.error(e);
@@ -180,6 +181,8 @@ useEffect(() => {
               name: show?.Name,
               avatar: show?.MainImageFileKey
             });
+          }else {
+            navigate('/show');
           }
         } catch (e) {
           console.error(e);
@@ -244,7 +247,7 @@ useEffect(() => {
     // chạy ngay 1 lần khi tab đang visible
     if (!document.hidden) fetchSilently();
 
-    const id = window.setInterval(fetchSilently, 30_000);
+    const id = window.setInterval(fetchSilently, 1000 * 60*5);//30 000 thôi
     const onVis = () => {
       if (!document.hidden) fetchSilently();
     };
@@ -253,7 +256,7 @@ useEffect(() => {
     return () => {
       stopped = true;
       window.clearInterval(id);
-      document.removeEventListener('visibilitychange', onVis);
+       document.removeEventListener('visibilitychange', onVis);
     };
   }, [
     authSlice?.token,

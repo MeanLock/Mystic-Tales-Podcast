@@ -154,7 +154,13 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
   }, [requiredRequirementIds, reuploadFiles]);
 
   const handleFileChange = (requirementId: string, file: File | null) => {
-    if (file && file.size > 150 * 1024 * 1024) { // 50 MB limit
+    const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !allowedExtensions.includes(ext)) {
+      toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
+      return;
+    }
+    if (file && file.size > 150 * 1024 * 1024) {
       toast.error("File size exceeds 150 MB limit.");
       return;
     }
@@ -209,41 +215,41 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
       setIsSubmitting(false);
     }
   };
- const handleSubmitProducingRequest = async () => {
-        const audioFileArray: File[] = [];
+  const handleSubmitProducingRequest = async () => {
+    const audioFileArray: File[] = [];
 
-        Object.entries(reuploadFiles).forEach(([requirementId, file]) => {
-            if (file) {
-                const ext = file.name.split('.').pop();
-                const newName = `${requirementId}.${ext}`;
-                const renamed = new File([file], newName, { type: file.type });
-                audioFileArray.push(renamed);
-            }
-        });
-        console.log("Submitting files:", audioFileArray);
-        try {
-            setIsSubmitting(true);
-            const res = await submitAudio(loginRequiredAxiosInstance, Booking.BookingProducingRequestList[0]?.Id, audioFileArray);
-            const sagaId = res?.data?.SagaInstanceId
-            if (!sagaId) {
-                toast.error("Submit failed, please try again.")
-                return
-            }
-            await startPolling(sagaId, loginRequiredAxiosInstance, {
-                onSuccess: () => {
-                    onClose();
-                    context?.handleDataChange();
-                    toast.success(`Submit successfully!`);
-                },
-                onFailure: (err) => toast.error(err || "Saga failed!"),
-                onTimeout: () => toast.error("System not responding, please try again."),
-            })
-        } catch (error) {
-            toast.error("Error submitting audio");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    Object.entries(reuploadFiles).forEach(([requirementId, file]) => {
+      if (file) {
+        const ext = file.name.split('.').pop();
+        const newName = `${requirementId}.${ext}`;
+        const renamed = new File([file], newName, { type: file.type });
+        audioFileArray.push(renamed);
+      }
+    });
+    console.log("Submitting files:", audioFileArray);
+    try {
+      setIsSubmitting(true);
+      const res = await submitAudio(loginRequiredAxiosInstance, Booking.BookingProducingRequestList[0]?.Id, audioFileArray);
+      const sagaId = res?.data?.SagaInstanceId
+      if (!sagaId) {
+        toast.error("Submit failed, please try again.")
+        return
+      }
+      await startPolling(sagaId, loginRequiredAxiosInstance, {
+        onSuccess: () => {
+          onClose();
+          context?.handleDataChange();
+          toast.success(`Submit successfully!`);
+        },
+        onFailure: (err) => toast.error(err || "Saga failed!"),
+        onTimeout: () => toast.error("System not responding, please try again."),
+      })
+    } catch (error) {
+      toast.error("Error submitting audio");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   if (loading) {
     return (
       <div className="flex justify-center items-center h-100 ">
@@ -319,7 +325,7 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
                         </Box>
                         <Button variant="outlined" component="label" startIcon={<CloudUpload />} sx={{ color: "#ff9800", borderColor: "#ff9800", textTransform: "none", borderRadius: "10px", padding: "10px 20px", fontWeight: 600, mt: 2, "&:hover": { backgroundColor: "rgba(255, 152, 0, 0.1)", borderColor: "#ff9800" } }}>
                           Re-upload Audio
-                          <input type="file" hidden accept="audio/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileChange(track.BookingRequirementId, file); }} />
+                          <input type="file" hidden accept=".wav,.flac,.mp3,.m4a,.aac" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileChange(track.BookingRequirementId, file); }} />
                         </Button>
                       </>
                     ) : (
@@ -416,7 +422,7 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
                           <input
                             type="file"
                             hidden
-                            accept="audio/*"
+                            accept=".wav,.flac,.mp3,.m4a,.aac"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) handleFileChange(req.Id, file);

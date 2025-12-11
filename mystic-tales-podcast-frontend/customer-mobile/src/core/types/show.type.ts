@@ -50,7 +50,6 @@ export type Show = {
     Name: string;
   };
 };
-
 export type ShowFromChannel = {
   Id: string;
   Name: string;
@@ -105,7 +104,6 @@ export type ShowFromChannel = {
     Name: string;
   };
 };
-
 export type ShowDetails = {
   Id: string;
   Name: string;

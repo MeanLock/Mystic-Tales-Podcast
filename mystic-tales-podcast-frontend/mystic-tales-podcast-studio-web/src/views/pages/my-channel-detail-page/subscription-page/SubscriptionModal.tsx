@@ -78,11 +78,12 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
         timeoutSeconds: 10,
         intervalSeconds: 0.5,
     })
+    const [originalCycleTypeIds, setOriginalCycleTypeIds] = useState<number[]>([]);
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
     });
-
     const fetchRegistrations = async () => {
         if (isUpdateMode) {
             setFetchingRegistrations(true);
@@ -99,6 +100,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
             }
         }
     };
+
     useEffect(() => {
         if (isUpdateMode && subscription) {
             fetchRegistrations();
@@ -116,8 +118,11 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
                     Price: item.Price,
                 }));
                 setCycleTypePrices(existingPrices);
+                setOriginalCycleTypeIds(existingPrices.map(p => p.SubscriptionCycleTypeId));
+
             } else {
                 setCycleTypePrices([]);
+                setOriginalCycleTypeIds([]);
             }
 
             const allBenefits = subscription.PodcastSubscriptionBenefitMappingList || [];
@@ -136,6 +141,8 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
             });
             setCycleTypePrices([]);
             setSelectedBenefits([]);
+            setOriginalCycleTypeIds([]);
+
         }
     }, [subscription, isUpdateMode]);
 
@@ -170,6 +177,15 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
     const handleSave = async () => {
         if (authSlice.user?.ViolationLevel > 0) {
             toast.error('Your account is currently under violation !!');
+            return;
+        }
+        const invalidPrices = cycleTypePrices.filter(p => p.Price <= 0);
+        if (invalidPrices.length > 0) {
+            toast.error('All cycle type prices must be greater than 0');
+            return;
+        }
+        if (selectedBenefits.length === 0) {
+            toast.error('Please select at least one benefit for the subscription.');
             return;
         }
         setLoading(true);
@@ -223,7 +239,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
                 }
                 await startPolling(sagaId, loginRequiredAxiosInstance, {
                     onSuccess: async () => {
-                        onClose();
+                        onClose?.();
                         await context?.handleDataChange();
                         toast.success(`Subscription created successfully!`);
                     },
@@ -250,7 +266,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
             }
             await startPolling(sagaId, loginRequiredAxiosInstance, {
                 onSuccess: () => {
-                    onClose();
+                    onClose?.();
                     context?.handleDataChange();
                     toast.success(`Subscription activated successfully!`);
                 },
@@ -277,7 +293,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
             }
             await startPolling(sagaId, loginRequiredAxiosInstance, {
                 onSuccess: async () => {
-                    onClose();
+                    onClose?.();
                     await context?.handleDataChange();
                     toast.success(`Subscription deleted successfully!`);
                 },
@@ -337,9 +353,6 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
             .sort((a, b) => b - a)
             .map(v => ({ version: v, benefits: allVersions[v] }));
     };
-
-
-
 
     return (
         <Box className="subscription-modal-content " sx={{ p: 3 }}>
@@ -478,45 +491,54 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
                 </Box>
 
                 <Box display="flex" flexDirection="column" gap={2}>
-                    {cycleTypePrices.map((cyclePrice) => (
-                        <Box
-                            key={cyclePrice.SubscriptionCycleTypeId}
-                            display="flex"
-                            alignItems="center"
-                            gap={2}
-                            p={2}
-                            className="pricing-container"
-                        >
-                            <Typography sx={{ minWidth: '100px', color: '#fff' }}>
-                                {getCycleTypeName(cyclePrice.SubscriptionCycleTypeId)}
-                            </Typography>
-                            <TextField
-                                type="number"
-                                value={cyclePrice.Price}
-                                onChange={(e) => handlePriceChange(cyclePrice.SubscriptionCycleTypeId, parseFloat(e.target.value) || 0)}
-                                size="small"
-                                fullWidth
-                                InputProps={{
-                                    endAdornment: <InputAdornment position="end">VND</InputAdornment>,
-                                }}
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        color: '#fff',
-                                        '& fieldset': { borderColor: '#444' },
-                                        '&:hover fieldset': { borderColor: '#666' },
-                                        '&.Mui-focused fieldset': { borderColor: 'var(--primary-green)' }
-                                    }
-                                }}
-                            />
-                            <IconButton
-                                onClick={() => handleRemoveCycleTypePrice(cyclePrice.SubscriptionCycleTypeId)}
-                                size="small"
-                                sx={{ color: '#f44336' }}
+                    {cycleTypePrices.map((cyclePrice) => {
+                        // NEW: Check if this is an original cycle type
+                        const isOriginal = isUpdateMode && originalCycleTypeIds.includes(cyclePrice.SubscriptionCycleTypeId);
+
+                        return (
+                            <Box
+                                key={cyclePrice.SubscriptionCycleTypeId}
+                                display="flex"
+                                alignItems="center"
+                                gap={2}
+                                p={2}
+                                className="pricing-container"
                             >
-                                <Delete />
-                            </IconButton>
-                        </Box>
-                    ))}
+                                <Typography sx={{ minWidth: '100px', color: '#fff' }}>
+                                    {getCycleTypeName(cyclePrice.SubscriptionCycleTypeId)}
+                                </Typography>
+                                <TextField
+                                    type="number"
+                                    value={cyclePrice.Price}
+                                    onChange={(e) => handlePriceChange(cyclePrice.SubscriptionCycleTypeId, parseFloat(e.target.value) || 0)}
+                                    size="small"
+                                    fullWidth
+                                    InputProps={{
+                                        endAdornment: <InputAdornment position="end">VND</InputAdornment>,
+                                    }}
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            color: '#fff',
+                                            '& fieldset': { borderColor: cyclePrice.Price <= 0 ? '#f44336' : '#444' },
+                                            '&:hover fieldset': { borderColor: cyclePrice.Price <= 0 ? '#f44336' : '#666' },
+                                            '&.Mui-focused fieldset': { borderColor: cyclePrice.Price <= 0 ? '#f44336' : 'var(--primary-green)' }
+                                        },
+                                    }}
+                                />
+                                {/* NEW: Conditionally show delete button */}
+                                {!isOriginal && (
+                                    <IconButton
+                                        onClick={() => handleRemoveCycleTypePrice(cyclePrice.SubscriptionCycleTypeId)}
+                                        size="small"
+                                        sx={{ color: '#f44336' }}
+                                    >
+                                        <Delete />
+                                    </IconButton>
+                                )}
+
+                            </Box>
+                        );
+                    })}
                 </Box>
             </Box>
 
@@ -777,7 +799,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
                 <Button
                     onClick={handleSave}
                     variant="contained"
-                    disabled={!formData.name || cycleTypePrices.length === 0 || loading || activating}
+                    disabled={!formData.name || cycleTypePrices.length === 0 || selectedBenefits.length === 0 || loading || activating}
                     sx={{
                         backgroundColor: 'var(--primary-green)',
                         color: '#000',
