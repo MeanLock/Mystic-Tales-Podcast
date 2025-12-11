@@ -324,24 +324,36 @@ const ChannelSubscription: FC<ChannelSubscriptionProps> = () => {
             editable: false
         };
     }, [])
-    if (subscriptions.length === 0) {
-        return (
-            <div className="pt-30">
-                <EmptyComponent item="Subscription" subtitle="Try adjusting your search terms or filters" />
-                <Modal_Button
-                    className=" channel-subscription__btn h-1/2 text-black font-bold rounded-lg normal-case "
-                    content="Add Subscription"
-                    variant="contained"
-                    size="md"
-                    startIcon={<Add />}
-                >
-                    <SubscriptionModal
-                        podcastChannelId={id}
-                        onClose={() => { }}
-                    />
-                </Modal_Button>
 
+    if (isLoading) {
+        return (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "400px" }}>
+                <Loading />
             </div>
+        );
+    }
+    if (!isLoading && subscriptions.length === 0) {
+        return (
+            <ChannelSubscriptionContext.Provider value={{ handleDataChange: fetchSubscriptionList }}>
+
+                <div className="pt-30">
+                    <EmptyComponent item="Subscription" subtitle="Try adjusting your search terms or filters" />
+                    <Modal_Button
+                        className=" channel-subscription__btn h-1/2 text-black font-bold rounded-lg normal-case "
+                        content="Add Subscription"
+                        variant="contained"
+                        size="md"
+                        startIcon={<Add />}
+                    >
+                        <SubscriptionModal
+                            podcastChannelId={id}
+                            onClose={() => { }}
+                        />
+                    </Modal_Button>
+
+                </div>
+            </ChannelSubscriptionContext.Provider>
+
         )
     }
 
@@ -456,7 +468,7 @@ const ChannelSubscription: FC<ChannelSubscriptionProps> = () => {
                         </div>
                     ) : (
                         <div className="channel-subscription__left">
-                            <EmptyComponent  subtitle="No Active Subscription Is Available" />
+                            <EmptyComponent subtitle="No Active Subscription Is Available" />
                         </div>
                     )}
 
