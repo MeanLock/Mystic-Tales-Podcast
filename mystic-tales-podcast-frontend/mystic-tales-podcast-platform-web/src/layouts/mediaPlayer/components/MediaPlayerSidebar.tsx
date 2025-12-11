@@ -3,9 +3,7 @@
 import { FaHeadphones, FaRegCompass } from "react-icons/fa";
 import { FiBarChart2, FiInfo } from "react-icons/fi";
 import { BiCategoryAlt } from "react-icons/bi";
-import { TbMusicSearch } from "react-icons/tb";
 import {
-  IoIosNotificationsOutline,
   IoIosSearch,
   IoMdMicrophone,
 } from "react-icons/io";
@@ -16,7 +14,6 @@ import { BsPersonCheck } from "react-icons/bs";
 import { PiReceipt } from "react-icons/pi";
 import { TbTransactionDollar } from "react-icons/tb";
 import {
-  MdNotificationsNone,
   MdOutlineAccountBalanceWallet,
   MdOutlinePayments,
 } from "react-icons/md";
@@ -33,17 +30,7 @@ import SearchSuggesstion from "./SearchSuggesstion";
 import { GrCircleQuestion } from "react-icons/gr";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  PopoverPortal,
-} from "@radix-ui/react-popover";
-import type { AccountMeUI } from "@/core/types/account";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ContentRealtimeResponse } from "@/core/types/search";
 import {
@@ -52,6 +39,7 @@ import {
 } from "@/core/services/search/search.service";
 import { Input } from "@/components/ui/input";
 import { LucideFileAudio } from "lucide-react";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 const navItems = [
   {
@@ -260,23 +248,11 @@ const navItems = [
     ],
   },
 ];
-const FileConfig: FileResolveConfig[] = [
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "AccountPublic",
-  },
-];
 
 const MediaPlayerSidebar = () => {
   // STATES
   const user = useSelector((state: RootState) => state.auth.user);
-  const [userWithImageUrl, setUserWithImageUrl] = useState<AccountMeUI | null>(
-    null
-  );
   const [isResolveLoading, setIsResolveLoading] = useState(false);
-  const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [notifications, setNotifications] = useState<Array<any>>([]);
   // Search States
   const [keyword, setKeyword] = useState("");
   const [showSearchSuggestion, setShowSearchSuggestion] = useState(false);
@@ -303,31 +279,6 @@ const MediaPlayerSidebar = () => {
         skip: shouldSkipQuery,
       }
     );
-
-  useEffect(() => {
-    const resolveFile = async () => {
-      if (user) {
-        setIsResolveLoading(true);
-        try {
-          const { resolvedData: userWithAvatarRaw } = await resolveFiles(
-            user,
-            FileConfig
-          );
-          const userWithAvatar = userWithAvatarRaw as unknown as AccountMeUI;
-          setUserWithImageUrl(userWithAvatar);
-        } catch (error) {
-          console.error("Error resolving user avatar:", error);
-        } finally {
-          setIsResolveLoading(false);
-        }
-      } else {
-        setUserWithImageUrl(null);
-        setIsResolveLoading(false);
-      }
-    };
-
-    resolveFile();
-  }, [user]);
 
   useEffect(() => {
     console.log("Suggestion Keywords Data:", suggestionKeywordData);
@@ -537,7 +488,7 @@ const MediaPlayerSidebar = () => {
       <SidebarNavItems navItems={navItems} isLoggedIn={!!user} />
 
       {/* User Informations */}
-      {userWithImageUrl ? (
+      {user ? (
         <div
           onClick={() => navigate("/media-player/management/profile")}
           className="w-full flex items-center justify-center md:justify-start md:gap-2 cursor-pointer hover:bg-white/20 py-2 px-2 rounded-lg"
@@ -546,20 +497,21 @@ const MediaPlayerSidebar = () => {
             {isResolveLoading ? (
               <Skeleton className="md:w-8 md:h-8 sm:w-8 sm:h-8 w-8 h-8 rounded-full" />
             ) : (
-              <img
-                src={userWithImageUrl.ImageUrl || "/images/unknown/user.png"}
+              <AutoResolveImage
+                FileKey={user?.MainImageFileKey}
                 className="md:w-10 md:h-10 sm:w-8 sm:h-8 w-8 h-8 rounded-full aspect-square object-cover"
+                type="AccountPublicSource"
               />
             )}
           </div>
           <div className="hidden md:inline-block">
             <p className="font-bold text-white text-[12px] line-clamp-1 max-w-[120px]">
-              {userWithImageUrl.FullName}
+              {user.FullName}
             </p>
             <div className="flex items-center gap-1 max-w-[150px]">
               <TbCoinFilled color="#aae339" size={14} />
               <p className="text-sm font-semibold text-mystic-green line-clamp-1">
-                {userWithImageUrl.Balance.toLocaleString("vn")}
+                {user.Balance.toLocaleString("vn")}
               </p>
             </div>
           </div>

@@ -10,6 +10,10 @@ import {
   useUploadSignImageMutation,
 } from "@/core/services/file/commitmentFile.service";
 import { accountApi } from "@/core/services/account/account.service";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
+import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
+import { useNavigate } from "react-router-dom";
 
 export type BecomePodcasterApiPayload = {
   PodcasterCreateProfileInfo: PodcasterCreateProfileInfo;
@@ -34,6 +38,31 @@ const ScriptEditor = ({
     },
     theme: "snow",
   });
+
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user?.IsPodcaster) {
+      dispatch(
+        showAlert({
+          type: "warning",
+          title: "Oops!",
+          description:
+            "Your account is already a podcaster. You cannot edit the description.",
+          isAutoClose: false,
+          isClosable: false,
+          functionalButtonText: "Got it",
+          isFunctional: true,
+          onClickAction: () => {
+            navigate("/media-player/management/profile");
+          },
+        })
+      );
+    }
+  }, []);
 
   useEffect(() => {
     if (quill) {

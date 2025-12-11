@@ -206,6 +206,7 @@ const ProfilePage = () => {
 
   const handleApplyToBePodcaster = () => {
     // TODO: implement apply podcaster
+    navigate("/media-player/management/become-podcaster");
   };
 
   const handleInputChange = (
@@ -845,14 +846,6 @@ const ProfilePage = () => {
             <Button
               className="bg-mystic-green text-black font-semibold hover:bg-mystic-green/90"
               onClick={handleConfirmResetPassword}
-              /*
-              disabled={
-                isResetting ||
-                !oldPassword.trim() ||
-                !newPassword.trim() ||
-                !confirmPassword.trim()
-              }
-                */
             >
               {/* {isResetting ? "Resetting..." : "Reset Password"} */}
               {isResettingPassword ? "Resetting..." : "Reset Password"}

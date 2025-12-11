@@ -8,6 +8,7 @@ import {
   type FileResolveConfig,
 } from "@/core/utils/fileResolver.util";
 import type { AccountMeUI } from "@/core/types/account";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 const navigationLinks = [
   { name: "Home", href: "/home" },
   { name: "FAQs", href: "/faqs" },
@@ -33,19 +34,9 @@ const CustomLinkItem = ({
   );
 };
 
-const FileConfig: FileResolveConfig[] = [
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "AccountPublic",
-  },
-];
 const NormalHeader = () => {
   // STATES
   const user = useSelector((state: RootState) => state.auth.user);
-  const [userWithImageUrl, setUserWithImageUrl] = useState<AccountMeUI | null>(
-    null
-  );
 
   // HOOKS
   const navigate = useNavigate();
@@ -53,26 +44,6 @@ const NormalHeader = () => {
   const handleNavigate = (to: string) => {
     navigate(to);
   };
-
-  useEffect(() => {
-    const resolveFile = async () => {
-      if (user) {
-        try {
-          const { resolvedData: userWithAvatarRaw } = await resolveFiles(
-            user,
-            FileConfig
-          );
-          const userWithAvatar = userWithAvatarRaw as unknown as AccountMeUI;
-          setUserWithImageUrl(userWithAvatar);
-        } catch (error) {
-          console.error("Error resolving user avatar:", error);
-        }
-      } else {
-        setUserWithImageUrl(null);
-      }
-    };
-    resolveFile();
-  }, [user]);
 
   const isCurrent = (href: string) => {
     if (href === "/home") {
@@ -152,9 +123,10 @@ const NormalHeader = () => {
             className="flex items-center gap-5 cursor-pointer"
           >
             <div>
-              <img
-                src={userWithImageUrl?.ImageUrl}
+              <AutoResolveImage
+                FileKey={user.MainImageFileKey}
                 className="w-10 h-10 shadow-2xl rounded-full object-cover"
+                type="AccountPublicSource"
               />
             </div>
             <div className="flex flex-col items-start justify-center">
@@ -162,7 +134,7 @@ const NormalHeader = () => {
               <div className="flex items-center gap-1">
                 <RiMoneyDollarCircleFill size={20} color="#aae339" />
                 <p className="text-mystic-green font-bold text-xs">
-                  {userWithImageUrl?.Balance.toLocaleString("vn")} đ
+                  {user.Balance.toLocaleString("vn")} đ
                 </p>
               </div>
             </div>
