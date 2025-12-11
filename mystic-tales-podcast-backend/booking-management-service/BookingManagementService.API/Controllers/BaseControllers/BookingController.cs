@@ -632,6 +632,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             return File(fileData, "video/MP2T");
         }
         [HttpPost("podcast-booking-tone/me/{isBuddy}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> CreatePodcastBookingTone(
             [FromRoute] bool isBuddy,
             [FromBody] PodcasterBookingToneApplyRequestDTO request)
