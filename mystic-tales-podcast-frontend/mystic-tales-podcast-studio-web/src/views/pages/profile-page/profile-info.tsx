@@ -340,7 +340,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                             PricePerBookingWord: displayPrice / 1000,
                             IsBuddy: profileData.PodcasterProfile.IsBuddy,
                         }));
-                        dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: profileData.PodcasterProfile.IsBuddy, PricePerBookingWord: displayPrice } }));
+                        dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: profileData.PodcasterProfile.IsBuddy, PricePerBookingWord: (displayPrice/1000) } }));
 
                         await refreshProfile?.();
 

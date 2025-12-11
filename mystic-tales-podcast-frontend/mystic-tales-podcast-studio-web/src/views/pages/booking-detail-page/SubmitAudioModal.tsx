@@ -155,12 +155,15 @@ const SubmitAudioModal: FC<SubmitAudioModalProps> = ({ booking, onClose }) => {
 
   const handleFileChange = (requirementId: string, file: File | null) => {
     const allowedExtensions = ['wav', 'flac', 'mp3', 'm4a', 'aac'];
-    const ext = file.name.split('.').pop()?.toLowerCase();
+     if (file ) {
+     const ext = file?.name.split('.').pop()?.toLowerCase();
     if (!ext || !allowedExtensions.includes(ext)) {
       toast.error('Allowed audio types: wav, flac, mp3, m4a, aac');
       return;
     }
-    if (file && file.size > 150 * 1024 * 1024) {
+    }
+   
+    if (file && file?.size > 150 * 1024 * 1024) {
       toast.error("File size exceeds 150 MB limit.");
       return;
     }
