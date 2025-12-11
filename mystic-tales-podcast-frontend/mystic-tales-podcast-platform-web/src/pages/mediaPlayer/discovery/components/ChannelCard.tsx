@@ -12,14 +12,9 @@ const ChannelCard = ({ card }: { card: ChannelFromAPI }) => {
       className="bg-transparent border-none shadow-sm p-1 transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >
       <CardContent className="flex flex-col aspect-square items-start justify-between text-card-foreground bg-transparent p-2 rounded-lg">
-        {/* <img
-          src={card.ImageUrl}
-          className="w-full h-full aspect-square object-cover rounded-lg mb-2"
-        /> */}
         <AutoResolveImage
           FileKey={card.MainImageFileKey}
           type="PodcastPublicSource"
-          Name={card.Name || "channel-image"}
           imgClassName="w-full h-full aspect-square object-cover rounded-lg mb-2"
         />
 

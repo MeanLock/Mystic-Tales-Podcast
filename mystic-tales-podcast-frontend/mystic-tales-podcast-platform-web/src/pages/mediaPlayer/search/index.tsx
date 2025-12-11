@@ -203,7 +203,12 @@ const SearchPage = () => {
                       <p className="text-white font-semibold text-lg line-clamp-1">
                         {channel.Name}
                       </p>
-                       <div className="text-gray-400 text-sm line-clamp-2 mt-1" dangerouslySetInnerHTML={{__html: channel.Description}}/>
+                      <div
+                        className="text-gray-400 text-sm line-clamp-2 mt-1"
+                        dangerouslySetInnerHTML={{
+                          __html: channel.Description,
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -241,7 +246,10 @@ const SearchPage = () => {
                       <p className="text-white font-semibold text-lg line-clamp-1">
                         {show.Name}
                       </p>
-                      <div className="text-gray-400 text-sm line-clamp-2 mt-1" dangerouslySetInnerHTML={{__html: show.Description}}/>
+                      <div
+                        className="text-gray-400 text-sm line-clamp-2 mt-1"
+                        dangerouslySetInnerHTML={{ __html: show.Description }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -267,7 +275,7 @@ const SearchPage = () => {
                   <div
                     key={index}
                     onClick={() =>
-                      navigate(`/media-player/episode/${episode.Id}`)
+                      navigate(`/media-player/episodes/details/${episode.Id}`)
                     }
                     className="flex items-start gap-4 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-all"
                   >
@@ -280,8 +288,12 @@ const SearchPage = () => {
                       <p className="text-white font-semibold text-lg line-clamp-1">
                         {episode.Name}
                       </p>
-                       <div className="text-gray-400 text-sm line-clamp-2 mt-1" dangerouslySetInnerHTML={{__html: episode.Description}}/>
-
+                      <div
+                        className="text-gray-400 text-sm line-clamp-2 mt-1"
+                        dangerouslySetInnerHTML={{
+                          __html: episode.Description,
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
