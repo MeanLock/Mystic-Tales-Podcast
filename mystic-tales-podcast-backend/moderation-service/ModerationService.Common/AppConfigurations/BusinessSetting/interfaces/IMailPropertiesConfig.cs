@@ -7,6 +7,9 @@ namespace ModerationService.Common.AppConfigurations.BusinessSetting.interfaces
         MailProperty CustomerRegistrationVerification { get; }
         MailProperty PodcasterRequestConfirmation { get; }
         MailProperty PodcasterRequestResult { get; }
+        MailProperty DMCANoticePending { get; }
+        MailProperty DMCACounterNoticePending { get; }
+        MailProperty DMCALawsuitProofPending { get; }
         MailProperty DMCANoticeInvalid { get; }
         MailProperty DMCACounterNoticeInvalidToAccused { get; }
         MailProperty DMCACounterNoticeInvalidToAccuser { get; }

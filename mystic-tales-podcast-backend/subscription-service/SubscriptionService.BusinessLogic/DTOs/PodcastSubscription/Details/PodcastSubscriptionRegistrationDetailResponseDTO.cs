@@ -13,6 +13,7 @@ namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.Details
         public int AccountId { get; set; }
         public int PodcastSubscriptionId { get; set; }
         public SubscriptionCycleTypeDTO SubscriptionCycleType { get; set; }
+        public decimal Price { get; set; }
         public int CurrentVersion { get; set; }
         public bool? IsAcceptNewestVersionSwitch { get; set; }
         public bool IsIncomeTaken { get; set; }

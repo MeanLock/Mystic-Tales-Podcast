@@ -323,7 +323,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     };
                     await _dmcaAccusationStatusTrackingGenericRepository.CreateAsync(newDMCAAccusationStatusTracking);
 
-                    //Send email to B
+                    //Send email to Accuser
+                    var accuserMailSendingRequestData = JObject.FromObject(new
+                    {
+                        SendModerationServiceEmailInfo = new
+                        {
+                            MailTypeName = "DMCANoticePending",
+                            ToEmail = createdDmcaAccusation.AccuserEmail,
+                            MailObject = new DMCANoticePendingMailViewModel
+                            {
+                                AccuserEmail = createdDmcaAccusation.AccuserEmail,
+                                AccuserFullName = createdDmcaAccusation.AccuserFullName,
+                                CreatedDate = _dateHelper.GetNowByAppTimeZone(),
+                            }
+                        }
+                    });
+                    var accuserMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: accuserMailSendingRequestData,
+                        sagaInstanceId: null,
+                        messageName: "moderation-service-mail-sending-flow");
+                    await _messagingService.SendSagaMessageAsync(accuserMailSendingFlow);
 
                     await transaction.CommitAsync();
 

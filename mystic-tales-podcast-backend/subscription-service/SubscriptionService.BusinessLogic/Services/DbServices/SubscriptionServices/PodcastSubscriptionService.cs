@@ -1148,6 +1148,21 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         throw new Exception($"No Podcast Subscription Cycle Type Price exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId} and SubscriptionCycleType Id: {parameter.SubscriptionCycleTypeId}");
                     }
+                    var accountCheck = await GetAccount(account.Id);
+                    if(accountCheck == null)
+                    {
+                        throw new Exception($"No Account exists for Account Id: {parameter.AccountId}");
+                    }
+
+                    var originalPrice2 = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId)
+                        .Select(ptcp => ptcp.Price)
+                        .FirstOrDefault();
+
+                    if (accountCheck.Balance - originalPrice2 < 0)
+                    {
+                        throw new Exception("Insufficient balance in account for podcast subscription registration.");
+                    }
 
                     var newRegistration = new PodcastSubscriptionRegistration
                     {
@@ -1161,11 +1176,6 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
                     var registrationResult = await _podcastSubscriptionRegistrationGenericRepository.CreateAsync(newRegistration);
-
-                    var originalPrice2 = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId)
-                        .Select(ptcp => ptcp.Price)
-                        .FirstOrDefault();
 
                     var transactionRequestData2 = new JObject
                     {
@@ -1343,8 +1353,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         {
             var podcastSubscriptionRegistration = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                 .Include(psr => psr.PodcastSubscription)
-                .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
-                .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                    .ThenInclude(ps => ps.PodcastSubscriptionCycleTypePrices)
+                    .ThenInclude(psct => psct.SubscriptionCycleType)
+                .Include(psr => psr.PodcastSubscription)
+                    .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                    .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
                 .Where(psr => psr.Id == PodcastSubscriptionRegistrationId)
                 .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                 {
@@ -1358,6 +1371,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         Id = psr.SubscriptionCycleType.Id,
                         Name = psr.SubscriptionCycleType.Name
                     },
+                    Price = psr.PodcastSubscription.PodcastSubscriptionCycleTypePrices
+                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == psr.SubscriptionCycleTypeId && ptcp.Version == psr.CurrentVersion)
+                        .Select(ptcp => ptcp.Price)
+                        .FirstOrDefault(),
                     CurrentVersion = psr.CurrentVersion,
                     IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
                     IsIncomeTaken = psr.IsIncomeTaken,
@@ -3584,8 +3601,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 {
                     result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                         .Include(psr => psr.PodcastSubscription)
-                        .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
-                        .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                            .ThenInclude(ps => ps.PodcastSubscriptionCycleTypePrices)
+                            .ThenInclude(psct => psct.SubscriptionCycleType)
+                        .Include(psr => psr.PodcastSubscription)
+                            .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                            .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
                         .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastShowId == episode.PodcastShowId && psr.CancelledAt == null)
                         .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                         {
@@ -3599,6 +3619,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 Id = psr.SubscriptionCycleType.Id,
                                 Name = psr.SubscriptionCycleType.Name
                             },
+                            Price = psr.PodcastSubscription.PodcastSubscriptionCycleTypePrices
+                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == psr.SubscriptionCycleTypeId && ptcp.Version == psr.CurrentVersion)
+                                .Select(ptcp => ptcp.Price)
+                                .FirstOrDefault(),
                             CurrentVersion = psr.CurrentVersion,
                             IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
                             IsIncomeTaken = psr.IsIncomeTaken,
@@ -3626,8 +3650,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         {
                             result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                                 .Include(psr => psr.PodcastSubscription)
-                                .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
-                                .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                                    .ThenInclude(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                    .ThenInclude(psct => psct.SubscriptionCycleType)
+                                .Include(psr => psr.PodcastSubscription)
+                                    .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                                    .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
                                 .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastChannelId == show.PodcastChannelId && psr.CancelledAt == null)
                                 .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                                 {
@@ -3641,6 +3668,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                         Id = psr.SubscriptionCycleType.Id,
                                         Name = psr.SubscriptionCycleType.Name
                                     },
+                                    Price = psr.PodcastSubscription.PodcastSubscriptionCycleTypePrices
+                                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == psr.SubscriptionCycleTypeId && ptcp.Version == psr.CurrentVersion)
+                                        .Select(ptcp => ptcp.Price)
+                                        .FirstOrDefault(),
                                     CurrentVersion = psr.CurrentVersion,
                                     IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
                                     IsIncomeTaken = psr.IsIncomeTaken,
@@ -3674,8 +3705,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             {
                 return await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                     .Include(psr => psr.PodcastSubscription)
-                    .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
-                    .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                        .ThenInclude(ps => ps.PodcastSubscriptionCycleTypePrices)
+                        .ThenInclude(psct => psct.SubscriptionCycleType)
+                    .Include(psr => psr.PodcastSubscription)
+                        .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                        .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
                     .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastChannelId == channelId && psr.CancelledAt == null)
                     .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                     {
@@ -3689,6 +3723,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             Id = psr.SubscriptionCycleType.Id,
                             Name = psr.SubscriptionCycleType.Name
                         },
+                        Price = psr.PodcastSubscription.PodcastSubscriptionCycleTypePrices
+                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == psr.SubscriptionCycleTypeId && ptcp.Version == psr.CurrentVersion)
+                            .Select(ptcp => ptcp.Price)
+                            .FirstOrDefault(),
                         CurrentVersion = psr.CurrentVersion,
                         IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
                         IsIncomeTaken = psr.IsIncomeTaken,
@@ -3726,8 +3764,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 {
                     result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                     .Include(psr => psr.PodcastSubscription)
-                    .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
-                    .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                        .ThenInclude(ps => ps.PodcastSubscriptionCycleTypePrices)
+                        .ThenInclude(psct => psct.SubscriptionCycleType)
+                    .Include(psr => psr.PodcastSubscription)
+                        .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                        .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
                     .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastChannelId == show.PodcastChannelId && psr.CancelledAt == null)
                     .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                     {
@@ -3741,6 +3782,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             Id = psr.SubscriptionCycleType.Id,
                             Name = psr.SubscriptionCycleType.Name
                         },
+                        Price = psr.PodcastSubscription.PodcastSubscriptionCycleTypePrices
+                            .Where(ptcp => ptcp.SubscriptionCycleTypeId == psr.SubscriptionCycleTypeId && ptcp.Version == psr.CurrentVersion)
+                            .Select(ptcp => ptcp.Price)
+                            .FirstOrDefault(),
                         CurrentVersion = psr.CurrentVersion,
                         IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
                         IsIncomeTaken = psr.IsIncomeTaken,
@@ -3760,8 +3805,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     if(result == null)
                         result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                             .Include(psr => psr.PodcastSubscription)
-                            .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
-                            .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                                .ThenInclude(ps => ps.PodcastSubscriptionCycleTypePrices)
+                                .ThenInclude(psct => psct.SubscriptionCycleType)
+                            .Include(psr => psr.PodcastSubscription)
+                                .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                                .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
                             .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastShowId == showId && psr.CancelledAt == null)
                             .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                             {
@@ -3775,6 +3823,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                     Id = psr.SubscriptionCycleType.Id,
                                     Name = psr.SubscriptionCycleType.Name
                                 },
+                                Price = psr.PodcastSubscription.PodcastSubscriptionCycleTypePrices
+                                    .Where(ptcp => ptcp.SubscriptionCycleTypeId == psr.SubscriptionCycleTypeId && ptcp.Version == psr.CurrentVersion)
+                                    .Select(ptcp => ptcp.Price)
+                                    .FirstOrDefault(),
                                 CurrentVersion = psr.CurrentVersion,
                                 IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
                                 IsIncomeTaken = psr.IsIncomeTaken,
@@ -3796,8 +3848,11 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                 {
                     result = await _podcastSubscriptionRegistrationGenericRepository.FindAll()
                         .Include(psr => psr.PodcastSubscription)
-                        .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
-                        .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
+                            .ThenInclude(ps => ps.PodcastSubscriptionCycleTypePrices)
+                            .ThenInclude(psct => psct.SubscriptionCycleType)
+                        .Include(psr => psr.PodcastSubscription)
+                            .ThenInclude(ps => ps.PodcastSubscriptionBenefitMappings)
+                            .ThenInclude(bm => bm.PodcastSubscriptionBenefit)
                         .Where(psr => psr.AccountId == accountId && psr.PodcastSubscription.PodcastShowId == showId && psr.CancelledAt == null)
                         .Select(psr => new PodcastSubscriptionRegistrationDetailResponseDTO
                         {
@@ -3811,6 +3866,10 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 Id = psr.SubscriptionCycleType.Id,
                                 Name = psr.SubscriptionCycleType.Name
                             },
+                            Price = psr.PodcastSubscription.PodcastSubscriptionCycleTypePrices
+                                .Where(ptcp => ptcp.SubscriptionCycleTypeId == psr.SubscriptionCycleTypeId && ptcp.Version == psr.CurrentVersion)
+                                .Select(ptcp => ptcp.Price)
+                                .FirstOrDefault(),
                             CurrentVersion = psr.CurrentVersion,
                             IsAcceptNewestVersionSwitch = psr.IsAcceptNewestVersionSwitch,
                             IsIncomeTaken = psr.IsIncomeTaken,

@@ -184,7 +184,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             });
         }
         [HttpPut("{PodcastSubscriptionId}")]
-        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> UpdatePodcastSubscriptionById(
             [FromRoute] int PodcastSubscriptionId,
             [FromBody] PodcastSubscriptionUpdateRequestDTO request)
@@ -221,7 +221,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             });
         }
         [HttpDelete("{PodcastSubscriptionId}")]
-        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> DeletePodcastSubscriptionById([FromRoute] int PodcastSubscriptionId)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
@@ -333,7 +333,7 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             });
         }
         [HttpPut("{PodcastSubscriptionId}/active/{IsActive}")]
-        [Authorize(Policy = "Customer.NoViolationAccess.PodcasterAccess")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> UpdatePodcastSubscriptionActiveStatusById(
             [FromRoute] int PodcastSubscriptionId,
             [FromRoute] bool IsActive)
