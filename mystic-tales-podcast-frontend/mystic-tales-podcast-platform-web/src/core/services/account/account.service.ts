@@ -1,8 +1,7 @@
-// @ts-nocheck
-
 import { appApi } from "@/core/api/appApi";
 import type { AccountMeFromApi } from "@/core/types/account";
-import { setUser } from "@/redux/slices/authSlice/authSlice";
+import { setUser, clearAuth } from "@/redux/slices/authSlice/authSlice";
+import { useNavigate } from "react-router-dom";
 
 export const accountApi = appApi.injectEndpoints({
   endpoints: (build) => ({
@@ -32,6 +31,7 @@ export const accountApi = appApi.injectEndpoints({
     }),
     updateAccountMe: build.query<{ Account: AccountMeFromApi }, void>({
       async queryFn(_arg, api, _extraOptions, baseQuery) {
+        const navigate = useNavigate();
         const result = await baseQuery({
           url: "/api/user-service/api/accounts/me",
           method: "GET",
@@ -39,7 +39,11 @@ export const accountApi = appApi.injectEndpoints({
         });
 
         if (result.error) {
+          api.dispatch(clearAuth());
+          navigate("/auth/login");
           return { error: result.error as any };
+
+          // Navigate về Login ở đây
         }
 
         if (result.data) {
@@ -118,5 +122,5 @@ export const {
   useUpdateAccountMeQuery,
   useGetAccountInformationsQuery,
   useUpdateAccountInformationsMutation,
-  useLazyCheckUserPodcastListenSlotQuery
+  useLazyCheckUserPodcastListenSlotQuery,
 } = accountApi;

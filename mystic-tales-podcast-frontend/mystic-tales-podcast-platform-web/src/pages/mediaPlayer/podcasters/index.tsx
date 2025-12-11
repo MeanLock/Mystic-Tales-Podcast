@@ -3,7 +3,7 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
-import type { PodcasterUI } from "@/core/types/podcaster";
+import type { PodcasterFromApi, PodcasterUI } from "@/core/types/podcaster";
 import type { SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import PodcasterCard from "./components/PodcasterCard";
@@ -11,31 +11,20 @@ import Autoplay from "embla-carousel-autoplay";
 import HighlyRatedCard from "./components/HighlyRatedCard";
 import { useGetPodcastersQuery } from "@/core/services/podcasters/podcasters.service";
 import Loading from "@/components/loading";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
 
-const PodcasterFileConfig: FileResolveConfig[] = [
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "AccountPublic",
-  },
-];
 
 const PodcastersPage = () => {
   // STATES
   const [popularPodcasters, setPopularPodcasters] = useState<
-    PodcasterUI[] | null
+    PodcasterFromApi[] | null
   >(null);
-  const [hotPodcasters, setHopularPodcasters] = useState<PodcasterUI[] | null>(
-    null
-  );
-  const [talentedRookies, setTalentedRookies] = useState<PodcasterUI[] | null>(
-    null
-  );
-  const [isFileResolving, setIsFileResolving] = useState(false);
+  const [hotPodcasters, setHopularPodcasters] = useState<
+    PodcasterFromApi[] | null
+  >(null);
+  const [talentedRookies, setTalentedRookies] = useState<
+    PodcasterFromApi[] | null
+  >(null);
+  // const [isFileResolving, setIsFileResolving] = useState(false);
 
   // HOOKS
   const { data: popularPodcastersRaw, isLoading: isPopularPodcasterLoading } =
@@ -56,45 +45,26 @@ const PodcastersPage = () => {
         return;
       }
 
-      setIsFileResolving(true);
-
       // Resolve Popular Podcasters
       if (popularPodcastersRaw && popularPodcastersRaw.PodcasterList) {
-        const resolvedPromises = popularPodcastersRaw.PodcasterList.map(
-          (podcaster) => resolveFiles(podcaster, PodcasterFileConfig)
-        );
-        const resolvedResults = await Promise.all(resolvedPromises);
-        const resolved = resolvedResults.map((r) => r.resolvedData);
-        setPopularPodcasters(resolved as unknown as PodcasterUI[]);
+        setPopularPodcasters(popularPodcastersRaw.PodcasterList);
       } else {
         setPopularPodcasters([]);
       }
 
       // Resolve Hot Podcasters
       if (hotPodcastersRaw && hotPodcastersRaw.PodcasterList) {
-        const resolvedPromises = hotPodcastersRaw.PodcasterList.map(
-          (podcaster) => resolveFiles(podcaster, PodcasterFileConfig)
-        );
-        const resolvedResults = await Promise.all(resolvedPromises);
-        const resolved = resolvedResults.map((r) => r.resolvedData);
-        setHopularPodcasters(resolved as unknown as PodcasterUI[]);
+        setHopularPodcasters(hotPodcastersRaw.PodcasterList);
       } else {
         setHopularPodcasters([]);
       }
 
       // Resolve Talented Rookies
       if (talentedRookiesRaw && talentedRookiesRaw.PodcasterList) {
-        const resolvedPromises = talentedRookiesRaw.PodcasterList.map(
-          (podcaster) => resolveFiles(podcaster, PodcasterFileConfig)
-        );
-        const resolvedResults = await Promise.all(resolvedPromises);
-        const resolved = resolvedResults.map((r) => r.resolvedData);
-        setTalentedRookies(resolved as unknown as PodcasterUI[]);
+        setTalentedRookies(talentedRookiesRaw.PodcasterList);
       } else {
         setTalentedRookies([]);
       }
-
-      setIsFileResolving(false);
     };
     resolveData();
   }, [
@@ -111,8 +81,7 @@ const PodcastersPage = () => {
   if (
     isHotPodcastersLoading ||
     isPopularPodcasterLoading ||
-    isTalentedRookiesLoading ||
-    isFileResolving
+    isTalentedRookiesLoading
   ) {
     return (
       <div className="w-full h-full flex items-center flex-col justify-center gap-5">

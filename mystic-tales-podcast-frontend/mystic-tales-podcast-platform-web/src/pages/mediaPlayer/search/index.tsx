@@ -31,90 +31,20 @@ const SearchPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get("keyword");
+  const refresh = searchParams.get("refresh");
 
-  const { data: searchDataRaw, isLoading: isSearchDataLoading } =
+  const { data: searchDataRaw, isFetching: isSearchDataLoading } =
     useGetSearchResultsQuery(
-      { keyword: keyword || "" },
+      { keyword: keyword || "", refresh: refresh || "" },
       {
         skip: !keyword || keyword.trim() === "",
+        refetchOnMountOrArgChange: true,
       }
     );
 
-  // useEffect(() => {
-  //   const resolveSearchData = async () => {
-  //     if (!keyword || keyword.trim() === "") {
-  //       navigate("/media-player/discovery");
-  //       return;
-  //     }
-
-  //     if (searchDataRaw) {
-  //       // Resolve all images
-  //       const resolvedTopResults = await Promise.all(
-  //         searchDataRaw.TopSearchResults.map(async (item) => {
-  //           if (item.Show) {
-  //             const { resolvedData } = await resolveFiles(
-  //               item.Show,
-  //               FileConfig
-  //             );
-  //             return { ...item, Show: resolvedData as any };
-  //           }
-  //           if (item.Episode) {
-  //             const { resolvedData } = await resolveFiles(
-  //               item.Episode,
-  //               FileConfig
-  //             );
-  //             return { ...item, Episode: resolvedData as any };
-  //           }
-  //           return item;
-  //         })
-  //       );
-
-  //       const resolvedShows = await Promise.all(
-  //         searchDataRaw.ShowList.map(async (show) => {
-  //           const { resolvedData } = await resolveFiles(show, FileConfig);
-  //           return resolvedData as any;
-  //         })
-  //       );
-
-  //       const resolvedEpisodes = await Promise.all(
-  //         searchDataRaw.EpisodeList.map(async (episode) => {
-  //           const { resolvedData } = await resolveFiles(episode, FileConfig);
-  //           return resolvedData as any;
-  //         })
-  //       );
-
-  //       const resolvedChannels = await Promise.all(
-  //         searchDataRaw.ChannelList.map(async (channel) => {
-  //           const { resolvedData } = await resolveFiles(channel, FileConfig);
-  //           return resolvedData as any;
-  //         })
-  //       );
-
-  //       const resolvedData: SearchResultResponseUI = {
-  //         TopSearchResults: resolvedTopResults as any,
-  //         ShowList: resolvedShows,
-  //         EpisodeList: resolvedEpisodes,
-  //         ChannelList: resolvedChannels,
-  //       };
-
-  //       // Merge with mockdata
-  //       setSearchData({
-  //         TopSearchResults: [...resolvedData.TopSearchResults],
-  //         ShowList: [...resolvedData.ShowList],
-  //         EpisodeList: [...resolvedData.EpisodeList],
-  //         ChannelList: [...resolvedData.ChannelList],
-  //       });
-  //     } else {
-  //       setSearchData(null);
-  //     }
-  //   };
-
-  //   resolveSearchData();
-  // }, [keyword, searchDataRaw, navigate]);
-
   if (isSearchDataLoading) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center gap-5">
+      <div className="scrollbar-hide w-full h-full flex flex-col items-center justify-center gap-5">
         <Loading />
         <p className="font-poppins text-[#D9D9D9] font-bold">
           Finding Your Contents...
@@ -124,7 +54,7 @@ const SearchPage = () => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-y-auto">
+    <div className="scrollbar-hide w-full h-full flex flex-col overflow-y-auto">
       <div
         onClick={() => navigate(-1)}
         className="px-8 pt-8 text-white font-poppins cursor-pointer hover:underline flex items-center gap-1"
