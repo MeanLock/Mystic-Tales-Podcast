@@ -783,7 +783,7 @@ const ShowDetailsPage = () => {
           <h1 className="text-4xl font-medium text-white">{show.Name}</h1>
           <p className="text-xl text-white">{show.Podcaster.FullName}</p>
           <span className="text-sm text-white">
-            ⭐ {averageRating.toFixed(1)} ({ratingCount}){" "}
+            ⭐ {averageRating.toFixed(1)} ({ratingCount ? ratingCount : 0}){" "}
             {show.PodcastCategory
               ? -show.PodcastCategory.Name
               : "Unknown Category"}{" "}
