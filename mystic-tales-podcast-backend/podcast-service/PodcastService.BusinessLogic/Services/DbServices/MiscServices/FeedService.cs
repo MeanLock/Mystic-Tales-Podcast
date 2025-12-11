@@ -3187,22 +3187,54 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 var showScores = CalculateShowSearchScores(shows, searchTerms, cacheMetrics);
                 var episodeScores = CalculateEpisodeSearchScores(episodes, searchTerms, cacheMetrics);
 
-                // STEP 4: Filter by minimum threshold
-                const double minScoreThreshold = 0.15;
-                channelScores = channelScores.Where(x => x.finalScore >= minScoreThreshold).ToList();
-                showScores = showScores.Where(x => x.finalScore >= minScoreThreshold).ToList();
-                episodeScores = episodeScores.Where(x => x.finalScore >= minScoreThreshold).ToList();
+                foreach (var cs in channelScores)
+                {
+                    Console.WriteLine($"[KeywordSearch] Channel '{cs.channel.Name}' - BM25: {cs.bm25Score:F4}, Engagement: {cs.engagementScore:F4}, Final: {cs.finalScore:F4}");
+                }
+                foreach (var ss in showScores)
+                {
+                    Console.WriteLine($"[KeywordSearch] Show '{ss.show.Name}' - BM25: {ss.bm25Score:F4}, Engagement: {ss.engagementScore:F4}, Final: {ss.finalScore:F4}");
+                }
+                foreach (var es in episodeScores)
+                {
+                    Console.WriteLine($"[KeywordSearch] Episode '{es.episode.Name}' - BM25: {es.bm25Score:F4}, Engagement: {es.engagementScore:F4}, Final: {es.finalScore:F4}");
+                }
 
-                // STEP 5: Normalize scores for mixed results
-                var (normalizedShows, normalizedEpisodes) = NormalizeScoresForMixedResults(showScores, episodeScores);
+                // // STEP 4: Filter by minimum threshold
+                // const double minScoreThreshold = 0.15;
+                // channelScores = channelScores.Where(x => x.finalScore >= minScoreThreshold).ToList();
+                // showScores = showScores.Where(x => x.finalScore >= minScoreThreshold).ToList();
+                // episodeScores = episodeScores.Where(x => x.finalScore >= minScoreThreshold).ToList();
 
-                // STEP 6: Build Top Search Results (mixed Show + Episode)
+                // // STEP 5: Normalize scores for mixed results
+                // var (normalizedShows, normalizedEpisodes) = NormalizeScoresForMixedResults(showScores, episodeScores);
+
+                // // STEP 6: Build Top Search Results (mixed Show + Episode)
+                // var topSearchResults = BuildTopSearchResults(normalizedShows, normalizedEpisodes);
+
+                // // STEP 7: Map to DTOs
+                // var channelList = await MapToChannelListItemsAsync(channelScores.OrderByDescending(x => x.finalScore).Select(x => x.channel).ToList());
+                // var showList = await MapToShowListItemsAsync(showScores.OrderByDescending(x => x.finalScore).Select(x => x.show).ToList());
+                // var episodeList = await MapToEpisodeListItemsAsync(episodeScores.OrderByDescending(x => x.finalScore).Select(x => x.episode).ToList());
+
+
+                // STEP 4: PHASE 1 - Build TopSearchResults with 4-Tier Adaptive Balancing (20 items)
+                var topShowScores = ApplyAdaptiveBalancing(showScores, targetCount: 20, entityType: "Show");
+                var topEpisodeScores = ApplyAdaptiveBalancing(episodeScores, targetCount: 20, entityType: "Episode");
+
+                // STEP 5: Normalize and build TopSearchResults
+                var (normalizedShows, normalizedEpisodes) = NormalizeScoresForMixedResults(topShowScores, topEpisodeScores);
                 var topSearchResults = BuildTopSearchResults(normalizedShows, normalizedEpisodes);
 
-                // STEP 7: Map to DTOs
-                var channelList = await MapToChannelListItemsAsync(channelScores.OrderByDescending(x => x.finalScore).Select(x => x.channel).ToList());
-                var showList = await MapToShowListItemsAsync(showScores.OrderByDescending(x => x.finalScore).Select(x => x.show).ToList());
-                var episodeList = await MapToEpisodeListItemsAsync(episodeScores.OrderByDescending(x => x.finalScore).Select(x => x.episode).ToList());
+                // STEP 6: PHASE 2 - Build Full Lists (ALL items, no filtering)
+                Console.WriteLine($"[KeywordSearch] Full Lists - Channels: {channelScores.Count}, Shows: {showScores.Count}, Episodes: {episodeScores.Count}");
+
+                var channelList = await MapToChannelListItemsAsync(
+                    channelScores.OrderByDescending(x => x.finalScore).Select(x => x.channel).ToList());
+                var showList = await MapToShowListItemsAsync(
+                    showScores.OrderByDescending(x => x.finalScore).Select(x => x.show).ToList());
+                var episodeList = await MapToEpisodeListItemsAsync(
+                    episodeScores.OrderByDescending(x => x.finalScore).Select(x => x.episode).ToList());
 
                 Console.WriteLine($"[KeywordSearch] Results - Top: {topSearchResults.Count}, Channels: {channelList.Count}, Shows: {showList.Count}, Episodes: {episodeList.Count}");
 
@@ -3224,7 +3256,93 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         #endregion
         #region Keyword Search Helpers
 
+        /// <summary>
+        /// 4-Tier Adaptive Balancing cho TopSearchResults
+        /// TIER 1: finalScore >= 0.15 (strict quality)
+        /// TIER 2: finalScore >= 0.08 (relaxed quality) 
+        /// TIER 3: bm25Score >= 0.05 (relevance-focused, catch new content)
+        /// TIER 4: ALL matched items (fallback, never empty)
+        /// </summary>
+        private List<(PodcastShow show, double bm25Score, double engagementScore, double finalScore)> ApplyAdaptiveBalancing(
+            List<(PodcastShow show, double bm25Score, double engagementScore, double finalScore)> showScores,
+            int targetCount,
+            string entityType)
+        {
+            if (!showScores.Any())
+            {
+                Console.WriteLine($"[AdaptiveBalancing-{entityType}] No items to process");
+                return new List<(PodcastShow, double, double, double)>();
+            }
 
+            // TIER 1: Strict quality
+            var tier1 = showScores.Where(x => x.finalScore >= 0.15).ToList();
+            if (tier1.Count >= targetCount)
+            {
+                Console.WriteLine($"[AdaptiveBalancing-{entityType}] ✅ TIER 1: {tier1.Count} items >= 0.15");
+                return tier1.OrderByDescending(x => x.finalScore).Take(targetCount).ToList();
+            }
+
+            // TIER 2: Relaxed quality
+            var tier2 = showScores.Where(x => x.finalScore >= 0.08).ToList();
+            if (tier2.Count >= targetCount)
+            {
+                Console.WriteLine($"[AdaptiveBalancing-{entityType}] ⚠️ TIER 2: {tier2.Count} items >= 0.08");
+                return tier2.OrderByDescending(x => x.finalScore).Take(targetCount).ToList();
+            }
+
+            // TIER 3: BM25-only (catch new content)
+            var tier3 = showScores.Where(x => x.bm25Score >= 0.05).ToList();
+            if (tier3.Count >= targetCount / 2) // Minimum 10 items for target=20
+            {
+                Console.WriteLine($"[AdaptiveBalancing-{entityType}] 🔍 TIER 3: {tier3.Count} items with BM25 >= 0.05");
+                return tier3.OrderByDescending(x => x.finalScore).Take(targetCount).ToList();
+            }
+
+            // TIER 4: Fallback - return all available
+            Console.WriteLine($"[AdaptiveBalancing-{entityType}] 🆘 TIER 4: Returning all {showScores.Count} items");
+            return showScores.OrderByDescending(x => x.finalScore).Take(targetCount).ToList();
+        }
+
+        // Overload cho Episode
+        private List<(PodcastEpisode episode, double bm25Score, double engagementScore, double finalScore)> ApplyAdaptiveBalancing(
+            List<(PodcastEpisode episode, double bm25Score, double engagementScore, double finalScore)> episodeScores,
+            int targetCount,
+            string entityType)
+        {
+            if (!episodeScores.Any())
+            {
+                Console.WriteLine($"[AdaptiveBalancing-{entityType}] No items to process");
+                return new List<(PodcastEpisode, double, double, double)>();
+            }
+
+            // TIER 1
+            var tier1 = episodeScores.Where(x => x.finalScore >= 0.15).ToList();
+            if (tier1.Count >= targetCount)
+            {
+                Console.WriteLine($"[AdaptiveBalancing-{entityType}] ✅ TIER 1: {tier1.Count} items >= 0.15");
+                return tier1.OrderByDescending(x => x.finalScore).Take(targetCount).ToList();
+            }
+
+            // TIER 2
+            var tier2 = episodeScores.Where(x => x.finalScore >= 0.08).ToList();
+            if (tier2.Count >= targetCount)
+            {
+                Console.WriteLine($"[AdaptiveBalancing-{entityType}] ⚠️ TIER 2: {tier2.Count} items >= 0.08");
+                return tier2.OrderByDescending(x => x.finalScore).Take(targetCount).ToList();
+            }
+
+            // TIER 3
+            var tier3 = episodeScores.Where(x => x.bm25Score >= 0.05).ToList();
+            if (tier3.Count >= targetCount / 2)
+            {
+                Console.WriteLine($"[AdaptiveBalancing-{entityType}] 🔍 TIER 3: {tier3.Count} items with BM25 >= 0.05");
+                return tier3.OrderByDescending(x => x.finalScore).Take(targetCount).ToList();
+            }
+
+            // TIER 4
+            Console.WriteLine($"[AdaptiveBalancing-{entityType}] 🆘 TIER 4: Returning all {episodeScores.Count} items");
+            return episodeScores.OrderByDescending(x => x.finalScore).Take(targetCount).ToList();
+        }
 
         private async Task<(
             ChannelAllTimeMaxQueryMetric? channelAllTime,
@@ -3321,9 +3439,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 if (account != null && account.DeactivatedAt == null && account.HasVerifiedPodcasterProfile == true)
                 {
                     podcasterAccounts[id] = account;
-                    Console.WriteLine($"[ChannelSearch] Loaded podcaster profile name: {account.PodcasterProfileName} for PodcasterId: {id}");
                 }
             }
+
 
             // Filter channels that have valid podcasters and match search terms
             channels = channels.Where(c =>
@@ -3342,7 +3460,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 return matchesKeyword;
             }).ToList();
-
             return channels;
         }
 
@@ -3403,7 +3520,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 return matchesKeyword;
             }).ToList();
-
             return shows;
         }
 
@@ -3476,7 +3592,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 return matchesKeyword;
             }).ToList();
-
             return episodes;
         }
 

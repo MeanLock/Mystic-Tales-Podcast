@@ -1130,7 +1130,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == (int)RoleEnum.Customer)
                 {
-                    episodeQuery = episodeQuery.Where(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.IsReleased != null);
+                    episodeQuery = episodeQuery.Where(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.ReleaseDate != null);
                 }
 
                 var episode = await episodeQuery.FirstOrDefaultAsync();

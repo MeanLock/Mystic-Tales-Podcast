@@ -593,7 +593,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1)
                 {
-                    showByChannelIdQuery = showByChannelIdQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && ps.IsReleased != null); // đã đăng và có ngày phát hành (có thể là đã phát hành hoặc sắp phát hành)
+                    showByChannelIdQuery = showByChannelIdQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && ps.ReleaseDate != null); // đã đăng và có ngày phát hành (có thể là đã phát hành hoặc sắp phát hành)
                 }
                 var showList = await showByChannelIdQuery.ToListAsync();
 

@@ -58,7 +58,7 @@ namespace PodcastService.API.Controllers.BaseControllers
                     actualCategory = category.ToString()
                 });
             }
-            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey, 5);
+            var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
 
             return Ok(new { FileUrl = url });
         }
