@@ -30,7 +30,9 @@ export async function loadBookingHls(
   } = opts;
 
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-  const playlistUrl = `${normalizedBaseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/hls-playlist/get-file-data/${fileKey}`;
+  // Thêm timestamp để bust cache mỗi lần load
+  const cacheBuster = Date.now();
+  const playlistUrl = `${normalizedBaseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/hls-playlist/get-file-data/${fileKey}?_t=${cacheBuster}`;
 
   const performSeekAndPlay = async () => {
     if (typeof seekTo === "number" && seekTo > 0) {
@@ -169,7 +171,12 @@ export async function loadBookingHls(
 
           // Exponential backoff: 1s, 2s, 3s
           setTimeout(() => {
-            h.loadSource(`${playlistUrl}?t=${Date.now()}`);
+            // Tạo URL mới với timestamp mới cho retry
+            const retryUrl = playlistUrl.replace(
+              /[?&]_t=\d+/,
+              `&_t=${Date.now()}`
+            );
+            h.loadSource(retryUrl);
             h.startLoad();
           }, 1000 * retryCount);
         } else {
@@ -181,6 +188,6 @@ export async function loadBookingHls(
     });
 
     h.attachMedia(audio);
-    h.loadSource(`${playlistUrl}?t=${Date.now()}`);
+    h.loadSource(playlistUrl);
   });
 }

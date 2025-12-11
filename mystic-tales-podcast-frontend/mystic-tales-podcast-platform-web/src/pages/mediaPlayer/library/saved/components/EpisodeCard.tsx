@@ -1,15 +1,11 @@
 import { IoPause, IoPlay } from "react-icons/io5";
-import { IoIosMore } from "react-icons/io";
 import type { EpisodeUI } from "@/core/types/episode";
 import { useNavigate } from "react-router-dom";
 import { renderDescriptionHTML } from "@/pages/mediaPlayer/channels/details";
-import { useDispatch } from "react-redux";
-import { playAudio } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import { usePlayer } from "@/core/services/player/usePlayer";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
-import { Tag } from "lucide-react";
 import { BsFillBookmarkFill } from "react-icons/bs";
-import { useSaveEpisodeMutation } from "@/core/services/episode/episode.service";
+
 
 const EpisodeCard = ({
   episode,
@@ -53,8 +49,6 @@ const EpisodeCard = ({
       return `${seconds}s`;
     }
   };
-
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const [triggerGetBenefitList] =
@@ -89,6 +83,7 @@ const EpisodeCard = ({
 
   return (
     <div
+      onClick={() => navigate(`/media-player/episodes/details/${episode.Id}`)}
       style={{ backgroundImage: `url(${episode.ImageUrl})` }}
       className="bg-cover w-full aspect-[3/4] rounded-xl relative transition-all duration-500 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >

@@ -3,7 +3,7 @@ import MediaPlayerSidebar from "./components/MediaPlayerSidebar";
 import { useUpdateAccountMeQuery } from "@/core/services/account/account.service";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/redux/store";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import NewMediaPlayerControlBar from "./components/NewMediaPlayerControlBar";
 import { usePlayer } from "@/core/services/player/usePlayer";
 import { setUser, clearAuth } from "@/redux/slices/authSlice/authSlice";
@@ -14,6 +14,7 @@ const MediaPlayerLayout = () => {
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
   const user = useSelector((state: RootState) => state.auth.user);
   const { playFromLatest } = usePlayer();
+  const hasCalledPlayFromLatest = useRef(false);
 
   // Chỉ polling khi user đã đăng nhập (có token)
   const { data, error } = useUpdateAccountMeQuery(undefined, {
@@ -40,10 +41,11 @@ const MediaPlayerLayout = () => {
 
   // Xử lý latest session khi có data - chỉ set state, playerCore sẽ xử lý việc listen
   useEffect(() => {
-    if (user) {
+    if (user && !hasCalledPlayFromLatest.current) {
+      hasCalledPlayFromLatest.current = true;
       playFromLatest();
     }
-  }, []);
+  }, [user, playFromLatest]);
 
   return (
     <div className="relative w-full h-screen flex flex-col justify-between bg-[url(/background/mediaplayer2.jpg)] bg-cover object-cover gap-5 overflow-hidden">

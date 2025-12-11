@@ -39,7 +39,9 @@ export async function loadEpisodeHls(
   } = opts;
 
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-  const playlistUrl = `${normalizedBaseUrl}api/podcast-service/api/episodes/hls-playlist/get-file-data/${fileKey}`;
+  // Thêm timestamp để bust cache mỗi lần load
+  const cacheBuster = Date.now();
+  const playlistUrl = `${normalizedBaseUrl}api/podcast-service/api/episodes/hls-playlist/get-file-data/${fileKey}?_t=${cacheBuster}`;
 
   const performSeekAndPlay = async () => {
     if (typeof seekTo === "number" && seekTo > 0) {
@@ -102,6 +104,8 @@ export async function loadEpisodeHls(
       xhr.open = (method: string, u: string, async?: boolean) => {
         let next = u;
 
+        // alert("Đang gọi lấy key/segment HLS...");
+        console.log("Token:", token);
         // KEY: pattern UUID ở cuối
         if (/[0-9a-fA-F-]{36}$/.test(u)) {
           const kid = u.split("/").pop();
@@ -185,7 +189,12 @@ export async function loadEpisodeHls(
 
           // Exponential backoff: 1s, 2s, 3s
           setTimeout(() => {
-            h.loadSource(`${playlistUrl}?t=${Date.now()}`);
+            // Tạo URL mới với timestamp mới cho retry
+            const retryUrl = playlistUrl.replace(
+              /[?&]_t=\d+/,
+              `&_t=${Date.now()}`
+            );
+            h.loadSource(retryUrl);
             h.startLoad();
           }, 1000 * retryCount);
         } else {
@@ -197,6 +206,6 @@ export async function loadEpisodeHls(
     });
 
     h.attachMedia(audio);
-    h.loadSource(`${playlistUrl}?t=${Date.now()}`);
+    h.loadSource(playlistUrl);
   });
 }

@@ -8,10 +8,7 @@ import type {
   PodcastBookingTone,
   PodcastBuddyFromAPI,
 } from "@/core/types/booking";
-import type {
-  PodcasterProfile,
-  PodcasterReviewAPI,
-} from "@/core/types/podcaster";
+
 
 export type CreateBookingPayload = {
   BookingCreateInfo: {

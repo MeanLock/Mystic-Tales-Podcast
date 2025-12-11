@@ -3,9 +3,12 @@ import type {
   PodcastBookingToneCategoryType,
   PodcastBuddyUI,
 } from "@/core/types/booking";
-import { useEffect, useState } from "react";
-import { FaArrowLeftLong, FaArrowRightLong } from "react-icons/fa6";
-import { IoIosArrowRoundBack } from "react-icons/io";
+import { useEffect, useState, useRef } from "react";
+import {
+  FaPlay,
+  FaPause,
+} from "react-icons/fa6";
+
 import { TbCoinFilled } from "react-icons/tb";
 import "./style.css";
 import BuddyCard from "./components/BuddyCard";
@@ -14,6 +17,9 @@ import type { PodcastBuddyDetails } from "@/core/types/podcaster";
 // import AutoResolveImageBackground from "./components/AutoResolveImage";
 import TonePill from "./components/TonePill";
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
+import {
+  useLazyGetAccountPublicSourceQuery,
+} from "@/core/services/file/file.service";
 
 interface PodcastBuddySelectProps {
   buddies: PodcastBuddyUI[];
@@ -50,10 +56,16 @@ const PodcastBuddySelectComponent = ({
     );
   const [selectedToneLocal, setSelectedToneLocal] =
     useState<PodcastBookingTone | null>(selectedBookingTone);
+  const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
+  const [trailerAudioUrl, setTrailerAudioUrl] = useState<string | null>(null);
   // const [buddiesLocal, setBuddiesLocal] = useState<PodcastBuddyUI[]>(buddies);
 
   // HOOKS
   const navigate = useNavigate();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [getFileUrl] = useLazyGetAccountPublicSourceQuery();
+
   // Sync step based on parent selections
   useEffect(() => {
     if (selectedBuddy) {
@@ -134,6 +146,58 @@ const PodcastBuddySelectComponent = ({
     localStorage.removeItem("selectedPodcaster");
     navigate(`/media-player/podcasters/${id}`);
   };
+
+  const handleListenToTrailer = async () => {
+    if (!selectedBuddyDetails?.PodcastBuddyProfile.BuddyAudioFileKey) {
+      console.error("No trailer audio available");
+      return;
+    }
+
+    try {
+      // Nếu đang phát thì pause
+      if (isPlayingTrailer && audioRef.current) {
+        audioRef.current.pause();
+        setIsPlayingTrailer(false);
+        return;
+      }
+
+      // Nếu chưa có URL thì fetch
+      if (!trailerAudioUrl) {
+        const fileUrlResponse = await getFileUrl({
+          FileKey: selectedBuddyDetails.PodcastBuddyProfile.BuddyAudioFileKey,
+        }).unwrap();
+        setTrailerAudioUrl(fileUrlResponse.FileUrl);
+
+        // Đợi audio element update rồi mới play
+        setTimeout(() => {
+          if (audioRef.current) {
+            audioRef.current.play();
+            setIsPlayingTrailer(true);
+          }
+        }, 100);
+      } else {
+        // Đã có URL rồi thì play luôn
+        if (audioRef.current) {
+          audioRef.current.play();
+          setIsPlayingTrailer(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error playing trailer:", error);
+    }
+  };
+
+  // Cleanup audio khi unmount hoặc selectedBuddy thay đổi
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      setIsPlayingTrailer(false);
+      setTrailerAudioUrl(null);
+    };
+  }, [selectedBuddy]);
 
   return (
     <div className="w-full flex flex-col">
@@ -233,12 +297,14 @@ const PodcastBuddySelectComponent = ({
           <div className="scrollbar-hide w-full h-[230px] overflow-y-auto mt-5 p-5 grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5">
             {buddies.length > 0 ? (
               buddies.map((buddy) => (
-                <BuddyCard
-                  key={buddy.Id}
-                  buddy={buddy}
-                  onViewDetails={handleViewPodcasterDetails}
-                  onSelectBuddy={onSelectBuddy}
-                />
+                <div className="w-full flex items-center justify-center">
+                  <BuddyCard
+                    key={buddy.Id}
+                    buddy={buddy}
+                    onViewDetails={handleViewPodcasterDetails}
+                    onSelectBuddy={onSelectBuddy}
+                  />
+                </div>
               ))
             ) : (
               <div className="col-span-full text-center text-white/60">
@@ -289,7 +355,22 @@ const PodcastBuddySelectComponent = ({
                     selectedBuddyDetails.PodcastBuddyProfile.Description || "",
                 }}
               />
-              <div className="w-full flex items-center mt-5">
+              {selectedBuddyDetails.PodcastBuddyProfile.BuddyAudioFileKey && (
+                <div className="w-full flex items-center mt-5">
+                  <LiquidButton
+                    onClick={handleListenToTrailer}
+                    variant="minimalRoundedMd"
+                  >
+                    <div className="flex items-center gap-2">
+                      {isPlayingTrailer ? <FaPause /> : <FaPlay />}
+                      <p>
+                        {isPlayingTrailer ? "Pause Trailer" : "Play Trailer"}
+                      </p>
+                    </div>
+                  </LiquidButton>
+                </div>
+              )}
+              <div className="w-full flex items-center mt-1">
                 <LiquidButton
                   onClick={() => handleChooseAgain(4)}
                   variant="minimalRoundedMd"
@@ -297,6 +378,17 @@ const PodcastBuddySelectComponent = ({
                   <p>Choose Another</p>
                 </LiquidButton>
               </div>
+
+              {/* Hidden audio element for trailer playback */}
+              {trailerAudioUrl && (
+                <audio
+                  ref={audioRef}
+                  src={trailerAudioUrl}
+                  onEnded={() => setIsPlayingTrailer(false)}
+                  onPause={() => setIsPlayingTrailer(false)}
+                  onPlay={() => setIsPlayingTrailer(true)}
+                />
+              )}
             </div>
             <div className="absolute bottom-5 right-2">
               <div className="border-2 border-mystic-green rounded-md  text-mystic-green shadow-2xl px-4 py-2  flex items-center justify-center gap-1">

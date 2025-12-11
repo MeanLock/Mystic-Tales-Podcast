@@ -1,5 +1,5 @@
 import type { ShowUI } from "@/core/types/show";
-import { FaHeadphones, FaHeart } from "react-icons/fa";
+import { FaHeadphones } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 

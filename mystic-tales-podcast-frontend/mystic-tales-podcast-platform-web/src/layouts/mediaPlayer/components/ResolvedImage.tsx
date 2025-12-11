@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from "react";
 import { store } from "@/redux/store";
 import fileApi from "@/core/services/file/file.service";

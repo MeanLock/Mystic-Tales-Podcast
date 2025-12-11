@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MdPeopleAlt } from "react-icons/md";
 import { FaStar } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";

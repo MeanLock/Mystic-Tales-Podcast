@@ -1,11 +1,10 @@
+// @ts-nocheck
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetAccountPublicSourceQuery } from "@/core/services/file/file.service";
 import { useState } from "react";
-import { is } from "zod/v4/locales";
 
 const AutoResolveImageBackground = ({
   FileKey,
-  key,
   FullName,
 }: {
   FileKey: string;

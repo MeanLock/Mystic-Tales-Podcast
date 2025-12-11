@@ -9,8 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/redux/store";
+
 
 import { IoPlay } from "react-icons/io5";
 import PlayingWave from "@/components/playingWave/PlayWave";

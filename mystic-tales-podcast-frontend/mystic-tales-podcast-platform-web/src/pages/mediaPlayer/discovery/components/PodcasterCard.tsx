@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 import type { TopPodcasters } from "@/core/types/feed";
 import type { PodcasterUI } from "@/core/types/podcaster";

@@ -2,6 +2,7 @@ import type { PodcastBookingToneCategoryType } from "@/core/types/booking";
 import { useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+// import { useLazyGetBookingPublicSourceQuery } from "@/core/services/file/file.service";
 
 interface RequirementCardProps {
   requirement: {
@@ -66,6 +67,34 @@ const RequirementCardWithWordCount = ({
   requirement,
 }: RequirementCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  // const [triggerResolveFile] = useLazyGetBookingPublicSourceQuery();
+
+  const handleDownload = async () => {
+    try {
+      if (!requirement.RequirementFile) return;
+
+      // Fetch as blob to force download (prevents audio/video from opening in browser)
+      const response = await fetch(requirement.RequirementFile);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      // Trigger download
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = requirement.Name || "requirement-document";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Cleanup blob URL
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error(
+        "[RequirementCardWithWordCount] Failed to download file:",
+        error
+      );
+    }
+  };
 
   return (
     <div className="w-full">
@@ -109,13 +138,55 @@ const RequirementCardWithWordCount = ({
               }}
             />
 
-            {requirement.RequirementFile && (
-              <iframe
-                src={requirement.RequirementFile}
-                rel="noopener noreferrer"
-                className="w-full mt-10 min-h-[800px]"
-              />
-            )}
+            {/* Hiển thị PDF trong iframe, audio cho nghe và download, các file khác cho download */}
+            {requirement.RequirementFile &&
+              requirement.RequirementFile.toLowerCase().includes(".pdf") && (
+                <iframe
+                  src={requirement.RequirementFile}
+                  title="Requirement Document PDF"
+                  className="w-full mt-10 min-h-[800px] border rounded-md"
+                />
+              )}
+            {requirement.RequirementFile &&
+              (requirement.RequirementFile.toLowerCase().includes(".mp3") ||
+                requirement.RequirementFile.toLowerCase().includes(".wav") ||
+                requirement.RequirementFile.toLowerCase().includes(".m4a") ||
+                requirement.RequirementFile.toLowerCase().includes(".ogg") ||
+                requirement.RequirementFile.toLowerCase().includes(".aac")) && (
+                <div className="mt-5 space-y-3">
+                  <div className="border rounded-md p-4 bg-gray-50">
+                    <p className="font-semibold mb-2 text-sm text-gray-600">
+                      Audio Preview:
+                    </p>
+                    <audio controls className="w-full">
+                      <source src={requirement.RequirementFile} />
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+                  <button
+                    onClick={handleDownload}
+                    className="inline-block px-6 py-3 bg-mystic-green text-black font-semibold rounded-md hover:bg-mystic-green/80 transition-colors cursor-pointer"
+                  >
+                    Download Audio File
+                  </button>
+                </div>
+              )}
+            {requirement.RequirementFile &&
+              !requirement.RequirementFile.toLowerCase().includes(".pdf") &&
+              !requirement.RequirementFile.toLowerCase().includes(".mp3") &&
+              !requirement.RequirementFile.toLowerCase().includes(".wav") &&
+              !requirement.RequirementFile.toLowerCase().includes(".m4a") &&
+              !requirement.RequirementFile.toLowerCase().includes(".ogg") &&
+              !requirement.RequirementFile.toLowerCase().includes(".aac") && (
+                <div className="mt-5">
+                  <button
+                    onClick={handleDownload}
+                    className="inline-block px-6 py-3 bg-mystic-green text-black font-semibold rounded-md hover:bg-mystic-green/80 transition-colors cursor-pointer"
+                  >
+                    Download Requirement Document
+                  </button>
+                </div>
+              )}
           </motion.div>
         )}
       </AnimatePresence>

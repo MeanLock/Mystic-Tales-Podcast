@@ -13,7 +13,6 @@ type PlayerOrderModeToggleProps = {
 export const PlayerOrderModeToggle: React.FC<PlayerOrderModeToggleProps> = ({
   mode,
   onTogglePlayerOrderMode,
-  classNameName = "",
 }) => {
   const isRandom = mode === "Random";
 

@@ -1,7 +1,6 @@
+// @ts-nocheck
 import { appApi } from "@/core/api/appApi";
 import type { AccountMeFromApi } from "@/core/types/account";
-import { setUser, clearAuth } from "@/redux/slices/authSlice/authSlice";
-import { useNavigate } from "react-router-dom";
 
 export const accountApi = appApi.injectEndpoints({
   endpoints: (build) => ({

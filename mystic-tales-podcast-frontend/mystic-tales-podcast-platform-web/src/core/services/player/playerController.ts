@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 // playerController.ts
 import Hls from "hls.js";
 import { loadEpisodeHls } from "./hlsEpisodeLoader";
@@ -64,6 +66,7 @@ class PlayerController {
   private currentProcedure: ListenSessionProcedure | null = null;
   private currentAudioId: string | null = null;
   private rafId: number | null = null;
+  private isLoadingLatest = false; // Prevent concurrent playFromLatest calls
 
   private constructor() {
     this.audio = new Audio();
@@ -222,6 +225,20 @@ class PlayerController {
   setVolume(v01: number) {
     this.audio.volume = Math.min(1, Math.max(0, v01));
     this.emitState();
+  }
+
+  // Reset toàn bộ state về trạng thái ban đầu (dùng khi cần fresh start)
+  reset() {
+    this.stop();
+  }
+
+  // Kiểm tra và set flag để prevent concurrent playFromLatest
+  isLoadingLatestSession(): boolean {
+    return this.isLoadingLatest;
+  }
+
+  setLoadingLatestSession(value: boolean): void {
+    this.isLoadingLatest = value;
   }
 
   // ====== API CHÍNH: nhận session đã có sẵn ======

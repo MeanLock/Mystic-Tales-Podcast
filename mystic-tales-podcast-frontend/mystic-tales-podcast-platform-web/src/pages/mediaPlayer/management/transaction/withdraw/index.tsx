@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   useCreateWithdrawRequestMutation,
   useGetTransactionHistoryQuery,

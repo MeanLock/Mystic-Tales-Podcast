@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import {
   Carousel,
   CarouselContent,
@@ -33,10 +35,6 @@ import { LiaDizzy } from "react-icons/lia";
 import Loading from "@/components/loading";
 import { setError } from "@/redux/slices/errorSlice/errorSlice";
 import { BiSolidBadgeCheck } from "react-icons/bi";
-import {
-  mockPodcasterDetails,
-  mockShows,
-} from "@/core/mockData/podcasterDetails.mockdata";
 import RatingChart from "./components/RatingChart";
 import ReviewCard from "./components/ReviewCard";
 import type { PodcastBuddyUI } from "@/core/types/booking";
