@@ -8,6 +8,9 @@ namespace ModerationService.Common.AppConfigurations.BusinessSetting
         public MailProperty CustomerRegistrationVerification { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestConfirmation { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestResult { get; set; } = new MailProperty();
+        public MailProperty DMCANoticePending { get; } = new MailProperty();
+        public MailProperty DMCACounterNoticePending { get; } = new MailProperty();
+        public MailProperty DMCALawsuitProofPending { get; } = new MailProperty();
         public MailProperty DMCANoticeInvalid { get; } = new MailProperty();
         public MailProperty DMCACounterNoticeInvalidToAccused { get; } = new MailProperty();
         public MailProperty DMCACounterNoticeInvalidToAccuser { get; } = new MailProperty();
@@ -36,6 +39,9 @@ namespace ModerationService.Common.AppConfigurations.BusinessSetting
         public MailProperty CustomerRegistrationVerification { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestConfirmation { get; set; } = new MailProperty();
         public MailProperty PodcasterRequestResult { get; set; } = new MailProperty();
+        public MailProperty DMCANoticePending { get; set; } = new MailProperty();
+        public MailProperty DMCACounterNoticePending { get; set; } = new MailProperty();
+        public MailProperty DMCALawsuitProofPending { get; set; } = new MailProperty();
         public MailProperty DMCANoticeInvalid { get; set; } = new MailProperty();
         public MailProperty DMCACounterNoticeInvalidToAccused { get; set; } = new MailProperty();
         public MailProperty DMCACounterNoticeInvalidToAccuser { get; set; } = new MailProperty();
@@ -65,6 +71,9 @@ namespace ModerationService.Common.AppConfigurations.BusinessSetting
             CustomerRegistrationVerification = mailConfig.CustomerRegistrationVerification;
             PodcasterRequestConfirmation = mailConfig.PodcasterRequestConfirmation;
             PodcasterRequestResult = mailConfig.PodcasterRequestResult;
+            DMCANoticePending = mailConfig.DMCANoticePending;
+            DMCACounterNoticePending = mailConfig.DMCACounterNoticePending;
+            DMCALawsuitProofPending = mailConfig.DMCALawsuitProofPending;
             DMCANoticeInvalid = mailConfig.DMCANoticeInvalid;
             DMCACounterNoticeInvalidToAccused = mailConfig.DMCACounterNoticeInvalidToAccused;
             DMCACounterNoticeInvalidToAccuser = mailConfig.DMCACounterNoticeInvalidToAccuser;

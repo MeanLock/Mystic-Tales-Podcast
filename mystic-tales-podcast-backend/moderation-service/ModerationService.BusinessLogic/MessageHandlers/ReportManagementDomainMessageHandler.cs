@@ -169,6 +169,9 @@ namespace ModerationService.BusinessLogic.MessageHandlers
                    Console.WriteLine("Preparing to send email of type: " + mailInfo.MailTypeName);
                    object mailModel = mailInfo.MailTypeName switch
                    {
+                       "DMCANoticePending" => mailInfo.MailObject.ToObject<DMCANoticePendingMailViewModel>(),
+                       "DMCACounterNoticePending" => mailInfo.MailObject.ToObject<DMCACounterNoticePendingMailViewModel>(),
+                       "DMCALawsuitProofPending" => mailInfo.MailObject.ToObject<DMCALawsuitProofPendingMailViewModel>(),
                        "DMCANoticeInvalid" => mailInfo.MailObject.ToObject<DMCANoticeInvalidMailViewModel>(),
                        "DMCACounterNoticeInvalidToAccused" => mailInfo.MailObject.ToObject<DMCACounterNoticeInvalidToAccusedMailViewModel>(),
                        "DMCACounterNoticeInvalidToAccuser" => mailInfo.MailObject.ToObject<DMCACounterNoticeInvalidToAccuserMailViewModel>(),

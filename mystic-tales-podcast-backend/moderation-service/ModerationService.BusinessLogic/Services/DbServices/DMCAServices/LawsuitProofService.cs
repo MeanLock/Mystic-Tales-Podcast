@@ -8,6 +8,7 @@ using ModerationService.BusinessLogic.Enums.DMCA;
 using ModerationService.BusinessLogic.Enums.Kafka;
 using ModerationService.BusinessLogic.Helpers.DateHelpers;
 using ModerationService.BusinessLogic.Helpers.FileHelpers;
+using ModerationService.BusinessLogic.Models.Mail;
 using ModerationService.BusinessLogic.Services.CrossServiceServices.QueryServices;
 using ModerationService.BusinessLogic.Services.DbServices.MiscServices;
 using ModerationService.BusinessLogic.Services.DbServices.ReportServices;
@@ -253,6 +254,27 @@ namespace ModerationService.BusinessLogic.Services.DbServices.DMCAServices
                     //{
                     //    throw new Exception("Failed to created dmca status tracking");
                     //}
+
+                    var accuserMailSendingRequestData = JObject.FromObject(new
+                    {
+                        SendModerationServiceEmailInfo = new
+                        {
+                            MailTypeName = "DMCALawsuitProofPending",
+                            ToEmail = dmcaAccusation.AccuserEmail,
+                            MailObject = new DMCALawsuitProofPendingMailViewModel
+                            {
+                                AccuserEmail = dmcaAccusation.AccuserEmail,
+                                AccuserFullName = dmcaAccusation.AccuserFullName,
+                                CreatedDate = _dateHelper.GetNowByAppTimeZone(),
+                            }
+                        }
+                    });
+                    var accuserMailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                        topic: KafkaTopicEnum.ReportManagementDomain,
+                        requestData: accuserMailSendingRequestData,
+                        sagaInstanceId: null,
+                        messageName: "moderation-service-mail-sending-flow");
+                    await _messagingService.SendSagaMessageAsync(accuserMailSendingFlow);
 
                     await transaction.CommitAsync();
 

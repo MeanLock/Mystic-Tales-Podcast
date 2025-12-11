@@ -707,7 +707,7 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             });
         }
         [HttpPost("{BookingId}/cancel-request")]
-        [Authorize(Policy = "Customer.NoViolationAccess")]
+        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> CancelProducingRequest(
             [FromRoute] int BookingId,
             [FromBody] BookingCancelRequestRequestDTO request)

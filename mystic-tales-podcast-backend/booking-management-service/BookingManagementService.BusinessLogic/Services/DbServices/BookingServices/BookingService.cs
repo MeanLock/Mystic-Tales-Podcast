@@ -4402,6 +4402,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var depositRate = config.BookingConfig.DepositRate;
                     var depositAmount = booking.Price * (decimal)depositRate;
 
+                    var account = await GetAccount(booking.AccountId);
+                    if(account == null)
+                    {
+                        throw new Exception("Account not found for Id: " + booking.AccountId);
+                    }
+                    if(account.Balance - depositAmount < 0)
+                    {
+                        throw new Exception("Insufficient balance to process deposit payment");
+                    }
+
                     var paymentRequestData = new JObject
                     {
                         { "BookingId", parameter.BookingId },
@@ -4492,6 +4502,16 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     var depositRate = config.BookingConfig.DepositRate;
                     var depositAmount = booking.Price * (decimal)depositRate;
                     var payTheRestAmount = booking.Price - depositAmount;
+
+                    var account = await GetAccount(booking.AccountId);
+                    if (account == null)
+                    {
+                        throw new Exception("Account not found for Id: " + booking.AccountId);
+                    }
+                    if (account.Balance - payTheRestAmount < 0)
+                    {
+                        throw new Exception("Insufficient balance to process deposit payment");
+                    }
 
                     var paymentRequestData = new JObject
                     {
@@ -4676,6 +4696,42 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 _logger.LogError(ex, "Error occurred while refreshing random order queue");
                 throw new HttpRequestException("Error occurred while refreshing random order queue, error: " + ex.Message);
             }
+        }
+        public async Task<AccountDTO?> GetAccount(int accountId)
+        {
+            var batchRequest = new BatchQueryRequest
+            {
+                Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                    {
+                        Key = "account",
+                        QueryType = "findbyid",
+                        EntityType = "Account",
+                        Parameters = JObject.FromObject(new
+                        {
+                            id = accountId
+                        }),
+                        Fields = new[] {
+                            "Id",
+                            "Email",
+                            "Password",
+                            "RoleId",
+                            "FullName",
+                            "Dob",
+                            "Gender",
+                            "Address",
+                            "Phone",
+                            "Balance"
+                        }
+                    }
+                }
+            };
+            var result = await _httpServiceQueryClient.ExecuteBatchAsync("UserService", batchRequest);
+
+            if (result.Results["account"] == null) return null;
+
+            return (result.Results["account"] as JObject).ToObject<AccountDTO>();
         }
     }
 }

@@ -1148,6 +1148,21 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     {
                         throw new Exception($"No Podcast Subscription Cycle Type Price exists for PodcastSubscription Id: {parameter.PodcastSubscriptionId} and SubscriptionCycleType Id: {parameter.SubscriptionCycleTypeId}");
                     }
+                    var accountCheck = await GetAccount(account.Id);
+                    if(accountCheck == null)
+                    {
+                        throw new Exception($"No Account exists for Account Id: {parameter.AccountId}");
+                    }
+
+                    var originalPrice2 = podcastSubscription.PodcastSubscriptionCycleTypePrices
+                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId)
+                        .Select(ptcp => ptcp.Price)
+                        .FirstOrDefault();
+
+                    if (accountCheck.Balance - originalPrice2 < 0)
+                    {
+                        throw new Exception("Insufficient balance in account for podcast subscription registration.");
+                    }
 
                     var newRegistration = new PodcastSubscriptionRegistration
                     {
@@ -1161,11 +1176,6 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         UpdatedAt = _dateHelper.GetNowByAppTimeZone()
                     };
                     var registrationResult = await _podcastSubscriptionRegistrationGenericRepository.CreateAsync(newRegistration);
-
-                    var originalPrice2 = podcastSubscription.PodcastSubscriptionCycleTypePrices
-                        .Where(ptcp => ptcp.SubscriptionCycleTypeId == parameter.SubscriptionCycleTypeId)
-                        .Select(ptcp => ptcp.Price)
-                        .FirstOrDefault();
 
                     var transactionRequestData2 = new JObject
                     {
