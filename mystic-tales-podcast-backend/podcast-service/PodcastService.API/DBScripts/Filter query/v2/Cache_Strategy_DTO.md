@@ -2,7 +2,7 @@
 
 ## I. ALL-TIME MAX VALUES (Refresh: Daily 00:00)
 
-### PodcasterAllTimeMaxQueryMetric
+### PodcasterAllTimeMaxQueryMetric(MaxTotalFollow, MaxListenCount, MaxRatingTerm, MaxAge)
 ```typescript
 class PodcasterAllTimeMaxQueryMetric {
   MaxTotalFollow: number;              // MTF
@@ -13,7 +13,7 @@ class PodcasterAllTimeMaxQueryMetric {
 }
 ```
 
-### ShowAllTimeMaxQueryMetric
+### ShowAllTimeMaxQueryMetric(MaxTotalFollow, MaxListenCount, MaxRatingTerm)
 ```typescript
 class ShowAllTimeMaxQueryMetric {
   MaxTotalFollow: number;              // MTF
@@ -23,7 +23,7 @@ class ShowAllTimeMaxQueryMetric {
 }
 ```
 
-### ChannelAllTimeMaxQueryMetric
+### ChannelAllTimeMaxQueryMetric(MaxListenCount, MaxTotalFavorite)
 ```typescript
 class ChannelAllTimeMaxQueryMetric {
   MaxListenCount: number;       // MLC
@@ -32,7 +32,7 @@ class ChannelAllTimeMaxQueryMetric {
 }
 ```
 
-### EpisodeAllTimeMaxQueryMetric
+### EpisodeAllTimeMaxQueryMetric(MaxListenCount, MaxTotalSave)
 ```typescript
 class EpisodeAllTimeMaxQueryMetric {
   MaxListenCount: number;              // MLC
@@ -45,7 +45,7 @@ class EpisodeAllTimeMaxQueryMetric {
 
 ## II. TEMPORAL MAX VALUES (Refresh: Every 12h at 00:00, 12:00)
 
-### PodcasterTemporal7dMaxQueryMetric
+### PodcasterTemporal7dMaxQueryMetric(MaxNewListenSession, MaxNewFollow, MaxGrowth)
 ```typescript
 class PodcasterTemporal7dMaxQueryMetric {
   MaxNewListenSession: number;         // MNLS
@@ -58,7 +58,7 @@ class PodcasterTemporal7dMaxQueryMetric {
 }
 ```
 
-### ShowTemporal7dMaxQueryMetric
+### ShowTemporal7dMaxQueryMetric(MaxNewListenSession, MaxNewFollow)
 ```typescript
 class ShowTemporal7dMaxQueryMetric {
   MaxNewListenSession: number;         // MNLS
@@ -70,7 +70,7 @@ class ShowTemporal7dMaxQueryMetric {
 }
 ```
 
-### ChannelTemporal7dMaxQueryMetric
+### ChannelTemporal7dMaxQueryMetric(MaxNewListenSession, MaxNewFavorite)
 ```typescript
 class ChannelTemporal7dMaxQueryMetric {
   MaxNewListenSession: number;         // MNLS
@@ -86,7 +86,7 @@ class ChannelTemporal7dMaxQueryMetric {
 
 ## III. SYSTEM PREFERENCES (Refresh: Every 2 hour)
 
-### SystemPreferencesTemporal30dQueryMetric
+### SystemPreferencesTemporal30dQueryMetric(ListenedPodcastCategories, ListenedPodcasters)
 ```typescript
 class SystemPreferencesTemporal30dQueryMetric {
   ListenedPodcastCategories: SystemListenedPodcastCategory[];
@@ -118,7 +118,7 @@ class SystemListenedPodcaster {
 
 ## IV. USER PREFERENCES (Refresh: Every 2 hour, TTL: 2 hours)
 
-### UserPreferencesTemporal30dQueryMetric
+### UserPreferencesTemporal30dQueryMetric(UserId, ListenedPodcastCategories, ListenedPodcasters)
 ```typescript
 class UserPreferencesTemporal30dQueryMetric {
   UserId: number;

@@ -96,6 +96,11 @@ namespace UserService.API.Configurations.Builder
                     policy.RequireRole("Customer");
                     policy.Requirements.Add(new AccountPodcasterAccessRequirement());
                 });
+                options.AddPolicy("Customer.NonPodcasterAccess", policy =>
+                {
+                    policy.RequireRole("Customer");
+                    policy.Requirements.Add(new AccountNonPodcasterAccessRequirement());
+                });
                 options.AddPolicy("Customer.NoViolationAccess.NonPodcasterAccess", policy =>
                 {
                     policy.RequireRole("Customer");

@@ -115,6 +115,17 @@ CREATE TABLE BookingPodcastTrack (
     FOREIGN KEY (bookingRequirementId) REFERENCES BookingRequirement(id)
 );
 
+CREATE TABLE BookingPodcastTrackListenSession (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL,
+    bookingPodcastTrackId UNIQUEIDENTIFIER NOT NULL,
+    lastListenDurationSeconds INT NOT NULL DEFAULT 0,
+    isCompleted BIT NOT NULL DEFAULT 0,
+    expiredAt DATETIME NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    FOREIGN KEY (bookingPodcastTrackId) REFERENCES BookingPodcastTrack(id)
+);
+
 -- BookingProducingRequestPodcastTrackToEdit table
 CREATE TABLE BookingProducingRequestPodcastTrackToEdit (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),

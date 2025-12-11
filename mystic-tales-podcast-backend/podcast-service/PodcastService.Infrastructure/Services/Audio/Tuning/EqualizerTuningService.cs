@@ -2,7 +2,9 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
+using PodcastService.Common.AppConfigurations.FilePath.interfaces;
 using PodcastService.Infrastructure.Configurations.Audio.Tuning;
 using PodcastService.Infrastructure.Helpers.AudioHelpers;
 using PodcastService.Infrastructure.Models.Audio;
@@ -17,16 +19,22 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
         private readonly IMoodConfig _moodConfig;
         private readonly IEqualizerConfig _equalizerConfig;
         private readonly AudioFormatDetectorHelper _audioFormatDetectorHelper; // ← NEW
+        private readonly IWebHostEnvironment _environment;
+        private readonly IFilePathConfig _filePathConfig;
 
         public EqualizerTuningService(
             ILogger<EqualizerTuningService> logger,
             IMoodConfig moodConfig,
-            IEqualizerConfig equalizerConfig)
+            IEqualizerConfig equalizerConfig,
+            IWebHostEnvironment environment,
+            IFilePathConfig filePathConfig)
         {
             _logger = logger;
             _moodConfig = moodConfig;
             _equalizerConfig = equalizerConfig;
             _audioFormatDetectorHelper = new AudioFormatDetectorHelper(logger as ILogger<AudioFormatDetectorHelper>); // ← Initialize
+            _environment = environment;
+            _filePathConfig = filePathConfig;
         }
 
         #region CreateFilterChain
@@ -131,7 +139,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
             var encodingStrategy = DetermineEncodingStrategy(formatInfo);
             Console.WriteLine($"[DEBUG] Encoding strategy: {encodingStrategy.Description}");
 
-            string workDir = Path.Combine(Path.GetTempPath(), "eqseg_" + Guid.NewGuid().ToString("N"));
+            // string workDir = Path.Combine(Path.GetTempPath(), "eqseg_" + Guid.NewGuid().ToString("N"));
+            string workDir = Path.Combine(_environment.ContentRootPath, _filePathConfig.AUDIO_TUNING_EQUALIZER_LOCAL_TEMP_FILE_PATH, "eqseg_" + Guid.NewGuid().ToString("N"));
             Console.WriteLine($"[DEBUG] WorkDir: {workDir}");
             Directory.CreateDirectory(workDir);
 

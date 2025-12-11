@@ -18,5 +18,10 @@
         string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
         string PODCAST_CATEGORY_FILE_PATH { get; set; }
         string PODCAST_CATEGORY_TEMP_FILE_PATH { get; set; }
+        string HLS_PROCESSING_LOCAL_TEMP_FILE_PATH { get; set; }
+        string AUDIO_TUNING_SINGLE_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH { get; set; }
+        string AUDIO_TUNING_MULTI_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH { get; set; }
+        string AUDIO_TUNING_AI_TUNE_LOCAL_TEMP_FILE_PATH { get; set; }
+        string AUDIO_TUNING_EQUALIZER_LOCAL_TEMP_FILE_PATH { get; set; }
     }
 }

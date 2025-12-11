@@ -112,6 +112,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         private readonly JwtHelper _jwtHelper;
         private readonly FileIOHelper _fileIOHelper;
         private readonly DateHelper _dateHelper;
+        private readonly PdfFormFillingHelper _pdfFormFillingHelper;
 
         // UNIT OF WORK
         private readonly IUnitOfWork _unitOfWork;
@@ -148,6 +149,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             BcryptHelper bcryptHelper,
             FluentEmailService fluentEmailService,
             JwtHelper jwtHelper,
+            PdfFormFillingHelper pdfFormFillingHelper,
             IUnitOfWork unitOfWork,
 
             IServiceProvider serviceProvider,
@@ -199,6 +201,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _jwtHelper = jwtHelper;
             _bcryptHelper = bcryptHelper;
             _dateHelper = dateHelper;
+            _pdfFormFillingHelper = pdfFormFillingHelper;
 
             _fluentEmailService = fluentEmailService;
 
@@ -212,6 +215,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             _kafkaProducerService = kafkaProducerService;
 
             _redisSharedCacheService = redisSharedCacheService;
+
         }
 
         public async Task<Account> GetExistAccountById(int accountId)
@@ -297,6 +301,12 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
             var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "account-status-change-flow");
             await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
             return startSagaTriggerMessage.SagaInstanceId;
+        }
+
+        public bool IsViolationLevelValid(int violationLevel, List<AccountViolationLevelConfigDTO> accountViolationLevelConfigs)
+        {
+            var validLevels = accountViolationLevelConfigs.Select(c => c.ViolationLevel).ToList();
+            return validLevels.Contains(violationLevel);
         }
 
         public int CalculateViolationLevel(int violationPoint, List<AccountViolationLevelConfigDTO> accountViolationLevelConfigs)
@@ -881,7 +891,7 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             BuddyAudioFileKey = item.PodcasterProfile.BuddyAudioFileKey,
                             IsVerified = item.PodcasterProfile.IsVerified,
                             IsFollowedByCurrentUser = item.AccountFollowedPodcasterPodcasters.Any(afp => afp.AccountId == requesterAccount.Id),
-                        }, 
+                        },
                         ReviewList = item.PodcastBuddyReviewPodcastBuddies?
                         .Where(r => r.Account != null).Select(r => new PodcastBuddyReviewListItemResponseDTO
                         {
@@ -1730,6 +1740,67 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
         }
 
 
+        public async Task UserViolationLevelUpdate(UpdateAccountViolationLevelParameterDTO updateAccountViolationLevelParameterDTO, SagaCommandMessage command)
+        {
+            using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var activeSystemConfigProfile = await GetActiveSystemConfigProfile();
+                    // kiểm tra violation level có hợp lệ không , nó phải nằm trong khoản min và max của cấu hình hệ thống
+                    if (IsViolationLevelValid(updateAccountViolationLevelParameterDTO.ViolationLevel, activeSystemConfigProfile.AccountViolationLevelConfigs) == false)
+                    {
+                        throw new Exception("Violation level " + updateAccountViolationLevelParameterDTO.ViolationLevel + " is not valid");
+                    }
+
+                    var account = await this.GetExistAccountById(updateAccountViolationLevelParameterDTO.AccountId);
+                    account.ViolationLevel = updateAccountViolationLevelParameterDTO.ViolationLevel;
+                    account.LastViolationLevelChanged = _dateHelper.GetNowByAppTimeZone();
+
+                    await _accountGenericRepository.UpdateAsync(account.Id, account);
+
+                    await transaction.CommitAsync();
+                    var messageNextRequestData = command.RequestData;
+                    messageNextRequestData["AccountId"] = account.Id;
+                    messageNextRequestData["ViolationLevel"] = updateAccountViolationLevelParameterDTO.ViolationLevel;
+                    var messageResponseData = JObject.FromObject(new
+                    {
+                        // Message = "Update account violation level successfully"
+                        AccountId = account.Id,
+                        NewViolationLevel = account.ViolationLevel
+                    });
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: messageNextRequestData,
+                        responseData: messageResponseData,
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-account-violation-level.success"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await SendChangeAccountStatusMessage(account.Id);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
+                        topic: KafkaTopicEnum.UserManagementDomain,
+                        requestData: command.RequestData,
+                        responseData: JObject.FromObject(new
+                        {
+                            ErrorMessage = $"Update account violation level failed, error: {ex.Message}"
+                        }),
+                        sagaInstanceId: command.SagaInstanceId,
+                        flowName: command.FlowName,
+                        messageName: "update-account-violation-level.failed"
+                    );
+                    await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    Console.WriteLine("\n" + ex.StackTrace + "\n");
+                }
+            }
+        }
         public async Task AddAccountViolationPoint(AddAccountViolationPointParameterDTO addAccountViolationPointParameterDTO, SagaCommandMessage command)
         {
             using (var transaction = await _appDbContext.Database.BeginTransactionAsync())
@@ -5109,21 +5180,31 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             && a.IsVerified == true
                             && a.PodcastListenSlot != null
                             && a.PodcastListenSlot < activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold
-                            && a.LastViolationPointChanged != null,
+                            && a.LastPodcastListenSlotChanged != null,
                         includeFunc: null
                     ).ToListAsync();
+                    // Console.WriteLine("\n\n\n\n" + activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold);
+
+                    // Console.WriteLine($"Found {accounts.Count} accounts eligible for podcast listen slot recovery.");
+                    // foreach (var account in accounts)
+                    // {
+                    //     Console.WriteLine($"Checking account Id={account.Id}: CurrentPodcastListenSlot={account.PodcastListenSlot}, Threshold={activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold}, LastPodcastListenSlotChanged={account.LastPodcastListenSlotChanged} ");
+                    // }
 
                     foreach (var account in accounts)
                     {
-                        var secondsSinceLastChange = (_dateHelper.GetNowByAppTimeZone() - account.LastViolationPointChanged.Value).TotalSeconds;
+                        var secondsSinceLastChange = (_dateHelper.GetNowByAppTimeZone() - account.LastPodcastListenSlotChanged.Value).TotalSeconds;
+                        // Console.WriteLine($"Checking account Id={account.Id}: SecondsSinceLastChange={secondsSinceLastChange}, CurrentPodcastListenSlot={account.PodcastListenSlot}, Threshold={activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold}");
                         if (secondsSinceLastChange >= activeSystemConfigProfile.AccountConfig.PodcastListenSlotRecoverySeconds && account.PodcastListenSlot < activeSystemConfigProfile.AccountConfig.PodcastListenSlotThreshold)
                         {
+                            // Console.WriteLine($"Updating podcast listen slot for account Id={account.Id}: Incrementing from {account.PodcastListenSlot} to {account.PodcastListenSlot + 1}");
                             account.PodcastListenSlot += 1;
 
-                            account.LastViolationPointChanged = _dateHelper.GetNowByAppTimeZone();
+                            account.LastPodcastListenSlotChanged = _dateHelper.GetNowByAppTimeZone();
                             await _accountGenericRepository.UpdateAsync(account.Id, account);
                         }
                     }
+
                     await transaction.CommitAsync();
 
 
@@ -5242,5 +5323,102 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
             }
         }
+
+        public async Task<byte[]> GenerateFilledBuddyCommitmentDocumentTemplatePdf(AccountStatusCache account)
+        {
+            try
+            {
+                // 1. Get template PDF from S3
+                string templatePath = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template_2.pdf";
+
+                byte[]? templateBytes = await _fileIOHelper.GetFileBytesAsync(templatePath);
+
+                if (templateBytes == null || templateBytes.Length == 0)
+                {
+                    throw new Exception("PDF template not found");
+                }
+
+                // 2. Prepare field values to fill
+                var fieldValues = new Dictionary<string, string>
+            {
+                { "mail_day_ne", account.Email }, // Fill email into 'mail_day_ne' field
+                // Add more fields as needed:
+                // { "date_field", DateTime.Now.ToString("dd/MM/yyyy") },
+                // { "name_field", account.FullName },
+            };
+
+                // 3. Fill PDF form fields
+                byte[] filledPdfBytes = _pdfFormFillingHelper.FillPdfTextFormFields(
+                    templateBytes,
+                    fieldValues,
+                    flattenForm: false // Lock the form after filling
+                );
+
+                _logger.LogInformation($"PDF filled successfully: {filledPdfBytes.Length} bytes");
+
+                return filledPdfBytes;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("GenerateFilledBuddyCommitmentDocumentTemplatePdf failed, error: " + ex.Message);
+            }
+        }
+
+        public async Task<byte[]> GetSignedBuddyCommitmentDocumentTemplatePdf(AccountStatusCache account, byte[] signatureImageBytes)
+        {
+            try
+            {
+                // 1. Get template PDF from S3
+                string templatePath = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template_2.pdf";
+
+                byte[]? templateBytes = await _fileIOHelper.GetFileBytesAsync(templatePath);
+
+                if (templateBytes == null || templateBytes.Length == 0)
+                {
+                    throw new Exception("PDF template not found");
+                }
+
+                // 2. Prepare field values to fill
+                var textFieldValues = new Dictionary<string, string>
+                {
+                    { "mail_day_ne", account.Email }, // Fill email into 'mail_day_ne' field
+                    // Add more fields as needed:
+                    // { "date_field", DateTime.Now.ToString("dd/MM/yyyy") },
+                    // { "name_field", account.FullName },
+                };
+
+                // 3. Fill PDF form fields
+                byte[] filledPdfBytes = _pdfFormFillingHelper.FillPdfTextFormFields(
+                    templateBytes,
+                    textFieldValues,
+                    flattenForm: false // Lock the form after filling
+                );
+
+                _logger.LogInformation($"PDF filled successfully: {filledPdfBytes.Length} bytes");
+
+                // [THÊM CHỮ KÍ Ở ĐÂY , GỌI HÀM MỚI TẠO TỪ HELPER]
+                var imageFieldValues = new Dictionary<string, byte[]>
+                {
+                    { "chu_ki_image", signatureImageBytes }
+                };
+
+                byte[] signedPdfBytes = _pdfFormFillingHelper.FillPdfImageFormFields(
+                    filledPdfBytes,
+                    imageFieldValues,
+                    flattenForm: true
+                );
+
+
+                return signedPdfBytes;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                throw new HttpRequestException("GenerateFilledBuddyCommitmentDocumentTemplatePdfPreview failed, error: " + ex.Message);
+            }
+        }
+
+
     }
 }

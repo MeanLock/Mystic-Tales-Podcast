@@ -132,7 +132,25 @@ namespace PodcastService.API.Configurations.Builder
                         // giá trị exp
                         // Console.WriteLine("Token exp: " + context.SecurityToken.ValidTo.ToString("yyyy-MM-dd HH:mm:ss"));
                         return Task.CompletedTask;
-                    }
+                    },
+
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        // Console.WriteLine($"[OnMessageReceived] Path: {path}");
+                        // Console.WriteLine($"[OnMessageReceived] Token present: {!string.IsNullOrEmpty(accessToken)}");
+
+                        // ✅ Kiểm tra path có phải SignalR hub không
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                            // Console.WriteLine("[OnMessageReceived] Token assigned to context");
+                        }
+                        return Task.CompletedTask;
+                    },
                 };
             });
         }

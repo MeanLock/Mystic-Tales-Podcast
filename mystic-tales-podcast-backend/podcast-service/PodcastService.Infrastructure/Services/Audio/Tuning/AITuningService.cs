@@ -1,7 +1,9 @@
 ﻿using System.Globalization;
 using System.IO.Compression;
 using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Hosting;
 using PodcastService.Common.AppConfigurations.App.interfaces;
+using PodcastService.Common.AppConfigurations.FilePath.interfaces;
 using PodcastService.Infrastructure.Helpers.AudioHelpers;
 using PodcastService.Infrastructure.Models.Audio.Tuning;
 
@@ -10,6 +12,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
     public class AITuningService
     {
         private readonly IAppConfig _appConfig;
+        private readonly IWebHostEnvironment _environment;
+        private readonly IFilePathConfig _filePathConfig;
         public sealed class AITuningResult
         {
             public bool Applied { get; init; }          // Có tách/mix & áp filter
@@ -22,10 +26,12 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
         }
 
         private readonly EqualizerTuningService _equalizerTuningService;
-        public AITuningService(EqualizerTuningService equalizerTuningService, IAppConfig appConfig)
+        public AITuningService(EqualizerTuningService equalizerTuningService, IAppConfig appConfig, IWebHostEnvironment environment, IFilePathConfig filePathConfig)
         {
             _equalizerTuningService = equalizerTuningService;
             _appConfig = appConfig;
+            _environment = environment;
+            _filePathConfig = filePathConfig;
         }
 
         public async Task<AITuningResult> ProcessAudioWithAI(Stream fileStream, AITuningProfile aITuningProfile, string? filterChain)
@@ -46,7 +52,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
             if (!needs)
                 return AITuningResult.Skip();
 
-            var tempDir = Path.Combine(Path.GetTempPath(), "ai_tune_" + Guid.NewGuid().ToString("N"));
+            // var tempDir = Path.Combine(Path.GetTempPath(), "ai_tune_" + Guid.NewGuid().ToString("N"));
+            var tempDir = Path.Combine(_environment.ContentRootPath, _filePathConfig.AUDIO_TUNING_AI_TUNE_LOCAL_TEMP_FILE_PATH, "ai_tune_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             var tempInput = Path.Combine(tempDir, "input.mp3");
             try
@@ -64,7 +71,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
                 {
                     using var stream = new FileStream(mixedPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                     var filteredStream = await _equalizerTuningService.ApplyFilterChain(stream, filterChain);
-                    var tempFilteredPath = Path.Combine(Path.GetTempPath(), "filtered_" + Guid.NewGuid().ToString("N") + ".mp3");
+                    // var tempFilteredPath = Path.Combine(Path.GetTempPath(), "filtered_" + Guid.NewGuid().ToString("N") + ".mp3");
+                    var tempFilteredPath = Path.Combine(_environment.ContentRootPath, _filePathConfig.AUDIO_TUNING_AI_TUNE_LOCAL_TEMP_FILE_PATH, "filtered_" + Guid.NewGuid().ToString("N") + ".mp3");
                     using (var fs = new FileStream(tempFilteredPath, FileMode.Create, FileAccess.Write))
                     {
                         await filteredStream.CopyToAsync(fs);
@@ -93,7 +101,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
         private async Task<string?> SeparateAndMixAsync(string inputPath, double voiceGainDb, double bgGainDb, string apiUrl)
         {
 
-            var workDir = Path.Combine(Path.GetTempPath(), "stems_" + Guid.NewGuid().ToString("N"));
+            // var workDir = Path.Combine(Path.GetTempPath(), "stems_" + Guid.NewGuid().ToString("N"));
+            var workDir = Path.Combine(_environment.ContentRootPath, _filePathConfig.AUDIO_TUNING_AI_TUNE_LOCAL_TEMP_FILE_PATH, "stems_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(workDir);
 
             var zipPath = Path.Combine(workDir, "stems.zip");
@@ -138,7 +147,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Tuning
                 if (!File.Exists(mixedOut)) return null;
 
                 // Copy ra temp file “sạch” rồi dọn
-                var final = Path.Combine(Path.GetTempPath(), "mixed_" + Guid.NewGuid().ToString("N") + ".mp3");
+                // var final = Path.Combine(Path.GetTempPath(), "mixed_" + Guid.NewGuid().ToString("N") + ".mp3");
+                var final = Path.Combine(_environment.ContentRootPath, _filePathConfig.AUDIO_TUNING_AI_TUNE_LOCAL_TEMP_FILE_PATH, "mixed_" + Guid.NewGuid().ToString("N") + ".mp3");
                 File.Copy(mixedOut, final, true);
                 try { Directory.Delete(workDir, true); } catch { }
                 return final;

@@ -362,29 +362,30 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
 
                         // gửi mail mật khẩu mới
                         var mailSendingRequestData = JObject.FromObject(new
+                        {
+                            SendUserServiceEmailMailInfo = new
                             {
-                                SendUserServiceEmailMailInfo = new
+                                // MailTypeName = "CustomerRegistrationVerification",
+                                MailTypeName = "CustomerGoogleRegistrationNewAccountPassword",
+                                ToEmail = newAccount.Email,
+                                MailObject = new CustomerGoogleRegistrationNewAccountPasswordMailViewModel
                                 {
-                                    // MailTypeName = "CustomerRegistrationVerification",
-                                    MailTypeName = "CustomerGoogleRegistrationNewAccountPassword",
-                                    ToEmail = newAccount.Email,
-                                    MailObject = new CustomerGoogleRegistrationNewAccountPasswordMailViewModel
-                                    {
-                                        Email = newAccount.Email,
-                                        FullName = newAccount.FullName ?? "",
-                                        NewAccountPassword = newpassword
-                                    }
+                                    Email = newAccount.Email,
+                                    FullName = newAccount.FullName ?? "",
+                                    NewAccountPassword = newpassword
                                 }
-                            });
-                            var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                                    topic: KafkaTopicEnum.UserManagementDomain,
-                                    requestData: mailSendingRequestData,
-                                    sagaInstanceId: null,
-                                    messageName: "user-service-mail-sending-flow");
-                            await _messagingService.SendSagaMessageAsync(mailSendingFlow);
+                            }
+                        });
+                        var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                topic: KafkaTopicEnum.UserManagementDomain,
+                                requestData: mailSendingRequestData,
+                                sagaInstanceId: null,
+                                messageName: "user-service-mail-sending-flow");
+                        await _messagingService.SendSagaMessageAsync(mailSendingFlow);
                     }
                     else
                     {
+                        
                         // Đã có account
                         if (string.IsNullOrEmpty(account.GoogleId))
                         {
@@ -396,13 +397,15 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                             else
                             {
                                 await _accountGenericRepository.DeleteAsync(account.Id);
+                                string newpassword = Guid.NewGuid().ToString();
 
                                 var newAccount = new Account
                                 {
                                     Email = googlePayload.Email,
-                                    Password = _bcryptHelper.HashPassword(Guid.NewGuid().ToString()),
+                                    // Password = _bcryptHelper.HashPassword(Guid.NewGuid().ToString()),
+                                    Password = _bcryptHelper.HashPassword(newpassword),
                                     FullName = googlePayload.Name ?? googlePayload.Email,
-                                    RoleId = 4,
+                                    RoleId = 1,
                                     IsVerified = true,
                                     GoogleId = googlePayload.Subject,
                                     // PodcastListenSlot = activeSystemConfigProfile["AccountConfig"].Value<int?>("PodcastListenSlotThreshold")
@@ -411,6 +414,31 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                                 newAccount = await _accountGenericRepository.CreateAsync(newAccount);
 
                                 account = newAccount;
+                                account.Role = await _roleGenericRepository.FindByIdAsync(newAccount.RoleId);
+
+                                // gửi mail mật khẩu mới
+                                var mailSendingRequestData = JObject.FromObject(new
+                                {
+                                    SendUserServiceEmailMailInfo = new
+                                    {
+                                        // MailTypeName = "CustomerRegistrationVerification",
+                                        MailTypeName = "CustomerGoogleRegistrationNewAccountPassword",
+                                        ToEmail = newAccount.Email,
+                                        MailObject = new CustomerGoogleRegistrationNewAccountPasswordMailViewModel
+                                        {
+                                            Email = newAccount.Email,
+                                            FullName = newAccount.FullName ?? "",
+                                            NewAccountPassword = newpassword
+                                        }
+                                    }
+                                });
+                                var mailSendingFlow = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                                        topic: KafkaTopicEnum.UserManagementDomain,
+                                        requestData: mailSendingRequestData,
+                                        sagaInstanceId: null,
+                                        messageName: "user-service-mail-sending-flow");
+                                await _messagingService.SendSagaMessageAsync(mailSendingFlow);
+
                             }
                         }
                         else if (account.GoogleId != googlePayload.Subject)
@@ -770,7 +798,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     if (account == null)
                     {
                         throw new HttpRequestException("Account does not exist");
-                    }else if (account.IsVerified == false)
+                    }
+                    else if (account.IsVerified == false)
                     {
                         throw new HttpRequestException("Account has not been verified");
                     }

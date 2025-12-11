@@ -330,6 +330,22 @@ namespace UserService.BusinessLogic.MessageHandlers
             );
         }
 
+        [MessageHandler("update-account-violation-level", SAGA_TOPIC)]
+        public async Task HandleUpdateAccountViolationLevelAsync(string key, string messageJson)
+        {
+            await ExecuteSagaCommandMessageAsync(
+                messageJson: messageJson,
+                stepHandler: async (command) =>
+                {
+                    var updateAccountViolationLevelParameterDTO = command.RequestData.ToObject<UpdateAccountViolationLevelParameterDTO>();
+                    await _accountService.UserViolationLevelUpdate(updateAccountViolationLevelParameterDTO, command);
+
+                },
+                responseTopic: SAGA_TOPIC,
+                failedEmitMessage: "update-account-violation-level.failed"    // From YAML onFailure.emit
+            );
+        }
+
         [MessageHandler("add-account-violation-point", SAGA_TOPIC)]
         public async Task HandleAddAccountViolationPointAsync(string key, string messageJson)
         {

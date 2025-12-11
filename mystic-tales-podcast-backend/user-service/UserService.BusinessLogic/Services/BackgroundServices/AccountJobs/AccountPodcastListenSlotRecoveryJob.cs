@@ -239,13 +239,16 @@ namespace UserService.BusinessLogic.Services.BackgroundServices.AccountJobs
             try
             {
                 _logger.LogDebug("Starting podcaster query metric update: ExecutionId={ExecutionId}", executionId);
-
+                Console.WriteLine("\n\n\n\nStarting podcaster query metric update...");
 
                 // Example: Use scoped services
                 using (var scope = _serviceProvider.CreateScope())
                 {
+                    Console.WriteLine("\n\nUpdating podcast listen slots for accounts...");
                     var accountService = scope.ServiceProvider.GetRequiredService<AccountService>();
+                    Console.WriteLine("Obtained AccountService from scope.");
                     await accountService.UpdateAccountPodcastListenSlotRecovery();
+                    Console.WriteLine("Finished updating podcast listen slots for accounts.\n\n");
                 }
 
 

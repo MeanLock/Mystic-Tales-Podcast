@@ -21,11 +21,13 @@ namespace UserService.API.Controllers.MiscControllers
     {
         private readonly ILogger<PublicSourceController> _logger;
         private readonly FileIOHelper _fileIOHelper;
+        private readonly PdfFormFillingHelper _pdfFormFillingHelper;
         private readonly IFilePathConfig _filePathConfig;
-        public PublicSourceController(ILogger<PublicSourceController> logger, FileIOHelper fileIOHelper, IFilePathConfig filePathConfig)
+        public PublicSourceController(ILogger<PublicSourceController> logger, FileIOHelper fileIOHelper, PdfFormFillingHelper pdfFormFillingHelper, IFilePathConfig filePathConfig)
         {
             _logger = logger;
             _fileIOHelper = fileIOHelper;
+            _pdfFormFillingHelper = pdfFormFillingHelper;
             _filePathConfig = filePathConfig;
         }
 
@@ -68,11 +70,102 @@ namespace UserService.API.Controllers.MiscControllers
 
             if (PodcasterDocumentFileType == PodcasterDocumentFileTypeEnum.MainBuddyCommitmentDocumentTemplate)
             {
-                var fileKey = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template.pdf";
+                var fileKey = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template_0.pdf";
                 var url = await _fileIOHelper.GeneratePresignedUrlAsync(fileKey, 120);
                 return Ok(new { FileUrl = url });
             }
             return BadRequest("Invalid PodcasterDocumentFileType.");
+        }
+
+        // /api/user-service/api/misc/public-source/podcaster-documents/buddy-commitment-document-template/fill-podcaster-apply-info/get-file-content
+        [HttpGet("podcaster-documents/buddy-commitment-document-template/fill-podcaster-apply-info/get-file-content")]
+        [Authorize(Policy = "Customer.NonPodcasterAccess")]
+        public async Task<IActionResult> GetFilledInfoBuddyCommitmentDocumentTemplateFileContent()
+        {
+            try
+            {
+                var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+                // 1. Get template PDF from S3
+                string templatePath = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template_2.pdf";
+
+                byte[]? templateBytes = await _fileIOHelper.GetFileBytesAsync(templatePath);
+
+                if (templateBytes == null || templateBytes.Length == 0)
+                {
+                    _logger.LogError($"Template PDF not found at: {templatePath}");
+                    return NotFound(new { message = "PDF template not found" });
+                }
+
+                _logger.LogInformation($"Template PDF loaded: {templateBytes.Length} bytes");
+
+                // 2. Prepare field values to fill
+                var fieldValues = new Dictionary<string, string>
+            {
+                { "mail_day_ne", account.Email }, // Fill email into 'mail_day_ne' field
+                // Add more fields as needed:
+                // { "date_field", DateTime.Now.ToString("dd/MM/yyyy") },
+                // { "name_field", account.FullName },
+            };
+
+                _logger.LogInformation($"Filling PDF with email: {account.Email}");
+
+                // 3. Fill PDF form fields
+                byte[] filledPdfBytes = _pdfFormFillingHelper.FillPdfTextFormFields(
+                    templateBytes,
+                    fieldValues,
+                    flattenForm: false // Lock the form after filling
+                );
+
+                _logger.LogInformation($"PDF filled successfully: {filledPdfBytes.Length} bytes");
+
+                // 4. Return filled PDF
+                string fileName = $"commitment_document_{account.Id}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
+                return File(filledPdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error generating filled PDF: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, new
+                {
+                    message = "Failed to generate PDF",
+                    error = ex.Message
+                });
+            }
+        }
+
+
+        [HttpGet("podcaster-documents/debug/list-form-fields")]
+        [AllowAnonymous] // For testing, remove in production
+        public async Task<IActionResult> DebugListFormFields()
+        {
+            try
+            {
+                string templatePath = $"{_filePathConfig.SYSTEM_PODCASTER_DOCUMENTS_FILE_PATH}/main_buddy_commitment_document_template_2.pdf";
+
+                byte[]? templateBytes = await _fileIOHelper.GetFileBytesAsync(templatePath);
+
+                if (templateBytes == null)
+                {
+                    return NotFound(new { message = "Template not found" });
+                }
+
+                var fieldNames = _pdfFormFillingHelper.GetFormFieldNames(templateBytes);
+
+                return Ok(new
+                {
+                    message = "Form fields found",
+                    templatePath = templatePath,
+                    totalFields = fieldNames.Count,
+                    fields = fieldNames
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
     }
 }

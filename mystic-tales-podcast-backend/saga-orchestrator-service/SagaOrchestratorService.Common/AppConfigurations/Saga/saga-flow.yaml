@@ -544,6 +544,38 @@ flows:
           nextSteps: []
           nextFlows: []
 
+  user-violation-level-update-flow:
+    topic: "user-management-domain"
+    handle-service: "SagaOrchestratorService"
+    description: "Cập nhật cấp độ vi phạm"
+    save-file: ""
+    steps:
+      - name: "update-account-violation-level"
+        topic: "user-management-domain"
+        handle-service: "UserService"
+        description: "Cập nhật cấp độ vi phạm cho tài khoản"
+        parameters:
+          - AccountId
+          - ViolationLevel
+        next-request-data:
+          - AccountId
+          - ViolationLevel
+        response-data:
+          - AccountId
+          - NewViolationLevel
+        onSuccess:
+          emit: "update-account-violation-level.success"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+        onFailure:
+          emit: "update-account-violation-level.failed"
+          topic: "user-management-domain"
+          handle-service: "SagaOrchestratorService"
+          nextSteps: []
+          nextFlows: []
+
   user-violation-punishment-flow:
     topic: "user-management-domain"
     handle-service: "SagaOrchestratorService"

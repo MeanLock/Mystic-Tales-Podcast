@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0" version="29.2.4">
+  <diagram id="MbEjH1huSBzFkDJzeNuB" name="MTP_ModerationDb_dev">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- PodcastBuddyReportType -->
+        <mxCell id="podcastbuddyreporttype-table" value="PodcastBuddyReportType" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreporttype-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastbuddyreporttype-table">
+          <mxGeometry y="30" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreporttype-name" value="name: NVARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastbuddyreporttype-table">
+          <mxGeometry y="60" width="220" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- PodcastShowReportType -->
+        <mxCell id="podcastshowreporttype-table" value="PodcastShowReportType" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="300" y="100" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreporttype-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastshowreporttype-table">
+          <mxGeometry y="30" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreporttype-name" value="name: NVARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastshowreporttype-table">
+          <mxGeometry y="60" width="220" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- PodcastEpisodeReportType -->
+        <mxCell id="podcastepisodereporttype-table" value="PodcastEpisodeReportType" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="560" y="100" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereporttype-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastepisodereporttype-table">
+          <mxGeometry y="30" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereporttype-name" value="name: NVARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastepisodereporttype-table">
+          <mxGeometry y="60" width="240" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- DMCAAccusationStatus -->
+        <mxCell id="dmcaaccusationstatus-table" value="DMCAAccusationStatus" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="230" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationstatus-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="dmcaaccusationstatus-table">
+          <mxGeometry y="30" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationstatus-name" value="name: NVARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusationstatus-table">
+          <mxGeometry y="60" width="220" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- DMCAAccusationConclusionReportType -->
+        <mxCell id="dmcaaccusationconclusionreporttype-table" value="DMCAAccusationConclusionReportType" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="300" y="230" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationconclusionreporttype-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="dmcaaccusationconclusionreporttype-table">
+          <mxGeometry y="30" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationconclusionreporttype-name" value="name: NVARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusationconclusionreporttype-table">
+          <mxGeometry y="60" width="320" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- PodcastBuddyReport -->
+        <mxCell id="podcastbuddyreport-table" value="PodcastBuddyReport" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="280" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreport-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastbuddyreport-table">
+          <mxGeometry y="30" width="280" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreport-content" value="content: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastbuddyreport-table">
+          <mxGeometry y="60" width="280" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreport-accountId" value="accountId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastbuddyreport-table">
+          <mxGeometry y="90" width="280" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreport-podcastBuddyId" value="podcastBuddyId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastbuddyreport-table">
+          <mxGeometry y="120" width="280" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreport-podcastBuddyReportTypeId" value="podcastBuddyReportTypeId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="podcastbuddyreport-table">
+          <mxGeometry y="150" width="280" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreport-resolvedAt" value="resolvedAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastbuddyreport-table">
+          <mxGeometry y="180" width="280" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- PodcastShowReport -->
+        <mxCell id="podcastshowreport-table" value="PodcastShowReport" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="360" y="360" width="300" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreport-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastshowreport-table">
+          <mxGeometry y="30" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreport-content" value="content: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastshowreport-table">
+          <mxGeometry y="60" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreport-accountId" value="accountId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastshowreport-table">
+          <mxGeometry y="90" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreport-podcastShowId" value="podcastShowId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastshowreport-table">
+          <mxGeometry y="120" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreport-podcastShowReportTypeId" value="podcastShowReportTypeId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="podcastshowreport-table">
+          <mxGeometry y="150" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreport-resolvedAt" value="resolvedAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastshowreport-table">
+          <mxGeometry y="180" width="300" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- PodcastEpisodeReport -->
+        <mxCell id="podcastepisodereport-table" value="PodcastEpisodeReport" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="700" y="360" width="320" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereport-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastepisodereport-table">
+          <mxGeometry y="30" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereport-content" value="content: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastepisodereport-table">
+          <mxGeometry y="60" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereport-accountId" value="accountId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastepisodereport-table">
+          <mxGeometry y="90" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereport-podcastEpisodeId" value="podcastEpisodeId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastepisodereport-table">
+          <mxGeometry y="120" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereport-podcastEpisodeReportTypeId" value="podcastEpisodeReportTypeId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="podcastepisodereport-table">
+          <mxGeometry y="150" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereport-resolvedAt" value="resolvedAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastepisodereport-table">
+          <mxGeometry y="180" width="320" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- PodcastBuddyReportReviewSession -->
+        <mxCell id="podcastbuddyreportreviewsession-table" value="PodcastBuddyReportReviewSession" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="610" width="340" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreportreviewsession-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastbuddyreportreviewsession-table">
+          <mxGeometry y="30" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreportreviewsession-podcastBuddyId" value="podcastBuddyId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastbuddyreportreviewsession-table">
+          <mxGeometry y="60" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreportreviewsession-assignedStaff" value="assignedStaff: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastbuddyreportreviewsession-table">
+          <mxGeometry y="90" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreportreviewsession-resolvedViolationPoint" value="resolvedViolationPoint: DECIMAL(18,3)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastbuddyreportreviewsession-table">
+          <mxGeometry y="120" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastbuddyreportreviewsession-isResolved" value="isResolved: BIT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastbuddyreportreviewsession-table">
+          <mxGeometry y="150" width="340" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- PodcastShowReportReviewSession -->
+        <mxCell id="podcastshowreportreviewsession-table" value="PodcastShowReportReviewSession" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="420" y="610" width="320" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreportreviewsession-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastshowreportreviewsession-table">
+          <mxGeometry y="30" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreportreviewsession-podcastShowId" value="podcastShowId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastshowreportreviewsession-table">
+          <mxGeometry y="60" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreportreviewsession-assignedStaff" value="assignedStaff: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastshowreportreviewsession-table">
+          <mxGeometry y="90" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastshowreportreviewsession-isResolved" value="isResolved: BIT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastshowreportreviewsession-table">
+          <mxGeometry y="120" width="320" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- PodcastEpisodeReportReviewSession -->
+        <mxCell id="podcastepisodereportreviewsession-table" value="PodcastEpisodeReportReviewSession" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="780" y="610" width="340" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereportreviewsession-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="podcastepisodereportreviewsession-table">
+          <mxGeometry y="30" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereportreviewsession-podcastEpisodeId" value="podcastEpisodeId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastepisodereportreviewsession-table">
+          <mxGeometry y="60" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereportreviewsession-assignedStaff" value="assignedStaff: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastepisodereportreviewsession-table">
+          <mxGeometry y="90" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="podcastepisodereportreviewsession-isResolved" value="isResolved: BIT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="podcastepisodereportreviewsession-table">
+          <mxGeometry y="120" width="340" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- DMCAAccusation -->
+        <mxCell id="dmcaaccusation-table" value="DMCAAccusation" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="820" width="320" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-id" value="id ( PK ): INT IDENTITY(1,1)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="30" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-podcastShowId" value="podcastShowId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="60" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-podcastEpisodeId" value="podcastEpisodeId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="90" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-assignedStaff" value="assignedStaff: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="120" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-accuserEmail" value="accuserEmail: NVARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="150" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-accuserPhone" value="accuserPhone: NVARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="180" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-accuserFullName" value="accuserFullName: NVARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="210" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-dismissReason" value="dismissReason: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="240" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-resolvedAt" value="resolvedAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="270" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusation-cancelledAt" value="cancelledAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusation-table">
+          <mxGeometry y="300" width="320" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- DMCAAccusationConclusionReport -->
+        <mxCell id="dmcaaccusationconclusionreport-table" value="DMCAAccusationConclusionReport" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="400" y="820" width="400" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationconclusionreport-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="dmcaaccusationconclusionreport-table">
+          <mxGeometry y="30" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationconclusionreport-dmcaAccusationId" value="dmcaAccusationId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="dmcaaccusationconclusionreport-table">
+          <mxGeometry y="60" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationconclusionreport-dmcaAccusationConclusionReportTypeId" value="dmcaAccusationConclusionReportTypeId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="dmcaaccusationconclusionreport-table">
+          <mxGeometry y="90" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationconclusionreport-createdBy" value="createdBy: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusationconclusionreport-table">
+          <mxGeometry y="120" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationconclusionreport-content" value="content: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusationconclusionreport-table">
+          <mxGeometry y="150" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationconclusionreport-attachFileKey" value="attachFileKey: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusationconclusionreport-table">
+          <mxGeometry y="180" width="400" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationconclusionreport-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusationconclusionreport-table">
+          <mxGeometry y="210" width="400" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- DMCAAccusationStatusTracking -->
+        <mxCell id="dmcaaccusationstatustracking-table" value="DMCAAccusationStatusTracking" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1190" width="360" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationstatustracking-dmcaAccusationId" value="dmcaAccusationId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="dmcaaccusationstatustracking-table">
+          <mxGeometry y="30" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationstatustracking-dmcaAccusationStatusId" value="dmcaAccusationStatusId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="dmcaaccusationstatustracking-table">
+          <mxGeometry y="60" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcaaccusationstatustracking-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcaaccusationstatustracking-table">
+          <mxGeometry y="90" width="360" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- CounterNotice -->
+        <mxCell id="counternotice-table" value="CounterNotice" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="440" y="1190" width="260" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="counternotice-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="counternotice-table">
+          <mxGeometry y="30" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="counternotice-dmcaAccusationId" value="dmcaAccusationId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="counternotice-table">
+          <mxGeometry y="60" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="counternotice-podcastBuddyId" value="podcastBuddyId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="counternotice-table">
+          <mxGeometry y="90" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="counternotice-content" value="content: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="counternotice-table">
+          <mxGeometry y="120" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="counternotice-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="counternotice-table">
+          <mxGeometry y="150" width="260" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- DMCANotice -->
+        <mxCell id="dmcanotice-table" value="DMCANotice" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="740" y="1190" width="260" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcanotice-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="dmcanotice-table">
+          <mxGeometry y="30" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcanotice-dmcaAccusationId" value="dmcaAccusationId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="dmcanotice-table">
+          <mxGeometry y="60" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcanotice-staffId" value="staffId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcanotice-table">
+          <mxGeometry y="90" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcanotice-content" value="content: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcanotice-table">
+          <mxGeometry y="120" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcanotice-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcanotice-table">
+          <mxGeometry y="150" width="260" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- LawsuitProof -->
+        <mxCell id="lawsuitproof-table" value="LawsuitProof" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="1190" width="260" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="lawsuitproof-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="lawsuitproof-table">
+          <mxGeometry y="30" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lawsuitproof-dmcaAccusationId" value="dmcaAccusationId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="lawsuitproof-table">
+          <mxGeometry y="60" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lawsuitproof-podcastBuddyId" value="podcastBuddyId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="lawsuitproof-table">
+          <mxGeometry y="90" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lawsuitproof-content" value="content: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="lawsuitproof-table">
+          <mxGeometry y="120" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lawsuitproof-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="lawsuitproof-table">
+          <mxGeometry y="150" width="260" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- CounterNoticeAttachFile -->
+        <mxCell id="counternoticeattachfile-table" value="CounterNoticeAttachFile" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1410" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="counternoticeattachfile-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="counternoticeattachfile-table">
+          <mxGeometry y="30" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="counternoticeattachfile-counterNoticeId" value="counterNoticeId ( FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="counternoticeattachfile-table">
+          <mxGeometry y="60" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="counternoticeattachfile-attachFileKey" value="attachFileKey: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="counternoticeattachfile-table">
+          <mxGeometry y="90" width="300" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- DMCANoticeAttachFile -->
+        <mxCell id="dmcanoticeattachfile-table" value="DMCANoticeAttachFile" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1410" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcanoticeattachfile-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="dmcanoticeattachfile-table">
+          <mxGeometry y="30" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcanoticeattachfile-dmcaNoticeId" value="dmcaNoticeId ( FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="dmcanoticeattachfile-table">
+          <mxGeometry y="60" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dmcanoticeattachfile-attachFileKey" value="attachFileKey: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="dmcanoticeattachfile-table">
+          <mxGeometry y="90" width="300" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- LawsuitProofAttachFile -->
+        <mxCell id="lawsuitproofattachfile-table" value="LawsuitProofAttachFile" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#dae8fc;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="720" y="1410" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="lawsuitproofattachfile-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="lawsuitproofattachfile-table">
+          <mxGeometry y="30" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lawsuitproofattachfile-lawsuitProofId" value="lawsuitProofId ( FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="lawsuitproofattachfile-table">
+          <mxGeometry y="60" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="lawsuitproofattachfile-attachFileKey" value="attachFileKey: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="lawsuitproofattachfile-table">
+          <mxGeometry y="90" width="300" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: PodcastBuddyReport -> PodcastBuddyReportType (N:1) -->
+        <mxCell id="rel-podcastbuddyreport-reporttype" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="podcastbuddyreport-podcastBuddyReportTypeId" target="podcastbuddyreporttype-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: PodcastShowReport -> PodcastShowReportType (N:1) -->
+        <mxCell id="rel-podcastshowreport-reporttype" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="podcastshowreport-table" target="podcastshowreporttype-table">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: PodcastEpisodeReport -> PodcastEpisodeReportType (N:1) -->
+        <mxCell id="rel-podcastepisodereport-reporttype" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="podcastepisodereport-table" target="podcastepisodereporttype-table">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: DMCAAccusationConclusionReport -> DMCAAccusation (N:1) -->
+        <mxCell id="rel-conclusionreport-accusation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="dmcaaccusationconclusionreport-dmcaAccusationId" target="dmcaaccusation-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: DMCAAccusationConclusionReport -> DMCAAccusationConclusionReportType (N:1) -->
+        <mxCell id="rel-conclusionreport-reporttype" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="dmcaaccusationconclusionreport-table" target="dmcaaccusationconclusionreporttype-table">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: DMCAAccusationStatusTracking -> DMCAAccusation (N:1) -->
+        <mxCell id="rel-statustracking-accusation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="dmcaaccusationstatustracking-table" target="dmcaaccusation-table">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: DMCAAccusationStatusTracking -> DMCAAccusationStatus (N:1) -->
+        <mxCell id="rel-statustracking-status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="dmcaaccusationstatustracking-dmcaAccusationStatusId" target="dmcaaccusationstatus-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: CounterNotice -> DMCAAccusation (N:1) -->
+        <mxCell id="rel-counternotice-accusation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="counternotice-dmcaAccusationId" target="dmcaaccusation-podcastShowId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: DMCANotice -> DMCAAccusation (N:1) -->
+        <mxCell id="rel-dmcanotice-accusation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="dmcanotice-table" target="dmcaaccusation-podcastEpisodeId">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: LawsuitProof -> DMCAAccusation (N:1) -->
+        <mxCell id="rel-lawsuitproof-accusation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="lawsuitproof-dmcaAccusationId" target="dmcaaccusation-assignedStaff">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: CounterNoticeAttachFile -> CounterNotice (N:1) -->
+        <mxCell id="rel-counternoticeattach-counternotice" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="counternoticeattachfile-table" target="counternotice-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: DMCANoticeAttachFile -> DMCANotice (N:1) -->
+        <mxCell id="rel-dmcanoticeattach-dmcanotice" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="dmcanoticeattachfile-table" target="dmcanotice-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationship: LawsuitProofAttachFile -> LawsuitProof (N:1) -->
+        <mxCell id="rel-lawsuitproofattach-lawsuitproof" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="lawsuitproofattachfile-table" target="lawsuitproof-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

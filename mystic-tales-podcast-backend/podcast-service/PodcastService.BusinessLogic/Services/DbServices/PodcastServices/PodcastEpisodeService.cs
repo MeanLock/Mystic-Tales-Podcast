@@ -98,6 +98,9 @@ using Microsoft.IdentityModel.Tokens;
 using PodcastService.BusinessLogic.DTOs.MessageQueue.ContentManagementDomain.CompleteAllUserEpisodeListenSessions;
 using PodcastService.BusinessLogic.DTOs.Cache.ListesnSessionProcedure;
 using PodcastService.BusinessLogic.Enums.ListenSessionProcedure;
+using Microsoft.AspNetCore.SignalR;
+using PodcastService.BusinessLogic.SignalRHubs;
+using Duende.IdentityServer.Models;
 
 namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 {
@@ -116,6 +119,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
         // DB CONTEXT
         private readonly AppDbContext _appDbContext;
+
+        // SIGNALR HUB CONTEXT
+        private readonly IHubContext<PodcastContentNotificationHub> _podcastContentNotificationHubContext;
 
         // HELPERS
         private readonly BcryptHelper _bcryptHelper;
@@ -177,6 +183,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         public PodcastEpisodeService(
             ILogger<PodcastEpisodeService> logger,
             AppDbContext appDbContext,
+
+            IHubContext<PodcastContentNotificationHub> podcastContentNotificationHubContext,
+
             BcryptHelper bcryptHelper,
             FluentEmailService fluentEmailService,
             JwtHelper jwtHelper,
@@ -236,6 +245,9 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             _logger = logger;
 
             _appDbContext = appDbContext;
+
+            _podcastContentNotificationHubContext = podcastContentNotificationHubContext;
+
             _unitOfWork = unitOfWork;
 
             _podcastChannelGenericRepository = podcastChannelGenericRepository;
@@ -489,7 +501,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
             catch (Exception ex)
             {
                 Console.WriteLine("\n" + ex.StackTrace + "\n");
-                throw new HttpRequestException("Get all available staffs failed, error: " + ex.Message);
+                throw new HttpRequestException("Get account failed, error: " + ex.Message);
             }
         }
 
@@ -741,6 +753,24 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     {
                         VolumeGainDb = generalTuningProfileRequestInfo.BackgroundMergeProfile?.VolumeGainDb,
                         FileStream = generalTuningProfileRequestInfo.BackgroundMergeProfile?.BackgroundSoundTrackFileKey != null ? await _fileIOHelper.GetFileStreamAsync(generalTuningProfileRequestInfo.BackgroundMergeProfile?.BackgroundSoundTrackFileKey) : null
+                    } : null,
+                    MultipleTimeRangeBackgroundMergeProfile = generalTuningProfileRequestInfo.MultipleTimeRangeBackgroundMergeProfile != null ? new MultipleTimeRangeBackgroundMergeProfile
+                    {
+                        TimeRangeMergeBackgrounds = generalTuningProfileRequestInfo.MultipleTimeRangeBackgroundMergeProfile?.TimeRangeMergeBackgrounds != null
+                            ? (await Task.WhenAll(
+                                generalTuningProfileRequestInfo.MultipleTimeRangeBackgroundMergeProfile.TimeRangeMergeBackgrounds.Select(async trbm => new TimeRangeMergeBackground
+                                {
+                                    BackgroundCutEndSecond = trbm.BackgroundCutEndSecond,
+                                    BackgroundCutStartSecond = trbm.BackgroundCutStartSecond,
+                                    OriginalMergeEndSecond = trbm.OriginalMergeEndSecond,
+                                    OriginalMergeStartSecond = trbm.OriginalMergeStartSecond,
+                                    VolumeGainDb = trbm.VolumeGainDb,
+                                    FileStream = trbm.BackgroundSoundTrackFileKey != null
+                                        ? await _fileIOHelper.GetFileStreamAsync(trbm.BackgroundSoundTrackFileKey)
+                                        : null
+                                })
+                            )).ToList()
+                            : null
                     } : null
                 };
 
@@ -2322,7 +2352,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         fingerprintStreamCopy.Position = 0;
 
                         // Chạy đồng thời với Task.WhenAll
-                        var transcriptionTask = _audioTranscriptionService.TranscribeAudioAsync(transcriptionStreamCopy, 
+                        var transcriptionTask = _audioTranscriptionService.TranscribeAudioAsync(transcriptionStreamCopy,
                         // lấy filename = "audio" + extension từ AudioFileKey
                         // FilePathHelper.GetFileName(existingPodcastEpisode.AudioFileKey)
                         "audio" + FilePathHelper.GetExtension(existingPodcastEpisode.AudioFileKey)
@@ -2502,12 +2532,23 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             // 			+ KHÔNG CÓ && THOẢ 1 TRONG 2 ĐIỀU KIỀN VI PHẠM (RESTRICT TERM / DUPLICATION):
                             // 				+ tạo 1 publish review session
 
-                            // Lọc ra các staff id đã được assign vào các phiên review trước đó trong hệ thống
+                            // Lọc ra các staff id đã được assign vào các phiên review chưa hoàn thành
                             // từ đó so với danh sách available staff truy vấn được từ Userservice để group lại các staff ít được assign nhất, nếu danh sách > 1 thì random chọn
-                            List<int> assignedStaffIds = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
+                            var podcastEpisodePublishReviewSessions = await _podcastEpisodePublishReviewSessionGenericRepository.FindAll(
                                 predicate: null,
-                                includeFunc: null
-                            ).Select(pprs => pprs.AssignedStaff).ToListAsync();
+                                includeFunc: q => q.Include(pprs => pprs.PodcastEpisodePublishReviewSessionStatusTrackings)
+                            ).ToListAsync();
+                            var assignedStaffIds = podcastEpisodePublishReviewSessions
+                                .Where(pprs =>
+                                {
+                                    var latestStatusTracking = pprs.PodcastEpisodePublishReviewSessionStatusTrackings
+                                        .OrderByDescending(persst => persst.CreatedAt)
+                                        .FirstOrDefault();
+                                    return latestStatusTracking != null && latestStatusTracking.PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview;
+                                })
+                                .Select(pprs => pprs.AssignedStaff)
+                                .ToList();
+
 
                             List<AccountDTO> availableStaff = await GetAllAvailableStaffs();
                             Dictionary<int, int> staffAssignmentCount = new Dictionary<int, int>();
@@ -2621,6 +2662,18 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         messageName: "processing-episode-draft-audio.success"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+
+                    await _podcastContentNotificationHubContext.Clients.User(processingEpisodeDraftAudioParameterDTO.PodcasterId.ToString()).SendAsync(
+                        "PodcastEpisodeAudioProcessingCompletedNotification",
+                        JObject.FromObject(new
+                        {
+                            IsSuccess = true,
+                            ErrorMessage = (string?)null,
+                        })
+                    );
+                    Console.WriteLine("\n\n\nPodcast episode audio processing completed successfully for episode id: " + existingPodcastEpisode.Id + "\n\n\n");
+                    // in người nhận
+                    Console.WriteLine("Notification sent to podcaster id: " + processingEpisodeDraftAudioParameterDTO.PodcasterId);
                 }
                 catch (Exception ex)
                 {
@@ -2637,6 +2690,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         messageName: "processing-episode-draft-audio.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await _podcastContentNotificationHubContext.Clients.User(processingEpisodeDraftAudioParameterDTO.PodcasterId.ToString()).SendAsync(
+                        "PodcastEpisodeAudioProcessingCompletedNotification",
+                        JObject.FromObject(new
+                        {
+                            IsSuccess = false,
+                            ErrorMessage = ex.Message,
+                        })
+                    );
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }
             }
@@ -3204,6 +3265,15 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
 
+                    await _podcastContentNotificationHubContext.Clients.User(processingEpisodePublishAudioParameterDTO.PodcasterId.ToString()).SendAsync(
+                        "PodcastEpisodeAudioProcessingCompletedNotification",
+                        JObject.FromObject(new
+                        {
+                            IsSuccess = true,
+                            ErrorMessage = (string?)null
+                        })
+                    );
+
                 }
                 catch (Exception ex)
                 {
@@ -3220,6 +3290,14 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         messageName: "processing-episode-publish-audio.failed"
                     );
                     await _messagingService.SendSagaMessageAsync(sagaEventMessage);
+                    await _podcastContentNotificationHubContext.Clients.User(processingEpisodePublishAudioParameterDTO.PodcasterId.ToString()).SendAsync(
+                        "PodcastEpisodeAudioProcessingCompletedNotification",
+                        JObject.FromObject(new
+                        {
+                            IsSuccess = false,
+                            ErrorMessage = ex.Message
+                        })
+                    );
                     Console.WriteLine("\n" + ex.StackTrace + "\n");
                 }
             }
@@ -4141,7 +4219,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             },
                             AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
                             ? await _fileIOHelper.GeneratePresignedUrlAsync(
-                                validEpisode.AudioFileKey
+                                validEpisode.AudioFileKey, _podcastListenSessionConfig.SessionAudioUrlExpirationSeconds
                             )
                             : null
                         },
@@ -4528,7 +4606,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 MainImageFileKey = podcaster.MainImageFileKey
                             },
                             AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
-                                ? await _fileIOHelper.GeneratePresignedUrlAsync(nextEpisode.AudioFileKey)
+                                ? await _fileIOHelper.GeneratePresignedUrlAsync(nextEpisode.AudioFileKey, _podcastListenSessionConfig.SessionAudioUrlExpirationSeconds)
                                 : null
                         },
                         ListenSessionProcedure = currentProcedure
@@ -4682,8 +4760,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         listenerId: listenerAccountId,
                         validEpisode: episode,
                         isNonQuotaListeningCheck: true, // true vì lí do FE và BE đầu vào không thể chặng trước , nên sẽ chặng từ bước này , ví do là vì nguồn này không thuộc vào show cụ thể
-                        // listenerCurrentPodcastSubscriptionRegistrationBenefitList: listenerCurrentPodcastSubscriptionRegistrationBenefitList
-                        // listenerCurrentPodcastSubscriptionRegistrationBenefitList: userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO.EpisodeBaseBenefitList.First(e => e.EpisodeId == episode.Id).PodcastSubscriptionBenefitIds.Select(id => new PodcastSubscriptionBenefitDTO { Id = id }).ToList()
+                                                        // listenerCurrentPodcastSubscriptionRegistrationBenefitList: listenerCurrentPodcastSubscriptionRegistrationBenefitList
+                                                        // listenerCurrentPodcastSubscriptionRegistrationBenefitList: userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO.EpisodeBaseBenefitList.First(e => e.EpisodeId == episode.Id).PodcastSubscriptionBenefitIds.Select(id => new PodcastSubscriptionBenefitDTO { Id = id }).ToList()
                         listenerCurrentPodcastSubscriptionRegistrationBenefitList: listenerCurrentPodcastSubscriptionRegistrationBenefitList != null ? listenerCurrentPodcastSubscriptionRegistrationBenefitList
                             : userPodcastSubscriptionRegistrationEpisodeBaseQueryResponseDTO.EpisodeBaseBenefitList
                                 .First(e => e.EpisodeId == episode.Id)
@@ -7359,7 +7437,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         // return null!;
                         Console.WriteLine("No valid latest listen session found for listener id: " + listenerId);
                         // in các thông tin của latestListenSession
-                        Console.WriteLine($"LatestListenSession: {latestListenSession.ToString()}");
+                        // Console.WriteLine($"LatestListenSession: {latestListenSession.ToString()}");
                         return new EpisodeListenResponseDTO
                         {
                             ListenSessionProcedure = null,
@@ -7476,8 +7554,6 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         }
                         await _customerListenSessionProcedureCachingService.UpdateProcedureAsync(listenerId, currentProcedure.Id, currentProcedure);
 
-
-
                         responseDTO = new EpisodeListenResponseDTO
                         {
                             ListenSessionProcedure = currentProcedure,
@@ -7511,7 +7587,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                                 },
                                 AudioFileUrl = deviceInfo.Platform == DevicePlatform.ios.ToString() || deviceInfo.Platform == DevicePlatform.android.ToString()
                                 ? await _fileIOHelper.GeneratePresignedUrlAsync(
-                                    episode.AudioFileKey
+                                    episode.AudioFileKey, _podcastListenSessionConfig.SessionAudioUrlExpirationSeconds
                                 )
                                 : null
                             }
@@ -7568,16 +7644,33 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         Reason = null
                     };
                 }
-                // remove NonQuotaListening condition if not checking for it
-                if (isNonQuotaListeningCheck == false && listenPermissionConditions.Contains(PodcastSubscriptionBenefitEnum.NonQuotaListening))
+
+                // in ra tất cả các điều kiện cần thiết ban đầu
+                foreach (var condition in listenPermissionConditions)
                 {
-                    listenPermissionConditions.Remove(PodcastSubscriptionBenefitEnum.NonQuotaListening);
+                    Console.WriteLine("Initial listen permission condition: " + condition.ToString());
+                    Console.WriteLine("isNonQuotaListeningCheck value: " + isNonQuotaListeningCheck);
+                    Console.WriteLine("Condition int value: " + (listenPermissionConditions.Contains(PodcastSubscriptionBenefitEnum.NonQuotaListening)));
                 }
+
+                // remove NonQuotaListening condition if not checking for it
+                    if (isNonQuotaListeningCheck == false && listenPermissionConditions.Contains(PodcastSubscriptionBenefitEnum.NonQuotaListening))
+                    {
+                        listenPermissionConditions.Remove(PodcastSubscriptionBenefitEnum.NonQuotaListening);
+                    }
 
                 // in ra tất cả các điều kiện cần thiết
                 foreach (var condition in listenPermissionConditions)
                 {
                     Console.WriteLine("Listen permission condition: " + condition.ToString());
+                }
+                if( listenPermissionConditions.Count == 0)
+                {
+                    return new ListenPermissionResult
+                    {
+                        CanListen = true,
+                        Reason = null
+                    };
                 }
 
                 // 5. Check subscription requirements

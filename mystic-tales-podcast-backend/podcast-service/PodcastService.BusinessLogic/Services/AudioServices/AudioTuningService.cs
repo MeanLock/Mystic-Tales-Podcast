@@ -53,6 +53,7 @@ namespace PodcastService.BusinessLogic.Services.AudioServices
                 workingStream = await PrepareStreamAsync(inputStream);
 
                 // Detect format
+                Console.WriteLine("[FROM] ProcessTuningAsync cho audio gốc");
                 formatInfo = _audioFormatDetectorHelper.DetectFormatFromStream(workingStream);
                 workingStream.Position = 0;
 
@@ -95,6 +96,16 @@ namespace PodcastService.BusinessLogic.Services.AudioServices
 
                     if (workingStream == null)
                         throw new Exception("Background merge failed");
+                }
+
+                if (profile.MultipleTimeRangeBackgroundMergeProfile != null)
+                {
+                    _logger.LogInformation("Layer 4: Multiple Time Range Background Merge");
+                    workingStream = await ApplyMultipleTimeRangeBackgroundMergeAsync(
+                        workingStream,
+                        profile.MultipleTimeRangeBackgroundMergeProfile);
+                    if (workingStream == null)
+                        throw new Exception("Multiple time range background merge failed");
                 }
 
 
@@ -207,6 +218,23 @@ namespace PodcastService.BusinessLogic.Services.AudioServices
                 return input;
             }
         }
+
+        private async Task<Stream?> ApplyMultipleTimeRangeBackgroundMergeAsync(Stream input, MultipleTimeRangeBackgroundMergeProfile profile)
+        {
+            try
+            {
+                _logger.LogInformation("Layer 4: Multiple Time Range Background Merge");
+                var merged = await _advanceTuningService.MergeMultipleTimeRangeBackgrounds(input, profile, null);
+
+                return merged ?? input;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Multiple Time Range Background Merge error");
+                input.Position = 0;
+                return input;
+            }
+        }   
     }
 
     // Result model

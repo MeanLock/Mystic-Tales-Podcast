@@ -707,6 +707,7 @@ namespace PodcastService.API.Controllers.BaseControllers
                 return BadRequest("Tuning process returned null stream");
             }
 
+            Console.WriteLine("[FROM] controller");
             var formatInfo = _formatDetector.DetectFormatFromStream(tunedAudio);
 
             if (tunedAudio.CanSeek)
@@ -731,7 +732,7 @@ namespace PodcastService.API.Controllers.BaseControllers
 
             return Ok(new
             {
-                ListenHistory = listenHistory
+                PodcastEpisodeListenHistory = listenHistory
             });
         }
 

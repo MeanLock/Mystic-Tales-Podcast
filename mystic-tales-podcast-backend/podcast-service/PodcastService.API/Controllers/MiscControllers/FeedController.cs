@@ -99,7 +99,7 @@ namespace PodcastService.API.Controllers.MiscControllers
         [HttpGet("podcast-contents")]
         public async Task<IActionResult> GetAllPodcastFeedContents([FromQuery] string keyword = null, [FromQuery] int limit = 20)
         {
-            if (!string.IsNullOrEmpty(keyword))
+            if (string.IsNullOrEmpty(keyword))
             {
                 return Ok(new
                 {

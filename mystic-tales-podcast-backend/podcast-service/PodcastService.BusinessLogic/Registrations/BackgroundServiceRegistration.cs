@@ -15,15 +15,15 @@ namespace PodcastService.BusinessLogic.Registrations
             // services.AddHostedService<MinuteBaseRequestCancellationService>();
             // services.AddHostedService<HourBaseRequestCancellationService>();
 
-            // services.AddHostedService<PodcasterAllTimeMaxQueryMetricUpdateJob>();
-            // services.AddHostedService<PodcasterTemporal7dMaxQueryMetricUpdateJob>();
-            // services.AddHostedService<ShowAllTimeMaxQueryMetricUpdateJob>();
-            // services.AddHostedService<ChannelAllTimeMaxQueryMetricUpdateJob>();
-            // services.AddHostedService<EpisodeAllTimeMaxQueryMetricUpdateJob>();
-            // services.AddHostedService<ShowTemporal7dMaxQueryMetricUpdateJob>();
-            // services.AddHostedService<ChannelTemporal7dMaxQueryMetricUpdateJob>();
-            // services.AddHostedService<SystemPreferencesTemporal30dQueryMetricUpdateJob>();
-            // services.AddHostedService<UserPreferencesTemporal30dQueryMetricUpdateJob>();
+            services.AddHostedService<PodcasterAllTimeMaxQueryMetricUpdateJob>();
+            services.AddHostedService<PodcasterTemporal7dMaxQueryMetricUpdateJob>();
+            services.AddHostedService<ShowAllTimeMaxQueryMetricUpdateJob>();
+            services.AddHostedService<ChannelAllTimeMaxQueryMetricUpdateJob>();
+            services.AddHostedService<EpisodeAllTimeMaxQueryMetricUpdateJob>();
+            services.AddHostedService<ShowTemporal7dMaxQueryMetricUpdateJob>();
+            services.AddHostedService<ChannelTemporal7dMaxQueryMetricUpdateJob>();
+            services.AddHostedService<SystemPreferencesTemporal30dQueryMetricUpdateJob>();
+            services.AddHostedService<UserPreferencesTemporal30dQueryMetricUpdateJob>();
 
             services.AddHostedService<ShowPublishReleaseJob>();
             services.AddHostedService<EpisodePublishReleaseJob>();

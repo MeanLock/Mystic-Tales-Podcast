@@ -9,5 +9,6 @@ namespace PodcastService.Common.AppConfigurations.BusinessSetting.interfaces
         int TokenEncryptionKeyRequestExpirationMinutes { get; set; }
         int SessionExpirationMinutes { get; set; }
         int SessionAdditionalUpdateBufferExpirationMinutes { get; set; }
+        int SessionAudioUrlExpirationSeconds { get; set; }
     }
 }

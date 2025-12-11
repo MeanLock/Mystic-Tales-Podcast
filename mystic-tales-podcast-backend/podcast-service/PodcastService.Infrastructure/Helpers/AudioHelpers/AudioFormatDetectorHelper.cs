@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using PodcastService.Infrastructure.Models.Audio;
+using System.Diagnostics;
 using System.Text;
 
 namespace PodcastService.Infrastructure.Helpers.AudioHelpers
@@ -28,6 +29,7 @@ namespace PodcastService.Infrastructure.Helpers.AudioHelpers
             if (stream == null || !stream.CanRead)
             {
                 _logger?.LogWarning("Stream is null or cannot be read");
+                Console.WriteLine("Stream is null or cannot be read");
                 return CreateUnknownFormat();
             }
 
@@ -46,6 +48,7 @@ namespace PodcastService.Infrastructure.Helpers.AudioHelpers
                 // Detect format based on magic bytes
                 var format = DetectFormatFromBytes(buffer);
                 _logger?.LogInformation($"Detected audio format: {format.Format} ({format.Extension})");
+                Console.WriteLine($"Detecteddddđ audio format: {format.Format} ({format.Extension})");
 
                 return format;
             }
@@ -148,19 +151,19 @@ namespace PodcastService.Infrastructure.Helpers.AudioHelpers
             }
 
             // FLAC: 66 4C 61 43 ("fLaC")
-            if (buffer[0] == 0x66 && buffer[1] == 0x4C && 
+            if (buffer[0] == 0x66 && buffer[1] == 0x4C &&
                 buffer[2] == 0x61 && buffer[3] == 0x43)
             {
                 return CreateFlacFormat();
             }
 
             // WAV: 52 49 46 46 ... 57 41 56 45 ("RIFF....WAVE")
-            if (buffer[0] == 0x52 && buffer[1] == 0x49 && 
+            if (buffer[0] == 0x52 && buffer[1] == 0x49 &&
                 buffer[2] == 0x46 && buffer[3] == 0x46)
             {
                 // Check for "WAVE" at offset 8
-                if (buffer.Length >= 12 && 
-                    buffer[8] == 0x57 && buffer[9] == 0x41 && 
+                if (buffer.Length >= 12 &&
+                    buffer[8] == 0x57 && buffer[9] == 0x41 &&
                     buffer[10] == 0x56 && buffer[11] == 0x45)
                 {
                     return CreateWavFormat();
@@ -169,8 +172,8 @@ namespace PodcastService.Infrastructure.Helpers.AudioHelpers
 
             // M4A/AAC: Starts with ftyp atom (00 00 00 xx 66 74 79 70)
             // Check for "ftyp" at offset 4
-            if (buffer.Length >= 8 && 
-                buffer[4] == 0x66 && buffer[5] == 0x74 && 
+            if (buffer.Length >= 8 &&
+                buffer[4] == 0x66 && buffer[5] == 0x74 &&
                 buffer[6] == 0x79 && buffer[7] == 0x70)
             {
                 // Further check for M4A specific brands
@@ -192,6 +195,35 @@ namespace PodcastService.Infrastructure.Helpers.AudioHelpers
             }
 
             _logger?.LogWarning($"Unknown format. Magic bytes: {BitConverter.ToString(buffer)}");
+            return CreateUnknownFormat();
+        }
+
+        private AudioFormatInfo DetectFormatUsingFFprobe(string filePath)
+        {
+            // Chạy: ffprobe -v error -show_entries format=format_name -of default=noprint_wrappers=1:nokey=1 "file"
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "ffprobe",
+                    Arguments = $"-v error -show_entries format=format_name -of default=noprint_wrappers=1:nokey=1 \"{filePath}\"",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd().Trim().ToLower();
+            process.WaitForExit();
+
+            // Parse output
+            if (output.Contains("mp3")) return CreateMp3Format();
+            if (output.Contains("aac") || output.Contains("m4a")) return CreateAacFormat();
+            if (output.Contains("flac")) return CreateFlacFormat();
+            if (output.Contains("wav")) return CreateWavFormat();
+
+            _logger?.LogError($"FFprobe also failed to detect format: {output}");
             return CreateUnknownFormat();
         }
 

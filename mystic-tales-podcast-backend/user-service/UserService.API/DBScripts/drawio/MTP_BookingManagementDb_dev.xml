@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0" version="29.2.4">
+  <diagram id="v_zvr0dhzXokU5J8m2nt" name="MTP_BookingManagementDb_dev">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Database Title -->
+        <mxCell id="db-title-1" value="BOOKING MANAGEMENT SERVICE DATABASE" style="text;html=1;strokeColor=none;fillColor=#f8cecc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="500" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- BookingStatus Table -->
+        <mxCell id="bookingstatus-table" value="BookingStatus" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingstatus-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="bookingstatus-table">
+          <mxGeometry y="30" width="250" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookingstatus-name" value="name: NVARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="bookingstatus-table">
+          <mxGeometry y="60" width="250" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- BookingOptionalManualCancelReason Table -->
+        <mxCell id="cancelreason-table" value="BookingOptionalManualCancelReason" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="230" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="cancelreason-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="cancelreason-table">
+          <mxGeometry y="30" width="320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cancelreason-name" value="name: NVARCHAR(250)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="cancelreason-table">
+          <mxGeometry y="60" width="320" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Booking Table -->
+        <mxCell id="booking-table" value="Booking" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="420" y="100" width="500" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="booking-table">
+          <mxGeometry y="30" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-title" value="title: NVARCHAR(250)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="60" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-description" value="description: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="90" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-accountId" value="accountId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="120" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-podcastBuddyId" value="podcastBuddyId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="150" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-price" value="price: DECIMAL(18,2)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="180" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-deadlineDays" value="deadlineDays: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="210" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-deadline" value="deadline: DATE" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="240" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-demoAudioFileKey" value="demoAudioFileKey: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="270" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-manualCancelReason" value="bookingManualCancelledReason: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="300" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-autoCancelReason" value="bookingAutoCancelReason: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="330" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-assignedStaffId" value="assignedStaffId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="360" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-customerRefundRate" value="customerBookingCancelDepositRefundRate: FLOAT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="390" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-buddyRefundRate" value="podcastBuddyBookingCancelDepositRefundRate: FLOAT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="420" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="booking-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="booking-table">
+          <mxGeometry y="450" width="500" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- PodcastBookingToneCategory Table -->
+        <mxCell id="tonecategory-table" value="PodcastBookingToneCategory" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="370" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="tonecategory-id" value="id ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="tonecategory-table">
+          <mxGeometry y="30" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tonecategory-name" value="name: NVARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="tonecategory-table">
+          <mxGeometry y="60" width="300" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- PodcastBookingTone Table -->
+        <mxCell id="tone-table" value="PodcastBookingTone" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="510" width="380" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="tone-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="tone-table">
+          <mxGeometry y="30" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tone-name" value="name: NVARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="tone-table">
+          <mxGeometry y="60" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tone-description" value="description: NVARCHAR(500)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="tone-table">
+          <mxGeometry y="90" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tone-categoryId" value="podcastBookingToneCategoryId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="tone-table">
+          <mxGeometry y="120" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tone-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="tone-table">
+          <mxGeometry y="150" width="380" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: PodcastBookingTone -> PodcastBookingToneCategory (N:1) -->
+        <mxCell id="rel-tone-category" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="tone-table" target="tonecategory-table">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- PodcastBuddyBookingTone Table -->
+        <mxCell id="buddytone-table" value="PodcastBuddyBookingTone" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="740" width="380" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="buddytone-podcasterId" value="podcasterId ( PK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="buddytone-table">
+          <mxGeometry y="30" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="buddytone-toneId" value="podcastBookingToneId ( PK-FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=7;" vertex="1" parent="buddytone-table">
+          <mxGeometry y="60" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="buddytone-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="buddytone-table">
+          <mxGeometry y="90" width="380" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: PodcastBuddyBookingTone -> PodcastBookingTone (N:1) -->
+        <mxCell id="rel-buddytone-tone" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="buddytone-table" target="tone-id">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="230" y="720" />
+              <mxPoint x="20" y="720" />
+              <mxPoint x="20" y="555" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- BookingRequirement Table -->
+        <mxCell id="requirement-table" value="BookingRequirement" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="980" y="100" width="450" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="requirement-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="requirement-table">
+          <mxGeometry y="30" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="requirement-bookingId" value="bookingId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="requirement-table">
+          <mxGeometry y="60" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="requirement-name" value="name: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="requirement-table">
+          <mxGeometry y="90" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="requirement-description" value="description: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="requirement-table">
+          <mxGeometry y="120" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="requirement-documentKey" value="requirementDocumentFileKey: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="requirement-table">
+          <mxGeometry y="150" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="requirement-order" value="order: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="requirement-table">
+          <mxGeometry y="180" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="requirement-wordCount" value="wordCount: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="requirement-table">
+          <mxGeometry y="210" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="requirement-toneId" value="podcastBookingToneId ( FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="requirement-table">
+          <mxGeometry y="240" width="450" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: BookingRequirement -> Booking (N:1) -->
+        <mxCell id="rel-requirement-booking" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="requirement-bookingId" target="booking-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: BookingRequirement -> PodcastBookingTone (N:1) -->
+        <mxCell id="rel-requirement-tone" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="requirement-toneId" target="tone-name">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="950" y="355" />
+              <mxPoint x="950" y="585" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- BookingStatusTracking Table -->
+        <mxCell id="statustrack-table" value="BookingStatusTracking" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="980" y="420" width="380" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="statustrack-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="statustrack-table">
+          <mxGeometry y="30" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="statustrack-bookingId" value="bookingId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="statustrack-table">
+          <mxGeometry y="60" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="statustrack-statusId" value="bookingStatusId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="statustrack-table">
+          <mxGeometry y="90" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="statustrack-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="statustrack-table">
+          <mxGeometry y="120" width="380" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: BookingStatusTracking -> Booking (N:1) -->
+        <mxCell id="rel-statustrack-booking" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="statustrack-bookingId" target="booking-title">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="950" y="495" />
+              <mxPoint x="950" y="175" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Relationship: BookingStatusTracking -> BookingStatus (N:1) -->
+        <mxCell id="rel-statustrack-status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="statustrack-statusId" target="bookingstatus-id">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="525" />
+              <mxPoint x="320" y="145" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- BookingProducingRequest Table -->
+        <mxCell id="prodrequest-table" value="BookingProducingRequest" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="420" y="630" width="380" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="prodrequest-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="prodrequest-table">
+          <mxGeometry y="30" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="prodrequest-bookingId" value="bookingId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="prodrequest-table">
+          <mxGeometry y="60" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="prodrequest-note" value="note: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="prodrequest-table">
+          <mxGeometry y="90" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="prodrequest-deadlineDays" value="deadlineDays: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="prodrequest-table">
+          <mxGeometry y="120" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="prodrequest-deadline" value="deadline: DATE" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="prodrequest-table">
+          <mxGeometry y="150" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="prodrequest-isAccepted" value="isAccepted: BIT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="prodrequest-table">
+          <mxGeometry y="180" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="prodrequest-finishedAt" value="finishedAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="prodrequest-table">
+          <mxGeometry y="210" width="380" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="prodrequest-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="prodrequest-table">
+          <mxGeometry y="240" width="380" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: BookingProducingRequest -> Booking (N:1) -->
+        <mxCell id="rel-prodrequest-booking" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="prodrequest-table" target="booking-description">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- BookingPodcastTrack Table -->
+        <mxCell id="track-table" value="BookingPodcastTrack" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="850" y="630" width="480" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="track-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="track-table">
+          <mxGeometry y="30" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="track-bookingId" value="bookingId ( FK ): INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="track-table">
+          <mxGeometry y="60" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="track-requestId" value="bookingProducingRequestId ( FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="track-table">
+          <mxGeometry y="90" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="track-audioFileKey" value="audioFileKey: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="track-table">
+          <mxGeometry y="120" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="track-audioFileSize" value="audioFileSize: FLOAT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="track-table">
+          <mxGeometry y="150" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="track-audioLength" value="audioLength: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="track-table">
+          <mxGeometry y="180" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="track-encryptionKeyId" value="audioEncryptionKeyId: UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="track-table">
+          <mxGeometry y="210" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="track-encryptionKeyFileKey" value="audioEncryptionKeyFileKey: NVARCHAR(MAX)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="track-table">
+          <mxGeometry y="240" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="track-previewSlot" value="remainingPreviewListenSlot: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="track-table">
+          <mxGeometry y="270" width="480" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="track-requirementId" value="bookingRequirementId ( FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="track-table">
+          <mxGeometry y="300" width="480" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: BookingPodcastTrack -> Booking (N:1) -->
+        <mxCell id="rel-track-booking" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="track-bookingId" target="booking-deadlineDays">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="830" y="705" />
+              <mxPoint x="830" y="325" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Relationship: BookingPodcastTrack -> BookingProducingRequest (N:1) -->
+        <mxCell id="rel-track-request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="track-requestId" target="prodrequest-id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: BookingPodcastTrack -> BookingRequirement (N:1) -->
+        <mxCell id="rel-track-requirement" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="track-requirementId" target="requirement-name">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1450" y="945" />
+              <mxPoint x="1450" y="205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- BookingPodcastTrackListenSession Table -->
+        <mxCell id="tracksession-table" value="BookingPodcastTrackListenSession" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="630" width="450" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="tracksession-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="tracksession-table">
+          <mxGeometry y="30" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tracksession-accountId" value="accountId: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="tracksession-table">
+          <mxGeometry y="60" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tracksession-trackId" value="bookingPodcastTrackId ( FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="tracksession-table">
+          <mxGeometry y="90" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tracksession-lastDuration" value="lastListenDurationSeconds: INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="tracksession-table">
+          <mxGeometry y="120" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tracksession-isCompleted" value="isCompleted: BIT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="tracksession-table">
+          <mxGeometry y="150" width="450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tracksession-createdAt" value="createdAt: DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="tracksession-table">
+          <mxGeometry y="180" width="450" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: BookingPodcastTrackListenSession -> BookingPodcastTrack (N:1) -->
+        <mxCell id="rel-tracksession-track" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="tracksession-trackId" target="track-audioLength">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- BookingProducingRequestPodcastTrackToEdit Table -->
+        <mxCell id="trackedit-table" value="BookingProducingRequestPodcastTrackToEdit" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;swimlaneFillColor=#f8cecc;fillColor=#f8cecc;" vertex="1" parent="1">
+          <mxGeometry x="420" y="960" width="520" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="trackedit-id" value="id ( PK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=5;" vertex="1" parent="trackedit-table">
+          <mxGeometry y="30" width="520" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="trackedit-requestId" value="bookingProducingRequestId ( FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="trackedit-table">
+          <mxGeometry y="60" width="520" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="trackedit-trackId" value="bookingPodcastTrackId ( FK ): UNIQUEIDENTIFIER" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=2;" vertex="1" parent="trackedit-table">
+          <mxGeometry y="90" width="520" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: BookingProducingRequestPodcastTrackToEdit -> BookingProducingRequest (N:1) -->
+        <mxCell id="rel-trackedit-request" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="trackedit-table" target="prodrequest-table">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Relationship: BookingProducingRequestPodcastTrackToEdit -> BookingPodcastTrack (N:1) -->
+        <mxCell id="rel-trackedit-track" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERmany;startFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="trackedit-trackId" target="track-encryptionKeyId">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="970" y="1035" />
+              <mxPoint x="970" y="855" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

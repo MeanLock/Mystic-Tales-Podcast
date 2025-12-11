@@ -2,7 +2,7 @@
 select * from PodcastChannelStatusTracking
 select * from PodcastShow
 select * from PodcastShowReview
-select * from PodcastShowStatusTracking where podcastShowId = N'89709A6A-11A3-4574-B94A-3ED61A0BE627'
+select * from PodcastShowStatusTracking where podcastShowId = N'7C723A74-FD5E-4747-B7A5-FAD6FA3B6F31'
 select * from Hashtag
 select * from PodcastChannelHashtag
 select * from PodcastShow

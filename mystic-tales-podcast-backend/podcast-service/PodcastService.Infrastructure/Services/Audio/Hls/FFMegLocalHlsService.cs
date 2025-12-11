@@ -4,6 +4,9 @@ using System.Security.Cryptography;
 using System.Text;
 using PodcastService.Infrastructure.Configurations.Audio.Hls.interfaces;
 using PodcastService.Infrastructure.Models.Audio.Hls;
+using Microsoft.AspNetCore.Hosting;
+using PodcastService.Common.AppConfigurations.FilePath;
+using PodcastService.Common.AppConfigurations.FilePath.interfaces;
 
 namespace PodcastService.Infrastructure.Services.Audio.Hls
 {
@@ -11,11 +14,15 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
     {
         private readonly ILogger<FFMegLocalHlsService> _logger;
         private readonly IHlsConfig _hlsConfig;
+        private readonly IWebHostEnvironment _environment;
+        private readonly IFilePathConfig _filePathConfig;
 
-        public FFMegLocalHlsService(ILogger<FFMegLocalHlsService> logger, IHlsConfig hlsConfig)
+        public FFMegLocalHlsService(ILogger<FFMegLocalHlsService> logger, IHlsConfig hlsConfig, IWebHostEnvironment environment, IFilePathConfig filePathConfig)
         {
             _logger = logger;
             _hlsConfig = hlsConfig;
+            _environment = environment;
+            _filePathConfig = filePathConfig;
         }
 
         /// <summary>
@@ -36,7 +43,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                 _logger.LogInformation("Starting HLS processing");
 
                 // Create temporary working directory
-                workingDir = Path.Combine(Path.GetTempPath(), "hls_processing", Guid.NewGuid().ToString());
+                // workingDir = Path.Combine(Path.GetTempPath(), "hls_processing", Guid.NewGuid().ToString());
+                workingDir = Path.Combine(_environment.ContentRootPath, _filePathConfig.HLS_PROCESSING_LOCAL_TEMP_FILE_PATH, Guid.NewGuid().ToString());
                 Directory.CreateDirectory(workingDir);
 
                 // Save stream to temporary audio file

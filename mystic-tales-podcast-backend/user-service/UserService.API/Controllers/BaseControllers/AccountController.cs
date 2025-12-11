@@ -173,6 +173,48 @@ namespace UserService.API.Controllers.BaseControllers
             return Ok(new { StaffList = staffs });
         }
 
+        // /api/user-service/api/accounts/buddy-commitment-document/fill-podcaster-apply-info/get-file-content
+        [HttpGet("buddy-commitment-document/fill-podcaster-apply-info/get-file-content")]
+        [Authorize(Policy = "Customer.NonPodcasterAccess")]
+        public async Task<IActionResult> GetFilledInfoBuddyCommitmentDocumentTemplateFileContent()
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+            byte[] filledPdfBytes = await _accountService.GenerateFilledBuddyCommitmentDocumentTemplatePdf(account);
+
+            // 4. Return filled PDF
+            string fileName = $"commitment_document_{account.Id}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
+            return File(filledPdfBytes, "application/pdf", fileName);
+        }
+
+        // /api/user-service/api/accounts/buddy-commitment-document/sign/get-file-content
+        [HttpPost("buddy-commitment-document/sign/get-file-content")]
+        [Authorize(Policy = "Customer.NonPodcasterAccess")]
+        public async Task<IActionResult> GetSignedBuddyCommitmentDocumentTemplateFileContent( [FromForm] IFormFile SignatureImageFile)
+        {
+            var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
+
+            // bắt buộc phải có file chữ kí
+            if (SignatureImageFile == null || SignatureImageFile.Length == 0)
+            {
+                return BadRequest("Signature image file is required.");
+            }
+
+            // lấy byte[] signedPdfBytes từ IFormFile SignatureImageFile 
+            byte[] signatureImageBytes = null;
+            using (var ms = new MemoryStream())
+            {
+                await SignatureImageFile.CopyToAsync(ms);
+                signatureImageBytes = ms.ToArray();
+            }
+            byte[] signedPdfBytes = await _accountService.GetSignedBuddyCommitmentDocumentTemplatePdf(account, signatureImageBytes);
+
+            // 4. Return signed PDF
+            string fileName = $"signed_commitment_document_{account.Id}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+
+            return File(signedPdfBytes, "application/pdf", fileName);
+        }
+
         // /api/user-service/api/accounts/admin/podcasters
         [HttpGet("admin/podcasters")]
         [Authorize(Policy = "Admin.BasicAccess")]
@@ -457,6 +499,25 @@ namespace UserService.API.Controllers.BaseControllers
             );
         }
 
+        // /api/user-service/api/accounts/{AccountId}/violation-level/{ViolationLevel}
+        [HttpPut("{AccountId}/violation-level/{ViolationLevel}")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> ChangeViolationLevelOfAccountById(int AccountId, int ViolationLevel)
+        {
+            var requestData = JObject.FromObject(new
+            {
+                AccountId = AccountId,
+                ViolationLevel = ViolationLevel
+            });
+
+            var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage("user-management-domain", requestData, null, "user-violation-level-update-flow");
+            await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+            return Ok(new
+            {
+                SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
+            }
+            );
+        }
 
         // /api/user-service/api/accounts/{AccountId}/violation-points/add
         [HttpPut("{AccountId}/violation-points/add")]

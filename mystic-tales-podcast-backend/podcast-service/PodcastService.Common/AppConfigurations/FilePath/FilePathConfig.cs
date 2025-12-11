@@ -21,6 +21,11 @@ namespace PodcastService.Common.AppConfigurations.FilePath
         public string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
         public string PODCAST_CATEGORY_FILE_PATH { get; set; }
         public string PODCAST_CATEGORY_TEMP_FILE_PATH { get; set; }
+        public string HLS_PROCESSING_LOCAL_TEMP_FILE_PATH { get; set; }
+        public string AUDIO_TUNING_SINGLE_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH { get; set; }
+        public string AUDIO_TUNING_MULTI_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH { get; set; }
+        public string AUDIO_TUNING_AI_TUNE_LOCAL_TEMP_FILE_PATH { get; set; }
+        public string AUDIO_TUNING_EQUALIZER_LOCAL_TEMP_FILE_PATH { get; set; }
         
     }
     public class FilePathConfig : IFilePathConfig
@@ -41,6 +46,11 @@ namespace PodcastService.Common.AppConfigurations.FilePath
         public string DMCA_ACCUSATION_TEMP_FILE_PATH { get; set; }
         public string PODCAST_CATEGORY_FILE_PATH { get; set; }
         public string PODCAST_CATEGORY_TEMP_FILE_PATH { get; set; }
+        public string HLS_PROCESSING_LOCAL_TEMP_FILE_PATH { get; set; }
+        public string AUDIO_TUNING_SINGLE_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH { get; set; }
+        public string AUDIO_TUNING_MULTI_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH { get; set; }
+        public string AUDIO_TUNING_AI_TUNE_LOCAL_TEMP_FILE_PATH { get; set; }
+        public string AUDIO_TUNING_EQUALIZER_LOCAL_TEMP_FILE_PATH { get; set; }
 
         public FilePathConfig(IConfiguration configuration)
         {
@@ -62,6 +72,11 @@ namespace PodcastService.Common.AppConfigurations.FilePath
             DMCA_ACCUSATION_TEMP_FILE_PATH = filePaths.DMCA_ACCUSATION_TEMP_FILE_PATH;
             PODCAST_CATEGORY_FILE_PATH = filePaths.PODCAST_CATEGORY_FILE_PATH;
             PODCAST_CATEGORY_TEMP_FILE_PATH = filePaths.PODCAST_CATEGORY_TEMP_FILE_PATH;
+            HLS_PROCESSING_LOCAL_TEMP_FILE_PATH = filePaths.HLS_PROCESSING_LOCAL_TEMP_FILE_PATH;
+            AUDIO_TUNING_SINGLE_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH = filePaths.AUDIO_TUNING_SINGLE_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH;
+            AUDIO_TUNING_MULTI_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH = filePaths.AUDIO_TUNING_MULTI_BACKGROUND_MERGE_LOCAL_TEMP_FILE_PATH;
+            AUDIO_TUNING_AI_TUNE_LOCAL_TEMP_FILE_PATH = filePaths.AUDIO_TUNING_AI_TUNE_LOCAL_TEMP_FILE_PATH;
+            AUDIO_TUNING_EQUALIZER_LOCAL_TEMP_FILE_PATH = filePaths.AUDIO_TUNING_EQUALIZER_LOCAL_TEMP_FILE_PATH;
         }
 
     }

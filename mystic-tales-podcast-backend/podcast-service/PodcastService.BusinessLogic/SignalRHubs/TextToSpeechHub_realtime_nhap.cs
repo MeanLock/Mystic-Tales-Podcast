@@ -2,6 +2,7 @@ using PodcastService.BusinessLogic.Services.SignalRHubServices;
 using PodcastService.DataAccess.Data;
 using Microsoft.AspNetCore.SignalR;
 using PodcastService.Infrastructure.Configurations.OpenAI.interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace ScriptPalaverBE.Services.chat_services
 {

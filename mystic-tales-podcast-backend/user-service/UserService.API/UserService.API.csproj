@@ -12,6 +12,7 @@
     <PackageReference Include="HotChocolate.AspNetCore.Playground" Version="10.5.5" />
     <PackageReference Include="HotChocolate.Data" Version="15.1.3" />
     <PackageReference Include="HotChocolate.Types" Version="15.1.3" />
+    <PackageReference Include="itext7" Version="9.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

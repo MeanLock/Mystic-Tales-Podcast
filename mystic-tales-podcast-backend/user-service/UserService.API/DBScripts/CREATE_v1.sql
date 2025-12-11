@@ -122,7 +122,7 @@ CREATE TABLE PodcastBuddyReview (
     FOREIGN KEY (podcastBuddyId) REFERENCES Account(id)
 );
 
--- AccountNotification table
+-- AccountNotification table ***
 CREATE TABLE AccountNotification (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT NOT NULL,
@@ -134,7 +134,7 @@ CREATE TABLE AccountNotification (
     FOREIGN KEY (notificationTypeId) REFERENCES NotificationType(id)
 );
 
--- NotificationType table
+-- NotificationType table ***
 CREATE TABLE NotificationType (
     id INT PRIMARY KEY,
     name NVARCHAR(250) NOT NULL
@@ -358,6 +358,17 @@ CREATE TABLE BookingPodcastTrack (
     FOREIGN KEY (bookingRequirementId) REFERENCES BookingRequirement(id)
 );
 
+CREATE TABLE BookingPodcastTrackListenSession (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    accountId INT NOT NULL,
+    bookingPodcastTrackId UNIQUEIDENTIFIER NOT NULL,
+    lastListenDurationSeconds INT NOT NULL DEFAULT 0,
+    isCompleted BIT NOT NULL DEFAULT 0,
+    expiredAt DATETIME NOT NULL,
+    createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
+    FOREIGN KEY (bookingPodcastTrackId) REFERENCES BookingPodcastTrack(id)
+);
+
 -- BookingProducingRequestPodcastTrackToEdit table
 CREATE TABLE BookingProducingRequestPodcastTrackToEdit (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
@@ -367,7 +378,7 @@ CREATE TABLE BookingProducingRequestPodcastTrackToEdit (
     FOREIGN KEY (bookingPodcastTrackId) REFERENCES BookingPodcastTrack(id)
 );
 
--- BookingChatRoom table
+-- BookingChatRoom table ***
 CREATE TABLE BookingChatRoom (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     bookingId INT NOT NULL,
@@ -375,7 +386,7 @@ CREATE TABLE BookingChatRoom (
     FOREIGN KEY (bookingId) REFERENCES Booking(id)
 );
 
--- BookingChatMessages table
+-- BookingChatMessages table ***
 CREATE TABLE BookingChatMessages (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     text NVARCHAR(MAX) NULL,
@@ -386,7 +397,7 @@ CREATE TABLE BookingChatMessages (
     FOREIGN KEY (chatRoomId) REFERENCES BookingChatRoom(id)
 );
 
--- BookingChatMember table
+-- BookingChatMember table ***
 CREATE TABLE BookingChatMember (
     chatRoomId UNIQUEIDENTIFIER NOT NULL,
     accountId INT NOT NULL,
@@ -563,7 +574,7 @@ CREATE TABLE PodcastEpisodeListenSession (
     isCompleted BIT NOT NULL DEFAULT 0,
     isContentRemoved BIT NOT NULL DEFAULT 0,
     podcastCategoryId INT NULL,
-    podcastSubCategoryId INT NULL;
+    podcastSubCategoryId INT NULL,
     expiredAt DATETIME NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (podcastEpisodeId) REFERENCES PodcastEpisode(id)
@@ -737,7 +748,7 @@ CREATE TABLE PodcastSubscriptionBenefit (
     name NVARCHAR(250) NOT NULL
 );
 
--- MemberSubscriptionBenefit table
+-- MemberSubscriptionBenefit table ***
 CREATE TABLE MemberSubscriptionBenefit (
     id INT PRIMARY KEY,
     name NVARCHAR(250) NOT NULL
@@ -800,7 +811,7 @@ CREATE TABLE PodcastSubscriptionRegistration (
 );
 
 
--- MemberSubscription table
+-- MemberSubscription table ***
 CREATE TABLE MemberSubscription (
     id INT IDENTITY(1,1) PRIMARY KEY,
     name NVARCHAR(250) NOT NULL,
@@ -813,7 +824,7 @@ CREATE TABLE MemberSubscription (
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME))
 );
 
--- MemberSubscriptionCycleTypePrice table
+-- MemberSubscriptionCycleTypePrice table ***
 CREATE TABLE MemberSubscriptionCycleTypePrice (
     memberSubscriptionId INT NOT NULL,
     subscriptionCycleTypeId INT NOT NULL,
@@ -826,7 +837,7 @@ CREATE TABLE MemberSubscriptionCycleTypePrice (
     FOREIGN KEY (subscriptionCycleTypeId) REFERENCES SubscriptionCycleType(id)
 );
 
--- MemberSubscriptionBenefitMapping table
+-- MemberSubscriptionBenefitMapping table ***
 CREATE TABLE MemberSubscriptionBenefitMapping (
     memberSubscriptionId INT NOT NULL,
     memberSubscriptionBenefitId INT NOT NULL,
@@ -838,7 +849,7 @@ CREATE TABLE MemberSubscriptionBenefitMapping (
     FOREIGN KEY (memberSubscriptionBenefitId) REFERENCES MemberSubscriptionBenefit(id)
 );
 
--- MemberSubscriptionRegistration table
+-- MemberSubscriptionRegistration table ***
 CREATE TABLE MemberSubscriptionRegistration (
 	id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT,
@@ -1001,11 +1012,11 @@ CREATE TABLE CounterNotice (
 -- DMCANotice table
 CREATE TABLE DMCANotice (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    dmcaAccusationId INT NOT NULL,
     isValid BIT NULL,
     invalidReason NVARCHAR(MAX) NULL,
     validatedBy INT NULL DEFAULT NULL,
     validatedAt DATETIME NULL DEFAULT NULL,
-    dmcaAccusationId INT NOT NULL,
     createdAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     updatedAt DATETIME NOT NULL DEFAULT (CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'N. Central Asia Standard Time' AS DATETIME)),
     FOREIGN KEY (dmcaAccusationId) REFERENCES DMCAAccusation(id)
@@ -1119,7 +1130,7 @@ CREATE TABLE PodcastSubscriptionTransaction (
     FOREIGN KEY (transactionStatusId) REFERENCES TransactionStatus(id)
 );
 
--- MemberSubscriptionTransaction table
+-- MemberSubscriptionTransaction table ***
 CREATE TABLE MemberSubscriptionTransaction (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     memberSubscriptionRegistrationId UNIQUEIDENTIFIER NOT NULL,
@@ -1146,7 +1157,7 @@ CREATE TABLE BookingTransaction (
     FOREIGN KEY (transactionStatusId) REFERENCES TransactionStatus(id)
 );
 
--- BookingStorageTransaction table
+-- BookingStorageTransaction table ***
 CREATE TABLE BookingStorageTransaction (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     accountId INT NOT NULL,
