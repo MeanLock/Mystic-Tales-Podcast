@@ -16,9 +16,9 @@ const MediaPlayerLayout = () => {
   useUpdateAccountMeQuery(undefined, {
     pollingInterval: accessToken ? 1000 * 60 * 5 : 0, // 5 phút nếu có token, không poll nếu chưa login
     skip: !accessToken, // Skip query hoàn toàn nếu chưa login
-    refetchOnFocus: true, // Refetch khi window được focus
-    refetchOnMountOrArgChange: true, // Refetch khi component mount hoặc arg thay đổi
-    refetchOnReconnect: true, // Refetch khi reconnect mạng
+    refetchOnFocus: false, // Không refetch khi window được focus
+    refetchOnMountOrArgChange: false, // Không refetch khi component mount hoặc arg thay đổi
+    refetchOnReconnect: false, // Không refetch khi reconnect mạng
   });
 
   // Xử lý latest session khi có data - chỉ set state, playerCore sẽ xử lý việc listen
