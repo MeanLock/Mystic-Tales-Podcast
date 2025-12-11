@@ -19,7 +19,7 @@ export default defineConfig({
         secure: false,
       },
     },
-    // host: true,
-    // allowedHosts: true
+    host: true,
+    allowedHosts: true
   },
 });
