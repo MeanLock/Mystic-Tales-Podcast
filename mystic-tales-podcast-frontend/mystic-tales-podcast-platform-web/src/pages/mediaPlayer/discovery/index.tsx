@@ -66,16 +66,11 @@ const DiscoveryPage = () => {
   const {
     data: discoveryData,
     isFetching: isDiscoveryLoading,
-    refetch,
   } = useGetDiscoveryFeedQuery(undefined, {
     refetchOnFocus: true,
     refetchOnReconnect: true,
     refetchOnMountOrArgChange: true,
   });
-
-  useEffect(() => {
-    refetch();
-  }, []);
 
   useEffect(() => {
     const resolveEachSection = () => {

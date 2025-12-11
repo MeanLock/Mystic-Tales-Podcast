@@ -43,8 +43,12 @@ const CategoryPage = () => {
   // HOOKS
   const navigate = useNavigate();
 
-  const { data: categoriesData, isLoading: isCategoriesLoading } =
-    useGetCategoriesQuery();
+  const { data: categoriesData, isFetching: isCategoriesLoading } =
+    useGetCategoriesQuery(undefined, {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: true,
+    });
 
   useEffect(() => {
     const resolveFile = async () => {
