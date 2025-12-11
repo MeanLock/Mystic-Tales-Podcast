@@ -31,7 +31,6 @@ export const accountApi = appApi.injectEndpoints({
     }),
     updateAccountMe: build.query<{ Account: AccountMeFromApi }, void>({
       async queryFn(_arg, api, _extraOptions, baseQuery) {
-        const navigate = useNavigate();
         const result = await baseQuery({
           url: "/api/user-service/api/accounts/me",
           method: "GET",
@@ -39,21 +38,11 @@ export const accountApi = appApi.injectEndpoints({
         });
 
         if (result.error) {
-          api.dispatch(clearAuth());
-          navigate("/auth/login");
           return { error: result.error as any };
-
-          // Navigate về Login ở đây
         }
 
         if (result.data) {
           const rawData = result.data as { Account: AccountMeFromApi };
-          const accountInformations = rawData.Account;
-
-          // Update Redux state
-          api.dispatch(setUser(accountInformations));
-
-          // Return data for the query
           return { data: rawData };
         }
 
@@ -79,7 +68,7 @@ export const accountApi = appApi.injectEndpoints({
         return { error: { kind: "NETWORK_ERROR", message: "No data" } as any };
       },
     }),
-    
+
     updateAccountInformations: build.mutation<
       { Message: string },
       { uploadAccountInformationsFormData: any; accountId: number }

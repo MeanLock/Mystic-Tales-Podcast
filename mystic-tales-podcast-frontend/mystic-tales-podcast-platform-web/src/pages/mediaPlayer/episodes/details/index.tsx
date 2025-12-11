@@ -5,14 +5,20 @@ import {
 } from "@/core/services/episode/episode.service";
 import { IoArrowBack, IoPause, IoPlay } from "react-icons/io5";
 import { useNavigate, useParams } from "react-router-dom";
-import AutoResolveImage from "../components/AutoResolveImage";
+
 import { BsFillBookmarkFill } from "react-icons/bs";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
-import { pauseAudio, playAudio } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
+import {
+  pauseAudio,
+  playAudio,
+} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
+import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+
 
 // Helper function to format duration
 const formatDuration = (seconds: number): string => {
@@ -138,8 +144,12 @@ const EpisodeDetailsPage = () => {
         PodcastEpisodeId: episodeDetailsRaw.Episode.Id,
       }).unwrap();
 
-      if(benefitsResult.CurrentPodcastSubscriptionRegistrationBenefitList.length > 0){
-        const benefitList = benefitsResult.CurrentPodcastSubscriptionRegistrationBenefitList;
+      if (
+        benefitsResult.CurrentPodcastSubscriptionRegistrationBenefitList
+          .length > 0
+      ) {
+        const benefitList =
+          benefitsResult.CurrentPodcastSubscriptionRegistrationBenefitList;
         const hasListenBenefit = benefitList.some(
           (benefit) => benefit.Id === 1
         );
@@ -149,8 +159,8 @@ const EpisodeDetailsPage = () => {
               audioId: episodeDetailsRaw.Episode.Id,
               sourceType: "SpecifyShowEpisodes",
             })
-          )
-        }else{
+          );
+        } else {
           if (listenSlotResult > 0) {
             dispatch(
               playAudio({
@@ -164,7 +174,7 @@ const EpisodeDetailsPage = () => {
             );
           }
         }
-      }else{
+      } else {
         if (listenSlotResult > 0) {
           dispatch(
             playAudio({
@@ -194,79 +204,131 @@ const EpisodeDetailsPage = () => {
       </div>
     );
   }
-  return (
-    <div className="w-full h-full flex flex-col">
-      <div className="w-full flex items-center p-8">
-        <div
-          className="flex items-center text-white gap-2 hover:underline cursor-pointer"
-          onClick={() => navigate(-1)}
+
+  if (!episodeDetailsRaw && !isLoadingEpisodeDetails || !episodeDetailsRaw?.Episode) {
+    return (
+      <div className="w-full h-full flex items-center justify-center flex-col gap-5">
+        <p className="text-red-400 font-poppins font-light">
+          Episode not found.
+        </p>
+        <LiquidButton
+          variant="danger"
+          onClick={() => navigate("/media-player/discovery")}
         >
-          <IoArrowBack />
-          <p className="font-poppins">Back</p>
-        </div>
+          Go Back
+        </LiquidButton>
       </div>
-      <div className="w-full h-[400px] flex items-center p-10 relative">
-        <div className="h-full aspect-square rounded-md flex items-center justify-center">
-          <AutoResolveImage
-            fileKey={episodeDetailsRaw?.Episode.MainImageFileKey}
-            name={episodeDetailsRaw?.Episode.Name || "episode-image"}
-            className="rounded-md shadow-md"
+    );
+  } else {
+    return (
+      <div className="w-full h-full flex flex-col">
+        <div className="w-full flex items-center p-8">
+          <div
+            className="flex items-center text-white gap-2 hover:underline cursor-pointer"
+            onClick={() => navigate(-1)}
+          >
+            <IoArrowBack />
+            <p className="font-poppins">Back</p>
+          </div>
+        </div>
+        <div className="w-full h-[400px] flex items-center p-10 relative">
+          <div className="h-full aspect-square rounded-md flex items-center justify-center">
+            <AutoResolveImage
+              FileKey={episodeDetailsRaw.Episode.MainImageFileKey}
+              type="PodcastPublicSource"
+              className="w-full h-full rounded-md object-cover shadow-2xl"
+            />
+          </div>
+          <div className="ml-10 h-full flex flex-col items-start justify-center gap-2">
+            <p className="text-[#D9D9D9] uppercase text-md leading-none">
+              {getTimeAgo(episodeDetailsRaw?.Episode.ReleaseDate || "")} -{" "}
+              {formatDuration(episodeDetailsRaw?.Episode.AudioLength || 0)}
+            </p>
+            <p className="text-white text-7xl line-clamp-1 font-bold leading-none">
+              {episodeDetailsRaw?.Episode.Name}
+            </p>
+            <p className="text-mystic-green uppercase text-2xl leading-none">
+              {episodeDetailsRaw?.Episode.Podcaster.FullName}
+            </p>
+            {/* Play button */}
+            {player.playMode.playStatus === "play" &&
+            player.currentAudio?.Id === episodeDetailsRaw?.Episode.Id ? (
+              <div
+                onClick={() => dispatch(pauseAudio())}
+                className="mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm"
+              >
+                <IoPause size={20} color="#000" />
+                <p>Pause</p>
+              </div>
+            ) : (
+              <div
+                onClick={() => handlePlayEpisodeFromShow()}
+                className="mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm"
+              >
+                <IoPlay size={20} color="#000" />
+                <p>Play</p>
+              </div>
+            )}
+          </div>
+          <div
+            onClick={() => handleToggleSaveEpisode(!IsSavedByCurrentUser)}
+            className="absolute right-12 bottom-12 rounded-full p-2 bg-white/20 transition-all duration-500 hover:scale-110 cursor-pointer"
+          >
+            {IsSavedByCurrentUser ? (
+              <BsFillBookmarkFill color="#aee339" size={12} />
+            ) : (
+              <BsFillBookmarkFill color="#fff" size={12} />
+            )}
+          </div>
+        </div>
+        <div className="w-full mt-10 px-8">
+          <div
+            className="prose prose-invert max-w-full text-white line-clamp-3"
+            dangerouslySetInnerHTML={{
+              __html: renderDescriptionHTML(
+                episodeDetailsRaw?.Episode.Description || null
+              ),
+            }}
           />
         </div>
-        <div className="ml-10 h-full flex flex-col items-start justify-center gap-2">
-          <p className="text-[#D9D9D9] uppercase text-md">
-            {getTimeAgo(episodeDetailsRaw?.Episode.ReleaseDate || "")} -{" "}
-            {formatDuration(episodeDetailsRaw?.Episode.AudioLength || 0)}
+
+        <div className="w-full mt-10 px-8 flex flex-col gap-3">
+          <p className="text-white font-poppins text-3xl font-bold mb-2">
+            Episode Informations
           </p>
-          <p className="text-white text-7xl pb-4 line-clamp-1 font-bold">
-            {episodeDetailsRaw?.Episode.Name}
-          </p>
-          <p className="text-mystic-green uppercase text-2xl">
-            {episodeDetailsRaw?.Episode.Podcaster.FullName}
-          </p>
-          {/* Play button */}
-          {player.playMode.playStatus === "play" &&
-          player.currentAudio?.Id === episodeDetailsRaw?.Episode.Id ? (
-            <div
-              onClick={() => dispatch(pauseAudio())}
-              className="mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm"
-            >
-              <IoPause size={20} color="#000" />
-              <p>Pause</p>
+          <div className="w-full grid grid-cols-2 md:grid-cols-4">
+            <div className="flex flex-col gap-1 font-poppins">
+              <p className="text-[#D9D9D9] font-semibold">Show</p>
+              <p
+                onClick={() =>
+                  navigate(
+                    `/media-player/shows/${episodeDetailsRaw?.Episode.PodcastShow.Id}`
+                  )
+                }
+                className="text-mystic-green font-light hover:underline italic cursor-pointer"
+              >
+                {episodeDetailsRaw?.Episode.PodcastShow.Name}
+              </p>
             </div>
-          ) : (
-            <div
-              onClick={() => handlePlayEpisodeFromShow()}
-              className="mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm"
-            >
-              <IoPlay size={20} color="#000" />
-              <p>Play</p>
+
+            <div className="flex flex-col gap-1 font-poppins">
+              <p className="text-[#D9D9D9] font-semibold">Podcaster</p>
+              <p
+                onClick={() =>
+                  navigate(
+                    `/media-player/podcasters/${episodeDetailsRaw?.Episode.Podcaster.Id}`
+                  )
+                }
+                className="text-mystic-green font-light hover:underline italic cursor-pointer"
+              >
+                {episodeDetailsRaw?.Episode.Podcaster.FullName}
+              </p>
             </div>
-          )}
-        </div>
-        <div
-          onClick={() => handleToggleSaveEpisode(!IsSavedByCurrentUser)}
-          className="absolute right-12 bottom-12 rounded-full p-2 bg-white/20 transition-all duration-500 hover:scale-110 cursor-pointer"
-        >
-          {IsSavedByCurrentUser ? (
-            <BsFillBookmarkFill color="#aee339" size={12} />
-          ) : (
-            <BsFillBookmarkFill color="#fff" size={12} />
-          )}
+          </div>
         </div>
       </div>
-      <div className="w-full mt-10 px-8">
-        <div
-          className="prose prose-invert max-w-full text-white line-clamp-3"
-          dangerouslySetInnerHTML={{
-            __html: renderDescriptionHTML(
-              episodeDetailsRaw?.Episode.Description || null
-            ),
-          }}
-        />
-      </div>
-    </div>
-  );
+    );
+  }
 };
 
 export default EpisodeDetailsPage;

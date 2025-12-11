@@ -21,17 +21,33 @@ import type {
   ListenSessionBookingTracks,
 } from "@/core/types/audio";
 import { usePlayer } from "@/core/services/player/usePlayer";
+import { setUser, clearAuth } from "@/redux/slices/authSlice/authSlice";
 
 const NormalLayout = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
   const user = useSelector((state: RootState) => state.auth.user);
   const { playFromLatest } = usePlayer();
   // Chỉ polling khi user đã đăng nhập (có token)
-  useUpdateAccountMeQuery(undefined, {
-    pollingInterval: accessToken ? 300000 : 0, // 5 giây nếu có token, không poll nếu chưa login
+  const { data, error } = useUpdateAccountMeQuery(undefined, {
+    pollingInterval: accessToken ? 1000 * 60 * 5 : 0, // 5 phút nếu có token, không poll nếu chưa login
     skip: !accessToken, // Skip query hoàn toàn nếu chưa login
   });
+
+  // Xử lý data và error từ updateAccountMe
+  useEffect(() => {
+    if (error) {
+      dispatch(clearAuth());
+      navigate("/auth/login");
+    }
+  }, [error, dispatch, navigate]);
+
+  useEffect(() => {
+    if (data?.Account) {
+      dispatch(setUser(data.Account));
+    }
+  }, [data, dispatch]);
 
   // Lấy latest session khi mount
   // const { data: episodeLatestData } = useGetEpisodeLatestSessionQuery(
@@ -55,7 +71,6 @@ const NormalLayout = () => {
     }
   }, []);
 
-  const navigate = useNavigate();
   useEffect(() => {
     if (accessToken) {
       // Tạo ID riêng cho từng tab nếu chưa có

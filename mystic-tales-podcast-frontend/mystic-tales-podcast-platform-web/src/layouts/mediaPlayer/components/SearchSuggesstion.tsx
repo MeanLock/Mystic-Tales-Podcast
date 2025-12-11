@@ -1,13 +1,6 @@
-import type {
-  ContentRealtimeResponse,
-  ContentRealtimeResponseUI,
-} from "@/core/types/search";
-import { IoIosSearch, IoMdMicrophone } from "react-icons/io";
-import { RiSlideshow4Line } from "react-icons/ri";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
+import type { ContentRealtimeResponse } from "@/core/types/search";
+import { IoIosSearch } from "react-icons/io";
+
 import { useEffect, useState } from "react";
 
 import {
@@ -16,16 +9,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
-import { playerApi } from "@/core/services/player/player.service";
+
 import { IoPlay } from "react-icons/io5";
 import PlayingWave from "@/components/playingWave/PlayWave";
-import {
-  pauseAudio,
-  playAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import type { CurrentAudioUI } from "@/core/types/audio";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import { usePlayer } from "@/core/services/player/usePlayer";
+import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 
 type SearchSuggestionProps = {
   keywordOriginal: string;
@@ -35,14 +26,6 @@ type SearchSuggestionProps = {
   onKeywordClick: (keyword: string) => void;
   onContentClick: (content: ContentRealtimeResponse) => void;
 };
-
-const FileConfig: FileResolveConfig[] = [
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "PodcastPublic",
-  },
-];
 
 const SearchSuggesstion = ({
   keywordOriginal,
@@ -57,32 +40,20 @@ const SearchSuggesstion = ({
   >([]);
 
   // HOOKS
-  const dispatch = useDispatch();
-  const mediaPlayer = useSelector((state: RootState) => state.player);
+  const {
+    play,
+    pause,
+    state: uiState,
+    playEpisodeFromSpecifyShow,
+  } = usePlayer();
+
+  const [getBenefitList] =
+    useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
+
   useEffect(() => {
     const resolveContent = async () => {
       if (contents.length > 0) {
-        const resolved = await Promise.all(
-          contents.map(async (content) => {
-            if (content.Show) {
-              const { resolvedData } = await resolveFiles(
-                content.Show,
-                FileConfig
-              );
-              return { ...content, Show: resolvedData as any };
-            }
-            if (content.Episode) {
-              const { resolvedData } = await resolveFiles(
-                content.Episode,
-                FileConfig
-              );
-              return { ...content, Episode: resolvedData as any };
-            }
-            return content;
-          })
-        );
-        setResolvedContents(resolved);
-        console.log("Resolved Contents:", resolved);
+        setResolvedContents(contents);
       } else {
         setResolvedContents([]);
       }
@@ -111,13 +82,32 @@ const SearchSuggesstion = ({
     );
   };
 
-  const handlePlayNow = (content: ContentRealtimeResponseUI) => {
-    // TODO: Implement play functionality with new flow
-    // dispatch(playAudio({ sourceType: ..., audioId: content.Episode.Id }));
-  };
+  const handlePlayPause = async (audioId: string | null) => {
+    if (!audioId) return;
 
-  const handlePause = () => {
-    dispatch(pauseAudio());
+    const benefitList =
+      (await getBenefitList({ PodcastEpisodeId: audioId }).unwrap())
+        .CurrentPodcastSubscriptionRegistrationBenefitList || [];
+
+    if (uiState.currentAudio) {
+      if (uiState.currentAudio.id === audioId) {
+        if (uiState.isPlaying) {
+          pause();
+        } else {
+          play();
+        }
+      } else {
+        playEpisodeFromSpecifyShow({
+          audioId: audioId,
+          benefitsList: benefitList,
+        });
+      }
+    } else {
+      playEpisodeFromSpecifyShow({
+        audioId: audioId,
+        benefitsList: benefitList,
+      });
+    }
   };
 
   // Always return content to keep popover open
@@ -190,12 +180,9 @@ const SearchSuggesstion = ({
                         className="flex items-start gap-3 px-2 py-1 rounded-md cursor-pointer transition-colors hover:bg-gray-300"
                       >
                         {/* TODO: Design Show UI */}
-                        <img
-                          src={
-                            (item as any).ImageUrl ||
-                            "/images/unknown/podcast.png"
-                          }
-                          alt={item.Name}
+                        <AutoResolveImage
+                          FileKey={item.MainImageFileKey}
+                          type="PodcastPublicSource"
                           className="w-10 h-10 rounded-full object-cover shadow-md"
                         />
                         <div className="flex-1 h-10 flex items-center min-w-0">
@@ -211,7 +198,7 @@ const SearchSuggesstion = ({
                   }
 
                   // Episode UI
-                  if (content.Episode) {
+                  if (content.Episode && content.Episode !== null) {
                     return (
                       <div
                         key={index}
@@ -220,21 +207,18 @@ const SearchSuggesstion = ({
                       >
                         {/* TODO: Design Episode UI */}
                         <div className="group w-10 aspect-square rounded-sm flex items-center justify-center relative">
-                          <img
-                            src={
-                              (item as any).ImageUrl ||
-                              "/images/unknown/podcast.png"
-                            }
-                            alt={item.Name}
+                          <AutoResolveImage
+                            FileKey={content.Episode.MainImageFileKey}
+                            type="PodcastPublicSource"
                             className="w-10 h-10 rounded-sm shadow-md object-cover"
                           />
-                          {mediaPlayer.playMode.playStatus === "play" &&
-                          mediaPlayer.currentAudio?.Id ===
-                            content.Episode.Id ? (
+                          {uiState.isPlaying &&
+                          uiState.currentAudio &&
+                          uiState.currentAudio?.id === content.Episode?.Id ? (
                             <div
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handlePause();
+                                handlePlayPause(content.Episode?.Id || null);
                               }}
                               className="z-10 absolute inset-0 bg-black/40 rounded-sm items-center justify-center cursor-pointer"
                             >
@@ -244,9 +228,7 @@ const SearchSuggesstion = ({
                             <div
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handlePlayNow(
-                                  content as ContentRealtimeResponseUI
-                                );
+                                handlePlayPause(content.Episode?.Id || null);
                               }}
                               className="hidden group-hover:inline-flex z-10 absolute inset-0 bg-black/40 rounded-sm items-center justify-center cursor-pointer"
                             >

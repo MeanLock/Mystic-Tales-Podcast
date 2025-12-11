@@ -60,7 +60,7 @@ const alertSlice = createSlice({
       state.description = action.payload.description;
       state.isAutoClose = action.payload.isAutoClose;
       state.autoCloseDuration = action.payload.autoCloseDuration;
-      state.isClosable = action.payload.isClosable || true;
+      state.isClosable = action.payload.isClosable;
       state.isFunctional = action.payload.isFunctional || false;
       state.functionalButtonText =
         action.payload.functionalButtonText || "Close";
