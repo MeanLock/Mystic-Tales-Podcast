@@ -61,6 +61,7 @@ export const accountApi = appApi.injectEndpoints({
       },
       providesTags: ["Account"],
     }),
+
     getAccountInformations: build.query<{ Account: AccountMeFromApi }, void>({
       async queryFn(_arg, api, _extraOptions, baseQuery) {
         const result = await baseQuery({
@@ -78,6 +79,7 @@ export const accountApi = appApi.injectEndpoints({
         return { error: { kind: "NETWORK_ERROR", message: "No data" } as any };
       },
     }),
+    
     updateAccountInformations: build.mutation<
       { Message: string },
       { uploadAccountInformationsFormData: any; accountId: number }

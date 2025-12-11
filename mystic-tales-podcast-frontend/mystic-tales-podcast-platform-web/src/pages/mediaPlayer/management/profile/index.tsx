@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import {
+  useGetAccountInformationsQuery,
   useUpdateAccountInformationsMutation,
   useUpdateAccountMeQuery,
 } from "@/core/services/account/account.service";
@@ -71,7 +72,7 @@ const ProfilePage = () => {
     isLoading: isAccountMeLoading,
     isError,
     refetch,
-  } = useUpdateAccountMeQuery();
+  } = useGetAccountInformationsQuery();
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const dispatch = useDispatch();
@@ -774,7 +775,7 @@ const ProfilePage = () => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[480px] border border-white/10 bg-black/80 text-white">
+        <DialogContent className="sm:max-w-[480px] z-9999 border border-white/10 bg-black/80 text-white">
           <DialogHeader>
             <DialogTitle className="text-mystic-green">
               Reset Password
