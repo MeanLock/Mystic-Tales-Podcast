@@ -102,7 +102,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 var bookingProducingRequest = await _bookingProducingRequestGenericRepository.FindByIdAsync(
                     id,
                     includeFunc: include => include
-                        .Include(bpr => bpr.BookingPodcastTracks));
+                        .Include(bpr => bpr.BookingPodcastTracks)
+                        .ThenInclude(bpt => bpt.BookingRequirement));
 
                 if (bookingProducingRequest == null)
                     return null;
@@ -160,17 +161,26 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                     RejectReason = bookingProducingRequest.RejectReason,
                     CreatedAt = bookingProducingRequest.CreatedAt,
                     BookingPodcastTracks = isLastestProducingRequest ?
-                    bookingProducingRequest.BookingPodcastTracks?.Select(nego => new BookingPodcastTrackListItemResponseDTO
+                    bookingProducingRequest.BookingPodcastTracks?
+                    .OrderBy(nego => nego.BookingRequirement.Order)
+                    .Select(nego => new BookingPodcastTrackWithRequirementListItemResponseDTO
                     {
                         Id = nego.Id,
                         BookingId = nego.BookingId,
                         BookingProducingRequestId = nego.BookingProducingRequestId,
-                        BookingRequirementId = nego.BookingRequirementId,
+                        BookingRequirement = new DTOs.Snippet.BookingRequirementSnippetResponseDTO
+                        {
+                            Id = nego.BookingRequirement.Id,
+                            Name = nego.BookingRequirement.Name,
+                            Description = nego.BookingRequirement.Description,
+                            Order = nego.BookingRequirement.Order,
+                            WordCount = nego.BookingRequirement.WordCount
+                        },
                         AudioFileKey = nego.AudioFileKey,
                         AudioFileSize = nego.AudioFileSize,
                         AudioLength = nego.AudioLength,
                         RemainingPreviewListenSlot = nego.RemainingPreviewListenSlot
-                    }).ToList() : new List<BookingPodcastTrackListItemResponseDTO>() ?? new List<BookingPodcastTrackListItemResponseDTO>(),
+                    }).ToList() : new List<BookingPodcastTrackWithRequirementListItemResponseDTO>() ?? new List<BookingPodcastTrackWithRequirementListItemResponseDTO>(),
                     EditRequirementList = editRequirementList
                 };
 
