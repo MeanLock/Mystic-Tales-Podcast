@@ -1080,6 +1080,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                             BookingStatusId = previousStatusTracking.BookingStatusId,
                             CreatedAt = _dateHelper.GetNowByAppTimeZone()
                         };
+                        booking.BookingManualCancelledReason = null;
+                        await _bookingGenericRepository.UpdateAsync(booking.Id, booking);
                         await _bookingStatusTrackingGenericRepository.CreateAsync(newBookingStatusTracking);
                     }
 
