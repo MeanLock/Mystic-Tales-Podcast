@@ -34,19 +34,39 @@ const AutoResolveImage = (props: AutoResolveImageProps) => {
 
   const accountQ = useGetAccountPublicSourceQuery(
     { FileKey },
-    { skip: !isAccount || !FileKey }
+    {
+      skip: !isAccount || !FileKey,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
   );
   const bookingQ = useGetBookingPublicSourceQuery(
     { FileKey },
-    { skip: !isBooking || !FileKey }
+    {
+      skip: !isBooking || !FileKey,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
   );
   const podcastQ = useGetPodcastPublicSourceQuery(
     { FileKey },
-    { skip: !isPodcast || !FileKey }
+    {
+      skip: !isPodcast || !FileKey,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
   );
   const categoryQ = useGetCategoryPublicSourceQuery(
     { FileKey },
-    { skip: !isCategory || !FileKey }
+    {
+      skip: !isCategory || !FileKey,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
   );
 
   const resolvedUrl =

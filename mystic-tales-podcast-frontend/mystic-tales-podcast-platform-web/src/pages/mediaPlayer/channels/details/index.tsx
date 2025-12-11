@@ -7,9 +7,8 @@ import type { ChannelDetailsUI } from "@/core/types/channel";
 import type { ShowUI } from "@/core/types/show";
 import Autoplay from "embla-carousel-autoplay";
 import { useEffect, useState } from "react";
-import { IoIosArrowBack, IoIosMore } from "react-icons/io";
+import { IoIosArrowBack } from "react-icons/io";
 import {
-  IoHeart,
   IoHeartOutline,
   IoHeartSharp,
   IoPaperPlane,
