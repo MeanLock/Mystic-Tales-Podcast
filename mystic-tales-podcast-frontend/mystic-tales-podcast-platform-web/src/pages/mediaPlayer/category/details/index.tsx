@@ -98,12 +98,14 @@ const CategoryDetailsPage = () => {
 
   // HOOKS
   const navigate = useNavigate();
-  const { data: categoryFeedDataRaw, isLoading: isCategoryFeedDataLoading } =
+  const { data: categoryFeedDataRaw, isFetching: isCategoryFeedDataLoading } =
     useGetCategoryFeedDataQuery(
       { PodcastCategoryId: Number(id)! },
       {
         skip: !id,
         refetchOnMountOrArgChange: true,
+        refetchOnFocus: true,
+        refetchOnReconnect: true,
       }
     );
 
