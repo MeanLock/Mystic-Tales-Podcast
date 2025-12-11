@@ -43,10 +43,18 @@ import { setError } from "@/redux/slices/errorSlice/errorSlice";
 import { useEffect } from "react";
 import { useSaveEpisodeMutation } from "@/core/services/episode/episode.service";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
+import type { EpisodeUI } from "@/core/types/episode";
+import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
+import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
+import { useNavigate } from "react-router-dom";
+import { usePlayer } from "@/core/services/player/usePlayer";
 
 // Helper function to format duration
 const formatDuration = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
+  if (minutes < 1) {
+    return `00:${seconds}s`;
+  }
   return `${minutes} min`;
 };
 
@@ -103,10 +111,17 @@ export function renderDescriptionHTML(description: string | null) {
   return html.trim();
 }
 
-const EpisodeCard = ({ episode }: { episode: any }) => {
+const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   const dispatch = useDispatch();
   const player = useSelector((state: RootState) => state.player);
   const user = useSelector((state: RootState) => state.auth.user);
+
+  const {
+    playEpisodeFromSpecifyShow,
+    play,
+    pause,
+    state: uiState,
+  } = usePlayer();
 
   // REPORT STATES
   const [episodeReportDialog, setEpisodeReportDialog] = useState(false);
@@ -118,6 +133,7 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
 
   const [fetchBenefits, { isFetching: isFetchingBenefits }] =
     useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
+  const [triggerCheckListenSlot] = useLazyCheckUserPodcastListenSlotQuery();
 
   // REPORT QUERIES
   const {
@@ -146,66 +162,181 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
   }, [episodeAvailableReportTypes, isEpisodeAvailableReportTypesLoading]);
 
   // Handle play episode
-  const handlePlayEpisode = async (episodeId: string) => {
-    console.log("Playing episode:", episodeId);
-    try {
-      const benefits = await fetchBenefits({
-        PodcastEpisodeId: episodeId,
-      }).unwrap();
-      console.log("API Benefits response:", benefits);
-      console.log("Benefits data:", benefits);
+  // const handlePlayEpisode = async (episodeId: string) => {
+  //   console.log("Playing episode:", episodeId);
+  //   try {
+  //     const benefits = await fetchBenefits({
+  //       PodcastEpisodeId: episodeId,
+  //     }).unwrap();
+  //     console.log("API Benefits response:", benefits);
+  //     console.log("Benefits data:", benefits);
 
-      // Normalize benefit list from different possible response shapes
-      const benefitList =
-        benefits.CurrentPodcastSubscriptionRegistrationBenefitList;
-      if (benefitList && benefitList.length > 0) {
-        const hasNonQuota = benefitList.some(
-          (s: any) => s?.Id === 1 || s?.Name === "Non-Quota Listening"
-        );
+  //     // Normalize benefit list from different possible response shapes
+  //     const benefitList =
+  //       benefits.CurrentPodcastSubscriptionRegistrationBenefitList;
+  //     if (benefitList && benefitList.length > 0) {
+  //       const hasNonQuota = benefitList.some(
+  //         (s: any) => s?.Id === 1 || s?.Name === "Non-Quota Listening"
+  //       );
 
-        if (hasNonQuota) {
-          dispatch(
-            playAudio({
-              sourceType: "SpecifyShowEpisodes",
-              audioId: episodeId,
-            })
+  //       if (hasNonQuota) {
+  //         dispatch(
+  //           playAudio({
+  //             sourceType: "SpecifyShowEpisodes",
+  //             audioId: episodeId,
+  //           })
+  //         );
+  //       } else {
+  //         if (user?.PodcastListenSlot === 0) {
+  //           dispatch(
+  //             setError({
+  //               message: "You have no listen slots left.",
+  //               autoClose: 10,
+  //             })
+  //           );
+  //           return;
+  //         } else {
+  //           dispatch(
+  //             playAudio({
+  //               sourceType: "SpecifyShowEpisodes",
+  //               audioId: episodeId,
+  //             })
+  //           );
+  //         }
+  //       }
+  //     } else {
+  //       if (!user) {
+  //         dispatch(
+  //           setError({
+  //             message: "You need to login first to play an episode!",
+  //             autoClose: 10,
+  //           })
+  //         );
+  //         return;
+  //       }
+  //       if (user?.PodcastListenSlot > 0) {
+  //         dispatch(
+  //           playAudio({
+  //             sourceType: "SpecifyShowEpisodes",
+  //             audioId: episodeId,
+  //           })
+  //         );
+  //       } else {
+  //         dispatch(
+  //           setError({
+  //             message: "You have no listen slots left.",
+  //             autoClose: 10,
+  //           })
+  //         );
+  //         return;
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching benefits:", error);
+  //     dispatch(
+  //       setError({
+  //         message:
+  //           "Unable to verify your subscription benefits. Please try again.",
+  //         autoClose: 10,
+  //       })
+  //     );
+  //   }
+  // };
+
+  const navigate = useNavigate();
+
+  const handlePlayPauseEpisode = async (episodeId: string) => {
+    if (!user) {
+      dispatch(
+        showAlert({
+          title: "Login Required",
+          description: "You need to login first to play an episode!",
+          type: "warning",
+          isAutoClose: false,
+          isFunctional: true,
+          isClosable: true,
+          functionalButtonText: "Login Now",
+          onClickAction: () => {
+            navigate("/auth/login");
+          },
+        })
+      );
+    } else {
+      // Check benefit registrations
+      if (
+        uiState.isPlaying &&
+        uiState.currentAudio &&
+        uiState.currentAudio.id === episode.Id
+      ) {
+        pause();
+        return;
+      } else if (
+        !uiState.isPlaying &&
+        uiState.currentAudio &&
+        uiState.currentAudio.id === episode.Id
+      ) {
+        play();
+        return;
+      } else {
+        const benefitData = await fetchBenefits({
+          PodcastEpisodeId: episodeId,
+        }).unwrap();
+        const benefitList =
+          benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
+        if (benefitList && benefitList.length > 0) {
+          const hasNonQuota = benefitList.some(
+            (s: any) => s?.Id === 1 || s?.Name === "Non-Quota Listening"
           );
+          if (hasNonQuota) {
+            playEpisodeFromSpecifyShow({
+              audioId: episodeId,
+              benefitsList: benefitList,
+            });
+          } else {
+            // Check listen slots
+            const listenSlot = await triggerCheckListenSlot().unwrap();
+            if (listenSlot > 0) {
+              playEpisodeFromSpecifyShow({
+                audioId: episodeId,
+                benefitsList: benefitList,
+              });
+            } else {
+              dispatch(
+                showAlert({
+                  title: "No Listen Slots Left",
+                  description:
+                    "You have no remaining podcast listen slots. Please wait for your slots to renew.",
+                  type: "error",
+                  isAutoClose: true,
+                  autoCloseDuration: 10,
+                  isClosable: true,
+                })
+              );
+            }
+          }
         } else {
-          if (user?.PodcastListenSlot === 0) {
-            dispatch(
-              setError({
-                message: "You have no listen slots left.",
-                autoClose: 10,
-              })
-            );
-            return;
+          // No benefits, check listen slots
+          const listenSlot = await triggerCheckListenSlot().unwrap();
+          if (listenSlot > 0) {
+            playEpisodeFromSpecifyShow({
+              audioId: episodeId,
+              benefitsList: [],
+            });
           } else {
             dispatch(
-              playAudio({
-                sourceType: "SpecifyShowEpisodes",
-                audioId: episodeId,
+              showAlert({
+                title: "No Listen Slots Left",
+                description:
+                  "You have no remaining podcast listen slots. Please wait for your slots to renew.",
+                type: "error",
+                isAutoClose: true,
+                autoCloseDuration: 10,
+                isClosable: true,
               })
             );
           }
         }
-      } else {
-        dispatch(
-          setError({
-            message:
-              "You need to subscribe to a plan to listen to this episode.",
-            autoClose: 10,
-          })
-        );
       }
-    } catch (error) {
-      console.error("Error fetching benefits:", error);
-      dispatch(
-        setError({
-          message:
-            "Unable to verify your subscription benefits. Please try again.",
-          autoClose: 10,
-        })
-      );
     }
   };
 
@@ -282,11 +413,11 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
           }}
         />
 
-        {player.playMode.playStatus === "play" ? (
-          player.currentAudio?.Id === episode.Id ? (
+        {uiState.isPlaying ? (
+          uiState.currentAudio && uiState.currentAudio?.id === episode.Id ? (
             <div className="absolute inset-0 flex bg-black/30 items-center justify-center">
               <div
-                onClick={() => dispatch(pauseAudio())}
+                onClick={() => handlePlayPauseEpisode(episode.Id)}
                 className="p-3 rounded-full bg-mystic-green flex items-center justify-center hover:bg-mystic-green"
               >
                 <PlayingWave />
@@ -295,7 +426,7 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
           ) : (
             <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
               <div
-                onClick={() => handlePlayEpisode(episode.Id)}
+                onClick={() => handlePlayPauseEpisode(episode.Id)}
                 className="p-2 rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green"
               >
                 <IoPlay size={25} color="#ffffff" />
@@ -305,7 +436,7 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
         ) : (
           <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
             <div
-              onClick={() => handlePlayEpisode(episode.Id)}
+              onClick={() => handlePlayPauseEpisode(episode.Id)}
               className="p-2 rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green"
             >
               <IoPlay size={25} color="#ffffff" />
@@ -322,7 +453,7 @@ const EpisodeCard = ({ episode }: { episode: any }) => {
                 {getTimeAgo(episode.ReleaseDate)}
               </p>
               <h4 className="font-bold text-lg text-white mb-2 leading-tight">
-                {episode.Name}
+                {`Season: ${episode.SeasonNumber}`} - {episode.Name}
               </h4>
               <div
                 className="text-white font-light text-sm line-clamp-2 leading-relaxed"

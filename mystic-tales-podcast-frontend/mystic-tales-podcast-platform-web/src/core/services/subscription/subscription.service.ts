@@ -14,7 +14,7 @@ type SubscriptionApiResponse = {
   };
 };
 
-type SubscriptionBenefit = {
+export type SubscriptionBenefit = {
   Id: number;
   Name: string;
 };

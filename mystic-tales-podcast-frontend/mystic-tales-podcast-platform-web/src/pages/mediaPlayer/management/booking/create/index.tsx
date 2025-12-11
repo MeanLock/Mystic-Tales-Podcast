@@ -1,18 +1,25 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// @ts-nocheck
-
-import { mockPodcastBuddies } from "@/core/mockData/booking.mockdata";
-import {
-  type PodcastBookingToneCategoryType,
-  type PodcastBookingToneType,
-  type PodcastBuddyUI,
-} from "@/core/types/booking";
 import { useEffect, useState } from "react";
 import PodcastBuddySelectComponent from "./components/PodcastBuddySelect";
 import Loading from "@/components/loading";
 import BookingForm from "./components/BookingForm";
-import { useCreateMutation } from "@/core/services/booking/booking.service";
+import {
+  useCreateMutation,
+  useGetPodcastBookingTonesQuery,
+  useGetPodcastBuddiesByBookingToneQuery,
+} from "@/core/services/booking/booking.service";
 import { useNavigate } from "react-router-dom";
+import type {
+  PodcastBookingTone,
+  PodcastBookingToneCategoryType,
+  PodcastBuddyUI,
+} from "@/core/types/booking";
+import {
+  resolveFiles,
+  type FileResolveConfig,
+} from "@/core/utils/fileResolver.util";
+import { useGetPodcastBuddyDetailsQuery } from "@/core/services/podcasters/podcasters.service";
+import { useDispatch } from "react-redux";
+import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
 
 export type BookingRequirementInfo = {
   Name: string;
@@ -23,40 +30,38 @@ export type BookingRequirementInfo = {
   ContentValue?: string;
 };
 
-type BookingFilterOptions = {
-  toneCategoryId: number;
-  toneId: string;
-};
+// Removed unused types
 
-interface CreateBookingPayloadProps {
-  BookingCreateInfo: {
-    Title: string;
-    Description: string;
-    PodcastBuddyId: number;
-    BookingRequirementInfos: BookingRequirementInfo[];
-  };
-  BookingRequirementFiles: File[];
-}
+const resolveConfig: FileResolveConfig[] = [
+  {
+    type: "AccountPublic",
+    path: "[].MainImageFileKey",
+    output: "[].ImageUrl",
+  },
+];
 
 const CreateBookingPage = () => {
   // STATES
 
   // Data States
-  const [podcastBuddies, setPodcastBuddies] = useState<PodcastBuddyUI[]>([]);
   const [availableBookingToneCategories, setAvailableBookingToneCategories] =
     useState<PodcastBookingToneCategoryType[]>([]);
-  const [availableBookingTones, setAvailableBookingTones] = useState<
-    PodcastBookingToneType[]
+  const [availablePodcastBuddies, setAvailablePodcastBuddies] = useState<
+    PodcastBuddyUI[]
   >([]);
-
+  const [availableBookingTones, setAvailableBookingTones] = useState<
+    PodcastBookingTone[]
+  >([]);
   // User Selections
   const [selectedBuddy, setSelectedBuddy] = useState<PodcastBuddyUI | null>(
     null
   );
   const [selectedBookingTone, setSelectedBookingTone] =
-    useState<PodcastBookingToneType | null>(null);
+    useState<PodcastBookingTone | null>(null);
+
   const [selectedBookingToneCategory, setSelectedBookingToneCategory] =
     useState<PodcastBookingToneCategoryType | null>(null);
+  // Form States
   const [bookingTitle, setBookingTitle] = useState<string>("");
   const [bookingDescription, setBookingDescription] = useState<string>("");
   const [bookingFiles, setBookingFiles] = useState<File[]>([]);
@@ -71,98 +76,91 @@ const CreateBookingPage = () => {
   // Loading & Error States
   const [isLoading, setIsLoading] = useState<boolean>(true);
   // Loading & Error States
-  const [notFoundPodcasterError, setNotFoundPodcasterError] =
-    useState<boolean>(false);
+  // const [notFoundPodcasterError, setNotFoundPodcasterError] =
+  //   useState<boolean>(false);
 
   const [createBooking] = useCreateMutation();
 
   // HOOKS
-  useEffect(() => {
-    // Fetch podcaster data here
-    fetch();
-  }, []);
   const navigate = useNavigate();
 
+  // Đầu tiên luôn lấy danh sách các Podcast Booking Tones
+  const {
+    data: availableBookingTonesFromAPI,
+    isLoading: isLoadingAvailableBookingTonesFromAPI,
+  } = useGetPodcastBookingTonesQuery();
+
+  // Khi người dùng chọn một Podcast Booking Tone, lấy danh sách Podcast Buddies tương ứng
+  const {
+    data: availablePodcastBuddiesFromAPI,
+    isLoading: isLoadingAvailablePodcastBuddiesFromAPI,
+  } = useGetPodcastBuddiesByBookingToneQuery(
+    { PodcastBookingToneId: selectedBookingTone?.Id! },
+    { skip: !selectedBookingTone }
+  );
+
+  // Khi người dùng chọn một Podcast Buddies, gọi API để lấy chi tiết Podcaster
+  const {
+    data: selectedPodcastBuddyDetails,
+    isLoading: isLoadingSelectedPodcastBuddyDetails,
+  } = useGetPodcastBuddyDetailsQuery(
+    { AccountId: selectedBuddy?.Id! },
+    { skip: !selectedBuddy }
+  );
+
+  // Khi có danh sách Podcast Booking Tones từ API, set vào state và extract categories
+  useEffect(() => {
+    if (!availableBookingTonesFromAPI || isLoadingAvailableBookingTonesFromAPI)
+      return;
+
+    // Step 1: Set available booking tones
+    setAvailableBookingTones(
+      availableBookingTonesFromAPI.PodcastBookingToneList
+    );
+
+    // Step 2: Extract and set unique tone categories
+    const uniqueCategories: PodcastBookingToneCategoryType[] = [];
+    availableBookingTonesFromAPI.PodcastBookingToneList.forEach((tone) => {
+      const category = tone.PodcastBookingToneCategory;
+      if (!uniqueCategories.find((cat) => cat.Id === category.Id)) {
+        uniqueCategories.push(category);
+      }
+    });
+    setAvailableBookingToneCategories(uniqueCategories);
+    // UI can render selection once tones are ready
+    setIsLoading(false);
+  }, [availableBookingTonesFromAPI, isLoadingAvailableBookingTonesFromAPI]);
+
+  // Khi có danh sách Podcast Buddies từ API, resolve file và set vào state
+  useEffect(() => {
+    // Resolve File ảnh
+    const resolveFile = async () => {
+      if (
+        !availablePodcastBuddiesFromAPI ||
+        isLoadingAvailablePodcastBuddiesFromAPI
+      )
+        return;
+      const resolvedPodcastBuddies = await resolveFiles(
+        availablePodcastBuddiesFromAPI.PodcastBuddyList,
+        resolveConfig
+      );
+      setAvailablePodcastBuddies(
+        resolvedPodcastBuddies.resolvedData as unknown as PodcastBuddyUI[]
+      );
+    };
+    resolveFile();
+  }, [availablePodcastBuddiesFromAPI, isLoadingAvailablePodcastBuddiesFromAPI]);
+
+  useEffect(() => {
+    // Set podcaster from localStorage if available
+    const storedPodcaster = localStorage.getItem("selectedPodcaster");
+    if (storedPodcaster) {
+      const podcasterObj = JSON.parse(storedPodcaster) as PodcastBuddyUI;
+      setSelectedBuddy(podcasterObj);
+    }
+  }, []);
+  const dispatch = useDispatch();
   // FUNCTIONS
-  const fetch = async () => {
-    // Fetch podcaster details from API
-    setIsLoading(true);
-    setTimeout(() => {
-      setPodcastBuddies(mockPodcastBuddies);
-      const storedPodcaster = localStorage.getItem("selectedPodcaster");
-      console.log("storedPodcaster", storedPodcaster);
-      console.log(
-        "Id: ",
-        storedPodcaster ? JSON.parse(storedPodcaster).Id : ""
-      );
-      let podcaster = null;
-      if (storedPodcaster) {
-        const selectedPodcasterId = JSON.parse(storedPodcaster).Id;
-        podcaster = mockPodcastBuddies.find(
-          (pb) => pb.PodcastBuddyProfile.AccountId === selectedPodcasterId
-        );
-        if (!podcaster) {
-          setNotFoundPodcasterError(true);
-          setSelectedBuddy(null);
-        } else {
-          setSelectedBuddy(podcaster);
-        }
-      } else {
-        setSelectedBuddy(null);
-      }
-
-      // Gom tất cả PodcastBookingTones, loại trùng theo Id
-      const allAvailableTones = Array.from(
-        new Map(
-          mockPodcastBuddies
-            .flatMap((b) => b.PodcastBuddyProfile.PodcastBuddyBookingTone || [])
-            .map((tone) => [tone.Id, tone])
-        ).values()
-      );
-
-      // Gom tất cả PodcastBookingToneCategories, loại trùng theo Id
-      const allAvailableBookingToneCategories = Array.from(
-        new Map(
-          allAvailableTones
-            .filter((tone) => tone.PodcastBookingToneCategory) // <-- bảo vệ undefined
-            .map((tone) => [
-              tone.PodcastBookingToneCategory.Id,
-              tone.PodcastBookingToneCategory,
-            ])
-        ).values()
-      );
-
-      // 4️⃣ Set state
-      setAvailableBookingTones(allAvailableTones);
-      setAvailableBookingToneCategories(allAvailableBookingToneCategories);
-
-      const storedFilterOptions: BookingFilterOptions = JSON.parse(
-        localStorage.getItem("bookingFilterOptions") || "{}"
-      );
-      if (storedFilterOptions) {
-        if (storedFilterOptions.toneCategoryId) {
-          setSelectedBookingToneCategory(
-            allAvailableBookingToneCategories.find(
-              (category) => category.Id === storedFilterOptions.toneCategoryId
-            ) || null
-          );
-        }
-        if (storedFilterOptions.toneId) {
-          setSelectedBookingTone(
-            allAvailableTones.find(
-              (tone) => tone.Id === storedFilterOptions.toneId
-            ) || null
-          );
-        }
-      } else {
-        setSelectedBookingToneCategory(null);
-        setSelectedBookingTone(null);
-      }
-
-      setIsLoading(false);
-    }, 2000);
-  };
-
   const handleSubmit = async () => {
     // basic validation
     if (!selectedBuddy) {
@@ -175,8 +173,50 @@ const CreateBookingPage = () => {
       bookingRequirements
     );
 
+    // Helper function to check if a requirement is complete
+    const isRequirementComplete = (req: BookingRequirementInfo): boolean => {
+      if (!req.Name.trim()) return false;
+      if (!req.Description.trim() || req.Description === "<p><br></p>")
+        return false;
+      if (!req.PodcastBookingToneId) return false;
+      if (!req.ContentType) return false;
+
+      if (req.ContentType === "link") {
+        return !!req.ContentValue?.trim();
+      }
+      if (req.ContentType === "script") {
+        return !!req.ContentValue?.trim() && req.ContentValue !== "<p><br></p>";
+      }
+      if (req.ContentType === "file") {
+        return !!bookingFiles.find((f) => f.name.startsWith(`${req.Order}.`));
+      }
+
+      return false;
+    };
+
+    // Filter only complete requirements
+    const completeRequirements = bookingRequirements.filter(
+      isRequirementComplete
+    );
+
+    if (completeRequirements.length < bookingRequirements.length) {
+      dispatch(
+        showAlert({
+          type: "warning",
+          description:
+            "Some requirements were incomplete and have been omitted from your booking.",
+          title: "Incomplete Requirements",
+          isAutoClose: true,
+          autoCloseDuration: 5,
+          functionalButtonText: "Got it!",
+          isClosable: true,
+        })
+      );
+      return;
+    }
+
     // Transform requirements according to ContentType rules described in comments
-    const transformedRequirements = bookingRequirements.map((item) => {
+    const transformedRequirements = completeRequirements.map((item) => {
       // shallow clone to avoid mutating state
       const copy: any = { ...item };
 
@@ -219,7 +259,7 @@ const CreateBookingPage = () => {
         DeadlineDayCount: bookingDeadlineDayCount,
         Description: bookingDescription,
         // selectedBuddy?.PodcastBuddyProfile.AccountId
-        PodcastBuddyId: 17,
+        PodcastBuddyId: selectedBuddy.Id,
         BookingRequirementInfo: transformedRequirements,
       },
       BookingRequirementFiles: bookingFiles,
@@ -231,7 +271,6 @@ const CreateBookingPage = () => {
         ...payload,
         BookingCreateInfo: {
           ...payload.BookingCreateInfo,
-          PodcastBuddyId: 17,
         },
       };
       const formData = new FormData();
@@ -255,32 +294,28 @@ const CreateBookingPage = () => {
         createBookingFormData: formData,
       }).unwrap();
       if (result) {
-        alert(result);
         navigate("/media-player/management/bookings");
       }
     } catch (err: any) {
       console.error("Create booking failed:", err);
-      alert("Create booking failed: " + (err?.message || JSON.stringify(err)));
     }
   };
+
   return (
     <div className="w-full h-full flex flex-col overflow-y-auto scrollbar-hide">
       <p className="text-5xl m-8 font-poppins text-white font-bold">
         Create Booking
       </p>
-      {notFoundPodcasterError && (
-        <div className="m-4 p-4 bg-yellow-200 text-yellow-900 rounded">
-          Selected podcaster not found. Please choose another podcaster.
-        </div>
-      )}
+      {/* notFoundPodcasterError UI removed as state is unused */}
       {isLoading ? (
         <div className="w-full h-[400px] bg-white/20 flex items-center justify-center">
           <Loading />
         </div>
       ) : (
         <PodcastBuddySelectComponent
-          buddies={podcastBuddies}
+          buddies={availablePodcastBuddies}
           selectedBuddy={selectedBuddy}
+          selectedBuddyDetails={selectedPodcastBuddyDetails}
           onSelectBuddy={setSelectedBuddy}
           availableBookingTones={availableBookingTones}
           selectedBookingTone={selectedBookingTone}
@@ -290,7 +325,7 @@ const CreateBookingPage = () => {
           onSelectBookingToneCategory={setSelectedBookingToneCategory}
         />
       )}
-      {selectedBuddy && (
+      {selectedBuddy && selectedPodcastBuddyDetails && (
         <BookingForm
           Title={bookingTitle}
           BookingDeadlineDayCount={bookingDeadlineDayCount}
@@ -311,6 +346,16 @@ const CreateBookingPage = () => {
               prev.map((r) => (r.Order === updatedReq.Order ? updatedReq : r))
             );
           }}
+          onDeleteRequirementInfo={(order: number) => {
+            console.log("onDeleteRequirementInfo received:", order);
+            setBookingRequirements((prev) =>
+              prev.filter((r) => r.Order !== order)
+            );
+            // Also remove associated files
+            setBookingFiles((prev) =>
+              prev.filter((f) => !f.name.startsWith(`${order}.`))
+            );
+          }}
           // parent will append/replace the uploaded file; if null, do nothing for now
           onUploadNewFile={(file: File | null) => {
             if (!file) return;
@@ -322,7 +367,7 @@ const CreateBookingPage = () => {
               file,
             ]);
           }}
-          selectedBuddy={selectedBuddy}
+          selectedBuddy={selectedPodcastBuddyDetails}
           onSubmit={handleSubmit}
         />
       )}

@@ -9,6 +9,39 @@ export const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ??
   "https://fast-scorpion-strictly.ngrok-free.app"; // giống baseApi cũ mobile
 
+// Helper: format log đẹp, có khung và xuống dòng
+const safeStringify = (value: any) => {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+};
+
+const debugLog = (title: string, data: Record<string, any>) => {
+  if (!__DEV__) return; // chỉ log khi dev, tránh spam production
+
+  const header =
+    "========================" + title + " ============================";
+  const lines: string[] = [header];
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (value === undefined) return;
+
+    if (typeof value === "object" && value !== null) {
+      lines.push(`${key}:`);
+      lines.push(safeStringify(value));
+    } else {
+      lines.push(`${key}: ${String(value)}`);
+    }
+  });
+
+  lines.push(
+    "========================================================================"
+  );
+  console.log(lines.join("\n"));
+};
+
 /** raw fetchBaseQuery – không gắn Authorization ở đây */
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
@@ -79,13 +112,17 @@ const modeAwareBaseQuery: BaseQueryFn<
   if (responseHandler) baseQueryArgs.responseHandler = responseHandler;
 
   // DEBUG: Log API call details
-  console.log("[API REQUEST]", {
-    url: `${BASE_URL}${url}`,
+  const fullUrl = `${url}`;
+
+  // DEBUG: Log API call details
+  debugLog("[API REQUEST]", {
+    url: fullUrl,
     method,
+    authMode,
+    hasHeaders: Object.keys(headersRecord || {}).length > 0,
     body,
     params,
-    authMode,
-    headers: headersRecord,
+    headers: headersRecord ? "Có Token" : "Không Token",
   });
 
   const res: any = await rawBaseQuery(baseQueryArgs, api, extraOptions);
@@ -93,12 +130,14 @@ const modeAwareBaseQuery: BaseQueryFn<
   if (res?.error) {
     const kind: ApiErrorModel["kind"] =
       typeof res.error?.status === "number" ? "HTTP_ERROR" : "NETWORK_ERROR";
-    console.log("[API ERROR]", {
-      url: `${BASE_URL}${url}`,
+
+    debugLog("[API ERROR]", {
+      url: fullUrl,
       method,
-      error: res.error,
       kind,
+      error: res.error,
     });
+
     return {
       error: {
         kind,
@@ -108,8 +147,8 @@ const modeAwareBaseQuery: BaseQueryFn<
     };
   }
 
-  console.log("[API SUCCESS]", {
-    url: `${BASE_URL}${url}`,
+  debugLog("[API SUCCESS]", {
+    url: fullUrl,
     method,
     data: res.data,
   });
@@ -153,8 +192,8 @@ export const appApi = createApi({
       async queryFn(arg, api, extraOptions, baseQuery) {
         const { kickoff, poll } = arg;
 
-        console.log("[KICKOFF START]", {
-          url: kickoff.url,
+        debugLog("[KICKOFF START]", {
+          url: `${BASE_URL}${kickoff.url}`,
           method: kickoff.method || "POST",
           body: kickoff.body,
           params: kickoff.params,
@@ -172,18 +211,25 @@ export const appApi = createApi({
           kickoffRes.data?.sagaInstanceId ??
           kickoffRes.data?.id;
 
-        console.log("[KICKOFF RESPONSE]", {
+        debugLog("[KICKOFF RESPONSE]", {
           sagaId,
           data: kickoffRes.data,
         });
 
         // Nếu backend không dùng Saga -> trả luôn data kickoff (non-saga endpoint)
         if (!sagaId) {
-          console.log("[NON-SAGA ENDPOINT] Returning kickoff data directly");
+          debugLog("[NON-SAGA ENDPOINT]", {
+            message: "Returning kickoff data directly",
+            data: kickoffRes.data,
+          });
+
           return { data: kickoffRes.data };
         }
 
-        console.log("[SAGA POLLING START]", { sagaId, pollConfig: poll });
+        debugLog("[SAGA POLLING START]", {
+          sagaId,
+          pollConfig: poll,
+        });
 
         try {
           // 2) Poll saga tới khi xong
@@ -195,7 +241,7 @@ export const appApi = createApi({
             config: poll,
           });
 
-          console.log("[SAGA POLLING SUCCESS]", {
+          debugLog("[SAGA POLLING SUCCESS]", {
             sagaId,
             finalPayload,
           });
@@ -203,12 +249,13 @@ export const appApi = createApi({
           // finalPayload chính là object kết quả của Saga (vd: { AccessToken, RefreshToken } hoặc { Message } )
           return { data: finalPayload };
         } catch (e: any) {
-          console.log("[SAGA POLLING ERROR]", {
+          debugLog("[SAGA POLLING ERROR]", {
             sagaId,
-            error: e,
             kind: e?.kind,
             message: e?.message,
+            error: e,
           });
+
           const err: ApiErrorModel = {
             kind: e?.kind ?? "SAGA_FAILED",
             message: e?.message ?? "Saga error",

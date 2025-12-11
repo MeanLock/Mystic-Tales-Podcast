@@ -1,12 +1,30 @@
-import { IoPlay } from "react-icons/io5";
+import { IoPause, IoPlay } from "react-icons/io5";
 import { IoIosMore } from "react-icons/io";
 import type { EpisodeUI } from "@/core/types/episode";
 import { useNavigate } from "react-router-dom";
 import { renderDescriptionHTML } from "@/pages/mediaPlayer/channels/details";
 import { useDispatch } from "react-redux";
 import { playAudio } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
+import { usePlayer } from "@/core/services/player/usePlayer";
+import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
+import { Tag } from "lucide-react";
+import { BsFillBookmarkFill } from "react-icons/bs";
+import { useSaveEpisodeMutation } from "@/core/services/episode/episode.service";
 
-const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
+const EpisodeCard = ({
+  episode,
+  handleUnSaveEpisode,
+}: {
+  episode: EpisodeUI;
+  handleUnSaveEpisode: (podcastEpisodeId: string) => void;
+}) => {
+  const {
+    playEpisodeFromSavedEpisodes,
+    play,
+    pause,
+    state: uiState,
+  } = usePlayer();
+
   const getTimeRange = (releaseDate: string) => {
     const now = new Date();
     const release = new Date(releaseDate);
@@ -37,13 +55,36 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   };
 
   const dispatch = useDispatch();
-  const handlePlaySavedEpisodes = () => {
-    dispatch(
-      playAudio({
+  const navigate = useNavigate();
+
+  const [triggerGetBenefitList] =
+    useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
+
+  const handlePlayPauseSavedEpisodes = async () => {
+    if (
+      uiState.isPlaying &&
+      uiState.currentAudio &&
+      uiState.currentAudio.id === episode.Id
+    ) {
+      pause();
+      return;
+    } else if (
+      !uiState.isPlaying &&
+      uiState.currentAudio &&
+      uiState.currentAudio.id === episode.Id
+    ) {
+      play();
+      return;
+    } else {
+      const benefitsList = await triggerGetBenefitList({
+        PodcastEpisodeId: episode.Id,
+      }).unwrap();
+      playEpisodeFromSavedEpisodes({
         audioId: episode.Id,
-        sourceType: "SavedEpisodes",
-      })
-    );
+        benefitsList:
+          benefitsList.CurrentPodcastSubscriptionRegistrationBenefitList,
+      });
+    }
   };
 
   return (
@@ -104,16 +145,28 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
         </div>
         <div className="w-full flex items-center justify-between">
           <div
-            onClick={() => handlePlaySavedEpisodes()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePlayPauseSavedEpisodes();
+            }}
             className="px-5 py-1 gap-1 bg-white rounded-xl flex items-center justify-center"
           >
-            <IoPlay size={15} color="#333" />
+            {uiState.isPlaying &&
+            uiState.currentAudio &&
+            uiState.currentAudio.id === episode.Id ? (
+              <IoPause size={15} color="#333" />
+            ) : (
+              <IoPlay size={15} color="#333" />
+            )}
             <p className="font-poppins m-0 text-sm font-semibold text-[#333]">
               {formatAudioLength(episode.AudioLength)}
             </p>
           </div>
-          <div className="flex p-1 rounded-full bg-transparent items-center justify-center text-white hover:bg-gray-300/30">
-            <IoIosMore size={20} />
+          <div
+            onClick={() => handleUnSaveEpisode(episode.Id)}
+            className="flex p-2 rounded-full items-center justify-center text-white bg-gray-300/30 hover:bg-gray-300/50"
+          >
+            <BsFillBookmarkFill color="#aee339" size={16} />
           </div>
         </div>
       </div>

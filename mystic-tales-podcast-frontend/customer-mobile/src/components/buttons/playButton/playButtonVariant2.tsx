@@ -4,6 +4,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { EqualizerVariant1 } from "../../equalizer/Variant1";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 
 interface PlayButtonProps {
   episodeId: string;
@@ -50,14 +51,13 @@ const PlayButtonVariant2 = ({
 
   // HOOKS
   const dispatch = useDispatch();
-  if (
-    player.playMode.playStatus === "play" &&
-    player.currentAudio?.Id === episodeId
-  ) {
+  const { checkIsCurrentPlay } = usePlayer();
+  if (checkIsCurrentPlay(episodeId)) {
     return (
       <Pressable
         style={style.playButton}
         onPress={() => dispatch(pauseAudio())}
+        className="w-8/12"
       >
         <EqualizerVariant1 color="#AEE339" />
         <Text className="text-[#AEE339] text-xs font-bold">
@@ -88,12 +88,13 @@ export default PlayButtonVariant2;
 
 const style = StyleSheet.create({
   playButton: {
-    backgroundColor: "rgba(217, 217, 217, 0.2)",
+    borderRadius: 999,
     paddingVertical: 5,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(217, 217, 217, 0.2)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
-    borderRadius: 8,
   },
 });

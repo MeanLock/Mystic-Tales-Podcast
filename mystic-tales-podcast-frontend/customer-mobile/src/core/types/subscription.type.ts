@@ -90,12 +90,17 @@ export type PodcastSubscriptionRegistration = {
     Name: string;
   };
   CurrentVersion: number;
+  Price: number;
   IsAcceptNewestVersionSwitch: boolean | null;
   IsIncomeTaken: boolean;
   LastPaidAt: string;
   CancelledAt: string | null;
   CreatedAt: string;
   UpdatedAt: string;
+  PodcastSubscriptionBenefitList: {
+    Id: number;
+    Name: string;
+  }[];
 };
 
 export type PodcastSubscriptionRegistrationFromAPI = {

@@ -23,7 +23,7 @@ const ShowCardVariant1 = ({ show }: ShowCardVariant1Props) => {
         key={show.Id}
         style={styles.image}
       />
-      <View className="absolute inset-0 bg-black/10 bg-opacity-40 justify-end p-2">
+      <View className="absolute inset-0 bg-black/40 bg-opacity-40 justify-end p-2">
         <Text className="text-white ">{show.Name}</Text>
       </View>
     </Pressable>

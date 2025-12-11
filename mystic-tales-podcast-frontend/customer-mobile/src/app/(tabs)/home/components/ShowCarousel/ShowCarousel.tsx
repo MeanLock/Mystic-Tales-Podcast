@@ -37,22 +37,6 @@ const ShowCarousel = ({ variant, title, shows, titleString }: ShowCarouselProps)
   const renderItem = ({ item }: { item: Show }) => {
     return <ShowCardVariant1 key={item.Id} show={item} />;
   };
-  console.log("ShowCarousel shows:", shows);
-
-  const dispatch = useDispatch();//thịnh
-  const router = useRouter();
-  const handleViewMoreShowFromFeed = () => {
-    // Implement navigation or action to view more episodes from the show
-    dispatch(
-      setShowsData({
-        shows: shows as Show[],
-        title: `${titleString}`,
-        from: "Feed",
-      })
-    );
-    // Navigate to the episodes list page
-    router.push(`/(content)/shows`);
-  };
 
   return (
     <View className="gap-5 mb-10">

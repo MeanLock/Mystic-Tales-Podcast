@@ -13,6 +13,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/src/store/store";
 import { BlurView } from "expo-blur";
 import { View } from "@/src/components/ui/View";
+import AutoResolvingImageBackground from "@/src/components/autoResolveImage/AutoResolveImageBackground";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 
 export interface MediaPlayerModalRef {
   present: () => void;
@@ -25,17 +27,21 @@ interface MediaPlayerModalProps {
 }
 
 const customBackgroundSheet = () => {
-  const playerState = useSelector((state: RootState) => state.player);
-  if (playerState.currentAudio?.ImageUrl) {
+  const {state: uiState} = usePlayer();
+  
+  if (uiState.currentAudio?.image) {
     return (
-      <ImageBackground
-        source={{ uri: playerState.currentAudio.ImageUrl }}
+      <AutoResolvingImageBackground
+        FileKey={uiState.currentAudio.image}
+        type="PodcastPublicSource"
         style={styles.backgroundImage}
-        blurRadius={60}
-        resizeMode="cover"
       >
-        <View style={styles.overlay} />
-      </ImageBackground>
+        <BlurView
+          intensity={50}
+          tint="dark"
+          style={[StyleSheet.absoluteFill, { zIndex: 1 }]}
+        />
+      </AutoResolvingImageBackground>
     );
   } else {
     return <View style={styles.fallbackBackground} />;
@@ -46,7 +52,6 @@ const MediaPlayerModal = forwardRef<MediaPlayerModalRef, MediaPlayerModalProps>(
   ({ onChange }, ref) => {
     // Redux selectors and refs
     const playerState = useSelector((state: RootState) => state.player);
-    const imageUrl = playerState.currentAudio?.ImageUrl || "";
 
     const insets = useSafeAreaInsets();
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -152,7 +157,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.1)", // Lớp phủ đen 70% opacity
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Lớp phủ đen 70% opacity
   },
   contentContainer: {
     flex: 1,

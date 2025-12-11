@@ -79,6 +79,7 @@ export const {
   useGetBookingPublicSourceQuery,
   useGetPodcastPublicSourceQuery,
   useGetCategoryPublicSourceQuery,
+  useLazyGetPodcastPublicSourceQuery
 } = fileApi;
 
 export default fileApi;

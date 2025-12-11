@@ -26,11 +26,13 @@ import {
 } from "@/src/core/services/show/show.service";
 import {
   useGetCustomerRegistrationInfoFromShowQuery,
+  useMakeDecisionOnAcceptingNewestVersionMutation,
   useSubscribePodcastSubscriptionMutation,
   useUnsubscribePodcastSubscriptionMutation,
 } from "@/src/core/services/subscription/subscription.service";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/src/store/store";
+import { setDataAndShowAlert } from "@/src/features/alert/alertSlice";
 
 export default function ShowDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,7 +45,10 @@ export default function ShowDetailsScreen() {
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
   const [isCommented, setIsCommented] = useState<boolean>(false);
   const [isFollowed, setIsFollowed] = useState<boolean>(false);
-
+  const [isNewVersionAvailable, setIsNewVersionAvailable] =
+    useState<boolean>(false);
+  const [versionCompareModalVisible, setVersionCompareModalVisible] =
+    useState<boolean>(false);
   const [
     isSubscriptionInformationsModalVisible,
     setIsSubscriptionInformationsModalVisible,
@@ -52,6 +57,7 @@ export default function ShowDetailsScreen() {
 
   const [selectedCycle, setSelectedCycle] = useState<any>(null);
   // HOOKS
+  const dispatch = useDispatch();
   const {
     data: showData,
     isLoading: showLoading,
@@ -82,7 +88,7 @@ export default function ShowDetailsScreen() {
   const {
     data: customerRegistrationInfo,
     isLoading: customerRegistrationInfoLoading,
-    refetch: refetchCustomerRegistrationInfo,
+    refetch: refetchUserRegistrationInfo,
   } = useGetCustomerRegistrationInfoFromShowQuery(
     { PodcastShowId: id! },
     {
@@ -103,6 +109,8 @@ export default function ShowDetailsScreen() {
     useFollowShowMutation();
   const [unfollowShow, { isLoading: unfollowShowLoading }] =
     useUnFollowShowMutation();
+  const [acceptNewVersion, { isLoading: isAcceptingNewVersion }] =
+    useMakeDecisionOnAcceptingNewestVersionMutation();
 
   useEffect(() => {
     if (
@@ -126,6 +134,16 @@ export default function ShowDetailsScreen() {
           .PodcastSubscriptionId === activeSubscription.PodcastSubscription.Id
       ) {
         setIsSubscribed(true);
+        if (
+          customerRegistrationInfo.PodcastSubscriptionRegistration
+            .CurrentVersion !==
+            activeSubscription.PodcastSubscription.CurrentVersion &&
+          customerRegistrationInfo.PodcastSubscriptionRegistration
+            .IsAcceptNewestVersionSwitch === false
+        ) {
+          // User chưa chấp nhận phiên bản mới
+          setIsNewVersionAvailable(true);
+        }
       } else {
         setIsSubscribed(false);
       }
@@ -189,7 +207,7 @@ export default function ShowDetailsScreen() {
         setIsSubscriptionInformationsModalVisible(false);
         refetchShowData();
         refetchActiveSubscription();
-        refetchCustomerRegistrationInfo();
+        refetchUserRegistrationInfo();
       }
     } catch (error) {
       Alert.alert("Subscription failed. Please try again later.");
@@ -239,7 +257,7 @@ export default function ShowDetailsScreen() {
         Alert.alert("Subscription cancelled successfully.");
         refetchShowData();
         refetchActiveSubscription();
-        refetchCustomerRegistrationInfo();
+        refetchUserRegistrationInfo();
       } catch (error) {
         Alert.alert("Failed to cancel subscription. Please try again later.");
       }
@@ -260,7 +278,7 @@ export default function ShowDetailsScreen() {
         .then(() => {
           refetchShowData();
           refetchActiveSubscription();
-          refetchCustomerRegistrationInfo();
+          refetchUserRegistrationInfo();
         })
         .catch(() => {
           Alert.alert("Failed to follow the show. Please try again later.");
@@ -272,12 +290,60 @@ export default function ShowDetailsScreen() {
         .then(() => {
           refetchActiveSubscription();
           refetchShowData();
-          refetchCustomerRegistrationInfo();
+          refetchUserRegistrationInfo();
         })
         .catch(() => {
           Alert.alert("Failed to unfollow the show. Please try again later.");
           setIsFollowed(snapShotValue);
         });
+    }
+  };
+
+  const handleViewNewVersion = () => {
+    setVersionCompareModalVisible(true);
+  };
+
+  const handleAcceptNewVersion = async () => {
+    if (
+      !customerRegistrationInfo ||
+      !customerRegistrationInfo.PodcastSubscriptionRegistration
+    ) {
+      return;
+    }
+    try {
+      await acceptNewVersion({
+        PodcastSubscriptionRegistrationId:
+          customerRegistrationInfo.PodcastSubscriptionRegistration.Id,
+        IsAccepted: true,
+      }).unwrap();
+
+      // Success alert
+      dispatch(
+        setDataAndShowAlert({
+          type: "success",
+          description: "You have accepted the newest version.",
+          isCloseable: true,
+          isFunctional: false,
+          title: "Accepted New Version",
+          autoCloseDuration: 2000,
+        })
+      );
+      setIsNewVersionAvailable(false);
+      setVersionCompareModalVisible(false);
+      refetchActiveSubscription();
+      refetchUserRegistrationInfo();
+    } catch (error) {
+      dispatch(
+        setDataAndShowAlert({
+          type: "error",
+          description:
+            "An error occurred while accepting the newest version. Please try again later.",
+          isCloseable: true,
+          isFunctional: false,
+          title: "Accept New Version Failed",
+          autoCloseDuration: 10,
+        })
+      );
     }
   };
 
@@ -319,6 +385,9 @@ export default function ShowDetailsScreen() {
           onCancelSubscription={handleCancelSubscription}
           isFollowed={isFollowed}
           onFollowToggle={handelFollowToggle}
+          isNewVersionAvailable={isNewVersionAvailable}
+          customerRegistrationInfo={customerRegistrationInfo}
+          handleViewNewVersion={handleViewNewVersion}
         />
         <View className="p-[30px] gap-10">
           <EpisodeList episodes={showData.Show?.EpisodeList} />
@@ -341,7 +410,8 @@ export default function ShowDetailsScreen() {
         {/* Subscription Informations Modal */}
         {activeSubscription &&
           activeSubscription.PodcastSubscription &&
-          selectedCycle && (
+          selectedCycle &&
+          !isNewVersionAvailable && (
             <Modal
               transparent={true}
               visible={isSubscriptionInformationsModalVisible}
@@ -455,6 +525,108 @@ export default function ShowDetailsScreen() {
               </Pressable>
             </Modal>
           )}
+
+        {activeSubscription &&
+          activeSubscription.PodcastSubscription &&
+          customerRegistrationInfo &&
+          customerRegistrationInfo.PodcastSubscriptionRegistration &&
+          isNewVersionAvailable && (
+            <Modal
+              transparent={true}
+              visible={versionCompareModalVisible}
+              animationType="fade"
+              onRequestClose={() => setVersionCompareModalVisible(false)}
+            >
+              {/* Overlay tối */}
+              <Pressable
+                style={styles.overlay}
+                onPress={() => setVersionCompareModalVisible(false)} // bấm ngoài để đóng
+              >
+                {/* Chặn sự kiện bấm lan xuống overlay */}
+                <Pressable style={styles.dialogCompare} onPress={() => {}}>
+                  <Text style={styles.subscriptionTitle} numberOfLines={1}>
+                    New Subscription Version Available
+                  </Text>
+                  <Text className="text-start">
+                    If you don't update, the subscription will be expired at the
+                    end of next moth.
+                  </Text>
+
+                  {/* Compare */}
+                  <View className="mt-5 flex flex-row items-start justify-between px-2">
+                    <View className="flex flex-col items-start gap-1">
+                      <Text className="text-sm font-bold text-white">
+                        Your Subscription
+                      </Text>
+                      <Text className="text-lg font-bold text-white">
+                        {customerRegistrationInfo
+                          .PodcastSubscriptionRegistration.Price
+                          ? customerRegistrationInfo.PodcastSubscriptionRegistration.Price.toLocaleString()
+                          : "100,000"}{" "}
+                        đ
+                      </Text>
+                      <View className="gap-2 mt-2">
+                        {customerRegistrationInfo.PodcastSubscriptionRegistration.PodcastSubscriptionBenefitList.map(
+                          (benefit) => (
+                            <View>
+                              <Text className="text-white text-xs">
+                                {benefit.Name}
+                              </Text>
+                            </View>
+                          )
+                        )}
+                      </View>
+                    </View>
+                    <View className="flex flex-col items-start gap-1">
+                      <Text className="text-sm font-bold text-[#aee339]">
+                        New Subscription
+                      </Text>
+                      <Text className="text-lg font-bold text-[#aee339]">
+                        {activeSubscription.PodcastSubscription.PodcastSubscriptionCycleTypePriceList.find(
+                          (price) =>
+                            price.SubscriptionCycleType.Id ===
+                            customerRegistrationInfo
+                              .PodcastSubscriptionRegistration
+                              ?.SubscriptionCycleType.Id
+                        )?.Price.toLocaleString()}
+                        đ
+                      </Text>
+                      <View className="gap-2 mt-2">
+                        {activeSubscription.PodcastSubscription.PodcastSubscriptionBenefitMappingList.map(
+                          (benefit) => (
+                            <View>
+                              <Text className="text-white text-xs">
+                                {benefit.PodcastSubscriptionBenefit.Name}
+                              </Text>
+                            </View>
+                          )
+                        )}
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Actions */}
+                  <View className="w-full gap-3 py-4 flex flex-row items-center justify-between mt-5">
+                    <Pressable
+                      className="w-1/3 py-2 flex items-center justify-center border-2 rounded-md border-zinc-600"
+                      onPress={() => setVersionCompareModalVisible(false)}
+                    >
+                      <Text className="text-zinc-400">Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      className="flex-1 py-2 flex items-center justify-center border-2 rounded-md border-[#aee339]"
+                      onPress={() => handleAcceptNewVersion()}
+                    >
+                      <Text className="text-[#aee339]">
+                        {isAcceptingNewVersion ? "Accepting..." : "Accept"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </Pressable>
+              </Pressable>
+            </Modal>
+          )}
+        <View className="h-36" />
       </ScrollView>
     );
   }
@@ -472,6 +644,12 @@ const styles = StyleSheet.create({
   },
   dialog: {
     width: "80%",
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: "#141414",
+  },
+  dialogCompare: {
+    width: "90%",
     padding: 16,
     borderRadius: 20,
     backgroundColor: "#141414",

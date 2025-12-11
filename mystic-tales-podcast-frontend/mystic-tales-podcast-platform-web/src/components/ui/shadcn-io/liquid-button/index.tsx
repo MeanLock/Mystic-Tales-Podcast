@@ -21,6 +21,10 @@ const buttonVariants = cva(
           "text-white border hover:border-none hover:text-white bg-gradient-to-r from-[#1D976C] to-[#93F9B9] [--liquid-button-color:rgba(147,249,185,0.8)]",
         minimal:
           "text-[#aee339] font-bold rounded-full border border-2 border-[#AEE339] hover:border-none hover:text-white bg-gradient-to-r from-[#1D976C] to-[#93F9B9] [--liquid-button-color:rgba(173,227,57,0.8)]",
+        minimalRoundedMd:
+          "text-[#aee339] font-bold rounded-md border border-2 border-[#AEE339] hover:border-none hover:text-white bg-gradient-to-r from-[#1D976C] to-[#93F9B9] [--liquid-button-color:rgba(173,227,57,0.8)]",
+        submit:
+          "text-[#56CCF2]/60 font-bold rounded-full border border-2 border-[#56CCF2]/60 hover:border-none hover:text-white bg-gradient-to-r [--liquid-button-color:rgba(86,204,242,0.4)]",
         danger:
           "text-red-400 border-red-400 border-2 rounded-full hover:border-none hover:text-white bg-gradient-to-r from-[#f85032] to-[#e73827] [--liquid-button-color:rgba(231,56,39,0.8)]",
       },

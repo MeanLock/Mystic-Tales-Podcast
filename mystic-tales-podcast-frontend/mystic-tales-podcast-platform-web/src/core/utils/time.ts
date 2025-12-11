@@ -7,6 +7,7 @@ type formatDateInput =
   | "hh:mmDD/MM/YYYY";
 
 export const formatDate = (dateString: string, format: formatDateInput) => {
+  if (!dateString) return "Not yet";
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return "";
 

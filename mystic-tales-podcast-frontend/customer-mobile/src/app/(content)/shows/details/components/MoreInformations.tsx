@@ -49,7 +49,9 @@ const InformationItem = ({
           <EvilIcons name="external-link" color="#AEE339" size={24} />
         </Pressable>
       ) : (
-        <Text className="text-white">{value}</Text>
+        <Text numberOfLines={1} className="text-white max-w-[60%]">
+          {value}
+        </Text>
       )}
     </View>
   );

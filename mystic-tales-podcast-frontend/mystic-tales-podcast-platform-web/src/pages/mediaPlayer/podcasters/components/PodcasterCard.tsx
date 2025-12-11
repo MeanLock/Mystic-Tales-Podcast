@@ -29,7 +29,7 @@ const PodcasterCard = ({ podcaster }: PodcasterCardProps) => {
         {/* info */}
         <div className="w-full flex flex-col items-center gap-1">
           <div className="w-full flex items-center justify-center">
-            <p className="text-lg font-semibold text-white font-poppins">
+            <p className="text-lg font-semibold text-white font-poppins line-clamp-1">
               {podcaster.Name}
             </p>
           </div>

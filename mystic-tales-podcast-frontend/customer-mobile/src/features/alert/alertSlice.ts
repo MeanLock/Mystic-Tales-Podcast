@@ -1,51 +1,73 @@
 // src/redux/slices/alertSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-export type AlertType = "success" | "error";
+export type AlertType = "success" | "error" | "warning" | "info";
 
 export interface AlertState {
   visible: boolean;
-  type: AlertType | null;
-  message: string;
-  seconds?: number;
+  title: string;
+  description: string;
+  type: AlertType;
+  isCloseable: boolean;
+  isFunctional: boolean;
+  functionalButtonText?: string;
+  autoCloseDuration?: number;
+  actionId?: string;
 }
 
 const initialState: AlertState = {
   visible: false,
-  type: null,
-  message: "",
-  seconds: undefined,
+  title: "",
+  description: "",
+  type: "info",
+  isCloseable: true,
+  isFunctional: false,
+  functionalButtonText: undefined,
+  autoCloseDuration: undefined,
+  actionId: undefined,
 };
 
 type ShowAlertPayload = {
-  message: string;
-  seconds?: number;
+  title: string;
+  description: string;
+  type: AlertType;
+  isCloseable: boolean;
+  isFunctional: boolean;
+  functionalButtonText?: string;
+  autoCloseDuration?: number;
+  actionId?: string;
 };
 
 const alertSlice = createSlice({
   name: "alert",
   initialState,
   reducers: {
-    showSuccess(state, action: PayloadAction<ShowAlertPayload>) {
+    setDataAndShowAlert(state, action: PayloadAction<{} & ShowAlertPayload>) {
       state.visible = true;
-      state.type = "success";
-      state.message = action.payload.message;
-      state.seconds = action.payload.seconds;
+      state.title = action.payload.title;
+      state.description = action.payload.description;
+      state.type = action.payload.type;
+      state.isCloseable = action.payload.isCloseable;
+      state.isFunctional = action.payload.isFunctional;
+      state.functionalButtonText =
+        action.payload.functionalButtonText || "Close";
+      state.autoCloseDuration = action.payload.autoCloseDuration || undefined;
+      state.actionId = action.payload.actionId || undefined;
     },
-    showError(state, action: PayloadAction<ShowAlertPayload>) {
-      state.visible = true;
-      state.type = "error";
-      state.message = action.payload.message;
-      state.seconds = action.payload.seconds;
-    },
+
     hideAlert(state) {
       state.visible = false;
-      state.type = null;
-      state.message = "";
-      state.seconds = undefined;
+      state.type = "info";
+      state.title = "";
+      state.description = "";
+      state.isCloseable = true;
+      state.isFunctional = false;
+      state.functionalButtonText = undefined;
+      state.autoCloseDuration = undefined;
+      state.actionId = undefined;
     },
   },
 });
 
-export const { showSuccess, showError, hideAlert } = alertSlice.actions;
+export const { setDataAndShowAlert, hideAlert } = alertSlice.actions;
 export default alertSlice.reducer;

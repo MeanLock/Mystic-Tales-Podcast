@@ -174,6 +174,36 @@ const ProfilePage = () => {
     const file = e.target.files?.[0];
     if (!file || !accountInformation) return;
 
+    // Validate file type
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/svg+xml",
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      setUpdateErrorMessage(
+        "Invalid file type. Only JPG, JPEG, PNG, GIF, WEBP, and SVG are allowed."
+      );
+      e.target.value = "";
+      return;
+    }
+
+    // Validate file size (max 3MB)
+    const maxSizeInBytes = 3 * 1024 * 1024; // 3MB
+    if (file.size > maxSizeInBytes) {
+      setUpdateErrorMessage(
+        "File size exceeds 3MB. Please upload a smaller image."
+      );
+      e.target.value = "";
+      return;
+    }
+
+    // Clear any previous errors
+    setUpdateErrorMessage(null);
+
     // gọi save chỉ với file, AccountUpdateInfo lấy từ accountInformation cũ
     await handleSaveEdit({ onlyAvatar: true, file });
     // clear input để lần sau có thể chọn lại cùng file nếu muốn
@@ -488,7 +518,7 @@ const ProfilePage = () => {
           <input
             type="file"
             ref={fileInputRef}
-            accept="image/png,image/jpeg"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
             className="hidden"
             onChange={handleAvatarFileChange}
           />
@@ -506,7 +536,7 @@ const ProfilePage = () => {
               resolution.
             </p>
             <p className="font-poppins text-[#D9D9D9]">
-              JPG or PNG is allowed.
+              JPG, JPEG, PNG, GIF, WEBP, or SVG is allowed (max 3MB).
             </p>
           </div>
         </div>

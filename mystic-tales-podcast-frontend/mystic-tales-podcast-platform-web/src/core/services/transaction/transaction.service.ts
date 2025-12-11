@@ -1,4 +1,5 @@
 import { appApi } from "@/core/api/appApi";
+import type { BalanceChange } from "@/core/types/transaction";
 
 const BASE_WEB_URL =
   import.meta.env.VITE_PUBLIC_WEB_URL ?? "http://localhost:5173";
@@ -16,6 +17,17 @@ type AccountBalanceTransaction = {
   };
   CreatedAt: string;
   ChangedAt: string | null;
+};
+
+export type WithdrawalRequest = {
+  Id: string;
+  Amount: number;
+  TransferReceiptImageFileKey: string;
+  RejectReason: string;
+  IsRejected: boolean;
+  CompletedAt: string;
+  CreatedAt: string;
+  UpdatedAt: string;
 };
 
 const transactionApi = appApi.injectEndpoints({
@@ -101,7 +113,29 @@ const transactionApi = appApi.injectEndpoints({
       }),
     }),
 
-    
+    getWithdrawalRequestHistory: build.query<
+      { AccountBalanceWithdrawalRequestList: WithdrawalRequest[] },
+      void
+    >({
+      query: () => ({
+        url: `/api/transaction-service/api/account-balance-transactions/balance-withdrawal-request`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
+
+    getAccountBalanceChangeHistory: build.query<
+      {
+        BalanceChangeHistory: BalanceChange[];
+      },
+      void
+    >({
+      query: () => ({
+        url: `/api/transaction-service/api/account-balance-transactions/balance-change-history`,
+        method: "GET",
+        authMode: "required",
+      }),
+    }),
   }),
 });
 
@@ -109,5 +143,6 @@ export const {
   useCreatePaymentLinkMutation,
   useCreateWithdrawRequestMutation,
   useGetTransactionHistoryQuery,
-
+  useGetWithdrawalRequestHistoryQuery,
+  useGetAccountBalanceChangeHistoryQuery,
 } = transactionApi;

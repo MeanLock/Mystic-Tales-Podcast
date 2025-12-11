@@ -39,8 +39,8 @@ const statusDatas: BookingStatusType[] = [
   { Id: 6, Name: "Track Previewing" },
   { Id: 7, Name: "Producing Requested" },
   { Id: 8, Name: "Completed" },
-  { Id: 9, Name: "Customer Cancel Request" },
-  { Id: 10, Name: "Podcast Buddy Cancel Request" },
+  { Id: 9, Name: "Reviewing Cancel Request (By You)..." },
+  { Id: 10, Name: "Reviewing Cancel Request (By Buddy)..." },
   { Id: 11, Name: "Cancelled Automatically" },
   { Id: 12, Name: "Cancelled Manually" },
 ];

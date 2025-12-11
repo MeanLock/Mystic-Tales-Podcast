@@ -1,17 +1,12 @@
+import AutoResolvingImage from "@/src/components/autoResolveImage/AutoResolvingImage";
 import { Text } from "@/src/components/ui/Text";
 import { View } from "@/src/components/ui/View";
+import { Show } from "@/src/core/types/show.type";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image, Pressable, StyleSheet } from "react-native";
 
-interface ShowCardProps {
-  Id: number;
-  Title: string;
-  NewEpisodeCount: number;
-  LastUpdated: string;
-  ImageUrl: string;
-}
-
-const ShowCard = ({ show, width }: { show: ShowCardProps; width: number }) => {
+const ShowCard = ({ show, width }: { show: Show; width: number }) => {
   const router = useRouter();
 
   function renderUpdate(count: number, time: string): string {
@@ -60,10 +55,10 @@ const ShowCard = ({ show, width }: { show: ShowCardProps; width: number }) => {
     }
 
     const epLabel = `${count} new ${count === 1 ? "episode" : "episodes"}`;
-    return base ? ` ${epLabel} • ${base}` : epLabel;
+    return base ? `${epLabel} • ${base}` : epLabel;
   }
 
-  const handleNavigate = (id: number) => {
+  const handleNavigate = (id: string) => {
     router.push({
       pathname: "/(content)/shows/details/[id]", // <-- CHỈ RÕ GROUP
       params: { id },
@@ -76,14 +71,22 @@ const ShowCard = ({ show, width }: { show: ShowCardProps; width: number }) => {
       style={[style.card, , { width: width, height: width + 50 }]}
     >
       <View style={[style.imageContainer, { height: width }]}>
-        <Image style={[style.image]} source={{ uri: show.ImageUrl }} />
+        <AutoResolvingImage
+          FileKey={show.MainImageFileKey}
+          type="PodcastPublicSource"
+          style={style.image}
+        />
+        {/* <View className="absolute z-10 inset-0 bg-black/50"></View>
+        <View className="absolute z-20 top-3 right-3 bg-gray-100/40 rounded-full p-2">
+          <MaterialCommunityIcons name="heart" size={20} color="#aee339" />
+        </View> */}
       </View>
       <View style={style.informationsContainer}>
         <Text style={style.title} numberOfLines={1}>
-          {show.Title}
+          {show.Name}
         </Text>
         <Text numberOfLines={1} style={style.updateDescription}>
-          {renderUpdate(show.NewEpisodeCount, show.LastUpdated)}
+          {renderUpdate(show.EpisodeCount, show.UpdatedAt)}
         </Text>
       </View>
     </Pressable>
@@ -100,12 +103,15 @@ const style = StyleSheet.create({
   imageContainer: {
     width: "100%",
     borderRadius: 8,
+    position: "relative",
   },
   image: {
     width: "100%",
     height: "100%",
     resizeMode: "cover",
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#333333",
   },
   informationsContainer: {
     width: "100%",

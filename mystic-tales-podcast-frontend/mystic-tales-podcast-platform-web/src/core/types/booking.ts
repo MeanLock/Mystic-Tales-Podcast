@@ -162,38 +162,39 @@ export type PodcastBookingToneType = {
   PodcastBookingToneCategory: PodcastBookingToneCategoryType;
 };
 
-export type PodcastBuddyFromAPI = {
-  PodcastBuddyProfile: {
-    AccountId: number;
+export type PodcastBookingTone = {
+  Id: string;
+  Name: string;
+  Description: string;
+  PodcastBookingToneCategory: {
+    Id: number;
     Name: string;
-    Description: string;
-    MainImageFileKey: string;
-    AverageRating: number;
-    RatingCount: number;
-    TotalFollow: number;
-    ListenCount: number;
-    PricePerBookingWord: number;
-    BuddyAudioFileKey: string;
-    IsVerified: boolean;
-    PodcastBuddyBookingTone: PodcastBookingToneType[];
   };
+  AvailablePodcasterCount: number;
+  CreatedAt: string;
+  UpdatedAt: string;
+};
+
+export type PodcastBuddyFromAPI = {
+  Id: number;
+  FullName: string;
+  Email: string;
+  MainImageFileKey: string;
+  PriceBookingPerWord: number;
+  AverageRating: number;
+  TotalFollow: number;
+  TotalBookingCompleted: number;
 };
 
 export type PodcastBuddyUI = {
-  PodcastBuddyProfile: {
-    AccountId: number;
-    Name: string;
-    Description: string;
-    ImageUrl: string;
-    AverageRating: number;
-    RatingCount: number;
-    TotalFollow: number;
-    ListenCount: number;
-    PricePerBookingWord: number;
-    BuddyAudioFileKey: string;
-    IsVerified: boolean;
-    PodcastBuddyBookingTone: PodcastBookingToneType[];
-  };
+  Id: number;
+  FullName: string;
+  Email: string;
+  ImageUrl: string;
+  PriceBookingPerWord: number;
+  AverageRating: number;
+  TotalFollow: number;
+  TotalBookingCompleted: number;
 };
 
 export type BookingProducingRequestDetails = {
@@ -234,4 +235,122 @@ export type BookingProducingRequestDetails = {
     Id: number;
     Name: string;
   };
+};
+
+export type CompletedBooking = {
+  Id: number;
+  Title: string;
+  Description: string;
+  Account: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
+  PodcastBuddy: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
+  Price: number;
+  Deadline: string;
+  DeadlineDays: number;
+  DemoAudioFileKey: string;
+  BookingManualCancelledReason: string;
+  BookingAutoCancelReason: string;
+  CompletedBookingTrackCount: number;
+  CompletedAt: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  CurrentStatus: {
+    Id: number;
+    Name: string;
+  };
+};
+
+export type CompletedBookingDetails = {
+  Id: number;
+  Title: string;
+  Description: string;
+  Account: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
+  PodcastBuddy: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+    PriceBookingPerWord: number;
+  };
+  AssignedStaff: {
+    Id: number;
+    FullName: string;
+    Email: string;
+    MainImageFileKey: string;
+  };
+  Price: number;
+  Deadline: string;
+  DeadlineDays: number;
+  DemoAudioFileKey: string | null;
+  BookingManualCancelledReason: string | null;
+  BookingRequirementFileList: {
+    Id: string;
+    BookingId: number;
+    Name: string;
+    Description: string;
+    RequirementDocumentFileKey: string;
+    Order: number;
+    WordCount: number;
+    PodcastBookingTone: {
+      Id: string;
+      Name: string;
+      Description: string;
+      PodcastBookingToneCategory: {
+        Id: number;
+        Name: string;
+      };
+      CreatedAt: string;
+      DeletedAt: string | null;
+    };
+  }[];
+  BookingProducingRequestList: {
+    Id: string;
+    BookingId: number;
+    Note: string;
+    Deadline: string;
+    DeadlineDays: number | null;
+    IsAccepted: boolean;
+    RejectReason: string | null;
+    FinishedAt: string | null;
+    CreatedAt: string;
+  }[];
+  BookingAutoCancelledReason: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
+  CurrentStatus: {
+    Id: number;
+    Name: string;
+  };
+  StatusTracking: {
+    Id: string;
+    BookingId: number;
+    BookingStatusId: number;
+    CreatedAt: string;
+  }[];
+  LastestBookingPodcastTracks: CompletedBookingTrack[];
+};
+
+export type CompletedBookingTrack = {
+  Id: string;
+  BookingId: number;
+  BookingRequirementId: string;
+  BookingProducingRequestId: string;
+  AudioFileKey: string;
+  AudioFileSize: number;
+  AudioLength: number;
+  RemainingPreviewListenSlot: number;
 };

@@ -15,7 +15,7 @@ const UpdateAccountMeHook = () => {
     skip: !user,
     refetchOnFocus: true,
     refetchOnReconnect: true,
-    pollingInterval: 30000,
+    pollingInterval: 60 * 60 * 1000, // 1 hour
   });
   return null;
 };

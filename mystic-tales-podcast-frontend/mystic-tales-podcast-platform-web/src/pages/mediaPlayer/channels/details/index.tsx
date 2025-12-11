@@ -209,7 +209,7 @@ const RenderSubscriptionSection = ({
         </p>
         <p className="text-[9px] text-black/70 font-bold">Subscription</p>
       </div>
-      <p className="text-[12px] font-semibold line-clamp-1">
+      <p className="text-[12px] font-semibold line-clamp-2">
         {subscription.Description}
       </p>
       <div className="text-[10px] italic w-full flex items-center justify-between mt-3">
@@ -611,14 +611,12 @@ const ChannelDetailsPage = () => {
           <p className="text-white text-2xl font-bold mt-5">
             {channel?.Channel.Name.toUpperCase()}
           </p>
-          <div className="text-[#d9d9d9] flex items-center justify-center text-sm font-md w-1/3 overflow-ellipsis line-clamp-3 text-justify">
-            <div
-              className="text-justify"
-              dangerouslySetInnerHTML={{
-                __html: renderDescriptionHTML(channel?.Channel.Description),
-              }}
-            />
-          </div>
+          <div
+            className="text-[#d9d9d9] text-center text-sm font-md w-1/3 overflow-hidden line-clamp-3"
+            dangerouslySetInnerHTML={{
+              __html: renderDescriptionHTML(channel?.Channel.Description),
+            }}
+          />
 
           <div className="text-xs flex items-center justify-center gap-2 text-[#d9d9d9] font-semibold overflow-ellipsis line-clamp-1">
             <p className="hover:text-mystic-green hover:underline cursor-pointer">

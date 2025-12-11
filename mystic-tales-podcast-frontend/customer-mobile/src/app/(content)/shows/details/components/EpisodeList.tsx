@@ -13,6 +13,8 @@ import {
   setEpisodes,
   setEpisodesData,
 } from "@/src/features/episode/episodeSlice";
+import { playAudio } from "@/src/features/mediaPlayer/playerSlice";
+import { usePlayer } from "@/src/core/services/player/usePlayer";
 
 interface EpisodeListProps {
   episodes: EpisodeFromShow[];
@@ -62,10 +64,13 @@ const formatDate = (dateString: string): string => {
 // Episode Component
 const EpisodeComponent = ({ episode }: { episode: EpisodeFromShow }) => {
   const router = useRouter();
+
+  const { listenFromEpisode } = usePlayer();
+
   const handlePlayEpisode = () => {
-    // Implement play functionality here
-    console.log("Play episode with ID:", episode.Id);
+    listenFromEpisode(episode.Id, "SpecifyShowEpisodes");
   };
+
   return (
     <Pressable
       onPress={() => router.push(`/(content)/episodes/details/${episode.Id}`)}
