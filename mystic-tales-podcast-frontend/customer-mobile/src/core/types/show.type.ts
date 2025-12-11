@@ -50,10 +50,6 @@ export type Show = {
     Name: string;
   };
 };
-<<<<<<< HEAD
-
-=======
->>>>>>> d24514da2d90e35a15e7a4d1b3dcfeff93364c25
 export type ShowFromChannel = {
   Id: string;
   Name: string;
@@ -108,10 +104,6 @@ export type ShowFromChannel = {
     Name: string;
   };
 };
-<<<<<<< HEAD
-
-=======
->>>>>>> d24514da2d90e35a15e7a4d1b3dcfeff93364c25
 export type ShowDetails = {
   Id: string;
   Name: string;

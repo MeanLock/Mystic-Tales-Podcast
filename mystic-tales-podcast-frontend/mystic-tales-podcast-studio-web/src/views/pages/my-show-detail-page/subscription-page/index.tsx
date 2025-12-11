@@ -286,7 +286,7 @@ const state_creator = (table: any[]) => {
 
 const ShowSubscription: FC<ShowSubscriptionProps> = () => {
     const { id } = useParams<{ id: string }>();
-    
+
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
     const [activeSubscription, setActiveSubscription] = useState<Subscription | null>(null)
     let [state, setState] = useState<GridState | null>(null);
@@ -332,22 +332,24 @@ const ShowSubscription: FC<ShowSubscriptionProps> = () => {
 
     if (subscriptions.length === 0) {
         return (
-            <div className="pt-30">
-                <EmptyComponent item="Subscription" subtitle="Try adjusting your search terms or filters" />
-                <Modal_Button
-                    className=" show-subscription__btn h-1/2 text-black font-bold rounded-lg normal-case "
-                    content="Add Subscription"
-                    variant="contained"
-                    size="md"
-                    startIcon={<Add />}
-                >
-                    <SubscriptionModal
-                        podcastShowId={id}
-                        onClose={() => { }}
-                    />
-                </Modal_Button>
+            <ShowSubscriptionContext.Provider value={{ handleDataChange: fetchSubscriptionList }}>
+                <div className="pt-30">
+                    <EmptyComponent item="Subscription" subtitle="Try adjusting your search terms or filters" />
+                    <Modal_Button
+                        className=" show-subscription__btn h-1/2 text-black font-bold rounded-lg normal-case "
+                        content="Add Subscription"
+                        variant="contained"
+                        size="md"
+                        startIcon={<Add />}
+                    >
+                        <SubscriptionModal
+                            podcastShowId={id}
+                            onClose={() => { }}
+                        />
+                    </Modal_Button>
 
-            </div>
+                </div>
+            </ShowSubscriptionContext.Provider>
         )
     }
 
@@ -459,9 +461,9 @@ const ShowSubscription: FC<ShowSubscriptionProps> = () => {
                                 </ul>
                             </div>
                         </div>
-                   ) : (
+                    ) : (
                         <div className="show-subscription__left">
-                            <EmptyComponent  subtitle="No Active Subscription Is Available" />
+                            <EmptyComponent subtitle="No Active Subscription Is Available" />
                         </div>
                     )}
 

@@ -37,8 +37,4 @@ export const channelSlice = createSlice({
   },
 });
 export const { setChannels, setTitle, setChannelsData } = channelSlice.actions;
-<<<<<<< HEAD
 export default channelSlice.reducer;
-=======
-export default channelSlice.reducer;
->>>>>>> d24514da2d90e35a15e7a4d1b3dcfeff93364c25

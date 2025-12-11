@@ -239,7 +239,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
                 }
                 await startPolling(sagaId, loginRequiredAxiosInstance, {
                     onSuccess: async () => {
-                        onClose();
+                        onClose?.();
                         await context?.handleDataChange();
                         toast.success(`Subscription created successfully!`);
                     },
@@ -266,7 +266,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
             }
             await startPolling(sagaId, loginRequiredAxiosInstance, {
                 onSuccess: () => {
-                    onClose();
+                    onClose?.();
                     context?.handleDataChange();
                     toast.success(`Subscription activated successfully!`);
                 },
@@ -293,7 +293,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
             }
             await startPolling(sagaId, loginRequiredAxiosInstance, {
                 onSuccess: async () => {
-                    onClose();
+                    onClose?.();
                     await context?.handleDataChange();
                     toast.success(`Subscription deleted successfully!`);
                 },

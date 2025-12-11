@@ -122,8 +122,4 @@ const style = StyleSheet.create({
   updateDescription: {
     color: "#999999",
   },
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> d24514da2d90e35a15e7a4d1b3dcfeff93364c25
