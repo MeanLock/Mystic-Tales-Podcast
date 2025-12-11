@@ -37,7 +37,7 @@ export const DefaultLayoutHeader: FC = () => {
     { id: 1, title: "New Booking Request", message: "You have a new booking from John Doe", time: "5 mins ago", isRead: false },
     { id: 2, title: "Audio Approved", message: "Your submitted audio has been approved", time: "1 hour ago", isRead: false },
     { id: 3, title: "Edit Required", message: "Client requested edits on Podcast #123", time: "2 hours ago", isRead: true },
-    { id: 4, title: "Payment Received", message: "Payment of 500 points received", time: "1 day ago", isRead: true },
+    { id: 4, title: "Payment Received", message: "Payment of 500 coins received", time: "1 day ago", isRead: true },
   ];
 
   const toggleSidebar = () => {
