@@ -1,11 +1,11 @@
 import type React from "react"
 import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import WaveSurfer from "wavesurfer.js"
-import { Music, Download, Play, Minus, CloudUpload, Delete } from "lucide-react"
+import { Music, Download, Play, Minus, CloudUpload } from "lucide-react"
 import { ArrowCounterClockwise, Database, FolderSimple, Plus, Question } from "phosphor-react"
 import { IconButton, MenuItem, Modal, Select, Skeleton, Tooltip } from "@mui/material"
 import ghost from "../../../../assets/ghost.mp3"
-import { PlayArrow, Pause, ContentCopy, PublishedWithChangesOutlined } from "@mui/icons-material"
+import { PlayArrow, Pause, ContentCopy, PublishedWithChangesOutlined, Delete } from "@mui/icons-material"
 import { toast } from "react-toastify"
 import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
 import { useNavigate, useParams } from "react-router-dom"
@@ -1485,7 +1485,7 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
                             <label className="text-sm">Zoom</label>
                             <input
                                 type="range"
-                                min="1"
+                                min="10"
                                 max="50"
                                 value={pixelsPerSecond}
                                 onChange={(e) => setPPS(Number.parseInt(e.target.value))}
