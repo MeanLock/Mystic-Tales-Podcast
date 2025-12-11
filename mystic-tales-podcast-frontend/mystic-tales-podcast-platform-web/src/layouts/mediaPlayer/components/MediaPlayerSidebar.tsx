@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { FaRegCompass } from "react-icons/fa";
+import { FaHeadphones, FaRegCompass } from "react-icons/fa";
 import { FiBarChart2, FiInfo } from "react-icons/fi";
 import { BiCategoryAlt } from "react-icons/bi";
 import { TbMusicSearch } from "react-icons/tb";
@@ -10,7 +10,6 @@ import {
   IoMdMicrophone,
 } from "react-icons/io";
 import { RiHistoryLine } from "react-icons/ri";
-import { FaHeart } from "react-icons/fa";
 import { RiSlideshow4Line } from "react-icons/ri";
 import { CgMediaPodcast } from "react-icons/cg";
 import { BsPersonCheck } from "react-icons/bs";
@@ -18,10 +17,8 @@ import { PiReceipt } from "react-icons/pi";
 import { TbTransactionDollar } from "react-icons/tb";
 import {
   MdNotificationsNone,
-  MdNotificationsPaused,
   MdOutlineAccountBalanceWallet,
   MdOutlinePayments,
-  MdSaveAlt,
 } from "react-icons/md";
 import { PiHandWithdrawBold } from "react-icons/pi";
 import { MdOutlineSubscriptions } from "react-icons/md";
@@ -34,7 +31,6 @@ import type { RootState } from "@/redux/store";
 import { SidebarNavItems } from "./SideBarNavItem";
 import SearchSuggesstion from "./SearchSuggesstion";
 import { GrCircleQuestion } from "react-icons/gr";
-import { IoInformationCircleOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import {
@@ -49,10 +45,7 @@ import {
   type FileResolveConfig,
 } from "@/core/utils/fileResolver.util";
 import { Skeleton } from "@/components/ui/skeleton";
-import type {
-  ContentRealtimeResponse,
-  ContentRealtimeResponseUI,
-} from "@/core/types/search";
+import type { ContentRealtimeResponse } from "@/core/types/search";
 import {
   useGetAutocompleteWordRealTimeQuery,
   useGetPodcastContentOnKeywordRealTimeQuery,
@@ -92,15 +85,6 @@ const navItems = [
         isSubItemsContain: false,
         subItems: [],
       },
-      // {
-      //   icon: <TbMusicSearch color="#fff" size={11} />,
-      //   iconActive: <TbMusicSearch color="#fff" size={15} />,
-      //   iconWhenSmall: <TbMusicSearch color="#333" size={11} />,
-      //   name: "Search",
-      //   to: "/media-player/search",
-      //   isSubItemsContain: false,
-      //   subItems: [],
-      // },
       {
         icon: <IoMdMicrophone color="#fff" size={11} />,
         iconActive: <IoMdMicrophone color="#fff" size={15} />,
@@ -381,7 +365,7 @@ const MediaPlayerSidebar = () => {
         sm:w-[80px]
         md:w-[290px] md:rounded-3xl md:p-5
         h-full
-        md:h-[734px]
+        md:h-full
         z-[9999]
       "
     >
@@ -415,59 +399,17 @@ const MediaPlayerSidebar = () => {
           </div>
         </div>
 
-        <div className="z-50">
-          {/* Notification Modal */}
-          <Popover
-            open={showNotificationModal}
-            onOpenChange={setShowNotificationModal}
-          >
-            {/* chỉ icon mới toggle */}
-            <PopoverTrigger asChild>
-              {showNotificationModal ? (
-                <div className="flex items-center justify-center p-2 bg-gray-300/30 text-white rounded-full cursor-pointer">
-                  <MdNotificationsNone size={25} />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center p-2 hover:bg-gray-300/30 text-[#d9d9d9] hover:text-white rounded-full cursor-pointer">
-                  <MdNotificationsNone size={25} />
-                </div>
-              )}
-            </PopoverTrigger>
-
-            <PopoverPortal>
-              <PopoverContent
-                side="bottom" // mở phía bên trái icon
-                align="start" // căn theo giữa icon
-                sideOffset={5} // cách icon 12px
-                collisionPadding={2}
-                className="
-                  w-[300px] h-96 rounded-2xl shadow-2xl
-                  bg-[#333] backdrop-blur-lg border border-white/10
-                  text-white
-                  flex flex-col 
-                  z-[9999]
-                "
-              >
-                <div className="p-3 w-full flex items-center">
-                  <p className="font-semibold">Notifications</p>
-                </div>
-
-                {/* Danh sách thông báo */}
-                {notifications.length === 0 ? (
-                  <div className="flex-1 w-full flex flex-col items-center justify-center p-5">
-                    <IoIosNotificationsOutline color="#d9d9d9" size={150} />
-                    <p className="text-[#d9d9d9]">No notifications</p>
-                    <p className="text-center text-xs text-[#d9d9d9]">
-                      Any notifications will be display here...
-                    </p>
-                  </div>
-                ) : (
-                  <p>Heheheh</p>
-                )}
-              </PopoverContent>
-            </PopoverPortal>
-          </Popover>
-        </div>
+        {user && (
+          <div className="z-50 flex items-center justify-center bg-white/30 shadow-md py-1 pl-3 pr-1 gap-3 rounded-full">
+            {/* Notification Modal */}
+            <p className="font-poppins font-bold text-white">
+              {user.PodcastListenSlot}
+            </p>
+            <div className="flex items-center justify-center flex-col rounded-full p-2 bg-white shadow-sm">
+              <FaHeadphones size={15} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Search Components */}
@@ -506,8 +448,9 @@ const MediaPlayerSidebar = () => {
                   navigate(
                     `/media-player/search?keyword=${encodeURIComponent(
                       keyword
-                    )}`
+                    )}&refresh=${Date.now()}`
                   );
+
                   setShowSearchSuggestion(false);
                 }
               }}
@@ -536,8 +479,9 @@ const MediaPlayerSidebar = () => {
                   navigate(
                     `/media-player/search?keyword=${encodeURIComponent(
                       keyword
-                    )}`
+                    )}&refresh=${Date.now()}`
                   );
+
                   setShowSearchSuggestion(false);
                 }
               }}
@@ -624,7 +568,14 @@ const MediaPlayerSidebar = () => {
           </div>
         </div>
       ) : (
-        <div></div>
+        <div className="w-full flex items-center justify-center">
+          <div
+            className="w-full flex items-center justify-center rounded-md bg-mystic-green py-2 px-4 cursor-pointer hover:brightness-90 transition"
+            onClick={() => navigate("/auth/login")}
+          >
+            <p className="font-poppins text-black font-bold">Login</p>
+          </div>
+        </div>
       )}
     </div>
   );

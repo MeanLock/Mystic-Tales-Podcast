@@ -23,7 +23,10 @@ const searchApi = appApi.injectEndpoints({
         authMode: "public",
       }),
     }),
-    getSearchResults: build.query<SearchResultResponse, { keyword: string }>({
+    getSearchResults: build.query<
+      SearchResultResponse,
+      { keyword: string; refresh: string }
+    >({
       query: ({ keyword }) => ({
         url: `/api/podcast-service/api/misc/feed/podcast-contents/keyword-search?keyword=${keyword}`,
         method: "GET",

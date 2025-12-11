@@ -3,8 +3,6 @@ import type { RootState } from "@/redux/store";
 import {
   FaBackward,
   FaForward,
-  FaRandom,
-  FaTruckLoading,
 } from "react-icons/fa";
 import { IoPauseCircle, IoPlayCircle } from "react-icons/io5";
 import { useDispatch, useSelector } from "react-redux";
@@ -29,7 +27,6 @@ import { MdAutoMode } from "react-icons/md";
 import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
 import { setError } from "@/redux/slices/errorSlice/errorSlice";
 import { Slider } from "@/components/ui/slider";
-import { CgSpinner } from "react-icons/cg";
 
 const NewMediaPlayerControlBar = () => {
   // REDUX
@@ -574,8 +571,8 @@ const NewMediaPlayerControlBar = () => {
                 fill="none"
                 stroke="currentColor"
                 strokeLinecap="round"
-                strokeWidth="2" // giảm xuống 1.5 hoặc 1 nếu muốn mỏng nữa
-                d="M12 2a10 10 0 0 1 10 10" // một cung tròn từ trên xuống bên phải
+                strokeWidth="2"
+                d="M12 2a10 10 0 0 1 10 10" 
               />
             </svg>
           </div>

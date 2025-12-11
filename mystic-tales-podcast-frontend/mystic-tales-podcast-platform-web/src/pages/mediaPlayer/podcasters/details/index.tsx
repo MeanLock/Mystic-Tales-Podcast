@@ -14,7 +14,6 @@ import type { ShowUI } from "@/core/types/show";
 import type {
   PodcasterDetailsUI,
   PodcasterReviewUI,
-  PodcasterUI,
 } from "@/core/types/podcaster";
 import type { PodcastCategory } from "@/core/types/podcastCategory";
 import ShowsByCategoryCarousel from "./components/ShowsByCategoryCarousel";

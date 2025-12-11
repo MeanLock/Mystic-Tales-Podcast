@@ -260,9 +260,13 @@ const SearchSuggesstion = ({
                               {item.Name}
                             </p>
                           </div>
-                          <p className="text-gray-700 text-xs line-clamp-1 mt-1">
-                            {item.Description}
-                          </p>
+                          <div
+                            className="text-gray-700 text-xs line-clamp-1 mt-1"
+                            dangerouslySetInnerHTML={{
+                              __html: item.Description || "",
+                            }}
+                          />
+                          <div />
                         </div>
                       </div>
                     );
