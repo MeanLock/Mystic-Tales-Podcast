@@ -855,7 +855,7 @@ const ProfilePage = () => {
                 */
             >
               {/* {isResetting ? "Resetting..." : "Reset Password"} */}
-              Reset Password
+              {isResettingPassword ? "Resetting..." : "Reset Password"}
             </Button>
           </DialogFooter>
         </DialogContent>
