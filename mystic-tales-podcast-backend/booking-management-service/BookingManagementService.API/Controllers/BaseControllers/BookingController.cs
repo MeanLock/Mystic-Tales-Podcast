@@ -632,16 +632,17 @@ namespace BookingManagementService.API.Controllers.BaseControllers
             return File(fileData, "video/MP2T");
         }
         [HttpPost("podcast-booking-tone/me/{isBuddy}")]
+        [Authorize(Policy = "Customer.PodcasterAccess")]
         public async Task<IActionResult> CreatePodcastBookingTone(
             [FromRoute] bool isBuddy,
             [FromBody] PodcasterBookingToneApplyRequestDTO request)
         {
             var account = HttpContext.Items["LoggedInAccount"] as AccountStatusCache;
             var accountId = account.Id;
-            if (!account.HasVerifiedPodcasterProfile || !account.PodcasterProfileIsBuddy)
-            {
-                throw new HttpRequestException("Only verified podcasters can create podcast booking tones.");
-            }
+            //if (!account.HasVerifiedPodcasterProfile || !account.PodcasterProfileIsBuddy)
+            //{
+            //    throw new HttpRequestException("Only verified podcasters can create podcast booking tones.");
+            //}
 
             var requestData = new JObject
             {
