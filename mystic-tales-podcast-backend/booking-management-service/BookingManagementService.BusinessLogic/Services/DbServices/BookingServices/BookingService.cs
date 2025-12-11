@@ -4633,7 +4633,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         }
                         else
                         {
-                            item.IsListenable = true;
+                            if(booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
+                                item.IsListenable = false;
+                            else
+                                item.IsListenable = true;
                         }
                     }
                     else
@@ -4681,7 +4684,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         }
                         else
                         {
-                            item.IsListenable = true;
+                            if (booking.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId != (int)BookingStatusEnum.TrackPreviewing)
+                                item.IsListenable = false;
+                            else
+                                item.IsListenable = true;
                         }
                     }
                     else
