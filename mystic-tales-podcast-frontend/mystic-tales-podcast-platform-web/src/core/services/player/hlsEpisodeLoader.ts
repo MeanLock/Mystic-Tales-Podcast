@@ -8,6 +8,14 @@ type EpisodeHlsOptions = HlsLoadBaseOptions & {
 };
 
 /**
+ * Đảm bảo baseUrl luôn có "/" ở cuối
+ */
+function normalizeBaseUrl(url: string): string {
+  return url.endsWith("/") ? url : `${url}/`;
+}
+
+// SSSSSS
+/**
  * Load HLS cho EPISODE:
  * - Tạo Hls instance (hoặc dùng native HLS của Safari)
  * - Map key/segment theo episode API

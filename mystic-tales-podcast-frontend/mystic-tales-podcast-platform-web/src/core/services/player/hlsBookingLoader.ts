@@ -7,6 +7,14 @@ type BookingHlsOptions = HlsLoadBaseOptions & {
   trackId: string;
 };
 
+/**
+ * Đảm bảo baseUrl luôn có "/" ở cuối
+ */
+function normalizeBaseUrl(url: string): string {
+  return url.endsWith("/") ? url : `${url}/`;
+}
+
+// AAAAA
 export async function loadBookingHls(
   opts: BookingHlsOptions
 ): Promise<Hls | null> {
