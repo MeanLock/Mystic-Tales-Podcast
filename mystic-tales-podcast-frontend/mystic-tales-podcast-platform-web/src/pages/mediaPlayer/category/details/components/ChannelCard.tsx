@@ -1,5 +1,4 @@
 import type { ChannelUI } from "@/core/types/channel";
-import { BsFillPeopleFill } from "react-icons/bs";
 import { FaHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 

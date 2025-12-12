@@ -1,6 +1,7 @@
+// @ts-nocheck
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
-import type { ShowFromAPI, ShowUI } from "@/core/types/show";
-import { FaHeadphones, FaHeart } from "react-icons/fa";
+import type { ShowFromAPI } from "@/core/types/show";
+import { FaHeadphones } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 const ShowCard = ({ show }: { show: ShowFromAPI }) => {

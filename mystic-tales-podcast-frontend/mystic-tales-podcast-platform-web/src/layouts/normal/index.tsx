@@ -9,26 +9,26 @@ import { useEffect } from "react";
 //   useGetEpisodeLatestSessionQuery,
 //   useGetBookingLatestSessionQuery,
 // } from "@/core/services/player/player.service";
-import {
-  setListenSession,
-  setListenSessionProcedure,
-  setCurrentAudio,
-  stopAudio,
-  playAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import type {
-  ListenSessionEpisodes,
-  ListenSessionBookingTracks,
-} from "@/core/types/audio";
-import { usePlayer } from "@/core/services/player/usePlayer";
+// import {
+//   setListenSession,
+//   setListenSessionProcedure,
+//   setCurrentAudio,
+//   stopAudio,
+//   playAudio,
+// } from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
+// import type {
+//   ListenSessionEpisodes,
+//   ListenSessionBookingTracks,
+// } from "@/core/types/audio";
+// import { usePlayer } from "@/core/services/player/usePlayer";
 import { setUser, clearAuth } from "@/redux/slices/authSlice/authSlice";
 
 const NormalLayout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
-  const user = useSelector((state: RootState) => state.auth.user);
-  const { playFromLatest } = usePlayer();
+  // const user = useSelector((state: RootState) => state.auth.user);
+  // const { playFromLatest } = usePlayer();
   // Chỉ polling khi user đã đăng nhập (có token)
   const { data, error } = useUpdateAccountMeQuery(undefined, {
     pollingInterval: accessToken ? 1000 * 60 * 5 : 0, // 5 phút nếu có token, không poll nếu chưa login
@@ -65,11 +65,11 @@ const NormalLayout = () => {
   // );
 
   // Xử lý latest session khi có data - chỉ set state, playerCore sẽ xử lý việc listen
-  useEffect(() => {
-    if (user) {
-      playFromLatest();
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (user) {
+  //     playFromLatest();
+  //   }
+  // }, []);
 
   useEffect(() => {
     if (accessToken) {

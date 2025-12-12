@@ -1,5 +1,4 @@
 import { appApi } from "@/core/api/appApi";
-import type { ChannelFromAPI } from "@/core/types/channel";
 import type { ShowDetailsFromAPI, ShowFromAPI } from "@/core/types/show";
 import type { SubscriptionDetails } from "@/core/types/subscription";
 

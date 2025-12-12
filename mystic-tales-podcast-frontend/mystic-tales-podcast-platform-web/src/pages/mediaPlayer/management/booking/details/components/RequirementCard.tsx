@@ -3,21 +3,8 @@ import { useEffect, useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
-import {
-  useGetBookingPublicSourceQuery,
   useLazyGetBookingPublicSourceQuery,
 } from "@/core/services/file/file.service";
-
-const FileConfig: FileResolveConfig[] = [
-  {
-    path: "RequirementDocumentFileKey",
-    type: "BookingPublic",
-    output: "RequirementDocumentFileUrl",
-  },
-];
 
 interface RequirementCardProps {
   requirement: {
@@ -81,10 +68,41 @@ function renderDescriptionHTML(description: string | null) {
 const RequirementCard = ({ requirement }: RequirementCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isResolveLoading, setIsResolveLoading] = useState(false);
-  const [isResolveError, setIsResolveError] = useState(false);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
 
   const [triggerResolveFile] = useLazyGetBookingPublicSourceQuery();
+
+  const handleDownload = async () => {
+    try {
+      if (!requirement.RequirementDocumentFileKey) return;
+
+      // Fetch fresh URL to avoid access denied
+      const resolveFile = await triggerResolveFile({
+        FileKey: requirement.RequirementDocumentFileKey,
+      }).unwrap();
+
+      const freshUrl = resolveFile.FileUrl;
+      if (freshUrl) {
+        // Fetch as blob to force download (prevents audio/video from opening in browser)
+        const response = await fetch(freshUrl);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        // Trigger download
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = requirement.Name || "requirement-document";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Cleanup blob URL
+        window.URL.revokeObjectURL(blobUrl);
+      }
+    } catch (error) {
+      console.error("[RequirementCard] Failed to download file:", error);
+    }
+  };
 
   useEffect(() => {
     const resolveRequirementFile = async () => {
@@ -105,7 +123,6 @@ const RequirementCard = ({ requirement }: RequirementCardProps) => {
           `[RequirementCard] ❌ Failed to resolve requirement #${requirement.Order}`,
           error
         );
-        setIsResolveError(true);
         setIsResolveLoading(false);
       }
     };
@@ -156,27 +173,56 @@ const RequirementCard = ({ requirement }: RequirementCardProps) => {
               />
 
               {/* Phân loại file requirement url */}
-              {/* Nếu là docx thì cho nút tải về */}
-              {/* Nếu là pdf thì dùng iframe hiển thị, và có nút tải về */}
-              {fileUrl && fileUrl.includes(".pdf") && (
+              {/* Nếu là pdf thì dùng iframe hiển thị */}
+              {/* Nếu là audio thì cho nghe và download */}
+              {/* Các file khác thì chỉ download */}
+              {fileUrl && fileUrl.toLowerCase().includes(".pdf") && (
                 <iframe
                   src={fileUrl}
-                  rel="noopener noreferrer"
-                  className="w-full mt-5 min-h-[800px]"
+                  title="Requirement Document PDF"
+                  className="w-full mt-5 min-h-[800px] border rounded-md"
                 />
               )}
-              {fileUrl && fileUrl.includes(".docx") && (
-                <div className="w-1/2">
-                  <iframe
-                    src={fileUrl}
-                    rel="noopener noreferrer"
-                    className="w-full mt-2 h-0"
-                  />
-                  <p className="text-zinc-300 font-semibold">
-                    Requirement Document Downloaded
-                  </p>
-                </div>
-              )}
+              {fileUrl &&
+                (fileUrl.toLowerCase().includes(".mp3") ||
+                  fileUrl.toLowerCase().includes(".wav") ||
+                  fileUrl.toLowerCase().includes(".m4a") ||
+                  fileUrl.toLowerCase().includes(".ogg") ||
+                  fileUrl.toLowerCase().includes(".aac")) && (
+                  <div className="mt-5 space-y-3">
+                    <div className="border rounded-md p-4 bg-gray-50">
+                      <p className="font-semibold mb-2 text-sm text-gray-600">
+                        Audio Preview:
+                      </p>
+                      <audio controls className="w-full">
+                        <source src={fileUrl} />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                    <button
+                      onClick={handleDownload}
+                      className="inline-block px-6 py-3 bg-mystic-green text-black font-semibold rounded-md hover:bg-mystic-green/80 transition-colors cursor-pointer"
+                    >
+                      Download Audio File
+                    </button>
+                  </div>
+                )}
+              {fileUrl &&
+                !fileUrl.toLowerCase().includes(".pdf") &&
+                !fileUrl.toLowerCase().includes(".mp3") &&
+                !fileUrl.toLowerCase().includes(".wav") &&
+                !fileUrl.toLowerCase().includes(".m4a") &&
+                !fileUrl.toLowerCase().includes(".ogg") &&
+                !fileUrl.toLowerCase().includes(".aac") && (
+                  <div className="mt-5">
+                    <button
+                      onClick={handleDownload}
+                      className="inline-block px-6 py-3 bg-mystic-green text-black font-semibold rounded-md hover:bg-mystic-green/80 transition-colors cursor-pointer"
+                    >
+                      Download Requirement Document
+                    </button>
+                  </div>
+                )}
             </motion.div>
           )}
         </AnimatePresence>

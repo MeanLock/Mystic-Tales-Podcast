@@ -1,12 +1,10 @@
+
 import type { RootState } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { IoInformationCircleOutline, IoPlay } from "react-icons/io5";
 import PlayingWave from "@/components/playingWave/PlayWave";
-import {
-  pauseAudio,
-  playAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import { Eye, MoreHorizontalIcon, Save } from "lucide-react";
+
+import { Eye, MoreHorizontalIcon} from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -44,7 +42,7 @@ import { useEffect } from "react";
 import { useSaveEpisodeMutation } from "@/core/services/episode/episode.service";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import type { EpisodeFromAPI, EpisodeUI } from "@/core/types/episode";
-import AutoResolveImage from "./AutoResolveImage";
+
 import { useNavigate } from "react-router-dom";
 import {
   Tooltip,
@@ -54,6 +52,7 @@ import {
 import { usePlayer } from "@/core/services/player/usePlayer";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
 import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 // Helper function to format duration
 const formatDuration = (seconds: number): string => {
@@ -340,11 +339,9 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
     >
       <div className="relative aspect-square h-full bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
         <AutoResolveImage
-          name={episode.Name}
-          fileKey={episode.MainImageFileKey}
-          className="absolute inset-0"
-          imgClassName="w-full h-full object-cover"
-          alt={episode.Name}
+          FileKey={episode.MainImageFileKey}
+          type="PodcastPublicSource"
+          className="w-full h-full object-cover"
         />
 
         {uiState.isPlaying ? (

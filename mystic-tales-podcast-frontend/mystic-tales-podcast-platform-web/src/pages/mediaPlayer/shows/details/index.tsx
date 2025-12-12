@@ -167,9 +167,9 @@ const ShowDetailsPage = () => {
   // STATES
   const [show, setShow] = useState<ShowDetailsUI | null>(null);
   const [isFileResolving, setIsFileResolving] = useState(false);
-  const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(
-    null
-  );
+  // const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(
+  //   null
+  // );
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -207,8 +207,7 @@ const ShowDetailsPage = () => {
   const dispatch = useDispatch();
 
   // Mutations
-  const [subscribeShow, { isLoading: isSubscribing }] =
-    useSubscribePodcastSubscriptionMutation();
+  const [subscribeShow] = useSubscribePodcastSubscriptionMutation();
   const [unsubscribeShow, { isLoading: isUnsubscribing }] =
     useUnsubscribePodcastSubscriptionMutation();
   const [ratingShow, { isLoading: isRating }] = useRatingShowMutation();
@@ -222,15 +221,11 @@ const ShowDetailsPage = () => {
     refetch: refetchShowDetails,
   } = useGetShowDetailsQuery({ PodcastShowId: id! }, { skip: !id });
 
-  const {
-    data: activeSubscriptionRaw,
-    isLoading: isActiveSubscriptionLoading,
-    refetch: refetchActiveSubscription,
-  } = useGetActiveShowSubscriptionQuery({ ShowId: id! }, { skip: !id });
+  const { data: activeSubscriptionRaw, refetch: refetchActiveSubscription } =
+    useGetActiveShowSubscriptionQuery({ ShowId: id! }, { skip: !id });
 
   const {
     data: customerRegistrationInfo,
-    isLoading: isCustomerRegistrationInfoLoading,
     refetch: refetchCustomerRegistration,
   } = useGetCustomerRegistrationInfoFromShowQuery(
     { PodcastShowId: id! },
@@ -243,9 +238,8 @@ const ShowDetailsPage = () => {
     refetch: refetchShowReportTypes,
   } = useGetShowReportTypesQuery({ PodcastShowId: id! }, { skip: !id });
 
-  const [followShow, { isLoading: isFollowing }] = useFollowShowMutation();
-  const [unFollowShow, { isLoading: isUnFollowing }] =
-    useUnFollowShowMutation();
+  const [followShow] = useFollowShowMutation();
+  const [unFollowShow] = useUnFollowShowMutation();
 
   const [getTrailerAudioUrl] = useLazyGetPodcastPublicSourceQuery();
   useEffect(() => {
@@ -947,7 +941,7 @@ const ShowDetailsPage = () => {
                         <SelectTrigger className="bg-white/5 border-white/10 text-white">
                           <SelectValue placeholder="Select a report type" />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1a1d24] border-white/10 text-white">
+                        <SelectContent className="bg-[#1a1d24] z-[9999] border-white/10 text-white">
                           {showAvailableReportTypes?.ShowReportTypeList.map(
                             (type) => (
                               <SelectItem
@@ -1283,7 +1277,11 @@ const ShowDetailsPage = () => {
           {/* Provider */}
           <div>
             <h3 className="text-gray-400 text-sm mb-2">Release Date</h3>
-            <p className="text-white text-base">{show.ReleaseDate}</p>
+            <p className="text-white text-base">
+              {show.IsReleased
+                ? show.ReleaseDate
+                : `Not Released Yet - Will be release on ${show.ReleaseDate}`}
+            </p>
           </div>
         </div>
 

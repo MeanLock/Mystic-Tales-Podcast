@@ -9,8 +9,12 @@ const CompletedBookingsPage = () => {
     CompletedBooking[]
   >([]);
   // HOOKS
-  const { data: completedBookingsRaw, isLoading: isLoadingCompletedBookings } =
-    useGetCompletedBookingsQuery();
+  const { data: completedBookingsRaw, isFetching: isLoadingCompletedBookings } =
+    useGetCompletedBookingsQuery(undefined, {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    });
 
   useEffect(() => {
     if (isLoadingCompletedBookings || !completedBookingsRaw) {

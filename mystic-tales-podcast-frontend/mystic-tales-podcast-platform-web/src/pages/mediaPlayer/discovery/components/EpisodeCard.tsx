@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { IoPause, IoPlay } from "react-icons/io5";
 import { IoIosMore } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";

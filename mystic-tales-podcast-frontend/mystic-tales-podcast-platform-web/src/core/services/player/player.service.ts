@@ -274,7 +274,7 @@ export const playerApi = appApi.injectEndpoints({
       }),
     }),
 
-    getEpisodeLatestSession: build.query<
+    getEpisodeLatestSession: build.mutation<
       {
         ListenSession: ListenSessionEpisodes | null;
         ListenSessionProcedure: ListenSessionProcedure | null;
@@ -291,7 +291,7 @@ export const playerApi = appApi.injectEndpoints({
       }),
     }),
 
-    getBookingLatestSession: build.query<
+    getBookingLatestSession: build.mutation<
       {
         ListenSession: ListenSessionBookingTracks | null;
         ListenSessionProcedure: ListenSessionProcedure | null;
@@ -319,6 +319,6 @@ export const {
   useUpdatePlayModeMutation,
   useNavigateBookingTrackInProcedureMutation,
   useNavigateEpisodeInProcedureMutation,
-  useLazyGetBookingLatestSessionQuery,
-  useLazyGetEpisodeLatestSessionQuery,
+  useGetBookingLatestSessionMutation,
+  useGetEpisodeLatestSessionMutation,
 } = playerApi;

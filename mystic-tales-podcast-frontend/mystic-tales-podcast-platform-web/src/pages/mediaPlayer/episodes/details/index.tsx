@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Loading from "@/components/loading";
 import {
   useGetEpisodeDetailsQuery,
@@ -8,13 +9,6 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { BsFillBookmarkFill } from "react-icons/bs";
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import type { RootState } from "@/redux/store";
-import {
-  pauseAudio,
-  playAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";

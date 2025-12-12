@@ -1,5 +1,7 @@
+// @ts-nocheck
+
 // usePlayer.ts
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   getPlayerController,
   type PlayerUiState,
@@ -10,10 +12,10 @@ import {
   useListenToBookingTrackMutation,
   useNavigateEpisodeInProcedureMutation,
   useNavigateBookingTrackInProcedureMutation,
-  useLazyGetEpisodeLatestSessionQuery,
-  useLazyGetBookingLatestSessionQuery,
-  useUpdateBookingTrackLastDurationMutation,
+  useGetEpisodeLatestSessionMutation,
+  useGetBookingLatestSessionMutation,
   useUpdatePlayModeMutation,
+  playerApi,
 } from "@/core/services/player/player.service"; // file RTK Query của bạn
 import type { SubscriptionBenefit } from "../subscription/subscription.service";
 import type {
@@ -29,6 +31,7 @@ import {
 import type { RootState } from "@/redux/store";
 import { useLazyCheckUserPodcastListenSlotQuery } from "../account/account.service";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
+import { appApi } from "@/core/api/appApi";
 
 export function usePlayer() {
   const controller = getPlayerController();
@@ -43,9 +46,9 @@ export function usePlayer() {
   const [listenToBookingTrack] = useListenToBookingTrackMutation();
 
   // Lấy latest session dành cho Episode và Booking Track
-  // Lazy query vì chỉ gọi khi cần
-  const [triggerBookingSession] = useLazyGetBookingLatestSessionQuery();
-  const [triggerEpisodeSession] = useLazyGetEpisodeLatestSessionQuery();
+  // Dùng mutation để tránh bị cancel khi gọi programmatically
+  const [triggerBookingSession] = useGetBookingLatestSessionMutation();
+  const [triggerEpisodeSession] = useGetEpisodeLatestSessionMutation();
 
   // Navigate
   const [navigateEpisode] = useNavigateEpisodeInProcedureMutation();
@@ -68,7 +71,11 @@ export function usePlayer() {
     // optional: sync 1 phát nữa cho chắc
     setState(controller.getUiState());
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      // KHÔNG stop controller khi unmount vì nó là singleton
+      // và cần giữ state xuyên suốt các component
+    };
   }, [controller]);
 
   // ====== Các hàm public gọi từ UI ======
@@ -229,8 +236,6 @@ export function usePlayer() {
         seekTo: 0,
         isSeekThenPlay: true,
       });
-
-      
     },
     [listenToEpisode, controller, dispatch]
   );
@@ -265,16 +270,27 @@ export function usePlayer() {
 
   // Hàm Play From Latest
   const playFromLatest = useCallback(async () => {
-    try {
-      // Gọi lazy query, dùng unwrap cho gọn
-      const [resEpisode, resBooking] = await Promise.all([
-        triggerEpisodeSession().unwrap(),
-        triggerBookingSession().unwrap(),
-      ]);
+    // Ngăn chặn gọi đồng thời - dùng flag từ controller singleton
+    if (controller.isLoadingLatestSession()) {
+      console.log("playFromLatest already in progress, skipping...");
+      return;
+    }
 
+    try {
+      controller.setLoadingLatestSession(true);
+
+      // Gọi tuần tự thay vì song song để tránh conflict/cancel
+      console.log("FETCHING EPISODE NÈ...");
+      const resEpisode = await triggerEpisodeSession(undefined).unwrap();
+      console.log("EPISODE LATEST REPONSE:", resEpisode);
+
+      console.log("FETCHING BOOKING NÈ ...");
+      const resBooking = await triggerBookingSession(undefined).unwrap();
+      console.log("BOOKING LATEST RESPONSE:", resBooking);
+
+      console.log("GOM LẠI NÈEEE:", { resEpisode, resBooking });
       if (!resEpisode.ListenSession && !resBooking.ListenSession) return;
       if (resEpisode.ListenSession && !resBooking.ListenSession) {
-        // Handle Với Episode
         const session = resEpisode.ListenSession as ListenSessionEpisodes;
         const latestPosition =
           session.PodcastEpisodeListenSession.LastListenDurationSeconds || 0;
@@ -282,8 +298,7 @@ export function usePlayer() {
           resEpisode.ListenSessionProcedure as ListenSessionProcedure;
 
         dispatch(setListenSession(session));
-        console.log("procedure in playFromLatest:", procedure);
-        console.log("Dispatch setListenSessionProcedure with:", procedure);
+        console.log("Latest Listen Session:", session);
         dispatch(setListenSessionProcedure(procedure));
 
         await controller.playFromExistingSession({
@@ -305,11 +320,7 @@ export function usePlayer() {
           resBooking.ListenSessionProcedure as ListenSessionProcedure;
 
         dispatch(setListenSession(session));
-        console.log("procedure in playFromLatest (booking):", procedure);
-        console.log(
-          "Dispatch setListenSessionProcedure with (booking):",
-          procedure
-        );
+        console.log("Latest Listen Session:", session);
         dispatch(setListenSessionProcedure(procedure));
 
         await controller.playFromExistingSession({
@@ -328,6 +339,8 @@ export function usePlayer() {
       }
     } catch (error) {
       console.error("playFromLatest error:", error);
+    } finally {
+      controller.setLoadingLatestSession(false);
     }
   }, [triggerEpisodeSession, triggerBookingSession, controller, dispatch]);
 

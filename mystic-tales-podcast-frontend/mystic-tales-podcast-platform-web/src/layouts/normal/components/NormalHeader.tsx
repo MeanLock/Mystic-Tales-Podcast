@@ -1,13 +1,8 @@
 import type { RootState } from "@/redux/store";
-import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { RiMoneyDollarCircleFill } from "react-icons/ri";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
-import type { AccountMeUI } from "@/core/types/account";
+
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 const navigationLinks = [
   { name: "Home", href: "/home" },

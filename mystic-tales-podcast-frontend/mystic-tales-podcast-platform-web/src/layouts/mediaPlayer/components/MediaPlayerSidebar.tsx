@@ -3,10 +3,7 @@
 import { FaHeadphones, FaRegCompass } from "react-icons/fa";
 import { FiBarChart2, FiInfo } from "react-icons/fi";
 import { BiCategoryAlt } from "react-icons/bi";
-import {
-  IoIosSearch,
-  IoMdMicrophone,
-} from "react-icons/io";
+import { IoIosSearch, IoMdMicrophone } from "react-icons/io";
 import { RiHistoryLine } from "react-icons/ri";
 import { RiSlideshow4Line } from "react-icons/ri";
 import { CgMediaPodcast } from "react-icons/cg";
@@ -192,13 +189,13 @@ const navItems = [
             name: "Subscriptions",
             to: "/media-player/management/transactions/subscriptions",
           },
-          {
-            icon: <MdOutlineSubscriptions color="#fff" size={9} />,
-            iconActive: <MdOutlineSubscriptions color="#aae339" size={9} />,
-            iconWhenSmall: <MdOutlineSubscriptions color="#333" size={9} />,
-            name: "Subscriptions",
-            to: "/media-player/management/transactions/subscriptions",
-          },
+          // {
+          //   icon: <MdOutlineSubscriptions color="#fff" size={9} />,
+          //   iconActive: <MdOutlineSubscriptions color="#aae339" size={9} />,
+          //   iconWhenSmall: <MdOutlineSubscriptions color="#333" size={9} />,
+          //   name: "Subscriptions",
+          //   to: "/media-player/management/transactions/subscriptions",
+          // },
           {
             icon: <MdOutlineAccountBalanceWallet color="#fff" size={9} />,
             iconActive: (
@@ -252,7 +249,7 @@ const navItems = [
 const MediaPlayerSidebar = () => {
   // STATES
   const user = useSelector((state: RootState) => state.auth.user);
-  const [isResolveLoading, setIsResolveLoading] = useState(false);
+  const [isResolveLoading] = useState(false);
   // Search States
   const [keyword, setKeyword] = useState("");
   const [showSearchSuggestion, setShowSearchSuggestion] = useState(false);
@@ -284,15 +281,8 @@ const MediaPlayerSidebar = () => {
     console.log("Suggestion Keywords Data:", suggestionKeywordData);
     if (suggestionKeywordData) {
       setSuggesstionAutocompleteKeywords(suggestionKeywordData);
-      // Push thêm mockdata vào
-      // setSuggesstionAutocompleteKeywords([
-      //   ...suggestionKeywordData,
-      //   ...mockAutocompleteKeywords,
-      // ]);
     } else {
       setSuggesstionAutocompleteKeywords([]);
-      // Push thêm mockdata vào
-      // setSuggesstionAutocompleteKeywords([...mockAutocompleteKeywords]);
     }
     if (suggestionContentData) {
       setSuggesstionContents(suggestionContentData.SearchItemList);
@@ -463,6 +453,7 @@ const MediaPlayerSidebar = () => {
                   isSuggestionKeywordLoading || isSuggestionContentLoading
                 }
                 onKeywordClick={(kw) => {
+                  setKeyword(kw);
                   navigate(
                     `/media-player/search?keyword=${encodeURIComponent(kw)}`
                   );

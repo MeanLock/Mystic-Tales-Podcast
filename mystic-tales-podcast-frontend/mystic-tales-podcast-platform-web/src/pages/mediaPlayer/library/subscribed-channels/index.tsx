@@ -4,7 +4,6 @@ import { resolveFiles } from "@/core/utils/fileResolver.util";
 import { useEffect, useState } from "react";
 import ChannelCard from "./components/ChannelCard";
 import { useGetSubscribedContentsQuery } from "@/core/services/subscription/subscription.service";
-import { is } from "zod/v4/locales";
 import FireLoading from "@/components/fireLoading";
 
 import {

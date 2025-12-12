@@ -1,23 +1,18 @@
 import { IoPause, IoPlay } from "react-icons/io5";
-import { IoIosMore } from "react-icons/io";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  playAudio,
-  pauseAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
+
 import type { RootState } from "@/redux/store";
-import PlayingWaveSmall from "@/components/playingWaveSmall/PlayWaveSmall";
+
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 import { usePlayer } from "@/core/services/player/usePlayer";
 import { useNavigate } from "react-router-dom";
 import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
-import { getPlayerController } from "@/core/services/player/playerController";
-import type { ListenSessionEpisodes } from "@/core/types/audio";
-import { useEffect, useState } from "react";
+
+import { useEffect} from "react";
 import { useGetPodcastPublicSourceQuery } from "@/core/services/file/file.service";
-import type { EpisodeFromAPI } from "@/core/types/episode";
+
 import type { EpisodeFromTrending } from "@/core/types/feed";
 
 const getTimeRange = (releaseDate: string) => {
@@ -35,11 +30,11 @@ const getTimeRange = (releaseDate: string) => {
   }
 };
 
-const formatAudioLength = (lengthInSeconds: number) => {
-  const minutes = Math.floor(lengthInSeconds / 60);
-  const seconds = lengthInSeconds % 60;
-  return `${minutes}m ${seconds}s`;
-};
+// const formatAudioLength = (lengthInSeconds: number) => {
+//   const minutes = Math.floor(lengthInSeconds / 60);
+//   const seconds = lengthInSeconds % 60;
+//   return `${minutes}m ${seconds}s`;
+// };
 
 const calculateProgressPercentage = (
   latestPosition: number,
@@ -62,7 +57,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
     state: playerUiState,
   } = usePlayer();
 
-  const controller = getPlayerController();
+  // const controller = getPlayerController();
 
   // Use state from usePlayer hook for reactive updates
   const state = playerUiState;
@@ -72,7 +67,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
   const [triggerCheckListenSlot] = useLazyCheckUserPodcastListenSlotQuery();
   const navigate = useNavigate();
 
-  const { data: fileData, isLoading: isLoadingFile } =
+  const { data: fileData } =
     useGetPodcastPublicSourceQuery(
       { FileKey: episode.MainImageFileKey! },
       {

@@ -2,10 +2,6 @@ import type { RootState } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { IoPlay } from "react-icons/io5";
 import PlayingWave from "@/components/playingWave/PlayWave";
-import {
-  pauseAudio,
-  playAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
 import { MoreHorizontalIcon, Save } from "lucide-react";
 import { useState } from "react";
 import {
@@ -113,7 +109,6 @@ export function renderDescriptionHTML(description: string | null) {
 
 const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   const dispatch = useDispatch();
-  const player = useSelector((state: RootState) => state.player);
   const user = useSelector((state: RootState) => state.auth.user);
 
   const {
@@ -131,7 +126,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   const [isEpisodeAlreadyReported, setIsEpisodeAlreadyReported] =
     useState(false);
 
-  const [fetchBenefits, { isFetching: isFetchingBenefits }] =
+  const [fetchBenefits] =
     useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
   const [triggerCheckListenSlot] = useLazyCheckUserPodcastListenSlotQuery();
 
@@ -147,8 +142,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
 
   const [reportEpisode, { isLoading: isReportingEpisode }] =
     useReportEpisodeMutation();
-  const [saveEpisode, { isLoading: isSavingEpisode }] =
-    useSaveEpisodeMutation();
+  const [saveEpisode] = useSaveEpisodeMutation();
 
   // Auto-check if episode is already reported when data loads
   useEffect(() => {
@@ -160,88 +154,6 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
       }
     }
   }, [episodeAvailableReportTypes, isEpisodeAvailableReportTypesLoading]);
-
-  // Handle play episode
-  // const handlePlayEpisode = async (episodeId: string) => {
-  //   console.log("Playing episode:", episodeId);
-  //   try {
-  //     const benefits = await fetchBenefits({
-  //       PodcastEpisodeId: episodeId,
-  //     }).unwrap();
-  //     console.log("API Benefits response:", benefits);
-  //     console.log("Benefits data:", benefits);
-
-  //     // Normalize benefit list from different possible response shapes
-  //     const benefitList =
-  //       benefits.CurrentPodcastSubscriptionRegistrationBenefitList;
-  //     if (benefitList && benefitList.length > 0) {
-  //       const hasNonQuota = benefitList.some(
-  //         (s: any) => s?.Id === 1 || s?.Name === "Non-Quota Listening"
-  //       );
-
-  //       if (hasNonQuota) {
-  //         dispatch(
-  //           playAudio({
-  //             sourceType: "SpecifyShowEpisodes",
-  //             audioId: episodeId,
-  //           })
-  //         );
-  //       } else {
-  //         if (user?.PodcastListenSlot === 0) {
-  //           dispatch(
-  //             setError({
-  //               message: "You have no listen slots left.",
-  //               autoClose: 10,
-  //             })
-  //           );
-  //           return;
-  //         } else {
-  //           dispatch(
-  //             playAudio({
-  //               sourceType: "SpecifyShowEpisodes",
-  //               audioId: episodeId,
-  //             })
-  //           );
-  //         }
-  //       }
-  //     } else {
-  //       if (!user) {
-  //         dispatch(
-  //           setError({
-  //             message: "You need to login first to play an episode!",
-  //             autoClose: 10,
-  //           })
-  //         );
-  //         return;
-  //       }
-  //       if (user?.PodcastListenSlot > 0) {
-  //         dispatch(
-  //           playAudio({
-  //             sourceType: "SpecifyShowEpisodes",
-  //             audioId: episodeId,
-  //           })
-  //         );
-  //       } else {
-  //         dispatch(
-  //           setError({
-  //             message: "You have no listen slots left.",
-  //             autoClose: 10,
-  //           })
-  //         );
-  //         return;
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching benefits:", error);
-  //     dispatch(
-  //       setError({
-  //         message:
-  //           "Unable to verify your subscription benefits. Please try again.",
-  //         autoClose: 10,
-  //       })
-  //     );
-  //   }
-  // };
 
   const navigate = useNavigate();
 
@@ -394,6 +306,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   return (
     <div
       key={episode.Id}
+      onClick={() => navigate(`/media-player/episodes/details/${episode.Id}`)}
       className="px-12 flex h-28 items-center gap-10 p-2 rounded-lg hover:bg-white/10 transition-colors group cursor-pointer"
     >
       <div className="relative aspect-square h-full bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
@@ -417,7 +330,10 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
           uiState.currentAudio && uiState.currentAudio?.id === episode.Id ? (
             <div className="absolute inset-0 flex bg-black/30 items-center justify-center">
               <div
-                onClick={() => handlePlayPauseEpisode(episode.Id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePlayPauseEpisode(episode.Id);
+                }}
                 className="p-3 rounded-full bg-mystic-green flex items-center justify-center hover:bg-mystic-green"
               >
                 <PlayingWave />
@@ -426,7 +342,10 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
           ) : (
             <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
               <div
-                onClick={() => handlePlayPauseEpisode(episode.Id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePlayPauseEpisode(episode.Id);
+                }}
                 className="p-2 rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green"
               >
                 <IoPlay size={25} color="#ffffff" />
@@ -436,7 +355,10 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
         ) : (
           <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
             <div
-              onClick={() => handlePlayPauseEpisode(episode.Id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePlayPauseEpisode(episode.Id);
+              }}
               className="p-2 rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green"
             >
               <IoPlay size={25} color="#ffffff" />

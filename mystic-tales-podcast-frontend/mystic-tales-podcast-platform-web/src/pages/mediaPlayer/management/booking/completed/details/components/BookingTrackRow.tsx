@@ -1,13 +1,7 @@
 import { usePlayer } from "@/core/services/player/usePlayer";
 import type { CompletedBookingTrack } from "@/core/types/booking";
-import {
-  pauseAudio,
-  playAudio,
-} from "@/redux/slices/mediaPlayerSlice/mediaPlayerSlice";
-import type { RootState } from "@/redux/store";
-import { FaPlay } from "react-icons/fa";
 import { IoPause, IoPlay } from "react-icons/io5";
-import { useDispatch, useSelector } from "react-redux";
+
 
 const formatAudioLength = (lengthInSeconds: number) => {
   const hour = Math.floor(lengthInSeconds / 3600);
@@ -30,10 +24,7 @@ const BookingTrackRow = ({
   track: CompletedBookingTrack;
   index: number;
 }) => {
-  const dispatch = useDispatch();
-  const player = useSelector((state: RootState) => state.player);
-
-  const { playBookingTrack } = usePlayer();
+  const { playBookingTrack, pause, state: uiState } = usePlayer();
   const handlePlayAudio = () => {
     playBookingTrack({
       bookingId: track.BookingId,
@@ -63,10 +54,10 @@ const BookingTrackRow = ({
         {/* <div className="p-2 rounded-full bg-white/20 hover:bg-white/60 transition-all duration-500 hover:scale-105 flex items-center justify-center">
           <IoPlay size={17} />
         </div> */}
-        {player.playMode.playStatus === "play" &&
-        player.currentAudio?.Id === track.Id ? (
+        {uiState.isPlaying && uiState.currentAudio &&
+        uiState.currentAudio.id === track.Id ? (
           <div
-            onClick={() => dispatch(pauseAudio())}
+            onClick={() => pause()}
             className="p-2 rounded-full bg-white/20 hover:bg-white/60 transition-all duration-500 hover:scale-105 flex items-center justify-center"
           >
             <IoPause size={17} />

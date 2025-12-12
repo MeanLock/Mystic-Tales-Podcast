@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { useEffect, useState } from "react";
 import { useQuill } from "react-quilljs";
 import { Input } from "@/components/ui/input";

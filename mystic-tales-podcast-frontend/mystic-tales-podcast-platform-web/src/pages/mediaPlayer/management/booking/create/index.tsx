@@ -102,7 +102,6 @@ const CreateBookingPage = () => {
   // Khi người dùng chọn một Podcast Buddies, gọi API để lấy chi tiết Podcaster
   const {
     data: selectedPodcastBuddyDetails,
-    isLoading: isLoadingSelectedPodcastBuddyDetails,
   } = useGetPodcastBuddyDetailsQuery(
     { AccountId: selectedBuddy?.Id! },
     { skip: !selectedBuddy }

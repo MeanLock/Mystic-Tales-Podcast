@@ -1,4 +1,4 @@
-import type { EpisodeDetailsUI, EpisodeUI } from "@/core/types/episode";
+import type { EpisodeUI } from "@/core/types/episode";
 import { FaHeadphones } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
