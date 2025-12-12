@@ -1,19 +1,17 @@
-// @ts-nocheck
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
-import type { ChannelDetailsUI } from "@/core/types/channel";
-import type { ShowUI } from "@/core/types/show";
+import type {
+  ChannelDetailsFromApi,
+  ChannelDetailsUI,
+} from "@/core/types/channel";
+import type { ShowFromAPI, ShowUI } from "@/core/types/show";
 import Autoplay from "embla-carousel-autoplay";
 import { useEffect, useState } from "react";
 import { IoIosArrowBack } from "react-icons/io";
-import {
-  IoHeartOutline,
-  IoHeartSharp,
-  IoPaperPlane,
-} from "react-icons/io5";
+import { IoHeartOutline, IoHeartSharp, IoPaperPlane } from "react-icons/io5";
 
 import {
   Dialog,
@@ -54,6 +52,7 @@ import type {
   PodcastSubscriptionCycleTypePriceType,
   SubscriptionDetails,
 } from "@/core/types/subscription";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 const ACCENT = "#aee339";
 
@@ -96,38 +95,38 @@ export function renderDescriptionHTML(description: string | null) {
   return html.trim();
 }
 
-const ChannelFileConfig: FileResolveConfig[] = [
-  {
-    path: "Channel.BackgroundImageFileKey",
-    output: "Channel.BackgroundImageUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "Channel.MainImageFileKey",
-    output: "Channel.ImageUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "Channel.Podcaster.MainImageFileKey",
-    output: "Channel.Podcaster.ImageUrl",
-    type: "AccountPublic",
-  },
-  {
-    path: "Channel.ShowList[].MainImageFileKey",
-    output: "Channel.ShowList[].ImageUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "Channel.ShowList[].TrailerAudioFileKey",
-    output: "Channel.ShowList[].TrailerAudioUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "Channel.ShowList[].Podcaster.MainImageFileKey",
-    output: "Channel.ShowList[].Podcaster.ImageUrl",
-    type: "AccountPublic",
-  },
-];
+// const ChannelFileConfig: FileResolveConfig[] = [
+//   {
+//     path: "Channel.BackgroundImageFileKey",
+//     output: "Channel.BackgroundImageUrl",
+//     type: "PodcastPublic",
+//   },
+//   {
+//     path: "Channel.MainImageFileKey",
+//     output: "Channel.ImageUrl",
+//     type: "PodcastPublic",
+//   },
+//   {
+//     path: "Channel.Podcaster.MainImageFileKey",
+//     output: "Channel.Podcaster.ImageUrl",
+//     type: "AccountPublic",
+//   },
+//   {
+//     path: "Channel.ShowList[].MainImageFileKey",
+//     output: "Channel.ShowList[].ImageUrl",
+//     type: "PodcastPublic",
+//   },
+//   {
+//     path: "Channel.ShowList[].TrailerAudioFileKey",
+//     output: "Channel.ShowList[].TrailerAudioUrl",
+//     type: "PodcastPublic",
+//   },
+//   {
+//     path: "Channel.ShowList[].Podcaster.MainImageFileKey",
+//     output: "Channel.ShowList[].Podcaster.ImageUrl",
+//     type: "AccountPublic",
+//   },
+// ];
 
 const formatVND = (n: number) =>
   n.toLocaleString("vi-VN", { maximumFractionDigits: 0 });
@@ -161,7 +160,7 @@ interface CurrentSubscription {
 type ShowMaps = {
   CategoryId: number;
   Name: string;
-  Shows: ShowUI[];
+  Shows: ShowFromAPI[];
 };
 
 const RenderSubscriptionSection = ({
@@ -242,7 +241,9 @@ const ChannelDetailsPage = () => {
 
   // STATES
   const [isFileResolving, setIsFileResolving] = useState(false);
-  const [channel, setChannel] = useState<ChannelDetailsUI | null>(null);
+  const [channel, setChannel] = useState<
+    ChannelDetailsFromApi["Channel"] | null
+  >(null);
   const [shows, setShows] = useState<ShowMaps[]>([]);
   const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] =
     useState(false);
@@ -255,8 +256,16 @@ const ChannelDetailsPage = () => {
   // HOOKS
   const dispatch = useDispatch();
   // Lấy Channel Details
-  const { data: channelRaw, isLoading: isChannelDetailLoading } =
-    useGetChannelDetailsQuery({ ChannelId: id! }, { skip: !id });
+  const { data: channelRaw, isFetching: isChannelDetailLoading } =
+    useGetChannelDetailsQuery(
+      { ChannelId: id! },
+      {
+        skip: !id,
+        refetchOnMountOrArgChange: true,
+        refetchOnFocus: true,
+        refetchOnReconnect: true,
+      }
+    );
 
   // Lấy gói subscription đang được active cho Channel này
   const {
@@ -269,7 +278,7 @@ const ChannelDetailsPage = () => {
   // Nếu chưa đăng ký thì trả về null
   const {
     data: customerRegistrationInfo,
-    isLoading: isCustomerRegistrationInfoLoading,
+    isFetching: isCustomerRegistrationInfoLoading,
     refetch: refetchCustomerRegistrationInfo,
   } = useGetCustomerRegistrationInfoFromChannelQuery(
     { PodcastChannelId: id! },
@@ -285,10 +294,8 @@ const ChannelDetailsPage = () => {
     useUnsubscribePodcastSubscriptionMutation();
 
   // Mutation follow/unfollow channel
-  const [favoriteChannel, { isLoading: isFavoriteChannelLoading }] =
-    useFavoriteChannelMutation();
-  const [unfavoriteChannel, { isLoading: isUnfavoriteChannelLoading }] =
-    useUnfavoriteChannelMutation();
+  const [favoriteChannel] = useFavoriteChannelMutation();
+  const [unfavoriteChannel] = useUnfavoriteChannelMutation();
 
   const navigate = useNavigate();
 
@@ -353,17 +360,17 @@ const ChannelDetailsPage = () => {
       setIsFollowed(channelRaw?.Channel.IsFavoritedByCurrentUser || false);
 
       // Resolve Channel Files
-      const { resolvedData: resolvedChannel } = await resolveFiles(
-        channelRaw,
-        ChannelFileConfig
-      );
+      // const { resolvedData: resolvedChannel } = await resolveFiles(
+      //   channelRaw,
+      //   ChannelFileConfig
+      // );
 
-      const data = resolvedChannel as unknown as ChannelDetailsUI;
+      // const data = resolvedChannel as unknown as ChannelDetailsUI;
 
       // ---- 3) Lọc shows published và gom theo category ----
-      const publishedShows: ShowUI[] = (data.Channel.ShowList ?? []).filter(
-        (show) => show?.CurrentStatus?.Id === 3
-      );
+      const publishedShows: ShowFromAPI[] = (
+        channelRaw.Channel.ShowList ?? []
+      ).filter((show) => show?.CurrentStatus?.Id === 3);
 
       // group shows by PodcastCategory.Id
       const groupsMap = new Map<number, ShowMaps>();
@@ -386,7 +393,7 @@ const ChannelDetailsPage = () => {
       const groupedShows: ShowMaps[] = Array.from(groupsMap.values());
 
       // ---- 4) Set state & log ----
-      setChannel(data);
+      setChannel(channelRaw.Channel as ChannelDetailsFromApi["Channel"]);
       setCurrentSubscription(
         activeSubscriptionRaw?.PodcastSubscription as SubscriptionDetails
       );
@@ -592,41 +599,45 @@ const ChannelDetailsPage = () => {
       <div className="w-full h-[400px] flex flex-col items-center justify-center px-10 relative overflow-hidden">
         {/* blurred background image (covers full area) */}
         <img
-          src={channel?.Channel.ImageUrl}
-          alt={channel?.Channel.Name}
+          src={channel.BackgroundImageFileKey}
           className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110 opacity-80"
           style={{
             // ensure it fills and the blur is strong; scale a bit to avoid edges showing
             transformOrigin: "center",
           }}
         />
+        <AutoResolveImage
+          FileKey={channel.BackgroundImageFileKey}
+          type="PodcastPublicSource"
+          className="absolute inset-0 w-full h-full object-cover filter blur-[2px] scale-110 opacity-80"
+        />
 
         <div className="w-full h-full flex-1 flex flex-col items-center justify-center gap-2 relative z-10">
-          <img
-            src={channel?.Channel.ImageUrl}
-            alt={channel?.Channel.Name}
+          <AutoResolveImage
+            FileKey={channel?.MainImageFileKey}
+            type="PodcastPublicSource"
             className="aspect-square w-[175px] object-cover rounded-md shadow-[10px_10px_20px_#0000008c]"
           />
 
           <p className="text-white text-2xl font-bold mt-5">
-            {channel?.Channel.Name.toUpperCase()}
+            {channel?.Name.toUpperCase()}
           </p>
           <div
             className="text-[#d9d9d9] text-center text-sm font-md w-1/3 overflow-hidden line-clamp-3"
             dangerouslySetInnerHTML={{
-              __html: renderDescriptionHTML(channel?.Channel.Description),
+              __html: renderDescriptionHTML(channel?.Description),
             }}
           />
 
           <div className="text-xs flex items-center justify-center gap-2 text-[#d9d9d9] font-semibold overflow-ellipsis line-clamp-1">
             <p className="hover:text-mystic-green hover:underline cursor-pointer">
-              {channel?.Channel.PodcastCategory.Name.toUpperCase()}
+              {channel?.PodcastCategory.Name.toUpperCase()}
             </p>{" "}
             •{" "}
             <p className="hover:text-mystic-green hover:underline cursor-pointer">
-              {channel?.Channel.PodcastSubCategory.Name.toUpperCase()}
+              {channel?.PodcastSubCategory.Name.toUpperCase()}
             </p>{" "}
-            • <p>{channel?.Channel.ShowCount.toLocaleString()} shows</p>
+            • <p>{channel?.ShowCount.toLocaleString()} shows</p>
           </div>
 
           <div className="absolute w-10 h-10 z-20 top-7 right-0 flex items-center justify-center p-2 rounded-full bg-white/20">
@@ -672,7 +683,7 @@ const ChannelDetailsPage = () => {
         )}
       </div>
       <div className="w-full p-8 flex flex-col">
-        {shows.map((group, index) => (
+        {shows.map((group) => (
           <div className="w-full flex flex-col">
             <div className="w-full flex items-center justify-between">
               <p className="font-bold text-3xl text-white">

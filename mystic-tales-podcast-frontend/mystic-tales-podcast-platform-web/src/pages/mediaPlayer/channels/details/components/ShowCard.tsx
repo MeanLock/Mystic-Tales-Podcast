@@ -1,19 +1,21 @@
-// @ts-nocheck
-
-import type { ChannelUI } from "@/core/types/channel";
-import type { ShowUI } from "@/core/types/show";
-import { MdOutlinePodcasts } from "react-icons/md";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import type { ShowFromAPI } from "@/core/types/show";
 
 interface ShowCardProps {
-  show: ShowUI;
+  show: ShowFromAPI;
 }
 
 const ShowCard = ({ show }: ShowCardProps) => {
   return (
     <div className="w-full flex flex-col gap-3 transition-all duration-500 ease-out hover:-translate-y-2 cursor-pointer">
       <div className="w-full relative">
-        <img
+        {/* <img
           src={show.ImageUrl}
+          className="aspect-square w-full object-cover rounded-md"
+        /> */}
+        <AutoResolveImage
+          FileKey={show.MainImageFileKey}
+          type="PodcastPublicSource"
           className="aspect-square w-full object-cover rounded-md"
         />
       </div>
