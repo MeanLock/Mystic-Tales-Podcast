@@ -7,6 +7,7 @@ type BookingHlsOptions = HlsLoadBaseOptions & {
   trackId: string;
 };
 
+
 /**
  * Đảm bảo baseUrl luôn có "/" ở cuối
  */
