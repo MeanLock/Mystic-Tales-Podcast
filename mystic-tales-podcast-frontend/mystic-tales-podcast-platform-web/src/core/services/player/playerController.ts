@@ -2,8 +2,8 @@
 
 // playerController.ts
 import Hls from "hls.js";
-import { loadEpisodeHls } from "./hlsEpisodeLoader";
-import { loadBookingHls } from "./hlsBookingLoader";
+import { loadEpisodeHls } from "./hlsEpisodeLoaderNew";
+import { loadBookingHls } from "./hlsBookingLoaderNew";
 import { BASE_URL } from "@/core/api/appApi";
 import { getAccessToken } from "@/core/api/appApi/token";
 import type {
