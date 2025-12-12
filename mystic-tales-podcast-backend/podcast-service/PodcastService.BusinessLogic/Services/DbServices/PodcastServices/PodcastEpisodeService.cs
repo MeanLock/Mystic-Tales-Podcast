@@ -1130,7 +1130,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == (int)RoleEnum.Customer)
                 {
-                    episodeQuery = episodeQuery.Where(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.ReleaseDate != null);
+                    episodeQuery = episodeQuery.Where(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.IsReleased != null);
                 }
 
                 var episode = await episodeQuery.FirstOrDefaultAsync();
@@ -5960,6 +5960,43 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         };
 
                         await _podcastEpisodeStatusTrackingGenericRepository.CreateAsync(newStatusTracking);
+
+                        // kiểm tra show còn episode nào đang published không, nếu không và show đang ở trạng thái ready to release thì chuyển show về trạng thái Draft
+                        var show = await _podcastShowGenericRepository.FindByIdAsync(
+                            id: episode.PodcastShowId,
+                            includeFunc: ps => ps.Include(ps => ps.PodcastEpisodes)
+                                                    .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
+                                                  .Include(ps => ps.PodcastShowStatusTrackings)
+                        );
+                        if (show != null)
+                        {
+                            var publishedEpisodesCount = show.PodcastEpisodes.Count(pe =>
+                                pe.Id != episode.Id &&
+                                (pe.PodcastEpisodeStatusTrackings
+                                .OrderByDescending(pet => pet.CreatedAt)
+                                .FirstOrDefault()
+                                .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published || pe.PodcastEpisodeStatusTrackings
+                                .OrderByDescending(pet => pet.CreatedAt)
+                                .FirstOrDefault()
+                                .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
+                            );
+
+                            var currentShowStatusTracking = show.PodcastShowStatusTrackings
+                                .OrderByDescending(pst => pst.CreatedAt)
+                                .FirstOrDefault();
+
+                            if (publishedEpisodesCount == 0 &&
+                                currentShowStatusTracking.PodcastShowStatusId == (int)PodcastShowStatusEnum.ReadyToRelease)
+                            {
+                                var newShowStatusTracking = new PodcastShowStatusTracking
+                                {
+                                    PodcastShowId = show.Id,
+                                    PodcastShowStatusId = (int)PodcastShowStatusEnum.Draft,
+                                };
+
+                                await _podcastShowStatusTrackingGenericRepository.CreateAsync(newShowStatusTracking);
+                            }
+                        }
                     }
                     await transaction.CommitAsync();
 
@@ -7114,6 +7151,43 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                             episode.TotalSave = 0;
                             episode.ListenCount = 0;
                             await _podcastEpisodeGenericRepository.UpdateAsync(episode.Id, episode);
+
+                            // kiểm tra show còn episode nào đang published không, nếu không và show đang ở trạng thái ready to release thì chuyển show về trạng thái Draft
+                            var show = await _podcastShowGenericRepository.FindByIdAsync(
+                            id: episode.PodcastShowId,
+                            includeFunc: ps => ps.Include(ps => ps.PodcastEpisodes)
+                                                    .ThenInclude(pe => pe.PodcastEpisodeStatusTrackings)
+                                                  .Include(ps => ps.PodcastShowStatusTrackings)
+                            );
+                            if (show != null)
+                            {
+                                var publishedEpisodesCount = show.PodcastEpisodes.Count(pe =>
+                                    pe.Id != episode.Id &&
+                                    (pe.PodcastEpisodeStatusTrackings
+                                    .OrderByDescending(pet => pet.CreatedAt)
+                                    .FirstOrDefault()
+                                    .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published || pe.PodcastEpisodeStatusTrackings
+                                    .OrderByDescending(pet => pet.CreatedAt)
+                                    .FirstOrDefault()
+                                    .PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.TakenDown)
+                                );
+
+                                var currentShowStatusTracking = show.PodcastShowStatusTrackings
+                                    .OrderByDescending(pst => pst.CreatedAt)
+                                    .FirstOrDefault();
+
+                                if (publishedEpisodesCount == 0 &&
+                                    currentShowStatusTracking.PodcastShowStatusId == (int)PodcastShowStatusEnum.ReadyToRelease)
+                                {
+                                    var newShowStatusTracking = new PodcastShowStatusTracking
+                                    {
+                                        PodcastShowId = show.Id,
+                                        PodcastShowStatusId = (int)PodcastShowStatusEnum.Draft,
+                                    };
+
+                                    await _podcastShowStatusTrackingGenericRepository.CreateAsync(newShowStatusTracking);
+                                }
+                            }
                         }
                     }
 
@@ -7654,17 +7728,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
 
                 // remove NonQuotaListening condition if not checking for it
-                    if (isNonQuotaListeningCheck == false && listenPermissionConditions.Contains(PodcastSubscriptionBenefitEnum.NonQuotaListening))
-                    {
-                        listenPermissionConditions.Remove(PodcastSubscriptionBenefitEnum.NonQuotaListening);
-                    }
+                if (isNonQuotaListeningCheck == false && listenPermissionConditions.Contains(PodcastSubscriptionBenefitEnum.NonQuotaListening))
+                {
+                    listenPermissionConditions.Remove(PodcastSubscriptionBenefitEnum.NonQuotaListening);
+                }
 
                 // in ra tất cả các điều kiện cần thiết
                 foreach (var condition in listenPermissionConditions)
                 {
                     Console.WriteLine("Listen permission condition: " + condition.ToString());
                 }
-                if( listenPermissionConditions.Count == 0)
+                if (listenPermissionConditions.Count == 0)
                 {
                     return new ListenPermissionResult
                     {

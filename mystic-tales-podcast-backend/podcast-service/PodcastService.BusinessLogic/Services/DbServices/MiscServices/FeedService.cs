@@ -2999,6 +2999,63 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
         #endregion
 
         #region Keyword search Entry Point
+        // public async Task<List<string>> GetPodcastKeywordSearchSuggestionsAsync(string prefix, int limit = 10)
+        // {
+        //     try
+        //     {
+        //         // Normalize prefix: lowercase + trim
+        //         prefix = prefix.ToLower().Trim();
+
+        //         if (string.IsNullOrWhiteSpace(prefix))
+        //         {
+        //             throw new ArgumentException("Prefix cannot be empty");
+        //         }
+
+        //         var cacheKey = "query:search_keyword:podcast_content:customer";
+
+        //         // Get existing cache
+        //         var cache = await _redisSharedCacheService.KeyGetAsync<CustomerRecordedPodcastContentSearchKeywordCache>(cacheKey);
+
+        //         if (cache == null || cache.KeywordList == null || !cache.KeywordList.Any())
+        //         {
+        //             return new List<string>();
+        //         }
+
+        //         // Find matching keywords
+        //         var matchingKeywords = cache.KeywordList
+        //             .Where(x =>
+        //             {
+        //                 // split khoảng trắng và kiểm tra từng từ có bắt đầu bằng prefix không
+        //                 var words = x.Keyword.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        //                 return words.Any(w => w.StartsWith(prefix));
+        //             })
+        //             .OrderByDescending(x => x.SearchCount)
+        //             .Take(limit)
+        //             .Select(x => x.Keyword)
+        //             .ToList();
+
+        //         // nếu hoàn toàn không có thì kiểm tra contain thông thường 
+        //         if (!matchingKeywords.Any())
+        //         {
+        //             matchingKeywords = cache.KeywordList
+        //                 .Where(x => x.Keyword.Contains(prefix))
+        //                 .OrderByDescending(x => x.SearchCount)
+        //                 .Take(limit)
+        //                 .Select(x => x.Keyword)
+        //                 .ToList();
+        //         }
+
+        //         Console.WriteLine($"[KeywordSearchSuggestions] Found {matchingKeywords.Count} suggestions for prefix '{prefix}'");
+
+        //         return matchingKeywords;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"[KeywordSearchSuggestions] ERROR: {ex.Message}\n{ex.StackTrace}");
+        //         throw new Exception("Error while fetching podcast keyword search suggestions: " + ex.Message);
+        //     }
+        // }
+
         public async Task<List<string>> GetPodcastKeywordSearchSuggestionsAsync(string prefix, int limit = 10)
         {
             try
@@ -3021,11 +3078,22 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     return new List<string>();
                 }
 
-                // Find matching keywords
-                var matchingKeywords = cache.KeywordList
+                // Pre-compute normalized keywords một lần (OPTIMIZATION KEY!)
+                var keywordTuples = cache.KeywordList
+                    .Select(x => (
+                        Keyword: x.Keyword,
+                        Normalized: RemoveVietnameseTones(x.Keyword),
+                        SearchCount: x.SearchCount
+                    ))
+                    .ToList();
+
+                // Pre-normalize prefix một lần
+                var normalizedPrefix = RemoveVietnameseTones(prefix);
+
+                // FALLBACK 1: StartsWith có dấu
+                var matchingKeywords = keywordTuples
                     .Where(x =>
                     {
-                        // split khoảng trắng và kiểm tra từng từ có bắt đầu bằng prefix không
                         var words = x.Keyword.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                         return words.Any(w => w.StartsWith(prefix));
                     })
@@ -3033,6 +3101,43 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                     .Take(limit)
                     .Select(x => x.Keyword)
                     .ToList();
+
+                // FALLBACK 2: Contains có dấu
+                if (!matchingKeywords.Any())
+                {
+                    matchingKeywords = keywordTuples
+                        .Where(x => x.Keyword.Contains(prefix))
+                        .OrderByDescending(x => x.SearchCount)
+                        .Take(limit)
+                        .Select(x => x.Keyword)
+                        .ToList();
+                }
+
+                // FALLBACK 3: StartsWith không dấu
+                if (!matchingKeywords.Any())
+                {
+                    matchingKeywords = keywordTuples
+                        .Where(x =>
+                        {
+                            var words = x.Normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            return words.Any(w => w.StartsWith(normalizedPrefix));
+                        })
+                        .OrderByDescending(x => x.SearchCount)
+                        .Take(limit)
+                        .Select(x => x.Keyword)
+                        .ToList();
+                }
+
+                // FALLBACK 4: Contains không dấu
+                if (!matchingKeywords.Any())
+                {
+                    matchingKeywords = keywordTuples
+                        .Where(x => x.Normalized.Contains(normalizedPrefix))
+                        .OrderByDescending(x => x.SearchCount)
+                        .Take(limit)
+                        .Select(x => x.Keyword)
+                        .ToList();
+                }
 
                 Console.WriteLine($"[KeywordSearchSuggestions] Found {matchingKeywords.Count} suggestions for prefix '{prefix}'");
 
@@ -3043,6 +3148,32 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 Console.WriteLine($"[KeywordSearchSuggestions] ERROR: {ex.Message}\n{ex.StackTrace}");
                 throw new Exception("Error while fetching podcast keyword search suggestions: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Loại bỏ dấu tiếng Việt và chuyển về chữ thường
+        /// </summary>
+        private string RemoveVietnameseTones(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return text;
+
+            var normalizedString = text.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder(normalizedString.Length);
+
+            foreach (var c in normalizedString)
+            {
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            var result = stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+            result = result.Replace('đ', 'd').Replace('Đ', 'D');
+
+            return result.ToLower();
         }
         public async Task<bool> UpdatePodcastFeedContentKeywordSearchCacheAsync(string keyword)
         {

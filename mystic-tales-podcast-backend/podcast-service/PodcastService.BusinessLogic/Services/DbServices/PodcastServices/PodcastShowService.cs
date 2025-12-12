@@ -300,7 +300,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 if (roleId == null || roleId == 1)
                 {
-                    showsQuery = showsQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && ps.ReleaseDate != null);
+                    showsQuery = showsQuery.Where(ps => ps.PodcastShowStatusTrackings.OrderByDescending(pst => pst.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && ps.IsReleased != null);
                 }
                 var showList = await showsQuery.ToListAsync();
 
@@ -671,7 +671,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1)
                 {
-                    query = query.Where(pc => pc.PodcastShowStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && pc.ReleaseDate != null); // đã đăng và có ngày phát hành (có thể là đã phát hành hoặc sắp phát hành)
+                    query = query.Where(pc => pc.PodcastShowStatusTrackings.OrderByDescending(pct => pct.CreatedAt).FirstOrDefault().PodcastShowStatusId == (int)PodcastShowStatusEnum.Published && pc.IsReleased != null); // đã đăng và có ngày phát hành (có thể là đã phát hành hoặc sắp phát hành)
                 }
                 var show = await query.FirstOrDefaultAsync();
 
@@ -736,7 +736,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 if (requestedAccount == null || requestedAccount.RoleId == null || requestedAccount.RoleId == 1)
                 {
-                    episodeByShowIdQuery = episodeByShowIdQuery.Where(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.ReleaseDate != null);
+                    episodeByShowIdQuery = episodeByShowIdQuery.Where(pe => pe.PodcastEpisodeStatusTrackings.OrderByDescending(pet => pet.CreatedAt).FirstOrDefault().PodcastEpisodeStatusId == (int)PodcastEpisodeStatusEnum.Published && pe.IsReleased != null);
                 }
 
                 var episodeList = await episodeByShowIdQuery.ToListAsync();

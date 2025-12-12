@@ -482,7 +482,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/listen
         [HttpPost("{PodcastEpisodeId}/listen")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId, [FromBody] EpisodeListenRequestDTO listenRequestDTO,[FromQuery] Guid? continue_listen_session_id = null, [FromQuery] string? Token = null)
+        public async Task<IActionResult> RecordEpisodeListen(Guid PodcastEpisodeId, [FromBody] EpisodeListenRequestDTO listenRequestDTO, [FromQuery] Guid? continue_listen_session_id = null, [FromQuery] string? Token = null)
         {
             string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
             string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
@@ -524,7 +524,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         // /api/podcast-service/api/episodes/listen-sessions/navigate
         [HttpPost("listen-sessions/navigate")]
         [Authorize(Policy = "Customer.BasicAccess")]
-        public async Task<IActionResult> NavigateEpisodeListenSession([FromBody] EpisodeListenSessionNavigateRequestDTO episodeListenSessionNavigateRequestDTO,[FromQuery] ListenSessionNavigateTypeEnum listen_session_navigate_type)
+        public async Task<IActionResult> NavigateEpisodeListenSession([FromBody] EpisodeListenSessionNavigateRequestDTO episodeListenSessionNavigateRequestDTO, [FromQuery] ListenSessionNavigateTypeEnum listen_session_navigate_type)
         {
             // bắt buộc phải gửi về enum đúng
             if (!Enum.IsDefined(typeof(ListenSessionNavigateTypeEnum), listen_session_navigate_type))
@@ -564,7 +564,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         }
 
         // /api/podcast-service/api/episodes/{PodcastEpisodeId}/hls-encryption-key/{KeyId}
-            [HttpGet("{PodcastEpisodeId}/hls-encryption-key/{KeyId}")]
+        [HttpGet("{PodcastEpisodeId}/hls-encryption-key/{KeyId}")]
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetEpisodeHlsEncryptionKeyFileUrl(Guid PodcastEpisodeId, Guid KeyId, [FromQuery] string? Token = null)
         {
@@ -648,7 +648,7 @@ namespace PodcastService.API.Controllers.BaseControllers
                     actualCategory = category.ToString()
                 });
             }
-            
+
             var url = await _fileIOHelper.GeneratePresignedUrlAsync(FileKey);
 
             if (account.RoleId == (int)RoleEnum.Customer)
@@ -741,7 +741,7 @@ namespace PodcastService.API.Controllers.BaseControllers
         [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetLatestPodcastEpisodeListenSession()
         {
-                        string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
+            string deviceTokenHeader = Request.Headers["X-DeviceInfo-Token"];
             string authorizedDeviceToken = HttpContext.User.FindFirst("device_info_token")?.Value;
             if (string.IsNullOrEmpty(deviceTokenHeader))
             {
