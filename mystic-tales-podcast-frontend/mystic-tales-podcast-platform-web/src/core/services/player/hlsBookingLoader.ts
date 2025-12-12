@@ -14,6 +14,7 @@ function normalizeBaseUrl(url: string): string {
   return url.endsWith("/") ? url : `${url}/`;
 }
 
+// AAAAA
 export async function loadBookingHls(
   opts: BookingHlsOptions
 ): Promise<Hls | null> {
