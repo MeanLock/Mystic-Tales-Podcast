@@ -28,36 +28,49 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
   const [showResolvePopup, setShowResolvePopup] = React.useState(false)
   const [violationLevel, setViolationLevel] = React.useState(account.ViolationLevel.toString())
   const [loading, setLoading] = React.useState(false)
+  const [loadingPdf, setLoadingPdf] = React.useState(false)
   const { startPolling } = useSagaPolling({
     timeoutSeconds: 15,
     intervalSeconds: 0.5,
   })
-  const fetchData = async () => {
+
+  useEffect(() => {
     const profile = account.PodcasterProfile;
     if (!profile) {
       setPodcasterProfile(null);
       return;
     }
     setPodcasterProfile(profile);
-    if (profile.CommitmentDocumentFileKey !== null) {
-      try {
+  }, [account.Id])
 
-        const commitment = await getBuddyCommitment(adminAxiosInstance, profile.CommitmentDocumentFileKey);
-        if (commitment.success) {
-          setBuddyCommitment(commitment.data.FileUrl);
-        } else {
-          console.error('API Error:', commitment.message);
-        }
-      } catch (error) {
-        console.error('Lỗi khi fetch customer accounts:', error);
+  const handleViewPdf = async () => {
+    if (!podcasterProfile?.CommitmentDocumentFileKey) {
+      toast.error('No document available');
+      return;
+    }
+
+    if (buddyCommitment) {
+      setShowPdf(true);
+      return;
+    }
+
+    setLoadingPdf(true);
+    try {
+      const commitment = await getBuddyCommitment(adminAxiosInstance, podcasterProfile.CommitmentDocumentFileKey);
+      if (commitment.success) {
+        setBuddyCommitment(commitment.data.FileUrl);
+        setShowPdf(true);
+      } else {
+        console.error('API Error:', commitment.message);
+        toast.error('Failed to load document');
       }
+    } catch (error) {
+      console.error('Error fetching commitment document:', error);
+      toast.error('Failed to load document');
+    } finally {
+      setLoadingPdf(false);
     }
   }
-
-  useEffect(() => {
-    fetchData()
-
-  }, [account.Id])
 
   const handleVerify = async (isVerify: boolean) => {
     const alert = confirmAlert(`Are you sure to ${isVerify ? "verify" : "reject"} this Podcaster Apply?`);
@@ -230,23 +243,22 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
           )}
           <div className="podcaster-profile__document-info">
             <div className="podcaster-profile__document-name">Commitment Document</div>
-            {buddyCommitment ? (
+            {podcasterProfile.CommitmentDocumentFileKey ? (
               <>
                 {!showPdf ? (
                   <span>
                     <button
-                      onClick={() => setShowPdf(true)}
+                      onClick={handleViewPdf}
                       className="podcaster-profile__document-link"
+                      disabled={loadingPdf}
                     >
-                      View Document
+                      {loadingPdf ? 'Loading...' : 'View Document'}
                     </button>
                   </span>
-
                 ) : (
                   <div className="mt-2 border rounded-lg overflow-hidden">
-
                     <iframe
-                      src={buddyCommitment}
+                      src={buddyCommitment || ''}
                       title="Commitment Document"
                       width="100%"
                       height="600px"
@@ -258,8 +270,6 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
               <span className="text-sm italic">No document available</span>
             )}
           </div>
-
-
         </div>
 
 
