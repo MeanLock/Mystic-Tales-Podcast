@@ -207,8 +207,7 @@ const ShowDetailsPage = () => {
   const dispatch = useDispatch();
 
   // Mutations
-  const [subscribeShow] =
-    useSubscribePodcastSubscriptionMutation();
+  const [subscribeShow] = useSubscribePodcastSubscriptionMutation();
   const [unsubscribeShow, { isLoading: isUnsubscribing }] =
     useUnsubscribePodcastSubscriptionMutation();
   const [ratingShow, { isLoading: isRating }] = useRatingShowMutation();
@@ -222,10 +221,8 @@ const ShowDetailsPage = () => {
     refetch: refetchShowDetails,
   } = useGetShowDetailsQuery({ PodcastShowId: id! }, { skip: !id });
 
-  const {
-    data: activeSubscriptionRaw,
-    refetch: refetchActiveSubscription,
-  } = useGetActiveShowSubscriptionQuery({ ShowId: id! }, { skip: !id });
+  const { data: activeSubscriptionRaw, refetch: refetchActiveSubscription } =
+    useGetActiveShowSubscriptionQuery({ ShowId: id! }, { skip: !id });
 
   const {
     data: customerRegistrationInfo,
@@ -242,8 +239,7 @@ const ShowDetailsPage = () => {
   } = useGetShowReportTypesQuery({ PodcastShowId: id! }, { skip: !id });
 
   const [followShow] = useFollowShowMutation();
-  const [unFollowShow] =
-    useUnFollowShowMutation();
+  const [unFollowShow] = useUnFollowShowMutation();
 
   const [getTrailerAudioUrl] = useLazyGetPodcastPublicSourceQuery();
   useEffect(() => {
@@ -945,7 +941,7 @@ const ShowDetailsPage = () => {
                         <SelectTrigger className="bg-white/5 border-white/10 text-white">
                           <SelectValue placeholder="Select a report type" />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1a1d24] border-white/10 text-white">
+                        <SelectContent className="bg-[#1a1d24] z-[9999] border-white/10 text-white">
                           {showAvailableReportTypes?.ShowReportTypeList.map(
                             (type) => (
                               <SelectItem
