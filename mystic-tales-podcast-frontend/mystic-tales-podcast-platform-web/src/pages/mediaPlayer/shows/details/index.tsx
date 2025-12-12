@@ -941,7 +941,7 @@ const ShowDetailsPage = () => {
                         <SelectTrigger className="bg-white/5 border-white/10 text-white">
                           <SelectValue placeholder="Select a report type" />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#1a1d24] z-[9999] border-white/10 text-white">
+                        <SelectContent className="z-[9999] bg-[#1a1d24] border-white/10 text-white">
                           {showAvailableReportTypes?.ShowReportTypeList.map(
                             (type) => (
                               <SelectItem
@@ -1033,6 +1033,7 @@ const ShowDetailsPage = () => {
           ))}
         </div>
       </div>
+
       {/* Ratings & Reviews Section */}
       <div className="px-12 w-full">
         <div className="flex items-center gap-4 mb-8 mt-16">
