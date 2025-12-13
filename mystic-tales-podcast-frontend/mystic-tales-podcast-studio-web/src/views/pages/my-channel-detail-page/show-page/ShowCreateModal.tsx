@@ -157,7 +157,7 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
     const handleSave = async () => {
         let payload;
         if (authSlice.user?.ViolationLevel > 0) {
-            toast.error('Your account is currently under violation. You cannot create a new show.');
+            toast.error('Your account is currently under violation. .');
             return;
         }
         try {
