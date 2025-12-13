@@ -1,11 +1,12 @@
-// hlsEpisodeLoader.ts
+// hlsBookingLoader.ts
 import Hls from "hls.js";
 import type { HlsLoadBaseOptions } from "@/core/types/hls";
 
-type EpisodeHlsOptions = HlsLoadBaseOptions & {
-  episodeId: string;
-  token: string; // Token /listen
+type BookingHlsOptions = HlsLoadBaseOptions & {
+  bookingId: number;
+  trackId: string;
 };
+
 
 /**
  * Đảm bảo baseUrl luôn có "/" ở cuối
@@ -14,24 +15,16 @@ function normalizeBaseUrl(url: string): string {
   return url.endsWith("/") ? url : `${url}/`;
 }
 
-/**
- * Load HLS cho EPISODE:
- * - Tạo Hls instance (hoặc dùng native HLS của Safari)
- * - Map key/segment theo episode API
- * - Sau khi audio sẵn sàng:
- *    + Seek đến seekTo (nếu có)
- *    + Play hoặc pause tùy isSeekThenPlay
- * - Trạng thái seeking/buffering chủ yếu do <audio> events quản lý
- */
-export async function loadEpisodeHls(
-  opts: EpisodeHlsOptions
+// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+export async function loadBookingHls(
+  opts: BookingHlsOptions
 ): Promise<Hls | null> {
   const {
     audio,
     baseUrl,
     fileKey,
-    episodeId,
-    token,
+    bookingId,
+    trackId,
     accessToken,
     seekTo,
     isSeekThenPlay = true,
@@ -41,7 +34,7 @@ export async function loadEpisodeHls(
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   // Thêm timestamp để bust cache mỗi lần load
   const cacheBuster = Date.now();
-  const playlistUrl = `${normalizedBaseUrl}api/podcast-service/api/episodes/hls-playlist/get-file-data/${fileKey}?_t=${cacheBuster}`;
+  const playlistUrl = `${normalizedBaseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/hls-playlist/get-file-data/${fileKey}?_t=${cacheBuster}`;
 
   const performSeekAndPlay = async () => {
     if (typeof seekTo === "number" && seekTo > 0) {
@@ -64,6 +57,8 @@ export async function loadEpisodeHls(
 
     return new Promise((resolve) => {
       const onLoadedMetadata = async () => {
+        audio.removeEventListener("loadedmetadata", onLoadedMetadata);
+
         const doWork = async () => {
           if (audio.readyState >= 2) {
             await performSeekAndPlay();
@@ -76,14 +71,11 @@ export async function loadEpisodeHls(
           }
         };
 
-        audio.removeEventListener("loadedmetadata", onLoadedMetadata);
         await doWork();
-        // Buffering state sẽ được quản lý bởi audio events (canplay/playing)
         onBufferingChange?.(false);
         resolve(null);
       };
 
-      // Bắt đầu: coi như đang buffering
       onBufferingChange?.(true);
       audio.addEventListener("loadedmetadata", onLoadedMetadata);
     });
@@ -104,19 +96,14 @@ export async function loadEpisodeHls(
       xhr.open = (method: string, u: string, async?: boolean) => {
         let next = u;
 
-        // alert("Đang gọi lấy key/segment HLS...");
-        console.log("Token:", token);
-        // KEY: pattern UUID ở cuối
         if (/[0-9a-fA-F-]{36}$/.test(u)) {
           const kid = u.split("/").pop();
-          next = `${normalizedBaseUrl}api/podcast-service/api/episodes/${episodeId}/hls-encryption-key/${kid}?token=${token}`;
-        }
-        // SEGMENT: .ts trong folder PodcastEpisodes
-        else if (u.includes(".ts")) {
-          const idx = url.lastIndexOf("main_files/PodcastEpisodes/");
+          next = `${normalizedBaseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/${trackId}/hls-encryption-key/${kid}`;
+        } else if (u.includes(".ts")) {
+          const idx = url.lastIndexOf("main_files/Bookings/");
           if (idx !== -1) {
             const segmentFileKey = url.substring(idx);
-            next = `${normalizedBaseUrl}api/podcast-service/api/episodes/hls-segment/get-file-data/${segmentFileKey}`;
+            next = `${normalizedBaseUrl}api/booking-management-service/api/bookings/${bookingId}/booking-podcast-tracks/hls-segment/get-file-data/${segmentFileKey}`;
           }
         }
 
@@ -165,26 +152,23 @@ export async function loadEpisodeHls(
       finishResolve();
     };
 
-    // Khi bắt đầu load HLS: bật buffering
     onBufferingChange?.(true);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
 
     h.on(Hls.Events.ERROR, (_, data) => {
-      console.error("[HLS EPISODE] Error:", data);
+      console.error("[HLS BOOKING] Error:", data);
 
-      // Nếu bị stall do thiếu buffer => đang buffering
       if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
         onBufferingChange?.(true);
       }
 
       if (data.fatal) {
-        // Fatal: tắt spinner hiện tại, có thể implement UI error ngoài này
         onBufferingChange?.(false);
 
         if (retryCount < MAX_RETRIES) {
           retryCount++;
           console.warn(
-            `[HLS EPISODE] Retrying... (${retryCount}/${MAX_RETRIES})`
+            `[HLS BOOKING] Retrying... (${retryCount}/${MAX_RETRIES})`
           );
 
           // Exponential backoff: 1s, 2s, 3s
@@ -199,7 +183,7 @@ export async function loadEpisodeHls(
           }, 1000 * retryCount);
         } else {
           console.error(
-            `[HLS EPISODE] Max retries (${MAX_RETRIES}) reached. Stopping.`
+            `[HLS BOOKING] Max retries (${MAX_RETRIES}) reached. Stopping.`
           );
         }
       }
