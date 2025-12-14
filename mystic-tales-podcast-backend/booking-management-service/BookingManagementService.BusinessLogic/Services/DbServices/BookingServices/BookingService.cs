@@ -4272,11 +4272,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                                         .GetActiveProcedureByCustomerIdAsync(booking.AccountId);
 
                                     if (customerListenSessionProcedure != null
-                                        && !customerListenSessionProcedure.IsCompleted
-                                        && customerListenSessionProcedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                                        && !customerListenSessionProcedure.IsCompleted && customerListenSessionProcedure.SourceDetail.Booking != null)
                                     {
-                                        await _customerListenSessionProcedureCachingService
-                                            .MarkProcedureCompletedAsync(booking.AccountId, customerListenSessionProcedure.Id, true);
+                                        if(customerListenSessionProcedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                                        await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, customerListenSessionProcedure.Id, true);
                                     }
                                 }
                             }

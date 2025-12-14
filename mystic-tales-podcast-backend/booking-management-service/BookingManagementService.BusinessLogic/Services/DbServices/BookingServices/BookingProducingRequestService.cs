@@ -274,7 +274,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
                         foreach (var procedure in customerListenSessionCacheKey.Values)
                         {
-                            if (!procedure.IsCompleted)
+                            if (!procedure.IsCompleted && procedure.SourceDetail.Booking != null)
                             {
                                 bool belongsToThisBooking = booking.BookingProducingRequests
                                     .Any(bp => bp.Id == procedure.SourceDetail.Booking.BookingProducingRequestId);
@@ -417,7 +417,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
                         foreach (var procedure in customerListenSessionCacheKey.Values)
                         {
-                            if (!procedure.IsCompleted)
+                            if (!procedure.IsCompleted && procedure.SourceDetail.Booking != null)
                             {
                                 bool belongsToThisBooking = booking.BookingProducingRequests
                                     .Any(bp => bp.Id == procedure.SourceDetail.Booking.BookingProducingRequestId);
@@ -1108,9 +1108,10 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         var customerListenSessionCacheKey = await _customerListenSessionProcedureCachingService.GetAllProceduresByCustomerIdAsync(booking.AccountId);
                         foreach (var procedure in customerListenSessionCacheKey.Values)
                         {
-                            if (!procedure.IsCompleted && procedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                            if (!procedure.IsCompleted && procedure.SourceDetail.Booking != null )
                             {
-                                await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
+                                if(procedure.SourceDetail.Booking.BookingProducingRequestId == producingRequest.Id)
+                                    await _customerListenSessionProcedureCachingService.MarkProcedureCompletedAsync(booking.AccountId, procedure.Id, true);
                             }
                         }
                     }
