@@ -1,4 +1,0 @@
-{
-    "appService.defaultWebAppToDeploy": "/subscriptions/0a090cfd-5d0f-48a1-8583-e1e364382fa7/resourceGroups/ASP.NET_Web_Api_Hosting_Group_0/providers/Microsoft.Web/sites/SurveyTalkServiceBE",
-    "appService.deploySubpath": "."
-}
