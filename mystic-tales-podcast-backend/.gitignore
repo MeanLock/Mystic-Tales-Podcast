@@ -11,3 +11,10 @@
 
 **/audio-separation-ai-service/outputs/*.mp3    
 **/audio-separation-ai-service/model/*.ckpt
+
+# AppSettings files for all backend services
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.Development.json.example
+!**/appsettings.Production.json.example
+
