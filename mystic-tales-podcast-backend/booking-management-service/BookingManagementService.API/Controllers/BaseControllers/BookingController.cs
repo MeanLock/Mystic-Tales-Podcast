@@ -989,5 +989,20 @@ namespace BookingManagementService.API.Controllers.BaseControllers
         //        BookingPodcastTrack = result
         //    });
         //}
+        [HttpGet("holding")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> GetAllHoldingBookings()
+        {
+            var result = await _bookingService.GetAllHoldingBookingsAsync();
+
+            //if (result == null || !result.Any())
+            //{
+            //    return NotFound("No bookings found.");
+            //}
+            return Ok(new
+            {
+                BookingList = result
+            });
+        }
     }
 }

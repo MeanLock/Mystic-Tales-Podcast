@@ -3258,6 +3258,45 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 throw new HttpRequestException("Error occurred while querying booking transaction, error: " + ex.Message);
             }
         }
+        private async Task<BookingTransactionDTO?> GetBookingHoldingTransactionByBookingId(int bookingId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "bookingTransaction",
+                            QueryType = "findall",
+                            EntityType = "BookingTransaction",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    BookingId = bookingId,
+                                    TransactionTypeId = (int)TransactionTypeEnum.BookingDeposit,
+                                    TransactionStatusId = (int)TransactionStatusEnum.Success
+                                }
+
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
+
+                return result.Results?["bookingTransaction"] is JArray bookingArray && bookingArray.Count > 0
+                    ? bookingArray.First.ToObject<BookingTransactionDTO>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while querying booking transaction");
+                throw new HttpRequestException("Error occurred while querying booking transaction, error: " + ex.Message);
+            }
+        }
         private async Task<List<BookingTransactionDTO>?> GetSystemBookingTransactionByBookingId(int bookingId)
         {
             try
@@ -4278,6 +4317,95 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                 }
             }
         }
+        public async Task<List<BookingHoldingListItemResponseDTO>> GetAllHoldingBookingsAsync()
+        {
+            try
+            {
+                var bookings = await _bookingGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(b => b.BookingStatusTrackings))
+                    .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId != null &&
+                    !new[] {
+                        (int)BookingStatusEnum.QuotationRequest,
+                        (int)BookingStatusEnum.QuotationDealing,
+                        (int)BookingStatusEnum.QuotationCancelled,
+                        (int)BookingStatusEnum.QuotationRejected,
+                        (int)BookingStatusEnum.Completed,
+                        (int)BookingStatusEnum.CancelledManually,
+                        (int)BookingStatusEnum.CancelledAutomatically
+                    }.Contains(b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId))
+                    .ToListAsync();
+                if(bookings.IsNullOrEmpty())
+                {
+                    return new List<BookingHoldingListItemResponseDTO>();
+                }
+                var result = new List<BookingHoldingListItemResponseDTO>();
+
+                foreach (var booking in bookings)
+                {
+                    var holdingAmount = await GetBookingHoldingTransactionByBookingId(booking.Id);
+                    var account = await _accountCachingService.GetAccountStatusCacheById(booking.AccountId);
+                    var podcaster = await _accountCachingService.GetAccountStatusCacheById(booking.PodcastBuddyId);
+                    AccountStatusCache? assignedStaff = null;
+                    if (booking.AssignedStaffId != null)
+                    {
+                        assignedStaff = await _accountCachingService.GetAccountStatusCacheById(booking.AssignedStaffId.Value);
+                    }
+                    result.Add(new BookingHoldingListItemResponseDTO
+                    {
+                        Id = booking.Id,
+                        Title = booking.Title,
+                        Description = booking.Description,
+                        Account = new AccountSnippetResponseDTO
+                        {
+                            Id = account.Id,
+                            FullName = account.FullName,
+                            Email = account.Email,
+                            MainImageFileKey = account.MainImageFileKey
+                        },
+                        PodcastBuddy = new AccountSnippetResponseDTO
+                        {
+                            Id = podcaster.Id,
+                            FullName = podcaster.PodcasterProfileName,
+                            Email = podcaster.Email,
+                            MainImageFileKey = podcaster.MainImageFileKey
+                        },
+                        AssignedStaff = assignedStaff != null ? new AccountSnippetResponseDTO
+                        {
+                            Id = assignedStaff.Id,
+                            FullName = assignedStaff.FullName,
+                            Email = assignedStaff.Email,
+                            MainImageFileKey = assignedStaff.MainImageFileKey
+                        } : null,
+                        DeadlineDays = booking.DeadlineDays,
+                        Price = booking.Price,
+                        Deadline = booking.Deadline,
+                        DemoAudioFileKey = booking.DemoAudioFileKey,
+                        BookingManualCancelledReason = booking.BookingManualCancelledReason,
+                        BookingAutoCancelledReason = booking.BookingAutoCancelReason,
+                        CreatedAt = booking.CreatedAt,
+                        UpdatedAt = booking.UpdatedAt,
+                        CurrentStatus = new BookingStatusResponseDTO
+                        {
+                            Id = booking.BookingStatusTrackings
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Id,
+                            Name = booking.BookingStatusTrackings
+                                .OrderByDescending(bst => bst.CreatedAt)
+                                .FirstOrDefault().BookingStatus.Name
+                        },
+                        HoldingAmount = holdingAmount != null ? holdingAmount.Amount : 0m
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching all holding bookings");
+                throw new HttpRequestException("Retreive holding bookings failed. Error: " + ex.Message);
+            }
+        }
         private async Task<List<AccountDTO>?> GetStaffList()
         {
             try
@@ -4412,27 +4540,30 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("Insufficient balance to process deposit payment");
                     }
 
-                    var paymentRequestData = new JObject
-                    {
-                        { "BookingId", parameter.BookingId },
-                        { "AccountId", parameter.AccountId },
-                        { "Amount", depositAmount },
-                        { "TransactionTypeId", (int)TransactionTypeEnum.BookingDeposit }
-                    };
-                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
-                        requestData: paymentRequestData,
-                        sagaInstanceId: null,
-                        messageName: "booking-transaction-deposit-payment-flow");
-                    var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+                    //var paymentRequestData = new JObject
+                    //{
+                    //    { "BookingId", parameter.BookingId },
+                    //    { "AccountId", parameter.AccountId },
+                    //    { "Amount", depositAmount },
+                    //    { "TransactionTypeId", (int)TransactionTypeEnum.BookingDeposit }
+                    //};
+                    //var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                    //    topic: KafkaTopicEnum.PaymentProcessingDomain,
+                    //    requestData: paymentRequestData,
+                    //    sagaInstanceId: null,
+                    //    messageName: "booking-transaction-deposit-payment-flow");
+                    //var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
 
                     await transaction.CommitAsync();
 
+                    var newRequestData = command.RequestData;
+                    newRequestData["Amount"] = depositAmount;
+                    newRequestData["TransactionTypeId"] = (int)TransactionTypeEnum.BookingDeposit;
                     var newResponseData = command.RequestData;
                     var newMessageName = command.MessageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.BookingManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: newRequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,
@@ -4513,28 +4644,32 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         throw new Exception("Insufficient balance to process deposit payment");
                     }
 
-                    var paymentRequestData = new JObject
-                    {
-                        { "BookingId", parameter.BookingId },
-                        { "AccountId", parameter.AccountId },
-                        { "PodcasterId", booking.PodcastBuddyId },
-                        { "Amount", payTheRestAmount },
-                        { "TransactionTypeId", (int)TransactionTypeEnum.BookingPayTheRest }
-                    };
-                    var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
-                        topic: KafkaTopicEnum.PaymentProcessingDomain,
-                        requestData: paymentRequestData,
-                        sagaInstanceId: null,
-                        messageName: "booking-final-payment-flow");
-                    var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
+                    //var paymentRequestData = new JObject
+                    //{
+                    //    { "BookingId", parameter.BookingId },
+                    //    { "AccountId", parameter.AccountId },
+                    //    { "PodcasterId", booking.PodcastBuddyId },
+                    //    { "Amount", payTheRestAmount },
+                    //    { "TransactionTypeId", (int)TransactionTypeEnum.BookingPayTheRest }
+                    //};
+                    //var startSagaTriggerMessage = _kafkaProducerService.PrepareStartSagaTriggerMessage(
+                    //    topic: KafkaTopicEnum.PaymentProcessingDomain,
+                    //    requestData: paymentRequestData,
+                    //    sagaInstanceId: null,
+                    //    messageName: "booking-final-payment-flow");
+                    //var result = await _messagingService.SendSagaMessageAsync(startSagaTriggerMessage);
 
                     await transaction.CommitAsync();
 
+                    var newRequestData = command.RequestData;
+                    newRequestData["PodcasterId"] = booking.PodcastBuddyId;
+                    newRequestData["Amount"] = depositAmount;
+                    newRequestData["TransactionTypeId"] = (int)TransactionTypeEnum.BookingPayTheRest;
                     var newResponseData = command.RequestData;
                     var newMessageName = command.MessageName + ".success";
                     var sagaEventMessage = _kafkaProducerService.PrepareSagaEventMessage(
                         topic: KafkaTopicEnum.BookingManagementDomain,
-                        requestData: command.RequestData,
+                        requestData: newRequestData,
                         responseData: newResponseData,
                         sagaInstanceId: command.SagaInstanceId,
                         flowName: command.FlowName,

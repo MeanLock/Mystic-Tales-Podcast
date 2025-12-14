@@ -61,6 +61,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
         private readonly IGenericRepository<PodcastSubscriptionCycleTypePrice> _podcastSubscriptionCycleTypePriceGenericRepository;
         private readonly IGenericRepository<PodcastSubscriptionBenefitMapping> _podcastSubscriptionBenefitMappingGenericRepository;
         private readonly IGenericRepository<PodcastSubscriptionRegistration> _podcastSubscriptionRegistrationGenericRepository;
+        private readonly IGenericRepository<PodcastSubscriptionBenefit> _podcastSubscriptionBenefitGenericRepository;
 
         private readonly AccountCachingService _accountCachingService;
         private readonly ILogger<PodcastSubscriptionService> _logger;
@@ -75,6 +76,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             IGenericRepository<PodcastSubscriptionCycleTypePrice> podcastSubscriptionCycleTypePriceGenericRepository,
             IGenericRepository<PodcastSubscriptionBenefitMapping> podcastSubscriptionBenefitMappingGenericRepository,
             IGenericRepository<PodcastSubscriptionRegistration> podcastSubscriptionRegistrationGenericRepository,
+            IGenericRepository<PodcastSubscriptionBenefit> podcastSubscriptionBenefitGenericRepository,
             AccountCachingService accountCachingService,
             ILogger<PodcastSubscriptionService> logger,
             KafkaProducerService kafkaProducerService,
@@ -87,6 +89,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             _podcastSubscriptionCycleTypePriceGenericRepository = podcastSubscriptionCycleTypePriceGenericRepository;
             _podcastSubscriptionBenefitMappingGenericRepository = podcastSubscriptionBenefitMappingGenericRepository;
             _podcastSubscriptionRegistrationGenericRepository = podcastSubscriptionRegistrationGenericRepository;
+            _podcastSubscriptionBenefitGenericRepository = podcastSubscriptionBenefitGenericRepository;
             _accountCachingService = accountCachingService;
             _logger = logger;
             _kafkaProducerService = kafkaProducerService;
@@ -220,6 +223,22 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     //        throw new Exception($"Podcast Channel with Id: {parameter.PodcastChannelId} is not elligle for creating subscription");
                     //    }
                     //}
+                    if(parameter.PodcastShowId == null && parameter.PodcastChannelId == null)
+                    {
+                        throw new Exception("Either PodcastShowId or PodcastChannelId must be provided to create a Podcast Subscription.");
+                    }
+                    if(parameter.PodcastShowId != null && parameter.PodcastChannelId != null)
+                    {
+                        throw new Exception("Only one of PodcastShowId or PodcastChannelId can be provided to create a Podcast Subscription, not both.");
+                    }
+                    if(parameter.PodcastSubscriptionBenefitMappingList == null || parameter.PodcastSubscriptionBenefitMappingList.Count == 0)
+                    {
+                        throw new Exception("At least one Podcast Subscription Benefit must be provided to create a Podcast Subscription.");
+                    }
+                    if(parameter.PodcastSubscriptionCycleTypePriceList == null || parameter.PodcastSubscriptionCycleTypePriceList.Count == 0)
+                    {
+                        throw new Exception("At least one Podcast Subscription Cycle Type Price must be provided to create a Podcast Subscription.");
+                    }
 
                     var newPodcastSubscription = new PodcastSubscription
                     {
@@ -252,6 +271,12 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     }
                     foreach (var benefitId in parameter.PodcastSubscriptionBenefitMappingList)
                     {
+                        var benefitExists = await _podcastSubscriptionBenefitGenericRepository.FindAll()
+                            .AnyAsync(bm => bm.Id == benefitId);
+                        if (!benefitExists)
+                        {
+                            throw new Exception($"There are no benefit with this id: {benefitId}");
+                        }
                         var newBenefitMapping = new PodcastSubscriptionBenefitMapping
                         {
                             PodcastSubscriptionId = podcastSubscription.Id,
@@ -4644,6 +4669,75 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
             }
             return totalIncome;
         }
+        public async Task<List<PodcastSubscriptionHoldingListItemResponseDTO>> GetHoldingPodcastSubscriptionListAsync()
+        {
+            try
+            {
+                var registrations = await _podcastSubscriptionRegistrationGenericRepository.FindAll(
+                    includeFunc: function => function
+                    .Include(psr => psr.PodcastSubscription)
+                    .Include(psr => psr.SubscriptionCycleType))
+                    .Where(psr => psr.CancelledAt == null && !psr.IsIncomeTaken)
+                    .ToListAsync();
+                var holdingList = new List<PodcastSubscriptionHoldingListItemResponseDTO>();
+                foreach (var registration in registrations)
+                {
+                    var transaction = await GetHoldingPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                    if (transaction == null)
+                        continue;
+                    var holdingAmount = transaction.OrderByDescending(transaction => transaction.CreatedAt).First().Amount;
+                    var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+                    holdingList.Add(new PodcastSubscriptionHoldingListItemResponseDTO
+                    {
+                        Id = registration.PodcastSubscription.Id,
+                        Name = registration.PodcastSubscription.Name,
+                        Description = registration.PodcastSubscription.Description,
+                        PodcastShowId = registration.PodcastSubscription.PodcastShowId,
+                        PodcastChannelId = registration.PodcastSubscription.PodcastChannelId,
+                        IsActive = registration.PodcastSubscription.IsActive,
+                        CurrentVersion = registration.PodcastSubscription.CurrentVersion,
+                        DeletedAt = registration.PodcastSubscription.DeletedAt,
+                        CreatedAt = registration.PodcastSubscription.CreatedAt,
+                        UpdatedAt = registration.PodcastSubscription.UpdatedAt,
+                        PodcastSubscriptionRegistrationList = new List<PodcastSubscriptionRegistrationHoldingListItemResponseDTO>
+                        {
+                            new PodcastSubscriptionRegistrationHoldingListItemResponseDTO
+                            {
+                                Id = registration.Id,
+                                Account = new AccountSnippetResponseDTO
+                                {
+                                    Id = account.Id,
+                                    FullName = account.FullName,
+                                    Email = account.Email,
+                                    MainImageFileKey = account.MainImageFileKey
+                                },
+                                CurrentVersion = registration.CurrentVersion,
+                                IsAcceptNewestVersionSwitch = registration.IsAcceptNewestVersionSwitch,
+                                PodcastSubscriptionId = registration.PodcastSubscriptionId,
+                                SubscriptionCycleType = new SubscriptionCycleTypeDTO
+                                {
+                                    Id = registration.SubscriptionCycleType.Id,
+                                    Name = registration.SubscriptionCycleType.Name
+                                },
+                                LastPaidAt = registration.LastPaidAt,
+                                IsIncomeTaken = registration.IsIncomeTaken,
+                                CancelledAt = registration.CancelledAt,
+                                CreatedAt = registration.CreatedAt,
+                                UpdatedAt = registration.UpdatedAt,
+                                HoldingAmount = holdingAmount
+                            }
+                        }
+                    });
+                }
+
+                return holdingList;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while GetHoldingPodcastSubscriptionListAsync");
+                throw new HttpRequestException($"Error while retrieving Holding Podcast Subscription List. Error: {ex.Message}");
+            }
+        }
         public async Task<PodcastChannelDTO?> GetPodcastChannelWithAccountId(int accountId, Guid podcastChannelId)
         {
             try
@@ -5158,6 +5252,44 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 {
                                     PodcastSubscriptionRegistrationId = registrationId,
                                     TransactionTypeId =(int)TransactionTypeEnum.SystemSubscriptionIncome,
+                                    TransactionStatusId = (int)TransactionStatusEnum.Success
+                                }
+                            })
+                        }
+                    }
+                };
+                var result = await _httpServiceQueryClient.ExecuteBatchAsync("TransactionService", batchRequest);
+
+                return result.Results?["podcastSubscriptionTransaction"] is JArray podcastSubscriptionTransactionArray && podcastSubscriptionTransactionArray.Count >= 0
+                    ? podcastSubscriptionTransactionArray.ToObject<List<PodcastSubscriptionTransactionDTO>>()
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("\n" + ex.StackTrace + "\n");
+                _logger.LogError(ex, "Error occurred while query podcast subscription transactions with RegistrationId: {RegistrationId}", registrationId);
+                throw new HttpRequestException($"Error while querying Podcast Subscription Transactions for RegistrationId: {registrationId}. Error: {ex.Message}");
+            }
+        }
+        public async Task<List<PodcastSubscriptionTransactionDTO>?> GetHoldingPodcastSubscriptionTransactionByRegistrationId(Guid registrationId)
+        {
+            try
+            {
+                var batchRequest = new BatchQueryRequest
+                {
+                    Queries = new List<BatchQueryItem>
+                    {
+                        new BatchQueryItem
+                        {
+                            Key = "podcastSubscriptionTransaction",
+                            QueryType = "findall",
+                            EntityType = "PodcastSubscriptionTransaction",
+                            Parameters = JObject.FromObject(new
+                            {
+                                where = new
+                                {
+                                    PodcastSubscriptionRegistrationId = registrationId,
+                                    TransactionTypeId =(int)TransactionTypeEnum.CustomerSubscriptionCyclePayment,
                                     TransactionStatusId = (int)TransactionStatusEnum.Success
                                 }
                             })

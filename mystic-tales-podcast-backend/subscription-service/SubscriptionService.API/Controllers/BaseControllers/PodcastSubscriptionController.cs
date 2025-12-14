@@ -514,5 +514,15 @@ namespace SubscriptionService.API.Controllers.BaseControllers
                 SagaInstanceId = startSagaTriggerMessage.SagaInstanceId
             });
         }
+        [HttpGet("holding")]
+        [Authorize(Policy = "Admin.BasicAccess")]
+        public async Task<IActionResult> GetHoldingPodcastSubscription()
+        {
+            var podcastSubscription = await _podcastSubscriptionService.GetHoldingPodcastSubscriptionListAsync();
+            return Ok(new
+            {
+                PodcastSubscriptionList = podcastSubscription
+            });
+        }
     }
 }
