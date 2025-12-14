@@ -241,7 +241,7 @@ const StaffForm: React.FC<StaffUpdateProps> = ({ account, onClose }) => {
                 <CFormInput
                   type="text"
                   id="balance"
-                  defaultValue={`${account.Balance || 0} Points`}
+                  defaultValue={`${account.Balance || 0} Coins`}
                   disabled
                   className="account-info__input account-info__input--disabled"
                 />

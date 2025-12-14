@@ -25,7 +25,9 @@ import { EpisodeDetailViewContext } from "."
 import { SmartAudioPlayer } from "@/views/components/common/audio"
 import SequencerTimeline from "./components/SequencerTimeline"
 import SequencerRuler from "./components/SequencerRuler"
-import { buffer } from "stream/consumers"
+import * as signalR from "@microsoft/signalr";
+import { useSelector } from "react-redux"
+import { RootState } from "@/redux/rootReducer"
 interface EpisodeAudioProps {
     initialAudio?: string
 }
@@ -1390,7 +1392,49 @@ const EpisodeAudio: React.FC<EpisodeAudioProps> = ({ initialAudio }) => {
         const tail = base.slice(-Math.floor(room / 2));
         return `${head}...${tail}${ext}`;
     };
+const connectionRef = useRef<signalR.HubConnection | null>(null);
+    const authSlice2 = useSelector((state: RootState) => state.auth);
 
+    const token = authSlice2.token || "";
+    const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
+    useEffect(() => {
+        // Build connection
+        console.log("Setting up SignalR connection...", token);
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(`${REST_API_BASE_URL}/api/podcast-service/hubs/podcast-content-notification`, {
+                accessTokenFactory: () => {
+                    return token;
+                }
+            })
+            .withAutomaticReconnect()
+            .build();
+
+        connectionRef.current = connection;
+
+        // Register events
+        connection.on("PodcastEpisodeAudioProcessingCompletedNotification", async (data) => {
+            console.log("Audio processing :", data);
+
+            if (!data.IsSuccess) {
+                console.error("Audio processing failed:", data.ErrorMessage);
+                return;
+            }
+
+            //alert(`Audio processing completed for Podcast ID: ${data}`);
+            await refreshEpisode?.();
+        });
+
+        // Start connection
+        connection.start()
+            .then(() => console.log("SignalR connected"))
+            .catch(err => console.error("SignalR connection error:", err));
+
+        // Cleanup
+        return () => {
+            connection.stop();
+        };
+    }, []);
     // if (!episodeDetail) {
     //     return (
     //         <div className="flex justify-center items-center h-100">

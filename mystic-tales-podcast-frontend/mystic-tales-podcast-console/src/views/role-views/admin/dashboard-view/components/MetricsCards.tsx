@@ -38,7 +38,7 @@ const createMetric = (
     percentChange: number | undefined,
     period: string
 ): MetricItem => {
-    const formattedValue = value !== undefined ? `${formatValue(value)} Points` : "Loading...";
+    const formattedValue = value !== undefined ? `${formatValue(value)} Coins` : "Loading...";
 
     return {
         title,
