@@ -15,6 +15,6 @@
 # AppSettings files for all backend services
 **/appsettings.json
 **/appsettings.*.json
-!**/appsettings.Development.json.example
-!**/appsettings.Production.json.example
+!**/appsettings.Development.example.json
+!**/appsettings.Production.example.json
 
