@@ -9,7 +9,7 @@ select * from PodcastShow
 select * from PodcastCategory
 select * from PodcastSubCategory
 select * from PodcastShowSubscriptionType
-select * from PodcastEpisode where id = N'01637F78-27A5-4D7F-9EC6-B94CBAA53771'
+select * from PodcastEpisode where id = N'7f6df5fc-fab5-425d-9afd-07ffd8fc8ca6'
 select * from PodcastEpisodeStatusTracking order by createdAt
 select * from PodcastEpisodeLicense
 

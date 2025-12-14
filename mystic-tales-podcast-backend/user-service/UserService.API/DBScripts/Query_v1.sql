@@ -6,6 +6,9 @@ select * from AccountFavoritedPodcastChannel
 select * from AccountFollowedPodcastShow
 select * from AccountSavedPodcastEpisode
 
+Delete from Account where id = 6006
+Delete from PodcasterProfile where accountId = 6009
+
 ALTER TABLE PodcasterProfile
 ADD listenCount INT NOT NULL DEFAULT 0;
 

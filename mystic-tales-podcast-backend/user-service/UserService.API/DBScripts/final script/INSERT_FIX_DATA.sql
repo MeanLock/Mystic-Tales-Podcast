@@ -6,6 +6,9 @@
 -- USER SERVICE DATABASE [Port: 8046]
 -- =====================================================
 
+USE UserServiceDB;
+GO
+
 -- Role table
 INSERT INTO Role (id, name) VALUES
 (1, N'Customer'),
@@ -19,6 +22,9 @@ INSERT INTO Role (id, name) VALUES
 -- =====================================================
 -- SYSTEM CONFIGURATION SERVICE DATABASE [Port: 8051]
 -- =====================================================
+
+USE SystemConfigurationServiceDB;
+GO
 
 -- SystemConfigProfile table
 SET IDENTITY_INSERT SystemConfigProfile ON;
@@ -284,7 +290,8 @@ INSERT INTO PodcastRestrictedTerm (id, term) VALUES
 -- =====================================================
 -- BOOKING MANAGEMENT SERVICE DATABASE [Port: 8061]
 -- =====================================================
-
+USE BookingManagementServiceDB;
+GO
 -- BookingStatus table
 INSERT INTO BookingStatus (id, name) VALUES
 (1, N'Quotation Request'),
@@ -374,7 +381,8 @@ INSERT INTO PodcastBookingTone (name, description, podcastBookingToneCategoryId)
 -- =====================================================
 -- PODCAST SERVICE DATABASE [Port: 8056]
 -- =====================================================
-
+USE PodcastServiceDB;
+GO
 -- PodcastEpisodeLicenseType table
 INSERT INTO PodcastEpisodeLicenseType (id, name) VALUES
 (1, N'Public Domain'),
@@ -533,6 +541,9 @@ INSERT INTO PodcastSubCategory (id, name, categoryId) VALUES
 -- SUBSCRIPTION SERVICE DATABASE [Port: 8066]
 -- =====================================================
 
+USE SubscriptionServiceDB;
+GO
+
 -- SubscriptionCycleType table
 INSERT INTO SubscriptionCycleType (id, name) VALUES
 (1, N'Monthly'),
@@ -551,6 +562,9 @@ INSERT INTO PodcastSubscriptionBenefit (id, name) VALUES
 -- =====================================================
 -- MODERATION SERVICE DATABASE [Port: 8071]
 -- =====================================================
+
+USE ModerationServiceDB;
+GO
 
 -- PodcastBuddyReportType table
 INSERT INTO PodcastBuddyReportType (id, name) VALUES
@@ -613,6 +627,9 @@ INSERT INTO DMCAAccusationConclusionReportType (id, name) VALUES
 -- =====================================================
 -- TRANSACTION SERVICE DATABASE [Port: 8076]
 -- =====================================================
+
+USE TransactionServiceDB;
+GO=
 
 -- TransactionType table
 INSERT INTO TransactionType (id, name) VALUES

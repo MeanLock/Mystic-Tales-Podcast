@@ -2905,7 +2905,8 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                         //     .FirstOrDefault()
                         //     .PodcastEpisodePublishReviewSessionStatusId == (int)PodcastEpisodePublishReviewSessionStatusEnum.PendingReview,
                         includeFunc: q => q.Include(pers => pers.PodcastEpisodePublishReviewSessionStatusTrackings)
-                    ).FirstOrDefaultAsync();
+                    ).OrderByDescending(pers => pers.CreatedAt)
+                    .FirstOrDefaultAsync();
 
                     var latestPendingReviewSessionStatusTracking = pendingReviewSession != null
                         ? pendingReviewSession.PodcastEpisodePublishReviewSessionStatusTrackings
