@@ -1,0 +1,83 @@
+.dashboard-tabs {
+    font-family: 'Poppins', sans-serif;
+
+    .MuiTabs-root {
+        border-bottom: none;
+        display: flex;
+        gap: 16px;
+        justify-content: flex-end;
+        min-height: auto;
+    }
+
+    .MuiTabs-indicator {
+        display: none;
+    }
+
+    .MuiTab-root {
+        border: none;
+        background: transparent;
+        color: var(--secondary-green);
+        border-radius: 999px;
+        border: 2px solid var(--secondary-green);
+        padding: 0.5rem 2.8rem;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-right: 0;
+        transition: all 0.3s ease;
+        text-transform: none;
+        min-height: auto;
+        min-width: auto;
+
+        &:hover {
+            background: var(--primary-green);
+            color: #282828;
+        }
+
+        &:focus {
+            outline: none;
+        }
+
+        &.Mui-selected {
+            background: var(--primary-green);
+            color: #282828;
+            border: none;
+        }
+    }
+
+
+
+}
+
+.dashboard-card {
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 8px 24px -6px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.5);
+    overflow: hidden;
+
+    &__title {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+
+    }
+}
+
+.MetricsCards {
+
+    &__card {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        font-family: 'inter', sans-serif;
+        border-radius: 15px;
+        font-family: 'Bricolage Grotesque', sans-serif;
+
+      
+    }
+}
+
+.progress-bar {
+    background-color: #3E5DAB;
+}
+.css-hzcega-MuiTabs-list {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+}
