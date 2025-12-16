@@ -1,13 +1,14 @@
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 import { getAccessToken } from "@/core/api/appApi/token";
 import { BASE_URL } from "@/core/api/appApi";
 import { JwtUtil } from "@/core/utils/token";
-
-
+import {
+  showTokenExpiredAlert,
+  showUnauthorizedAlert,
+} from "@/core/utils/alert";
 
 const loginRequiredAxiosInstance = axios.create({
-  baseURL: BASE_URL.REST_API_BASE_URL,
+  baseURL: BASE_URL,
   timeout: 1000000,
 });
 
@@ -16,28 +17,22 @@ loginRequiredAxiosInstance.interceptors.request.use(
     const token = getAccessToken();
     if (token) {
       if (JwtUtil.isTokenValid(token) === false) {
-
-        //** CHO HIỆN THÔNG BÁO YÊU CẦU ĐĂNG NHẬP
-        // await loginRequiredAlert();
-
-        return Promise.reject(new Error('Unauthorized'));
+        // Show alert for invalid token
+        showUnauthorizedAlert();
+        return Promise.reject(new Error("Unauthorized"));
       }
       if (JwtUtil.isTokenNotExpired(token) === false) {
-        //** CHO HIỆN THÔNG BÁO YÊU CẦU ĐĂNG NHẬP
-        // await loginRequiredAlert();
-
-        return Promise.reject(new Error('Login expired'));
+        // Show alert for expired token
+        showTokenExpiredAlert();
+        return Promise.reject(new Error("Login expired"));
       }
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-
-      //** CHO HIỆN THÔNG BÁO YÊU CẦU ĐĂNG NHẬP
-      // await loginRequiredAlert();
-
-      // window.location.replace('/login');
-      return Promise.reject(new Error('Unauthorized'));
+      // Show alert when no token found
+      showUnauthorizedAlert();
+      return Promise.reject(new Error("Unauthorized"));
     }
-    config.headers["ngrok-skip-browser-warning"] = '69420';
+    config.headers["ngrok-skip-browser-warning"] = "69420";
     return config;
   },
   (error) => {
@@ -45,10 +40,4 @@ loginRequiredAxiosInstance.interceptors.request.use(
   }
 );
 
-
-export {
-  loginRequiredAxiosInstance
-}
-
-
-
+export { loginRequiredAxiosInstance };

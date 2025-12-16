@@ -3,7 +3,7 @@ import { getAccessToken } from "@/core/api/appApi/token";
 import { BASE_URL } from "@/core/api/appApi";
 
 const publicAxiosInstance = axios.create({
-  baseURL: BASE_URL.REST_API_BASE_URL,
+  baseURL: BASE_URL,
   timeout: 10000,
 });
 
@@ -13,7 +13,7 @@ publicAxiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    config.headers["ngrok-skip-browser-warning"] = '8041';
+    config.headers["ngrok-skip-browser-warning"] = "8041";
     return config;
   },
   (error) => {
@@ -21,11 +21,4 @@ publicAxiosInstance.interceptors.request.use(
   }
 );
 
-
-
-export {
-  publicAxiosInstance
-}
-
-
-
+export { publicAxiosInstance };
