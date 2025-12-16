@@ -30,6 +30,7 @@ import Loading from "@/components/loading";
 import type { ChannelFromAPI } from "@/core/types/channel";
 import ChannelCard from "./components/ChannelCard";
 import PodcasterCard from "./components/PodcasterCard";
+import { useNavigate } from "react-router-dom";
 
 const DiscoveryPage = () => {
   // STATES
@@ -62,15 +63,14 @@ const DiscoveryPage = () => {
     useState<ContinueListening | null>(null);
 
   // HOOKS
+  const navigate = useNavigate();
   // Fetch Discovery Data
-  const {
-    data: discoveryData,
-    isFetching: isDiscoveryLoading,
-  } = useGetDiscoveryFeedQuery(undefined, {
-    refetchOnFocus: true,
-    refetchOnReconnect: true,
-    refetchOnMountOrArgChange: true,
-  });
+  const { data: discoveryData, isFetching: isDiscoveryLoading } =
+    useGetDiscoveryFeedQuery(undefined, {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: true,
+    });
 
   useEffect(() => {
     const resolveEachSection = () => {
@@ -128,12 +128,6 @@ const DiscoveryPage = () => {
     resolveEachSection();
   }, [discoveryData]);
 
-  //FUNCTIONS
-
-  const checkFileResolved = () => {
-    console.log("Resolved Discovery Data:", hotThisWeek);
-    console.log(baseOnYourTaste?.ShowList[0]);
-  };
 
   if (isDiscoveryLoading) {
     return (
@@ -174,12 +168,6 @@ const DiscoveryPage = () => {
           <div className="hidden md:inline-flex w-full items-center justify-between">
             <p className="font-poppins text-white text-5xl font-bold">
               Base On <span className="text-mystic-green">Your Taste</span>
-            </p>
-            <p
-              onClick={() => checkFileResolved()}
-              className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green"
-            >
-              See all
             </p>
           </div>
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
@@ -247,9 +235,6 @@ const DiscoveryPage = () => {
             <p className="font-poppins text-white text-4xl font-bold">
               <span className="text-mystic-green">Continue </span>Listening
             </p>
-            <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
-              See all
-            </p>
           </div>
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
             <p className="font-poppins font-semibold text-mystic-green text-lg hover:underline">
@@ -262,7 +247,7 @@ const DiscoveryPage = () => {
             <Carousel
               opts={{
                 align: "start",
-                loop: true,
+                loop: false,
               }}
               className="w-full"
             >
@@ -283,7 +268,7 @@ const DiscoveryPage = () => {
             <Carousel
               opts={{
                 align: "start",
-                loop: true,
+                loop: false,
               }}
               plugins={[
                 Autoplay({
@@ -315,9 +300,6 @@ const DiscoveryPage = () => {
           <div className="hidden md:inline-flex w-full items-center justify-between">
             <p className="font-poppins font-bold text-white text-2xl">
               <span className="text-mystic-green">New</span> Shows
-            </p>
-            <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
-              See all
             </p>
           </div>
 
@@ -381,83 +363,12 @@ const DiscoveryPage = () => {
         </div>
       )}
 
-      {/* New Episodes */}
-      {/* <div className="w-full flex flex-col mt-10 gap-5">
-        <div className="hidden md:inline-flex w-full items-center justify-between">
-          <p className="font-poppins font-bold text-white text-2xl">
-            New Episodes
-          </p>
-          <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
-            See all
-          </p>
-        </div>
-
-        <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
-          <p className="font-poppins font-semibold text-white text-md hover:underline">
-            <span className="text-mystic-green">New</span> Episodes
-          </p>
-          <GrFormNext color="#fff" size={25} />
-        </div>
-
-        {isLoading ? (
-          <Carousel
-            opts={{
-              align: "start",
-              loop: false,
-            }}
-            className="w-full"
-          >
-            <CarouselContent>
-              {Array.from({ length: 5 }).map((_, index) => (
-                <CarouselItem
-                  key={index}
-                  className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
-                >
-                  <div className="p-1">
-                    <Skeleton className="w-full aspect-[3/4] rounded-lg" />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
-        ) : (
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            plugins={[
-              Autoplay({
-                delay: 3000,
-              }),
-            ]}
-            className="w-full"
-          >
-            <CarouselContent>
-              {newEpisodes.map((episode, index) => (
-                <CarouselItem
-                  key={index}
-                  className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
-                >
-                  <div className="p-1">
-                    <EpisodeCard episode={episode} />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
-        )}
-      </div> */}
-
       {/* Hot Channels This Week */}
       {hotThisWeek && hotThisWeek.ChannelList.length > 0 && (
         <div className="w-full flex flex-col mt-10 gap-5">
           <div className="hidden md:inline-flex w-full items-center justify-between">
             <p className="font-poppins font-bold text-white text-2xl">
               Hot <span className="text-mystic-green">Channels</span> This Week
-            </p>
-            <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
-              See all
             </p>
           </div>
 
@@ -528,9 +439,6 @@ const DiscoveryPage = () => {
             <p className="font-poppins font-bold text-white text-2xl">
               Hot <span className="text-mystic-green">Shows</span> This Week
             </p>
-            <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
-              See all
-            </p>
           </div>
 
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
@@ -599,9 +507,6 @@ const DiscoveryPage = () => {
           <div className="hidden md:inline-flex w-full items-center justify-between">
             <p className="font-poppins font-bold text-white text-2xl">
               Top <span className="text-mystic-green">Podcasters</span>
-            </p>
-            <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
-              See all
             </p>
           </div>
 
@@ -676,9 +581,6 @@ const DiscoveryPage = () => {
             <p className="font-poppins font-bold text-white text-2xl">
               <span className="text-mystic-green">Breakout</span> Rookies
             </p>
-            <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
-              See all
-            </p>
           </div>
 
           <div className="md:hidden w-full flex items-center justify-start cursor-pointer">
@@ -749,9 +651,6 @@ const DiscoveryPage = () => {
               <span className="text-mystic-green">
                 {topSubcategory.PodcastSubCategory.Name}
               </span>
-            </p>
-            <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
-              See all
             </p>
           </div>
 
@@ -826,7 +725,7 @@ const DiscoveryPage = () => {
                 {randomCategory.PodcastCategory.Name}
               </span>
             </p>
-            <p className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
+            <p onClick={() => navigate(`/media-player/categories/${randomCategory.PodcastCategory.Id}`)} className="text-sm font-bold cursor-pointer underline text-gray-300 hover:text-mystic-green">
               See all
             </p>
           </div>

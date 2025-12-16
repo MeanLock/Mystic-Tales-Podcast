@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Skeleton } from "../ui/skeleton";
 import { getPublisSourceFileUrl } from "@/core/services/file/file2.service";
-
-const FALL_BACK_URL =
-  "https://i.pinimg.com/1200x/b6/2b/e8/b62be83c782a82871177abe584c9e78e.jpg";
+import UserFallBackImage from "/images/unknown/user.png";
+import ContentFallBackImage  from "/images/unknown/content.png";
 
 interface AutoResolveImageProps {
   FileKey: string;
@@ -21,6 +20,7 @@ const AutoResolveImage = (props: AutoResolveImageProps) => {
   const { FileKey, Name, type, className, imgClassName } = props;
   const [isLoading, setIsLoading] = useState(true);
   const [url, setUrl] = useState<string | null>(null);
+  const [fallBackUrl, setFallBackUrl] = useState<string>("");
 
   // Reset error state khi FileKey thay đổi để không dùng trạng thái cũ
   useEffect(() => {
@@ -32,6 +32,14 @@ const AutoResolveImage = (props: AutoResolveImageProps) => {
         setUrl(null);
         setIsLoading(false);
         return;
+      }
+
+      if (type === "AccountPublicSource") {
+        setFallBackUrl(UserFallBackImage);
+      } else if (type === "PodcastPublicSource") {
+        setFallBackUrl(ContentFallBackImage);
+      } else {
+        setFallBackUrl(ContentFallBackImage);
       }
 
       const responseUrl = await getPublisSourceFileUrl({
@@ -57,29 +65,17 @@ const AutoResolveImage = (props: AutoResolveImageProps) => {
 
   if (isLoading && FileKey) {
     return (
-      <div
-        className={
-          "rounded-md flex items-center justify-center" + (className || "")
-        }
-      >
-        <Skeleton className={`${imgClassName || ""}`} />
-      </div>
+      <Skeleton className={imgClassName || className || "w-full h-full"} />
     );
   }
 
   return (
-    <div
-      className={`rounded-md flex items-center justify-center ${
-        className || ""
-      }`}
-    >
-      <img
-        src={url || FALL_BACK_URL}
-        alt={Name || "Image"}
-        className={`object-cover ${imgClassName || ""}`}
-        onError={() => setUrl(FALL_BACK_URL)}
-      />
-    </div>
+    <img
+      src={url || fallBackUrl}
+      alt={Name || "Image"}
+      className={`${imgClassName || className} object-cover`}
+      onError={() => setUrl(fallBackUrl)}
+    />
   );
 };
 

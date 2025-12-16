@@ -500,7 +500,7 @@ const NewMediaPlayerControlBar = () => {
     <div className="w-full h-full flex items-center px-5 gap-5 md:gap-10">
       {/* AUDIO INFORMATIONS */}
       <div className="flex items-center gap-2">
-        <div className="">
+        <div className="flex items-center justify-center w-15">
           <AutoResolveImage
             FileKey={state.currentAudio.image || ""}
             Name={state.currentAudio.name}
@@ -509,8 +509,7 @@ const NewMediaPlayerControlBar = () => {
                 ? "BookingPublicSource"
                 : "PodcastPublicSource"
             }
-            className="w-12 shadow-sm"
-            imgClassName="rounded-full w-12 h-12 aspect-square"
+            imgClassName="rounded-full w-12 h-12 object-cover aspect-square"
             key={state.currentAudio.id}
           />
         </div>
