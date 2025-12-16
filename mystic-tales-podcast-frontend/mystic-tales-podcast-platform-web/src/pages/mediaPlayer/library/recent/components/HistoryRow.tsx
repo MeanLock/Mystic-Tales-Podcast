@@ -172,7 +172,7 @@ const HistoryRow = ({
           </div>
         )}
       </div>
-      <div className="flex flex-col items-start justify-start w-[500px]">
+      <div className="flex flex-col items-start justify-start w-125">
         <p className="text-white font-semibold">
           {history.PodcastEpisode.Name}
         </p>
@@ -183,7 +183,7 @@ const HistoryRow = ({
           }}
         />
       </div>
-      <div className="w-[300px] flex items-center justify-center">
+      <div className="w-75 flex items-center justify-center">
         <p className="text-white font-semibold text-sm">
           {formatAudioLength(history.PodcastEpisode.AudioLength)}
         </p>

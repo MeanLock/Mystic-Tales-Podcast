@@ -4,7 +4,7 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import type { PodcastCategory } from "@/core/types/podcastCategory";
-import type { ShowUI } from "@/core/types/show";
+import type { ShowFromAPI } from "@/core/types/show";
 import Autoplay from "embla-carousel-autoplay";
 import { useNavigate } from "react-router-dom";
 import ShowCard from "./ShowCard";
@@ -12,7 +12,7 @@ import ShowCard from "./ShowCard";
 interface Props {
   item: {
     Category: PodcastCategory;
-    ShowList: ShowUI[];
+    ShowList: ShowFromAPI[];
   };
 }
 

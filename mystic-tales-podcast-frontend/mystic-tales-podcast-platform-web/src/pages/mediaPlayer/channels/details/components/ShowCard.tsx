@@ -9,10 +9,6 @@ const ShowCard = ({ show }: ShowCardProps) => {
   return (
     <div className="w-full flex flex-col gap-3 transition-all duration-500 ease-out hover:-translate-y-2 cursor-pointer">
       <div className="w-full relative">
-        {/* <img
-          src={show.ImageUrl}
-          className="aspect-square w-full object-cover rounded-md"
-        /> */}
         <AutoResolveImage
           FileKey={show.MainImageFileKey}
           type="PodcastPublicSource"

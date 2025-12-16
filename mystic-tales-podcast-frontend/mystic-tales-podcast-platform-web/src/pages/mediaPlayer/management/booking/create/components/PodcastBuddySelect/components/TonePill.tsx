@@ -86,7 +86,7 @@ function TonePill({
   return (
     <div
       onClick={() => onSelect(bookingTone)}
-      className={`flex h-[50px] shadow-sm items-center rounded-full p-2 gap-5 ${
+      className={`flex h-12.5 shadow-sm items-center rounded-full p-2 gap-5 ${
         theme.bg
       } cursor-pointer transition-all duration-500 hover:-translate-y-0.5 ${
         isSelected ? "ring-2 ring-mystic-green bg-white/10" : ""

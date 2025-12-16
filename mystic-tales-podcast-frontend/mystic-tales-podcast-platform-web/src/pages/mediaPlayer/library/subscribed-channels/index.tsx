@@ -1,7 +1,5 @@
 import { useGetFavoritedChannelsQuery } from "@/core/services/channel/channel.service";
-import type { ChannelUI } from "@/core/types/channel";
-import { resolveFiles } from "@/core/utils/fileResolver.util";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ChannelCard from "./components/ChannelCard";
 import { useGetSubscribedContentsQuery } from "@/core/services/subscription/subscription.service";
 import FireLoading from "@/components/fireLoading";
@@ -16,8 +14,6 @@ import { Label } from "@/components/ui/label";
 
 const SubscribedChannelsPage = () => {
   // STATES
-  const [favoritedChannels, setFavoritedChannels] = useState<ChannelUI[]>([]);
-  const [subscribedChannels, setSubscribedChannels] = useState<ChannelUI[]>([]);
   const [favoritedSearchQuery, setFavoritedSearchQuery] = useState<string>("");
   const [subscribedSearchQuery, setSubscribedSearchQuery] =
     useState<string>("");
@@ -25,108 +21,59 @@ const SubscribedChannelsPage = () => {
     useState<string[]>([]);
   const [subscribedSelectedCategories, setSubscribedSelectedCategories] =
     useState<string[]>([]);
-  const [isResolvingFavorited, setIsResolvingFavorited] = useState(false);
-  const [isResolvingSubscribed, setIsResolvingSubscribed] = useState(false);
 
   // HOOKS
-  const {
-    data: favoritedChannelsDataRaw,
-    isLoading: isFavoritedChannelsLoading,
-  } = useGetFavoritedChannelsQuery();
+  const { data: favoritedChannels, isLoading: isFavoritedChannelsLoading } =
+    useGetFavoritedChannelsQuery(undefined, {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    });
 
-  const {
-    data: subscribedContentsData,
-    isLoading: isSubscribedContentsLoading,
-  } = useGetSubscribedContentsQuery();
-
-  useEffect(() => {
-    const resolveFileData = async () => {
-      // Resolve favorited channels independently
-      if (!isFavoritedChannelsLoading && favoritedChannelsDataRaw) {
-        setIsResolvingFavorited(true);
-        const { resolvedData: resolvedData1 } = await resolveFiles(
-          favoritedChannelsDataRaw,
-          [
-            {
-              path: "ChannelList[].MainImageFileKey",
-              type: "PodcastPublic",
-              output: "ChannelList[].ImageUrl",
-            },
-            {
-              path: "ChannelList[].Podcaster.AvatarImageFileKey",
-              type: "AccountPublic",
-              output: "ChannelList[].Podcaster.AvatarUrl",
-            },
-          ]
-        );
-        setFavoritedChannels(
-          resolvedData1.ChannelList as unknown as ChannelUI[]
-        );
-        setIsResolvingFavorited(false);
-      }
-
-      // Resolve subscribed channels independently
-      if (!isSubscribedContentsLoading && subscribedContentsData) {
-        setIsResolvingSubscribed(true);
-        const { resolvedData: resolvedData2 } = await resolveFiles(
-          subscribedContentsData,
-          [
-            {
-              path: "PodcastChannelList[].MainImageFileKey",
-              type: "PodcastPublic",
-              output: "PodcastChannelList[].ImageUrl",
-            },
-            {
-              path: "PodcastChannelList[].Podcaster.AvatarImageFileKey",
-              type: "AccountPublic",
-              output: "PodcastChannelList[].Podcaster.AvatarUrl",
-            },
-          ]
-        );
-        setSubscribedChannels(
-          resolvedData2.PodcastChannelList as unknown as ChannelUI[]
-        );
-        setIsResolvingSubscribed(false);
-      }
-    };
-    resolveFileData();
-  }, [
-    favoritedChannelsDataRaw,
-    isFavoritedChannelsLoading,
-    subscribedContentsData,
-    isSubscribedContentsLoading,
-  ]);
+  const { data: subscribedChannels, isLoading: isSubscribedContentsLoading } =
+    useGetSubscribedContentsQuery(undefined, {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    });
 
   // Filter favorited channels by search query and category
-  const filteredFavoritedChannels = favoritedChannels.filter((channel) => {
-    const matchesSearch = channel.Name.toLowerCase().includes(
-      favoritedSearchQuery.toLowerCase()
-    );
-    const matchesCategory =
-      favoritedSelectedCategories.length === 0 ||
-      favoritedSelectedCategories.includes(channel.PodcastCategory.Name);
-    return matchesSearch && matchesCategory;
-  });
+  const filteredFavoritedChannels = favoritedChannels?.ChannelList.filter(
+    (channel) => {
+      const matchesSearch = channel.Name.toLowerCase().includes(
+        favoritedSearchQuery.toLowerCase()
+      );
+      const matchesCategory =
+        favoritedSelectedCategories.length === 0 ||
+        favoritedSelectedCategories.includes(channel.PodcastCategory.Name);
+      return matchesSearch && matchesCategory;
+    }
+  );
 
   // Get unique categories from favorited channels
   const favoritedCategories = Array.from(
-    new Set(favoritedChannels.map((ch) => ch.PodcastCategory.Name))
+    new Set(favoritedChannels?.ChannelList.map((ch) => ch.PodcastCategory.Name))
   );
 
   // Filter subscribed channels by search query and category
-  const filteredSubscribedChannels = subscribedChannels.filter((channel) => {
-    const matchesSearch = channel.Name.toLowerCase().includes(
-      subscribedSearchQuery.toLowerCase()
-    );
-    const matchesCategory =
-      subscribedSelectedCategories.length === 0 ||
-      subscribedSelectedCategories.includes(channel.PodcastCategory.Name);
-    return matchesSearch && matchesCategory;
-  });
+  const filteredSubscribedChannels =
+    subscribedChannels?.PodcastChannelList.filter((channel) => {
+      const matchesSearch = channel.Name.toLowerCase().includes(
+        subscribedSearchQuery.toLowerCase()
+      );
+      const matchesCategory =
+        subscribedSelectedCategories.length === 0 ||
+        subscribedSelectedCategories.includes(channel.PodcastCategory.Name);
+      return matchesSearch && matchesCategory;
+    });
 
   // Get unique categories from subscribed channels
   const subscribedCategories = Array.from(
-    new Set(subscribedChannels.map((ch) => ch.PodcastCategory.Name))
+    new Set(
+      subscribedChannels?.PodcastChannelList.map(
+        (ch) => ch.PodcastCategory.Name
+      )
+    )
   );
 
   // Toggle category selection for favorited
@@ -151,13 +98,13 @@ const SubscribedChannelsPage = () => {
     <div className="w-full h-full flex flex-col py-10 gap-20">
       <div className="w-full flex flex-col gap-5">
         <p className="mx-8 font-poppins text-6xl text-white font-semibold">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C6FFDD] via-[#FBD786] to-[#f7797d]">
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-[#C6FFDD] via-[#FBD786] to-[#f7797d]">
             Favorited
           </span>{" "}
           Channels
         </p>
 
-        {favoritedChannels && favoritedChannels.length > 0 ? (
+        {favoritedChannels && favoritedChannels.ChannelList.length > 0 ? (
           <div className="mx-2 px-6 flex items-center justify-start gap-20 shadow-2xl py-3">
             {/* Search Query Input */}
             <input
@@ -165,7 +112,7 @@ const SubscribedChannelsPage = () => {
               placeholder="Search by channel name..."
               value={favoritedSearchQuery}
               onChange={(e) => setFavoritedSearchQuery(e.target.value)}
-              className="px-2 py-2 bg-transparent border-b-[2px] border-white/20 text-white placeholder:text-[#D9D9D9] focus:outline-none focus:border-b-2 focus:border-white w-80"
+              className="px-2 py-2 bg-transparent border-b-2 border-white/20 text-white placeholder:text-[#D9D9D9] focus:outline-none focus:border-b-2 focus:border-white w-80"
             />
             {/* Category Filter Dropdown */}
             <Popover>
@@ -174,7 +121,7 @@ const SubscribedChannelsPage = () => {
                   className="
                 px-6 py-2 
                 bg-transparent border-mystic-green 
-                border-[1px] rounded-md 
+                border rounded-md 
                 text-mystic-green text-sm font-semibold font-poppins
                 transition-all duration-500 ease-out hover:bg-mystic-green hover:text-white hover:-translate-y-0.5 cursor-pointer
                 "
@@ -240,15 +187,12 @@ const SubscribedChannelsPage = () => {
           </div>
         ) : (
           <div className="mx-8 grid grid-cols-6">
-            {filteredFavoritedChannels.map((channel) => (
+            {filteredFavoritedChannels?.map((channel) => (
               <div
                 key={channel.Id}
                 className="flex items-center justify-center p-5"
               >
-                <ChannelCard
-                  channel={channel}
-                  isLoadingImage={isResolvingFavorited}
-                />
+                <ChannelCard channel={channel} />
               </div>
             ))}
           </div>
@@ -256,12 +200,13 @@ const SubscribedChannelsPage = () => {
       </div>
       <div className="w-full flex flex-col gap-5">
         <p className="mx-8 font-poppins text-6xl text-white font-semibold">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#74ebd5]  to-[#ACB6E5]">
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-[#74ebd5]  to-[#ACB6E5]">
             Subscribed
           </span>{" "}
           Channels
         </p>
-        {subscribedChannels && subscribedChannels.length > 0 ? (
+        {subscribedChannels &&
+        subscribedChannels.PodcastChannelList.length > 0 ? (
           <div className="mx-2 px-6 flex items-center justify-start gap-20 shadow-2xl py-3">
             {/* Search Query Input */}
             <input
@@ -269,7 +214,7 @@ const SubscribedChannelsPage = () => {
               placeholder="Search by channel name..."
               value={subscribedSearchQuery}
               onChange={(e) => setSubscribedSearchQuery(e.target.value)}
-              className="px-2 py-2 bg-transparent border-b-[2px] border-white/20 text-white placeholder:text-[#D9D9D9] focus:outline-none focus:border-b-2 focus:border-white w-80"
+              className="px-2 py-2 bg-transparent border-b-2 border-white/20 text-white placeholder:text-[#D9D9D9] focus:outline-none focus:border-b-2 focus:border-white w-80"
             />
             {/* Category Filter Dropdown */}
             <Popover>
@@ -278,7 +223,7 @@ const SubscribedChannelsPage = () => {
                   className="
                 px-6 py-2 
                 bg-transparent border-mystic-green 
-                border-[1px] rounded-md 
+                border rounded-md 
                 text-mystic-green text-sm font-semibold font-poppins
                 transition-all duration-500 ease-out hover:bg-mystic-green hover:text-white hover:-translate-y-0.5 cursor-pointer
                 "
@@ -343,15 +288,12 @@ const SubscribedChannelsPage = () => {
           </div>
         ) : (
           <div className="mx-8 w-full grid grid-cols-6">
-            {filteredSubscribedChannels.map((channel) => (
+            {filteredSubscribedChannels?.map((channel) => (
               <div
                 key={channel.Id}
                 className="flex items-center justify-center p-5"
               >
-                <ChannelCard
-                  channel={channel}
-                  isLoadingImage={isResolvingSubscribed}
-                />
+                <ChannelCard channel={channel} />
               </div>
             ))}
           </div>

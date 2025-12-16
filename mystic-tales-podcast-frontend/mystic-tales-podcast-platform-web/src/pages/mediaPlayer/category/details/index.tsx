@@ -12,7 +12,6 @@ import EpisodeCard from "./components/EpisodeCard";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import Loading from "@/components/loading";
 
-
 const CategoryDetailsPage = () => {
   const { id } = useParams();
 
@@ -40,10 +39,24 @@ const CategoryDetailsPage = () => {
     );
   }
 
-  if (!categoryFeedDataRaw) {
+  if (
+    !categoryFeedDataRaw ||
+    (categoryFeedDataRaw.TopChannels.length === 0 &&
+      categoryFeedDataRaw.TopShows.length === 0 &&
+      categoryFeedDataRaw.TopEpisodes.length === 0 &&
+      categoryFeedDataRaw.HotShows.length === 0 &&
+      categoryFeedDataRaw.SubCategorySections.every(
+        (section) => section.ShowList.length === 0
+      ))
+  ) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <p className="text-white font-poppins">No data available</p>
+      <div className="w-full h-full flex items-center justify-center flex-col gap-5">
+        <p className="text-white font-poppins">
+          This category has no data available yet.
+        </p>
+        <div onClick={() => navigate(-1)} className="cursor-pointer px-10 py-2 flex items-center justify-center bg-white rounded-md text-black font-bold font-poppins hover:-translate-y-0.5 hover:shadow-md transition-all duration-500 ease-out">
+          <p>Back</p>
+        </div>
       </div>
     );
   }

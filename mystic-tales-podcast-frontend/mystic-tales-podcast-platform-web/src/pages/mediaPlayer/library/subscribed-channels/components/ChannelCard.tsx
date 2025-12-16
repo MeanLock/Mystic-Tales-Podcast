@@ -1,13 +1,12 @@
-import type { ChannelUI } from "@/core/types/channel";
+import type { ChannelFromAPI } from "@/core/types/channel";
 import { FaHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { Skeleton } from "@/components/ui/skeleton";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 const ChannelCard = ({
   channel,
-  isLoadingImage,
 }: {
-  channel: ChannelUI;
+  channel: ChannelFromAPI;
   isLoadingImage?: boolean;
 }) => {
   const formatNumber = (num: number): string => {
@@ -25,18 +24,14 @@ const ChannelCard = ({
   return (
     <div
       onClick={() => navigate(`/media-player/channels/${channel.Id}`)}
-      className="w-full aspect-square rounded-md shadow-2xl overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:scale-105 hover:-translate-y-[6px]"
+      className="w-full aspect-square rounded-md shadow-2xl overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:scale-105 hover:-translate-y-1.5"
     >
       <div className="absolute inset-0 flex items-center justify-center">
-        {isLoadingImage ? (
-          <Skeleton className="w-full h-full" />
-        ) : (
-          <img
-            src={channel.ImageUrl}
-            alt={channel.Name}
-            className="w-full h-full object-cover"
-          />
-        )}
+      <AutoResolveImage
+          FileKey={channel.MainImageFileKey}
+          type="PodcastPublicSource"
+          className="w-full h-full object-cover"
+        />
       </div>
       <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30"></div>
       <div className="w-full h-full z-20 flex flex-col justify-between relative p-3">

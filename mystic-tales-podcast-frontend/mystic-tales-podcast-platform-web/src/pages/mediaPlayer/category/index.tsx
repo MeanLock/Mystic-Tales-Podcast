@@ -43,7 +43,7 @@ const CategoryPage = () => {
       </div>
     );
   }
-
+  
   return (
     <div
       className="

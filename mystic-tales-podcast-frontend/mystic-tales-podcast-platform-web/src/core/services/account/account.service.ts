@@ -66,6 +66,7 @@ export const accountApi = appApi.injectEndpoints({
         }
         return { error: { kind: "NETWORK_ERROR", message: "No data" } as any };
       },
+      providesTags: ["Account"],
     }),
 
     updateAccountInformations: build.mutation<
@@ -113,4 +114,5 @@ export const {
   useGetAccountInformationsQuery,
   useUpdateAccountInformationsMutation,
   useLazyCheckUserPodcastListenSlotQuery,
+  useLazyUpdateAccountMeQuery
 } = accountApi;
