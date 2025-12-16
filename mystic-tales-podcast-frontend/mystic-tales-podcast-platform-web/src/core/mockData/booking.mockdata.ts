@@ -1,0 +1,838 @@
+// @ts-nocheck
+
+import type {
+  BookingDetailsUI,
+  PodcastBookingToneCategoryType,
+  PodcastBookingToneType,
+  PodcastBuddyUI,
+} from "../types/booking";
+
+export const podcastBookingToneCategories: PodcastBookingToneCategoryType[] = [
+  {
+    Id: 1,
+    Name: "Giọng Nam",
+  },
+  {
+    Id: 2,
+    Name: "Giọng Nữ",
+  },
+  {
+    Id: 3,
+    Name: "Giọng Đặc Biệt/Trung Tính",
+  },
+];
+
+export const podcastBookingTones: PodcastBookingToneType[] = [
+  // --- GIỌNG NAM ---
+  {
+    Id: "1",
+    Name: "Nam – Tông cao",
+    Description: "Trẻ trung, năng động, hợp podcast giải trí, thể thao",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "2",
+    Name: "Nam – Tông trầm",
+    Description: "Truyền cảm, chững chạc, hợp podcast tâm sự, triết lý",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "3",
+    Name: "Nam – Ấm áp",
+    Description: "Dễ nghe, thân thiện, gần gũi",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "4",
+    Name: "Nam – Truyền cảm xúc",
+    Description: "Diễn đạt tốt cảm xúc, hợp kể chuyện, trải nghiệm cá nhân",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "5",
+    Name: "Nam – Lạnh lùng",
+    Description: "Bí ẩn, hợp chủ đề phân tích, crime, thriller",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "6",
+    Name: "Nam – Hài hước",
+    Description: "Linh hoạt, vui tươi, hợp talkshow hoặc podcast giải trí",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "7",
+    Name: "Nam – Nghiêm nghị",
+    Description: "Chuẩn mực, phát thanh viên, hợp chủ đề chính luận",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "8",
+    Name: "Nam – Đam mê",
+    Description: "Mạnh mẽ, nhiều năng lượng, hợp chủ đề truyền cảm hứng",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "9",
+    Name: "Nam – Lãnh đạo",
+    Description: "Quyết đoán, thuyết phục, hợp kinh doanh, quản trị",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "10",
+    Name: "Nam – Lãng tử",
+    Description: "Tự do, nhẹ nhàng, hợp podcast du lịch, khám phá",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "11",
+    Name: "Nam – Bình thản",
+    Description: "Chậm rãi, từ tốn, hợp thiền, mindfulness",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "12",
+    Name: "Nam – Dễ thương",
+    Description: "Giọng cao vừa, hóm hỉnh, gần gũi",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "13",
+    Name: "Nam – Trẻ trung sinh viên",
+    Description: "Năng động, thân thiện, hợp đối tượng Gen Z",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "14",
+    Name: "Nam – Kể chuyện đêm khuya",
+    Description: "Trầm, nhẹ, chậm rãi, du dương, hợp podcast đêm",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "15",
+    Name: "Nam – Nhà nghiên cứu",
+    Description: "Rõ ràng, logic, hợp podcast khoa học, tri thức",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "16",
+    Name: "Nam – MC chuyên nghiệp",
+    Description: "Tông trung, phát âm chuẩn, dẫn dắt tốt",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "17",
+    Name: "Nam – Phản biện",
+    Description: "Dứt khoát, có nhịp lên xuống, hợp chủ đề tranh luận",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "18",
+    Name: "Nam – Hào sảng",
+    Description: "Giọng vang, nhiệt huyết, hợp du lịch, phượt",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "19",
+    Name: "Nam – Chất nghệ sĩ",
+    Description: "Biểu cảm, cảm xúc, hợp thơ, văn, nghệ thuật",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+  {
+    Id: "20",
+    Name: "Nam – Hơi khàn",
+    Description: "Quyến rũ, cuốn hút, hợp podcast tình cảm, tâm sự",
+    PodcastBookingToneCategory: podcastBookingToneCategories[0],
+  },
+
+  // --- GIỌNG NỮ ---
+  {
+    Id: "21",
+    Name: "Nữ – Tông cao",
+    Description: "Tươi sáng, hoạt bát, hợp lifestyle, giáo dục",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "22",
+    Name: "Nữ – Tông trầm",
+    Description: "Quyến rũ, trưởng thành, hợp tâm sự, cảm xúc",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "23",
+    Name: "Nữ – Quyến rũ",
+    Description: "Dẻo, nhấn nhá, hợp chủ đề tình yêu, cảm xúc",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "24",
+    Name: "Nữ – Dễ thương",
+    Description: "Trong trẻo, vui tươi, hợp kể chuyện, giải trí",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "25",
+    Name: "Nữ – Truyền cảm",
+    Description: "Dịu dàng, cảm xúc, hợp đọc truyện, tâm sự",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "26",
+    Name: "Nữ – Ấm áp",
+    Description: "Nhẹ nhàng, thân thiện, hợp giáo dục, chăm sóc tinh thần",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "27",
+    Name: "Nữ – Nghiêm túc",
+    Description: "Chắc giọng, rõ chữ, hợp chủ đề chuyên môn",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "28",
+    Name: "Nữ – MC radio",
+    Description: "Đều, mềm, rõ nhịp, hợp talkshow sáng",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "29",
+    Name: "Nữ – Trẻ trung sinh viên",
+    Description: "Năng động, vui vẻ, hợp podcast học đường",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "30",
+    Name: "Nữ – Dịu dàng",
+    Description: "Nói chậm, mềm mại, hợp chủ đề thư giãn, tâm hồn",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "31",
+    Name: "Nữ – Lạc quan",
+    Description: "Tone sáng, cười trong giọng, hợp chủ đề tích cực",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "32",
+    Name: "Nữ – Hài hước",
+    Description: "Nhanh, linh hoạt, hợp podcast giải trí",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "33",
+    Name: "Nữ – Tri thức",
+    Description: "Chuẩn, trang trọng, hợp podcast học thuật",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "34",
+    Name: "Nữ – Cảm động",
+    Description: "Nhẹ, có cảm xúc sâu, hợp kể chuyện thật",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "35",
+    Name: "Nữ – Quyền lực",
+    Description: "Rõ, tự tin, hợp chủ đề lãnh đạo, truyền cảm hứng",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "36",
+    Name: "Nữ – Nghệ sĩ",
+    Description: "Biểu cảm, hợp đọc thơ, văn, nghệ thuật",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "37",
+    Name: "Nữ – Phóng viên",
+    Description: "Nhanh, rõ, linh hoạt, hợp tin tức, phỏng vấn",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "38",
+    Name: "Nữ – Lạnh lùng",
+    Description: "Giọng đều, ít cảm xúc, hợp chủ đề khoa học, phân tích",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "39",
+    Name: "Nữ – Chất giọng miền Nam",
+    Description: "Dịu, nhẹ, thân mật, hợp podcast đời sống",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+  {
+    Id: "40",
+    Name: "Nữ – Chất giọng miền Bắc",
+    Description: "Rõ chữ, tự nhiên, hợp chính luận, giáo dục",
+    PodcastBookingToneCategory: podcastBookingToneCategories[1],
+  },
+
+  // --- GIỌNG ĐẶC BIỆT / TRUNG TÍNH ---
+  {
+    Id: "e53c9045-c61e-4fab-aebd-0f219aa64bb3",
+    Name: "Giọng kể truyện cổ tích",
+    Description: "Nhấn nhá nhẹ, êm, hợp podcast cho trẻ em",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+  {
+    Id: "42",
+    Name: "Giọng đọc tin tức",
+    Description: "Chuẩn, dứt khoát, không cảm xúc",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+  {
+    Id: "43",
+    Name: "Giọng thầy cô giáo",
+    Description: "Nhiệt tình, rõ, dễ nghe, hợp chủ đề học tập",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+  {
+    Id: "44",
+    Name: "Giọng thiền / mindfulness",
+    Description: "Rất chậm, nhẹ, trầm, tạo cảm giác thư giãn",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+  {
+    Id: "45",
+    Name: "Giọng chuyên gia",
+    Description: "Tự tin, logic, hợp phân tích chuyên sâu",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+  {
+    Id: "46",
+    Name: "Giọng hoạt hình",
+    Description: "Tăng nhịp, vui nhộn, hợp giải trí, parody",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+  {
+    Id: "47",
+    Name: "Giọng kể phim / trailer",
+    Description: "Trầm, có lực, tạo kịch tính, hợp review phim",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+  {
+    Id: "48",
+    Name: "Giọng tự sự",
+    Description: "Tự nhiên, cảm xúc thật, như đang ghi nhật ký",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+  {
+    Id: "49",
+    Name: "Giọng cặp đôi (song thoại)",
+    Description: "Nam – nữ đối thoại tự nhiên, hợp talkshow",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+  {
+    Id: "50",
+    Name: "Giọng trung tính AI / chatbot",
+    Description: "Rõ, đều, dễ hiểu, hợp hướng dẫn kỹ thuật",
+    PodcastBookingToneCategory: podcastBookingToneCategories[2],
+  },
+];
+
+export const mockPodcastBuddies: PodcastBuddyUI[] = [
+  {
+    PodcastBuddyProfile: {
+      AccountId: 1,
+      Name: "SAMURICE",
+      ImageUrl: "https://i.pravatar.cc/300?img=11",
+      Description: "Giọng AI chuyên nghiệp, đa dạng tông giọng",
+      AverageRating: 4.8,
+      RatingCount: 150,
+      TotalFollow: 2000,
+      ListenCount: 50000,
+      PricePerBookingWord: 100,
+      BuddyAudioFileKey: "samurice-intro.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[40],
+        podcastBookingTones[41],
+        podcastBookingTones[42],
+        podcastBookingTones[43],
+        podcastBookingTones[44],
+        podcastBookingTones[45],
+        podcastBookingTones[46],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 2,
+      Name: "Minh Vũ",
+      ImageUrl: "https://i.pravatar.cc/300?img=12",
+      Description: "Giọng Nam trầm ấm, hợp chủ đề tâm sự và triết lý sống",
+      AverageRating: 4.9,
+      RatingCount: 320,
+      TotalFollow: 5400,
+      ListenCount: 120000,
+      PricePerBookingWord: 130,
+      BuddyAudioFileKey: "minhvu-voice.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[1],
+        podcastBookingTones[2],
+        podcastBookingTones[14],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 3,
+      Name: "Mai Linh",
+      ImageUrl: "https://i.pravatar.cc/300?img=13",
+      Description: "Giọng Nữ truyền cảm, hợp podcast về đời sống và tâm hồn",
+      AverageRating: 4.7,
+      RatingCount: 280,
+      TotalFollow: 6200,
+      ListenCount: 85000,
+      PricePerBookingWord: 115,
+      BuddyAudioFileKey: "mailinh-intro.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[24],
+        podcastBookingTones[25],
+        podcastBookingTones[34],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 4,
+      Name: "Long Lê",
+      ImageUrl: "https://i.pravatar.cc/300?img=14",
+      Description: "Giọng kể chuyện đêm khuya, sâu lắng và chậm rãi",
+      AverageRating: 4.8,
+      RatingCount: 400,
+      TotalFollow: 7800,
+      ListenCount: 156000,
+      PricePerBookingWord: 150,
+      BuddyAudioFileKey: "longle-night.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[14],
+        podcastBookingTones[11],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 5,
+      Name: "Hà An",
+      ImageUrl: "https://i.pravatar.cc/300?img=15",
+      Description:
+        "Giọng Nữ nhẹ nhàng, phù hợp với chủ đề mindfulness và giáo dục",
+      AverageRating: 4.6,
+      RatingCount: 180,
+      TotalFollow: 3000,
+      ListenCount: 64000,
+      PricePerBookingWord: 110,
+      BuddyAudioFileKey: "haan-soft.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[26],
+        podcastBookingTones[30],
+        podcastBookingTones[44],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 6,
+      Name: "Tuấn Kiệt",
+      ImageUrl: "https://i.pravatar.cc/300?img=16",
+      Description: "Giọng Nam mạnh mẽ, truyền cảm hứng và chuyên nghiệp",
+      AverageRating: 4.9,
+      RatingCount: 560,
+      TotalFollow: 8800,
+      ListenCount: 190000,
+      PricePerBookingWord: 160,
+      BuddyAudioFileKey: "tuankiet-motivation.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[8],
+        podcastBookingTones[9],
+        podcastBookingTones[35],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 7,
+      Name: "Lan Chi",
+      ImageUrl: "https://i.pravatar.cc/300?img=17",
+      Description: "Giọng Nữ năng động, hợp podcast về lifestyle và học đường",
+      AverageRating: 4.5,
+      RatingCount: 240,
+      TotalFollow: 4700,
+      ListenCount: 76000,
+      PricePerBookingWord: 95,
+      BuddyAudioFileKey: "lanchi-fun.mp3",
+      IsVerified: false,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[21],
+        podcastBookingTones[29],
+        podcastBookingTones[31],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 8,
+      Name: "Hữu Phúc",
+      ImageUrl: "https://i.pravatar.cc/300?img=18",
+      Description: "Giọng kể chuyện tự nhiên, gần gũi và chân thành",
+      AverageRating: 4.7,
+      RatingCount: 310,
+      TotalFollow: 5100,
+      ListenCount: 112000,
+      PricePerBookingWord: 125,
+      BuddyAudioFileKey: "huuphuc-story.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[48],
+        podcastBookingTones[14],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 9,
+      Name: "Trâm Anh",
+      ImageUrl: "https://i.pravatar.cc/300?img=19",
+      Description:
+        "Giọng Nữ cảm xúc, hợp kể chuyện tình yêu và trải nghiệm cá nhân",
+      AverageRating: 4.8,
+      RatingCount: 370,
+      TotalFollow: 7200,
+      ListenCount: 134000,
+      PricePerBookingWord: 135,
+      BuddyAudioFileKey: "tramanh-love.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[23],
+        podcastBookingTones[34],
+        podcastBookingTones[25],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 10,
+      Name: "Bảo Nam",
+      ImageUrl: "https://i.pravatar.cc/300?img=20",
+      Description: "Giọng Nam trẻ trung, hợp podcast về công nghệ và startup",
+      AverageRating: 4.6,
+      RatingCount: 210,
+      TotalFollow: 3500,
+      ListenCount: 89000,
+      PricePerBookingWord: 120,
+      BuddyAudioFileKey: "baonam-tech.mp3",
+      IsVerified: false,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[13],
+        podcastBookingTones[15],
+        podcastBookingTones[33],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 11,
+      Name: "Yuki",
+      ImageUrl: "https://i.pravatar.cc/300?img=21",
+      Description: "Giọng Nữ AI, trung tính, rõ ràng, hợp hướng dẫn kỹ thuật",
+      AverageRating: 4.8,
+      RatingCount: 290,
+      TotalFollow: 4200,
+      ListenCount: 91000,
+      PricePerBookingWord: 105,
+      BuddyAudioFileKey: "yuki-guide.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[48],
+        podcastBookingTones[49],
+        podcastBookingTones[44],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 12,
+      Name: "Trọng Hiếu",
+      ImageUrl: "https://i.pravatar.cc/300?img=22",
+      Description: "Giọng Nam vui tươi, hợp talkshow và podcast giải trí",
+      AverageRating: 4.7,
+      RatingCount: 330,
+      TotalFollow: 6400,
+      ListenCount: 105000,
+      PricePerBookingWord: 115,
+      BuddyAudioFileKey: "tronghieu-fun.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[6],
+        podcastBookingTones[18],
+        podcastBookingTones[46],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 13,
+      Name: "Minh Anh",
+      ImageUrl: "https://i.pravatar.cc/300?img=23",
+      Description:
+        "Giọng Nữ miền Bắc, rõ chữ, hợp giáo dục và podcast chính luận",
+      AverageRating: 4.9,
+      RatingCount: 410,
+      TotalFollow: 9100,
+      ListenCount: 175000,
+      PricePerBookingWord: 140,
+      BuddyAudioFileKey: "minhanh-radio.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[40],
+        podcastBookingTones[27],
+        podcastBookingTones[33],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 14,
+      Name: "Nam Tôn",
+      ImageUrl: "https://i.pravatar.cc/300?img=24",
+      Description: "Giọng Nam lạnh lùng, hợp phân tích và crime podcast",
+      AverageRating: 4.5,
+      RatingCount: 190,
+      TotalFollow: 2700,
+      ListenCount: 68000,
+      PricePerBookingWord: 95,
+      BuddyAudioFileKey: "namton-crime.mp3",
+      IsVerified: false,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[5],
+        podcastBookingTones[47],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 15,
+      Name: "Thảo My",
+      ImageUrl: "https://i.pravatar.cc/300?img=25",
+      Description:
+        "Giọng Nữ nghệ sĩ, biểu cảm, hợp podcast nghệ thuật và thơ văn",
+      AverageRating: 4.8,
+      RatingCount: 310,
+      TotalFollow: 5900,
+      ListenCount: 99000,
+      PricePerBookingWord: 125,
+      BuddyAudioFileKey: "thaomy-art.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[36],
+        podcastBookingTones[23],
+        podcastBookingTones[19],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 16,
+      Name: "Duy Khánh",
+      ImageUrl: "https://i.pravatar.cc/300?img=26",
+      Description:
+        "Giọng Nam phản biện, rõ ràng, hợp podcast tranh luận và thời sự",
+      AverageRating: 4.6,
+      RatingCount: 270,
+      TotalFollow: 4700,
+      ListenCount: 82000,
+      PricePerBookingWord: 110,
+      BuddyAudioFileKey: "duykhanh-debate.mp3",
+      IsVerified: false,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[17],
+        podcastBookingTones[15],
+        podcastBookingTones[35],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 17,
+      Name: "Kim Ngân",
+      ImageUrl: "https://i.pravatar.cc/300?img=27",
+      Description: "Giọng Nữ miền Nam thân mật, hợp podcast đời sống",
+      AverageRating: 4.7,
+      RatingCount: 280,
+      TotalFollow: 5300,
+      ListenCount: 92000,
+      PricePerBookingWord: 115,
+      BuddyAudioFileKey: "kimngan-life.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[39],
+        podcastBookingTones[26],
+        podcastBookingTones[30],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 18,
+      Name: "Quốc Đạt",
+      ImageUrl: "https://i.pravatar.cc/300?img=28",
+      Description: "Giọng Nam khoa học, rõ ràng, logic, hợp podcast tri thức",
+      AverageRating: 4.8,
+      RatingCount: 360,
+      TotalFollow: 6600,
+      ListenCount: 125000,
+      PricePerBookingWord: 130,
+      BuddyAudioFileKey: "quocdat-science.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[15],
+        podcastBookingTones[33],
+        podcastBookingTones[45],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 19,
+      Name: "Lê Hương",
+      ImageUrl: "https://i.pravatar.cc/300?img=29",
+      Description: "Giọng Nữ trẻ trung, hợp podcast lifestyle và học đường",
+      AverageRating: 4.6,
+      RatingCount: 230,
+      TotalFollow: 4200,
+      ListenCount: 78000,
+      PricePerBookingWord: 100,
+      BuddyAudioFileKey: "lehuong-youth.mp3",
+      IsVerified: false,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[21],
+        podcastBookingTones[29],
+        podcastBookingTones[31],
+      ],
+    },
+  },
+  {
+    PodcastBuddyProfile: {
+      AccountId: 20,
+      Name: "An Bình",
+      ImageUrl: "https://i.pravatar.cc/300?img=30",
+      Description: "Giọng Nữ thiền và mindfulness, chậm rãi và thư giãn",
+      AverageRating: 4.9,
+      RatingCount: 410,
+      TotalFollow: 8700,
+      ListenCount: 182000,
+      PricePerBookingWord: 145,
+      BuddyAudioFileKey: "anbinh-mindful.mp3",
+      IsVerified: true,
+      PodcastBuddyBookingTone: [
+        podcastBookingTones[44],
+        podcastBookingTones[30],
+        podcastBookingTones[26],
+      ],
+    },
+  },
+];
+
+const mockBookingDetails1: BookingDetailsUI = {
+  Id: 1,
+  Title: "Đặt làm voice-over cho podcast về lucid dream",
+  Description: `<div><div><em><strong>T&ocirc;i cần một <span style="color: #ff6600;">giọng đọc ấm &aacute;p</span> v&agrave; cuốn h&uacute;t để l&agrave;m voice-over cho tập podcast về lucid dream của m&igrave;nh.</strong></em></div></div>`,
+  AccountId: 1,
+  PodcastBuddy: {
+    Id: 1,
+    Email: "thinhngu@gmail.com",
+    FullName: "Bé Thịnh Pé Pỏng",
+    ImageUrl:
+      "https://i.pinimg.com/736x/4f/f1/d5/4ff1d52b884997affaa7bc5dc885cbde.jpg",
+    PriceBookingPerWord: 10,
+  },
+  Price: null,
+  Deadline: null,
+  DeadlineDays: 3,
+  DemoAudioFileKey: "",
+  BookingManualCancelledReason: null,
+  BookingAutoCancelReason: null,
+  CreatedAt: "2025-11-07T08:15:52.397Z",
+  UpdatedAt: "2025-11-07T08:15:52.397Z",
+  BookingRequirementFileList: [
+    {
+      Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      BookingId: 1,
+      Name: "Đoạn 1 - Giới thiệu về lucid dream",
+      Description: `Đoạn này cần một giọng đọc nhẹ nhàng và thu hút để giới thiệu về khái niệm lucid dream. /\$-\[script\]\$-<p><em><strong>Trading l&agrave; một hoạt động kinh doanh được thực hiện bởi những người chuy&ecirc;n mua v&agrave; b&aacute;n t&agrave;i sản, h&agrave;ng h&oacute;a hoặc tiền tệ với mục đ&iacute;ch kiếm lợi nhuận</strong></em>. Đ&acirc;y l&agrave; một trong những hoạt động đầu tư phổ biến v&agrave; c&oacute; t&iacute;nh rủi ro cao. Với sự ph&aacute;t triển của c&ocirc;ng nghệ, việc giao dịch trở n&ecirc;n dễ d&agrave;ng hơn bao giờ hết, cho ph&eacute;p bất kỳ ai c&oacute; thể tham gia v&agrave;o thị trường t&agrave;i ch&iacute;nh v&agrave; trở th&agrave;nh một nh&agrave; giao dịch. Tuy nhi&ecirc;n, để th&agrave;nh c&ocirc;ng trong trading, bạn cần hiểu r&otilde; về kh&aacute;i niệm trading l&agrave; g&igrave; cũng như c&aacute;c phong c&aacute;ch trading phổ biến. B&agrave;i viết n&agrave;y sẽ gi&uacute;p bạn t&igrave;m hiểu về trading v&agrave; những điều cần lưu &yacute; khi tham gia v&agrave;o hoạt động n&agrave;y.</p>
+<h2><strong>Trading l&agrave; g&igrave;?</strong></h2>
+<p>Trading hay c&ograve;n được gọi l&agrave; giao dịch chứng kho&aacute;n, l&agrave; hoạt động mua b&aacute;n t&agrave;i sản, h&agrave;ng h&oacute;a hoặc tiền tệ tr&ecirc;n thị trường t&agrave;i ch&iacute;nh. Mục đ&iacute;ch của trading l&agrave; kiếm lợi nhuận từ việc mua v&agrave;o v&agrave; b&aacute;n ra c&aacute;c t&agrave;i sản với gi&aacute; kh&aacute;c nhau. Người tham gia trading được gọi l&agrave; nh&agrave; giao dịch, họ c&oacute; thể l&agrave; c&aacute; nh&acirc;n, tổ chức hoặc c&aacute;c c&ocirc;ng ty đầu tư chuy&ecirc;n nghiệp.</p>
+<p>Thị trường t&agrave;i ch&iacute;nh l&agrave; nơi c&aacute;c nh&agrave; giao dịch gặp gỡ v&agrave; thực hiện c&aacute;c giao dịch mua b&aacute;n. Thị trường n&agrave;y bao gồm nhiều loại t&agrave;i sản, từ cổ phiếu, tr&aacute;i phiếu, h&agrave;ng h&oacute;a đến tiền tệ. C&aacute;c giao dịch tr&ecirc;n thị trường t&agrave;i ch&iacute;nh được thực hiện th&ocirc;ng qua c&aacute;c s&agrave;n giao dịch, v&iacute; dụ như s&agrave;n chứng kho&aacute;n hay s&agrave;n ngoại hối.</p>
+<p>Một trong những đặc điểm của trading l&agrave; t&iacute;nh thanh khoản cao, cho ph&eacute;p nh&agrave; giao dịch c&oacute; thể mua b&aacute;n t&agrave;i sản một c&aacute;ch nhanh ch&oacute;ng v&agrave; dễ d&agrave;ng. Tuy nhi&ecirc;n, điều n&agrave;y cũng đồng nghĩa với việc trading c&oacute; t&iacute;nh rủi ro cao. Nếu kh&ocirc;ng c&oacute; kế hoạch v&agrave; chiến lược đ&uacute;ng, bạn c&oacute; thể mất tiền nhanh ch&oacute;ng trong trading.</p>
+<h2><strong>Khung thời gian giao dịch l&agrave; g&igrave;?</strong></h2>
+<p>Nếu bạn đ&atilde; nắm được cơ bản về trading l&agrave; g&igrave; th&igrave; thứ tiếp theo bạn cần phải biết ch&iacute;nh l&agrave; khung thời gian trading. C&oacute; thể hiểu rằng, khung thời gian trading l&agrave; khoảng thời gian m&agrave; nh&agrave; giao dịch sẽ giữ một vị thế tr&ecirc;n thị trường. C&oacute; nhiều loại khung thời gian trading kh&aacute;c nhau, t&ugrave;y thuộc v&agrave;o mục đ&iacute;ch v&agrave; phong c&aacute;ch giao dịch của từng nh&agrave; giao dịch. Dưới đ&acirc;y l&agrave; một số khung thời gian trading phổ biến:</p>
+<ul>
+<li><strong>Position Trading</strong>: Đ&acirc;y l&agrave; loại trading d&agrave;i hạn, trong đ&oacute; nh&agrave; giao dịch giữ một vị thế trong khoảng từ v&agrave;i th&aacute;ng đến v&agrave;i năm. Nh&agrave; giao dịch sẽ t&igrave;m kiếm c&aacute;c xu hướng lớn tr&ecirc;n thị trường v&agrave; đưa ra quyết định mua hoặc b&aacute;n dựa tr&ecirc;n những thay đổi lớn trong thị trường.</li>
+<li><strong>Swing Trading</strong>: Đ&acirc;y l&agrave; loại trading trung hạn, trong đ&oacute; nh&agrave; giao dịch giữ một vị thế trong khoảng từ v&agrave;i ng&agrave;y đến v&agrave;i tuần. Nh&agrave; giao dịch sẽ t&igrave;m kiếm c&aacute;c cơ hội giao dịch trong xu hướng ngắn hạn v&agrave; đưa ra quyết định mua hoặc b&aacute;n dựa tr&ecirc;n những thay đổi trong xu hướng n&agrave;y.</li>
+<li><strong>Day Trading</strong>: Đ&acirc;y l&agrave; loại trading ngắn hạn, trong đ&oacute; nh&agrave; giao dịch mở v&agrave; đ&oacute;ng c&aacute;c vị thế trong c&ugrave;ng một ng&agrave;y. Nh&agrave; giao dịch sẽ t&igrave;m kiếm c&aacute;c cơ hội giao dịch trong khoảng thời gian ngắn v&agrave; đưa ra quyết định mua hoặc b&aacute;n dựa tr&ecirc;n những biến động ngắn hạn của thị trường.</li>
+<li><strong>Scalp Trading</strong>: Đ&acirc;y l&agrave; loại trading rất ngắn hạn, trong đ&oacute; nh&agrave; giao dịch giữ c&aacute;c vị thế chỉ trong v&agrave;i ph&uacute;t hoặc v&agrave;i gi&acirc;y. Nh&agrave; giao dịch sẽ t&igrave;m kiếm c&aacute;c cơ hội giao dịch trong khoảng thời gian cực ngắn v&agrave; đưa ra quyết định mua hoặc b&aacute;n dựa tr&ecirc;n những biến động nhỏ của thị trường.</li>
+</ul>
+<p>Việc lựa chọn khung thời gian trading ph&ugrave; hợp với m&igrave;nh l&agrave; điều rất quan trọng để th&agrave;nh c&ocirc;ng trong trading. Bạn cần x&aacute;c định r&otilde; mục ti&ecirc;u v&agrave; phong c&aacute;ch giao dịch của m&igrave;nh để c&oacute; thể chọn được khung thời gian ph&ugrave; hợp.</p>\$-\[script\]\$-/`,
+      RequirementFile: null,
+      Order: 1,
+      WordCount: 5000,
+      PodcastBookingTone: {
+        Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        Name: "string",
+        Description: "string",
+        PodcastBookingToneCategory: {
+          Id: 0,
+          Name: "string",
+        },
+        CreatedAt: "2025-11-07T08:15:52.397Z",
+        UpdatedAt: "2025-11-07T08:15:52.397Z",
+      },
+    },
+    {
+      Id: "3fa85f64-5717-4562-b3fc-2c963f66af21",
+      BookingId: 1,
+      Name: "Đoạn 2 - Nội dung cuốn sách",
+      Description: `<div><div><strong>Đ&acirc;y l&agrave; t&agrave;i liệu chi tiết về Trading, bạn cần đọc thật <span style="color: #ff0000;">r&otilde; v&agrave; to</span></strong></div></div>`,
+      RequirementFile:
+        "https://www.junkybooks.com/book/reader.php?book=thebooks/6483a9c6a2e4d-the-handbook-of-international-trade-and-finance.pdf",
+      Order: 2,
+      WordCount: 20000000,
+      PodcastBookingTone: {
+        Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        Name: "Giọng học thuật",
+        Description: "",
+        PodcastBookingToneCategory: {
+          Id: 0,
+          Name: "string",
+        },
+        CreatedAt: "2025-11-07T08:15:52.397Z",
+        UpdatedAt: "2025-11-07T08:15:52.397Z",
+      },
+    },
+  ],
+  BookingProducingRequestList: [],
+  CurrentStatus: {
+    Id: 2,
+    Name: "Quotation Dealing",
+  },
+  StatusTracking: [
+    {
+      id: "status-tracking-1",
+      bookingId: 1,
+      bookingStatusId: 1,
+      createdAt: "2025-11-11T04:07:11.405Z",
+    },
+    {
+      id: "status-tracking-2",
+      bookingId: 1,
+      bookingStatusId: 2,
+      createdAt: "2025-11-12T04:07:11.405Z",
+    },
+  ],
+};
