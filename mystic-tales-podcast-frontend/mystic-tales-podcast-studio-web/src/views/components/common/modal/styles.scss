@@ -1,0 +1,95 @@
+.custom-modal {
+
+  .MuiDialog-paper {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    color: var(--text-primary);
+    border: 1px solid var(--primary-green);
+  }
+
+  &-header {
+    background: rgba(0, 0, 0, 0.2);
+     backdrop-filter: blur(10px);
+    box-shadow: 0 11px 10px rgba(0, 4, 0, 0.25);
+    margin-bottom: 0;
+    border: none;
+    z-index: 1;
+
+    &.MuiDialogTitle-root {
+      padding: 1.8rem 2rem 0rem 2rem;
+    }
+
+    &-brand {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+
+      &-logo {
+        // height: 45px;
+        // width:45px;
+        // border-radius: 9999px;
+        // max-width: 100%;
+        // object-fit: cover;
+        margin-right: 16px;
+      }
+
+      &-text {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.8rem;
+        transition: opacity 0.3s ease;
+
+        &-title {
+          color: white;
+          font-weight: bold;
+
+        }
+
+        &-subtitle {
+          font-weight: bold;
+          color: var(--primary-green);
+          text-align: left;
+        }
+      }
+    }
+
+  }
+
+  &-title {
+    color: var(--primary-green);
+    font-weight: 600;
+    flex: 1;
+  }
+}
+
+// MUI Dialog overrides
+.MuiDialog-root {
+  .MuiBackdrop-root {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+}
+
+.MuiDialogContent-root {
+  &::-webkit-scrollbar {
+     display: none;
+
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--secondary-grey);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--primary-green);
+    border-radius: 4px;
+  }
+
+
+}
+
+// Close button styling
+.MuiIconButton-root {
+  &:hover {
+    background-color: rgba(174, 227, 57, 0.1);
+  }
+}

@@ -1,0 +1,11 @@
+// Font
+$font-family-base: var(--app-font-primary,'Segoe UI',  'San Francisco',  'Helvetica Neue',  Helvetica,  'Lucida Grande',  Roboto,  Ubuntu,  Tahoma,  'Microsoft Sans Serif',  Arial,  sans-serif ); // used (font chính của toàn bộ tất cả layout) default: 'Roboto', sans-serif
+$font-size-base: var(--app-font-size-base, 16px) ; // used (kích thước font chính của toàn bộ tất cả layout) default: 16px
+$line-height-base: var(--app-line-height-base, 1.5) ; // used (độ cao dòng của toàn bộ tất cả layout) default: 1.5
+$font-size-adjust-base: var(--app-font-size-adjust-base, 0.5) ; // used (độ cao dòng của toàn bộ tất cả layout) default: 0.5
+
+
+$layout-border-primary: var(--app-layout-border-primary, #ccd0d5) ; // used (màu viền của toàn bộ tất cả layout) default: #ccd0d5
+
+// Color
+$background-color-primary: var(--app-background-color-primary, #2cffb9) ; // used (màu nền chính của toàn bộ tất cả layout) default: #f6f8fa

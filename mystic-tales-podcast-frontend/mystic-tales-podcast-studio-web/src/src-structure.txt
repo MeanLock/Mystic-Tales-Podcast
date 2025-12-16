@@ -1,0 +1,255 @@
+D:\FPTU\Capstone\Mystic-Tales-Podcast\mystic-tales-podcast-frontend\mystic-tales-podcast-studio-web\src
+├── App.scss
+├── App.tsx
+├── assets
+|  ├── ghost.mp3
+|  ├── login.png
+|  ├── logo.png
+|  ├── logoMTP.jpg
+|  ├── logoMTP2.png
+|  ├── Podbean_AI_test_-_Noise_Reduction_original_92vyi.mp3
+|  └── react.svg
+├── config
+|  ├── api.config.ts
+|  ├── app.config.ts
+|  ├── env.config.ts
+|  ├── index.ts
+|  └── router.config.ts
+├── core
+|  ├── api
+|  |  ├── graphql
+|  |  |  ├── config
+|  |  |  |  └── clients
+|  |  |  |     ├── v1
+|  |  |  |     |  ├── admin-client.ts
+|  |  |  |     |  ├── adminClient.ts
+|  |  |  |     |  ├── index.ts
+|  |  |  |     |  ├── login-required-client.ts
+|  |  |  |     |  ├── loginRequiredClient.ts
+|  |  |  |     |  ├── public-client.ts
+|  |  |  |     |  ├── publicClient.ts
+|  |  |  |     |  ├── ws-client.ts
+|  |  |  |     |  └── wsClient.ts
+|  |  |  |     └── v2
+|  |  |  |        ├── admin-apollo-client.ts
+|  |  |  |        ├── index.ts
+|  |  |  |        ├── login-required-apollo-client.ts
+|  |  |  |        ├── public-apollo-client.ts
+|  |  |  |        └── ws-apollo-client.ts
+|  |  |  └── main
+|  |  |     ├── api-call
+|  |  |     |  ├── graphql-mutation-api.helper.ts
+|  |  |     |  ├── graphql-query-api.helper.ts
+|  |  |     |  ├── graphql-subscription-api.helper.ts
+|  |  |     |  └── index.ts
+|  |  |     ├── errors
+|  |  |     |  ├── app-errors.ts
+|  |  |     |  ├── auth-errors.ts
+|  |  |     |  └── index.ts
+|  |  |     └── response-generator
+|  |  |        ├── v1
+|  |  |        |  ├── index.ts
+|  |  |        |  └── response-generator.ts
+|  |  |        └── v2
+|  |  |           ├── index.ts
+|  |  |           └── response-generator.ts
+|  |  └── rest-api
+|  |     ├── config
+|  |     |  └── instances
+|  |     |     ├── v1
+|  |     |     |  ├── admin-instance.ts
+|  |     |     |  ├── index.ts
+|  |     |     |  ├── login-required-instance.ts
+|  |     |     |  └── public-instance.ts
+|  |     |     └── v2
+|  |     |        ├── admin-axios-instance.ts
+|  |     |        ├── index.ts
+|  |     |        ├── login-required-axios-instance.ts
+|  |     |        └── public-axios-instance.ts
+|  |     └── main
+|  |        ├── api-call
+|  |        |  ├── index.ts
+|  |        |  └── rest-api.helper.ts
+|  |        ├── errors
+|  |        |  ├── app-errors.ts
+|  |        |  ├── auth-errors.ts
+|  |        |  └── index.ts
+|  |        └── response-generator
+|  |           └── v1
+|  |              └── response-generator.ts
+|  ├── graphql
+|  |  ├── mutation
+|  |  |  └── chat.mutation.ts
+|  |  ├── query
+|  |  |  └── chat.query.ts
+|  |  └── subscriptions
+|  |     └── chat.subscription.ts
+|  ├── hooks
+|  |  └── useNavigationContext.ts
+|  ├── services
+|  |  └── account
+|  |     └── account.service.ts
+|  ├── types
+|  |  └── index.ts
+|  └── utils
+|     ├── alert.util.ts
+|     ├── date.util.ts
+|     ├── jwt.util.ts
+|     └── storage.util.ts
+├── index.css
+├── index.scss
+├── lib
+|  ├── mutation.ts
+|  ├── query.ts
+|  └── utils.ts
+├── main.tsx
+├── modules
+|  └── image-extension.d.ts
+├── redux
+|  ├── auth
+|  |  └── authSlice.ts
+|  ├── navigation
+|  |  └── navigationSlice.ts
+|  ├── persistConfig.ts
+|  ├── rootReducer.ts
+|  ├── store.ts
+|  └── ui
+|     └── uiSlice.ts
+├── router
+|  ├── auth.routes.tsx
+|  ├── default.routes.tsx
+|  ├── index.tsx
+|  ├── ProtectedRoute.tsx
+|  └── _roleNav.ts
+├── styles
+|  ├── base
+|  |  └── _variables.scss
+|  ├── main.scss
+|  ├── themes
+|  |  ├── app
+|  |  |  ├── _dark__theme.scss
+|  |  |  ├── _default__theme.scss
+|  |  |  └── _light__theme.scss
+|  |  ├── chat-room
+|  |  |  ├── _dark__theme.scss
+|  |  |  ├── _default__theme.scss
+|  |  |  └── _red__theme.scss
+|  |  └── themes.scss
+|  └── variables
+|     ├── FunctionArea
+|     |  └── _function-side-bar-variables.scss
+|     ├── MainArea
+|     |  ├── _chat-box-info-variables.scss
+|     |  ├── _chat-box-variables.scss
+|     |  └── _room-browser-variables.scss
+|     └── _app-variables.scss
+├── views
+|  ├── components
+|  |  ├── common
+|  |  |  ├── empty
+|  |  |  |  ├── index.tsx
+|  |  |  |  └── styles.scss
+|  |  |  └── mui-ui
+|  |  |     ├── AppTheme.tsx
+|  |  |     ├── ColorModeIconDropdown.tsx
+|  |  |     ├── ColorModeSelect.tsx
+|  |  |     ├── customizations
+|  |  |     |  ├── dataDisplay.tsx
+|  |  |     |  ├── feedback.tsx
+|  |  |     |  ├── inputs.tsx
+|  |  |     |  ├── navigation.tsx
+|  |  |     |  └── surfaces.ts
+|  |  |     ├── MuiUiComponents.tsx
+|  |  |     ├── MuiUiCustomIcons.tsx
+|  |  |     ├── MuiUiRating.tsx
+|  |  |     ├── theme.ts
+|  |  |     └── themePrimitives.ts
+|  |  └── layouts
+|  |     ├── auth-layout
+|  |     |  ├── AuthLayoutContent.tsx
+|  |     |  ├── AuthLayoutFooter.tsx
+|  |     |  ├── AuthLayoutHeader.tsx
+|  |     |  ├── index.tsx
+|  |     |  └── styles.scss
+|  |     ├── default-layout
+|  |     |  ├── DefaultLayoutContent.tsx
+|  |     |  ├── DefaultLayoutHeader.tsx
+|  |     |  ├── DefaultLayoutSideBar.tsx
+|  |     |  ├── index.tsx
+|  |     |  ├── README.md
+|  |     |  └── styles.scss
+|  |     └── error-boundary
+|  |        └── ErrorBoundary.tsx
+|  └── pages
+|     ├── audio-tuning-page
+|     |  ├── index.tsx
+|     |  └── styles.scss
+|     ├── dashboard
+|     |  └── index.tsx
+|     ├── hls.tsx
+|     ├── home-page
+|     |  ├── index.tsx
+|     |  └── styles.scss
+|     ├── login-page
+|     |  ├── Card.tsx
+|     |  ├── index.tsx
+|     |  ├── SignInContainer.tsx
+|     |  └── styles.scss
+|     ├── my-channel-detail-page
+|     |  ├── dashboard-page
+|     |  |  ├── index.tsx
+|     |  |  └── styles.scss
+|     |  ├── overview-page
+|     |  |  ├── index.tsx
+|     |  |  └── styles.scss
+|     |  ├── show-page
+|     |  |  ├── index.tsx
+|     |  |  └── styles.scss
+|     |  └── subscription-page
+|     |     ├── index.tsx
+|     |     ├── revenue-chart.tsx
+|     |     └── styles.scss
+|     ├── my-channel-page
+|     |  ├── index.tsx
+|     |  └── styles.scss
+|     ├── my-show-detail-page
+|     |  ├── episode-detail-page
+|     |  |  ├── episode-audio.scss
+|     |  |  ├── episode-info.tsx
+|     |  |  ├── epsiode-audio.tsx
+|     |  |  ├── index.tsx
+|     |  |  └── styles.scss
+|     |  ├── episode-page
+|     |  |  ├── index.tsx
+|     |  |  └── styles.scss
+|     |  ├── overview-page
+|     |  |  ├── index.tsx
+|     |  |  ├── show-info.tsx
+|     |  |  ├── show-trailer.scss
+|     |  |  ├── show-trailer.tsx
+|     |  |  └── styles.scss
+|     |  └── subscription-page
+|     |     ├── index.tsx
+|     |     ├── revenue-chart.tsx
+|     |     └── styles.scss
+|     ├── my-show-page
+|     |  ├── index.tsx
+|     |  └── styles.scss
+|     ├── profile-page
+|     |  ├── buddy-audio.tsx
+|     |  ├── index.tsx
+|     |  ├── profile-info.tsx
+|     |  ├── show-trailer.scss
+|     |  └── styles.scss
+|     ├── register-page
+|     |  ├── Card.tsx
+|     |  ├── index.tsx
+|     |  ├── SignInContainer.tsx
+|     |  └── styles.scss
+|     └── survey-page
+|        ├── index.tsx
+|        └── styles.scss
+└── vite-env.d.ts
+
+directory: 79 file: 172
+
