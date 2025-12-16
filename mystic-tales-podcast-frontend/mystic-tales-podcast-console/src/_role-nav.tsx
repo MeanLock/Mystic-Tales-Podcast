@@ -241,13 +241,13 @@ const get_roleNav = (role_id: number, account_id: number) => {
     icon: <AssignmentIcon sx={{ fontSize: 32 }} />,
 
   },
-  {
-    component: CNavItem,
-    name: 'System Config',
-    to: '/system-configuration',
-    icon: <SettingsOutlinedIcon sx={{ fontSize: 29 }} />,
+  // {
+  //   component: CNavItem,
+  //   name: 'System Config',
+  //   to: '/system-configuration',
+  //   icon: <SettingsOutlinedIcon sx={{ fontSize: 29 }} />,
 
-  }
+  // }
 
 ],
   ]
