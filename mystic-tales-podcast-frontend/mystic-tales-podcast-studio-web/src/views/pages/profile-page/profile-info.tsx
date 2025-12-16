@@ -123,6 +123,8 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
     const [showAllCategory, setShowAllCategory] = useState<Record<string, boolean>>({});
     const displayLimit = 10;
 
+        const [displayPrice, setDisplayPrice] = useState<number>(0);
+
 
 
     const { startPolling } = useSagaPolling({
@@ -183,6 +185,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
         if (!profile) return;
         setProfileData(profile);
         setOriginalProfile(prev => prev ?? profile);
+                setDisplayPrice(profile.PodcasterProfile.PricePerBookingWord * 1000);
         fetchBookingToneList();
         fetchPodcasterBookingTone();
     }, [profile]);
@@ -226,8 +229,9 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
 
     const priceChanged = useMemo(() => {
         if (!originalProfile || !profileData) return false;
-        return originalProfile.PodcasterProfile.PricePerBookingWord !== profileData.PodcasterProfile.PricePerBookingWord;
-    }, [originalProfile, profileData?.PodcasterProfile.PricePerBookingWord]);
+        // So sánh với giá trị gốc (đã nhân 1000)
+        return (originalProfile.PodcasterProfile.PricePerBookingWord * 1000) !== displayPrice;
+    }, [originalProfile, displayPrice]);
 
     const descriptionChanged = useMemo(() => {
         if (!originalProfile || !profileData) return false;
@@ -314,7 +318,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                     PodcasterProfileUpdateInfo: {
                         Name: profileData.PodcasterProfile.Name,
                         Description: profileData.PodcasterProfile.Description || '',
-                        PricePerBookingWord: profileData.PodcasterProfile.PricePerBookingWord || 1,
+                        PricePerBookingWord: displayPrice / 1000,
                         IsBuddy: profileData.PodcasterProfile.IsBuddy,
                     },
                     BuddyAudioFile: null
@@ -333,10 +337,10 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                             ...(prev || profileData),
                             Name: profileData.PodcasterProfile.Name,
                             Description: profileData.PodcasterProfile.Description,
-                            PricePerBookingWord: profileData.PodcasterProfile.PricePerBookingWord,
+                            PricePerBookingWord: displayPrice / 1000,
                             IsBuddy: profileData.PodcasterProfile.IsBuddy,
                         }));
-                        dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: profileData.PodcasterProfile.IsBuddy, PricePerBookingWord: profileData.PodcasterProfile.PricePerBookingWord } }));
+                        dispatch(setAuthToken({ ...authSlice, user: { ...authSlice.user, IsBuddy: profileData.PodcasterProfile.IsBuddy, PricePerBookingWord: (displayPrice/1000) } }));
 
                         await refreshProfile?.();
 
@@ -417,7 +421,7 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                     <div className="profile-info-page__row">
                         <TextField
                             label="Price Per Booking Word "
-                            value={profileData.PodcasterProfile.PricePerBookingWord}
+                            value={displayPrice} // Dùng displayPrice thay vì profileData.PodcasterProfile.PricePerBookingWord
                             variant="standard"
                             InputProps={{
                                 endAdornment: (
@@ -427,12 +431,12 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ loading }) => {
                                 ),
                             }}
                             type="number"
-                            onChange={(e) => {
+                           onChange={(e) => {
                                 let val = e.target.value;
-                                if (val === '' || Number(val) < 1) {
-                                    setProfileData({ ...profileData, PodcasterProfile: { ...profileData.PodcasterProfile, PricePerBookingWord: 1 } });
+                                if (val === '' || Number(val) < 1000) {
+                                    setDisplayPrice(1000); // Min 1000 VND
                                 } else {
-                                    setProfileData({ ...profileData, PodcasterProfile: { ...profileData.PodcasterProfile, PricePerBookingWord: Number(val) } });
+                                    setDisplayPrice(Number(val));
                                 }
                             }}
                             className="profile-info-page__input profile-info-page__input--name"

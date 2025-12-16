@@ -126,7 +126,8 @@ const show_state = (table: DMCAAccusation[], navigate: (path: string) => void) =
               break;
                case 'Unresolved Dismissed':
             case 'Direct Resolve Dismissed':
-              color = '#ffffffff'; bg = '#ef221eff'; // đỏ dịu mắt
+           color = '#ef5350';
+                            bg = 'rgba(239, 83, 80, 0.15)';
               break;
             default:
               color = '#9e9e9e'; bg = 'rgba(158,158,158,0.15)'; // xám trung tính sáng
@@ -218,7 +219,8 @@ const episode_state = (table: DMCAAccusation[], navigate: (path: string) => void
               break;
             case 'Unresolved Dismissed':
             case 'Direct Resolve Dismissed':
-              color = '#ffffffff'; bg = '#ef221eff'; // đỏ dịu mắt
+            color = '#ef5350';
+                            bg = 'rgba(239, 83, 80, 0.15)';
               break;
             default:
               color = '#9e9e9e'; bg = 'rgba(158,158,158,0.15)'; // xám trung tính sáng

@@ -47,32 +47,41 @@ const state_creator = (table: Podcaster[], handleDataChange: () => void) => {
         headerName: "Status",
         cellClass: 'd-flex align-items-center',
         flex: 0.7,
+        valueGetter: (params: { data: Podcaster }) => {
+          if (params.data.DeactivatedAt !== null) return 0;
+          if (!params.data.PodcasterProfile.IsVerified) return 1;
+          return 2;
+        },
         cellRenderer: (params: { data: Podcaster }) => {
           let status = {
             title: '',
             color: '',
+            bg: ''
           };
           if (params.data.DeactivatedAt !== null) {
             status = {
               title: 'Deactivated',
-              color: 'danger',
+              color: '#ef5350',
+              bg: 'rgba(251, 222, 227, 0.2)',
             };
           } else if (params.data.PodcasterProfile.IsVerified) {
             status = {
               title: 'Verified',
-              color: 'success',
+              color: 'var(--secondary-green)',
+              bg: 'rgba(173, 227, 57, 0.06)'
             };
           } else {
             status = {
               title: 'Pending',
-              color: 'warning',
+              color: '#ffb300',
+              bg: 'rgba(255, 179, 0, 0.07)'
             };
           }
           return (
             <CCard
-              textColor={`${status.color}`}
-              style={{ width: '100px' }}
-              className={`text-center fw-bold rounded-pill px-1 border-2 border-${status.color} bg-light`}
+              style={{ width: '100px', color: `${status.color}`, background: `${status.bg}`, border: `2px solid ${status.color}` }}
+              className={`text-center fw-bold rounded-pill px-1 `}
+
             >
               {status.title}
             </CCard>
@@ -84,9 +93,9 @@ const state_creator = (table: Podcaster[], handleDataChange: () => void) => {
         cellClass: 'd-flex justify-content-center py-0',
         cellRenderer: (params: { data: Podcaster }) => {
           const Modal_props = {
-            updateForm: <PodcasterDetailTab account={params.data}  onClose={() => {
-        handleDataChange(); // Refresh lại data
-      }}  />,
+            updateForm: <PodcasterDetailTab account={params.data} onClose={() => {
+              handleDataChange(); // Refresh lại data
+            }} />,
             title: 'Podcaster [ID: #' + params.data.Id + ']',
             button: <Eye size={27} color='var(--secondary-green)' />,
             update_button_color: 'white'
@@ -156,7 +165,7 @@ const PodcasterView: FC<PodcasterViewProps> = () => {
       <CRow className="container-test">
         <CCol xs={12}>
           {isLoading ? (
-             <div className="flex justify-content-center align-items-center h-150" >
+            <div className="flex justify-content-center align-items-center h-150" >
               <Loading />
             </div>
           ) : (

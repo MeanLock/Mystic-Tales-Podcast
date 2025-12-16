@@ -67,7 +67,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                     }
                     return (
                         <span>
-                            {params.data.Price} Point
+                            {params.data.Price} Coins
                         </span>
                     );
                 }

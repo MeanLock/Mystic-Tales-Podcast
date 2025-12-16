@@ -1,7 +1,5 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
-import "./index.scss";
 import App from "./App";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
@@ -13,7 +11,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import queryClient from "@/lib/query";
 import { ThemeProvider } from "@mui/material";
 import theme from "./views/components/common/mui-ui/theme";
-
+import "./index.css";
+import "./index.scss";
 ModuleRegistry.registerModules([AllCommunityModule]);
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

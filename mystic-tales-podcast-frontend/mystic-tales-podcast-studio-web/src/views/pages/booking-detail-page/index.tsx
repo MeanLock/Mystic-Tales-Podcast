@@ -413,7 +413,7 @@ const BookingDetailPage: FC<BookingDetailPageProps> = () => {
                                 </div>
                                 <div className="booking-detail__plain-item">
                                     <span className="booking-detail__plain-label">Price</span>
-                                    <span className="booking-detail__plain-value booking-detail__plain-value--price">{Booking.Price ? `${Booking.Price} Points` : '---'} </span>
+                                    <span className="booking-detail__plain-value booking-detail__plain-value--price">{Booking.Price ? `${Booking.Price.toLocaleString('vi-VN')} Coins` : '---'} </span>
                                 </div>
                                 {(isProducing) && (
                                     <div className="booking-detail__plain-item">

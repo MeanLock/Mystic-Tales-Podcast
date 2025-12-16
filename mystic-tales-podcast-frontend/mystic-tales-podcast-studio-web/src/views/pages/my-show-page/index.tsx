@@ -39,7 +39,7 @@ const MyShowPage: FC<MyShowPageProps> = () => {
         setLoading(true);
         try {
             const showList = await getShowList(loginRequiredAxiosInstance);
-            console.log("Fetched show list:", showList);
+            console.log("Fetched show :", showList);
             if (showList.success) {
                 setShowList(showList.data.ShowList);
             } else {

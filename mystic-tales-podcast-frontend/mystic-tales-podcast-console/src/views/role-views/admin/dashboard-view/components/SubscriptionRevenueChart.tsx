@@ -54,7 +54,7 @@ export function SubscriptionRevenueChart({ activeTab }: { activeTab: string }) {
   }
 
   const getTooltipLabel = (item: SubscriptionProfit) => {
-    const revenue = item.Amount.toLocaleString('vi-VN') + ' Points';
+    const revenue = item.Amount.toLocaleString('vi-VN') + ' Coins';
 
     if (activeTab === 'Daily' || activeTab === 'Weekly') {
       return `Revenue: ${revenue}`;

@@ -319,7 +319,7 @@ const BookingDetailView: FC<BookingDetailViewProps> = () => {
                             <div className="booking-detail__plain-grid">
                                 <div className="booking-detail__plain-item">
                                     <span className="booking-detail__plain-label">Price</span>
-                                    <span className="booking-detail__plain-value booking-detail__plain-value--price">{Booking.Price ? `${Booking.Price} Points` : '---'} </span>
+                                    <span className="booking-detail__plain-value booking-detail__plain-value--price">{Booking.Price ? `${Booking.Price} Coins` : '---'} </span>
                                 </div>
                                 <div className="booking-detail__plain-item">
                                     <span className="booking-detail__plain-label">Deadline</span>

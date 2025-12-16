@@ -283,6 +283,10 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
     };
 
     const handleDelete = async () => {
+        if (authSlice.user?.ViolationLevel > 0) {
+                    toast.error('Your account is currently under violation !!');
+                    return;
+                }
         const alert = await confirmAlert("Are you sure to DELETE this subscription?");
         if (!alert.isConfirmed) return;
         setDeleting(true);

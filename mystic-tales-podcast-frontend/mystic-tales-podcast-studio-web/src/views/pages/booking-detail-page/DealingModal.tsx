@@ -54,9 +54,8 @@ const DealingModal: FC<DealingModalProps> = ({ booking, onClose }) => {
     })
 
     const unitPricePerThousand = Number(authSlice.user?.PricePerBookingWord ?? 0);
-
-    const calcPrice = (wordCount: number) => (Math.max(0, wordCount) / 1000) * unitPricePerThousand;
-    const fmtPoints = (n: number) => `${Math.round(n).toLocaleString('vi-VN')} points`;
+    const calcPrice = (wordCount: number) => (Math.max(0, wordCount) ) * unitPricePerThousand;
+    const fmtPoints = (n: number) => `${Math.round(n).toLocaleString('vi-VN')} coins`;
     const totalPrice = React.useMemo(
         () => requirementInfoList.reduce((sum, item) => sum + calcPrice(item.WordCount || 0), 0),
         [requirementInfoList, unitPricePerThousand]

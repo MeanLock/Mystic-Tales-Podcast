@@ -24,6 +24,11 @@ export const useSmartAudio = ({
     );
     const [isLoading, setIsLoading] = useState(false);
     const [status, setStatus] = useState<string>('Đang khởi tạo...');
+    const retryCountRef = useRef<number>(0);
+    const maxRetries = 3;
+    const lastErrorTimeRef = useRef<number>(0);
+    const isRetryingRef = useRef<boolean>(false);
+    const hasStoppedRetryingRef = useRef<boolean>(false);
 
     const updateStatus = useCallback((newStatus: string) => {
         setStatus(newStatus);
@@ -49,6 +54,11 @@ export const useSmartAudio = ({
             setCurrentUrl(newUrl);
             setUrlCreatedAt(Date.now());
             updateStatus('✅ Sẵn sàng');
+            
+            // Reset retry count on success
+            retryCountRef.current = 0;
+            isRetryingRef.current = false;
+            hasStoppedRetryingRef.current = false;
 
             // Nếu cần preserve playback, update audio element ngay
             if (preservePlayback && audio && newUrl) {
@@ -67,6 +77,19 @@ export const useSmartAudio = ({
             const err = error as Error;
             onError?.(err);
             updateStatus(`❌ Lỗi: ${err.message}`);
+            
+            // If it's a 403 error, stop retrying immediately
+            if (err.message.includes('403')) {
+                console.error('403 error received, stopping retries');
+                retryCountRef.current = maxRetries;
+                isRetryingRef.current = false;
+                hasStoppedRetryingRef.current = true;
+                if (audio) {
+                    audio.src = '';
+                    audio.removeAttribute('src');
+                }
+            }
+            
             return false;
         } finally {
             setIsLoading(false);
@@ -115,11 +138,53 @@ export const useSmartAudio = ({
         const audio = audioRef.current;
         if (!audio || !audio.error) return;
         
-        if (audio.error.code === 4) {
-            updateStatus('Lỗi load audio, đang thử lại...');
-            await refreshPresignedUrl(true); // Preserve playback state
+        // If we've already stopped retrying, don't process any more errors
+        if (hasStoppedRetryingRef.current) {
+            return;
         }
-    }, [refreshPresignedUrl, updateStatus]);
+        
+        // Prevent concurrent retry attempts
+        if (isRetryingRef.current) {
+            console.log('Already retrying, skipping...');
+            return;
+        }
+        
+        // Prevent rapid retry loops - wait at least 2 seconds between retries
+        const now = Date.now();
+        if (now - lastErrorTimeRef.current < 2000) {
+            console.log('Skipping retry - too soon after last error');
+            return;
+        }
+        lastErrorTimeRef.current = now;
+        
+        if (audio.error.code === 4) {
+            // Check if we've exceeded max retries
+            if (retryCountRef.current >= maxRetries) {
+                hasStoppedRetryingRef.current = true;
+                updateStatus(`❌ Đã thử ${maxRetries} lần nhưng không thể tải audio. Vui lòng kiểm tra lại file.`);
+                onError?.(new Error(`Failed to load audio after ${maxRetries} attempts`));
+                // Clear audio src to prevent continuous error events
+                audio.src = '';
+                audio.removeAttribute('src');
+                return;
+            }
+            
+            retryCountRef.current += 1;
+            isRetryingRef.current = true;
+            updateStatus(`⚠️ Lỗi load audio, đang thử lại (${retryCountRef.current}/${maxRetries})...`);
+            
+            const success = await refreshPresignedUrl(true);
+            
+            if (!success) {
+                // If refresh failed, show error
+                isRetryingRef.current = false;
+                updateStatus(`❌ Không thể tải URL mới (lần ${retryCountRef.current}/${maxRetries})`);
+            }
+        } else {
+            // Not error code 4, stop retrying
+            isRetryingRef.current = false;
+        }
+    }, [refreshPresignedUrl, updateStatus, onError, maxRetries]);
 
   const handlePlay = useCallback(() => {
   }, [updateStatus]);
