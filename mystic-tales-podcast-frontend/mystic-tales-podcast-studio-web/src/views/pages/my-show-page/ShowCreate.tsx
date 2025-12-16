@@ -131,7 +131,7 @@ const ShowCreate = ({ onClose }: { onClose?: () => void }) => {
                 console.error('API Error:', channelList.message);
             }
         } catch (error) {
-            console.error('Lỗi khi fetch channel list:', error);
+            console.error('Lỗi khi fetch  list:', error);
         } finally {
             setLoading(false);
         }
