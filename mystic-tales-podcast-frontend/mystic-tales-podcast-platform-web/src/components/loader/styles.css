@@ -1,0 +1,33 @@
+.waving-container {
+  width: 48px; /* w-12 */
+  height: 48px; /* h-12 */
+  border-radius: 6px; /* rounded-md */
+}
+
+.pill {
+  width: 4px; /* w-1.5 */
+  height: 20px; /* h-5 */
+  border-radius: 9999px; /* rounded-full */
+  background: rgba(255, 255, 255, 0.85);
+  transform-origin: bottom;
+  animation: wave 1s ease-in-out infinite;
+}
+
+/* lệch pha 3 cột */
+.pill:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.pill:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* animation wave */
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}

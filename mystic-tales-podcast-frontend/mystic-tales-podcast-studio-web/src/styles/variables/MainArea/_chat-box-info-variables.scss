@@ -1,0 +1,87 @@
+// Text
+$text-primary: var(--chat-box-info_text-primary, #000000); // used (màu chữ chính) default: #000000
+$text-secondary: var(--chat-box-info_text-secondary, #60708a); // used (màu chữ phụ) default: #60708a
+$text-link: var(--chat-box-info_text-link, #005ae0); // used (màu chữ của Link) default: #005ae0
+$text-placeholder: var(--chat-box-info_text-placeholder, #000000);
+$text-error: var(--chat-box-info_text-error, #000000);
+$text-success: var(--chat-box-info_text-success, #000000);
+$text-muted: var(--chat-box-info_text-muted, #000000);
+
+// Input
+$input-bg-primary: var(--chat-box-info_input-bg-primary, #ffffff);  // used (màu nền của Input) default: #ffffff
+$input-bg-secondary: var(--chat-box-info_input-bg-secondary, #e5e7eb); // used (màu nền phụ của Input) default: #e5e7eb
+$input-border-primary: var(--chat-box-info_input-border-primary, #0000000d); // used (màu viền của Input) default: #0000000d
+$input-border-secondary: var(--chat-box-info_input-border-secondary, #00000000); // used (màu viền phụ của Input) default: #00000000
+$input-text-primary: var(--chat-box-info_input-text-primary, #000000); 
+$input-text-secondary: var(--chat-box-info_input-text-secondary, #000000);
+$input-focus-border-primary: var(--chat-box-info_input-focus-border-primary, #005ae0); // used (màu viền của Input khi focus) default: #005ae0
+$input-focus-border-secondary: var(--chat-box-info_input-focus-border-secondary, #005ae0);
+$input-box-shadow-primary: var(--chat-box-info_input-box-shadow-primary, #00000033); // used (box-shadow của Input khi focus) default: 0 0 10px 0 #00000033
+$input-box-shadow-secondary: var(--chat-box-info_input-box-shadow-secondary, #00000033);
+
+// Title
+$title-primary: var(--chat-box-info_title-primary, #000000);    // used (màu chữ của Title) default: #000000
+$title-secondary: var(--chat-box-info_title-secondary, #000000);
+$title-error: var(--chat-box-info_title-error, #000000);
+$title-success: var(--chat-box-info_title-success, #000000);
+
+// Button
+$button-bg-primary: var(--chat-box-info_button-bg-primary, #e5e7eb); // used (màu nền của Button) default: #e5e7eb
+$button-bg-secondary: var(--chat-box-info_button-bg-secondary, #005ae0); 
+$button-hover-bg-primary: var(--chat-box-info_button-hover-bg-primary, #ccd0d5);  // used (màu nền của Button khi hover) default: #ccd0d5
+$button-hover-bg-secondary: var(--chat-box-info_button-hover-bg-secondary, #000000);
+$button-text-primary: var(--chat-box-info_button-text-primary, #000000); // used (màu chữ của Button) default: #000000
+$button-text-secondary: var(--chat-box-info_button-text-secondary, #ffffff); 
+$button-hover-text-primary: var(--chat-box-info_button-hover-text-primary, #000000); // used (màu chữ của Button khi hover) default: #000000
+$button-hover-text-secondary: var(--chat-box-info_button-hover-text-secondary, #000000);
+$button-active-bg-primary: var(--chat-box-info_button-active-bg-primary, #e5efff); // used (màu nền của Button khi active, xài trong filter button) default: #e5efff
+$button-active-bg-secondary: var(--chat-box-info_button-active-bg-secondary, #000000);
+$button-active-text-primary: var(--chat-box-info_button-active-text-primary, #005ae0); // used (màu chữ của Button khi active, xài trong filter button) default: #005ae0
+$button-active-text-secondary: var(--chat-box-info_button-active-text-secondary, #000000);
+$button-disabled-bg: var(--chat-box-info_button-disabled-bg, #000000);
+$button-disabled-text: var(--chat-box-info_button-disabled-text, #000000);
+
+// Action Button
+$action-button-bg: var(--chat-box-info_action-button-bg, #ffffff);   // used (màu nền của Action Button) default: #ffffff
+$action-group-bg: var(--chat-box-info_action-group-bg, #ffffff); // used (màu khung nhóm các Action Button) default: #ffffff
+$action-button-hover-bg: var(--chat-box-info_action-button-hover-bg, #ccd0d5); // used (màu nền của Action Button khi hover) default: #ccd0d5
+
+// Background
+$background-primary: var(--chat-box-info_background-primary, #e2e2e2);  // used (màu nền của Chat Box Info) default: #e2e2e2
+$background-secondary: var(--chat-box-info_background-secondary, #ffffff); // used (màu nền phụ của Chat Box Info) default: #e2e2e2
+$background-overlay: var(--chat-box-info_background-overlay, rgba(0, 0, 0, 0.5));
+$background-highlight: var(--chat-box-info_background-highlight, #000000);
+$background-card: var(--chat-box-info_background-card, #000000);
+
+// Icon
+$icon-primary: var(--chat-box-info_icon-primary, #000000); // used (màu của Icon) default: #000000
+$icon-secondary: var(--chat-box-info_icon-secondary, #000000);
+$icon-disabled: var(--chat-box-info_icon-disabled, #000000);
+$icon-highlight: var(--chat-box-info_icon-highlight, #000000);
+
+// Divider & Border
+$border-primary: var(--chat-box-info_border-primary, #000000);
+$border-secondary: var(--chat-box-info_border-secondary, #000000);
+$divider-light: var(--chat-box-info_divider-light, #000000);
+$divider-dark: var(--chat-box-info_divider-dark, #000000);
+
+// Shadow
+$shadow-primary: var(--chat-box-info_shadow-primary, 0 2px 4px #0000001a);
+$shadow-secondary: var(--chat-box-info_shadow-secondary, 0 2px 6px #00000033);
+
+// Info Section
+$infoSection-bg: var(--chat-box-info_infoSection-bg, #ffffff); // used (màu nền của Info Section) default: #ffffff
+$infoSection-title-bg: var(--chat-box-info_infoSection-title-bg, #ffffff); // used (màu nền của Info Section Title, vd: Dropdown Section Title) default: #ffffff
+$infoSection-title-text: var(--chat-box-info_infoSection-title-text, #000000); // used (màu chữ của Info Section Title, vd: Dropdown Section Title) default: #000000
+$infoSection-dropdown-item-bg: var(--chat-box-info_infoSection-dropdown-item-bg, #ffffff); // used (màu nền của Dropdown Item) default: #ffffff
+$infoSection-dropdown-item-hover-bg: var(--chat-box-info_infoSection-dropdown-item-hover-bg, #e5e7eb); // used (màu nền của Dropdown Item khi hover) default: #e5e7eb
+$infoSection-dropdown-item-border: var(--chat-box-info_infoSection-dropdown-item-border, #ccd0d5); // used (màu viền của ảnh Dropdown Item) default: #ccd0d5
+
+
+// popup
+$popup-bg: var(--chat-box-info_popup-bg, #ffffff); // used (màu nền của PopUp) default: #ffffff
+$popup-item-bg: var(--chat-box-info_popup-bg, #ffffff); // used (màu nền của item trong PopUp) default: #ffffff
+$popup-item-hover-bg: var(--chat-box-info_popup-hover-bg, #e5e7eb); // used (màu nền của item trong PopUp khi hover) default: #e5e7eb
+$popup-item-border: var(--chat-box-info_popup-border, #ccd0d5); // used (màu viền của ảnh trong item trong PopUp ) default: #ccd0d5
+
+
