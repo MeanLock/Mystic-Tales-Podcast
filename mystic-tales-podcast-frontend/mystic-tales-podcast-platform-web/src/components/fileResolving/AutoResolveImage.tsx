@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
-import {
-  useGetAccountPublicSourceQuery,
-  useGetBookingPublicSourceQuery,
-  useGetCategoryPublicSourceQuery,
-  useGetPodcastPublicSourceQuery,
-} from "@/core/services/file/file.service";
 import { Skeleton } from "../ui/skeleton";
+import { getPublisSourceFileUrl } from "@/core/services/file/file2.service";
 
 const FALL_BACK_URL =
   "https://i.pinimg.com/1200x/b6/2b/e8/b62be83c782a82871177abe584c9e78e.jpg";
@@ -24,76 +19,41 @@ interface AutoResolveImageProps {
 
 const AutoResolveImage = (props: AutoResolveImageProps) => {
   const { FileKey, Name, type, className, imgClassName } = props;
-  const [imgErrored, setImgErrored] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [url, setUrl] = useState<string | null>(null);
 
   // Reset error state khi FileKey thay đổi để không dùng trạng thái cũ
   useEffect(() => {
-    setImgErrored(false);
-  }, [FileKey]);
+    let mounted = true;
+    setIsLoading(true);
 
-  // Hooks are declared consistently with skip flags so only one executes
-  const isAccount = type === "AccountPublicSource";
-  const isBooking = type === "BookingPublicSource";
-  const isPodcast = type === "PodcastPublicSource";
-  const isCategory = type === "CategoryPublicSource";
+    const resolveImage = async () => {
+      if (!FileKey) {
+        setUrl(null);
+        setIsLoading(false);
+        return;
+      }
 
-  const accountQ = useGetAccountPublicSourceQuery(
-    { FileKey },
-    {
-      skip: !isAccount || !FileKey,
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
-    }
-  );
-  const bookingQ = useGetBookingPublicSourceQuery(
-    { FileKey },
-    {
-      skip: !isBooking || !FileKey,
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
-    }
-  );
-  const podcastQ = useGetPodcastPublicSourceQuery(
-    { FileKey },
-    {
-      skip: !isPodcast || !FileKey,
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
-    }
-  );
-  const categoryQ = useGetCategoryPublicSourceQuery(
-    { FileKey },
-    {
-      skip: !isCategory || !FileKey,
-      refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
-    }
-  );
+      const responseUrl = await getPublisSourceFileUrl({
+        fileKey: FileKey,
+        type: type,
+      });
 
-  const resolvedUrl =
-    accountQ.data?.FileUrl ||
-    bookingQ.data?.FileUrl ||
-    podcastQ.data?.FileUrl ||
-    categoryQ.data?.FileUrl ||
-    "";
+      if (mounted && responseUrl) {
+        setUrl(responseUrl);
+        setIsLoading(false);
+      } else if (mounted) {
+        setUrl(null);
+        setIsLoading(false);
+      }
+    };
 
-  const isLoading =
-    accountQ.isLoading ||
-    bookingQ.isLoading ||
-    podcastQ.isLoading ||
-    categoryQ.isLoading;
+    resolveImage();
 
-  const isError =
-    accountQ.isError ||
-    bookingQ.isError ||
-    podcastQ.isError ||
-    categoryQ.isError;
-
-  const showFallback = !FileKey || isError || imgErrored || !resolvedUrl;
+    return () => {
+      mounted = false;
+    };
+  }, [FileKey, type]);
 
   if (isLoading && FileKey) {
     return (
@@ -108,29 +68,13 @@ const AutoResolveImage = (props: AutoResolveImageProps) => {
   }
 
   return (
-    <div className={"overflow-hidden " + (className || "")}>
-      {!showFallback ? (
-        <img
-          src={resolvedUrl}
-          alt={Name || "image"}
-          className={"w-full h-full object-cover " + (imgClassName || "")}
-          onError={() => setImgErrored(true)}
-        />
-      ) : (
-        <div
-          className={
-            "w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center " +
-            (imgClassName || "")
-          }
-        >
-          <img
-            src={FALL_BACK_URL}
-            alt={Name || "image"}
-            className={"w-full h-full object-cover " + (imgClassName || "")}
-            onError={() => setImgErrored(true)}
-          />
-        </div>
-      )}
+    <div className={"rounded-md flex items-center justify-center"}>
+      <img
+        src={url || FALL_BACK_URL}
+        alt={Name || "Image"}
+        className={`object-cover w-full h-full` + (className || "")}
+        onError={() => setUrl(FALL_BACK_URL)}
+      />
     </div>
   );
 };

@@ -12,6 +12,7 @@ const fileApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "public",
       }),
+      keepUnusedDataFor: 0,
     }),
     getTemplatePodcastBuddyCommitmentFile: build.query<
       { FileUrl: string },
@@ -22,6 +23,7 @@ const fileApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "required",
       }),
+      keepUnusedDataFor: 0,
     }),
     getPodcastBuddyCommitmentFile: build.query<
       { FileUrl: string },
@@ -32,6 +34,7 @@ const fileApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "required",
       }),
+      keepUnusedDataFor: 0,
     }),
     // ---------------------------------------
     // Bookings
@@ -44,6 +47,7 @@ const fileApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "required",
       }),
+      keepUnusedDataFor: 0,
     }),
     // ---------------------------------------
     // Podcast
@@ -56,6 +60,7 @@ const fileApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "public",
       }),
+      keepUnusedDataFor: 0,
     }),
     // ---------------------------------------
     // Category
@@ -68,6 +73,7 @@ const fileApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "public",
       }),
+      keepUnusedDataFor: 0,
     }),
   }),
 });
@@ -81,7 +87,7 @@ export const {
   useGetCategoryPublicSourceQuery,
   useLazyGetBookingPublicSourceQuery,
   useLazyGetPodcastPublicSourceQuery,
-  useLazyGetAccountPublicSourceQuery
+  useLazyGetAccountPublicSourceQuery,
 } = fileApi;
 
 export default fileApi;

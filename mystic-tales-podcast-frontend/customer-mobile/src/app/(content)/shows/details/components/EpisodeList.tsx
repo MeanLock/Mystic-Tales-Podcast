@@ -15,6 +15,7 @@ import {
 } from "@/src/features/episode/episodeSlice";
 import { playAudio } from "@/src/features/mediaPlayer/playerSlice";
 import { usePlayer } from "@/src/core/services/player/usePlayer";
+import HtmlText from "@/src/components/renderHtml/HtmlText";
 
 interface EpisodeListProps {
   episodes: EpisodeFromShow[];
@@ -82,7 +83,7 @@ const EpisodeComponent = ({ episode }: { episode: EpisodeFromShow }) => {
           <Text className="text-white text-[20px] font-bold" numberOfLines={2}>
             {episode.Name}
           </Text>
-          <Text numberOfLines={3}>{episode.Description}</Text>
+          <HtmlText html={episode.Description} color="#fff" numberOfLines={3} />
         </View>
         <View className="w-full items-start mt-5">
           <PlayButtonVariant2
