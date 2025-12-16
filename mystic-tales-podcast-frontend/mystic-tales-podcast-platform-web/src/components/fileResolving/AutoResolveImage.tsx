@@ -62,17 +62,21 @@ const AutoResolveImage = (props: AutoResolveImageProps) => {
           "rounded-md flex items-center justify-center" + (className || "")
         }
       >
-        <Skeleton className={"w-full h-full " + (imgClassName || "")} />
+        <Skeleton className={`${imgClassName || ""}`} />
       </div>
     );
   }
 
   return (
-    <div className={"rounded-md flex items-center justify-center"}>
+    <div
+      className={`rounded-md flex items-center justify-center ${
+        className || ""
+      }`}
+    >
       <img
         src={url || FALL_BACK_URL}
         alt={Name || "Image"}
-        className={`object-cover w-full h-full` + (className || "")}
+        className={`object-cover ${imgClassName || ""}`}
         onError={() => setUrl(FALL_BACK_URL)}
       />
     </div>

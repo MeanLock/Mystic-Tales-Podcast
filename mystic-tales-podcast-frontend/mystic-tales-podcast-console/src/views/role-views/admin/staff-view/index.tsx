@@ -49,37 +49,50 @@ const state_creator = (table: Account[]) => {
         headerName: "Created At",
         flex: 0.7,
         valueGetter: (params: { data: Account }) => formatDate(params.data.CreatedAt),
+        comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+          const dateA = new Date(nodeA.data.CreatedAt).getTime();
+          const dateB = new Date(nodeB.data.CreatedAt).getTime();
+          return dateA - dateB;
+        },
       },
       {
         headerName: "Status",
         cellClass: 'd-flex align-items-center',
         flex: 0.7,
+        valueGetter: (params: { data: Account }) => {
+          if (params.data.DeactivatedAt !== null) return 0;
+          if (!params.data.IsVerified) return 1;
+          return 2;
+        },
         cellRenderer: (params: { data: Account }) => {
           let status = {
             title: '',
             color: '',
+            bg: ''
           };
           if (params.data.DeactivatedAt !== null) {
             status = {
               title: 'Deactivated',
-              color: 'danger',
+              color: '#ef5350',
+              bg: 'rgba(251, 222, 227, 0.2)',
             };
           } else if (params.data.IsVerified) {
             status = {
               title: 'Verified',
-              color: 'success',
+             color: 'var(--secondary-green)',
+              bg: 'rgba(173, 227, 57, 0.06)'
             };
           } else {
             status = {
               title: 'Unverified',
-              color: 'warning',
+               color: '#ffb300',
+              bg: 'rgba(255, 179, 0, 0.07)'
             };
           }
           return (
             <CCard
-              textColor={`${status.color}`}
-              style={{ width: '100px' }}
-              className={`text-center fw-bold rounded-pill px-1 border-2 border-${status.color} bg-light`}
+              style={{ width: '100px', color: `${status.color}`, background: `${status.bg}`, border: `2px solid ${status.color}` }}
+              className={`text-center fw-bold rounded-pill px-1 `}
             >
               {status.title}
             </CCard>
@@ -123,23 +136,23 @@ const StaffView: FC<StaffViewProps> = () => {
   let [state, setState] = useState<GridState | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
- const handleDataChange = async () => {
-     setIsLoading(true);
-     try {
-       const accountList = await getStaffAccounts(adminAxiosInstance);
-       console.log("Fetched staff accounts:", accountList);
-       if (accountList.success) {
-         setState(state_creator(accountList.data.StaffList));
-       } else {
-         console.error('API Error:', accountList.message);
-       }
-     } catch (error) {
-       console.error('Lỗi khi fetch staff accounts:', error);
-     } finally {
-       setIsLoading(false);
-     }
-   }
- 
+  const handleDataChange = async () => {
+    setIsLoading(true);
+    try {
+      const accountList = await getStaffAccounts(adminAxiosInstance);
+      console.log("Fetched staff accounts:", accountList);
+      if (accountList.success) {
+        setState(state_creator(accountList.data.StaffList));
+      } else {
+        console.error('API Error:', accountList.message);
+      }
+    } catch (error) {
+      console.error('Lỗi khi fetch staff accounts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
 
   useEffect(() => {
     handleDataChange()

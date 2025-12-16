@@ -189,13 +189,6 @@ const navItems = [
             name: "Subscriptions",
             to: "/media-player/management/transactions/subscriptions",
           },
-          // {
-          //   icon: <MdOutlineSubscriptions color="#fff" size={9} />,
-          //   iconActive: <MdOutlineSubscriptions color="#aae339" size={9} />,
-          //   iconWhenSmall: <MdOutlineSubscriptions color="#333" size={9} />,
-          //   name: "Subscriptions",
-          //   to: "/media-player/management/transactions/subscriptions",
-          // },
           {
             icon: <MdOutlineAccountBalanceWallet color="#fff" size={9} />,
             iconActive: (
@@ -490,7 +483,9 @@ const MediaPlayerSidebar = () => {
             ) : (
               <AutoResolveImage
                 FileKey={user?.MainImageFileKey}
+                Name={user.FullName}
                 className="md:w-10 md:h-10 sm:w-8 sm:h-8 w-8 h-8 rounded-full aspect-square object-cover"
+                imgClassName="rounded-full md:w-10 md:h-10 sm:w-8 sm:h-8 w-8 h-8"
                 type="AccountPublicSource"
               />
             )}

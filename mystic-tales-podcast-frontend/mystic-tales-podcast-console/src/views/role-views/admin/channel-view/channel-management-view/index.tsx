@@ -110,7 +110,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                             color = '#9e9e9e'; bg = 'rgba(158, 158, 158, 0.1)'; // xám trung tính sáng
                             break;
                         case 'Unpublished':
-                            color = '#ffb300'; bg = 'rgba(255, 179, 0, 0.15)'; // vàng cam tươi
+                            color = '#ffb300'; bg = 'rgba(255, 179, 0, 0.07)'; // vàng cam tươi
                             break;
                         case 'Published':
                             color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)'; // xanh primary của bạn
@@ -119,13 +119,13 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                             color = 'rgba(57, 184, 227, 1)'; bg = 'rgba(57, 184, 227, 0.15)'; // xanh dương dịu mắt
                             break;  
                         case 'Taken Down':
-                            color = '#ef5350'; bg = 'rgba(239, 83, 80, 0.15)'; // đỏ dịu mắt
+                            color = '#ef5350'; bg = 'rgba(251, 222, 227, 0.2)'; // đỏ dịu mắt
                             break;
                         case 'Removed':
-                            color = '#ef5350'; bg = 'rgba(239, 83, 80, 0.15)'; // đỏ dịu mắt
+                            color = '#ef5350'; bg = 'rgba(251, 222, 227, 0.2)'; // đỏ dịu mắt
                             break;
                         default:
-                            color = '#ef5350'; bg = 'rgba(239, 83, 80, 0.15)'; // đỏ dịu mắt
+                            color = '#ef5350'; bg = 'rgba(251, 222, 227, 0.2)'; // đỏ dịu mắt
                     }
 
                     return (
@@ -140,7 +140,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                                 color,
                                 background: bg,
                                 textAlign: 'center',
-                                border: `1.5px solid ${color}`,
+                                border: `2px solid ${color}`,
                             }}
                         >
                             {status}

@@ -1,9 +1,6 @@
 import { usePlayer } from "@/core/services/player/usePlayer";
 import type { RootState } from "@/redux/store";
-import {
-  FaBackward,
-  FaForward,
-} from "react-icons/fa";
+import { FaBackward, FaForward } from "react-icons/fa";
 import { IoPauseCircle, IoPlayCircle } from "react-icons/io5";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -503,7 +500,7 @@ const NewMediaPlayerControlBar = () => {
     <div className="w-full h-full flex items-center px-5 gap-5 md:gap-10">
       {/* AUDIO INFORMATIONS */}
       <div className="flex items-center gap-2">
-        <div className="w-12 h-12">
+        <div className="">
           <AutoResolveImage
             FileKey={state.currentAudio.image || ""}
             Name={state.currentAudio.name}
@@ -512,8 +509,8 @@ const NewMediaPlayerControlBar = () => {
                 ? "BookingPublicSource"
                 : "PodcastPublicSource"
             }
-            className="w-12 h-12 rounded-full shadow-sm overflow-hidden"
-            imgClassName="object-cover"
+            className="w-12 shadow-sm"
+            imgClassName="rounded-full w-12 h-12 aspect-square"
             key={state.currentAudio.id}
           />
         </div>
@@ -572,7 +569,7 @@ const NewMediaPlayerControlBar = () => {
                 stroke="currentColor"
                 strokeLinecap="round"
                 strokeWidth="2"
-                d="M12 2a10 10 0 0 1 10 10" 
+                d="M12 2a10 10 0 0 1 10 10"
               />
             </svg>
           </div>
