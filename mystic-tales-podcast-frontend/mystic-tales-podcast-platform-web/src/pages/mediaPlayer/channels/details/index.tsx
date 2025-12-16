@@ -704,7 +704,7 @@ const ChannelDetailsPage = () => {
                     >
                       <div className="flex items-end gap-3">
                         <span className="text-4xl md:text-5xl text-mystic-green font-extrabold leading-none">
-                          {formatVND(d.Price)}đ
+                          {formatVND(d.Price)} coins
                         </span>
                         <span className="text-white/60 mb-1">
                           {cycleSuffix(d.SubscriptionCycleType.Name)}
@@ -751,7 +751,7 @@ const ChannelDetailsPage = () => {
                              text-black hover:brightness-95"
                           style={{ backgroundColor: ACCENT }}
                         >
-                          Subscribe now for only {formatVND(d.Price)}đ
+                          Subscribe now for only {formatVND(d.Price)} coins
                           {cycleSuffix(d.SubscriptionCycleType.Name)}
                         </Button>
                       </DialogFooter>
