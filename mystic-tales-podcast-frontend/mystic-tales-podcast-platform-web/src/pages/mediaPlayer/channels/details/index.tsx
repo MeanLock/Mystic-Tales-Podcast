@@ -3,11 +3,8 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
-import type {
-  ChannelDetailsFromApi,
-  ChannelDetailsUI,
-} from "@/core/types/channel";
-import type { ShowFromAPI, ShowUI } from "@/core/types/show";
+import type { ChannelDetailsFromApi } from "@/core/types/channel";
+import type { ShowFromAPI } from "@/core/types/show";
 import Autoplay from "embla-carousel-autoplay";
 import { useEffect, useState } from "react";
 import { IoIosArrowBack } from "react-icons/io";
@@ -38,10 +35,6 @@ import {
   useSubscribePodcastSubscriptionMutation,
   useUnsubscribePodcastSubscriptionMutation,
 } from "@/core/services/subscription/subscription.service";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
 import Loading from "@/components/loading";
 import { LiaDizzy } from "react-icons/lia";
 import { useDispatch, useSelector } from "react-redux";
@@ -95,39 +88,6 @@ export function renderDescriptionHTML(description: string | null) {
   return html.trim();
 }
 
-// const ChannelFileConfig: FileResolveConfig[] = [
-//   {
-//     path: "Channel.BackgroundImageFileKey",
-//     output: "Channel.BackgroundImageUrl",
-//     type: "PodcastPublic",
-//   },
-//   {
-//     path: "Channel.MainImageFileKey",
-//     output: "Channel.ImageUrl",
-//     type: "PodcastPublic",
-//   },
-//   {
-//     path: "Channel.Podcaster.MainImageFileKey",
-//     output: "Channel.Podcaster.ImageUrl",
-//     type: "AccountPublic",
-//   },
-//   {
-//     path: "Channel.ShowList[].MainImageFileKey",
-//     output: "Channel.ShowList[].ImageUrl",
-//     type: "PodcastPublic",
-//   },
-//   {
-//     path: "Channel.ShowList[].TrailerAudioFileKey",
-//     output: "Channel.ShowList[].TrailerAudioUrl",
-//     type: "PodcastPublic",
-//   },
-//   {
-//     path: "Channel.ShowList[].Podcaster.MainImageFileKey",
-//     output: "Channel.ShowList[].Podcaster.ImageUrl",
-//     type: "AccountPublic",
-//   },
-// ];
-
 const formatVND = (n: number) =>
   n.toLocaleString("vi-VN", { maximumFractionDigits: 0 });
 
@@ -137,25 +97,6 @@ const cycleSuffix = (cycleName: string) => {
   if (n.includes("year") || n.includes("annual")) return "/year";
   return "/cycle";
 };
-
-type SubscriptionData = {
-  Id: number;
-  Price: number;
-  Cycle: {
-    Id: number;
-    Name: string;
-  };
-  Benefits: {
-    Id: number;
-    Name: string;
-  }[];
-};
-
-interface CurrentSubscription {
-  Title: string;
-  Description: string;
-  Data: SubscriptionData[];
-}
 
 type ShowMaps = {
   CategoryId: number;
@@ -198,13 +139,13 @@ const RenderSubscriptionSection = ({
   }
   return (
     <div
-      className="z-20 w-[300px] absolute right-5 bottom-5 flex flex-col gap-2 p-3 rounded-xl
+      className="z-20 w-75 absolute right-5 bottom-5 flex flex-col gap-2 p-3 rounded-xl
                  bg-[rgba(174,227,57,0.85)] text-black shadow-[15px_15px_20px_#0000008c]
                  backdrop-blur-md"
     >
       <div className="flex items-center justify-between w-full">
         <p className="text-xs font-bold line-clamp-1">
-          {subscription.Name ? subscription.Name.toUpperCase() : "Ê"}
+          {subscription.Name ? subscription.Name.toUpperCase() : "Subscription"}
         </p>
         <p className="text-[9px] text-black/70 font-bold">Subscription</p>
       </div>
@@ -240,7 +181,6 @@ const ChannelDetailsPage = () => {
   const user = useSelector((state: RootState) => state.auth.user);
 
   // STATES
-  const [isFileResolving, setIsFileResolving] = useState(false);
   const [channel, setChannel] = useState<
     ChannelDetailsFromApi["Channel"] | null
   >(null);
@@ -331,7 +271,6 @@ const ChannelDetailsPage = () => {
       ) {
         return;
       }
-      setIsFileResolving(true);
 
       // Check if user is subscribed
       setIsUserSubscribed(false);
@@ -353,19 +292,10 @@ const ChannelDetailsPage = () => {
 
       if (!channelRaw) {
         console.log("[CHANNEL DEBUG] No channelRaw data, stopping");
-        setIsFileResolving(false);
         return;
       }
 
       setIsFollowed(channelRaw?.Channel.IsFavoritedByCurrentUser || false);
-
-      // Resolve Channel Files
-      // const { resolvedData: resolvedChannel } = await resolveFiles(
-      //   channelRaw,
-      //   ChannelFileConfig
-      // );
-
-      // const data = resolvedChannel as unknown as ChannelDetailsUI;
 
       // ---- 3) Lọc shows published và gom theo category ----
       const publishedShows: ShowFromAPI[] = (
@@ -398,7 +328,6 @@ const ChannelDetailsPage = () => {
         activeSubscriptionRaw?.PodcastSubscription as SubscriptionDetails
       );
       setShows(groupedShows);
-      setIsFileResolving(false);
     };
 
     resolveData();
@@ -560,7 +489,6 @@ const ChannelDetailsPage = () => {
 
   if (
     isChannelDetailLoading ||
-    isFileResolving ||
     (user && isCustomerRegistrationInfoLoading) ||
     (user && isActiveSubscriptionLoading)
   ) {
@@ -596,27 +524,21 @@ const ChannelDetailsPage = () => {
           <p className="font-light font-poppins">Back</p>
         </div>
       </div>
-      <div className="w-full h-[400px] flex flex-col items-center justify-center px-10 relative overflow-hidden">
+      <div className="w-full h-100 flex flex-col items-center justify-center px-10 relative overflow-hidden">
         {/* blurred background image (covers full area) */}
-        <img
-          src={channel.BackgroundImageFileKey}
-          className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110 opacity-80"
-          style={{
-            // ensure it fills and the blur is strong; scale a bit to avoid edges showing
-            transformOrigin: "center",
-          }}
-        />
         <AutoResolveImage
           FileKey={channel.BackgroundImageFileKey}
           type="PodcastPublicSource"
           className="absolute inset-0 w-full h-full object-cover filter blur-[2px] scale-110 opacity-80"
         />
 
-        <div className="w-full h-full flex-1 flex flex-col items-center justify-center gap-2 relative z-10">
+        <div className="absolute inset-0 w-full h-full bg-black opacity-50 z-10" />
+
+        <div className="w-full z-20 h-full flex-1 flex flex-col items-center justify-center gap-2 relative">
           <AutoResolveImage
             FileKey={channel?.MainImageFileKey}
             type="PodcastPublicSource"
-            className="aspect-square w-[175px] object-cover rounded-md shadow-[10px_10px_20px_#0000008c]"
+            className="aspect-square w-43.75 object-cover rounded-md shadow-[10px_10px_20px_#0000008c]"
           />
 
           <p className="text-white text-2xl font-bold mt-5">
@@ -630,7 +552,7 @@ const ChannelDetailsPage = () => {
           />
 
           <div className="text-xs flex items-center justify-center gap-2 text-[#d9d9d9] font-semibold overflow-ellipsis line-clamp-1">
-            <p className="hover:text-mystic-green hover:underline cursor-pointer">
+            <p onClick={() => navigate(`/media-player/categories/${channel.PodcastCategory.Id}`)} className="hover:text-mystic-green hover:underline cursor-pointer">
               {channel?.PodcastCategory.Name.toUpperCase()}
             </p>{" "}
             •{" "}
@@ -669,9 +591,6 @@ const ChannelDetailsPage = () => {
             <div></div>
           )
         ) : (
-          // <div>
-          //   <p>Subscribe đê</p>
-          // </div>
           <div className="z-20 absolute right-5 bottom-5 flex flex-col gap-2 p-3 rounded-xl">
             <LiquidButton
               onClick={() => handleCancelSubscription()}
@@ -688,10 +607,6 @@ const ChannelDetailsPage = () => {
             <div className="w-full flex items-center justify-between">
               <p className="font-bold text-3xl text-white">
                 <span className="text-mystic-green">{group.Name}</span> Shows
-              </p>
-
-              <p className="font-poppins font-semibold cursor-pointer text-white hover:underline hover:text-mystic-green text-sm">
-                See all ({group.Shows.length})
               </p>
             </div>
             <div className="w-full">
@@ -735,7 +650,7 @@ const ChannelDetailsPage = () => {
           onOpenChange={setIsSubscriptionDialogOpen}
         >
           <DialogContent
-            className="w-[500px] px-8 py-12 border border-white/10 bg-[#0f1115]/50 text-white
+            className="w-125 px-8 py-12 border border-white/10 bg-[#0f1115]/50 text-white
                  backdrop-blur-xl shadow-2xl rounded-2xl"
           >
             <DialogHeader>
@@ -763,7 +678,7 @@ const ChannelDetailsPage = () => {
                     <TabsTrigger
                       key={d.SubscriptionCycleType.Id}
                       value={d.SubscriptionCycleType.Name}
-                      className="data-[state=active]:bg-[var(--accent)]
+                      className="data-[state=active]:bg-accent
                          data-[state=active]:text-black data-[state=active]:shadow
                          rounded-full px-5 py-2 text-sm font-semibold
                          text-white
@@ -785,11 +700,11 @@ const ChannelDetailsPage = () => {
                   >
                     <div
                       className="rounded-2xl p-6 md:p-8 border border-white/10
-                         bg-gradient-to-b from-white/5 to-transparent"
+                         bg-linear-to-b from-white/5 to-transparent"
                     >
                       <div className="flex items-end gap-3">
                         <span className="text-4xl md:text-5xl text-mystic-green font-extrabold leading-none">
-                          {formatVND(d.Price)}đ
+                          {formatVND(d.Price)} coins
                         </span>
                         <span className="text-white/60 mb-1">
                           {cycleSuffix(d.SubscriptionCycleType.Name)}
@@ -836,7 +751,7 @@ const ChannelDetailsPage = () => {
                              text-black hover:brightness-95"
                           style={{ backgroundColor: ACCENT }}
                         >
-                          Subscribe now for only {formatVND(d.Price)}đ
+                          Subscribe now for only {formatVND(d.Price)} coins
                           {cycleSuffix(d.SubscriptionCycleType.Name)}
                         </Button>
                       </DialogFooter>

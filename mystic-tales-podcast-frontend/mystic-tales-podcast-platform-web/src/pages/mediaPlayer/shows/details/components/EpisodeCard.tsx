@@ -39,11 +39,12 @@ import { setError } from "@/redux/slices/errorSlice/errorSlice";
 import { useEffect } from "react";
 import { useSaveEpisodeMutation } from "@/core/services/episode/episode.service";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
-import type { EpisodeUI } from "@/core/types/episode";
+import type { EpisodeFromAPI } from "@/core/types/episode";
 import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
 import { useNavigate } from "react-router-dom";
 import { usePlayer } from "@/core/services/player/usePlayer";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 // Helper function to format duration
 const formatDuration = (seconds: number): string => {
@@ -107,7 +108,7 @@ export function renderDescriptionHTML(description: string | null) {
   return html.trim();
 }
 
-const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
+const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
 
@@ -309,21 +310,11 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
       onClick={() => navigate(`/media-player/episodes/details/${episode.Id}`)}
       className="px-12 flex h-28 items-center gap-10 p-2 rounded-lg hover:bg-white/10 transition-colors group cursor-pointer"
     >
-      <div className="relative aspect-square h-full bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
-        <img
-          src={episode.ImageUrl}
-          alt={episode.Name}
+      <div className="relative aspect-square h-full bg-gray-700 rounded-lg overflow-hidden shrink-0">
+        <AutoResolveImage
+          FileKey={episode.MainImageFileKey}
+          type="PodcastPublicSource"
           className="w-full h-full aspect-square object-cover"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-            e.currentTarget.parentElement!.innerHTML = `
-              <div class="w-full h-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center">
-                <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                </svg>
-              </div>
-            `;
-          }}
         />
 
         {uiState.isPlaying ? (
@@ -437,7 +428,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
           open={episodeReportDialog}
           onOpenChange={setEpisodeReportDialog}
         >
-          <DialogContent className="sm:max-w-[500px] bg-[#0f1115]/95 border-white/10 text-white">
+          <DialogContent className="sm:max-w-125 bg-[#0f1115]/95 border-white/10 text-white">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-mystic-green">
                 Report Episode
@@ -500,7 +491,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setEpisodeReportContent(e.target.value)
                   }
-                  className="min-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none"
+                  className="min-h-30 bg-white/5 border-white/10 text-white placeholder:text-white/40 resize-none"
                   disabled={isEpisodeAlreadyReported}
                 />
                 <p className="text-xs text-white/50">Minimum 10 characters</p>

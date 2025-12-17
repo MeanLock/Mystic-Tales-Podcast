@@ -8,6 +8,7 @@ import type { RootState } from "@/redux/store";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { TbCoinFilled } from "react-icons/tb";
+import MTPCoinOutline from "@/components/coinIcons/CoinIconOutline";
 
 const presetAmounts = [20000, 50000, 100000, 200000, 500000];
 
@@ -99,12 +100,12 @@ const WithDrawPage = () => {
         <span className="text-[#FEA863]">Withdraw</span> Money
       </p>
 
-      <div className="w-1/2 mx-8 p-4 rounded-2xl bg-gradient-to-r from-[#FEA863]/20 to-[#E9B286]/50 border border-[#FEA863]/30 backdrop-blur-sm shadow-2xl">
+      <div className="w-1/2 mx-8 p-4 rounded-2xl bg-linear-to-r from-[#FEA863]/20 to-[#E9B286]/50 border border-[#FEA863]/30 backdrop-blur-sm shadow-2xl">
         <p className="text-black text-sm mb-2 font-bold">
           Account Current Balance
         </p>
         <div className="flex items-center gap-2">
-          <TbCoinFilled className="w-6 h-6 text-[#FEA863]" />
+          <MTPCoinOutline size={30} color="#FEA863" />
           <span className="text-3xl font-bold text-white">
             {currentBalance.toLocaleString()}
           </span>
@@ -159,7 +160,9 @@ const WithDrawPage = () => {
                   placeholder="Enter amount to withdraw"
                   className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition-all"
                 />
-                <TbCoinFilled className="absolute right-4 top-3.5 w-5 h-5 text-[#FEA863]/60" />
+                <div className="absolute right-4 top-3.5 flex items-center justify-center">
+                  <MTPCoinOutline size={20} color="#FEA863" />
+                </div>
               </div>
               {error && <p className="text-[#FEA863] text-xs mt-2">{error}</p>}
             </div>
@@ -197,7 +200,7 @@ const WithDrawPage = () => {
                 amount <= 0 ||
                 amount > currentBalance
               }
-              className="w-full py-3 px-4 bg-gradient-to-r from-[#FEA863] to-[#E9B286]/80 hover:from-[#FEA863]/90 hover:to-[#FEA863]/70 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all duration-200 shadow-lg shadow-[#FEA863]/30 hover:shadow-xl hover:shadow-[#FEA863]/40"
+              className="w-full py-3 px-4 bg-linear-to-r from-[#FEA863] to-[#E9B286]/80 hover:from-[#FEA863]/90 hover:to-[#FEA863]/70 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all duration-200 shadow-lg shadow-[#FEA863]/30 hover:shadow-xl hover:shadow-[#FEA863]/40"
             >
               {isCreatingWithdrawRequest
                 ? "Processing..."

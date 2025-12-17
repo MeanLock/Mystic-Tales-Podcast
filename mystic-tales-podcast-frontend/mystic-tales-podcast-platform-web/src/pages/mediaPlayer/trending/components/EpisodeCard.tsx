@@ -10,10 +10,11 @@ import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
 
-import { useEffect} from "react";
+import { useEffect } from "react";
 import { useGetPodcastPublicSourceQuery } from "@/core/services/file/file.service";
 
 import type { EpisodeFromTrending } from "@/core/types/feed";
+import ContentFallBackImage from "/images/unknown/content.png";
 
 const getTimeRange = (releaseDate: string) => {
   const now = new Date();
@@ -67,21 +68,18 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
   const [triggerCheckListenSlot] = useLazyCheckUserPodcastListenSlotQuery();
   const navigate = useNavigate();
 
-  const { data: fileData } =
-    useGetPodcastPublicSourceQuery(
-      { FileKey: episode.MainImageFileKey! },
-      {
-        skip: !episode.MainImageFileKey,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-        refetchOnReconnect: true,
-      }
-    );
+  const { data: fileData } = useGetPodcastPublicSourceQuery(
+    { FileKey: episode.MainImageFileKey! },
+    {
+      skip: !episode.MainImageFileKey,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
 
   // RESOLVE FILE URL
-  const fileUrl =
-    fileData?.FileUrl ||
-    "https://i.pinimg.com/736x/1c/c0/8f/1cc08fc01181a676f894534fc73f42cf.jpg";
+  const fileUrl = fileData?.FileUrl || ContentFallBackImage;
 
   // HOOKS
   useEffect(() => {}, []);
@@ -182,7 +180,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
       style={{
         backgroundImage: `url(${fileUrl})`,
       }}
-      className="bg-cover w-full aspect-[3/4] rounded-xl relative transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+      className="bg-cover w-full aspect-3/4 rounded-xl relative transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >
       <div className="w-full aspect-square">
         <AutoResolveImage
@@ -198,8 +196,8 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
             rounded-b-xl
             pointer-events-none absolute inset-0
             backdrop-blur-[200px] backdrop-saturate-200
-            [mask-image:linear-gradient(to_top,black_30%,transparent_100%)]
-            [mask-size:cover]
+            mask-[linear-gradient(to_top,black_30%,transparent_100%)]
+            mask-cover
         "
       />
 
@@ -207,8 +205,8 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
         className="
             rounded-xl
             pointer-events-none absolute inset-0
-            bg-gradient-to-t from-black/50 via-transparent/30 to-transparent
-            [mask-image:linear-gradient(to_top,black_70%,transparent_100%)]
+            bg-linear-to-t from-black/50 via-transparent/30 to-transparent
+            mask-[linear-gradient(to_top,black_70%,transparent_100%)]
         "
       />
 
@@ -222,7 +220,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
           </p>
         </div>
       </div>
-      <div className="absolute bottom-0 z-20 bg-black/40 backdrop-blur-md right-0 left-0 rounded-b-md">
+      <div className="absolute bottom-0 z-20 backdrop-blur-md right-0 left-0 rounded-b-md">
         <div className="w-full flex items-center justify-start relative">
           <div className="w-full flex items-center gap-2 justify-between p-5">
             <div

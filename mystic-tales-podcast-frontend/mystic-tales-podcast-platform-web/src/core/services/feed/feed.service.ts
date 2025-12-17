@@ -13,6 +13,7 @@ const feedApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "hybrid",
       }),
+      keepUnusedDataFor: 0, // keep data for 1 minute
     }),
     getTrendingFeed: build.query<TrendingData, void>({
       query: () => ({
@@ -20,6 +21,7 @@ const feedApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "hybrid",
       }),
+      keepUnusedDataFor: 60, // keep data for 1 minute
     }),
     getCategoryFeed: build.query<
       CategoryFeedDataFromAPI,
@@ -30,6 +32,7 @@ const feedApi = appApi.injectEndpoints({
         method: "GET",
         authMode: "hybrid",
       }),
+      keepUnusedDataFor: 0, // keep data for 1 minute
     }),
   }),
 });

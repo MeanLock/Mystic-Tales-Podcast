@@ -1,10 +1,9 @@
-// @ts-nocheck
-import type { ChannelUI } from "@/core/types/channel";
-import { BsFillPeopleFill } from "react-icons/bs";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import type { ChannelFromAPI } from "@/core/types/channel";
 import { FaHeart } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const ChannelCard = ({ channel }: { channel: ChannelUI }) => {
+const ChannelCard = ({ channel }: { channel: ChannelFromAPI }) => {
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
@@ -20,12 +19,12 @@ const ChannelCard = ({ channel }: { channel: ChannelUI }) => {
   return (
     <div
       onClick={() => navigate(`/media-player/channels/${channel.Id}`)}
-      className="w-full aspect-square rounded-md shadow-2xl overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:scale-105 hover:-translate-y-[6px]"
+      className="w-full aspect-square rounded-md shadow-2xl overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:scale-105 hover:-translate-y-1.5"
     >
       <div className="absolute inset-0 flex items-center justify-center">
-        <img
-          src={channel.ImageUrl}
-          alt={channel.Name}
+        <AutoResolveImage
+          FileKey={channel.MainImageFileKey}
+          type="PodcastPublicSource"
           className="w-full h-full object-cover"
         />
       </div>

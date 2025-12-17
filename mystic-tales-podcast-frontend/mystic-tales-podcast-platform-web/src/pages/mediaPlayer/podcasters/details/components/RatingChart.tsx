@@ -1,8 +1,8 @@
-import type { PodcasterReviewUI } from "@/core/types/podcaster";
+import type { PodcasterReviewAPI } from "@/core/types/podcaster";
 import { BsFillPeopleFill } from "react-icons/bs";
 import { FaStar } from "react-icons/fa";
 
-const RatingChart = ({ rating }: { rating: PodcasterReviewUI[] }) => {
+const RatingChart = ({ rating }: { rating: PodcasterReviewAPI[] }) => {
   const getAverageRating = () => {
     const ratingCount = rating.length;
     if (ratingCount === 0) {
@@ -52,7 +52,7 @@ const RatingChart = ({ rating }: { rating: PodcasterReviewUI[] }) => {
         <div className="w-auto flex flex-col h-full justify-between text-sm md:text-base">
           {[5, 4, 3, 2, 1].map((stars, index) => (
             <div key={stars} className="flex items-center h-[1.5em] gap-1">
-              <div className="flex items-center justify-start min-w-[40px] md:min-w-[50px]">
+              <div className="flex items-center justify-start min-w-10 md:min-w-12.5">
                 <p className="text-[#D9D9D9]">({distribution[index]})</p>
               </div>
               <div className="flex items-center gap-0.5 text-white">

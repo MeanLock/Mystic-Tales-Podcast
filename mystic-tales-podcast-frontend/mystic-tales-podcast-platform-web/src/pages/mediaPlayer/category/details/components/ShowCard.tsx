@@ -1,9 +1,10 @@
-import type { ShowUI } from "@/core/types/show";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import type { ShowFromAPI } from "@/core/types/show";
 import { FaHeadphones } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const ShowCard = ({ show }: { show: ShowUI }) => {
-  const renderDescription = (show: ShowUI) => {
+const ShowCard = ({ show }: { show: ShowFromAPI }) => {
+  const renderDescription = (show: ShowFromAPI) => {
     const year = new Date(show.ReleaseDate).getFullYear();
     const category = show.PodcastCategory?.Name || "Unknown";
     const subcategory = show.PodcastSubCategory?.Name || "Unknown";
@@ -25,16 +26,19 @@ const ShowCard = ({ show }: { show: ShowUI }) => {
   const navigate = useNavigate();
 
   return (
-    <div onClick={() => navigate(`/media-player/shows/${show.Id}`)} className="w-full aspect-video bg-white rounded-md overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:-translate-y-[6px]">
+    <div
+      onClick={() => navigate(`/media-player/shows/${show.Id}`)}
+      className="w-full aspect-video bg-white rounded-md overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:-translate-y-1.5"
+    >
       <div className="absolute inset-0 flex items-center justify-center">
-        <img
-          src={show.ImageUrl}
-          alt={show.Name}
-          className="w-full aspect-video object-cover"
+        <AutoResolveImage
+          FileKey={show.MainImageFileKey}
+          type="PodcastPublicSource"
+          imgClassName="w-full aspect-video rounded-md"
         />
       </div>
 
-      <div className="absolute z-20 p-3 inset-0 bg-gradient-to-t from-black to-transparent flex flex-col justify-between gap-1">
+      <div className="absolute z-20 p-3 inset-0 bg-linear-to-t from-black to-transparent flex flex-col justify-between gap-1">
         {/* ListenCount */}
         <div className="w-fit px-2 py-1 shadow-md rounded-full bg-white/40 text-[#252525] flex items-center gap-2">
           <FaHeadphones />

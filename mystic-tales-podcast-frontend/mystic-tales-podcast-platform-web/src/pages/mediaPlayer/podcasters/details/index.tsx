@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import {
   Carousel,
   CarouselContent,
@@ -11,21 +9,17 @@ import { useEffect, useState } from "react";
 import { IoIosArrowBack } from "react-icons/io";
 import { useNavigate, useParams } from "react-router-dom";
 import ChannelCard from "./components/ChannelCard";
-import { resolveFiles } from "@/core/utils/fileResolver.util";
-import type { ShowUI } from "@/core/types/show";
+import type { ShowFromAPI} from "@/core/types/show";
 import type {
-  PodcasterDetailsUI,
-  PodcasterReviewUI,
+  PodcasterReviewAPI,
 } from "@/core/types/podcaster";
 import type { PodcastCategory } from "@/core/types/podcastCategory";
 import ShowsByCategoryCarousel from "./components/ShowsByCategoryCarousel";
-import type { ChannelUI } from "@/core/types/channel";
 import {
   useFollowPodcasterMutation,
   useGetPodcasterDetailsQuery,
   useUnFollowPodcasterMutation,
 } from "@/core/services/podcasters/podcasters.service";
-import type { FileResolveConfig } from "@/core/utils/fileResolver.util";
 import { useGetShowListFromPodcasterQuery } from "@/core/services/show/show.service";
 import { useGetChannelListFromPodcasterQuery } from "@/core/services/channel/channel.service";
 import { useDispatch, useSelector } from "react-redux";
@@ -37,61 +31,8 @@ import { setError } from "@/redux/slices/errorSlice/errorSlice";
 import { BiSolidBadgeCheck } from "react-icons/bi";
 import RatingChart from "./components/RatingChart";
 import ReviewCard from "./components/ReviewCard";
-import type { PodcastBuddyUI } from "@/core/types/booking";
-
-const PodcasterFileConfig: FileResolveConfig[] = [
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "AccountPublic",
-  },
-  {
-    path: "ReviewList[].Account.MainImageFileKey",
-    output: "ReviewList[].Account.ImageUrl",
-    type: "AccountPublic",
-  },
-];
-
-const ShowFileConfig: FileResolveConfig[] = [
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "TrailerAudioFileKey",
-    output: "TrailerAudioUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "Podcaster.MainImageFileKey",
-    output: "Podcaster.ImageUrl",
-    type: "AccountPublic",
-  },
-  {
-    path: "PodcastChannel.MainImageFileKey",
-    output: "PodcastChannel.ImageUrl",
-    type: "PodcastPublic",
-  },
-];
-
-const ChannelFileConfig: FileResolveConfig[] = [
-  {
-    path: "BackgroundImageFileKey",
-    output: "BackgroundImageUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "MainImageFileKey",
-    output: "ImageUrl",
-    type: "PodcastPublic",
-  },
-  {
-    path: "Podcaster.MainImageFileKey",
-    output: "Podcaster.ImageUrl",
-    type: "AccountPublic",
-  },
-];
+import type { PodcastBuddyFromAPI } from "@/core/types/booking";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 const PodcasterDetailsPage = () => {
   // REDUX
@@ -101,14 +42,9 @@ const PodcasterDetailsPage = () => {
   const { id: podcasterId } = useParams<{ id: string }>();
 
   // STATES
-  const [podcaster, setPodcaster] = useState<PodcasterDetailsUI | null>(null);
-  const [channels, setChannels] = useState<ChannelUI[]>([]);
-  // const [shows, setShows] = useState<ShowUI[]>([]);
   const [showsByCategory, setShowsByCategory] = useState<
-    { Category: PodcastCategory; ShowList: ShowUI[] }[]
+    { Category: PodcastCategory; ShowList: ShowFromAPI[] }[]
   >([]);
-  const [isBookingAvailable, setIsBookingAvailable] = useState(true);
-  const [isFileResolving, setIsFileResolving] = useState(false);
   const [isNotFound, setIsNotFound] = useState(false);
 
   // HOOKS
@@ -116,7 +52,7 @@ const PodcasterDetailsPage = () => {
   const dispatch = useDispatch();
   // ===============================================
   const [follow, { isLoading: isFollowing }] = useFollowPodcasterMutation();
-  const [unfollow, { isLoading: isUnFollowing }] =
+  const [unfollow] =
     useUnFollowPodcasterMutation();
   // Lấy Podcaster Details
   const { data: podcasterDetailsRaw, isLoading: isPodcasterDetailsLoading } =
@@ -125,8 +61,6 @@ const PodcasterDetailsPage = () => {
       { skip: !podcasterId }
     );
   // Lấy danh sách id các Podcaster đã followed của Customer
-  // const { data: followedPodcasters, isLoading: isFollowedPodcastersLoading } =
-  //   useGetFollowedPodcastersQuery(undefined, { skip: !user });
 
   // Lấy danh sách các channel và show từ podcaster details
   const { data: showsRaw, isLoading: isShowsLoading } =
@@ -153,34 +87,19 @@ const PodcasterDetailsPage = () => {
         return;
       }
 
-      setIsFileResolving(true);
-
       // ===== USE API DATA =====
       if (!podcasterDetailsRaw) {
         console.log("Không tìm thấy podcaster");
         setIsNotFound(true);
-        setIsFileResolving(false);
         return;
       }
 
-      // Resolve Podcaster Details
-      const { resolvedData: resolvedPodcaster } = await resolveFiles(
-        podcasterDetailsRaw,
-        PodcasterFileConfig
-      );
-      setPodcaster(resolvedPodcaster as unknown as PodcasterDetailsUI);
 
       // Resolve Shows
       if (showsRaw && showsRaw.ShowList) {
-        const resolvedShowsPromises = showsRaw.ShowList.map((show) =>
-          resolveFiles(show, ShowFileConfig)
-        );
-        const resolvedShowsResults = await Promise.all(resolvedShowsPromises);
-        const resolvedShows = resolvedShowsResults.map((r) => r.resolvedData);
-
         // Group shows by category
         const showsGroupedByCategory = (
-          resolvedShows as unknown as ShowUI[]
+          showsRaw.ShowList as ShowFromAPI[]
         ).reduce((acc, show) => {
           const categoryId = show.PodcastCategory.Id;
           const existingCategory = acc.find(
@@ -197,37 +116,12 @@ const PodcasterDetailsPage = () => {
           }
 
           return acc;
-        }, [] as { Category: PodcastCategory; ShowList: ShowUI[] }[]);
+        }, [] as { Category: PodcastCategory; ShowList: ShowFromAPI[] }[]);
 
         setShowsByCategory(showsGroupedByCategory);
       } else {
         setShowsByCategory([]);
       }
-
-      // Resolve Channels
-      if (channelsRaw && channelsRaw.ChannelList) {
-        const resolvedChannelsPromises = channelsRaw.ChannelList.map(
-          (channel) => resolveFiles(channel, ChannelFileConfig)
-        );
-        const resolvedChannelsResults = await Promise.all(
-          resolvedChannelsPromises
-        );
-        const resolvedChannels = resolvedChannelsResults.map(
-          (r) => r.resolvedData
-        );
-        setChannels(resolvedChannels as unknown as ChannelUI[]);
-      } else {
-        setChannels([]);
-      }
-
-      // Check booking availability
-      if (resolvedPodcaster && resolvedPodcaster.IsBuddy) {
-        setIsBookingAvailable(true);
-      } else {
-        setIsBookingAvailable(false);
-      }
-
-      setIsFileResolving(false);
     };
 
     resolveData();
@@ -243,14 +137,14 @@ const PodcasterDetailsPage = () => {
   ]);
 
   const handleCreateBooking = () => {
-    if (!podcaster) {
+    if (!podcasterDetailsRaw) {
       return;
     } else {
-      const payload: PodcastBuddyUI = {
-        Id: podcaster.AccountId,
-        FullName: podcaster.Name,
-        ImageUrl: podcaster.ImageUrl,
-        AverageRating: podcaster.AverageRating,
+      const payload: PodcastBuddyFromAPI = {
+        Id: podcasterDetailsRaw.AccountId,
+        FullName: podcasterDetailsRaw.Name,
+        MainImageFileKey: podcasterDetailsRaw.MainImageFileKey,
+        AverageRating: podcasterDetailsRaw.AverageRating,
         TotalBookingCompleted: 0,
         TotalFollow: 0,
         PriceBookingPerWord: 0,
@@ -267,7 +161,7 @@ const PodcasterDetailsPage = () => {
   };
 
   const handleFollowPodcaster = async () => {
-    if (!podcaster) {
+    if (!podcasterDetailsRaw) {
       return;
     }
 
@@ -282,23 +176,10 @@ const PodcasterDetailsPage = () => {
     }
 
     try {
-      // Optimistic UI update
-      setPodcaster({
-        ...podcaster,
-        IsFollowedByCurrentUser: true,
-        TotalFollow: podcaster.TotalFollow + 1,
-      });
-
       await follow({
-        PodcasterId: podcaster.AccountId,
+        PodcasterId: podcasterDetailsRaw.AccountId,
       }).unwrap();
     } catch (error) {
-      // Revert on error
-      setPodcaster({
-        ...podcaster,
-        IsFollowedByCurrentUser: false,
-        TotalFollow: podcaster.TotalFollow - 1,
-      });
       dispatch(
         setError({
           message: "Failed to follow podcaster. Please try again.",
@@ -309,7 +190,7 @@ const PodcasterDetailsPage = () => {
   };
 
   const handleUnfollowPodcaster = async () => {
-    if (!podcaster) {
+    if (!podcasterDetailsRaw) {
       return;
     }
 
@@ -324,23 +205,10 @@ const PodcasterDetailsPage = () => {
     }
 
     try {
-      // Optimistic UI update
-      setPodcaster({
-        ...podcaster,
-        IsFollowedByCurrentUser: false,
-        TotalFollow: podcaster.TotalFollow - 1,
-      });
-
       await unfollow({
-        PodcasterId: podcaster.AccountId,
+        PodcasterId: podcasterDetailsRaw.AccountId,
       }).unwrap();
     } catch (error) {
-      // Revert on error
-      setPodcaster({
-        ...podcaster,
-        IsFollowedByCurrentUser: true,
-        TotalFollow: podcaster.TotalFollow + 1,
-      });
       dispatch(
         setError({
           message: "Failed to follow podcaster. Please try again.",
@@ -353,8 +221,7 @@ const PodcasterDetailsPage = () => {
   if (
     isPodcasterDetailsLoading ||
     isShowsLoading ||
-    isChannelsLoading ||
-    isFileResolving
+    isChannelsLoading 
   ) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-5">
@@ -395,16 +262,12 @@ const PodcasterDetailsPage = () => {
         </div>
 
         {/* Customer Informations with strongly blurred background image */}
-        <div className="w-full h-[400px] flex flex-col md:flex-row px-10 relative overflow-hidden">
+        <div className="w-full h-100 flex flex-col md:flex-row px-10 relative overflow-hidden">
           {/* blurred background image (covers full area) */}
-          <img
-            src={podcaster?.ImageUrl}
-            alt={podcaster?.Name}
+          <AutoResolveImage
+            FileKey={podcasterDetailsRaw?.MainImageFileKey || ""}
+            type="AccountPublicSource"
             className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110 opacity-80"
-            style={{
-              // ensure it fills and the blur is strong; scale a bit to avoid edges showing
-              transformOrigin: "center",
-            }}
           />
 
           {/* dark overlay to keep foreground readable */}
@@ -412,13 +275,14 @@ const PodcasterDetailsPage = () => {
 
           {/* actual content goes above the background */}
           <div className="relative z-10 w-full flex items-center gap-10">
-            <div className="w-[312px] h-[312px] flex-shrink-0 rounded-full overflow-hidden shadow-xl">
-              <img
-                src={podcaster?.ImageUrl}
-                alt={podcaster?.Name}
+            <div className="w-78 h-79 shrink-0 rounded-full overflow-hidden shadow-xl">
+              <AutoResolveImage
+                FileKey={podcasterDetailsRaw?.MainImageFileKey || ""}
+                type="AccountPublicSource"
                 className="w-full h-full object-cover"
               />
             </div>
+
 
             <div className="flex-1 min-w-0 flex flex-col justify-start text-white gap-3">
               <p
@@ -427,23 +291,23 @@ const PodcasterDetailsPage = () => {
                   fontSize: "clamp(32px, 5vw, 96px)",
                 }}
               >
-                {podcaster?.Name.toLocaleUpperCase()}
+                {podcasterDetailsRaw?.Name.toLocaleUpperCase()}
               </p>
               <div className="w-full flex items-center gap-2">
                 <BiSolidBadgeCheck />
                 <p className="font-poppins font-bold text-gray-300">
-                  {podcaster?.TotalFollow.toLocaleString()} Followers
+                  {podcasterDetailsRaw?.TotalFollow.toLocaleString()} Followers
                 </p>
               </div>
 
               <div
                 className="text-sm text-[#D9D9D9] mt-2 line-clamp-4 w-2/3 overflow-ellipsis"
                 dangerouslySetInnerHTML={{
-                  __html: podcaster?.Description || "",
+                  __html: podcasterDetailsRaw?.Description || "",
                 }}
               />
               <div className="w-full  flex items-center justify-start gap-5 mt-5">
-                {!podcaster?.IsFollowedByCurrentUser ? (
+                {!podcasterDetailsRaw?.IsFollowedByCurrentUser ? (
                   <LiquidButton
                     onClick={() => handleFollowPodcaster()}
                     variant="minimal"
@@ -459,7 +323,7 @@ const PodcasterDetailsPage = () => {
                     <p>Followed</p>
                   </LiquidButton>
                 )}
-                {podcaster?.IsBuddy && user && (
+                {podcasterDetailsRaw?.IsBuddy && user && (
                   // <div
                   //   onClick={() => handleCreateBooking()}
                   //   className="px-5 h-[30px] bg-mystic-green text-black cursor-pointer transition-all hover:-translate-y-1 ease-in-out duration-500 flex items-center justify-center rounded-full font-bold"
@@ -497,7 +361,7 @@ const PodcasterDetailsPage = () => {
               className="w-full"
             >
               <CarouselContent>
-                {channels.map((channel) => (
+                {channelsRaw?.ChannelList.map((channel) => (
                   <CarouselItem
                     key={channel.Id}
                     className="basis-1/2 md:basis-1/3 lg:basis-1/4"
@@ -532,13 +396,13 @@ const PodcasterDetailsPage = () => {
           </div>
         </div>
 
-        {podcaster && (
+        {podcasterDetailsRaw && (
           <div className="w-full px-5 py-10 mt-20 flex flex-col bg-black/10 gap-10">
             <p className="font-bold font-poppins text-white text-5xl">
               Rating & Reviews
             </p>
 
-            <RatingChart rating={podcaster.ReviewList} />
+            <RatingChart rating={podcasterDetailsRaw.ReviewList} />
 
             <div className="w-full">
               <Carousel
@@ -554,13 +418,13 @@ const PodcasterDetailsPage = () => {
                 className="w-full"
               >
                 <CarouselContent>
-                  {podcaster.ReviewList.map((review) => (
+                  {podcasterDetailsRaw.ReviewList.map((review) => (
                     <CarouselItem
                       key={review.Id}
                       className="basis-1/2 md:basis-1/3 lg:basis-1/3"
                     >
                       <div className="p-1">
-                        <ReviewCard review={review as PodcasterReviewUI} />
+                        <ReviewCard review={review as PodcasterReviewAPI} />
                       </div>
                     </CarouselItem>
                   ))}

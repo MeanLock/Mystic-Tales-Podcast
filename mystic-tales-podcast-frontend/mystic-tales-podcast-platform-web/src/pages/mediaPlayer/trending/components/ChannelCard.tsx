@@ -17,12 +17,16 @@ const ChannelCard = ({ channel }: { channel: ChannelFromAPI }) => {
   const navigate = useNavigate();
 
   return (
-    <div onClick={() => navigate(`/media-player/channels/${channel.Id}`)} className="w-full aspect-square rounded-md shadow-2xl overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:scale-105 hover:-translate-y-[6px]">
+    <div
+      onClick={() => navigate(`/media-player/channels/${channel.Id}`)}
+      className="w-full aspect-square rounded-md shadow-2xl overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:scale-105 hover:-translate-y-1.5"
+    >
       <div className="absolute inset-0 flex items-center justify-center">
         <AutoResolveImage
           FileKey={channel.MainImageFileKey}
           type="PodcastPublicSource"
           className="w-full h-full object-cover"
+          imgClassName="w-full aspect-square rounded-md"
         />
       </div>
       <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30"></div>

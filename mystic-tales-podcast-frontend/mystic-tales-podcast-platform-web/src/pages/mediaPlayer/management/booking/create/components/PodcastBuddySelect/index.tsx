@@ -1,13 +1,10 @@
 import type {
   PodcastBookingTone,
   PodcastBookingToneCategoryType,
-  PodcastBuddyUI,
+  PodcastBuddyFromAPI,
 } from "@/core/types/booking";
 import { useEffect, useState, useRef } from "react";
-import {
-  FaPlay,
-  FaPause,
-} from "react-icons/fa6";
+import { FaPlay, FaPause } from "react-icons/fa6";
 
 import { TbCoinFilled } from "react-icons/tb";
 import "./style.css";
@@ -17,15 +14,15 @@ import type { PodcastBuddyDetails } from "@/core/types/podcaster";
 // import AutoResolveImageBackground from "./components/AutoResolveImage";
 import TonePill from "./components/TonePill";
 import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
-import {
-  useLazyGetAccountPublicSourceQuery,
-} from "@/core/services/file/file.service";
+import { useLazyGetAccountPublicSourceQuery } from "@/core/services/file/file.service";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import MTPCoinOutline from "@/components/coinIcons/CoinIconOutline";
 
 interface PodcastBuddySelectProps {
-  buddies: PodcastBuddyUI[];
-  selectedBuddy: PodcastBuddyUI | null;
+  buddies: PodcastBuddyFromAPI[];
+  selectedBuddy: PodcastBuddyFromAPI | null;
   selectedBuddyDetails: PodcastBuddyDetails | null | undefined;
-  onSelectBuddy: (buddy: PodcastBuddyUI | null) => void;
+  onSelectBuddy: (buddy: PodcastBuddyFromAPI | null) => void;
   availableBookingTones: PodcastBookingTone[];
   selectedBookingTone: PodcastBookingTone | null;
   onSelectBookingTone: (tone: PodcastBookingTone | null) => void;
@@ -202,8 +199,8 @@ const PodcastBuddySelectComponent = ({
   return (
     <div className="w-full flex flex-col">
       {step === 1 && (
-        <div className="w-full h-[400px] bg-white/20 flex flex-col">
-          <div className="flex flex-col items-center justify-center h-[100px] ">
+        <div className="w-full h-100 bg-white/20 flex flex-col">
+          <div className="flex flex-col items-center justify-center h-25 ">
             <p className="font-bold text-2xl">
               Select Booking Tone Category To Continue
             </p>
@@ -211,11 +208,11 @@ const PodcastBuddySelectComponent = ({
               Lorem ipsum dolor sit amet, consectetur adipiscing elit.
             </p>
           </div>
-          <div className="w-full h-[230px] flex items-center justify-center gap-5">
+          <div className="w-full h-57.5 flex items-center justify-center gap-5">
             {availableBookingToneCategories.map((category) => (
               <div
                 key={category.Id}
-                className={`w-64 h-[100px] flex items-center justify-center rounded-md cursor-pointer transition-all duration-500 hover:-translate-y-1 ${
+                className={`w-64 h-25 flex items-center justify-center rounded-md cursor-pointer transition-all duration-500 hover:-translate-y-1 ${
                   selectedToneCategoryLocal?.Id === category.Id
                     ? "bg-mystic-green text-black hover:text-black shadow-2xl"
                     : "text-white bg-white/30 border hover:border-2 hover:border-mystic-green hover:text-mystic-green"
@@ -227,7 +224,7 @@ const PodcastBuddySelectComponent = ({
             ))}
           </div>
 
-          <div className="h-[70px] py-2 w-full flex items-center justify-center">
+          <div className="h-17.5 py-2 w-full flex items-center justify-center">
             {selectedToneCategoryLocal && (
               <LiquidButton
                 onClick={() => handleSetToneCategory()}
@@ -241,8 +238,8 @@ const PodcastBuddySelectComponent = ({
       )}
 
       {step === 2 && (
-        <div className="w-full h-[400px] bg-white/20 flex flex-col">
-          <div className="flex flex-col items-center justify-center h-[100px] ">
+        <div className="w-full h-100 bg-white/20 flex flex-col">
+          <div className="flex flex-col items-center justify-center h-25 ">
             <p className="font-bold text-2xl">
               Select Booking Tone To Continue
             </p>
@@ -250,7 +247,7 @@ const PodcastBuddySelectComponent = ({
               Lorem ipsum dolor sit amet, consectetur adipiscing elit.
             </p>
           </div>
-          <div className="scrollbar-hide px-5 py-5 w-full h-[230px] overflow-y-auto grid md:grid-cols-4 grid-cols-2 gap-5">
+          <div className="scrollbar-hide px-5 py-5 w-full h-57.5 overflow-y-auto grid md:grid-cols-4 grid-cols-2 gap-5">
             {filteredBookingTones().map((tone, index) => (
               <TonePill
                 onSelect={(selectedTone) => setSelectedToneLocal(selectedTone)}
@@ -260,7 +257,7 @@ const PodcastBuddySelectComponent = ({
               />
             ))}
           </div>
-          <div className="px-5 h-[70px] flex items-center justify-between">
+          <div className="px-5 h-17.5 flex items-center justify-between">
             <LiquidButton
               onClick={() => handleChooseAgain(2)}
               variant="minimalRoundedMd"
@@ -268,13 +265,6 @@ const PodcastBuddySelectComponent = ({
               <p>Back</p>
             </LiquidButton>
             {selectedToneLocal !== null && (
-              // <div
-              //   onClick={() => handleSetTone()}
-              //   className="cursor-pointer border-2  px-5 py-2 rounded-sm border-mystic-green text-mystic-green transition-all duration-500 ease-in-out hover:bg-mystic-green hover:text-black hover:-translate-y-1 font-semibold flex items-center justify-center gap-1"
-              // >
-              //   <FaArrowRightLong />
-              //   <p>Next</p>
-              // </div>
               <LiquidButton
                 onClick={() => handleSetTone()}
                 variant="minimalRoundedMd"
@@ -287,14 +277,14 @@ const PodcastBuddySelectComponent = ({
       )}
 
       {step === 3 && buddies && (
-        <div className="w-full py-3 h-[400px] bg-white/20 flex flex-col items-center justify-center">
-          <div className="flex flex-col items-center justify-center h-[100px]">
+        <div className="w-full py-3 h-100 bg-white/20 flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center h-25">
             <p className="font-bold text-2xl">Select Your Podcaster Now!</p>
             <p className="font-semibold text-[#d9d9d9]">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit.
             </p>
           </div>
-          <div className="scrollbar-hide w-full h-[230px] overflow-y-auto mt-5 p-5 grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5">
+          <div className="scrollbar-hide w-full h-57.5 overflow-y-auto mt-5 p-5 grid xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-5">
             {buddies.length > 0 ? (
               buddies.map((buddy) => (
                 <div className="w-full flex items-center justify-center">
@@ -312,7 +302,7 @@ const PodcastBuddySelectComponent = ({
               </div>
             )}
           </div>
-          <div className="h-[70px] px-5 w-full flex items-center justify-between">
+          <div className="h-17.5 px-5 w-full flex items-center justify-between">
             <LiquidButton
               onClick={() => handleChooseAgain(3)}
               variant="minimalRoundedMd"
@@ -324,19 +314,18 @@ const PodcastBuddySelectComponent = ({
       )}
 
       {step === 4 && selectedBuddy && selectedBuddyDetails && (
-        <div className="w-full h-[400px] flex px-10 relative overflow-hidden">
-          <img
-            src={selectedBuddy.ImageUrl}
-            alt={selectedBuddy.FullName}
+        <div className="w-full h-100 flex px-10 relative overflow-hidden">
+          <AutoResolveImage
+            FileKey={selectedBuddy.MainImageFileKey}
+            type="AccountPublicSource"
             className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110 opacity-80"
-            style={{ transformOrigin: "center" }}
           />
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative z-10 w-full flex items-center gap-10">
-            <div className="w-[312px] h-[312px] rounded-full overflow-hidden shadow-xl">
-              <img
-                src={selectedBuddy.ImageUrl}
-                alt={selectedBuddy.FullName}
+            <div className="w-78 h-78 rounded-full overflow-hidden shadow-xl">
+              <AutoResolveImage
+                FileKey={selectedBuddy.MainImageFileKey}
+                type="AccountPublicSource"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -355,8 +344,29 @@ const PodcastBuddySelectComponent = ({
                     selectedBuddyDetails.PodcastBuddyProfile.Description || "",
                 }}
               />
+
+              {/* Hidden audio element for trailer playback */}
+              {trailerAudioUrl && (
+                <audio
+                  ref={audioRef}
+                  src={trailerAudioUrl}
+                  onEnded={() => setIsPlayingTrailer(false)}
+                  onPause={() => setIsPlayingTrailer(false)}
+                  onPlay={() => setIsPlayingTrailer(true)}
+                />
+              )}
+            </div>
+            <div className="absolute bottom-5 right-2 left-0 flex items-center justify-end gap-5 ">
+              <div className="flex items-center">
+                <LiquidButton
+                  onClick={() => handleChooseAgain(4)}
+                  variant="minimalRoundedMd"
+                >
+                  <p>Choose Another</p>
+                </LiquidButton>
+              </div>
               {selectedBuddyDetails.PodcastBuddyProfile.BuddyAudioFileKey && (
-                <div className="w-full flex items-center mt-5">
+                <div className="flex items-center">
                   <LiquidButton
                     onClick={handleListenToTrailer}
                     variant="minimalRoundedMd"
@@ -370,35 +380,14 @@ const PodcastBuddySelectComponent = ({
                   </LiquidButton>
                 </div>
               )}
-              <div className="w-full flex items-center mt-1">
-                <LiquidButton
-                  onClick={() => handleChooseAgain(4)}
-                  variant="minimalRoundedMd"
-                >
-                  <p>Choose Another</p>
-                </LiquidButton>
-              </div>
-
-              {/* Hidden audio element for trailer playback */}
-              {trailerAudioUrl && (
-                <audio
-                  ref={audioRef}
-                  src={trailerAudioUrl}
-                  onEnded={() => setIsPlayingTrailer(false)}
-                  onPause={() => setIsPlayingTrailer(false)}
-                  onPlay={() => setIsPlayingTrailer(true)}
-                />
-              )}
-            </div>
-            <div className="absolute bottom-5 right-2">
-              <div className="border-2 border-mystic-green rounded-md  text-mystic-green shadow-2xl px-4 py-2  flex items-center justify-center gap-1">
-                <p className="font-bold text-xl">
+              <div className="border-2 border-mystic-green rounded-md text-mystic-green shadow-2xl flex items-center gap-1 h-10 px-5">
+                <p className="font-bold">
                   {(
                     selectedBuddyDetails.PodcastBuddyProfile
                       .PricePerBookingWord * 1000
                   ).toLocaleString()}
                 </p>
-                <TbCoinFilled />
+                <MTPCoinOutline size={16} color="#aee339" />
                 <p className="font-semibold text-sm "> / 1000 words</p>
               </div>
             </div>

@@ -11,12 +11,9 @@ import { useNavigate } from "react-router-dom";
 import type {
   PodcastBookingTone,
   PodcastBookingToneCategoryType,
+  PodcastBuddyFromAPI,
   PodcastBuddyUI,
 } from "@/core/types/booking";
-import {
-  resolveFiles,
-  type FileResolveConfig,
-} from "@/core/utils/fileResolver.util";
 import { useGetPodcastBuddyDetailsQuery } from "@/core/services/podcasters/podcasters.service";
 import { useDispatch } from "react-redux";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
@@ -30,15 +27,6 @@ export type BookingRequirementInfo = {
   ContentValue?: string;
 };
 
-// Removed unused types
-
-const resolveConfig: FileResolveConfig[] = [
-  {
-    type: "AccountPublic",
-    path: "[].MainImageFileKey",
-    output: "[].ImageUrl",
-  },
-];
 
 const CreateBookingPage = () => {
   // STATES
@@ -46,14 +34,11 @@ const CreateBookingPage = () => {
   // Data States
   const [availableBookingToneCategories, setAvailableBookingToneCategories] =
     useState<PodcastBookingToneCategoryType[]>([]);
-  const [availablePodcastBuddies, setAvailablePodcastBuddies] = useState<
-    PodcastBuddyUI[]
-  >([]);
   const [availableBookingTones, setAvailableBookingTones] = useState<
     PodcastBookingTone[]
   >([]);
   // User Selections
-  const [selectedBuddy, setSelectedBuddy] = useState<PodcastBuddyUI | null>(
+  const [selectedBuddy, setSelectedBuddy] = useState<PodcastBuddyFromAPI | null>(
     null
   );
   const [selectedBookingTone, setSelectedBookingTone] =
@@ -92,8 +77,7 @@ const CreateBookingPage = () => {
 
   // Khi người dùng chọn một Podcast Booking Tone, lấy danh sách Podcast Buddies tương ứng
   const {
-    data: availablePodcastBuddiesFromAPI,
-    isLoading: isLoadingAvailablePodcastBuddiesFromAPI,
+    data: availablePodcastBuddies,
   } = useGetPodcastBuddiesByBookingToneQuery(
     { PodcastBookingToneId: selectedBookingTone?.Id! },
     { skip: !selectedBookingTone }
@@ -130,31 +114,11 @@ const CreateBookingPage = () => {
     setIsLoading(false);
   }, [availableBookingTonesFromAPI, isLoadingAvailableBookingTonesFromAPI]);
 
-  // Khi có danh sách Podcast Buddies từ API, resolve file và set vào state
-  useEffect(() => {
-    // Resolve File ảnh
-    const resolveFile = async () => {
-      if (
-        !availablePodcastBuddiesFromAPI ||
-        isLoadingAvailablePodcastBuddiesFromAPI
-      )
-        return;
-      const resolvedPodcastBuddies = await resolveFiles(
-        availablePodcastBuddiesFromAPI.PodcastBuddyList,
-        resolveConfig
-      );
-      setAvailablePodcastBuddies(
-        resolvedPodcastBuddies.resolvedData as unknown as PodcastBuddyUI[]
-      );
-    };
-    resolveFile();
-  }, [availablePodcastBuddiesFromAPI, isLoadingAvailablePodcastBuddiesFromAPI]);
-
   useEffect(() => {
     // Set podcaster from localStorage if available
     const storedPodcaster = localStorage.getItem("selectedPodcaster");
     if (storedPodcaster) {
-      const podcasterObj = JSON.parse(storedPodcaster) as PodcastBuddyUI;
+      const podcasterObj = JSON.parse(storedPodcaster) as PodcastBuddyFromAPI;
       setSelectedBuddy(podcasterObj);
     }
   }, []);
@@ -312,7 +276,7 @@ const CreateBookingPage = () => {
         </div>
       ) : (
         <PodcastBuddySelectComponent
-          buddies={availablePodcastBuddies}
+          buddies={availablePodcastBuddies?.PodcastBuddyList || []}
           selectedBuddy={selectedBuddy}
           selectedBuddyDetails={selectedPodcastBuddyDetails}
           onSelectBuddy={setSelectedBuddy}

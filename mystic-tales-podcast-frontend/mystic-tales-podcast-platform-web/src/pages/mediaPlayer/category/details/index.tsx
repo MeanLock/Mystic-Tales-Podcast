@@ -4,97 +4,16 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { useGetCategoryFeedDataQuery } from "@/core/services/category/category.serivce";
-import type { CategoryFeedDataUI } from "@/core/types/feed";
-import type { FileResolveConfig } from "@/core/utils/fileResolver.util";
-import { resolveFiles } from "@/core/utils/fileResolver.util";
 import Autoplay from "embla-carousel-autoplay";
-import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ChannelCard from "./components/ChannelCard";
 import ShowCard from "./components/ShowCard";
 import EpisodeCard from "./components/EpisodeCard";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import Loading from "@/components/loading";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// File config cho TopChannels - array trực tiếp
-const topChannelsFileConfig: FileResolveConfig[] = [
-  {
-    type: "PodcastPublic",
-    path: "[].MainImageFileKey",
-    output: "[].ImageUrl",
-  },
-  {
-    type: "PodcastPublic",
-    path: "[].BackgroundImageFileKey",
-    output: "[].BackgroundImageUrl",
-  },
-  {
-    type: "AccountPublic",
-    path: "[].Podcaster.MainImageFileKey",
-    output: "[].Podcaster.ImageUrl",
-  },
-];
-
-// File config cho TopShows/HotShows - array trực tiếp
-const showsArrayFileConfig: FileResolveConfig[] = [
-  {
-    type: "PodcastPublic",
-    path: "[].MainImageFileKey",
-    output: "[].ImageUrl",
-  },
-  {
-    type: "AccountPublic",
-    path: "[].Podcaster.MainImageFileKey",
-    output: "[].Podcaster.ImageUrl",
-  },
-  {
-    type: "PodcastPublic",
-    path: "[].PodcastChannel.MainImageFileKey",
-    output: "[].PodcastChannel.ImageUrl",
-  },
-];
-
-// File config cho TopEpisodes - array trực tiếp
-const topEpisodesFileConfig: FileResolveConfig[] = [
-  {
-    type: "PodcastPublic",
-    path: "[].MainImageFileKey",
-    output: "[].ImageUrl",
-  },
-  {
-    type: "PodcastPublic",
-    path: "[].PodcastShow.MainImageFileKey",
-    output: "[].PodcastShow.ImageUrl",
-  },
-];
-
-// File config cho SubCategories items (each item has ShowList array)
-const subCategoryItemFileConfig: FileResolveConfig[] = [
-  {
-    type: "PodcastPublic",
-    path: "ShowList[].MainImageFileKey",
-    output: "ShowList[].ImageUrl",
-  },
-  {
-    type: "AccountPublic",
-    path: "ShowList[].Podcaster.MainImageFileKey",
-    output: "ShowList[].Podcaster.ImageUrl",
-  },
-  {
-    type: "PodcastPublic",
-    path: "ShowList[].PodcastChannel.MainImageFileKey",
-    output: "ShowList[].PodcastChannel.ImageUrl",
-  },
-];
 
 const CategoryDetailsPage = () => {
   const { id } = useParams();
-
-  // STATES
-  const [categoryFeedData, setCategoryFeedData] =
-    useState<CategoryFeedDataUI | null>(null);
-  const [isResolvingFiles, setIsResolvingFiles] = useState(false);
 
   // HOOKS
   const navigate = useNavigate();
@@ -109,59 +28,7 @@ const CategoryDetailsPage = () => {
       }
     );
 
-  useEffect(() => {
-    const resolveFile = async () => {
-      if (isCategoryFeedDataLoading || !categoryFeedDataRaw) {
-        return;
-      }
-
-      setIsResolvingFiles(true);
-      try {
-        // Resolve từng section
-        const [
-          topChannelsResolved,
-          topShowsResolved,
-          topEpisodesResolved,
-          hotShowsResolved,
-        ] = await Promise.all([
-          resolveFiles(categoryFeedDataRaw.TopChannels, topChannelsFileConfig),
-          resolveFiles(categoryFeedDataRaw.TopShows, showsArrayFileConfig),
-          resolveFiles(categoryFeedDataRaw.TopEpisodes, topEpisodesFileConfig),
-          resolveFiles(categoryFeedDataRaw.HotShows, showsArrayFileConfig),
-        ]);
-
-        // Resolve SubCategorySections (array of sections)
-        const subCategoriesResolved = await Promise.all(
-          categoryFeedDataRaw.SubCategorySections.map((section) =>
-            resolveFiles(section, subCategoryItemFileConfig)
-          )
-        );
-
-        // Combine tất cả resolved data
-        const resolvedData: CategoryFeedDataUI = {
-          PodcastCategory: categoryFeedDataRaw.PodcastCategory,
-          TopChannels: topChannelsResolved.resolvedData as any,
-          TopShows: topShowsResolved.resolvedData as any,
-          TopEpisodes: topEpisodesResolved.resolvedData as any,
-          HotShows: hotShowsResolved.resolvedData as any,
-          SubCategorySections: subCategoriesResolved.map(
-            (r) => r.resolvedData
-          ) as any,
-        };
-
-        setCategoryFeedData(resolvedData);
-      } catch (error) {
-        console.error("Error resolving category feed files:", error);
-        // Fallback to original data if resolve fails
-        setCategoryFeedData(categoryFeedDataRaw as any);
-      } finally {
-        setIsResolvingFiles(false);
-      }
-    };
-    resolveFile();
-  }, [categoryFeedDataRaw, isCategoryFeedDataLoading]);
-
-  if (isCategoryFeedDataLoading || isResolvingFiles) {
+  if (isCategoryFeedDataLoading) {
     return (
       <div className="w-full h-full flex flex-col gap-5 items-center justify-center">
         <Loading />
@@ -172,10 +39,24 @@ const CategoryDetailsPage = () => {
     );
   }
 
-  if (!categoryFeedData) {
+  if (
+    !categoryFeedDataRaw ||
+    (categoryFeedDataRaw.TopChannels.length === 0 &&
+      categoryFeedDataRaw.TopShows.length === 0 &&
+      categoryFeedDataRaw.TopEpisodes.length === 0 &&
+      categoryFeedDataRaw.HotShows.length === 0 &&
+      categoryFeedDataRaw.SubCategorySections.every(
+        (section) => section.ShowList.length === 0
+      ))
+  ) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <p className="text-white font-poppins">No data available</p>
+      <div className="w-full h-full flex items-center justify-center flex-col gap-5">
+        <p className="text-white font-poppins">
+          This category has no data available yet.
+        </p>
+        <div onClick={() => navigate(-1)} className="cursor-pointer px-10 py-2 flex items-center justify-center bg-white rounded-md text-black font-bold font-poppins hover:-translate-y-0.5 hover:shadow-md transition-all duration-500 ease-out">
+          <p>Back</p>
+        </div>
       </div>
     );
   }
@@ -190,13 +71,13 @@ const CategoryDetailsPage = () => {
         <p>Back</p>
       </div>
       <div className="w-full flex flex-col items-start justify-center gap-2 mb-5">
-        <p className="text-7xl font-poppins font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#abbaab] to-[#ffffff]">
-          {categoryFeedData.PodcastCategory.Name}
+        <p className="text-7xl font-poppins font-bold bg-clip-text text-transparent bg-linear-to-r from-[#abbaab] to-[#ffffff]">
+          {categoryFeedDataRaw.PodcastCategory.Name}
         </p>
       </div>
 
       {/* Top Channels Section */}
-      {categoryFeedData.TopChannels.length > 0 && (
+      {categoryFeedDataRaw.TopChannels.length > 0 && (
         <div className="w-full flex flex-col mt-10 gap-5">
           <div className="hidden md:inline-flex w-full items-center justify-between">
             <p className="font-poppins font-bold text-white text-2xl">
@@ -210,59 +91,36 @@ const CategoryDetailsPage = () => {
             </p>
           </div>
 
-          {isResolvingFiles ? (
-            <Carousel
-              opts={{
-                align: "start",
-                loop: false,
-              }}
-              className="w-full"
-            >
-              <CarouselContent>
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
-                  >
-                    <div className="p-1">
-                      <Skeleton className="w-full aspect-square rounded-lg" />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          ) : (
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              plugins={[
-                Autoplay({
-                  delay: 3000,
-                }),
-              ]}
-              className="w-full"
-            >
-              <CarouselContent>
-                {categoryFeedData.TopChannels.map((channel, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
-                  >
-                    <div className="p-1">
-                      <ChannelCard channel={channel} />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          )}
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            plugins={[
+              Autoplay({
+                delay: 3000,
+              }),
+            ]}
+            className="w-full"
+          >
+            <CarouselContent>
+              {categoryFeedDataRaw.TopChannels.map((channel, index) => (
+                <CarouselItem
+                  key={index}
+                  className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
+                >
+                  <div className="p-1">
+                    <ChannelCard channel={channel} />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
         </div>
       )}
 
       {/* Top Shows Section */}
-      {categoryFeedData.TopShows.length > 0 && (
+      {categoryFeedDataRaw.TopShows.length > 0 && (
         <div className="w-full flex flex-col mt-10 gap-5">
           <div className="hidden md:inline-flex w-full items-center justify-between">
             <p className="font-poppins font-bold text-white text-2xl">
@@ -276,59 +134,36 @@ const CategoryDetailsPage = () => {
             </p>
           </div>
 
-          {isResolvingFiles ? (
-            <Carousel
-              opts={{
-                align: "start",
-                loop: false,
-              }}
-              className="w-full"
-            >
-              <CarouselContent>
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3"
-                  >
-                    <div className="p-1">
-                      <Skeleton className="w-full aspect-video rounded-lg" />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          ) : (
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              plugins={[
-                Autoplay({
-                  delay: 3000,
-                }),
-              ]}
-              className="w-full"
-            >
-              <CarouselContent>
-                {categoryFeedData.TopShows.map((show, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3"
-                  >
-                    <div className="p-1">
-                      <ShowCard show={show} />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          )}
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            plugins={[
+              Autoplay({
+                delay: 3000,
+              }),
+            ]}
+            className="w-full"
+          >
+            <CarouselContent>
+              {categoryFeedDataRaw.TopShows.map((show, index) => (
+                <CarouselItem
+                  key={index}
+                  className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/3"
+                >
+                  <div className="p-1">
+                    <ShowCard show={show} />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
         </div>
       )}
 
       {/* Top Episodes Section */}
-      {categoryFeedData.TopEpisodes.length > 0 && (
+      {categoryFeedDataRaw.TopEpisodes.length > 0 && (
         <div className="w-full flex flex-col mt-10 gap-5">
           <div className="hidden md:inline-flex w-full items-center justify-between">
             <p className="font-poppins font-bold text-white text-2xl">
@@ -342,59 +177,36 @@ const CategoryDetailsPage = () => {
             </p>
           </div>
 
-          {isResolvingFiles ? (
-            <Carousel
-              opts={{
-                align: "start",
-                loop: false,
-              }}
-              className="w-full"
-            >
-              <CarouselContent>
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
-                  >
-                    <div className="p-1">
-                      <Skeleton className="w-full aspect-[3/4] rounded-lg" />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          ) : (
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              plugins={[
-                Autoplay({
-                  delay: 3000,
-                }),
-              ]}
-              className="w-full"
-            >
-              <CarouselContent>
-                {categoryFeedData.TopEpisodes.map((episode, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
-                  >
-                    <div className="p-1">
-                      <EpisodeCard episode={episode} />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          )}
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            plugins={[
+              Autoplay({
+                delay: 3000,
+              }),
+            ]}
+            className="w-full"
+          >
+            <CarouselContent>
+              {categoryFeedDataRaw.TopEpisodes.map((episode, index) => (
+                <CarouselItem
+                  key={index}
+                  className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
+                >
+                  <div className="p-1">
+                    <EpisodeCard episode={episode} />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
         </div>
       )}
 
       {/* Hot Shows Section */}
-      {categoryFeedData.HotShows.length > 0 && (
+      {categoryFeedDataRaw.HotShows.length > 0 && (
         <div className="w-full flex flex-col mt-10 gap-5">
           <div className="hidden md:inline-flex w-full items-center justify-between">
             <p className="font-poppins font-bold text-white text-2xl">
@@ -408,59 +220,36 @@ const CategoryDetailsPage = () => {
             </p>
           </div>
 
-          {isResolvingFiles ? (
-            <Carousel
-              opts={{
-                align: "start",
-                loop: false,
-              }}
-              className="w-full"
-            >
-              <CarouselContent>
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
-                  >
-                    <div className="p-1">
-                      <Skeleton className="w-full aspect-video rounded-lg" />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          ) : (
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              plugins={[
-                Autoplay({
-                  delay: 3000,
-                }),
-              ]}
-              className="w-full"
-            >
-              <CarouselContent>
-                {categoryFeedData.HotShows.map((show, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
-                  >
-                    <div className="p-1">
-                      <ShowCard show={show} />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </Carousel>
-          )}
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            plugins={[
+              Autoplay({
+                delay: 3000,
+              }),
+            ]}
+            className="w-full"
+          >
+            <CarouselContent>
+              {categoryFeedDataRaw.HotShows.map((show, index) => (
+                <CarouselItem
+                  key={index}
+                  className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+                >
+                  <div className="p-1">
+                    <ShowCard show={show} />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
         </div>
       )}
 
       {/* SubCategories Sections */}
-      {categoryFeedData.SubCategorySections.map(
+      {categoryFeedDataRaw.SubCategorySections.map(
         (section) =>
           section.ShowList.length > 0 && (
             <div
@@ -479,54 +268,31 @@ const CategoryDetailsPage = () => {
                 </p>
               </div>
 
-              {isResolvingFiles ? (
-                <Carousel
-                  opts={{
-                    align: "start",
-                    loop: false,
-                  }}
-                  className="w-full"
-                >
-                  <CarouselContent>
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <CarouselItem
-                        key={index}
-                        className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
-                      >
-                        <div className="p-1">
-                          <Skeleton className="w-full aspect-video rounded-lg" />
-                        </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                </Carousel>
-              ) : (
-                <Carousel
-                  opts={{
-                    align: "start",
-                    loop: true,
-                  }}
-                  plugins={[
-                    Autoplay({
-                      delay: 3000,
-                    }),
-                  ]}
-                  className="w-full"
-                >
-                  <CarouselContent>
-                    {section.ShowList.map((show, index) => (
-                      <CarouselItem
-                        key={index}
-                        className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
-                      >
-                        <div className="p-1">
-                          <ShowCard show={show} />
-                        </div>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                </Carousel>
-              )}
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: true,
+                }}
+                plugins={[
+                  Autoplay({
+                    delay: 3000,
+                  }),
+                ]}
+                className="w-full"
+              >
+                <CarouselContent>
+                  {section.ShowList.map((show, index) => (
+                    <CarouselItem
+                      key={index}
+                      className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/5"
+                    >
+                      <div className="p-1">
+                        <ShowCard show={show} />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
             </div>
           )
       )}

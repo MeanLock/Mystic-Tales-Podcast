@@ -1,7 +1,7 @@
-import type { PodcasterReviewUI } from "@/core/types/podcaster";
+import type { PodcasterReviewAPI } from "@/core/types/podcaster";
 import { FaStar } from "react-icons/fa";
 
-const ReviewCard = ({ review }: { review: PodcasterReviewUI }) => {
+const ReviewCard = ({ review }: { review: PodcasterReviewAPI }) => {
   return (
     <div className="w-full bg-white/10 backdrop-blur-md shadow-md aspect-video flex flex-col rounded-md p-2">
       <div className="w-full flex items-start gap-1">
@@ -22,9 +22,10 @@ const ReviewCard = ({ review }: { review: PodcasterReviewUI }) => {
         ) : (
           <p className="line-clamp-4 text-white font-medium">
             Tôi thực sự khâm phục tài năng của Podcaster này, anh ta có giọng
-            nói trời phú có thể khiến tôi xuất bất cứ lúc nào tôi bật podcast
-            của anh ta lên. Thật sự là tôi đã fail NNN được 10 lần từ lúc biết
-            đến anh ta
+            nói trời phú có thể khiến tôi xúc động. Mỗi tập podcast đều mang
+            đến những câu chuyện sâu sắc và ý nghĩa, giúp tôi thư giãn sau những
+            giờ làm việc căng thẳng. Tôi rất mong chờ các tập tiếp theo từ anh
+            ấy!
           </p>
         )}
       </div>

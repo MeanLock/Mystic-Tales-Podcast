@@ -4,13 +4,14 @@ import { RiMoneyDollarCircleLine } from "react-icons/ri";
 import { MdArrowForward } from "react-icons/md";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { RegistrationUI } from "..";
+import type { Registration } from "..";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 
 const AcceptRegistrationCard = ({
   registration,
   onViewDetails,
 }: {
-  registration: RegistrationUI;
+  registration: Registration;
   onViewDetails?: (id: string) => void;
 }) => {
   const handleViewDetails = useCallback(() => {
@@ -57,9 +58,9 @@ const AcceptRegistrationCard = ({
 
       <div className="space-y-4 px-4 py-4">
         <div className="flex items-center gap-2">
-          <img
-            src={registration.SourceInformation.ImageUrl || "/placeholder.svg"}
-            alt={registration.SourceInformation.Name}
+          <AutoResolveImage
+            FileKey={registration.SourceInformation.MainImageFileKey}
+            type="PodcastPublicSource"
             className="w-10 h-10 object-cover rounded-full shadow-md"
           />
           <h3 className="text-xl font-bold text-white line-clamp-1 dark:text-white">
@@ -119,7 +120,7 @@ const AcceptRegistrationCard = ({
           </div>
           <div className="h-1.5 w-full rounded-full bg-white/15 shadow-inner">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#aee339]/40 via-[#aee339]/60 to-[#aee339] shadow-lg transition-all"
+              className="h-full rounded-full bg-linear-to-r from-[#aee339]/40 via-[#aee339]/60 to-[#aee339] shadow-lg transition-all"
               style={{
                 width: `${Math.max(
                   10,

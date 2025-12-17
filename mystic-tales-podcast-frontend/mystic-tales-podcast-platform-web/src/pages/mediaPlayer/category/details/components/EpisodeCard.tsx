@@ -1,8 +1,9 @@
-import type { EpisodeUI } from "@/core/types/episode";
+import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import type { EpisodeFromAPI } from "@/core/types/episode";
 import { FaHeadphones } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
+const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
   const formatNumber = (num: number): string => {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
@@ -28,17 +29,17 @@ const EpisodeCard = ({ episode }: { episode: EpisodeUI }) => {
   return (
     <div
       onClick={() => navigate(`/media-player/episodes/${episode.Id}`)}
-      className="w-full aspect-[3/4] bg-white rounded-md overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:-translate-y-[6px]"
+      className="w-full aspect-3/4 bg-white rounded-md overflow-hidden relative cursor-pointer transition-all duration-500 ease-out hover:-translate-y-1.5"
     >
       <div className="absolute inset-0 flex items-center justify-center">
-        <img
-          src={episode.ImageUrl || "/images/unknown/content.png"}
-          alt={episode.Name}
-          className="w-full h-full object-cover"
+        <AutoResolveImage
+          FileKey={episode.MainImageFileKey}
+          type="PodcastPublicSource"
+          imgClassName="w-full aspect-[3/4] rounded-md"
         />
       </div>
 
-      <div className="absolute z-20 p-3 inset-0 bg-gradient-to-t from-black to-transparent flex flex-col justify-between gap-1">
+      <div className="absolute z-20 p-3 inset-0 bg-linear-to-t from-black to-transparent flex flex-col justify-between gap-1">
         {/* Stats */}
         <div className="w-full flex items-center justify-between">
           <div className="w-fit px-2 py-1 shadow-md rounded-full bg-white/40 text-[#252525] flex items-center gap-2">
