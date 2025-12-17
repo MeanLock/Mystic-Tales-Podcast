@@ -11,8 +11,8 @@ namespace SubscriptionService.BusinessLogic.DTOs.PodcastSubscription.ListItems
         public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public Guid? PodcastShowId { get; set; }
-        public Guid? PodcastChannelId { get; set; }
+        public string? PodcastShowName { get; set; }
+        public string? PodcastChannelName { get; set; }
         public bool IsActive { get; set; }
         public int CurrentVersion { get; set; }
         public DateTime? DeletedAt { get; set; }

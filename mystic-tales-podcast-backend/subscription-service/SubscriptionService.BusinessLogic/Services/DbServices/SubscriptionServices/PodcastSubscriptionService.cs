@@ -4680,54 +4680,77 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                     .Where(psr => psr.CancelledAt == null && !psr.IsIncomeTaken)
                     .ToListAsync();
                 var holdingList = new List<PodcastSubscriptionHoldingListItemResponseDTO>();
-                foreach (var registration in registrations)
+                var subscriptionIds = registrations.Select(r => r.PodcastSubscriptionId).Distinct().ToList();
+                foreach (var subscriptionId in subscriptionIds)
                 {
-                    var transaction = await GetHoldingPodcastSubscriptionTransactionByRegistrationId(registration.Id);
-                    if (transaction == null)
+                    var subscription = await _podcastSubscriptionGenericRepository.FindByIdAsync(subscriptionId);
+                    if(subscription == null || !subscription.IsActive || subscription.DeletedAt != null)
                         continue;
-                    var holdingAmount = transaction.OrderByDescending(transaction => transaction.CreatedAt).First().Amount;
-                    var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
-                    holdingList.Add(new PodcastSubscriptionHoldingListItemResponseDTO
+                    string? podcastChannelName = null;
+                    string? podcastShowName = null;
+                    if (subscription.PodcastShowId != null)
                     {
-                        Id = registration.PodcastSubscription.Id,
-                        Name = registration.PodcastSubscription.Name,
-                        Description = registration.PodcastSubscription.Description,
-                        PodcastShowId = registration.PodcastSubscription.PodcastShowId,
-                        PodcastChannelId = registration.PodcastSubscription.PodcastChannelId,
-                        IsActive = registration.PodcastSubscription.IsActive,
-                        CurrentVersion = registration.PodcastSubscription.CurrentVersion,
-                        DeletedAt = registration.PodcastSubscription.DeletedAt,
-                        CreatedAt = registration.PodcastSubscription.CreatedAt,
-                        UpdatedAt = registration.PodcastSubscription.UpdatedAt,
-                        PodcastSubscriptionRegistrationList = new List<PodcastSubscriptionRegistrationHoldingListItemResponseDTO>
+                        var show = await GetPodcastShow(subscription.PodcastShowId.Value);
+                        podcastShowName = show?.Name;
+                    }
+                    if (subscription.PodcastChannelId != null)
+                    {
+                        var channel = await GetPodcastChannel(subscription.PodcastChannelId.Value);
+                        podcastChannelName = channel?.Name;
+                    }
+                    var holdingListItem = new PodcastSubscriptionHoldingListItemResponseDTO
+                    {
+                        Id = subscription.Id,
+                        Name = subscription.Name,
+                        Description = subscription.Description,
+                        PodcastShowName = podcastShowName,
+                        PodcastChannelName = podcastChannelName,
+                        IsActive = subscription.IsActive,
+                        CurrentVersion = subscription.CurrentVersion,
+                        DeletedAt = subscription.DeletedAt,
+                        CreatedAt = subscription.CreatedAt,
+                        UpdatedAt = subscription.UpdatedAt,
+                        PodcastSubscriptionRegistrationList = new List<PodcastSubscriptionRegistrationHoldingListItemResponseDTO>()
+                    };
+
+                    foreach (var registration in registrations.Where(r => r.PodcastSubscriptionId == subscriptionId))
+                    {
+                        var transaction = await GetHoldingPodcastSubscriptionTransactionByRegistrationId(registration.Id);
+                        if (transaction == null)
+                            continue;
+                        var holdingAmount = transaction.OrderByDescending(transaction => transaction.CreatedAt).First().Amount;
+                        var account = await _accountCachingService.GetAccountStatusCacheById(registration.AccountId.Value);
+
+                        var registrationHoldingItem = new PodcastSubscriptionRegistrationHoldingListItemResponseDTO
                         {
-                            new PodcastSubscriptionRegistrationHoldingListItemResponseDTO
+                            Id = registration.Id,
+                            Account = new AccountSnippetResponseDTO
                             {
-                                Id = registration.Id,
-                                Account = new AccountSnippetResponseDTO
-                                {
-                                    Id = account.Id,
-                                    FullName = account.FullName,
-                                    Email = account.Email,
-                                    MainImageFileKey = account.MainImageFileKey
-                                },
-                                CurrentVersion = registration.CurrentVersion,
-                                IsAcceptNewestVersionSwitch = registration.IsAcceptNewestVersionSwitch,
-                                PodcastSubscriptionId = registration.PodcastSubscriptionId,
-                                SubscriptionCycleType = new SubscriptionCycleTypeDTO
-                                {
-                                    Id = registration.SubscriptionCycleType.Id,
-                                    Name = registration.SubscriptionCycleType.Name
-                                },
-                                LastPaidAt = registration.LastPaidAt,
-                                IsIncomeTaken = registration.IsIncomeTaken,
-                                CancelledAt = registration.CancelledAt,
-                                CreatedAt = registration.CreatedAt,
-                                UpdatedAt = registration.UpdatedAt,
-                                HoldingAmount = holdingAmount
-                            }
-                        }
-                    });
+                                Id = account.Id,
+                                FullName = account.FullName,
+                                Email = account.Email,
+                                MainImageFileKey = account.MainImageFileKey
+                            },
+                            CurrentVersion = registration.CurrentVersion,
+                            IsAcceptNewestVersionSwitch = registration.IsAcceptNewestVersionSwitch,
+                            PodcastSubscriptionId = registration.PodcastSubscriptionId,
+                            SubscriptionCycleType = new SubscriptionCycleTypeDTO
+                            {
+                                Id = registration.SubscriptionCycleType.Id,
+                                Name = registration.SubscriptionCycleType.Name
+                            },
+                            LastPaidAt = registration.LastPaidAt,
+                            IsIncomeTaken = registration.IsIncomeTaken,
+                            CancelledAt = registration.CancelledAt,
+                            CreatedAt = registration.CreatedAt,
+                            UpdatedAt = registration.UpdatedAt,
+                            HoldingAmount = holdingAmount
+                        };
+
+                        holdingListItem.PodcastSubscriptionRegistrationList.Add(registrationHoldingItem);
+                    }
+
+                    holdingList.Add(holdingListItem);
                 }
 
                 return holdingList;
