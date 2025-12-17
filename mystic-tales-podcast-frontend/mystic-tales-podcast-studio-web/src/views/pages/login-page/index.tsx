@@ -8,7 +8,7 @@ import FormControl from '@mui/material/FormControl';
 import Link from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useGoogleLogin } from '@react-oauth/google';
 import { CssBaseline } from '@mui/material';
 import { loginRequiredAxiosInstance, publicAxiosInstance } from '../../../core/api/rest-api/config/instances/v2';
@@ -53,6 +53,7 @@ const LoginPage: FC<LoginPageProps> = (props) => {
         intervalSeconds: 0.5,
     })
     const deviceInfo = getCapacitorDevice();
+    const { token } = useSelector((state: any) => state.auth);
 
     const validateInputs = () => {
         let isValid = true;
@@ -147,13 +148,18 @@ const LoginPage: FC<LoginPageProps> = (props) => {
         }
     }
 
-    const handleLogout = () => {
-        dispatch(clearAuthToken())
-    }
-
-    useEffect(() => {
-        handleLogout()
-    }, [])
+       useEffect(() => {
+        // Kiểm tra nếu đã có token thì redirect về dashboard
+        if (token) {
+            const decode = JwtUtil.decodeToken(token);
+            if (decode && decode?.role_id === "1") {
+                navigate("/dashboard");
+                return;
+            }
+        }
+        // Chỉ xóa token nếu không có token hợp lệ
+        dispatch(clearAuthToken());
+    }, [token, navigate, dispatch]);
 
     const handleLoginGoogleOAuth2 = useGoogleLogin(
         {
