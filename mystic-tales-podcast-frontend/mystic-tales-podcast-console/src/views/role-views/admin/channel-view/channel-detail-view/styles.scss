@@ -437,15 +437,9 @@
         white-space: nowrap;
 
         &--published {
-            background: rgba(174, 227, 57, 0.15);
-            color: #6b8e23;
+            background: rgba(173, 227, 57, 0.06);
+            color: #7FB800;
             border: 1.5px solid #AEE339;
-        }
-
-        &--unpublished {
-            background: rgba(158, 158, 158, 0.1);
-            color: #666;
-            border: 1.5px solid #9e9e9e;
         }
 
         &--draft {
@@ -455,21 +449,21 @@
         }
 
         &--ready-to-release {
-            background: rgba(255, 111, 0, 0.12);
-            color: #e65100;
-            border: 1.5px solid #ff6f00;
+            background: rgba(255, 179, 0, 0.07);
+            color: #ffb300;
+            border: 1.5px solid #ffb300;
         }
 
         &--taken-down {
-            background: rgba(211, 47, 47, 0.12);
-            color: #b71c1c;
-            border: 1.5px solid #d32f2f;
+            background: rgba(251, 222, 227, 0.2);
+            color: #ef5350;
+            border: 1.5px solid #ef5350;
         }
 
         &--removed {
-            background: rgba(211, 47, 47, 0.12);
-            color: #b71c1c;
-            border: 1.5px solid #d32f2f;
+            background: rgba(251, 222, 227, 0.2);
+            color: #ef5350;
+            border: 1.5px solid #ef5350;
         }
 
         &--unknown {

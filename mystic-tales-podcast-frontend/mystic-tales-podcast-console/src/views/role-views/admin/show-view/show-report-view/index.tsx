@@ -7,37 +7,7 @@ import { formatDate } from "../../../../../core/utils/date.util"
 import { getShowReports } from "@/core/services/report/ShowReport.Service"
 import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v1/admin-instance"
 import Loading from "@/views/components/common/loading"
-export const mockList: any = {
-    ShowReportList: [
-        {
-            Id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-            Content: "This episode contains inappropriate language.",
-            AccountId: 101,
-            PodcastShowId: "c7e3c9e0-12b4-45d1-bb25-91ffb44d8f6a",
-            PodcastShowReportTypeId: 2, // e.g. 1: Spam, 2: Offensive, 3: Copyright
-            ResolvedAt: "2025-10-10T10:07:05.532Z",
-            CreatedAt: "2025-10-10T09:45:12.210Z",
-        },
-        {
-            Id: "c2a34b12-0b92-4f78-9fd3-914e0d567a01",
-            Content: "Reported due to misleading information.",
-            AccountId: 102,
-            PodcastShowId: "a7b2e6b9-5f41-4a1e-80c2-26d37f6a6a90",
-            PodcastShowReportTypeId: 1,
-            ResolvedAt: "2025-10-09T15:22:40.100Z",
-            CreatedAt: "2025-10-09T13:00:00.000Z",
-        },
-        {
-            Id: "f6c71c2e-8a93-47df-bd51-f60aee1df6c9",
-            Content: "Contains copyrighted background music.",
-            AccountId: 103,
-            PodcastShowId: "9c73b3d0-1c41-4a8e-9d8c-11c5e6c74a01",
-            PodcastShowReportTypeId: 3,
-            ResolvedAt: "",
-            CreatedAt: "2025-10-10T08:15:42.200Z",
-        },
-    ],
-};
+
 ModuleRegistry.registerModules([AllCommunityModule])
 
 interface ShowReportViewProps { }
@@ -68,44 +38,56 @@ const state_creator = (table: any[]) => {
             { headerName: " Show", field: "PodcastShow.Name", flex: 0.8 },
             { headerName: " Show Report Type", field: "PodcastShowReportType.Name", flex: 0.8 },
             {
+                headerName: "Created At",
+                field: "CreatedAt",
+                flex: 0.5,
+                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    // So sánh theo timestamp gốc thay vì string đã format
+                    const dateA = new Date(nodeA.data.CreatedAt).getTime();
+                    const dateB = new Date(nodeB.data.CreatedAt).getTime();
+                    return dateA - dateB;
+                }
+            },
+            {
                 headerName: "Status",
                 cellClass: 'd-flex align-items-center',
                 flex: 0.7,
+                valueGetter: (params: { data: any }) => {
+                    if (params.data.ResolvedAt !== null && params.data.ResolvedAt !== "") return "Resolved";
+                    return "Unresolved";
+                },
                 cellRenderer: (params: { data: any }) => {
                     let status = {
                         title: '',
                         color: '',
+                        bg: ''
                     };
                     if (params.data.ResolvedAt !== null && params.data.ResolvedAt !== "") {
                         status = {
                             title: 'Resolved',
-                            color: 'success',
+                            color: 'var(--secondary-green)',
+                            bg: 'rgba(173, 227, 57, 0.06)'
                         };
-                        
-                    } else  {
+
+                    } else {
                         status = {
                             title: 'Unresolved',
-                            color: 'warning',
+                            color: '#ffb300',
+                            bg: 'rgba(255, 179, 0, 0.07)'
                         };
                     }
                     return (
                         <CCard
-                            textColor={`${status.color}`}
-                            style={{ width: '100px' }}
-                            className={`text-center fw-bold rounded-pill px-1 border-2 border-${status.color} bg-light`}
+                            style={{ width: '100px', color: `${status.color}`, background: `${status.bg}`, border: `2px solid ${status.color}` }}
+                            className={`text-center fw-bold rounded-pill px-1 `}
                         >
                             {status.title}
                         </CCard>
                     );
                 },
-            },
-            {
-                headerName: "Created At",
-                field: "CreatedAt",
-                flex: 0.5,
-                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
+            }
 
-            },
         ],
         rowData: table
 

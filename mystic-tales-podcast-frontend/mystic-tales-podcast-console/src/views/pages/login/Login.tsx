@@ -56,7 +56,7 @@ const Login = () => {
       if (user.role_id == 3) {
         navigate("/dashboard")
       } else if (user.role_id == 2) {
-        navigate("/staff/podcaster/table")
+        navigate("/staff/publish-review-sessions")
       }
     }
   }, [authSlice])

@@ -16,6 +16,7 @@ import { formatDate } from "@/core/utils/date.util"
 import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
 import { renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
 import { EmailOutlined } from "@mui/icons-material"
+import { SmartAudioPlayer } from "@/views/components/common/audio"
 
 export const PodcastIllegalContentTypes = [
     { Id: 1, Name: "Near-exact Duplicate Content (trùng 90%)" },
@@ -85,7 +86,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
             console.error('fetchAudioUrl error', e);
         }
     }, []);
-     const fetchOriginalAudioUrl = useCallback(async ( fileKey: string) => {
+    const fetchOriginalAudioUrl = useCallback(async (fileKey: string) => {
         try {
             const res = await getAudioEpisode(adminAxiosInstance, fileKey);
             if (res.success) {
@@ -341,21 +342,29 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                             alt={PublishDetail.PodcastEpisode.Name}
                             className="content-card__image"
                         />
-                        <div className="flex flex-col">
+                        <div className="flex flex-col w-full">
                             <div className="content-card__body">
                                 <span className="content-card__type">Episode</span>
                                 <h3 className="content-card__title mb-0">{PublishDetail.PodcastEpisode.Name}</h3>
                                 <p className="content-card__description">Explicit Content: {PublishDetail.PodcastEpisode.ExplicitContent ? 'Yes' : 'No'}</p>
-                                <div className="content-card__stats">
-                                    <audio
-                                        controls
-                                        src={audioUrl || undefined}
-                                        style={{ flex: 1 }}
-                                        onError={() => fetchOriginalAudioUrl(PublishDetail.PodcastEpisode.AudioFileKey)}
-
-                                    />
-                                </div>
                             </div>
+
+                            {/* Audio player full width */}
+                            <div className="px-3 pb-3 w-full">
+                                <SmartAudioPlayer
+                                    audioId={PublishDetail.PodcastEpisode.AudioFileKey}
+                                    className="w-full"
+                                    fetchUrlFunction={async (fileKey) => {
+                                        const result = await getAudioEpisode(adminAxiosInstance, fileKey);
+                                        return {
+                                            success: result.success,
+                                            data: result.data ? { FileUrl: result.data.FileUrl } : undefined,
+                                            message: typeof result.message === 'string' ? result.message : result.message?.content
+                                        };
+                                    }}
+                                />
+                            </div>
+
                             <div className="flex-1 flex items-end mb-1 mx-4">
                                 <div
                                     className={`content-card__badge content-card__badge--${['Published'].includes(PublishDetail.EpisodeCurrentStatus.Name)
@@ -372,9 +381,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                     <span className="content-card__badge-dot"></span>
                                     {PublishDetail.EpisodeCurrentStatus.Name}
                                 </div>
-
                             </div>
-
                         </div>
                     </div>
                 )}
@@ -494,12 +501,24 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                             <span className="publish-review-detail__duplicate-value">{episode?.ListenCount || 0}</span>
                                         </div>
                                         <div className="publish-review-detail__duplicate-info">
-                                            <audio
+                                            {/* <audio
                                                 controls
                                                 src={audioSources[episode.Id]?.url}
                                                 style={{ flex: 1 }}
                                                 onError={() => fetchAudioUrl(episode.Id, episode.AudioFileKey)}
 
+                                            /> */}
+                                            <SmartAudioPlayer
+                                                audioId={episode.AudioFileKey}
+                                                className="w-full mt-4 "
+                                                fetchUrlFunction={async (fileKey) => {
+                                                    const result = await getAudioEpisode(adminAxiosInstance, fileKey);
+                                                    return {
+                                                        success: result.success,
+                                                        data: result.data ? { FileUrl: result.data.FileUrl } : undefined,
+                                                        message: typeof result.message === 'string' ? result.message : result.message?.content
+                                                    };
+                                                }}
                                             />
                                         </div>
                                     </div>

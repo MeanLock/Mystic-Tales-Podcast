@@ -71,11 +71,21 @@ const useProducingRequestColumnDefs = () => {
             headerName: "Created At",
             cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.8rem' },
             valueGetter: (params: { data: any }) => formatDate(params.data.CreatedAt),
+            comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                const dateA = new Date(nodeA.data.CreatedAt).getTime();
+                const dateB = new Date(nodeB.data.CreatedAt).getTime();
+                return dateA - dateB;
+            },
         },
         {
             headerName: "Accept",
             cellClass: 'd-flex align-items-center justify-content-center',
             cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+            valueGetter: (params: { data: any }) => {
+                if (params.data.IsAccepted) return 0;
+                if (!params.data.IsAccepted === false) return 1;
+                return 2;
+            },
             cellRenderer: (params: any) => {
                 let status = {
                     title: '',
@@ -86,19 +96,21 @@ const useProducingRequestColumnDefs = () => {
                 if (params.data.IsAccepted) {
                     status = {
                         title: 'Accepted',
-                        color: 'var(--primary-green)', bg: 'rgba(174, 227, 57, 0.2)'
+                        color: 'var(--secondary-green)',
+                        bg: 'rgba(173, 227, 57, 0.06)'
 
                     };
                 } else if (params.data.IsAccepted === false) {
                     status = {
                         title: 'Rejected',
-                        color: '#ef5350', bg: 'rgba(227, 57, 57, 0.2)'
+                        color: '#ef5350',
+                        bg: 'rgba(251, 222, 227, 0.2)',
 
                     };
                 } else {
                     status = {
                         title: 'Pending',
-                        color: '#f3da35ff', bg: 'rgba(255, 179, 0, 0.15)'
+                        color: '#ffb300', bg: 'rgba(255, 179, 0, 0.07)'
                     };
                 }
                 return (
@@ -418,7 +430,7 @@ const BookingDetailView: FC<BookingDetailViewProps> = () => {
 
                 </div>
             </div>
-    
+
 
         </BookingDetailViewContext.Provider>
 

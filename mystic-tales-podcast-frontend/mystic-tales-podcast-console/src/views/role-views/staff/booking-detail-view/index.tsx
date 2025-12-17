@@ -69,61 +69,73 @@ const useProducingRequestColumnDefs = () => {
             cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.8rem' },
             valueGetter: (params: { data: any }) => formatDate(params.data.FinishedAt),
         },
-        {
-            headerName: "Created At",
-            cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.8rem' },
-            valueGetter: (params: { data: any }) => formatDate(params.data.CreatedAt),
-        },
-        {
-            headerName: "Accept",
-            cellClass: 'd-flex align-items-center justify-content-center',
-            cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-            cellRenderer: (params: any) => {
-                let status = {
-                    title: '',
-                    color: '',
-                    bg: ''
-                };
-
-                if (params.data.IsAccepted) {
-                    status = {
-                        title: 'Accepted',
-                        color: 'var(--primary-green)', bg: 'rgba(174, 227, 57, 0.2)'
-
-                    };
-                } else if (params.data.IsAccepted === false) {
-                    status = {
-                        title: 'Rejected',
-                        color: '#ef5350', bg: 'rgba(227, 57, 57, 0.2)'
-
-                    };
-                } else {
-                    status = {
-                        title: 'Pending',
-                        color: '#f3da35ff', bg: 'rgba(255, 179, 0, 0.15)'
-                    };
-                }
-                return (
-                    <span
-
-                        style={{
-                            display: 'inline-block',
-                            minWidth: 100,
-                            padding: '0 10px',
-                            borderRadius: 50,
-                            fontWeight: 700,
-                            color: status.color,
-                            fontSize: '0.75rem',
-                            background: status.bg,
-                            textAlign: 'center',
-                            border: `1.5px solid ${status.color}`,
-                        }}
-                    >
-                        {status.title}
-                    </span>
-                );
-            },
-        },
+         {
+                   headerName: "Created At",
+                   cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.8rem' },
+                   valueGetter: (params: { data: any }) => formatDate(params.data.CreatedAt),
+                   comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                       const dateA = new Date(nodeA.data.CreatedAt).getTime();
+                       const dateB = new Date(nodeB.data.CreatedAt).getTime();
+                       return dateA - dateB;
+                   },
+               },
+               {
+                   headerName: "Accept",
+                   cellClass: 'd-flex align-items-center justify-content-center',
+                   cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                   valueGetter: (params: { data: any }) => {
+                       if (params.data.IsAccepted) return 0;
+                       if (!params.data.IsAccepted === false) return 1;
+                       return 2;
+                   },
+                   cellRenderer: (params: any) => {
+                       let status = {
+                           title: '',
+                           color: '',
+                           bg: ''
+                       };
+       
+                       if (params.data.IsAccepted) {
+                           status = {
+                               title: 'Accepted',
+                               color: 'var(--secondary-green)',
+                               bg: 'rgba(173, 227, 57, 0.06)'
+       
+                           };
+                       } else if (params.data.IsAccepted === false) {
+                           status = {
+                               title: 'Rejected',
+                               color: '#ef5350',
+                               bg: 'rgba(251, 222, 227, 0.2)',
+       
+                           };
+                       } else {
+                           status = {
+                               title: 'Pending',
+                               color: '#ffb300', bg: 'rgba(255, 179, 0, 0.07)'
+                           };
+                       }
+                       return (
+                           <span
+       
+                               style={{
+                                   display: 'inline-block',
+                                   minWidth: 100,
+                                   padding: '0 10px',
+                                   borderRadius: 50,
+                                   fontWeight: 700,
+                                   color: status.color,
+                                   fontSize: '0.75rem',
+                                   background: status.bg,
+                                   textAlign: 'center',
+                                   border: `1.5px solid ${status.color}`,
+                               }}
+                           >
+                               {status.title}
+                           </span>
+                       );
+                   },
+               },
         {
             headerName: "",
             cellClass: 'd-flex justify-content-center py-0',

@@ -551,8 +551,8 @@
         white-space: nowrap;
 
         &--published {
-            background: rgba(174, 227, 57, 0.15);
-            color: #6b8e23;
+             background: rgba(173, 227, 57, 0.06);
+            color: #7FB800;
             border: 1.5px solid #AEE339;
         }
 
@@ -563,22 +563,14 @@
         }
 
         &--pending-review {
-            background: rgba(176, 153, 39, 0.12);
-            color: #d1bf1d;
-            border: 1.5px solid #d1bf1d;
+            background: rgba(255, 179, 0, 0.07);
+            color: #ffb300;
+            border: 1.5px solid #ffb300;
         }
-
-        &--pending-review {
-            background: rgba(176, 153, 39, 0.12);
-            color: #d1bf1d;
-            border: 1.5px solid #d1bf1d;
-        }
-
-
         &--ready-to-release {
-            background: rgba(255, 111, 0, 0.12);
-            color: #e65100;
-            border: 1.5px solid #ff6f00;
+            background: rgba(33, 150, 243, 0.12);
+            color: #3c82d3;
+            border: 1.5px solid #3c82d3;
         }
         
         &--audio-processing {
@@ -588,15 +580,15 @@
         }
 
         &--taken-down {
-            background: rgba(211, 47, 47, 0.12);
-            color: #b71c1c;
-            border: 1.5px solid #d32f2f;
+            background: rgba(251, 222, 227, 0.2);
+            color: #ef5350;
+            border: 1.5px solid #ef5350;
         }
 
-           &--removed {
-            background: rgba(211, 47, 47, 0.12);
-            color: #b71c1c;
-            border: 1.5px solid #d32f2f;
+        &--removed {
+            background: rgba(251, 222, 227, 0.2);
+            color: #ef5350;
+            border: 1.5px solid #ef5350;
         }
 
         &--unknown {
