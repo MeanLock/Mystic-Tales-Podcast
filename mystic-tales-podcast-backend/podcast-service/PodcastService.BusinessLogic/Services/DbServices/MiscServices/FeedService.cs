@@ -130,6 +130,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 // STEP 3: Build sections in order (following deduplication priority)
                 var continueListening = await BuildDiscoveryContinueListeningSection(account?.Id);
 
+
                 var basedOnYourTaste = await BuildDiscoveryBasedOnYourTasteSection(
                     account?.Id, userPrefs, systemPrefs, dedupShowIds);
 
@@ -298,12 +299,22 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
 
                 Console.WriteLine($"[ContinueListening] Building for userId={userId}");
+                // lấy ra listen session chưa hoàn thành
+                var latestListenSession = await _podcastEpisodeListenSessionGenericRepository.FindAll(
+                    predicate: ls =>
+                        ls.AccountId == userId.Value &&
+                        // ls.IsCompleted == false &&
+                        ls.IsCompleted == false &&
+                        ls.IsContentRemoved == false,
+                    includeFunc: null
+                ).FirstOrDefaultAsync();
 
                 var listenSessions = await _podcastEpisodeListenSessionGenericRepository.FindAll(
                     predicate: ls =>
                         ls.AccountId == userId.Value &&
                         // ls.IsCompleted == false &&
-                        ls.LastListenDurationSeconds < ls.PodcastEpisode.AudioLength &&
+                        // ls.LastListenDurationSeconds < ls.PodcastEpisode.AudioLength &&
+                        (latestListenSession == null || ls.PodcastEpisodeId != latestListenSession.PodcastEpisodeId) &&
                         ls.IsContentRemoved == false &&
                         ls.PodcastEpisode.DeletedAt == null &&
                         ls.PodcastEpisode.PodcastShow.DeletedAt == null &&
@@ -352,10 +363,17 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
                 }
 
                 // distint and order by last episode listened id
+                // listenSessions = listenSessions
+                //     .GroupBy(ls => ls.PodcastEpisodeId)
+                //     .Select(g => g.OrderByDescending(ls => ls.CreatedAt).First())
+                //     .OrderByDescending(ls => ls.CreatedAt)
+                //     .ToList();
                 listenSessions = listenSessions
-                    .GroupBy(ls => ls.PodcastEpisodeId)
-                    .Select(g => g.OrderByDescending(ls => ls.CreatedAt).First())
                     .OrderByDescending(ls => ls.CreatedAt)
+                    .GroupBy(ls => ls.PodcastEpisodeId)
+                    .Select(g => g.First()) // First() vì đã sort trước khi group
+                    .ToList()
+                    .Where(ls => ls.LastListenDurationSeconds < ls.PodcastEpisode.AudioLength) // đảm bảo vẫn chưa nghe hết
                     .ToList();
 
                 // Get unique podcaster IDs
@@ -412,10 +430,10 @@ namespace PodcastService.BusinessLogic.Services.DbServices.PodcastServices
 
                 Console.WriteLine($"[ContinueListening] Built with {listItems.Count} items");
 
-                return new DiscoveryPodcastFeedDTO.ContinueListeningDiscoveryPodcastFeedSection
+                return (new DiscoveryPodcastFeedDTO.ContinueListeningDiscoveryPodcastFeedSection
                 {
                     ListenSessionList = listItems
-                };
+                });
             }
             catch (Exception ex)
             {

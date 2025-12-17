@@ -459,7 +459,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=user-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true; 
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_UserDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true; 
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -506,7 +506,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=user-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_UserDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -553,7 +553,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=system-configuration-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SystemConfigurationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -600,7 +600,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=system-configuration-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SystemConfigurationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -647,7 +647,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=booking-management-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_BookingManagementDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -694,7 +694,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=booking-management-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_BookingManagementDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -741,7 +741,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=podcast-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_PodcastDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -788,7 +788,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=podcast-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_PodcastDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -835,7 +835,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=subscription-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SubscriptionDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -882,7 +882,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=subscription-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SubscriptionDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -929,7 +929,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=moderation-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_ModerationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -976,7 +976,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=moderation-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_ModerationDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -1023,7 +1023,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=transaction-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_TransactionDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -1070,7 +1070,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=transaction-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_TransactionDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -1116,7 +1116,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=saga-orchestrator-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SagaOrchestratorDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
@@ -1161,7 +1161,7 @@ services:
       - Infrastructure__Kafka__Cluster__ConnectionTimeoutMs=30000
       - Infrastructure__Kafka__Cluster__RequestTimeoutMs=30000
       - Infrastructure__Kafka__Consumer__GroupId=saga-orchestrator-service-consumer-group
-      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=SurveyTalkDB_test_v2;User Id=sa;Password=Banana100;TrustServerCertificate=true;
+      - ConnectionStrings__SQLSERVER_DefaultConnectionString=Server=sql-server,1433;Database=MTP_SagaOrchestratorDb_dev;User Id=sa;Password=Banana100;TrustServerCertificate=true;
       - Jwt__OpenSSL_PrivateKey_Path=AppConfigurations/Jwt/keys/private_key.pem
       - Jwt__OpenSSL_PublicKey_Path=AppConfigurations/Jwt/keys/public_key.pem
     ports:
