@@ -4322,7 +4322,8 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
             {
                 var bookings = await _bookingGenericRepository.FindAll(
                     includeFunc: function => function
-                    .Include(b => b.BookingStatusTrackings))
+                    .Include(b => b.BookingStatusTrackings)
+                    .ThenInclude(b => b.BookingStatus))
                     .Where(b => b.BookingStatusTrackings.OrderByDescending(bst => bst.CreatedAt).FirstOrDefault().BookingStatusId != null &&
                     !new[] {
                         (int)BookingStatusEnum.QuotationRequest,
@@ -4388,7 +4389,7 @@ namespace BookingManagementService.BusinessLogic.Services.DbServices.BookingServ
                         {
                             Id = booking.BookingStatusTrackings
                                 .OrderByDescending(bst => bst.CreatedAt)
-                                .FirstOrDefault().BookingStatus.Id,
+                                .FirstOrDefault().BookingStatusId,
                             Name = booking.BookingStatusTrackings
                                 .OrderByDescending(bst => bst.CreatedAt)
                                 .FirstOrDefault().BookingStatus.Name
