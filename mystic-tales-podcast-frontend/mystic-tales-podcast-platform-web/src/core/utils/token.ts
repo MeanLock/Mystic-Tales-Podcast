@@ -7,7 +7,6 @@ import { jwtDecode } from "jwt-decode";
  */
 const decodeToken = (token: string): any | null => {
   try {
-    console.log("Decoded: ", jwtDecode(token));
     return jwtDecode(token);
   } catch (error) {
     console.error("Invalid token", error);
