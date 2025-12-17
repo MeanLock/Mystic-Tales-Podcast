@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // usePlayer.ts
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
@@ -32,6 +30,12 @@ import type { RootState } from "@/redux/store";
 import { useLazyCheckUserPodcastListenSlotQuery } from "../account/account.service";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
 import { appApi } from "@/core/api/appApi";
+import { callAxiosRestApi } from "@/core/api/appApiAxios/index";
+import { loginRequiredAxiosInstance } from "@/core/api/appApiAxios/config/instances";
+import {
+  getBookingLatestSession,
+  getEpisodeLatestSession,
+} from "./get-latest.service";
 
 export function usePlayer() {
   const controller = getPlayerController();
@@ -270,26 +274,18 @@ export function usePlayer() {
 
   // Hàm Play From Latest
   const playFromLatest = useCallback(async () => {
-    // Ngăn chặn gọi đồng thời - dùng flag từ controller singleton
-    if (controller.isLoadingLatestSession()) {
-      console.log("playFromLatest already in progress, skipping...");
-      return;
-    }
-
     try {
-      controller.setLoadingLatestSession(true);
-
       // Gọi tuần tự thay vì song song để tránh conflict/cancel
       console.log("FETCHING EPISODE NÈ...");
-      const resEpisode = await triggerEpisodeSession(undefined).unwrap();
+      // const resEpisode = await triggerEpisodeSession(undefined).unwrap();
+      const resEpisode = await getEpisodeLatestSession();
       console.log("EPISODE LATEST REPONSE:", resEpisode);
 
       console.log("FETCHING BOOKING NÈ ...");
-      const resBooking = await triggerBookingSession(undefined).unwrap();
+      // const resBooking = await triggerBookingSession(undefined).unwrap();
+      const resBooking = await getBookingLatestSession();
       console.log("BOOKING LATEST RESPONSE:", resBooking);
-
-      console.log("GOM LẠI NÈEEE:", { resEpisode, resBooking });
-      if (!resEpisode.ListenSession && !resBooking.ListenSession) return;
+      // if (!resEpisode.ListenSession && !resBooking.ListenSession) return;
       if (resEpisode.ListenSession && !resBooking.ListenSession) {
         const session = resEpisode.ListenSession as ListenSessionEpisodes;
         const latestPosition =
@@ -340,7 +336,7 @@ export function usePlayer() {
     } catch (error) {
       console.error("playFromLatest error:", error);
     } finally {
-      controller.setLoadingLatestSession(false);
+      console.log("playFromLatest finally done.");
     }
   }, [triggerEpisodeSession, triggerBookingSession, controller, dispatch]);
 

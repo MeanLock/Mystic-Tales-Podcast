@@ -1,6 +1,6 @@
 import Loading from "@/components/loading";
 import { useGetSearchResultsQuery } from "@/core/services/search/search.service";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { IoIosArrowBack } from "react-icons/io";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
@@ -8,7 +8,6 @@ import { usePlayer } from "@/core/services/player/usePlayer";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import PlayingWave from "@/components/playingWave/PlayWave";
 import { IoPlay } from "react-icons/io5";
-
 
 const SearchPage = () => {
   // STATES
@@ -27,12 +26,23 @@ const SearchPage = () => {
 
   const { data: searchDataRaw, isFetching: isSearchDataLoading } =
     useGetSearchResultsQuery(
-      { keyword: keyword || "", refresh: refresh || "" },
+      { keyword: keyword || "", refresh: refresh || undefined },
       {
         skip: !keyword || keyword.trim() === "",
-        refetchOnMountOrArgChange: true,
+        // Chỉ refetch nếu có refresh param (search mới) hoặc data cũ hơn 10s
+        refetchOnMountOrArgChange: refresh ? true : 20,
       }
     );
+
+  // Loại bỏ refresh param khỏi URL sau khi đã fetch xong để navigate(-1) không refetch lại
+  useEffect(() => {
+    if (refresh && !isSearchDataLoading && keyword) {
+      // Replace URL without refresh param
+      navigate(`/media-player/search?keyword=${encodeURIComponent(keyword)}`, {
+        replace: true,
+      });
+    }
+  }, [refresh, isSearchDataLoading, keyword, navigate]);
 
   const {
     play,
@@ -170,7 +180,8 @@ const SearchPage = () => {
                         />
                         {uiState.isPlaying &&
                         uiState.currentAudio &&
-                        uiState.currentAudio.id === content.Id && isEpisode ? (
+                        uiState.currentAudio.id === content.Id &&
+                        isEpisode ? (
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
