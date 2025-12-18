@@ -27,7 +27,6 @@ export type BookingRequirementInfo = {
   ContentValue?: string;
 };
 
-
 const CreateBookingPage = () => {
   // STATES
 
@@ -38,9 +37,8 @@ const CreateBookingPage = () => {
     PodcastBookingTone[]
   >([]);
   // User Selections
-  const [selectedBuddy, setSelectedBuddy] = useState<PodcastBuddyFromAPI | null>(
-    null
-  );
+  const [selectedBuddy, setSelectedBuddy] =
+    useState<PodcastBuddyFromAPI | null>(null);
   const [selectedBookingTone, setSelectedBookingTone] =
     useState<PodcastBookingTone | null>(null);
 
@@ -64,7 +62,7 @@ const CreateBookingPage = () => {
   // const [notFoundPodcasterError, setNotFoundPodcasterError] =
   //   useState<boolean>(false);
 
-  const [createBooking] = useCreateMutation();
+  const [createBooking, { isLoading: isCreating }] = useCreateMutation();
 
   // HOOKS
   const navigate = useNavigate();
@@ -76,17 +74,14 @@ const CreateBookingPage = () => {
   } = useGetPodcastBookingTonesQuery();
 
   // Khi người dùng chọn một Podcast Booking Tone, lấy danh sách Podcast Buddies tương ứng
-  const {
-    data: availablePodcastBuddies,
-  } = useGetPodcastBuddiesByBookingToneQuery(
-    { PodcastBookingToneId: selectedBookingTone?.Id! },
-    { skip: !selectedBookingTone }
-  );
+  const { data: availablePodcastBuddies } =
+    useGetPodcastBuddiesByBookingToneQuery(
+      { PodcastBookingToneId: selectedBookingTone?.Id! },
+      { skip: !selectedBookingTone }
+    );
 
   // Khi người dùng chọn một Podcast Buddies, gọi API để lấy chi tiết Podcaster
-  const {
-    data: selectedPodcastBuddyDetails,
-  } = useGetPodcastBuddyDetailsQuery(
+  const { data: selectedPodcastBuddyDetails } = useGetPodcastBuddyDetailsQuery(
     { AccountId: selectedBuddy?.Id! },
     { skip: !selectedBuddy }
   );
@@ -332,6 +327,7 @@ const CreateBookingPage = () => {
           }}
           selectedBuddy={selectedPodcastBuddyDetails}
           onSubmit={handleSubmit}
+          isCreating={isCreating}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 import Loading from "@/components/loading";
 import { useGetSearchResultsQuery } from "@/core/services/search/search.service";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { IoIosArrowBack } from "react-icons/io";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
@@ -8,6 +8,8 @@ import { usePlayer } from "@/core/services/player/usePlayer";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import PlayingWave from "@/components/playingWave/PlayWave";
 import { IoPlay } from "react-icons/io5";
+import ActivityIndicator from "@/components/loader/ActivityIndicator";
+import { debouncePromise } from "@/core/utils/debouncePromise";
 
 const SearchPage = () => {
   // STATES
@@ -53,24 +55,62 @@ const SearchPage = () => {
   const [getBenefitList] =
     useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery();
 
-  const handlePlayPause = async (episodeId: string) => {
-    if (uiState.currentAudio && uiState.currentAudio?.id === episodeId) {
-      if (uiState.isPlaying) {
-        pause();
-      } else {
-        play();
-      }
-    } else {
+  // const handlePlayPause = async (episodeId: string) => {
+  //   if (uiState.currentAudio && uiState.currentAudio?.id === episodeId) {
+  //     if (uiState.isPlaying) {
+  //       pause();
+  //     } else {
+  //       play();
+  //     }
+  //   } else {
+  //     const benefitList = await getBenefitList({
+  //       PodcastEpisodeId: episodeId,
+  //     }).unwrap();
+  //     playEpisodeFromSpecifyShow({
+  //       audioId: episodeId,
+  //       benefitsList:
+  //         benefitList.CurrentPodcastSubscriptionRegistrationBenefitList || [],
+  //     });
+  //   }
+  // };
+
+  // Tách phần cần debounce (gọi API) ra riêng
+  const playNewEpisode = useCallback(
+    async (audioId: string) => {
       const benefitList = await getBenefitList({
-        PodcastEpisodeId: episodeId,
+        PodcastEpisodeId: audioId,
       }).unwrap();
       playEpisodeFromSpecifyShow({
-        audioId: episodeId,
+        audioId: audioId,
         benefitsList:
           benefitList.CurrentPodcastSubscriptionRegistrationBenefitList || [],
       });
-    }
-  };
+    },
+    [getBenefitList, playEpisodeFromSpecifyShow]
+  );
+
+  // Memoize debounced function - chỉ depend vào playNewEpisode (ổn định)
+  const debouncedPlayNew = useMemo(
+    () => debouncePromise(playNewEpisode, 1000),
+    [playNewEpisode]
+  );
+
+  // Handler check state trước khi gọi - có thể tạo lại không sao
+  const handlePlayPause = useCallback(
+    (audioId: string | null) => {
+      if (!audioId) return;
+      if (uiState.currentAudio && uiState.currentAudio?.id === audioId) {
+        if (uiState.isPlaying) {
+          pause();
+        } else {
+          play();
+        }
+      } else {
+        debouncedPlayNew(audioId);
+      }
+    },
+    [uiState, pause, play, debouncedPlayNew]
+  );
 
   if (isSearchDataLoading) {
     return (
@@ -178,30 +218,46 @@ const SearchPage = () => {
                           type="PodcastPublicSource"
                           className="w-20 h-20 object-cover rounded-md flex-shrink-0"
                         />
-                        {uiState.isPlaying &&
-                        uiState.currentAudio &&
-                        uiState.currentAudio.id === content.Id &&
+                        {uiState.isLoadingSession &&
+                        uiState.loadingAudioId === content.Id &&
                         isEpisode ? (
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
-                              handlePlayPause(content.Id);
                             }}
-                            className="absolute inset-0 bg-black/30 flex items-center justify-center"
+                            className={`z-10 absolute inset-0 bg-black/40 rounded-sm flex items-center justify-center cursor-not-allowed`}
                           >
-                            <PlayingWave />
+                            <ActivityIndicator size={16} color="#fff" />
                           </div>
                         ) : isEpisode ? (
-                          <div className="absolute inset-0 bg-black/30 hidden group-hover:flex items-center justify-center">
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePlayPause(content.Id);
-                              }}
-                              className="bg-mystic-green rounded-full p-2 flex items-center justify-center"
-                            >
-                              <IoPlay color="#fff" />
-                            </div>
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlayPause(
+                                content && isEpisode ? content.Id : null
+                              );
+                            }}
+                            className={`z-10 absolute inset-0 bg-black/40 rounded-sm items-center justify-center ${
+                              uiState.isPlaying &&
+                              uiState.currentAudio &&
+                              uiState.currentAudio?.id === content?.Id
+                                ? "flex"
+                                : "hidden group-hover:inline-flex"
+                            }
+                            ${
+                              uiState.isLoadingSession
+                                ? "cursor-not-allowed"
+                                : "cursor-pointer"
+                            }
+                          `}
+                          >
+                            {uiState.isPlaying &&
+                            uiState.currentAudio &&
+                            uiState.currentAudio?.id === content?.Id ? (
+                              <PlayingWave />
+                            ) : (
+                              <IoPlay className="text-white w-4 h-4" />
+                            )}
                           </div>
                         ) : null}
                       </div>
@@ -210,9 +266,6 @@ const SearchPage = () => {
                         <p className="text-white font-semibold text-lg line-clamp-1">
                           {content.Name}
                         </p>
-                        {/* <p className="text-gray-400 text-sm line-clamp-2 mt-1">
-                          {content.Description}
-                        </p> */}
                         <div
                           className="text-gray-400 text-sm line-clamp-2 mt-1"
                           dangerouslySetInnerHTML={{
@@ -257,7 +310,7 @@ const SearchPage = () => {
                     <AutoResolveImage
                       FileKey={channel.MainImageFileKey}
                       type="PodcastPublicSource"
-                      className="w-20 h-20 object-cover rounded-full flex-shrink-0"
+                      className="w-20 h-20 object-cover rounded-full shrink-0"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-white font-semibold text-lg line-clamp-1">
@@ -339,11 +392,53 @@ const SearchPage = () => {
                     }
                     className="flex items-start gap-4 p-3 rounded-lg hover:bg-white/10 cursor-pointer transition-all"
                   >
-                    <AutoResolveImage
-                      FileKey={episode.MainImageFileKey}
-                      type="PodcastPublicSource"
-                      className="w-20 h-20 object-cover rounded-md flex-shrink-0"
-                    />
+                    <div className="w-20 h-20 group flex items-center justify-center relative">
+                      <AutoResolveImage
+                        FileKey={episode.MainImageFileKey}
+                        type="PodcastPublicSource"
+                        className="w-20 h-20 object-cover rounded-md shrink-0"
+                      />
+                      {uiState.isLoadingSession &&
+                      uiState.loadingAudioId === episode.Id ? (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          className={`z-10 absolute inset-0 bg-black/40 rounded-sm flex items-center justify-center cursor-not-allowed`}
+                        >
+                          <ActivityIndicator size={16} color="#fff" />
+                        </div>
+                      ) : (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayPause(episode ? episode.Id : null);
+                          }}
+                          className={`z-10 absolute inset-0 bg-black/40 rounded-sm items-center justify-center ${
+                            uiState.isPlaying &&
+                            uiState.currentAudio &&
+                            uiState.currentAudio?.id === episode?.Id
+                              ? "flex"
+                              : "hidden group-hover:inline-flex"
+                          }
+                            ${
+                              uiState.isLoadingSession
+                                ? "cursor-not-allowed"
+                                : "cursor-pointer"
+                            }
+                          `}
+                        >
+                          {uiState.isPlaying &&
+                          uiState.currentAudio &&
+                          uiState.currentAudio?.id === episode?.Id ? (
+                            <PlayingWave />
+                          ) : (
+                            <IoPlay className="text-white w-4 h-4" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex-1 min-w-0">
                       <p className="text-white font-semibold text-lg line-clamp-1">
                         {episode.Name}

@@ -443,9 +443,8 @@ const MediaPlayerSidebar = () => {
                 keywordOriginal={keyword}
                 keywords={suggesstionAutocompleteKeywords}
                 contents={suggesstionContents}
-                isLoading={
-                  isSuggestionKeywordLoading || isSuggestionContentLoading
-                }
+                isKeywordLoading={isSuggestionKeywordLoading}
+                isContentLoading={isSuggestionContentLoading}
                 onKeywordClick={(kw) => {
                   setKeyword(kw);
                   navigate(

@@ -182,7 +182,7 @@ export const playerApi = appApi.injectEndpoints({
                 },
                 poll: {
                   intervalMs: 1000,
-                  maxAttempts: 30,
+                  maxAttempts: 3,
                 },
               })
             )

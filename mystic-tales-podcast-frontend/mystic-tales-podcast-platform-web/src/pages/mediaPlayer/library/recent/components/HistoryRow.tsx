@@ -1,9 +1,11 @@
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import ActivityIndicator from "@/components/loader/ActivityIndicator";
 import PlayingWave from "@/components/playingWave/PlayWave";
 import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
 import type { ListenHistory } from "@/core/services/episode/episode.service";
 import { usePlayer } from "@/core/services/player/usePlayer";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
+import { debouncePromise } from "@/core/utils/debouncePromise";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
 import type { RootState } from "@/redux/store";
 import { IoPlay } from "react-icons/io5";
@@ -139,6 +141,8 @@ const HistoryRow = ({
     }
   };
 
+  const debouncePlay = debouncePromise(handlePlayPauseEpisode, 300);
+
   return (
     <div
       key={history.PodcastEpisode.Id + history.CreatedAt}
@@ -150,24 +154,36 @@ const HistoryRow = ({
           type="PodcastPublicSource"
           className="w-16 h-16 rounded-lg"
         />
-        {uiState.isPlaying &&
-        uiState.currentAudio &&
-        uiState.currentAudio.id === history.PodcastEpisode.Id ? (
+        {uiState.isLoadingSession &&
+        uiState.loadingAudioId === history.PodcastEpisode.Id ? (
           <div
-            onClick={handlePlayPauseEpisode}
-            className="absolute inset-0 flex bg-black/30 items-center justify-center rounded-lg"
+            className={`absolute inset-0 flex bg-black/30 items-center justify-center rounded-lg cursor-not-allowed`}
           >
-            <div className="p-2 rounded-full bg-mystic-green flex items-center justify-center ">
-              <PlayingWave />
+            <div className="p-2 rounded-full flex items-center justify-center ">
+              <ActivityIndicator size={25} color="#fff" />
             </div>
           </div>
         ) : (
-          <div className="hidden group-hover:flex absolute inset-0 bg-black/30 rounded-lg items-center justify-center m-auto transition-colors cursor-pointer">
-            <div
-              onClick={() => handlePlayPauseEpisode()}
-              className="p-2 rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green"
-            >
-              <IoPlay size={20} color="#ffffff" />
+          <div
+            onClick={() => debouncePlay()}
+            className={`absolute inset-0 flex bg-black/30 items-center justify-center rounded-lg ${
+              uiState.isPlaying &&
+              uiState.currentAudio &&
+              uiState.currentAudio.id === history.PodcastEpisode.Id
+                ? ""
+                : "hidden group-hover:flex"
+            }
+          ${uiState.isLoadingSession ? "cursor-not-allowed" : "cursor-pointer"}
+          `}
+          >
+            <div className="p-2 rounded-full bg-mystic-green flex items-center justify-center ">
+              {uiState.isPlaying &&
+              uiState.currentAudio &&
+              uiState.currentAudio.id === history.PodcastEpisode.Id ? (
+                <PlayingWave />
+              ) : (
+                <IoPlay size={20} color="#ffffff" />
+              )}
             </div>
           </div>
         )}

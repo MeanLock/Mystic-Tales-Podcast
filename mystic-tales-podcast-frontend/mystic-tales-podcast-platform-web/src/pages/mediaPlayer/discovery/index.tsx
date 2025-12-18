@@ -147,7 +147,7 @@ const DiscoveryPage = () => {
     "
     >
       <div className="w-full flex flex-col gap-2">
-        <p className="text-9xl font-poppins font-bold bg-gradient-to-r from-[#aee339] to-[#5EFCE8] bg-clip-text text-transparent">
+        <p className="text-9xl font-poppins font-bold bg-linear-to-r from-[#aee339] to-[#5EFCE8] bg-clip-text text-transparent">
           Discovery
         </p>
         <p className="font-poppins text-white font-bold">
@@ -258,7 +258,7 @@ const DiscoveryPage = () => {
                     className="basis-1/2 md:basis-1/3 lg:basis-1/5"
                   >
                     <div className="p-1">
-                      <Skeleton className="w-full aspect-[3/4] rounded-xl" />
+                      <Skeleton className="w-full aspect-3/4 rounded-xl" />
                     </div>
                   </CarouselItem>
                 ))}

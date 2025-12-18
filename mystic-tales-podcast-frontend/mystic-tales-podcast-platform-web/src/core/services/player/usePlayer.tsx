@@ -1,9 +1,8 @@
 // usePlayer.ts
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   getPlayerController,
   type PlayerUiState,
-  type SourceType,
 } from "@/core/services/player/playerController";
 import {
   useListenToEpisodeMutation,
@@ -13,7 +12,6 @@ import {
   useGetEpisodeLatestSessionMutation,
   useGetBookingLatestSessionMutation,
   useUpdatePlayModeMutation,
-  playerApi,
 } from "@/core/services/player/player.service"; // file RTK Query của bạn
 import type { SubscriptionBenefit } from "../subscription/subscription.service";
 import type {
@@ -29,9 +27,7 @@ import {
 import type { RootState } from "@/redux/store";
 import { useLazyCheckUserPodcastListenSlotQuery } from "../account/account.service";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
-import { appApi } from "@/core/api/appApi";
-import { callAxiosRestApi } from "@/core/api/appApiAxios/index";
-import { loginRequiredAxiosInstance } from "@/core/api/appApiAxios/config/instances";
+
 import {
   getBookingLatestSession,
   getEpisodeLatestSession,
@@ -88,63 +84,121 @@ export function usePlayer() {
   // Gọi API xong là play luôn, và luôn play từ đầu (seekTo = 0)
   const playEpisodeFromSpecifyShow = useCallback(
     async (opts: { audioId: string; benefitsList: SubscriptionBenefit[] }) => {
-      const { audioId, benefitsList = [] } = opts;
-      const listenSlot = await getPodcastListenSlotCount().unwrap();
+      if (controller.isCurrentlyLoadingSession()) {
+        console.warn("Already loading a session, please wait");
+        return;
+      }
 
-      if (benefitsList.length > 0) {
-        if (!benefitsList.find((b) => b.Id === 1)) {
-          if (listenSlot <= 0) {
-            dispatch(
-              showAlert({
-                type: "warning",
-                title: "Listen Slot Exceeded",
-                description:
-                  "You have used up all your free listen slots. Please wait for more slots to become available.",
-                isAutoClose: false,
-                isClosable: true,
-              })
+      const { audioId, benefitsList = [] } = opts;
+
+      // Set loading flag NGAY để chặn concurrent calls
+      controller.setLoadingSession(true, audioId);
+
+      let retryCount = 0;
+      const MAX_RETRIES = 3;
+
+      const attemptLoad = async (): Promise<boolean> => {
+        try {
+          const listenSlot = await getPodcastListenSlotCount().unwrap();
+
+          if (benefitsList.length > 0) {
+            if (!benefitsList.find((b) => b.Id === 1)) {
+              if (listenSlot <= 0) {
+                dispatch(
+                  showAlert({
+                    type: "warning",
+                    title: "Listen Slot Exceeded",
+                    description:
+                      "You have used up all your free listen slots. Please wait for more slots to become available.",
+                    isAutoClose: false,
+                    isClosable: true,
+                  })
+                );
+                return false;
+              }
+            }
+          } else {
+            if (listenSlot <= 0) {
+              dispatch(
+                showAlert({
+                  type: "warning",
+                  title: "Listen Slot Exceeded",
+                  description:
+                    "You have used up all your free listen slots. Please wait for more slots to become available.",
+                  isAutoClose: false,
+                  isClosable: true,
+                })
+              );
+              return false;
+            }
+          }
+
+          const res = await listenToEpisode({
+            PodcastEpisodeId: audioId,
+            SourceType: "SpecifyShowEpisodes",
+            CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
+          }).unwrap();
+
+          const session = res.ListenSession as ListenSessionEpisodes;
+          const procedure =
+            res.ListenSessionProcedure as ListenSessionProcedure;
+
+          // Lưu session và procedure vào redux store
+          dispatch(setListenSession(session));
+          dispatch(setListenSessionProcedure(procedure));
+
+          await controller.playFromExistingSession({
+            session,
+            procedure,
+            sourceType: "SpecifyShowEpisodes",
+            seekTo: 0,
+            isSeekThenPlay: true,
+          });
+          return true;
+        } catch (error) {
+          console.error(
+            `Error in playEpisodeFromSpecifyShow (attempt ${retryCount + 1}):`,
+            error
+          );
+          return false;
+        }
+      };
+
+      try {
+        while (retryCount < MAX_RETRIES) {
+          const success = await attemptLoad();
+          if (success) break;
+
+          retryCount++;
+          if (retryCount < MAX_RETRIES) {
+            console.log(`Retrying... (${retryCount}/${MAX_RETRIES})`);
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * retryCount)
             );
-            return;
           }
         }
-      } else {
-        if (listenSlot <= 0) {
+
+        if (retryCount >= MAX_RETRIES) {
+          console.error("Max retries reached. Clearing state.");
+          controller.stop();
+          dispatch(setListenSession(null));
+          dispatch(setListenSessionProcedure(null));
           dispatch(
             showAlert({
-              type: "warning",
-              title: "Listen Slot Exceeded",
+              type: "error",
+              title: "Playback Failed",
               description:
-                "You have used up all your free listen slots. Please wait for more slots to become available.",
-              isAutoClose: false,
+                "Unable to load audio after multiple attempts. Please try again later.",
+              isAutoClose: true,
               isClosable: true,
             })
           );
-          return;
         }
+      } finally {
+        controller.setLoadingSession(false);
       }
-
-      const res = await listenToEpisode({
-        PodcastEpisodeId: audioId,
-        SourceType: "SpecifyShowEpisodes",
-        CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
-      }).unwrap();
-
-      const session = res.ListenSession as ListenSessionEpisodes;
-      const procedure = res.ListenSessionProcedure as ListenSessionProcedure;
-
-      // Lưu session và procedure vào redux store
-      dispatch(setListenSession(session));
-      dispatch(setListenSessionProcedure(procedure));
-
-      await controller.playFromExistingSession({
-        session,
-        procedure,
-        sourceType: "SpecifyShowEpisodes",
-        seekTo: 0,
-        isSeekThenPlay: true,
-      });
     },
-    [listenToEpisode, controller, dispatch]
+    [listenToEpisode, controller, dispatch, getPodcastListenSlotCount]
   );
 
   // Hàm continue listening, đây là type của Specify Show Episodes
@@ -155,28 +209,84 @@ export function usePlayer() {
       benefitsList: SubscriptionBenefit[];
       seekTo: number;
     }) => {
+      if (controller.isCurrentlyLoadingSession()) {
+        console.warn("Already loading a session, please wait");
+        return;
+      }
+
       const { audioId, continueSessionId, benefitsList = [], seekTo } = opts;
 
-      const res = await listenToEpisode({
-        PodcastEpisodeId: audioId,
-        SourceType: "SpecifyShowEpisodes",
-        CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
-        continue_listen_session_id: continueSessionId,
-      }).unwrap();
+      controller.setLoadingSession(true, audioId);
 
-      const session = res.ListenSession as ListenSessionEpisodes;
-      const procedure = res.ListenSessionProcedure as ListenSessionProcedure;
+      let retryCount = 0;
+      const MAX_RETRIES = 3;
 
-      dispatch(setListenSession(session));
-      dispatch(setListenSessionProcedure(procedure));
+      const attemptLoad = async (): Promise<boolean> => {
+        try {
+          const res = await listenToEpisode({
+            PodcastEpisodeId: audioId,
+            SourceType: "SpecifyShowEpisodes",
+            CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
+            continue_listen_session_id: continueSessionId,
+          }).unwrap();
 
-      await controller.playFromExistingSession({
-        session,
-        procedure,
-        sourceType: "SpecifyShowEpisodes",
-        seekTo: seekTo,
-        isSeekThenPlay: true,
-      });
+          const session = res.ListenSession as ListenSessionEpisodes;
+          const procedure =
+            res.ListenSessionProcedure as ListenSessionProcedure;
+
+          dispatch(setListenSession(session));
+          dispatch(setListenSessionProcedure(procedure));
+
+          await controller.playFromExistingSession({
+            session,
+            procedure,
+            sourceType: "SpecifyShowEpisodes",
+            seekTo: seekTo,
+            isSeekThenPlay: true,
+          });
+          return true;
+        } catch (error) {
+          console.error(
+            `Error in playContinueListening (attempt ${retryCount + 1}):`,
+            error
+          );
+          return false;
+        }
+      };
+
+      try {
+        while (retryCount < MAX_RETRIES) {
+          const success = await attemptLoad();
+          if (success) break;
+
+          retryCount++;
+          if (retryCount < MAX_RETRIES) {
+            console.log(`Retrying... (${retryCount}/${MAX_RETRIES})`);
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * retryCount)
+            );
+          }
+        }
+
+        if (retryCount >= MAX_RETRIES) {
+          console.error("Max retries reached. Clearing state.");
+          controller.stop();
+          dispatch(setListenSession(null));
+          dispatch(setListenSessionProcedure(null));
+          dispatch(
+            showAlert({
+              type: "error",
+              title: "Playback Failed",
+              description:
+                "Unable to load audio after multiple attempts. Please try again later.",
+              isAutoClose: true,
+              isClosable: true,
+            })
+          );
+        }
+      } finally {
+        controller.setLoadingSession(false);
+      }
     },
     [listenToEpisode, controller, dispatch]
   );
@@ -185,89 +295,203 @@ export function usePlayer() {
   // Gọi API xong là play luôn, và luôn play từ đầu (seekTo = 0)
   const playEpisodeFromSavedEpisodes = useCallback(
     async (opts: { audioId: string; benefitsList: SubscriptionBenefit[] }) => {
+      if (controller.isCurrentlyLoadingSession()) {
+        console.warn("Already loading a session, please wait");
+        return;
+      }
+
       const { audioId, benefitsList } = opts;
 
-      const listenSlot = await getPodcastListenSlotCount().unwrap();
+      controller.setLoadingSession(true, audioId);
 
-      if (benefitsList.length > 0) {
-        if (!benefitsList.find((b) => b.Id === 1)) {
-          if (listenSlot <= 0) {
-            dispatch(
-              showAlert({
-                type: "warning",
-                title: "Listen Slot Exceeded",
-                description:
-                  "You have used up all your free listen slots. Please wait for more slots to become available.",
-                isAutoClose: false,
-                isClosable: true,
-              })
+      let retryCount = 0;
+      const MAX_RETRIES = 3;
+
+      const attemptLoad = async (): Promise<boolean> => {
+        try {
+          const listenSlot = await getPodcastListenSlotCount().unwrap();
+
+          if (benefitsList.length > 0) {
+            if (!benefitsList.find((b) => b.Id === 1)) {
+              if (listenSlot <= 0) {
+                dispatch(
+                  showAlert({
+                    type: "warning",
+                    title: "Listen Slot Exceeded",
+                    description:
+                      "You have used up all your free listen slots. Please wait for more slots to become available.",
+                    isAutoClose: false,
+                    isClosable: true,
+                  })
+                );
+                return false;
+              }
+            }
+          } else {
+            if (listenSlot <= 0) {
+              dispatch(
+                showAlert({
+                  type: "warning",
+                  title: "Listen Slot Exceeded",
+                  description:
+                    "You have used up all your free listen slots. Please wait for more slots to become available.",
+                  isAutoClose: false,
+                  isClosable: true,
+                })
+              );
+              return false;
+            }
+          }
+
+          const res = await listenToEpisode({
+            PodcastEpisodeId: audioId,
+            SourceType: "SavedEpisodes",
+            CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
+          }).unwrap();
+
+          const session = res.ListenSession as ListenSessionEpisodes;
+          const procedure =
+            res.ListenSessionProcedure as ListenSessionProcedure;
+
+          dispatch(setListenSession(session));
+          dispatch(setListenSessionProcedure(procedure));
+
+          await controller.playFromExistingSession({
+            session,
+            procedure,
+            sourceType: "SavedEpisodes",
+            seekTo: 0,
+            isSeekThenPlay: true,
+          });
+          return true;
+        } catch (error) {
+          console.error(
+            `Error in playEpisodeFromSavedEpisodes (attempt ${
+              retryCount + 1
+            }):`,
+            error
+          );
+          return false;
+        }
+      };
+
+      try {
+        while (retryCount < MAX_RETRIES) {
+          const success = await attemptLoad();
+          if (success) break;
+
+          retryCount++;
+          if (retryCount < MAX_RETRIES) {
+            console.log(`Retrying... (${retryCount}/${MAX_RETRIES})`);
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * retryCount)
             );
-            return;
           }
         }
-      } else {
-        if (listenSlot <= 0) {
+
+        if (retryCount >= MAX_RETRIES) {
+          console.error("Max retries reached. Clearing state.");
+          controller.stop();
+          dispatch(setListenSession(null));
+          dispatch(setListenSessionProcedure(null));
           dispatch(
             showAlert({
-              type: "warning",
-              title: "Listen Slot Exceeded",
+              type: "error",
+              title: "Playback Failed",
               description:
-                "You have used up all your free listen slots. Please wait for more slots to become available.",
-              isAutoClose: false,
+                "Unable to load audio after multiple attempts. Please try again later.",
+              isAutoClose: true,
               isClosable: true,
             })
           );
-          return;
         }
+      } finally {
+        controller.setLoadingSession(false);
       }
-
-      const res = await listenToEpisode({
-        PodcastEpisodeId: audioId,
-        SourceType: "SavedEpisodes",
-        CurrentPodcastSubscriptionRegistrationBenefitList: benefitsList,
-      }).unwrap();
-
-      const session = res.ListenSession as ListenSessionEpisodes;
-      const procedure = res.ListenSessionProcedure as ListenSessionProcedure;
-
-      dispatch(setListenSession(session));
-      dispatch(setListenSessionProcedure(procedure));
-
-      await controller.playFromExistingSession({
-        session,
-        procedure,
-        sourceType: "SavedEpisodes",
-        seekTo: 0,
-        isSeekThenPlay: true,
-      });
     },
-    [listenToEpisode, controller, dispatch]
+    [listenToEpisode, controller, dispatch, getPodcastListenSlotCount]
   );
 
   // Hàm Listen To Booking Track
   // Gọi API xong là play luôn, và luôn play từ đầu (seekTo = 0)
   const playBookingTrack = useCallback(
     async (opts: { bookingId: number; bookingTrackId: string }) => {
+      if (controller.isCurrentlyLoadingSession()) {
+        console.warn("Already loading a session, please wait");
+        return;
+      }
+
       const { bookingId, bookingTrackId } = opts;
 
-      const res = await listenToBookingTrack({
-        BookingId: bookingId,
-        BookingPodcastTrackId: bookingTrackId,
-      }).unwrap();
+      controller.setLoadingSession(true, bookingTrackId);
 
-      const session = res.ListenSession as ListenSessionBookingTracks;
-      const procedure = res.ListenSessionProcedure as ListenSessionProcedure;
+      let retryCount = 0;
+      const MAX_RETRIES = 3;
 
-      dispatch(setListenSession(session));
-      dispatch(setListenSessionProcedure(procedure));
+      const attemptLoad = async (): Promise<boolean> => {
+        try {
+          const res = await listenToBookingTrack({
+            BookingId: bookingId,
+            BookingPodcastTrackId: bookingTrackId,
+          }).unwrap();
 
-      await controller.playFromExistingSession({
-        session,
-        procedure,
-        sourceType: "BookingProducingTracks",
-        seekTo: 0,
-        isSeekThenPlay: true,
-      });
+          const session = res.ListenSession as ListenSessionBookingTracks;
+          const procedure =
+            res.ListenSessionProcedure as ListenSessionProcedure;
+
+          dispatch(setListenSession(session));
+          dispatch(setListenSessionProcedure(procedure));
+
+          await controller.playFromExistingSession({
+            session,
+            procedure,
+            sourceType: "BookingProducingTracks",
+            seekTo: 0,
+            isSeekThenPlay: true,
+          });
+          return true;
+        } catch (error) {
+          console.error(
+            `Error in playBookingTrack (attempt ${retryCount + 1}):`,
+            error
+          );
+          return false;
+        }
+      };
+
+      try {
+        while (retryCount < MAX_RETRIES) {
+          const success = await attemptLoad();
+          if (success) break;
+
+          retryCount++;
+          if (retryCount < MAX_RETRIES) {
+            console.log(`Retrying... (${retryCount}/${MAX_RETRIES})`);
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * retryCount)
+            );
+          }
+        }
+
+        if (retryCount >= MAX_RETRIES) {
+          console.error("Max retries reached. Clearing state.");
+          controller.stop();
+          dispatch(setListenSession(null));
+          dispatch(setListenSessionProcedure(null));
+          dispatch(
+            showAlert({
+              type: "error",
+              title: "Playback Failed",
+              description:
+                "Unable to load audio after multiple attempts. Please try again later.",
+              isAutoClose: true,
+              isClosable: true,
+            })
+          );
+        }
+      } finally {
+        controller.setLoadingSession(false);
+      }
     },
     [listenToBookingTrack, controller, dispatch]
   );
@@ -491,7 +715,7 @@ export function usePlayer() {
           return;
         } else {
           // Call API to update AutoPlay mode
-          const response = await updatePlayMode({
+          await updatePlayMode({
             CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
             IsAutoPlay: IsAutoPlay,
             PlayOrderMode: player.listenSessionProcedure?.PlayOrderMode,
@@ -502,7 +726,7 @@ export function usePlayer() {
           return;
         } else {
           // Call API to update Play Order Mode
-          const response = await updatePlayMode({
+          await updatePlayMode({
             CustomerListenSessionProcedureId: player.listenSessionProcedure?.Id,
             IsAutoPlay: player.listenSessionProcedure?.IsAutoPlay,
             PlayOrderMode: PlayOrderMode,
