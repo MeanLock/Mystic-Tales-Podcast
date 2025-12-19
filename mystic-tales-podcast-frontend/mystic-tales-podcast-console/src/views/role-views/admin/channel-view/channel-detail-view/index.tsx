@@ -142,7 +142,7 @@ const ChannelDetailView = () => {
                             <Typography variant="h5" className="channel-detail__section-title">
                                 Hashtags
                             </Typography>
-                            <div className="channel-detail__hashtags">
+                            <div className="channel-detail__hashtags mt-4">
                                 {channelDetail.Hashtags.map((tag: any) => (
                                     <Chip
                                         key={tag.Id}
@@ -252,7 +252,7 @@ const ChannelDetailView = () => {
                                                 <td className="channel-detail__show-episodes">{show.EpisodeCount}</td>
                                                 <td className="channel-detail__show-followers">{show.TotalFollow.toLocaleString()}</td>
                                                 <td>
-                                                    <span className={`channel-detail__show-status channel-detail__show-status--${show.CurrentStatus?.Name.toLowerCase().replace(/\\s+/g, '-') || 'unknown'}`}>
+                                                    <span className={`channel-detail__show-status channel-detail__show-status--${show.CurrentStatus?.Name.trim().toLowerCase().replace(/\s+/g, '-') || 'unknown'}`}>
                                                         {show.CurrentStatus?.Name || 'Unknown'}
                                                     </span>
                                                 </td>

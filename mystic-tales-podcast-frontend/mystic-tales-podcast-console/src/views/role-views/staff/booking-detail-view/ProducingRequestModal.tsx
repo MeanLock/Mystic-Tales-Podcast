@@ -218,7 +218,7 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
                 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         <Edit sx={{ color: "#ff0000ff", fontSize: "1.3rem" }} />
-                        <Typography sx={{ color: "white", fontWeight: 700, fontSize: "0.95rem" }}>
+                        <Typography sx={{ color: "#ff0000ff", fontWeight: 700, fontSize: "0.95rem" }}>
                             Edit Requirements Requested
                         </Typography>
                     </Box>
@@ -337,12 +337,7 @@ const ProducingRequestModal: React.FC<ProducingRequestModalProps> = ({ bookingPr
                                                     className="flex-1"
                                                 />
                                             </Box>
-                                            {context.CurrentStatus !== "Producing Requested" && data.IsAccepted !== false && (
-                                                <Button variant="outlined" component="label" startIcon={<CloudUpload />} sx={{ color: "#ff9800", borderColor: "#ff9800", textTransform: "none", borderRadius: "10px", padding: "10px 20px", fontWeight: 600, mt: 2, "&:hover": { backgroundColor: "rgba(255, 152, 0, 0.1)", borderColor: "#ff9800" } }}>
-                                                    Re-upload Audio
-                                                    <input type="file" hidden accept="audio/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileChange(track.BookingRequirementId, file); }} />
-                                                </Button>
-                                            )}
+                                           
                                         </>
                                     ) : (
                                         <Box>

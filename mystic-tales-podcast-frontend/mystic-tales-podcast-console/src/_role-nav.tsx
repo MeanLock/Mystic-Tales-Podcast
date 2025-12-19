@@ -228,11 +228,30 @@ const get_roleNav = (role_id: number, account_id: number) => {
 
   },
   {
-    component: CNavItem,
+    component: CNavGroup,
     name: 'Transactions',
-    to: '/transactions/table',
+    to: '/transactions',
     icon: <Money size={30} weight="duotone" />,
-
+    items: [
+      {
+        component: CNavItem,
+        name: 'Withdrawal',
+        to: '/transactions/withdrawal',
+        icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+      },
+      {
+        component: CNavItem,
+        name: 'Booking',
+        to: '/transactions/bookings/holding',
+        icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+      },
+      {
+        component: CNavItem,
+        name: 'Subscription',
+        to: '/transactions/subscriptions/holding',
+        icon: <ArrowCircleRight size={17} color="lightsalmon" weight="duotone" />
+      },
+    ],
   },
   {
     component: CNavItem,

@@ -59,9 +59,9 @@ const state_creator = (table: Account[]) => {
         cellClass: 'd-flex align-items-center',
         flex: 0.7,
         valueGetter: (params: { data: Account }) => {
-          if (params.data.DeactivatedAt !== null) return 0;
-          if (!params.data.IsVerified) return 1;
-          return 2;
+          if (params.data.DeactivatedAt !== null) return "Deactivated";
+          if (params.data.IsVerified) return "Verified";
+          return "Unverified";
         },
         cellRenderer: (params: { data: Account }) => {
           let status = {

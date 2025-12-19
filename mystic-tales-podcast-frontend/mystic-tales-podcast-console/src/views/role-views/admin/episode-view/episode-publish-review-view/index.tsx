@@ -37,21 +37,26 @@ const state_creator = (table: any[], navigate: any) => {
                 filter: false
             },
             { headerName: "Podcast Episode ", field: "PodcastEpisode.Name", flex: 1.5 },
-             { headerName: "Assigned Staff ", field: "AssignedStaff.Email"},
-            { headerName: "Note", field: "Note", flex: 0.8 ,valueGetter: (params: any) => (params.data.Note ? params.data.Note : '---')},
+            { headerName: "Assigned Staff ", field: "AssignedStaff.Email" },
+            { headerName: "Note", field: "Note", flex: 0.8, valueGetter: (params: any) => (params.data.Note ? params.data.Note : '---') },
             { headerName: "Re-Review Count", field: "ReReviewCount", flex: 0.8 },
             {
-                headerName: "Deadline",
-                field: "Deadline",
-                flex: 0.5,
-                valueGetter: (params: any) => formatDate(params.data.Deadline),
-
+                headerName: "Created At",
+                field: "CreatedAt",
+                flex: 0.7,
+                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    const dateA = new Date(nodeA.data.CreatedAt).getTime();
+                    const dateB = new Date(nodeB.data.CreatedAt).getTime();
+                    return dateA - dateB;
+                },
             },
-              {
+            {
                 headerName: "Status",
                 cellClass: 'd-flex align-items-center justify-content-center',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 flex: 1.1,
+                valueGetter: (params: any) => params.data?.CurrentStatus?.Name.trim() || '',
                 cellRenderer: (params: any) => {
                     const status = params.data?.CurrentStatus?.Name || '';
                     let color = '#888';
@@ -59,20 +64,16 @@ const state_creator = (table: any[], navigate: any) => {
 
                     switch (status) {
                         case 'Pending Review':
-
                             color = '#ffb300';
-                            bg = 'rgba(255, 179, 0, 0.15)'; // vàng cam
+                            bg = 'rgba(255, 179, 0, 0.07)';
                             break;
-
                         case 'Accepted':
-                            color = '#a8e02eff';
-                            bg = 'rgba(174, 227, 57, 0.2)'; // xanh primary
+                            color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)';
                             break;
 
                         case 'Discard':
                         case 'Rejected':
-                            color = '#ef5350';
-                            bg = 'rgba(239, 83, 80, 0.15)'; // đỏ
+                            color = '#ef5350'; bg = 'rgba(251, 222, 227, 0.2)';
                             break;
 
                         default:
@@ -92,7 +93,7 @@ const state_creator = (table: any[], navigate: any) => {
                                 color,
                                 background: bg,
                                 textAlign: 'center',
-                                border: `1.5px solid ${color}`,
+                                border: `2px solid ${color}`,
                             }}
                         >
                             {status === 'Podcast Buddy Cancel Request' ? 'Buddy Cancel Request' : status}
@@ -100,23 +101,23 @@ const state_creator = (table: any[], navigate: any) => {
                     );
                 },
             },
-           {
-        headerName: "Actions",
-        cellClass: "d-flex justify-content-center py-0",
-        flex: 0.5,
-        cellRenderer: (params: any) => {
-          const PublishReviewSessionId = params.data.Id
-          return (
-            <div className="d-flex gap-2 align-items-center h-100">
-              <CButton
-                onClick={() => navigate("/episode/publish-review-sessions/" + PublishReviewSessionId)}
-              >
-                <Eye size={27} color='var(--secondary-green)' />
-              </CButton>
-            </div>
-          )
-        },
-      },
+            {
+                headerName: "Actions",
+                cellClass: "d-flex justify-content-center py-0",
+                flex: 0.5,
+                cellRenderer: (params: any) => {
+                    const PublishReviewSessionId = params.data.Id
+                    return (
+                        <div className="d-flex gap-2 align-items-center h-100">
+                            <CButton
+                                onClick={() => navigate("/episode/publish-review-sessions/" + PublishReviewSessionId)}
+                            >
+                                <Eye size={27} color='var(--secondary-green)' />
+                            </CButton>
+                        </div>
+                    )
+                },
+            },
         ],
         rowData: table
 
@@ -131,20 +132,20 @@ const EpisodePublishRequestReviewView: FC<EpisodePublishRequestReviewViewProps> 
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const navigate = useNavigate();
     const handleDataChange = async () => {
-      setIsLoading(true);
-      try {
-        const res = await getEpisodePublishList(adminAxiosInstance);
-        console.log('Episode Publish Review Sessions:', res.data);
-        if (res.success) {
-          setState(state_creator(res.data.ReviewSessionList,navigate));
-        } else {
-          console.error('API Error:', res.message);
+        setIsLoading(true);
+        try {
+            const res = await getEpisodePublishList(adminAxiosInstance);
+            console.log('Episode Publish Review Sessions:', res.data);
+            if (res.success) {
+                setState(state_creator(res.data.ReviewSessionList, navigate));
+            } else {
+                console.error('API Error:', res.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi fetch customer accounts:', error);
+        } finally {
+            setIsLoading(false);
         }
-      } catch (error) {
-        console.error('Lỗi khi fetch customer accounts:', error);
-      } finally {
-        setIsLoading(false);
-      }
     }
 
     useEffect(() => {
@@ -169,7 +170,7 @@ const EpisodePublishRequestReviewView: FC<EpisodePublishRequestReviewViewProps> 
             <CRow >
                 <CCol xs={12}>
                     {isLoading ? (
-                       <div className="flex justify-content-center align-items-center h-150" >
+                        <div className="flex justify-content-center align-items-center h-150" >
                             <Loading />
                         </div>
                     ) : (

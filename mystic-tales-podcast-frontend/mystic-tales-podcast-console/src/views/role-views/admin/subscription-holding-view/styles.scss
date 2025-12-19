@@ -1,0 +1,59 @@
+.subscription-holding-modal {
+  padding: 1rem;
+  max-height: 70vh;
+  overflow-y: auto;
+
+  h5 {
+    font-weight: 600;
+    color: var(--cui-body-color);
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+  }
+
+  .table {
+    font-size: 0.9rem;
+    
+    thead {
+      background-color: var(--cui-table-bg);
+      
+      th {
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 0.75rem;
+        border-bottom: 2px solid var(--cui-border-color);
+        white-space: nowrap;
+      }
+    }
+
+    tbody {
+      td {
+        padding: 0.875rem 0.75rem;
+        vertical-align: middle;
+        
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 70px;
+          padding: 0.35rem 0.75rem;
+          font-size: 0.8rem;
+          font-weight: 600;
+          border-radius: 20px;
+        }
+      }
+
+      tr:hover {
+        background-color: var(--cui-table-hover-bg);
+      }
+    }
+  }
+
+  .no-data {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--cui-secondary);
+    font-size: 1rem;
+  }
+}

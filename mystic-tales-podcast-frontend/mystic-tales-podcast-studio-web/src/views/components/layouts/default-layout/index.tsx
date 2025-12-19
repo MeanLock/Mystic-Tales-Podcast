@@ -248,7 +248,7 @@ useEffect(() => {
     // chạy ngay 1 lần khi tab đang visible
     if (!document.hidden) fetchSilently();
 
-    const id = window.setInterval(fetchSilently, 1000 * 60*5);//30 000 thôi
+    const id = window.setInterval(fetchSilently, 2000 * 60*5);//30 000 thôi
     const onVis = () => {
       if (!document.hidden) fetchSilently();
     };

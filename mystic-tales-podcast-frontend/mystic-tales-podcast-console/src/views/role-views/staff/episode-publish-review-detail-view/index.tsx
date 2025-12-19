@@ -339,32 +339,26 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                             alt={PublishDetail.PodcastEpisode.Name}
                             className="content-card__image"
                         />
-                        <div className="flex flex-col">
+                        <div className="flex flex-col w-full">
                             <div className="content-card__body">
                                 <span className="content-card__type">Episode</span>
                                 <h3 className="content-card__title mb-0">{PublishDetail.PodcastEpisode.Name}</h3>
                                 <p className="content-card__description">Explicit Content: {PublishDetail.PodcastEpisode.ExplicitContent ? 'Yes' : 'No'}</p>
-                                <div className="content-card__stats">
-                                    {/* <audio
-                                        controls
-                                        src={audioUrl || undefined}
-                                        style={{ flex: 1 }}
-                                        onError={() => fetchOriginalAudioUrl(PublishDetail.PodcastEpisode.AudioFileKey)}
-
-                                    /> */}
-                                    <SmartAudioPlayer
-                                        audioId={PublishDetail.PodcastEpisode.AudioFileKey}
-                                        className="w-full mt-4"
-                                        fetchUrlFunction={async (fileKey) => {
-                                            const result = await getAudioEpisode(staffAxiosInstance, fileKey);
-                                            return {
-                                                success: result.success,
-                                                data: result.data ? { FileUrl: result.data.FileUrl } : undefined,
-                                                message: typeof result.message === 'string' ? result.message : result.message?.content
-                                            };
-                                        }}
-                                    />
-                                </div>
+                            
+                            </div>
+                              <div className="px-3 pb-3 w-full">
+                                <SmartAudioPlayer
+                                    audioId={PublishDetail.PodcastEpisode.AudioFileKey}
+                                    className="w-full"
+                                    fetchUrlFunction={async (fileKey) => {
+                                        const result = await getAudioEpisode(staffAxiosInstance, fileKey);
+                                        return {
+                                            success: result.success,
+                                            data: result.data ? { FileUrl: result.data.FileUrl } : undefined,
+                                            message: typeof result.message === 'string' ? result.message : result.message?.content
+                                        };
+                                    }}
+                                />
                             </div>
                             <div className="flex-1 flex items-end mb-2 mx-4">
                                 <div
@@ -388,6 +382,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                         </div>
                     </div>
                 )}
+              
                 {PublishDetail.PodcastChannel && PublishDetail.PodcastChannel.DeletedAt === null && (
                     <div className="content-card" onClick={() => navigate(`/channel/${PublishDetail.PodcastChannel.Id}`)}>
                         <Image

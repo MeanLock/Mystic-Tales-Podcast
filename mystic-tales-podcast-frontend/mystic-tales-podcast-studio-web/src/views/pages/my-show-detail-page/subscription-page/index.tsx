@@ -15,6 +15,7 @@ import { loginRequiredAxiosInstance } from "@/core/api/rest-api/config/instances
 import Modal_Button from "@/views/components/common/modal/ModalButton"
 import SubscriptionModal from "./SubscriptionModal"
 import Loading from "@/views/components/common/loading"
+import { getTruncatedDescription, renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
 
 
 interface Subscription {
@@ -94,8 +95,12 @@ const state_creator = (table: any[]) => {
                                 display: '-webkit-box',
                                 WebkitLineClamp: 2,
                                 WebkitBoxOrient: 'vertical'
-                            }}>
-                                {params.data.Description}
+                            }}
+                                dangerouslySetInnerHTML={{
+                                    __html: getTruncatedDescription(params.data.Description || "", 100),
+                                }}
+                            >
+
                             </div>
                         </div>
                     );
@@ -403,7 +408,11 @@ const ShowSubscription: FC<ShowSubscriptionProps> = () => {
                                     <span className="subscription-card__badge">Active</span>
                                 </div>
 
-                                <div className="subscription-card__description">{activeSubscription.Description}</div>
+                                <div className="subscription-card__description"
+                                 dangerouslySetInnerHTML={{
+                                        __html: renderDescriptionHTML(activeSubscription.Description || ""),
+                                    }}
+                                ></div>
 
                                 <div className="subscription-card__pricing-section">
                                     <h3 className="subscription-card__pricing-title">Pricing Options</h3>

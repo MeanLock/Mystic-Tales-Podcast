@@ -1,3 +1,38 @@
+/**
+ * Lấy description ngắn gọn với dấu "..."
+ * @param description - Mô tả đầy đủ
+ * @param maxLength - Độ dài tối đa (mặc định: 100)
+ * @returns Description đã được cắt ngắn
+ */
+export function getTruncatedDescription(
+  description: string | null,
+  maxLength: number = 100
+): string {
+  if (!description) return "";
+
+  // --- Loại bỏ các phần đặc biệt (link, script) ---
+  const linkRegex = /\$-\[link\]\$-([\s\S]*?)\$-\[link\]\$-/;
+  const scriptRegex = /\$-\[script\]\$-([\s\S]*?)\$-\[script\]\$-/;
+  
+  let cleanDescription = description
+    .replace(linkRegex, "")
+    .replace(scriptRegex, "")
+    .trim();
+
+  // --- Loại bỏ HTML tags ---
+  cleanDescription = cleanDescription.replace(/<[^>]*>/g, "");
+
+  // --- Loại bỏ khoảng trắng thừa ---
+  cleanDescription = cleanDescription.replace(/\s+/g, " ").trim();
+
+  // --- Cắt ngắn và thêm dấu "..." ---
+  if (cleanDescription.length <= maxLength) {
+    return cleanDescription;
+  }
+
+  return cleanDescription.substring(0, maxLength).trim() + "...";
+}
+
 export function renderDescriptionHTML(description: string | null) {
   if (!description) return "";
 

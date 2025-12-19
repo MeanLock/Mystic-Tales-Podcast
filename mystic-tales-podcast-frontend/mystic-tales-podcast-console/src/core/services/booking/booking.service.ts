@@ -14,6 +14,15 @@ export const getBookingList = async (instance: AxiosInstance ) => {
 
     return response;
 }
+export const getBookingHoldingList = async (instance: AxiosInstance ) => {
+    const response = await callAxiosRestApi({
+        instance: instance,
+        method: "get",
+        url: `${BASE_URL}/holding`,
+    }, "");
+
+    return response;
+}
 export const getSummaryBooking = async (instance: AxiosInstance, reportPeriod: string) => {
     const response = await callAxiosRestApi({
         instance: instance,

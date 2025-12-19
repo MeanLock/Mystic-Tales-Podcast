@@ -77,12 +77,16 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                 valueGetter: (params: any) => formatDate(params.data.Deadline),
 
             },
-            {
+           {
                 headerName: "Recently Updated",
                 field: "UpdatedAt",
                 cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
-
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    const dateA = new Date(nodeA.data.UpdatedAt).getTime();
+                    const dateB = new Date(nodeB.data.UpdatedAt).getTime();
+                    return dateA - dateB;
+                },
             },
 
             {
@@ -90,6 +94,9 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                 cellClass: 'd-flex align-items-center justify-content-center',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 flex: 1.1,
+                valueGetter: (params: any) => {
+                    return params.data?.CurrentStatus?.Name?.trim() || '';
+                },
                 cellRenderer: (params: any) => {
                     const status = params.data?.CurrentStatus?.Name?.trim() || '';
                     let color = '#888';
@@ -99,8 +106,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                         case 'Quotation Request':
                         case 'Quotation Dealing':
                         case 'Quotation Cancelled':
-                            color = '#ffb300';
-                            bg = 'rgba(255, 179, 0, 0.15)'; // vàng cam
+                            color = '#ffb300'; bg = 'rgba(255, 179, 0, 0.07)';
                             break;
 
                         case 'Pending Edit Required':
@@ -116,8 +122,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                             break;
 
                         case 'Completed':
-                            color = '#AEE339';
-                            bg = 'rgba(174, 227, 57, 0.2)'; // xanh primary
+                            color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)';
                             break;
 
                         case 'Customer Cancel Request':
@@ -126,7 +131,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                         case 'Cancelled Automatically':
                         case 'Cancelled Manually':
                             color = '#ef5350';
-                            bg = 'rgba(239, 83, 80, 0.15)'; // đỏ
+                            bg = 'rgba(251, 222, 227, 0.2)'; // đỏ
                             break;
 
                         default:
@@ -146,7 +151,7 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                                 color,
                                 background: bg,
                                 textAlign: 'center',
-                                border: `1.5px solid ${color}`,
+                                border: `2px solid ${color}`,
                             }}
                         >
                             {status === 'Podcast Buddy Cancel Request' ? 'Buddy Cancel Request' : status}
