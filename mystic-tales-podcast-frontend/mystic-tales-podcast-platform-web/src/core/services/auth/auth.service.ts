@@ -1,11 +1,12 @@
 import { appApi } from "@/core/api/appApi";
+import { alertMessages } from "@/core/data/alert-message.data";
+import type { AlertMessage } from "@/core/types/alert";
 import { JwtUtil } from "@/core/utils/token";
 import { setAuthToken, setUser } from "@/redux/slices/authSlice/authSlice";
 
 interface LoginResponse {
   isError: boolean;
-  message: string;
-  isUnVerified?: boolean;
+  message: AlertMessage;
 }
 
 interface GetMeResponse {
@@ -42,12 +43,15 @@ export const authApi = appApi.injectEndpoints({
       ) {
         let loginResponse: LoginResponse = {
           isError: false,
-          message: "",
-          isUnVerified: false,
+          message: {
+            id: "",
+            description: "",
+            title: "",
+            type: "info",
+          },
         };
 
         try {
-          // 1️⃣ Gọi saga login
           const sagaRes = await api
             .dispatch(
               appApi.endpoints.kickoffThenWait.initiate({
@@ -60,19 +64,16 @@ export const authApi = appApi.injectEndpoints({
                 poll: { intervalMs: 1000, maxAttempts: 30 },
               })
             )
-            .unwrap()
-            .catch((err) => {
-              console.error("Login saga failed:", err);
-              return null;
-            });
-
-          if (!sagaRes) {
-            return { data: { isError: true, message: "Login saga failed" } };
-          }
-          console.log("Sage Response: ", sagaRes);
+            .unwrap();
+          // SAGA KHÔNG CÓ ACCESS TOKEN BÊN TRONG
           if (!sagaRes.AccessToken) {
             return {
-              data: { isError: true, message: "No access token returned" },
+              data: {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-1") ||
+                  alertMessages[0],
+              },
             };
           }
 
@@ -82,21 +83,28 @@ export const authApi = appApi.injectEndpoints({
 
           // 3️⃣ Kiểm tra role
           const { role_id, device_info_token } = JwtUtil.decodeToken(token);
+
+          // ERROR MESSAGE: ROLE KHÔNG PHẢI CUSTOMER
           if (role_id !== "1") {
             return {
               data: {
                 isError: true,
-                message: "You're not the Customer! Please use another web",
+                message: alertMessages.find(
+                  (msg) => msg.id === "login-failed-5"
+                )!,
               },
             };
           }
           if (device_info_token) {
             localStorage.setItem("device_info_token", device_info_token);
           } else {
+            // ERROR MESSAGE: KHÔNG BẮT ĐƯỢC DEVICE TOKEN
             return {
               data: {
                 isError: true,
-                message: "Cannot specify device, please login again",
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-1") ||
+                  alertMessages[0],
               },
             };
           }
@@ -108,52 +116,90 @@ export const authApi = appApi.injectEndpoints({
             authMode: "required",
           });
 
+          // ERROR MESSAGE: KHÔNG LẤY ĐƯỢC ACCOUNT ME
           if (!accountMeRes.data) {
             return {
-              data: { isError: true, message: "Failed to get account info" },
+              data: {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-1") ||
+                  alertMessages[0],
+              },
             };
           }
 
           const accountData = accountMeRes.data as GetMeResponse;
           const account = accountData.Account;
+
+          // ERROR MESSAGE: ACCOUNT BỊ DEACTIVATED
           if (account.DeactivatedAt) {
             return {
               data: {
                 isError: true,
-                message: "Account Is Deactivated!",
-                isUnVerified: false,
+                message: alertMessages.find(
+                  (msg) => msg.id === "login-failed-3"
+                )!,
               },
             };
           }
-          // 5️⃣ Lấy ImageUrl
-          let ImageUrl = "/images/unknown/user.jpg";
-          if (account.MainImageFileKey) {
-            try {
-              const imageRes = await baseQuery({
-                url: `/api/user-service/api/misc/public-source/get-file-url/${account.MainImageFileKey}`,
-                method: "GET",
-                authMode: "public",
-              });
-              ImageUrl = (imageRes.data as any)?.FileUrl ?? ImageUrl;
-            } catch {
-              console.warn(
-                "Failed to fetch account image, fallback to default"
-              );
-            }
-          }
 
-          const accountWithImage = { ...account, ImageUrl };
-          delete (accountWithImage as any).MainImageFileKey;
+          api.dispatch(setUser(accountData.Account));
 
-          api.dispatch(setUser(accountWithImage));
-
-          loginResponse = { isError: false, message: "Login successful" };
-        } catch (error) {
-          console.error("Login error:", error);
           loginResponse = {
-            isError: true,
-            message: "Something went wrong, please try again later",
+            isError: false,
+            message:
+              alertMessages.find((msg) => msg.id === "login-success") ||
+              alertMessages[0],
           };
+        } catch (error: any) {
+          // Kiểm tra loại lỗi từ polling.ts
+          if (error?.kind === "SAGA_FAILED") {
+            console.log("🔴 SAGA_FAILED detected");
+            // ERROR MESSAGE: SAI MẬT KHẨU HOẶC EMAIL
+            if (error.message?.includes("Email or password is incorrect")) {
+              loginResponse = {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-2") ||
+                  alertMessages[0],
+              };
+              // ERROR MESSAGE: BỊ DEACTIVATED
+            } else if (error.message.includes("Account has been deactivated")) {
+              loginResponse = {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-3") ||
+                  alertMessages[0],
+              };
+              // ERROR MESSAGE: CHƯA VERIFIED
+            } else if (
+              error.message.includes("Account has not been verified")
+            ) {
+              loginResponse = {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-4") ||
+                  alertMessages[0],
+              };
+              // ERROR MESSAGE: KHÁC
+            } else {
+              loginResponse = {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-1") ||
+                  alertMessages[0],
+              };
+            }
+          } else {
+            console.log("🌐 Network or other error detected");
+            // ERROR MESSAGE: LỖI MẠNG HOẶC LỖI KHÔNG XÁC ĐỊNH
+            loginResponse = {
+              isError: true,
+              message:
+                alertMessages.find((msg) => msg.id === "login-failed-1") ||
+                alertMessages[0],
+            };
+          }
         }
 
         return { data: loginResponse };
@@ -170,8 +216,12 @@ export const authApi = appApi.injectEndpoints({
       async queryFn({ GoogleAuth, DeviceInfo }, api, _extraOptions, baseQuery) {
         let loginResponse: LoginResponse = {
           isError: false,
-          message: "",
-          isUnVerified: false,
+          message: {
+            id: "",
+            description: "",
+            title: "",
+            type: "info",
+          },
         };
 
         try {
@@ -188,21 +238,17 @@ export const authApi = appApi.injectEndpoints({
                 poll: { intervalMs: 1000, maxAttempts: 30 },
               })
             )
-            .unwrap()
-            .catch((err) => {
-              console.error("Login Google saga failed:", err);
-              return null;
-            });
+            .unwrap();
 
-          if (!sagaRes) {
-            return {
-              data: { isError: true, message: "Login Google saga failed" },
-            };
-          }
-          console.log("Google Sage Response: ", sagaRes);
+          // SAGA KHÔNG CÓ ACCESS TOKEN BÊN TRONG
           if (!sagaRes.AccessToken) {
             return {
-              data: { isError: true, message: "No access token returned" },
+              data: {
+                isError: true,
+                message: alertMessages.find(
+                  (msg) => msg.id === "login-failed-1"
+                )!,
+              },
             };
           }
 
@@ -212,21 +258,27 @@ export const authApi = appApi.injectEndpoints({
 
           // 3️⃣ Kiểm tra role
           const { role_id, device_info_token } = JwtUtil.decodeToken(token);
+          // ERROR MESSAGE: ROLE KHÔNG PHẢI CUSTOMER
           if (role_id !== "1") {
             return {
               data: {
                 isError: true,
-                message: "You're not the Customer! Please use another web",
+                message: alertMessages.find(
+                  (msg) => msg.id === "login-failed-5"
+                )!,
               },
             };
           }
           if (device_info_token) {
             localStorage.setItem("device_info_token", device_info_token);
           } else {
+            // ERROR MESSAGE: KHÔNG BẮT ĐƯỢC DEVICE TOKEN
             return {
               data: {
                 isError: true,
-                message: "Cannot specify device, please login again",
+                message: alertMessages.find(
+                  (msg) => msg.id === "login-failed-1"
+                )!,
               },
             };
           }
@@ -240,52 +292,88 @@ export const authApi = appApi.injectEndpoints({
 
           if (!accountMeRes.data) {
             return {
-              data: { isError: true, message: "Failed to get account info" },
+              data: {
+                isError: true,
+                message: alertMessages.find(
+                  (msg) => msg.id === "login-failed-1"
+                )!,
+              },
             };
           }
 
           const accountData = accountMeRes.data as GetMeResponse;
           const account = accountData.Account;
+
+          // ERROR MESSAGE: ACCOUNT BỊ DEACTIVATED
           if (account.DeactivatedAt) {
             return {
               data: {
                 isError: true,
-                message: "Account Is Deactivated!",
-                isUnVerified: false,
+                message: alertMessages.find(
+                  (msg) => msg.id === "login-failed-3"
+                )!,
               },
             };
           }
-          // 5️⃣ Lấy ImageUrl
-          let ImageUrl = "/images/unknown/user.jpg";
-          if (account.MainImageFileKey) {
-            try {
-              const imageRes = await baseQuery({
-                url: `/api/user-service/api/misc/public-source/get-file-url/${account.MainImageFileKey}`,
-                method: "GET",
-                authMode: "public",
-              });
-              ImageUrl = (imageRes.data as any)?.FileUrl ?? ImageUrl;
-            } catch {
-              console.warn(
-                "Failed to fetch account image, fallback to default"
-              );
-            }
-          }
 
-          const accountWithImage = { ...account, ImageUrl };
-          delete (accountWithImage as any).MainImageFileKey;
+          api.dispatch(setUser(accountData.Account));
 
-          api.dispatch(setUser(accountWithImage));
-
-          loginResponse = { isError: false, message: "Login successful" };
-        } catch (error) {
-          console.error("Login Google error:", error);
           loginResponse = {
-            isError: true,
-            message: "Something went wrong, please try again later",
+            isError: false,
+            message:
+              alertMessages.find((msg) => msg.id === "login-success") ||
+              alertMessages[0],
           };
+        } catch (error: any) {
+          // Kiểm tra loại lỗi từ polling.ts
+          if (error?.kind === "SAGA_FAILED") {
+            console.log("🔴 SAGA_FAILED detected");
+            // ERROR MESSAGE: SAI MẬT KHẨU HOẶC EMAIL
+            if (error.message?.includes("Email or password is incorrect")) {
+              loginResponse = {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-2") ||
+                  alertMessages[0],
+              };
+              // ERROR MESSAGE: BỊ DEACTIVATED
+            } else if (error.message.includes("Account has been deactivated")) {
+              loginResponse = {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-3") ||
+                  alertMessages[0],
+              };
+              // ERROR MESSAGE: CHƯA VERIFIED
+            } else if (
+              error.message.includes("Account has not been verified")
+            ) {
+              loginResponse = {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-4") ||
+                  alertMessages[0],
+              };
+              // ERROR MESSAGE: KHÁC
+            } else {
+              loginResponse = {
+                isError: true,
+                message:
+                  alertMessages.find((msg) => msg.id === "login-failed-1") ||
+                  alertMessages[0],
+              };
+            }
+          } else {
+            console.log("🌐 Network or other error detected");
+            // ERROR MESSAGE: LỖI MẠNG HOẶC LỖI KHÔNG XÁC ĐỊNH
+            loginResponse = {
+              isError: true,
+              message:
+                alertMessages.find((msg) => msg.id === "login-failed-1") ||
+                alertMessages[0],
+            };
+          }
         }
-
         return { data: loginResponse };
       },
     }),

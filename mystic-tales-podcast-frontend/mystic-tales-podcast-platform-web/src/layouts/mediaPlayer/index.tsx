@@ -13,7 +13,7 @@ const MediaPlayerLayout = () => {
   const navigate = useNavigate();
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
   const user = useSelector((state: RootState) => state.auth.user);
-  const { playFromLatest } = usePlayer();
+  const { playFromLatest, stop } = usePlayer();
   const hasCalledPlayFromLatest = useRef(false);
 
   // Chỉ polling khi user đã đăng nhập (có token)
@@ -29,6 +29,7 @@ const MediaPlayerLayout = () => {
   useEffect(() => {
     if (error) {
       dispatch(clearAuth());
+      stop();
       navigate("/auth/login");
     }
   }, [error, dispatch, navigate]);

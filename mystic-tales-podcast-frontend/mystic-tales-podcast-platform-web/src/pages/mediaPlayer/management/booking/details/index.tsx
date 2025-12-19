@@ -5,7 +5,6 @@ import { IoIosArrowBack } from "react-icons/io";
 import { useNavigate, useParams } from "react-router-dom";
 import BookingStatusTrackingBar from "./components/BookingStatusTrackingBar";
 import { TimeUtil } from "@/core/utils/time";
-import { TbCoinFilled } from "react-icons/tb";
 import RequirementCard from "./components/RequirementCard";
 import RequirementCardWithWordCount from "./components/RequirementCardWithWordCounts";
 import {
@@ -41,6 +40,7 @@ import { Input } from "@/components/ui/input";
 import { setError } from "@/redux/slices/errorSlice/errorSlice";
 import { usePlayer } from "@/core/services/player/usePlayer";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import MTPCoinOutline from "@/components/coinIcons/CoinIconOutline";
 
 export function renderDescriptionHTML(description: string | null) {
   if (!description) return "";
@@ -153,7 +153,6 @@ const BookingDetailsPage = () => {
       refetchOnReconnect: true,
     }
   );
-
 
   const handleConfirmDeal = async () => {
     if (!booking || !user) return;
@@ -557,7 +556,7 @@ const BookingDetailsPage = () => {
                     {booking.Booking.Price ? (
                       <>
                         <p>{booking.Booking.Price.toLocaleString()}</p>
-                        <TbCoinFilled />
+                        <MTPCoinOutline size={16} color="#fff" />
                       </>
                     ) : (
                       <p>Not Yet</p>
@@ -665,7 +664,7 @@ const BookingDetailsPage = () => {
                           {booking.Booking.Price.toLocaleString()}
                         </span>
                       </p>
-                      <TbCoinFilled className="w-5 h-5 text-mystic-green" />
+                      <MTPCoinOutline size={20} color="#aee339" />
                     </div>
                   </div>
                 </div>

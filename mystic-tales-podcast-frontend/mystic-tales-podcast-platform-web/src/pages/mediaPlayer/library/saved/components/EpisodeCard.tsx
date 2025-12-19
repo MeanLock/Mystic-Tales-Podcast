@@ -8,6 +8,8 @@ import { BsFillBookmarkFill } from "react-icons/bs";
 import { useGetPodcastPublicSourceQuery } from "@/core/services/file/file.service";
 import ContentFallBackImage from "/images/unknown/content.png";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
+import ActivityIndicator from "@/components/loader/ActivityIndicator";
+import { debouncePromise } from "@/core/utils/debouncePromise";
 
 const EpisodeCard = ({
   episode,
@@ -88,7 +90,7 @@ const EpisodeCard = ({
       const benefitsList = await triggerGetBenefitList({
         PodcastEpisodeId: episode.Id,
       }).unwrap();
-      playEpisodeFromSavedEpisodes({
+      await playEpisodeFromSavedEpisodes({
         audioId: episode.Id,
         benefitsList:
           benefitsList.CurrentPodcastSubscriptionRegistrationBenefitList,
@@ -96,9 +98,11 @@ const EpisodeCard = ({
     }
   };
 
+  const debouncedPlay = debouncePromise(handlePlayPauseSavedEpisodes, 300);
+
   return (
     <div
-      onClick={() => navigate(`/media-player/episodes/details/${episode.Id}`)}
+      onClick={() => navigate(`/media-player/episodes/${episode.Id}`)}
       style={{ backgroundImage: `url(${fileUrl})` }}
       className="bg-cover w-full aspect-3/4 rounded-xl relative transition-all duration-500 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >
@@ -159,24 +163,41 @@ const EpisodeCard = ({
           />
         </div>
         <div className="w-full flex items-center justify-between">
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePlayPauseSavedEpisodes();
-            }}
-            className="px-5 py-1 gap-1 bg-white rounded-xl flex items-center justify-center"
-          >
-            {uiState.isPlaying &&
-            uiState.currentAudio &&
-            uiState.currentAudio.id === episode.Id ? (
-              <IoPause size={15} color="#333" />
-            ) : (
-              <IoPlay size={15} color="#333" />
-            )}
-            <p className="font-poppins m-0 text-sm font-semibold text-[#333]">
-              {formatAudioLength(episode.AudioLength)}
-            </p>
-          </div>
+          {uiState.isLoadingSession && uiState.loadingAudioId === episode.Id ? (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="px-5 py-1 gap-1 bg-gray-300 rounded-xl flex items-center justify-center"
+            >
+              <ActivityIndicator />
+              <p className="font-poppins m-0 text-sm font-semibold text-[#333]">
+                Loading
+              </p>
+            </div>
+          ) : (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                debouncedPlay();
+              }}
+              className={`px-5 py-1 gap-1 bg-white rounded-xl flex items-center justify-center ${
+                uiState.isLoadingSession
+                  ? "cursor-not-allowed"
+                  : "cursor-pointer"
+              }`}
+            >
+              {uiState.isPlaying &&
+              uiState.currentAudio &&
+              uiState.currentAudio.id === episode.Id ? (
+                <IoPause size={15} color="#333" />
+              ) : (
+                <IoPlay size={15} color="#333" />
+              )}
+              <p className="font-poppins m-0 text-sm font-semibold text-[#333]">
+                {formatAudioLength(episode.AudioLength)}
+              </p>
+            </div>
+          )}
+
           <div
             onClick={() => handleUnSaveEpisode(episode.Id)}
             className="flex p-2 rounded-full items-center justify-center text-white bg-gray-300/30 hover:bg-gray-300/50"
@@ -190,13 +211,3 @@ const EpisodeCard = ({
 };
 
 export default EpisodeCard;
-
-{
-  /* <div
-        className="
-          pointer-events-none absolute inset-0
-          backdrop-blur-[14px] backdrop-saturate-150
-          [mask-image:linear-gradient(to_top,black_52%,transparent_75%)]
-          "
-      /> */
-}

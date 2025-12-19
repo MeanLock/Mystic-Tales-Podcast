@@ -100,10 +100,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="shows/:id" element={<ShowDetailsPage />} />
 
                 <Route path="episodes" element={<EpisodeListPage />} />
-                <Route
-                  path="episodes/details/:id"
-                  element={<EpisodeDetailsPage />}
-                />
+                <Route path="episodes/:id" element={<EpisodeDetailsPage />} />
                 {/* Protected Route */}
                 <Route element={<ProtectedRoute />}>
                   <Route

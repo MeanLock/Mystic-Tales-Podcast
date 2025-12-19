@@ -7,7 +7,6 @@ type BookingHlsOptions = HlsLoadBaseOptions & {
   trackId: string;
 };
 
-
 /**
  * Đảm bảo baseUrl luôn có "/" ở cuối
  */
@@ -120,10 +119,10 @@ export async function loadBookingHls(
     },
   });
 
-  return new Promise<Hls>((resolve) => {
+  return new Promise<Hls>((resolve, reject) => {
     let resolved = false;
     let retryCount = 0;
-    const MAX_RETRIES = 3;
+    const MAX_RETRIES = 1;
 
     const finishResolve = () => {
       if (!resolved) {
@@ -185,6 +184,12 @@ export async function loadBookingHls(
           console.error(
             `[HLS BOOKING] Max retries (${MAX_RETRIES}) reached. Stopping.`
           );
+          if (!resolved) {
+            resolved = true;
+            reject(
+              new Error(`Failed to load HLS after ${MAX_RETRIES} retries`)
+            );
+          }
         }
       }
     });

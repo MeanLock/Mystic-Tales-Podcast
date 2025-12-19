@@ -9,12 +9,12 @@ import { useNavigate } from "react-router-dom";
 import { useLazyCheckUserPodcastListenSlotQuery } from "@/core/services/account/account.service";
 import { useLazyGetSubscriptionBenefitsMapListFromEpisodeIdQuery } from "@/core/services/subscription/subscription.service";
 import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
-
-import { useEffect } from "react";
 import { useGetPodcastPublicSourceQuery } from "@/core/services/file/file.service";
 
 import type { EpisodeFromTrending } from "@/core/types/feed";
 import ContentFallBackImage from "/images/unknown/content.png";
+import ActivityIndicator from "@/components/loader/ActivityIndicator";
+import { debouncePromise } from "@/core/utils/debouncePromise";
 
 const getTimeRange = (releaseDate: string) => {
   const now = new Date();
@@ -81,8 +81,6 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
   // RESOLVE FILE URL
   const fileUrl = fileData?.FileUrl || ContentFallBackImage;
 
-  // HOOKS
-  useEffect(() => {}, []);
   // FUNCTIONS
   const handlePlayEpisodeFromSpecifyShow = async (episodeId: string) => {
     if (!user) {
@@ -174,6 +172,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
       }
     }
   };
+  const debouncePlay = debouncePromise(handlePlayPause, 1000);
 
   return (
     <div
@@ -223,29 +222,43 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
       <div className="absolute bottom-0 z-20 backdrop-blur-md right-0 left-0 rounded-b-md">
         <div className="w-full flex items-center justify-start relative">
           <div className="w-full flex items-center gap-2 justify-between p-5">
-            <div
-              onClick={() => handlePlayPause()}
-              className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
-            >
-              {state.isPlaying &&
-              state.currentAudio &&
-              state.currentAudio.id === episode.Id ? (
+            {state.isLoadingSession && state.loadingAudioId === episode.Id ? (
+              <div className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
                 <div className="z-20 relative w-5 h-5 overflow-hidden flex items-center justify-center">
-                  <IoPause className="h-5 w-5 text-black" />
+                  <ActivityIndicator size={20} color="#000" />
                 </div>
-              ) : (
-                <IoPlay className="h-5 w-5 text-black" />
-              )}
-              <p className="font-poppins m-0 text-xs font-semibold text-[#333]">
+                <p className="font-poppins m-0 text-xs font-semibold text-[#333]">
+                  Loading
+                </p>
+              </div>
+            ) : (
+              <div
+                onClick={() => debouncePlay()}
+                className={`w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl hover:bg-gray-100 transition-colors ${
+                  state.isLoadingSession
+                    ? "cursor-not-allowed"
+                    : "cursor-pointer"
+                }`}
+              >
                 {state.isPlaying &&
                 state.currentAudio &&
-                state.currentAudio.id === episode.Id
-                  ? "Pause"
-                  : `Play`}
-              </p>
-            </div>
+                state.currentAudio.id === episode.Id ? (
+                  <div className="z-20 relative w-5 h-5 overflow-hidden flex items-center justify-center">
+                    <IoPause className="h-5 w-5 text-black" />
+                  </div>
+                ) : (
+                  <IoPlay className="h-5 w-5 text-black" />
+                )}
+                <p className="font-poppins m-0 text-xs font-semibold text-[#333]">
+                  {state.isPlaying &&
+                  state.currentAudio &&
+                  state.currentAudio.id === episode.Id
+                    ? "Pause"
+                    : `Continue`}
+                </p>
+              </div>
+            )}
           </div>
-
           {state.currentAudio && state.currentAudio.id === episode.Id ? (
             <div
               style={{
@@ -257,7 +270,12 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromTrending }) => {
               className="absolute top-0 h-0.5 bg-mystic-green"
             />
           ) : (
-            <div />
+            <div
+              style={{
+                width: `0%`,
+              }}
+              className="absolute top-0 h-0.5 bg-mystic-green"
+            />
           )}
         </div>
       </div>
