@@ -29,6 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import { get } from 'lodash';
 import { getAccountProfile } from '@/core/services/account/account.service';
 import { getCapacitorDevice } from '@/core/utils/device.util';
+import axios from 'axios';
 interface LoginPageProps {
     disableCustomTheme?: boolean;
 }
@@ -117,10 +118,16 @@ const LoginPage: FC<LoginPageProps> = (props) => {
                     }
 
                     dispatch(setAuthToken({ token }));
-                    await new Promise((r) => setTimeout(r, 100));
+                   const tempInstance = axios.create({
+    ...loginRequiredAxiosInstance.defaults,
+    headers: {
+        ...loginRequiredAxiosInstance.defaults.headers,
+        Authorization: `Bearer ${token}`
+    }
+});
 
-                    const res = await getAccountProfile(loginRequiredAxiosInstance);
-
+                    const res = await getAccountProfile(tempInstance);
+console.log("res", res);
                     if (!res?.success) {
                         toast.error("Login failed.");
                         return;
