@@ -338,7 +338,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
   };
 
   const handleViewDetails = async (episodeId: string) => {
-    navigate(`/media-player/episodes/details/${episodeId}`);
+    navigate(`/media-player/episodes/${episodeId}`);
   };
 
   return (

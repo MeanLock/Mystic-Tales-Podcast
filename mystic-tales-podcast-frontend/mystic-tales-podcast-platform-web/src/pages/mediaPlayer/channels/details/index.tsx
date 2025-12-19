@@ -149,9 +149,10 @@ const RenderSubscriptionSection = ({
         </p>
         <p className="text-[9px] text-black/70 font-bold">Subscription</p>
       </div>
-      <p className="text-[12px] font-semibold line-clamp-2">
-        {subscription.Description}
-      </p>
+      <div
+        className="text-[12px] font-semibold line-clamp-2"
+        dangerouslySetInnerHTML={{ __html: subscription.Description || "" }}
+      />
       <div className="text-[10px] italic w-full flex items-center justify-between mt-3">
         <p>
           {renderPriceOptions(
@@ -547,12 +548,19 @@ const ChannelDetailsPage = () => {
           <div
             className="text-[#d9d9d9] text-center text-sm font-md w-1/3 overflow-hidden line-clamp-3"
             dangerouslySetInnerHTML={{
-              __html: renderDescriptionHTML(channel?.Description),
+              __html: channel?.Description || "",
             }}
           />
 
           <div className="text-xs flex items-center justify-center gap-2 text-[#d9d9d9] font-semibold overflow-ellipsis line-clamp-1">
-            <p onClick={() => navigate(`/media-player/categories/${channel.PodcastCategory.Id}`)} className="hover:text-mystic-green hover:underline cursor-pointer">
+            <p
+              onClick={() =>
+                navigate(
+                  `/media-player/categories/${channel.PodcastCategory.Id}`
+                )
+              }
+              className="hover:text-mystic-green hover:underline cursor-pointer"
+            >
               {channel?.PodcastCategory.Name.toUpperCase()}
             </p>{" "}
             •{" "}
@@ -658,7 +666,8 @@ const ChannelDetailsPage = () => {
                 {currentSubscription?.Name}
               </DialogTitle>
               <DialogDescription className="text-white/70 ">
-                {currentSubscription?.Description}
+                {/* {currentSubscription?.Description} */}
+                <div dangerouslySetInnerHTML={{ __html: currentSubscription?.Description || ""}}/>
               </DialogDescription>
             </DialogHeader>
 

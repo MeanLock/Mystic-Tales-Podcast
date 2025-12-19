@@ -324,7 +324,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
   return (
     <div
       key={episode.Id}
-      onClick={() => navigate(`/media-player/episodes/details/${episode.Id}`)}
+      onClick={() => navigate(`/media-player/episodes/${episode.Id}`)}
       className="px-12 flex h-28 items-center gap-10 p-2 rounded-lg hover:bg-white/10 transition-colors group cursor-pointer"
     >
       <div className="relative aspect-square h-full bg-gray-700 rounded-lg overflow-hidden shrink-0">

@@ -102,7 +102,7 @@ const EpisodeCard = ({
 
   return (
     <div
-      onClick={() => navigate(`/media-player/episodes/details/${episode.Id}`)}
+      onClick={() => navigate(`/media-player/episodes/${episode.Id}`)}
       style={{ backgroundImage: `url(${fileUrl})` }}
       className="bg-cover w-full aspect-3/4 rounded-xl relative transition-all duration-500 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >

@@ -12,7 +12,6 @@ import type {
   PodcastBookingTone,
   PodcastBookingToneCategoryType,
   PodcastBuddyFromAPI,
-  PodcastBuddyUI,
 } from "@/core/types/booking";
 import { useGetPodcastBuddyDetailsQuery } from "@/core/services/podcasters/podcasters.service";
 import { useDispatch } from "react-redux";

@@ -210,6 +210,9 @@ const EpisodeCard = ({
       style={{
         backgroundImage: `url(${fileUrl})`,
       }}
+      onClick={() =>
+        navigate(`/media-player/episodes/${listenSession.Episode.Id}`)
+      }
       className="bg-cover w-full aspect-3/4 rounded-xl relative transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer"
     >
       <div className="w-full aspect-square">
@@ -263,12 +266,11 @@ const EpisodeCard = ({
       <div className="absolute bottom-0 z-20 bg-black/40 backdrop-blur-md right-0 left-0 rounded-b-md">
         <div className="w-full flex items-center justify-start relative">
           <div className="w-full flex items-center gap-2 justify-between p-5">
-            {state.isLoadingSession && state.loadingAudioId === listenSession.Episode.Id ? (
-              <div
-                className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
-              >
+            {state.isLoadingSession &&
+            state.loadingAudioId === listenSession.Episode.Id ? (
+              <div className="w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
                 <div className="z-20 relative w-5 h-5 overflow-hidden flex items-center justify-center">
-                  <ActivityIndicator size={20} color="#000" />
+                  <ActivityIndicator size={13} color="#000" />
                 </div>
                 <p className="font-poppins m-0 text-xs font-semibold text-[#333]">
                   Loading
@@ -276,8 +278,15 @@ const EpisodeCard = ({
               </div>
             ) : (
               <div
-                onClick={() => debouncePlay()}
-                className={`w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl hover:bg-gray-100 transition-colors ${state.isLoadingSession ? "cursor-not-allowed" : "cursor-pointer"}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  debouncePlay();
+                }}
+                className={`w-full flex items-center justify-center gap-1 py-1 px-2 bg-white rounded-xl hover:bg-gray-100 transition-colors ${
+                  state.isLoadingSession
+                    ? "cursor-not-allowed"
+                    : "cursor-pointer"
+                }`}
               >
                 {state.isPlaying &&
                 state.currentAudio &&

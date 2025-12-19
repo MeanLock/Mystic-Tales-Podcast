@@ -5,8 +5,6 @@ import type {
 } from "@/core/types/booking";
 import { useEffect, useState, useRef } from "react";
 import { FaPlay, FaPause } from "react-icons/fa6";
-
-import { TbCoinFilled } from "react-icons/tb";
 import "./style.css";
 import BuddyCard from "./components/BuddyCard";
 import { useNavigate } from "react-router-dom";

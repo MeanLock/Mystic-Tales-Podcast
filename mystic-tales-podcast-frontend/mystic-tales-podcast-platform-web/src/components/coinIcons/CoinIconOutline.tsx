@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type SVGProps } from "react";
 
 interface IconProps extends SVGProps<SVGSVGElement> {

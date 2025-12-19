@@ -17,7 +17,6 @@ import {
 import { PiHandWithdrawBold } from "react-icons/pi";
 import { MdOutlineSubscriptions } from "react-icons/md";
 import { AiOutlineFileDone, AiOutlineHome } from "react-icons/ai";
-import { TbCoinFilled } from "react-icons/tb";
 import { MdOutlineNavigateNext } from "react-icons/md";
 
 import { useSelector } from "react-redux";
@@ -457,7 +456,7 @@ const MediaPlayerSidebar = () => {
                     navigate(`/media-player/shows/${content.Show.Id}`);
                   } else if (content.Episode) {
                     navigate(
-                      `/media-player/episodes/details/${content.Episode.Id}`
+                      `/media-player/episodes/${content.Episode.Id}`
                     );
                   }
                   setShowSearchSuggestion(false);
