@@ -5,6 +5,7 @@ using NAudio.Wave;
 using PodcastService.Infrastructure.Models.Audio;
 using NAudio.MediaFoundation;
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 using PodcastService.Infrastructure.Models.Audio.AcoustID;
 using PodcastService.Infrastructure.Helpers.AudioHelpers;
 
@@ -15,23 +16,70 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
         private readonly ILogger<AcoustIDAudioFingerprintGenerator> _logger;
         private readonly AudioFormatDetectorHelper _audioFormatDetectorHelper;
         private bool _isMediaFoundationInitialized;
+        private readonly bool _isWindows;
 
         public AcoustIDAudioFingerprintGenerator(ILogger<AcoustIDAudioFingerprintGenerator> logger)
         {
             _logger = logger;
             _audioFormatDetectorHelper = new AudioFormatDetectorHelper(logger as ILogger<AudioFormatDetectorHelper>);
-            // Initialize MediaFoundation for MP3/other format support
-            try
+
+            // ✅ Detect OS
+            _isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+            // ✅ Initialize MediaFoundation ONLY on Windows
+            if (_isWindows)
             {
-                MediaFoundationApi.Startup();
-                _isMediaFoundationInitialized = true;
+                try
+                {
+                    MediaFoundationApi.Startup();
+                    _isMediaFoundationInitialized = true;
+                    _logger.LogInformation("MediaFoundation initialized successfully (Windows)");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to initialize MediaFoundation on Windows. Some audio formats may not be supported.");
+                    _isMediaFoundationInitialized = false;
+                }
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogWarning(ex, "Failed to initialize MediaFoundation. Some audio formats may not be supported.");
+                _logger.LogInformation($"Running on {RuntimeInformation.OSDescription}. MediaFoundation is not available (Windows-only). Supported formats: MP3, WAV");
                 _isMediaFoundationInitialized = false;
             }
         }
+
+        /// <summary>
+        /// Create appropriate wave reader based on audio format with platform awareness
+        /// </summary>
+        // private WaveStream? CreateWaveReader(Stream audioStream)
+        // {
+        //     try
+        //     {
+        //         audioStream.Position = 0;
+
+        //         // STEP 1: Detect format using magic bytes
+        //         var formatInfo = _audioFormatDetectorHelper.DetectFormatFromStream(audioStream);
+        //         audioStream.Position = 0; // Reset after detection
+
+        //         _logger.LogDebug($"Detected audio format: {formatInfo.Format}");
+
+        //         // STEP 2: Use appropriate reader based on format and platform
+        //         return formatInfo.Format switch
+        //         {
+        //             AudioFormat.MP3 => CreateMp3Reader(audioStream),
+        //             AudioFormat.WAV => CreateWavReader(audioStream),
+        //             AudioFormat.FLAC => CreateMediaFoundationReader(audioStream),  // Windows only
+        //             AudioFormat.M4A => CreateMediaFoundationReader(audioStream),   // Windows only
+        //             AudioFormat.AAC => CreateMediaFoundationReader(audioStream),   // Windows only
+        //             _ => TryAllReaders(audioStream) // Fallback for unknown formats
+        //         };
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error creating wave reader");
+        //         return null;
+        //     }
+        // }
 
         private WaveStream? CreateWaveReader(Stream audioStream)
         {
@@ -39,13 +87,29 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             {
                 audioStream.Position = 0;
 
-                // ✅ STEP 1: Detect format using magic bytes
+                // Detect format using magic bytes
                 var formatInfo = _audioFormatDetectorHelper.DetectFormatFromStream(audioStream);
-                audioStream.Position = 0; // Reset after detection
+                audioStream.Position = 0;
 
                 _logger.LogDebug($"Detected audio format: {formatInfo.Format}");
 
-                // ✅ STEP 2: Use appropriate reader based on format
+                // On Linux, convert everything to WAV using FFmpeg
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    if (formatInfo.Format == AudioFormat.WAV)
+                    {
+                        // WAV can be read directly
+                        return new WaveFileReader(audioStream);
+                    }
+                    else
+                    {
+                        // Convert to WAV using FFmpeg
+                        _logger.LogInformation($"Converting {formatInfo.Format} to WAV using FFmpeg (Linux)");
+                        return ConvertToWavUsingFFmpeg(audioStream, formatInfo);
+                    }
+                }
+
+                // Windows - use native readers
                 return formatInfo.Format switch
                 {
                     AudioFormat.MP3 => CreateMp3Reader(audioStream),
@@ -53,7 +117,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                     AudioFormat.FLAC => CreateMediaFoundationReader(audioStream),
                     AudioFormat.M4A => CreateMediaFoundationReader(audioStream),
                     AudioFormat.AAC => CreateMediaFoundationReader(audioStream),
-                    _ => TryAllReaders(audioStream) // Fallback for unknown
+                    _ => TryAllReaders(audioStream)
                 };
             }
             catch (Exception ex)
@@ -63,11 +127,85 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             }
         }
 
+        private WaveStream? ConvertToWavUsingFFmpeg(Stream audioStream, AudioFormatInfo formatInfo)
+        {
+            string? tempDir = null;
+
+            try
+            {
+                tempDir = Path.Combine(Path.GetTempPath(), $"acoustid_{Guid.NewGuid():N}");
+                Directory.CreateDirectory(tempDir);
+
+                var inputFile = Path.Combine(tempDir, $"input{formatInfo.Extension}");
+                var outputFile = Path.Combine(tempDir, "output.wav");
+
+                // Write input stream to temp file
+                using (var fs = new FileStream(inputFile, FileMode.Create, FileAccess.Write))
+                {
+                    audioStream.CopyTo(fs);
+                }
+
+                // ✅ CRITICAL: Don't force sample rate or channels
+                // Let FFmpeg preserve the original audio properties
+                var ffmpegArgs = $"-i \"{inputFile}\" -acodec pcm_s16le -y \"{outputFile}\"";
+
+                var process = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "ffmpeg",
+                        Arguments = ffmpegArgs,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+
+                _logger.LogDebug($"Converting to WAV (preserving original format): {ffmpegArgs}");
+
+                process.Start();
+                var stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    _logger.LogError($"FFmpeg conversion failed (exit {process.ExitCode}): {stderr}");
+                    return null;
+                }
+
+                if (!File.Exists(outputFile))
+                {
+                    _logger.LogError("FFmpeg completed but output file not found");
+                    return null;
+                }
+
+                // Open WAV file
+                var wavFileStream = new FileStream(outputFile, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.DeleteOnClose);
+                return new WaveFileReader(wavFileStream);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error converting audio to WAV using FFmpeg");
+
+                if (tempDir != null && Directory.Exists(tempDir))
+                {
+                    try { Directory.Delete(tempDir, true); } catch { }
+                }
+
+                return null;
+            }
+        }
+        /// <summary>
+        /// Create MP3 reader (cross-platform)
+        /// </summary>
         private WaveStream? CreateMp3Reader(Stream audioStream)
         {
             try
             {
-                return new Mp3FileReader(audioStream);
+                var reader = new Mp3FileReader(audioStream);
+                _logger.LogDebug("Successfully created Mp3FileReader");
+                return reader;
             }
             catch (Exception ex)
             {
@@ -76,11 +214,16 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             }
         }
 
+        /// <summary>
+        /// Create WAV reader (cross-platform)
+        /// </summary>
         private WaveStream? CreateWavReader(Stream audioStream)
         {
             try
             {
-                return new WaveFileReader(audioStream);
+                var reader = new WaveFileReader(audioStream);
+                _logger.LogDebug("Successfully created WaveFileReader");
+                return reader;
             }
             catch (Exception ex)
             {
@@ -89,17 +232,29 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             }
         }
 
+        /// <summary>
+        /// Create MediaFoundation reader (Windows only)
+        /// </summary>
         private WaveStream? CreateMediaFoundationReader(Stream audioStream)
         {
+            // Platform check
+            if (!_isWindows)
+            {
+                _logger.LogWarning($"MediaFoundation reader requested but not available on {RuntimeInformation.OSDescription}. Format not supported.");
+                return null;
+            }
+
             if (!_isMediaFoundationInitialized)
             {
-                _logger.LogWarning("MediaFoundation not initialized");
+                _logger.LogWarning("MediaFoundation not initialized on Windows");
                 return null;
             }
 
             try
             {
-                return new StreamMediaFoundationReader(audioStream);
+                var reader = new StreamMediaFoundationReader(audioStream);
+                _logger.LogDebug("Successfully created MediaFoundationReader (Windows)");
+                return reader;
             }
             catch (Exception ex)
             {
@@ -108,38 +263,61 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             }
         }
 
-        // ✅ Fallback: Try all readers (existing logic)
+        /// <summary>
+        /// Fallback: Try all available readers based on platform
+        /// </summary>
         private WaveStream? TryAllReaders(Stream audioStream)
         {
-            _logger.LogWarning("Unknown format, trying all readers...");
+            _logger.LogWarning("Unknown format, trying all available readers...");
 
-            // Try MP3
+            // Try MP3 (cross-platform)
             try
             {
                 audioStream.Position = 0;
-                return new Mp3FileReader(audioStream);
+                var reader = new Mp3FileReader(audioStream);
+                _logger.LogInformation("Successfully opened with Mp3FileReader");
+                return reader;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Mp3FileReader failed");
+            }
 
-            // Try WAV
+            // Try WAV (cross-platform)
             try
             {
                 audioStream.Position = 0;
-                return new WaveFileReader(audioStream);
+                var reader = new WaveFileReader(audioStream);
+                _logger.LogInformation("Successfully opened with WaveFileReader");
+                return reader;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "WaveFileReader failed");
+            }
 
-            // Try MediaFoundation
-            if (_isMediaFoundationInitialized)
+            // Try MediaFoundation (Windows only)
+            if (_isWindows && _isMediaFoundationInitialized)
             {
                 try
                 {
                     audioStream.Position = 0;
-                    return new StreamMediaFoundationReader(audioStream);
+                    var reader = new StreamMediaFoundationReader(audioStream);
+                    _logger.LogInformation("Successfully opened with MediaFoundationReader (Windows)");
+                    return reader;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "MediaFoundationReader failed");
+                }
             }
 
+            // Log supported formats based on platform
+            var supportedFormats = _isWindows
+                ? "MP3, WAV, FLAC, M4A, AAC (MediaFoundation)"
+                : "MP3, WAV";
+
+            _logger.LogError($"All available readers failed. Supported formats on this platform: {supportedFormats}");
             return null;
         }
 
@@ -174,13 +352,13 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                     if (workingStream.CanSeek)
                     {
                         var fileSizeBytes = workingStream.Length;
-                        result.FileSizeMB = Math.Round(fileSizeBytes / (1024.0 * 1024.0), 2); // Convert bytes to MB với 2 chữ số thập phân
+                        result.FileSizeMB = Math.Round(fileSizeBytes / (1024.0 * 1024.0), 2);
                     }
                 }
                 catch (NotSupportedException)
                 {
                     _logger.LogDebug("Stream does not support Length property");
-                    result.FileSizeMB = 0; // Set to 0 when Length is not available
+                    result.FileSizeMB = 0;
                 }
 
                 // Extract audio data using NAudio
@@ -257,11 +435,87 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             }
         }
 
+        /// <summary>
+        /// Extract audio data with platform-aware resampling
+        /// </summary>
+        // private async Task<AcoustIDAudioData?> ExtractAudioDataAsync(Stream audioStream)
+        // {
+        //     WaveStream? reader = null;
+        //     WaveStream? resampler = null;
+
+        //     try
+        //     {
+        //         // Create appropriate reader based on stream content
+        //         reader = CreateWaveReader(audioStream);
+        //         if (reader == null)
+        //         {
+        //             _logger.LogError("Unable to create wave reader for the audio stream");
+        //             return null;
+        //         }
+
+        //         // Convert to standard format for Chromaprint (11025Hz, 16-bit, Mono)
+        //         // AcoustID.NET works best with lower sample rates
+        //         var targetFormat = new WaveFormat(11025, 16, 1);
+
+        //         // ✅ Platform-aware resampling
+        //         if (_isWindows && _isMediaFoundationInitialized)
+        //         {
+        //             // Windows: Use MediaFoundationResampler (best quality)
+        //             try
+        //             {
+        //                 resampler = new MediaFoundationResampler(reader, targetFormat);
+        //                 _logger.LogDebug($"Using MediaFoundationResampler: {reader.WaveFormat.SampleRate}Hz → {targetFormat.SampleRate}Hz");
+        //             }
+        //             catch (Exception ex)
+        //             {
+        //                 _logger.LogWarning(ex, "MediaFoundationResampler failed, using fallback");
+        //                 resampler = TryFallbackResampling(reader, targetFormat);
+        //             }
+        //         }
+        //         else
+        //         {
+        //             // Linux: Use fallback resampling
+        //             resampler = TryFallbackResampling(reader, targetFormat);
+        //         }
+
+        //         // If resampler is null, use original reader
+        //         var sourceStream = resampler ?? reader;
+
+        //         // Read all audio data
+        //         var samples = await ReadAllSamplesAsync(sourceStream);
+
+        //         var audioData = new AcoustIDAudioData
+        //         {
+        //             Samples = samples,
+        //             SampleRate = sourceStream.WaveFormat.SampleRate,
+        //             Channels = sourceStream.WaveFormat.Channels,
+        //             Duration = reader.TotalTime.TotalSeconds
+        //         };
+
+        //         return audioData;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error extracting audio data");
+        //         return null;
+        //     }
+        //     finally
+        //     {
+        //         // Dispose resampler if it's different from reader
+        //         if (resampler != null && resampler != reader)
+        //         {
+        //             resampler.Dispose();
+        //         }
+
+        //         // Dispose reader
+        //         reader?.Dispose();
+        //     }
+        // }
+
         private async Task<AcoustIDAudioData?> ExtractAudioDataAsync(Stream audioStream)
         {
             try
             {
-                // Create appropriate reader based on stream content
                 using WaveStream? reader = CreateWaveReader(audioStream);
                 if (reader == null)
                 {
@@ -269,21 +523,38 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                     return null;
                 }
 
-                // Convert to standard format for Chromaprint (11025Hz, 16-bit, Mono)
-                // AcoustID.NET works best with lower sample rates
                 var targetFormat = new WaveFormat(11025, 16, 1);
-                using var resampler = new MediaFoundationResampler(reader, targetFormat);
 
-                // Read all audio data
-                var samples = await ReadAllSamplesAsync(resampler);
+                // ✅ Dùng IWaveProvider và using
+                IWaveProvider sourceStream;
 
-                return new AcoustIDAudioData
+                if (_isWindows && _isMediaFoundationInitialized)
                 {
-                    Samples = samples,
-                    SampleRate = targetFormat.SampleRate,
-                    Channels = targetFormat.Channels,
-                    Duration = reader.TotalTime.TotalSeconds
-                };
+                    using var resampler = new MediaFoundationResampler(reader, targetFormat);
+                    sourceStream = resampler;
+                    var samples = await ReadAllSamplesAsync(sourceStream);
+
+                    return new AcoustIDAudioData
+                    {
+                        Samples = samples,
+                        SampleRate = sourceStream.WaveFormat.SampleRate,
+                        Channels = sourceStream.WaveFormat.Channels,
+                        Duration = reader.TotalTime.TotalSeconds
+                    };
+                }
+                else
+                {
+                    sourceStream = TryFallbackResampling(reader, targetFormat) ?? reader;
+                    var samples = await ReadAllSamplesAsync(sourceStream);
+
+                    return new AcoustIDAudioData
+                    {
+                        Samples = samples,
+                        SampleRate = sourceStream.WaveFormat.SampleRate,
+                        Channels = sourceStream.WaveFormat.Channels,
+                        Duration = reader.TotalTime.TotalSeconds
+                    };
+                }
             }
             catch (Exception ex)
             {
@@ -292,54 +563,33 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             }
         }
 
-        // private WaveStream? CreateWaveReader(Stream audioStream)
-        // {
-        //     try
-        //     {
-        //         // Try different readers based on stream content
-        //         audioStream.Position = 0;
+        /// <summary>
+        /// Try fallback resampling for Linux or when MediaFoundation fails
+        /// </summary>
+        private WaveStream? TryFallbackResampling(WaveStream reader, WaveFormat targetFormat)
+        {
+            // Check if conversion is needed
+            if (reader.WaveFormat.SampleRate == targetFormat.SampleRate &&
+                reader.WaveFormat.Channels == targetFormat.Channels &&
+                reader.WaveFormat.BitsPerSample == targetFormat.BitsPerSample)
+            {
+                _logger.LogDebug("No resampling needed - format already matches target");
+                return reader; // No conversion needed
+            }
 
-        //         // Try MP3 first (most common)
-        //         try
-        //         {
-        //             return new Mp3FileReader(audioStream);
-        //         }
-        //         catch
-        //         {
-        //             audioStream.Position = 0;
-        //         }
-
-        //         // Try WAV
-        //         try
-        //         {
-        //             return new WaveFileReader(audioStream);
-        //         }
-        //         catch
-        //         {
-        //             audioStream.Position = 0;
-        //         }
-
-        //         // Try MediaFoundation reader (supports multiple formats)
-        //         if (_isMediaFoundationInitialized)
-        //         {
-        //             try
-        //             {
-        //                 return new StreamMediaFoundationReader(audioStream);
-        //             }
-        //             catch
-        //             {
-        //                 audioStream.Position = 0;
-        //             }
-        //         }
-
-        //         return null;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Error creating wave reader");
-        //         return null;
-        //     }
-        // }
+            // Try WaveFormatConversionStream
+            try
+            {
+                var converted = new WaveFormatConversionStream(targetFormat, reader);
+                _logger.LogDebug($"Using WaveFormatConversionStream (fallback): {reader.WaveFormat.SampleRate}Hz → {targetFormat.SampleRate}Hz");
+                return converted;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, $"WaveFormatConversionStream not supported. Using original format: {reader.WaveFormat.SampleRate}Hz, {reader.WaveFormat.Channels}ch, {reader.WaveFormat.BitsPerSample}bit");
+                return reader; // Use original format
+            }
+        }
 
         private async Task<short[]> ReadAllSamplesAsync(IWaveProvider waveProvider)
         {
@@ -372,33 +622,30 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             {
                 try
                 {
-                    // Create ChromaContext using AcoustID.NET - không dùng using vì không implement IDisposable
+                    // Create ChromaContext using AcoustID.NET
                     var context = new ChromaContext();
 
                     // Start fingerprinting with audio parameters
                     context.Start(audioData.SampleRate, audioData.Channels);
 
-                    // AcoustID.NET expects short[] data, không cần convert sang float
+                    // Feed audio data
                     context.Feed(audioData.Samples, audioData.Samples.Length);
 
                     // Finish fingerprinting
                     context.Finish();
 
-                    // Get fingerprint as string - trả về trực tiếp string
-                    // var fingerprintString = context.GetFingerprint();
+                    // Get raw fingerprint and convert to Base64
                     int[] raw = context.GetRawFingerprint();
-                    // hoặc nếu là byte[] rawBytes = ...
                     byte[] rawBytes = raw.SelectMany(i => BitConverter.GetBytes(i)).ToArray();
-
                     var fingerprintString = Convert.ToBase64String(rawBytes);
+
                     if (string.IsNullOrEmpty(fingerprintString))
                     {
                         _logger.LogWarning("Empty fingerprint returned from ChromaContext");
                         return string.Empty;
                     }
 
-                    // Trả về trực tiếp fingerprint string
-                    _logger.LogDebug($"Generated fingerprint: {fingerprintString.Substring(0, Math.Min(50, fingerprintString.Length))}...");
+                    _logger.LogDebug($"Generated fingerprint: {fingerprintString.Substring(0, Math.Min(50, fingerprintString.Length))}... (length: {fingerprintString.Length})");
                     return fingerprintString;
                 }
                 catch (Exception ex)
@@ -409,37 +656,6 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             });
         }
 
-        private byte[] ParseFingerprintString(string fingerprintString)
-        {
-            try
-            {
-                // Remove any whitespace and handle base64-like encoding
-                var cleanString = fingerprintString.Trim();
-
-                // If it starts with "AQAA", it's likely base64 encoded
-                if (cleanString.StartsWith("AQAA"))
-                {
-                    try
-                    {
-                        return Convert.FromBase64String(cleanString);
-                    }
-                    catch
-                    {
-                        // Fallback to UTF8 bytes if base64 decode fails
-                        return System.Text.Encoding.UTF8.GetBytes(cleanString);
-                    }
-                }
-
-                // Fallback: convert string to bytes
-                return System.Text.Encoding.UTF8.GetBytes(cleanString);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to parse fingerprint string, using UTF8 encoding");
-                return System.Text.Encoding.UTF8.GetBytes(fingerprintString);
-            }
-        }
-
         private string GenerateHash(byte[] data)
         {
             using var sha256 = SHA256.Create();
@@ -447,228 +663,15 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             return Convert.ToHexString(hashBytes).ToLowerInvariant();
         }
 
-        /// <summary>
-        /// So sánh một target fingerprint với nhiều candidate fingerprints
-        /// </summary>
-        /// <param name="comparison">Đối tượng chứa target và danh sách candidates</param>
-        /// <returns>Kết quả so sánh với tỷ lệ phần trăm tương đồng</returns>
-        public AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparisonPercentageResult CompareTargetToCandidates(
-            AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparison comparison)
-        {
-            var result = new AcoustIDTargetToCandidatesAudioFingerprintSimilarityComparisonPercentageResult();
-
-            try
-            {
-                if (string.IsNullOrEmpty(comparison.Target?.AudioFingerPrint))
-                {
-                    _logger.LogWarning("Target fingerprint is null or empty");
-                    return result;
-                }
-
-                if (comparison.Candidates == null || !comparison.Candidates.Any())
-                {
-                    _logger.LogWarning("No candidates provided for comparison");
-                    return result;
-                }
-
-                var targetFingerprint = comparison.Target.AudioFingerPrint;
-
-                foreach (var candidate in comparison.Candidates)
-                {
-                    try
-                    {
-                        if (string.IsNullOrEmpty(candidate?.AudioFingerPrint))
-                        {
-                            _logger.LogWarning($"Candidate {candidate?.Id} has null or empty fingerprint");
-                            continue;
-                        }
-
-                        // Tính toán tỷ lệ tương đồng
-                        var similarityPercentage = CalculateFingerprintSimilarity(targetFingerprint, candidate.AudioFingerPrint);
-
-                        result.results.Add(new AcoustIDAudioFingerprintSimilarityPercentageResult
-                        {
-                            Id = candidate.Id,
-                            SimilarityPercentage = similarityPercentage
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Error comparing candidate {candidate?.Id}");
-                        // Thêm kết quả với 0% similarity cho candidate lỗi
-                        result.results.Add(new AcoustIDAudioFingerprintSimilarityPercentageResult
-                        {
-                            Id = candidate?.Id ?? "unknown",
-                            SimilarityPercentage = 0f
-                        });
-                    }
-                }
-
-                // Sắp xếp kết quả theo tỷ lệ tương đồng giảm dần
-                result.results = result.results.OrderByDescending(r => r.SimilarityPercentage).ToList();
-
-                _logger.LogInformation($"Completed comparison for target {comparison.Target.Id} with {result.results.Count} candidates");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during fingerprint comparison");
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Tính toán tỷ lệ tương đồng giữa hai audio fingerprints
-        /// </summary>
-        /// <param name="fingerprint1">Fingerprint đầu tiên</param>
-        /// <param name="fingerprint2">Fingerprint thứ hai</param>
-        /// <returns>Tỷ lệ tương đồng từ 0.0 đến 100.0</returns>
-        private float CalculateFingerprintSimilarity(string fingerprint1, string fingerprint2)
-        {
-            try
-            {
-                // Nếu một trong hai fingerprint rỗng
-                if (string.IsNullOrEmpty(fingerprint1) || string.IsNullOrEmpty(fingerprint2))
-                {
-                    return 0f;
-                }
-
-                // Nếu hai fingerprint giống hệt nhau
-                if (fingerprint1.Equals(fingerprint2, StringComparison.Ordinal))
-                {
-                    return 100f;
-                }
-
-                // Convert string sang byte array để tính toán
-                var bytes1 = System.Text.Encoding.UTF8.GetBytes(fingerprint1);
-                var bytes2 = System.Text.Encoding.UTF8.GetBytes(fingerprint2);
-
-                // Tính Hamming distance cho các fingerprint có cùng độ dài
-                if (bytes1.Length == bytes2.Length)
-                {
-                    return CalculateHammingDistanceSimilarity(bytes1, bytes2);
-                }
-
-                // Nếu độ dài khác nhau, sử dụng string similarity
-                return CalculateStringSimilarity(fingerprint1, fingerprint2);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error calculating fingerprint similarity");
-                return 0f;
-            }
-        }
-
-        /// <summary>
-        /// Tính tỷ lệ tương đồng dựa trên Hamming distance (cho fingerprints cùng độ dài)
-        /// </summary>
-        private float CalculateHammingDistanceSimilarity(byte[] fingerprint1, byte[] fingerprint2)
-        {
-            int differences = 0;
-            int totalBits = fingerprint1.Length * 8; // Tổng số bits
-
-            for (int i = 0; i < fingerprint1.Length; i++)
-            {
-                // XOR để tìm các bit khác nhau
-                byte xorResult = (byte)(fingerprint1[i] ^ fingerprint2[i]);
-
-                // Đếm số bit khác nhau trong byte
-                while (xorResult != 0)
-                {
-                    differences += xorResult & 1;
-                    xorResult >>= 1;
-                }
-            }
-
-            // Tính tỷ lệ tương đồng: (tổng bits - bits khác nhau) / tổng bits * 100
-            float similarity = ((float)(totalBits - differences) / totalBits) * 100f;
-            return Math.Max(0f, Math.Min(100f, similarity)); // Đảm bảo trong khoảng [0, 100]
-        }
-
-        /// <summary>
-        /// Tính tỷ lệ tương đồng dựa trên Jaccard similarity (cho fingerprints khác độ dài)
-        /// </summary>
-        private float CalculateJaccardSimilarity(byte[] fingerprint1, byte[] fingerprint2)
-        {
-            // Convert byte arrays to sets of bytes
-            var set1 = new HashSet<byte>(fingerprint1);
-            var set2 = new HashSet<byte>(fingerprint2);
-
-            // Tính intersection và union
-            var intersection = set1.Intersect(set2).Count();
-            var union = set1.Union(set2).Count();
-
-            if (union == 0)
-            {
-                return 0f;
-            }
-
-            // Jaccard similarity = |intersection| / |union| * 100
-            return ((float)intersection / union) * 100f;
-        }
-
-        /// <summary>
-        /// Tính tỷ lệ tương đồng dựa trên string similarity (cho fingerprints string khác độ dài)
-        /// </summary>
-        private float CalculateStringSimilarity(string fingerprint1, string fingerprint2)
-        {
-            // Sử dụng Levenshtein distance để tính tương đồng
-            int distance = CalculateLevenshteinDistance(fingerprint1, fingerprint2);
-            int maxLength = Math.Max(fingerprint1.Length, fingerprint2.Length);
-
-            if (maxLength == 0)
-            {
-                return 100f; // Cả hai string đều rỗng
-            }
-
-            // Similarity = (1 - distance/maxLength) * 100
-            float similarity = (1f - (float)distance / maxLength) * 100f;
-            return Math.Max(0f, Math.Min(100f, similarity));
-        }
-
-        /// <summary>
-        /// Tính Levenshtein distance giữa hai string
-        /// </summary>
-        private int CalculateLevenshteinDistance(string s1, string s2)
-        {
-            if (string.IsNullOrEmpty(s1))
-                return s2?.Length ?? 0;
-
-            if (string.IsNullOrEmpty(s2))
-                return s1.Length;
-
-            int[,] matrix = new int[s1.Length + 1, s2.Length + 1];
-
-            // Initialize first row and column
-            for (int i = 0; i <= s1.Length; i++)
-                matrix[i, 0] = i;
-
-            for (int j = 0; j <= s2.Length; j++)
-                matrix[0, j] = j;
-
-            // Fill matrix
-            for (int i = 1; i <= s1.Length; i++)
-            {
-                for (int j = 1; j <= s2.Length; j++)
-                {
-                    int cost = s1[i - 1] == s2[j - 1] ? 0 : 1;
-                    matrix[i, j] = Math.Min(
-                        Math.Min(matrix[i - 1, j] + 1, matrix[i, j - 1] + 1),
-                        matrix[i - 1, j - 1] + cost
-                    );
-                }
-            }
-
-            return matrix[s1.Length, s2.Length];
-        }
-
         public void Dispose()
         {
-            if (_isMediaFoundationInitialized)
+            // Only shutdown MediaFoundation if it was initialized (Windows only)
+            if (_isWindows && _isMediaFoundationInitialized)
             {
                 try
                 {
                     MediaFoundationApi.Shutdown();
+                    _logger.LogInformation("MediaFoundation shutdown successfully");
                 }
                 catch (Exception ex)
                 {
@@ -676,7 +679,5 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                 }
             }
         }
-
     }
-
 }

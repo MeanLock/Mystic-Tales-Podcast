@@ -1,5 +1,5 @@
-﻿Select flowName, initialData, resultData, flowStatus, createdAt from SagaInstance order by createdAt DESC
-Select sagaInstanceId , stepName, stepStatus, requestData, responseData from SagaStepExecution order by createdAt DESC
+﻿Select top 10 flowName, initialData, resultData, flowStatus, createdAt from SagaInstance order by createdAt DESC
+Select top 10 sagaInstanceId , stepName, stepStatus, requestData, responseData, createdAt from SagaStepExecution order by createdAt DESC
 
 
 {    "AccountId": 17,    "PodcastShowId": "172eb07f-2121-4ff7-8b5c-91eeec0dee86"  }
@@ -12,4 +12,4 @@ Select sagaInstanceId , stepName, stepStatus, requestData, responseData from Sag
 
 complete-all-user-booking-producing-listen-sessions
 
-BE2EF4BC-3DB7-4C77-AF39-B05F89BDD50C	send-subscription-service-email	FAILED	{    "SendSubscriptionServiceEmailInfo": {      "MailTypeName": "PodcastSubscriptionRegistration",      "ToEmail": "vuthif@email.com",      "MailObject": {        "CustomerFullName": "Bố Lộc Vĩ Đại",        "Price": 9996.0,        "CreatedDate": "2025-11-28T17:39:23.1749828"      }    }  }	{    "ErrorMessage": "Send email failed, error: Gửi mail thất bại"  }
+{   "ErrorMessage": "Unpublish episode unpublish episode force failed, error: An error occurred while saving the entity changes. See the inner exception for details." }

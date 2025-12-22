@@ -220,11 +220,15 @@ def load_model_optimized():
                     "automatic-speech-recognition", 
                     model=model_path,
                     torch_dtype=torch.float32,
-                    trust_remote_code=False
+                    trust_remote_code=False,
+                    device="cpu"
                 )
                 model = transcriber.model
                 processor = AutoProcessor.from_pretrained(model_path)
-        
+                # Ensure model is on CPU
+                model = model.to("cpu")
+                logger.info("✓ Model explicitly moved to CPU")
+                    
         if not hasattr(processor, 'feature_extractor'):
             logger.error("❌ FATAL: Processor missing feature_extractor after all attempts!")
             raise ValueError("Processor is missing feature_extractor.")
@@ -316,9 +320,9 @@ async def _transcribe_long_audio_proper(model, processor, audio_data: np.ndarray
         
         logger.info(f"✓ Input features shape: {input_features.shape}")
         
-        if torch.cuda.is_available():
-            input_features = input_features.to(device)
-            logger.info(f"✓ Input on device: {input_features.device}")
+        # ✅ FIXED: Single .to(device) call - works for both CPU and GPU
+        input_features = input_features.to(device)
+        logger.info(f"✓ Input on device: {input_features.device}")
         
         forced_decoder_ids = None
         if language:
@@ -382,6 +386,9 @@ async def _transcribe_parallel_chunks(transcriber, audio: np.ndarray, language: 
         
         all_results = []
         
+        # Check if model is actually on GPU
+        is_on_gpu = next(transcriber.model.parameters()).is_cuda
+        
         for i in range(0, total_chunks, max_parallel):
             batch_end = min(i + max_parallel, total_chunks)
             batch_chunks = chunks[i:batch_end]
@@ -389,7 +396,8 @@ async def _transcribe_parallel_chunks(transcriber, audio: np.ndarray, language: 
             
             logger.info(f"Processing batch: chunks {i+1}-{batch_end}/{total_chunks} ({batch_size} parallel)")
             
-            if torch.cuda.is_available():
+            # Only log GPU memory if model is actually on GPU
+            if is_on_gpu and torch.cuda.is_available():
                 memory_before = torch.cuda.memory_allocated() / 1024**3
                 logger.info(f"GPU memory before batch: {memory_before:.2f}GB")
             
@@ -401,7 +409,8 @@ async def _transcribe_parallel_chunks(transcriber, audio: np.ndarray, language: 
             batch_results = await asyncio.gather(*tasks)
             all_results.extend(batch_results)
             
-            if torch.cuda.is_available():
+            # Only clear cache and log if model is on GPU
+            if is_on_gpu and torch.cuda.is_available():
                 torch.cuda.empty_cache()
                 memory_after = torch.cuda.memory_allocated() / 1024**3
                 logger.info(f"GPU memory after batch: {memory_after:.2f}GB")
@@ -664,6 +673,257 @@ async def transcribe(
         # ============================================
         transcription_queue.release(job_id)
 
+# Add this endpoint after the main /transcribe endpoint
+
+@app.post("/transcribe-cpu")
+async def transcribe_cpu(
+    AudioFile: UploadFile = File(...), 
+    language: Optional[str] = None,
+    method: str = Query("auto", description="auto|proper|parallel|sequential"),
+    max_parallel: int = Query(2, ge=1, le=4, description="Max parallel chunks (1-4)")
+):
+    """
+    Force CPU-only transcription (for testing/comparison)
+    Copies the GPU model to CPU temporarily
+    """
+    global device, model, processor
+    
+    # Generate unique job ID
+    job_id = str(uuid.uuid4())[:8]
+    
+    # Validate file
+    if not AudioFile.filename:
+        raise HTTPException(status_code=400, detail="No filename")
+    
+    allowed_extensions = {'.wav', '.flac', '.mp3', '.m4a', '.aac'}
+    file_ext = os.path.splitext(AudioFile.filename)[1].lower()
+    if file_ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"Unsupported format")
+    
+    # Read file
+    content = await AudioFile.read()
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Empty file")
+    
+    # Convert if needed
+    if file_ext not in {'.wav', '.flac'}:
+        logger.info(f"Converting {file_ext} to WAV...")
+        try:
+            content = await converter.convert_async(
+                content, 
+                file_ext[1:],
+                method='pydub'
+            )   
+            logger.info(f"✓ Converted to WAV: {len(content)} bytes")
+        except Exception as conv_error:
+            logger.error(f"Conversion failed: {conv_error}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot convert {file_ext} to WAV. Ensure ffmpeg is installed."
+            )
+    
+    # Acquire lock
+    await transcription_queue.acquire(job_id, AudioFile.filename)
+    
+    # Save original device state
+    original_device = device
+    cuda_was_available = torch.cuda.is_available()
+    cpu_transcriber = None
+    cpu_model = None
+    
+    try:
+        logger.info("🔵 CPU-ONLY MODE: Creating CPU-only pipeline...")
+        
+        # Load original model first
+        try:
+            current_transcriber, current_model, current_processor = load_model_optimized()
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Model loading failed: {str(e)}")
+        
+        if current_model is None:
+            raise HTTPException(status_code=503, detail="Model not available")
+        
+        # COPY GPU MODEL TO CPU (no reloading!)
+        logger.info("Copying GPU model to CPU...")
+        
+        import copy
+        
+        # Create a CPU copy by moving to CPU
+        cpu_model = copy.deepcopy(current_model).to("cpu").to(torch.float32)
+        
+        logger.info("✓ CPU model copy created")
+        
+        # Create CPU pipeline using the CPU model
+        cpu_transcriber = pipeline(
+            "automatic-speech-recognition",
+            model=cpu_model,
+            tokenizer=current_processor.tokenizer,
+            feature_extractor=current_processor.feature_extractor,
+            torch_dtype=torch.float32,
+            device="cpu"
+        )
+        
+        logger.info("✓ CPU-only pipeline created")
+        
+        # Temporarily override global device
+        device = "cpu"
+        
+        logger.info(f"Processing: {AudioFile.filename} ({len(content)} bytes), method={method}, device=CPU")
+        
+        # Load audio
+        try:
+            audio_buffer = io.BytesIO(content)
+            audio, sr = librosa.load(audio_buffer, sr=16000, dtype=np.float32)
+            
+            if len(audio) == 0:
+                raise HTTPException(status_code=400, detail="Invalid audio")
+            
+            audio = librosa.util.normalize(audio)
+            audio_duration = len(audio) / sr
+            
+            logger.info(f"Audio: {audio_duration:.2f}s, Forced device: CPU")
+            
+        except Exception as audio_error:
+            logger.error(f"Audio processing error: {audio_error}")
+            raise HTTPException(status_code=400, detail=f"Audio failed: {str(audio_error)}")
+        
+        # START TRANSCRIPTION
+        start_time = time.time()
+        
+        with torch.no_grad():
+            try:
+                # Method selection (using CPU pipeline)
+                if method == "auto":
+                    if audio_duration > 30:
+                        try:
+                            result = await _transcribe_long_audio_proper(
+                                cpu_model, current_processor, audio, language
+                            )
+                            processing_method = "CPU: auto → proper (model.generate)"
+                        except Exception as proper_error:
+                            logger.warning(f"Proper failed, trying parallel: {proper_error}")
+                            result = await _transcribe_parallel_chunks(
+                                cpu_transcriber, audio, language, max_parallel
+                            )
+                            processing_method = "CPU: auto → parallel (fallback)"
+                    else:
+                        result = await _transcribe_short_audio(cpu_transcriber, audio, language)
+                        processing_method = "CPU: auto → pipeline (short)"
+                
+                elif method == "proper":
+                    result = await _transcribe_long_audio_proper(
+                        cpu_model, current_processor, audio, language
+                    )
+                    processing_method = "CPU: proper (model.generate - no chunks)"
+                
+                elif method == "parallel":
+                    result = await _transcribe_parallel_chunks(
+                        cpu_transcriber, audio, language, max_parallel
+                    )
+                    processing_method = f"CPU: parallel ({max_parallel} chunks at once)"
+                
+                elif method == "sequential":
+                    result = await _transcribe_sequential_chunks(
+                        cpu_transcriber, audio, language
+                    )
+                    processing_method = "CPU: sequential (1 chunk at a time)"
+                
+                else:
+                    raise HTTPException(status_code=400, detail=f"Unknown method: {method}")
+                
+                # Extract text
+                if isinstance(result, dict):
+                    if 'chunks' in result and result['chunks']:
+                        output_text = ' '.join([c.get('text', '') for c in result['chunks']])
+                    elif 'text' in result:
+                        output_text = result['text']
+                    else:
+                        output_text = str(result)
+                else:
+                    output_text = str(result)
+                
+                if not output_text.strip():
+                    output_text = "No transcription"
+            
+            except Exception as transcribe_error:
+                logger.error(f"CPU Transcription error: {transcribe_error}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                
+                # Final fallback
+                try:
+                    logger.info("Final CPU fallback...")
+                    simple_result = cpu_transcriber(audio)
+                    output_text = simple_result.get('text', 'Failed') if isinstance(simple_result, dict) else str(simple_result)
+                    processing_method = "CPU: simple fallback"
+                except Exception as fallback_error:
+                    logger.error(f"All CPU methods failed: {fallback_error}")
+                    raise HTTPException(status_code=500, detail=f"CPU Transcription failed: {str(transcribe_error)}")
+        
+        end_time = time.time()
+        total_time = end_time - start_time
+        
+        # Response
+        response_data = {
+            "JobID": job_id,
+            "Transcript": output_text.strip(),
+            "DurationSeconds": audio_duration,
+            "ProcessingTimeSeconds": total_time,
+            "RealTimeFactor": total_time / audio_duration if audio_duration > 0 else 0,
+            "FileSizeBytes": len(content),
+            "AudioShape": list(audio.shape),
+            "SampleRate": sr,
+            "ModelUsed": getattr(cpu_model, 'name_or_path', 'unknown'),
+            "DeviceUsed": "cpu (forced)",
+            "ProcessingMethod": processing_method,
+            "MemoryInfo": None,
+            "Note": "CPU-only mode (deepcopy to CPU)",
+            "OriginalDeviceAvailable": "cuda" if cuda_was_available else "cpu"
+        }
+        
+        # Add extra info
+        if isinstance(result, dict):
+            if "chunks_processed" in result:
+                response_data["ChunksProcessed"] = result["chunks_processed"]
+            if "parallel_batches" in result:
+                response_data["ParallelBatches"] = result["parallel_batches"]
+        
+        return response_data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected CPU error: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"CPU Internal error: {str(e)}")
+    
+    finally:
+        # Restore original device
+        device = original_device
+        
+        # Cleanup CPU-only objects
+        if cpu_model is not None:
+            try:
+                del cpu_model
+                logger.info("✓ CPU model cleaned up")
+            except Exception as e:
+                logger.warning(f"CPU model cleanup error: {e}")
+        
+        if cpu_transcriber is not None:
+            try:
+                del cpu_transcriber
+                logger.info("✓ CPU transcriber cleaned up")
+            except Exception as e:
+                logger.warning(f"CPU transcriber cleanup error: {e}")
+        
+        # Force garbage collection
+        gc.collect()
+        
+        # Release lock
+        transcription_queue.release(job_id)
+        
+        logger.info(f"✓ CPU test complete, device restored to: {device}")
 
 # ============================================
 # OTHER ENDPOINTS (unchanged)

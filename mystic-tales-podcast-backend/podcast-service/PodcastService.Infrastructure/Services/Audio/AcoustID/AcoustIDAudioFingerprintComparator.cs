@@ -1,12 +1,7 @@
 using Microsoft.Extensions.Logging;
-using AcoustID;
-using AcoustID.Chromaprint;
 using NAudio.Wave;
-using PodcastService.Infrastructure.Models.Audio;
-using NAudio.MediaFoundation;
-using System.Security.Cryptography;
+using PodcastService.Infrastructure.Configurations.Audio.AcoustID.interfaces;
 using PodcastService.Infrastructure.Models.Audio.AcoustID;
-using System.Numerics;
 using System.Diagnostics;
 
 namespace PodcastService.Infrastructure.Services.Audio.AcoustID
@@ -14,10 +9,12 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
     public class AcoustIDAudioFingerprintComparator : IDisposable
     {
         private readonly ILogger<AcoustIDAudioFingerprintComparator> _logger;
+        private readonly IAcoustIDFingerprintComparisonConfig _acoustIDFingerprintComparisonConfig;
 
-        public AcoustIDAudioFingerprintComparator(ILogger<AcoustIDAudioFingerprintComparator> logger)
+        public AcoustIDAudioFingerprintComparator(ILogger<AcoustIDAudioFingerprintComparator> logger, IAcoustIDFingerprintComparisonConfig acoustIDFingerprintComparisonConfig)
         {
             _logger = logger;
+            _acoustIDFingerprintComparisonConfig = acoustIDFingerprintComparisonConfig;
         }
 
         /// <summary>
@@ -187,7 +184,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             Console.WriteLine($"Fingerprint lengths: target={targetFingerprint.Length}, candidate={candidateFingerprint.Length}, ratio={lengthRatio:F2}");
 
             // OPTIMIZATION 1: Chỉ skip khi candidate ngắn hơn target quá nhiều (không hợp lý)
-            if (candidateFingerprint.Length < targetFingerprint.Length && lengthRatio > 1.4f) // 1.3f=30%, 1.4f=40%
+            if (candidateFingerprint.Length < targetFingerprint.Length && lengthRatio > _acoustIDFingerprintComparisonConfig.MaxLengthRatioThreshold)
             {
                 _logger.LogDebug($"OPTIMIZATION 1: Candidate too short ({candidateFingerprint.Length} vs {targetFingerprint.Length}, ratio={lengthRatio:F2}), returning 0%");
                 return 0f;
@@ -198,7 +195,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             // 1. PRIORITY: Exact subsequence matching (cho audio clips)
             var subsequenceMatch = CalculateChromaprintSubsequenceMatch(fingerprint1, fingerprint2);
             Console.WriteLine($"\n\n ==> Final SubsequenceMatch: {subsequenceMatch:F2}%");
-            if (subsequenceMatch >= 95f)
+            if (subsequenceMatch >= _acoustIDFingerprintComparisonConfig.SubsequenceMatchThreshold)
             {
                 _logger.LogDebug($"Found exact Chromaprint subsequence match: {subsequenceMatch:F2}%");
                 return Math.Min(100f, subsequenceMatch);
@@ -247,7 +244,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
 
             if (shorter.Length == 0) return 0f;
 
-            const int BIT_TOLERANCE = 5; // Allow n-bit differences per uint32, BIT_TOLERANCE càng thấp càng chặt (0=exact match, 1=very strict, 3=moderate, 5=loose)
+            int BIT_TOLERANCE = _acoustIDFingerprintComparisonConfig.SubsequenceBitTolerance; // Allow n-bit differences per uint32, BIT_TOLERANCE càng thấp càng chặt (0=exact match, 1=very strict, 3=moderate, 5=loose)
             float bestMatchScore = 0f;
             int bestMatchPosition = -1;
 
@@ -294,7 +291,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                 float matchScore = ((float)tolerantMatches / shorter.Length) * 100f;
 
                 // Enhanced: Apply integrated validation for promising matches
-                if (matchScore >= 50f && matchScore < 95f)
+                if (matchScore >= _acoustIDFingerprintComparisonConfig.EnhancedValidationMinThreshold && matchScore < _acoustIDFingerprintComparisonConfig.EnhancedValidationMaxThreshold)
                 {
                     // Extract matching segments for validation
                     var shorterSegment = shorter;
@@ -307,7 +304,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                     float crossCorrScore = CalculateChromaprintCrossCorrelation(shorterSegment, longerSegment);
 
                     // Weighted combination: base (60%), hamming (25%), crosscorr (15%)
-                    float enhancedScore = (matchScore * 0.6f) + (hammingScore * 0.25f) + (crossCorrScore * 0.15f);
+                    float enhancedScore = (matchScore * _acoustIDFingerprintComparisonConfig.SubsequenceBaseWeight) + (hammingScore * _acoustIDFingerprintComparisonConfig.SubsequenceHammingWeight) + (crossCorrScore * _acoustIDFingerprintComparisonConfig.SubsequenceCrossCorrelationWeight);
 
                     _logger.LogDebug($"Enhanced validation at pos {i}: Base={matchScore:F2}%, Hamming={hammingScore:F2}%, CrossCorr={crossCorrScore:F2}%, Enhanced={enhancedScore:F2}%");
 
@@ -329,13 +326,13 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             }
 
             // Nếu tìm thấy match > 85% với tolerance
-            if (bestMatchScore >= 85f)
+            if (bestMatchScore >= _acoustIDFingerprintComparisonConfig.HighQualityMatchThreshold)
             {
                 _logger.LogDebug($"Found high-quality Chromaprint subsequence match: {bestMatchScore:F2}% at position {bestMatchPosition}");
 
                 // Bonus cho high-coverage matches
                 float coverage = ((float)shorter.Length / longer.Length);
-                float bonus = coverage * 10f; // Up to 10% bonus
+                float bonus = coverage * _acoustIDFingerprintComparisonConfig.CoverageBonusMultiplier; // Up to 10% bonus
 
                 return Math.Min(100f, bestMatchScore + bonus);
             }
@@ -354,7 +351,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             var shorter = fingerprint1.Length <= fingerprint2.Length ? fingerprint1 : fingerprint2;
             var longer = fingerprint1.Length > fingerprint2.Length ? fingerprint1 : fingerprint2;
 
-            if (shorter.Length < 4) return CalculateSimpleHamming(fingerprint1, fingerprint2);
+            if (shorter.Length < _acoustIDFingerprintComparisonConfig.MinimumWindowSize) return CalculateSimpleHamming(fingerprint1, fingerprint2);
 
             float maxSimilarity = 0f;
 
@@ -367,13 +364,10 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             // }.Where(s => s >= 4).ToArray();
 
             // Multiple window sizes: 100%, 80%, 60%, 40%, 20%
-            var windowSizes = new[] {
-                shorter.Length,             // 100%
-                shorter.Length * 4/5,       // 80%
-                shorter.Length * 3/5,       // 60%
-                shorter.Length * 2/5,       // 40%
-                shorter.Length / 5          // 20%
-            }.Where(s => s >= 4).ToArray();
+            var windowSizes = _acoustIDFingerprintComparisonConfig.WindowSizeRatios
+                .Select(ratio => (int)(shorter.Length * ratio))
+                .Where(s => s >= _acoustIDFingerprintComparisonConfig.MinimumWindowSize)
+                .ToArray();
 
 
             // Multiple window sizes: 100%, 95%, 90%, 85%, 80%
@@ -406,8 +400,8 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                 // /100, /50 → 85% accuracy
                 // /200, /100 → 90% accuracy
 
-                int stepLonger = Math.Max(1, maxPositionsLonger / 50);   // Max loop positions trên longer
-                int stepShorter = Math.Max(1, maxPositionsShorter / 25); // Max loop positions trên shorter
+                int stepLonger = Math.Max(1, maxPositionsLonger / _acoustIDFingerprintComparisonConfig.LongerStepDivisor);   // Max loop positions trên longer
+                int stepShorter = Math.Max(1, maxPositionsShorter / _acoustIDFingerprintComparisonConfig.ShorterStepDivisor); // Max loop positions trên shorter
 
                 // Console.WriteLine($"Step sizes: longer={stepLonger} (checking {maxPositionsLonger / stepLonger} positions), shorter={stepShorter} (checking {maxPositionsShorter / stepShorter} positions)");
 
@@ -436,7 +430,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                         float crossCorrScore = CalculateChromaprintCrossCorrelation(longerWindow, shorterWindow);
 
                         // Weighted combination: base (65%), hamming (20%), crosscorr (15%)
-                        float enhancedSimilarity = (adjustedSimilarity * 0.65f) + (hammingScore * coverage * 0.20f) + (crossCorrScore * coverage * 0.15f);
+                        float enhancedSimilarity = (adjustedSimilarity * _acoustIDFingerprintComparisonConfig.SlidingWindowBaseWeight) + (hammingScore * coverage * _acoustIDFingerprintComparisonConfig.SlidingWindowHammingWeight) + (crossCorrScore * coverage * _acoustIDFingerprintComparisonConfig.SlidingWindowCrossCorrelationWeight);
 
                         // Console.WriteLine($"Enhanced sliding validation at [{i},{j}] win={windowSize}: Base={adjustedSimilarity:F2}%, Hamming={hammingScore:F2}%, CrossCorr={crossCorrScore:F2}%, Enhanced={enhancedSimilarity:F2}%");
 
@@ -465,7 +459,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
         {
             if (window1.Length != window2.Length) return 0f;
 
-            const int BIT_TOLERANCE = 3;
+            int BIT_TOLERANCE = _acoustIDFingerprintComparisonConfig.WindowBitTolerance;
             float totalScore = 0f;
 
             for (int i = 0; i < window1.Length; i++)
@@ -481,11 +475,11 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
 
                     if (bitDiff <= BIT_TOLERANCE)
                     {
-                        totalScore += 0.95f;
+                        totalScore += _acoustIDFingerprintComparisonConfig.TolerantMatchScore;
                     }
-                    else if (bitDiff <= 6)
+                    else if (bitDiff <= _acoustIDFingerprintComparisonConfig.WindowSecondaryBitDiffThreshold)
                     {
-                        totalScore += Math.Max(0f, 0.8f - (bitDiff * 0.08f));
+                        totalScore += Math.Max(0f, _acoustIDFingerprintComparisonConfig.SecondaryMatchBaseScore - (bitDiff * _acoustIDFingerprintComparisonConfig.SecondaryMatchDecayRate));
                     }
                 }
             }
@@ -503,9 +497,9 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                 return CalculateCrossArrayHamming(fingerprint1, fingerprint2);
 
             // Ignore least significant bits (noise-prone)
-            const uint MASK = 0xFFFFFFF0; // Ignore 4 LSBs (Lọc noise)
+            uint MASK = _acoustIDFingerprintComparisonConfig.HammingDistanceMask; // Ignore 4 LSBs (Lọc noise)
 
-            int totalBits = fingerprint1.Length * 28; // 28 bits per uint (after masking)
+            int totalBits = fingerprint1.Length * _acoustIDFingerprintComparisonConfig.MaskedBitsPerUint; // 28 bits per uint (after masking)
             int matchingBits = 0;
 
             for (int i = 0; i < fingerprint1.Length; i++)
@@ -514,7 +508,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                 uint masked2 = fingerprint2[i] & MASK;
                 uint xorResult = masked1 ^ masked2;
 
-                matchingBits += 28 - CountSetBits(xorResult);
+                matchingBits += _acoustIDFingerprintComparisonConfig.MaskedBitsPerUint - CountSetBits(xorResult);
             }
             return ((float)matchingBits / totalBits) * 100f;
         }
@@ -527,10 +521,10 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             var shorter = fingerprint1.Length <= fingerprint2.Length ? fingerprint1 : fingerprint2;
             var longer = fingerprint1.Length > fingerprint2.Length ? fingerprint1 : fingerprint2;
 
-            if (shorter.Length < 8) return 0f;
+            if (shorter.Length < _acoustIDFingerprintComparisonConfig.MinimumCorrelationLength) return 0f;
 
             float maxCorrelation = 0f;
-            int searchRange = Math.Min(longer.Length - shorter.Length + 1, 50);
+            int searchRange = Math.Min(longer.Length - shorter.Length + 1,  _acoustIDFingerprintComparisonConfig.MaxCrossCorrelationSearchRange);
 
             for (int offset = 0; offset < searchRange; offset++)
             {
@@ -540,11 +534,11 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                 for (int i = 0; i < shorter.Length; i++)
                 {
                     // Weighted correlation - center samples have higher weight
-                    float weight = 1.0f;
-                    if (shorter.Length > 16)
+                    float weight = _acoustIDFingerprintComparisonConfig.DefaultCorrelationWeight;
+                    if (shorter.Length > _acoustIDFingerprintComparisonConfig.CenterWeightThresholdLength)
                     {
                         float centerDistance = Math.Abs(i - shorter.Length / 2f) / (shorter.Length / 2f);
-                        weight = 1.0f - 0.3f * centerDistance;
+                        weight = _acoustIDFingerprintComparisonConfig.DefaultCorrelationWeight - _acoustIDFingerprintComparisonConfig.CenterDistanceWeightFactor * centerDistance;
                     }
 
                     uint val1 = shorter[i];
@@ -558,7 +552,7 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
                     {
                         uint xor = val1 ^ val2;
                         int bitDiff = CountSetBits(xor);
-                        float bitSimilarity = Math.Max(0f, 1f - (bitDiff / 32f));
+                        float bitSimilarity = Math.Max(0f, 1f - (bitDiff / (float)_acoustIDFingerprintComparisonConfig.BitsPerUint));
                         correlation += weight * bitSimilarity;
                     }
 
@@ -585,12 +579,12 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
             for (int offset = 0; offset <= longer.Length - shorter.Length; offset++)
             {
                 int matchingBits = 0;
-                int totalBits = shorter.Length * 32;
+                int totalBits = shorter.Length * _acoustIDFingerprintComparisonConfig.BitsPerUint;
 
                 for (int i = 0; i < shorter.Length; i++)
                 {
                     uint xorResult = shorter[i] ^ longer[offset + i];
-                    matchingBits += 32 - CountSetBits(xorResult);
+                    matchingBits += _acoustIDFingerprintComparisonConfig.BitsPerUint - CountSetBits(xorResult);
                 }
 
                 float similarity = ((float)matchingBits / totalBits) * 100f;
@@ -613,12 +607,12 @@ namespace PodcastService.Infrastructure.Services.Audio.AcoustID
 
             int minLength = Math.Min(fingerprint1.Length, fingerprint2.Length);
             int matchingBits = 0;
-            int totalBits = minLength * 32;
+            int totalBits = minLength * _acoustIDFingerprintComparisonConfig.BitsPerUint;
 
             for (int i = 0; i < minLength; i++)
             {
                 uint xorResult = fingerprint1[i] ^ fingerprint2[i];
-                matchingBits += 32 - CountSetBits(xorResult);
+                matchingBits += _acoustIDFingerprintComparisonConfig.BitsPerUint - CountSetBits(xorResult);
             }
 
             return ((float)matchingBits / totalBits) * 100f;

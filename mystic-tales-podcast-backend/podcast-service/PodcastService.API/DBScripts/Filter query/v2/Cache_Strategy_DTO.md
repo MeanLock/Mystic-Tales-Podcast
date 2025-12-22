@@ -215,7 +215,7 @@ HSET query:metric:podcaster:temporal_7d_max LastUpdated "2025-11-08T00:00:00Z"
 ```redis
 SET query:metric:system_preferences:temporal_30d '{"ListenedPodcastCategories":[...],"ListenedPodcasters":[...],"LastUpdated":"2025-11-08T00:00:00Z"}'
 
-SETEX query:metric:user_preferences:temporal_30d 7200 '{"UserId":123,"ListenedPodcastCategories":[...],"ListenedPodcasters":[...],"LastUpdated":"2025-11-08T00:00:00Z"}'
+SET query:metric:user_preferences:temporal_30d 7200 '{"UserId":123,"ListenedPodcastCategories":[...],"ListenedPodcasters":[...],"LastUpdated":"2025-11-08T00:00:00Z"}'
 ```
 
 ---

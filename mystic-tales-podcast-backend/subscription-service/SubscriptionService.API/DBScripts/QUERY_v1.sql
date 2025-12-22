@@ -1,7 +1,7 @@
-select * from  podcastSubscription
+select * from  podcastSubscription where podcastShowId = N'89709a6a-11a3-4574-b94a-3ed61a0be627'
 select * from  PodcastSubscriptionBenefitMapping
 select * from  PodcastSubscriptionCycleTypePrice
-select * from  PodcastSubscriptionRegistration
+select * from  PodcastSubscriptionRegistration where accountId = 1012
 
 Drop table PodcastSubscriptionRegistrationBenefit
 Drop table PodcastSubscriptionRegistration
