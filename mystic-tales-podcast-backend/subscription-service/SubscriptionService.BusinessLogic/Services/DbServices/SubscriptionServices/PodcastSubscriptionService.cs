@@ -3797,7 +3797,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                         })
                         .FirstOrDefaultAsync();
                     } 
-                    else
+                    if(result == null)
                     {
                         result = await _podcastSubscriptionGenericRepository.FindAll()
                         .Include(psr => psr.PodcastSubscriptionBenefitMappings)
