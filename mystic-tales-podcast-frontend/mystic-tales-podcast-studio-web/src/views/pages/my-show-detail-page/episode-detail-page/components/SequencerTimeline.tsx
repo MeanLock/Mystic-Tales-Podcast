@@ -22,9 +22,10 @@ interface SequencerTimelineProps {
     playhead: number
     selectedClipId?: string | null
     onSelectClip?: (id: string) => void
+    onStopSegment?: () => void
 }
 
-export default function SequencerTimeline({ clips, setClips, pixelsPerSecond, rowH, totalLengthSec, playhead, selectedClipId, onSelectClip }: SequencerTimelineProps) {
+export default function SequencerTimeline({ clips, setClips, pixelsPerSecond, rowH, totalLengthSec, playhead, selectedClipId, onSelectClip, onStopSegment }: SequencerTimelineProps) {
     const totalWidth = Math.max(Math.ceil(totalLengthSec * pixelsPerSecond), 100) // Minimum 1200px cho full width
 
     return (
@@ -53,7 +54,7 @@ export default function SequencerTimeline({ clips, setClips, pixelsPerSecond, ro
                         setClips={setClips}
                         selectedClipId={selectedClipId}
                         onSelectClip={() => onSelectClip?.(clip.id)}
-                    />
+                        onStopSegment={onStopSegment} />
                 ))}
 
                 {/* Playhead */}

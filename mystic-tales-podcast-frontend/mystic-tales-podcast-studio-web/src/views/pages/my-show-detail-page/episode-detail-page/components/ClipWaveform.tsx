@@ -68,6 +68,9 @@ export function ClipWaveform({ clip, width, height, dragHandle, isOriginal, onDe
 
     const onInnerMouseDown = (e: React.MouseEvent) => {
         if (isOriginal) return
+         if (isSegmentPlaying) {
+        onStopSegment?.()
+    }
         isDraggingRef.current = true
         lastXRef.current = e.clientX
         // Ngăn drag container RND khi đang kéo nội bộ waveform
@@ -131,7 +134,7 @@ export function ClipWaveform({ clip, width, height, dragHandle, isOriginal, onDe
                 </div>
 
                 <div className="truncate flex items-center gap-2">
-                    {!isOriginal && (
+                    {/* {!isOriginal && (
                         <>
                             <IconButton
                                 onClick={handlePlayPauseSegment}
@@ -159,7 +162,7 @@ export function ClipWaveform({ clip, width, height, dragHandle, isOriginal, onDe
                                 <Delete />
                             </IconButton>
                         </>
-                    )}
+                    )} */}
                     <div className="text-slate-400">{secondsToTime(visibleDur)}</div>
 
                 </div>
