@@ -7,9 +7,10 @@ import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { ShowInfoViewContext } from './show-info';
-import { renderDescriptionHTML } from '@/core/utils/htmlRender.utils';
+import { getTruncatedDescription, renderDescriptionHTML } from '@/core/utils/htmlRender.utils';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/rootReducer';
+import Loading from '@/views/components/common/loading';
 
 
 interface ShowAssignableChannel {
@@ -85,7 +86,14 @@ const AssignChannelModal = ({ onclose }: { onclose: () => void }) => {
     useEffect(() => {
         fetchShowAssignableChannels();
     }, [id]);
+if(context.channel===null){
+     return (
+                <div className="flex justify-center items-center h-100">
+                    <Loading />
+                </div>
+            );
 
+}
     return (
         <div className="assign-channel-modal">
             <div className="assign-channel-modal__header">
@@ -183,7 +191,7 @@ const AssignChannelModal = ({ onclose }: { onclose: () => void }) => {
                                     <div className="assign-channel-modal__option-content">
                                         <h3 className="assign-channel-modal__option-title">{channel.Name}</h3>
                                         <p className="assign-channel-modal__option-description">
-                                            {renderDescriptionHTML(channel.Description) || 'No description available'}
+                                            {getTruncatedDescription(channel.Description || "", 100)}
                                         </p>
                                     </div>
                                     <div className="assign-channel-modal__option-arrow">→</div>

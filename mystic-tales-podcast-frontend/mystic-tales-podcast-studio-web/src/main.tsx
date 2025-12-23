@@ -12,7 +12,10 @@ import queryClient from "@/lib/query";
 import { ThemeProvider } from "@mui/material";
 import theme from "./views/components/common/mui-ui/theme";
 import "./index.css";
+import { StyledEngineProvider } from '@mui/material/styles';
 import "./index.scss";
+import 'quill/dist/quill.snow.css';
+
 ModuleRegistry.registerModules([AllCommunityModule]);
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -25,7 +28,9 @@ createRoot(document.getElementById("root")!).render(
             }
           >
             <QueryClientProvider client={queryClient}>
+              <StyledEngineProvider injectFirst>
               <App />
+              </StyledEngineProvider>
             </QueryClientProvider>
           </GoogleOAuthProvider>
         </PersistGate>

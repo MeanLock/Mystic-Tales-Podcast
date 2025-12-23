@@ -1,8 +1,9 @@
 import { fetchImage, handleImgError } from '@/core/utils/image.util';
 import { Favorite, PersonAdd, PlayArrow } from '@mui/icons-material';
 import { Card, CardContent, CardMedia, Chip, Skeleton, Typography } from '@mui/material';
-import { FC, useEffect, useState } from 'react';
+import { FC, use, useEffect, useState } from 'react';
 import notfound from "../../../../assets/notfound.png"
+import { Link, useNavigate } from 'react-router-dom';
 const ShowCard: FC<{ show: any }> = ({ show }) => {
     const [imageUrl, setImageUrl] = useState<string>("");
     useEffect(() => {
@@ -17,16 +18,19 @@ const ShowCard: FC<{ show: any }> = ({ show }) => {
         })();
         return () => { alive = false; };
     }, [show.MainImageFileKey]);
-
+  const handleCardClick = () => {
+        const baseUrl = window.location.origin;
+        window.open(`${baseUrl}/show/${show.Id}/overview`, '_blank');
+    };
+const navigate = useNavigate();
     return (
-        
-        <Card
-            key={show.Id}
+       <Link
             className="my-show-page__show-card"
-            onClick={() => {
-                window.open(`/show/${show.Id}/overview`);
-            }}
-        >
+            to={`/show/${show.Id}/overview`}
+            target="_blank"
+            rel="noopener noreferrer"
+        > 
+
             <div className="my-show-page__show-image-container relative">
                 <CardMedia
                     component="img"
@@ -66,7 +70,7 @@ const ShowCard: FC<{ show: any }> = ({ show }) => {
                     />
                 </div>
             </CardContent>
-        </Card>
+</Link>  
     );
 };
 

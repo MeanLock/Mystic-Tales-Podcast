@@ -205,6 +205,9 @@ const state_creator = (table: any[], navigate?: (path: string) => void) => {
                 cellClass: 'd-flex align-items-center justify-content-center',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 flex: 1.1,
+                valueGetter: (params: any) => {
+                    return params.data?.CurrentStatus?.Name?.trim() || '';
+                },
                 cellRenderer: (params: any) => {
                     const status = params.data?.CurrentStatus?.Name || '';
                     let color = '#888';

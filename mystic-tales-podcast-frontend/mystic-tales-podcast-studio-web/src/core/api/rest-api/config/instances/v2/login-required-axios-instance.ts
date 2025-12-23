@@ -16,7 +16,7 @@ const loginRequiredAxiosInstance = axios.create({
 loginRequiredAxiosInstance.interceptors.request.use(
   async (config) => {
     const token = LocalStorageUtil.getAuthTokenFromPersistLocalStorage();
-    console.log("Token in interceptor:", token);
+    // console.log("Token in interceptor:", token);
     if (token) {
       if (JwtUtil.isTokenValid(token) === false) {
 

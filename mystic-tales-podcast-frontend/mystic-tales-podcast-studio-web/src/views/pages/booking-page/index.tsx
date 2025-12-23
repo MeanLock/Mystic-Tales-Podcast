@@ -79,7 +79,11 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                 field: "UpdatedAt",
                 cellStyle: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
-
+   comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    const dateA = new Date(nodeA.data.UpdatedAt).getTime();
+                    const dateB = new Date(nodeB.data.UpdatedAt).getTime();
+                    return dateA - dateB;
+                },
             },
 
             {
@@ -87,6 +91,9 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                 cellClass: 'd-flex align-items-center justify-content-center',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 flex: 1.1,
+                  valueGetter: (params: any) => {
+                    return params.data?.CurrentStatus?.Name?.trim() || '';
+                },
                 cellRenderer: (params: any) => {
                     const status = params.data?.CurrentStatus?.Name?.trim() || '';
                     let color = '#888';

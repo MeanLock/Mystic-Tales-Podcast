@@ -125,7 +125,7 @@ const RequirementFileDetailModal: React.FC<RequirementFileDetailModalProps> = ({
 
       {/* Detailed Requirements */}
       <Box>
-        <Typography sx={labelSx} >Detailed Requirements</Typography>
+        <Typography className="text-md" >Detailed Requirements</Typography>
         <Box
           sx={{
             "& h1, & h2, & h3": { fontSize: "0.95rem", fontWeight: 600, color: "var(--primary-green)", mt: 2, mb: 1 },
