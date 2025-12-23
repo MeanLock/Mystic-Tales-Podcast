@@ -1420,7 +1420,8 @@ namespace UserService.BusinessLogic.Services.DbServices.UserServices
                     Gender = accountFromDb.Gender,
                     Phone = accountFromDb.Phone,
                     PodcastListenSlot = accountFromDb.PodcastListenSlot,
-                    IsPodcaster = accountFromDb.RoleId == 1 && accountFromDb.PodcasterProfile != null && accountFromDb.PodcasterProfile.IsVerified == true ? true : false
+                    IsPodcaster = accountFromDb.RoleId == 1 && accountFromDb.PodcasterProfile != null && accountFromDb.PodcasterProfile.IsVerified == true ? true : false,
+                    IsPodcasterApplying = accountFromDb.RoleId == 1 && accountFromDb.PodcasterProfile != null && accountFromDb.PodcasterProfile.IsVerified == null ? true : false
                 };
             }
             catch (Exception ex)
