@@ -6,7 +6,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { ToastContainer } from "react-toastify";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import NormalLayout from "./layouts/normal/index.tsx";
 import HomePage from "./pages/normal/home/index.tsx";
 import FAQPage from "./pages/normal/faqs/index.tsx";
@@ -47,19 +47,19 @@ import EpisodeDetailsPage from "./pages/mediaPlayer/episodes/details/index.tsx";
 import AlertModal from "./components/alert/AlertModal.tsx";
 import AccountBalanceChangePage from "./pages/mediaPlayer/management/transaction/account-balance/index.tsx";
 import ProtectedRoute from "./route/ProtectedRoute.tsx";
+import RootRedirect from "./route/RootRedirect.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
-          {/* <ErrorModal /> */}
           <AlertModal />
           <BrowserRouter basename="/">
             <Routes>
               {/* 1️⃣ NORMAL LAYOUT */}
               <Route element={<NormalLayout />}>
-                <Route path="/" element={<Navigate to="/home" replace />} />
+                <Route path="/" element={<RootRedirect />} />
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/faqs" element={<FAQPage />} />
                 <Route path="/about" element={<AboutPage />} />

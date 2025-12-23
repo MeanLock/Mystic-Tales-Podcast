@@ -9,6 +9,8 @@ const PODCAST_PUBLIC_SOURCE_PREFIX_API =
   "/api/podcast-service/api/misc/public-source/get-file-url/";
 const CATEGORY_PUBLIC_SOURCE_PREFIX_API =
   "/api/podcast-service/api/categories/podcast-categories/get-file-url/";
+const WITHDRAWAL_RECEIPT_IMAGE_FILE_PREFIX_API =
+  "/api/transaction-service/api/account-balance-transactions/transfer-receipt-image/get-file-url/";
 
 interface GetFileUrlParams {
   fileKey: string;
@@ -16,7 +18,8 @@ interface GetFileUrlParams {
     | "AccountPublicSource"
     | "BookingPublicSource"
     | "PodcastPublicSource"
-    | "CategoryPublicSource";
+    | "CategoryPublicSource"
+    | "WithdrawalReceipt";
 }
 
 export const getPublisSourceFileUrl = async ({
@@ -36,6 +39,9 @@ export const getPublisSourceFileUrl = async ({
       break;
     case "CategoryPublicSource":
       url = `${CATEGORY_PUBLIC_SOURCE_PREFIX_API}${fileKey}`;
+      break;
+    case "WithdrawalReceipt":
+      url = `${WITHDRAWAL_RECEIPT_IMAGE_FILE_PREFIX_API}${fileKey}`;
       break;
     default:
       url = `${ACCOUNT_PUBLIC_SOURCE_PREFIX_API}${fileKey}`;
