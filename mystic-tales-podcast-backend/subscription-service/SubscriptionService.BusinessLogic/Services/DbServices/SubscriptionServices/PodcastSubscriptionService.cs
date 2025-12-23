@@ -3818,6 +3818,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                             CreatedAt = psr.CreatedAt,
                             UpdatedAt = psr.UpdatedAt,
                             PodcastSubscriptionCycleTypePriceList = psr.PodcastSubscriptionCycleTypePrices
+                            .Where(ctp => ctp.Version == psr.CurrentVersion)
                             .Select(ctp => new PodcastSubscriptionCycleTypePriceListItemResponseDTO
                             {
                                 PodcastSubscriptionId = ctp.PodcastSubscriptionId,
@@ -3834,6 +3835,7 @@ namespace SubscriptionService.BusinessLogic.Services.DbServices.SubscriptionServ
                                 UpdatedAt = ctp.UpdatedAt
                             }).ToList(),
                             PodcastSubscriptionBenefitMappingList = psr.PodcastSubscriptionBenefitMappings
+                            .Where(bm => bm.Version == psr.CurrentVersion)
                             .Select(bm => new PodcastSubscriptionBenefitMappingListItemResponseDTO
                             {
                                 PodcastSubscriptionId = bm.PodcastSubscriptionId,
