@@ -77,13 +77,31 @@ class GPUManager:
         memory_info = self.get_memory_info()
         return memory_info["memory_usage_percent"] < (self.memory_threshold * 100)
     
+    # @contextmanager
+    # def gpu_memory_cleanup(self):
+    #     """Context manager để cleanup GPU memory"""
+    #     try:
+    #         yield
+    #     finally:
+    #         if torch.cuda.is_available():
+    #             torch.cuda.empty_cache()
+    #             gc.collect()
+    #             logger.debug("GPU memory cleaned up")
     @contextmanager
     def gpu_memory_cleanup(self):
-        """Context manager để cleanup GPU memory"""
+        """Context manager for GPU memory cleanup - safe for CPU"""
         try:
-            yield
+            # ✅ Only cleanup GPU if available
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            yield  # Execute the code block
+            
         finally:
+            # ✅ Only cleanup GPU if available
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
                 gc.collect()
-                logger.debug("GPU memory cleaned up")
+            else:
+                # CPU - just gc
+                gc.collect()

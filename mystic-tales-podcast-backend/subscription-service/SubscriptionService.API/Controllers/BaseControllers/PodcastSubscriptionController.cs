@@ -436,7 +436,6 @@ namespace SubscriptionService.API.Controllers.BaseControllers
             });
         }
         [HttpGet("episodes/{PodcastEpisodeId}")]
-        [Authorize(Policy = "Customer.BasicAccess")]
         public async Task<IActionResult> GetPodcastSubscriptionByPodcastEpisodeId([FromRoute] Guid PodcastEpisodeId)
         {
             var podcastSubscription = await _podcastSubscriptionService.GetActivePodcastSubscriptionByPodcastEpisodeIdAsync(PodcastEpisodeId);

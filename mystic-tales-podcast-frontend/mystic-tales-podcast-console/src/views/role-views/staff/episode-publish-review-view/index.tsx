@@ -45,18 +45,23 @@ const state_creator = (table: any[], navigate: any) => {
                 valueGetter: (params: any) => formatDate(params.data.Deadline),
 
             },
-            {
-                headerName: "Recent Updated",
-                field: "UpdatedAt",
-                flex: 0.5,
-                valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
-
+          {
+                headerName: "Created At",
+                field: "CreatedAt",
+                flex: 0.7,
+                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    const dateA = new Date(nodeA.data.CreatedAt).getTime();
+                    const dateB = new Date(nodeB.data.CreatedAt).getTime();
+                    return dateA - dateB;
+                },
             },
-              {
+            {
                 headerName: "Status",
                 cellClass: 'd-flex align-items-center justify-content-center',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 flex: 1.1,
+                valueGetter: (params: any) => params.data?.CurrentStatus?.Name.trim() || '',
                 cellRenderer: (params: any) => {
                     const status = params.data?.CurrentStatus?.Name || '';
                     let color = '#888';
@@ -64,19 +69,16 @@ const state_creator = (table: any[], navigate: any) => {
 
                     switch (status) {
                         case 'Pending Review':
-
                             color = '#ffb300';
-                            bg = 'rgba(255, 179, 0, 0.15)'; // vàng cam
+                            bg = 'rgba(255, 179, 0, 0.07)';
                             break;
-
                         case 'Accepted':
-                           color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)'; 
+                            color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)';
                             break;
 
                         case 'Discard':
                         case 'Rejected':
-                            color = '#ef5350';
-                            bg = 'rgba(239, 83, 80, 0.15)'; // đỏ
+                            color = '#ef5350'; bg = 'rgba(251, 222, 227, 0.2)';
                             break;
 
                         default:
@@ -96,7 +98,7 @@ const state_creator = (table: any[], navigate: any) => {
                                 color,
                                 background: bg,
                                 textAlign: 'center',
-                                border: `1.5px solid ${color}`,
+                                border: `2px solid ${color}`,
                             }}
                         >
                             {status === 'Podcast Buddy Cancel Request' ? 'Buddy Cancel Request' : status}

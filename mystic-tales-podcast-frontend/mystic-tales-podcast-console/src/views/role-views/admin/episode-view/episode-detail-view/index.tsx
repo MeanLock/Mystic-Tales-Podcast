@@ -195,10 +195,10 @@ const EpisodeDetailView = () => {
                     )}
 
                     {/* Audio Player Section */}
-                    {episodeDetail.AudioFileKey && episodeDetail.IsAudioPublishable && (
+                    {episodeDetail.AudioFileKey && (
                         <div className="episode-detail__section">
                             <Typography variant="h5" className="episode-detail__section-title">
-                                Audio Player
+                                Audio 
                             </Typography>
                             <SmartAudioPlayer
                                 audioId={episodeDetail.AudioFileKey}

@@ -116,11 +116,12 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
 
       await startPolling(sagaId, adminAxiosInstance, {
         onSuccess: () => {
-          toast.success(`Set violation level successfully`)
-          setShowResolvePopup(false)
-          setViolationLevel("")
+        
           onClose?.()
           context?.handleDataChange();
+            toast.success(`Set violation level successfully`)
+          setShowResolvePopup(false)
+          setViolationLevel("")
         },
         onFailure: (err: any) => toast.error(err || "Saga failed!"),
         onTimeout: () => toast.error("System not responding, please try again."),
@@ -311,7 +312,7 @@ const PodcasterProfileTab: FC<PodcasterProfileProps> = ({ account, active, onClo
       )}
 
       {showResolvePopup && (
-        <div className="resolve-popup-overlay" onClick={handleClosePopup}>
+        <div className="resolve-popup-overlay" >
           <div className="resolve-popup" onClick={(e) => e.stopPropagation()}>
             <div className="resolve-popup__header">
               <h4 className="resolve-popup__title">Update Violation Level</h4>

@@ -58,14 +58,14 @@ export async function pollSagaResult<T = unknown>(opts: {
       // Lỗi HTTP/Network trong lúc poll → trả về luôn cho gọn (tuỳ ý bạn muốn retry hay fail ngay)
       const kind: ApiErrorModel["kind"] =
         typeof res.error?.status === "number" ? "HTTP_ERROR" : "NETWORK_ERROR";
-      throw Object.assign(new Error("Saga result error"), {
+        throw Object.assign(new Error("Saga result error"), {
         kind,
         details: res.error,
       });
     }
 
     const env = res.data as SagaEnvelope;
-    console.log("Saga Result Nè: ", env.ResultData);
+    console.log("Saga Result: ", env.ResultData);
     if (env.FlowStatus === "SUCCESS") {
       const parsed = tryParse<T>(env.ResultData);
       console.log("Parsed Saga Result:", parsed);

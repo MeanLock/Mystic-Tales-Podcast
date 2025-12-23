@@ -16,6 +16,8 @@ using PodcastService.Infrastructure.Configurations.Kafka;
 using PodcastService.Infrastructure.Configurations.Audio.Hls.interfaces;
 using PodcastService.Infrastructure.Configurations.Audio.Hls;
 using PodcastService.Infrastructure.Configurations.Audio.Tuning;
+using PodcastService.Infrastructure.Configurations.Audio.AcoustID.interfaces;
+using PodcastService.Infrastructure.Configurations.Audio.AcoustID;
 
 namespace PodcastService.Infrastructure.Registrations
 {
@@ -62,7 +64,8 @@ namespace PodcastService.Infrastructure.Registrations
             // Audio
             services.AddSingleton<IHlsConfig, HlsConfig>();
             services.AddSingleton<IMoodConfig, MoodConfig>();
-            services.AddSingleton<IEqualizerConfig, EqualizerConfig>(); 
+            services.AddSingleton<IEqualizerConfig, EqualizerConfig>();
+            services.AddSingleton<IAcoustIDFingerprintComparisonConfig, AcoustIDFingerprintComparisonConfig>(); 
             
             return services;
         }

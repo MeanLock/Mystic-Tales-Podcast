@@ -1298,7 +1298,7 @@ namespace PodcastService.BusinessLogic.Services.DbServices.CachingServices
 
                 // ============ Bước 2: Xử lý từng user ============
                 var now = _dateHelper.GetNowByAppTimeZone();
-
+                var allUserMetrics = new List<UserPreferencesTemporal30dQueryMetric>();
                 foreach (var userId in distinctUserIds)
                 {
                     // Filter sessions của user này
@@ -1414,9 +1414,15 @@ namespace PodcastService.BusinessLogic.Services.DbServices.CachingServices
                     };
 
                     // Cache riêng cho từng user
-                    await _redisSharedCacheService.KeySetAsync(cacheKey, userMetric, TimeSpan.FromSeconds(cacheTTL ?? 86400));
-
+                    // await _redisSharedCacheService.KeySetAsync(cacheKey, userMetric, TimeSpan.FromSeconds(cacheTTL ?? 86400));
+                    allUserMetrics.Add(userMetric);
                 }
+                // Cache chung cho tất cả users
+                await _redisSharedCacheService.KeySetAsync(
+                    cacheKey,
+                    allUserMetrics,
+                    TimeSpan.FromSeconds(cacheTTL ?? 86400)
+                );
 
             }
             catch (Exception ex)

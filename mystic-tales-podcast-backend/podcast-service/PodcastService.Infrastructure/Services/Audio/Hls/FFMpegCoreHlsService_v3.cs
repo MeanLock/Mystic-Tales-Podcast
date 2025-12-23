@@ -366,7 +366,8 @@ namespace PodcastService.Infrastructure.Services.Audio.Hls
                 // ⭐ Use Process directly instead of FFMpegCore (wrapper has bugs)
                 var processStartInfo = new ProcessStartInfo
                 {
-                    FileName = string.IsNullOrEmpty(_hlsConfig.FfmpegPath) ? "ffmpeg" : _hlsConfig.FfmpegPath,
+                    // FileName = string.IsNullOrEmpty(_hlsConfig.FfmpegPath) ? "ffmpeg" : _hlsConfig.FfmpegPath,
+                    FileName = "ffmpeg",
                     Arguments = argumentString,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,

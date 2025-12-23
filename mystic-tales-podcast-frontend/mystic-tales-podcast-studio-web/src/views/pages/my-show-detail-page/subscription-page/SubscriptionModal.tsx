@@ -30,6 +30,7 @@ import { formatDate } from '@/core/utils/date.util';
 import { confirmAlert } from '@/core/utils/alert.util';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/rootReducer';
+import { useQuill } from 'react-quilljs';
 
 interface SubscriptionModalProps {
     subscription?: any;
@@ -84,7 +85,17 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
         name: '',
         description: '',
     });
-
+   const { quill, quillRef } = useQuill({
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                ['link'],
+                ['clean'],
+            ],
+        },
+        placeholder: 'Add description...'
+    });
     useEffect(() => {
         if (isUpdateMode && subscription) {
             fetchSubscriptionDetails(subscription.Id);
@@ -144,6 +155,31 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
             setFetchingDetails(false);
         }
     };
+
+    useEffect(() => {
+            if (!quill) return;
+            const serverHtml = formData?.description ?? '';
+            const currentHtml = quill.root.innerHTML;
+            if (serverHtml !== currentHtml) {
+                (quill.clipboard as any).dangerouslyPasteHTML(serverHtml);
+            }
+        }, [quill, formData?.description]);
+    
+        useEffect(() => {
+            if (!quill) return;
+            const onTextChange = (_delta: any, _oldDelta: any, source: 'user' | 'api') => {
+                if (source !== 'user') return;
+                const htmlContent = quill.root.innerHTML;
+                setFormData(prev => {
+                    if (!prev || prev.description === htmlContent) return prev;
+                    return { ...prev, description: htmlContent };
+                });
+            };
+            quill.on('text-change', onTextChange);
+            return () => {
+                quill.off?.('text-change', onTextChange);
+            };
+        }, [quill]);
 
     const handleAddCycleTypePrice = (cycleTypeId: number) => {
         if (!cycleTypePrices.find(p => p.SubscriptionCycleTypeId === cycleTypeId)) {
@@ -394,7 +430,7 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
                     }}
                 />
 
-                <TextField
+                {/* <TextField
                     label="Description"
                     fullWidth
                     multiline
@@ -412,7 +448,11 @@ const SubscriptionModal: FC<SubscriptionModalProps> = ({
                         '& .MuiInputLabel-root': { color: '#888' },
                         '& .MuiInputLabel-root.Mui-focused': { color: 'var(--primary-green)' }
                     }}
-                />
+                /> */}
+
+                     <div className="subscription-modal-content__description-editor">
+                    <div ref={quillRef} />
+                </div>
             </Box>
 
             <Divider sx={{ borderColor: '#333', mb: 3 }} />

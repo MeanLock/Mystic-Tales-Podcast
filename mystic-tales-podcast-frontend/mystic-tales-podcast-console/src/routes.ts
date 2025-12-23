@@ -9,6 +9,8 @@ const DMCA_Accusation_View = React.lazy(() => import('./views/role-views/admin/d
 const DMCA_Accusation_Detail_View = React.lazy(() => import('./views/role-views/admin/dmca-accusation-detail-view/index'))
 const SystemConfigView = React.lazy(() => import('./views/role-views/admin/system-config-view/index'))
 const Transaction_View = React.lazy(() => import('./views/role-views/admin/transaction-view/index'))
+const Booking_Holding_View = React.lazy(() => import('./views/role-views/admin/booking-holding-view/index'))
+const Subscription_Holding_View = React.lazy(() => import('./views/role-views/admin/subscription-holding-view/index'))
 const Background_Sound_View = React.lazy(() => import('./views/role-views/admin/background-sound-view/index'))
 
 const Admin_Episode_Publish_Review_View = React.lazy(() => import('./views/role-views/admin/episode-view/episode-publish-review-view/index'))
@@ -54,7 +56,10 @@ const routes = [
   { path: '/dmca-accusation/table', name: 'DMCA Accusation', element: DMCA_Accusation_View, role_id: [3] },
   { path: '/dmca-accusation/:id/:type', name: 'Detail', element: DMCA_Accusation_Detail_View, role_id: [3], parent: '/dmca-accusation/table' },
   { path: '/system-configuration', name: 'System Configuration', element: SystemConfigView, role_id: [3] },
-  { path: '/transactions/table', name: 'Transactions', element: Transaction_View, role_id: [3] },
+  { path: '/transactions/withdrawal', name: 'Transactions', element: Transaction_View, role_id: [3] },
+  { path: '/transactions/bookings/holding', name: 'Transactions', element: Booking_Holding_View, role_id: [3] },
+    { path: '/transactions/subscriptions/holding', name: 'Transactions', element: Subscription_Holding_View, role_id: [3] },
+
   { path: '/background-sound/table', name: 'Background Sound', element: Background_Sound_View, role_id: [3] },
   { path: '/episode/publish-review-sessions', name: 'Publish Review', element: Admin_Episode_Publish_Review_View, role_id: [3] },
   { path: '/episode/publish-review-sessions/:id', name: 'Publish Review Detail', element: Admin_Episode_Publish_Review_Detail_View, role_id: [3], parent: '/episode/publish-review-sessions' },

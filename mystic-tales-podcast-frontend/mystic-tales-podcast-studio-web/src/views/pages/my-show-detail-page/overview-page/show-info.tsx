@@ -671,6 +671,127 @@ const ShowInfo = () => {
 
                 <div className="show-info-page__content">
                     <div className="show-info-page__form">
+                        {/* Stats Cards Section */}
+                        <div className="show-info-page__stats-section">
+                            <div className="show-info-page__stat-card">
+                                <div className="show-info-page__stat-icon">👥</div>
+                                <div className="show-info-page__stat-content">
+                                    <div className="show-info-page__stat-label">Total Followers</div>
+                                    <div className="show-info-page__stat-value">{showDetail.TotalFollow}</div>
+                                </div>
+                            </div>
+                            <div className="show-info-page__stat-card">
+                                <div className="show-info-page__stat-icon">🎧</div>
+                                <div className="show-info-page__stat-content">
+                                    <div className="show-info-page__stat-label">Listen Count</div>
+                                    <div className="show-info-page__stat-value">{showDetail.ListenCount}</div>
+                                </div>
+                            </div>
+                            <div className="show-info-page__stat-card">
+                                <div className="show-info-page__stat-icon">⭐</div>
+                                <div className="show-info-page__stat-content">
+                                    <div className="show-info-page__stat-label">Rating Average</div>
+                                    <div className="show-info-page__stat-value">{showDetail.AverageRating}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Metadata Section with Glassmorphism */}
+                        <div className="show-info-page__metadata-section">
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem', mb: 0.5 }}>
+                                    Status
+                                </Typography>
+                                <Chip
+                                    label={showDetail.CurrentStatus.Name}
+                                    sx={{
+                                        background: showDetail.CurrentStatus.Id === 1 
+                                            ? 'rgba(255, 193, 7, 0.2)' 
+                                            : 'rgba(76, 175, 80, 0.2)',
+                                        backdropFilter: 'blur(10px)',
+                                        WebkitBackdropFilter: 'blur(10px)',
+                                        border: showDetail.CurrentStatus.Id === 1
+                                            ? '1px solid rgba(255, 193, 7, 0.3)'
+                                            : '1px solid rgba(76, 175, 80, 0.3)',
+                                        color: showDetail.CurrentStatus.Id === 1 ? '#FFC107' : '#4CAF50',
+                                        fontWeight: 700,
+                                        fontSize: '0.875rem',
+                                        height: '32px',
+                                        boxShadow: showDetail.CurrentStatus.Id === 1
+                                            ? '0 8px 32px rgba(255, 193, 7, 0.15)'
+                                            : '0 8px 32px rgba(76, 175, 80, 0.15)',
+                                        '& .MuiChip-label': {
+                                            padding: '0 12px',
+                                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                                        },
+                                    }}
+                                />
+                            </Box>
+
+                            <TextField
+                                variant="filled"
+                                slotProps={{
+                                    input: {
+                                        readOnly: true,
+                                    },
+                                }}
+                                label="Channel"
+                                value={showDetail.PodcastChannel?.Name || 'Single Show'}
+                                className="show-info-page__input-small"
+                            />
+
+                            {showDetail.ReleaseDate !== null && (
+                                <TextField
+                                    variant="filled"
+                                    slotProps={{
+                                        input: {
+                                            readOnly: true,
+                                        },
+                                    }}
+                                    label="Release Date"
+                                    value={formatDate(showDetail.ReleaseDate)}
+                                    className="show-info-page__input-small"
+                                />
+                            )}
+
+                            <TextField
+                                variant="filled"
+                                slotProps={{
+                                    input: {
+                                        readOnly: true,
+                                    },
+                                }}
+                                label="Is Released"
+                                value={showDetail.IsReleased ? 'Yes' : 'No'}
+                                className="show-info-page__input-small"
+                            />
+
+                            <TextField
+                                variant="filled"
+                                slotProps={{
+                                    input: {
+                                        readOnly: true,
+                                    },
+                                }}
+                                label="Created At"
+                                value={formatDate(showDetail.CreatedAt)}
+                                className="show-info-page__input-small"
+                            />
+
+                            <TextField
+                                variant="filled"
+                                slotProps={{
+                                    input: {
+                                        readOnly: true,
+                                    },
+                                }}
+                                label="Updated At"
+                                value={formatDate(showDetail.UpdatedAt)}
+                                className="show-info-page__input-small"
+                            />
+                        </div>
+
+                        {/* Editable Information Section */}
                         <div className="show-info-page__row">
                             <TextField
                                 label="Name"
@@ -686,29 +807,20 @@ const ShowInfo = () => {
                                     },
                                 }}
                             />
-
-                            <TextField
-                                id="filled-read-only-input"
+                              <TextField
                                 variant="filled"
                                 slotProps={{
                                     input: {
                                         readOnly: true,
                                     },
                                 }}
-                                label="Status"
-                                value={showDetail.CurrentStatus.Name}
-                                className="show-info-page__input show-info-page__input--status"
-
-                            />
-                        </div>
-                        <div className="show-info-page__row">
-                            <TextField
-                                id="filled-read-only-input"
-                                variant="filled"
                                 label="Channel"
                                 value={showDetail.PodcastChannel?.Name || 'Single Show'}
-                                className="show-info-page__input show-info-page__input--status"
+                                className="show-info-page__input--name"
                             />
+
+                        </div>
+                        <div className="show-info-page__row">
 
                             <TextField
                                 select
@@ -810,102 +922,6 @@ const ShowInfo = () => {
                                     </MenuItem>
                                 ))}
                             </TextField>
-                        </div>
-
-                        {/* Dates and Numbers Row */}
-                        <div className="show-info-page__row">
-                            {showDetail.ReleaseDate !== null && (
-                                <TextField
-                                    variant="filled"
-                                    slotProps={{
-                                        input: {
-                                            readOnly: true,
-                                        },
-                                    }}
-                                    label="Release Date"
-                                    value={formatDate(showDetail.ReleaseDate)}
-                                    className="show-info-page__input-small"
-
-                                />
-                            )}
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Is Released"
-                                value={showDetail.IsReleased ? 'Yes' : 'No'}
-                                className="show-info-page__input-small"
-
-                            />
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Created At"
-                                value={formatDate(showDetail.CreatedAt)}
-                                className="show-info-page__input-small"
-
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Updated At"
-                                value={formatDate(showDetail.UpdatedAt)}
-                                className="show-info-page__input-small"
-
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Total Followers"
-                                value={showDetail.TotalFollow}
-                                className="show-info-page__input-small"
-
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Listen Count"
-                                value={showDetail.ListenCount}
-                                className="show-info-page__input-small"
-
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Rating Average"
-                                value={`${showDetail.AverageRating} ⭐`}
-                                className="show-info-page__input-small"
-
-                            />
-
-
                         </div>
 
                         <TextField

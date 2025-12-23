@@ -38,43 +38,54 @@ const state_creator = (table: any[]) => {
             { headerName: "Episode", field: "PodcastEpisode.Name", flex: 0.8 },
             { headerName: "Episode Report Type", field: "PodcastEpisodeReportType.Name", flex: 0.8 },
             {
+                headerName: "Created At",
+                field: "CreatedAt",
+                flex: 0.5,
+                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    const dateA = new Date(nodeA.data.CreatedAt).getTime();
+                    const dateB = new Date(nodeB.data.CreatedAt).getTime();
+                    return dateA - dateB;
+                },
+            },
+            {
                 headerName: "Status",
                 cellClass: 'd-flex align-items-center',
                 flex: 0.7,
+                valueGetter: (params: { data: any }) => {
+                    if (params.data.ResolvedAt !== null && params.data.ResolvedAt !== "") return "Resolved";
+                    return "Unresolved";
+                },
                 cellRenderer: (params: { data: any }) => {
                     let status = {
                         title: '',
                         color: '',
+                        bg: ''
                     };
                     if (params.data.ResolvedAt !== null && params.data.ResolvedAt !== "") {
                         status = {
                             title: 'Resolved',
-                            color: 'success',
+                            color: 'var(--secondary-green)',
+                            bg: 'rgba(173, 227, 57, 0.06)'
                         };
                     } else {
                         status = {
                             title: 'Unresolved',
-                            color: 'warning',
+                            color: '#ffb300',
+                            bg: 'rgba(255, 179, 0, 0.07)'
                         };
                     }
                     return (
                         <CCard
-                            textColor={`${status.color}`}
-                            style={{ width: '100px' }}
-                            className={`text-center fw-bold rounded-pill px-1 border-2 border-${status.color} bg-light`}
+                            style={{ width: '100px', color: `${status.color}`, background: `${status.bg}`, border: `2px solid ${status.color}` }}
+                            className={`text-center fw-bold rounded-pill px-1 `}
                         >
                             {status.title}
                         </CCard>
                     );
                 },
             },
-            {
-                headerName: "Created At",
-                field: "CreatedAt",
-                flex: 0.5,
-                valueGetter: (params: any) => formatDate(params.data.CreatedAt),
 
-            },
         ],
         rowData: table
 

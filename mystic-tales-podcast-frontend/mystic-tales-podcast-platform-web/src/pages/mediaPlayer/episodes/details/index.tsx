@@ -1,4 +1,3 @@
-// @ts-nocheck
 import Loading from "@/components/loading";
 import {
   useGetEpisodeDetailsQuery,
@@ -14,6 +13,8 @@ import { LiquidButton } from "@/components/ui/shadcn-io/liquid-button";
 import AutoResolveImage from "@/components/fileResolving/AutoResolveImage";
 import { TimeUtil } from "@/core/utils/time";
 import { usePlayer } from "@/core/services/player/usePlayer";
+import { debouncePromise } from "@/core/utils/debouncePromise";
+import ActivityIndicator from "@/components/loader/ActivityIndicator";
 
 // Helper function to format duration
 const formatDuration = (seconds: number): string => {
@@ -133,13 +134,13 @@ const EpisodeDetailsPage = () => {
     }
   };
 
-  const handlePlayPause = async (audioId: string) => {
-    if (!audioId) return;
+  const handlePlayPause = async () => {
+    if (!episodeDetailsRaw || !episodeDetailsRaw.Episode.Id) return;
     const benefitList = await getBenefitList({
-      PodcastEpisodeId: audioId,
+      PodcastEpisodeId: episodeDetailsRaw.Episode.Id,
     }).unwrap();
     if (uiState.currentAudio) {
-      if (uiState.currentAudio.id === audioId) {
+      if (uiState.currentAudio.id === episodeDetailsRaw.Episode.Id) {
         if (uiState.isPlaying) {
           pause();
         } else {
@@ -147,19 +148,21 @@ const EpisodeDetailsPage = () => {
         }
       } else {
         playEpisodeFromSpecifyShow({
-          audioId: audioId,
+          audioId: episodeDetailsRaw.Episode.Id,
           benefitsList:
             benefitList.CurrentPodcastSubscriptionRegistrationBenefitList || [],
         });
       }
     } else {
       playEpisodeFromSpecifyShow({
-        audioId: audioId,
+        audioId: episodeDetailsRaw.Episode.Id,
         benefitsList:
           benefitList.CurrentPodcastSubscriptionRegistrationBenefitList || [],
       });
     }
   };
+
+  const debouncePlay = debouncePromise(handlePlayPause, 1000);
 
   if (isLoadingEpisodeDetails) {
     return (
@@ -220,24 +223,38 @@ const EpisodeDetailsPage = () => {
             <p className="text-mystic-green uppercase text-2xl leading-none">
               {episodeDetailsRaw?.Episode.Podcaster.FullName}
             </p>
+
             {/* Play button */}
-            {uiState.isPlaying &&
-            uiState.currentAudio &&
-            uiState.currentAudio.id === episodeDetailsRaw?.Episode.Id ? (
+            {uiState.isLoadingSession &&
+            uiState.loadingAudioId === episodeDetailsRaw.Episode.Id ? (
               <div
-                onClick={() => handlePlayPause(episodeDetailsRaw.Episode.Id)}
-                className="mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm"
+                className={`mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm cursor-not-allowed`}
               >
-                <IoPause size={20} color="#000" />
-                <p>Pause</p>
+                <ActivityIndicator size={20} color="#000" />
+                <p>Loading...</p>
               </div>
             ) : (
               <div
-                onClick={() => handlePlayPause(episodeDetailsRaw.Episode.Id)}
-                className="mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm"
+                onClick={() => debouncePlay()}
+                className={`mt-5 px-8 py-2 bg-mystic-green font-poppins font-semibold text-black rounded-full flex items-center justify-center gap-2 shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-sm ${
+                  uiState.isLoadingSession
+                    ? "cursor-not-allowed"
+                    : "cursor-pointer"
+                }`}
               >
-                <IoPlay size={20} color="#000" />
-                <p>Play</p>
+                {uiState.isPlaying &&
+                uiState.currentAudio &&
+                uiState.currentAudio.id === episodeDetailsRaw?.Episode.Id ? (
+                  <>
+                    <IoPause size={20} color="#000" />
+                    <p>Pause</p>
+                  </>
+                ) : (
+                  <>
+                    <IoPlay size={20} color="#000" />
+                    <p>Play</p>
+                  </>
+                )}
               </div>
             )}
           </div>

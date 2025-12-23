@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { appApi } from "@/core/api/appApi";
 import type { ApiErrorModel } from "@/core/types";
 import type {
@@ -11,14 +12,56 @@ type CurrentPodcastSubscriptionRegistrationBenefit = {
   Name: string;
 };
 
+type ListenResponse<T> = {
+  isError: boolean;
+  message: string;
+  data: T | null;
+};
+
 export const playerApi = appApi.injectEndpoints({
   endpoints: (build) => ({
     // Listen to an episode, get listen session and procedure
+    // listenToEpisode: build.mutation<
+    //   {
+    //     ListenSession: ListenSessionEpisodes | null;
+    //     ListenSessionProcedure: ListenSessionProcedure;
+    //   },
+    //   {
+    //     PodcastEpisodeId: string;
+    //     SourceType: "SpecifyShowEpisodes" | "SavedEpisodes";
+    //     CurrentPodcastSubscriptionRegistrationBenefitList: CurrentPodcastSubscriptionRegistrationBenefit[];
+    //     continue_listen_session_id?: string;
+    //   }
+    // >({
+    //   query: ({
+    //     PodcastEpisodeId,
+    //     SourceType,
+    //     CurrentPodcastSubscriptionRegistrationBenefitList,
+    //     continue_listen_session_id,
+    //   }) => ({
+    //     url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}/listen${
+    //       continue_listen_session_id
+    //         ? `?continue_listen_session_id=${continue_listen_session_id}`
+    //         : ""
+    //     }`,
+    //     method: "POST",
+    //     authMode: "required",
+    //     body: {
+    //       SourceType,
+    //       CurrentPodcastSubscriptionRegistrationBenefitList,
+    //     },
+    //     headers: {
+    //       "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
+    //     },
+    //   }),
+    //   invalidatesTags: ["Account"],
+    // }),
+
     listenToEpisode: build.mutation<
-      {
+      ListenResponse<{
         ListenSession: ListenSessionEpisodes | null;
         ListenSessionProcedure: ListenSessionProcedure;
-      },
+      }>,
       {
         PodcastEpisodeId: string;
         SourceType: "SpecifyShowEpisodes" | "SavedEpisodes";
@@ -26,27 +69,100 @@ export const playerApi = appApi.injectEndpoints({
         continue_listen_session_id?: string;
       }
     >({
-      query: ({
-        PodcastEpisodeId,
-        SourceType,
-        CurrentPodcastSubscriptionRegistrationBenefitList,
-        continue_listen_session_id,
-      }) => ({
-        url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}/listen${
-          continue_listen_session_id
-            ? `?continue_listen_session_id=${continue_listen_session_id}`
-            : ""
-        }`,
-        method: "POST",
-        authMode: "required",
-        body: {
+      async queryFn(
+        {
+          PodcastEpisodeId,
           SourceType,
           CurrentPodcastSubscriptionRegistrationBenefitList,
+          continue_listen_session_id,
         },
-        headers: {
-          "X-DeviceInfo-Token": localStorage.getItem("device_info_token") || "",
-        },
-      }),
+        _queryApi,
+        _extraOptions,
+        fetchWithBQ
+      ) {
+        try {
+          const result = await fetchWithBQ({
+            url: `/api/podcast-service/api/episodes/${PodcastEpisodeId}/listen${
+              continue_listen_session_id
+                ? `?continue_listen_session_id=${continue_listen_session_id}`
+                : ""
+            }`,
+            method: "POST",
+            authMode: "required",
+            body: {
+              SourceType,
+              CurrentPodcastSubscriptionRegistrationBenefitList,
+            },
+            headers: {
+              "X-DeviceInfo-Token":
+                localStorage.getItem("device_info_token") || "",
+            },
+          });
+
+          // ❌ HTTP error
+          if (result.error) {
+            console.log("listenToEpisode error:", result);
+            const message = result.error.details.message;
+            let formattedMessage = "";
+
+            if (message.includes("no subscription registration")) {
+              formattedMessage = "Unsubscribed";
+            } else if (message.includes("not in Published status")) {
+              formattedMessage = "Content is not available";
+            } else if (
+              message.includes("insufficient benefits - missing conditions:")
+            ) {
+              const parseMissingConditions = (msg: string): string[] => {
+                const marker = "missing conditions:";
+                const index = msg.indexOf(marker);
+
+                if (index === -1) return [];
+
+                return msg
+                  .slice(index + marker.length)
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+              };
+              const missingConditions = parseMissingConditions(message);
+              formattedMessage = `Insufficient benefits: ${missingConditions.join(
+                ", "
+              )}`;
+            }
+            return {
+              data: {
+                isError: true,
+                message:
+                  (result.error as any)?.data?.message ||
+                  "Listen episode failed",
+                data: null,
+              },
+            };
+          }
+
+          // ✅ success
+          console.log("listenToEpisode success:", result);
+          return {
+            data: {
+              isError: false,
+              message: "Listen episode success",
+              data: result.data as {
+                ListenSession: ListenSessionEpisodes | null;
+                ListenSessionProcedure: ListenSessionProcedure;
+              },
+            },
+          };
+        } catch (e: any) {
+          // ❌ runtime error
+          return {
+            data: {
+              isError: true,
+              message: e?.message || "Unexpected error",
+              data: null,
+            },
+          };
+        }
+      },
       invalidatesTags: ["Account"],
     }),
 
@@ -182,7 +298,7 @@ export const playerApi = appApi.injectEndpoints({
                 },
                 poll: {
                   intervalMs: 1000,
-                  maxAttempts: 30,
+                  maxAttempts: 3,
                 },
               })
             )

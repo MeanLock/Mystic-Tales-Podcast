@@ -49,8 +49,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BackgroundGradient } from "@/components/ui/shadcn-io/background-gradient";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
+import { showAlert } from "@/redux/slices/alertSlice/alertSlice";
 // no direct redux dispatch needed here; auth service handles storing token/user
 
 /** Zod schema: email hợp lệ, password tối thiểu 8 ký tự,
@@ -66,15 +67,8 @@ const LoginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof LoginSchema>;
 
-type ErrorResponse = {
-  isError: boolean;
-  message: string;
-  isUnVerified?: boolean;
-};
-
 const LoginPage = () => {
   // STATES
-  const [serverError, setServerError] = useState<string | null>(null);
   const [login, { isLoading }] = useLoginMutation();
   const [loginGoogle, { isLoading: isGoogleLoading }] =
     useLoginGoogleMutation();
@@ -82,6 +76,8 @@ const LoginPage = () => {
   const user = useSelector((state: RootState) => state.auth.user);
 
   // HOOKS
+  const dispatch = useDispatch();
+
   useEffect(() => {
     getCapacitorDevice().then(setDeviceInfo);
     if (user) {
@@ -90,17 +86,6 @@ const LoginPage = () => {
     }
   }, []);
 
-  const [responseError, setResponseError] = useState<ErrorResponse>({
-    isError: false,
-    message: "",
-    isUnVerified: false,
-  });
-  // AAAA
-  const [verificationData, setVerificationData] = useState({
-    isModalOpen: false,
-    verificationCode: "",
-  });
-
   const [forgotPasswordData, setForgotPasswordData] = useState({
     isModalOpen: false,
     email: "",
@@ -108,57 +93,42 @@ const LoginPage = () => {
     success: "",
   });
 
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [responseError, setResponseError] = useState({
+    isError: false,
+    message: "",
+    isUnVerified: false,
+  });
+  const [verificationData, setVerificationData] = useState({
+    isModalOpen: false,
+    verificationCode: "",
+  });
+
+  const resetResponseError = () => {
+    setResponseError({ isError: false, message: "", isUnVerified: false });
+  };
+
+  const handleVerifyMyAccount = () => {
+    setResponseError({ isError: false, message: "", isUnVerified: false });
+    setVerificationData({ isModalOpen: true, verificationCode: "" });
+  };
+
+  const closeVerifyModal = () => {
+    setVerificationData({ isModalOpen: false, verificationCode: "" });
+  };
+
+  const handleSubmitVerifyCode = () => {
+    // TODO: Implement verification logic
+    console.log("Verify code:", verificationData.verificationCode);
+    closeVerifyModal();
+  };
+
   // HOOKS
   const navigate = useNavigate();
   const [forgotPassword, { isLoading: isForgotLoading }] =
     useSendForgotPasswordRequestMutation();
 
-  // HELPERS
-  const resetResponseError = () =>
-    setResponseError({ isError: false, message: "", isUnVerified: false });
-
-  const handleVerifyMyAccount = () => {
-    resetResponseError();
-    setVerificationData((prev) => ({ ...prev, isModalOpen: true }));
-  };
-
-  // đóng modal + reset mã
-  const closeVerifyModal = () => {
-    setVerificationData({ isModalOpen: false, verificationCode: "" });
-  };
-
-  const handleSubmitVerifyCode = async () => {
-    // ví dụ: mã đúng = "123456"
-    if (verificationData.verificationCode.length !== 6) {
-      setResponseError({
-        isError: true,
-        message: "Please enter the 6-digit verification code.",
-      });
-      return;
-    }
-
-    try {
-      // TODO: gọi API verify ở đây
-      // await verifyAccountAPI(verificationData.verificationCode);
-
-      // demo logic:
-      if (verificationData.verificationCode === "123456") {
-        closeVerifyModal();
-        // ví dụ: navigate sau verify
-        navigate("/home");
-      } else {
-        setResponseError({
-          isError: true,
-          message: "Invalid verification code. Please try again.",
-        });
-      }
-    } catch (e: any) {
-      setResponseError({
-        isError: true,
-        message: e?.message || "Verification failed. Try again later.",
-      });
-    }
-  };
+  // HELPER
 
   // FUNCTIONS
   const form = useForm<LoginFormValues>({
@@ -168,10 +138,6 @@ const LoginPage = () => {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
-    // reset errors
-    setServerError(null);
-    resetResponseError();
-
     try {
       const payload = {
         ManualLoginInfo: { Email: values.Email, Password: values.Password },
@@ -185,33 +151,50 @@ const LoginPage = () => {
       const result = await login(payload).unwrap();
 
       if (!result) {
-        setServerError("Empty response from server");
+        dispatch(
+          showAlert({
+            type: "error",
+            title: "Login Failed",
+            description: "Something went wrong, please try again later",
+            isAutoClose: true,
+            isClosable: true,
+            autoCloseDuration: 10,
+            isFunctional: false,
+          })
+        );
         return;
       }
 
       if (result.isError) {
         // show error dialog
-        setResponseError({
-          isError: true,
-          message: result.message || "Login failed",
-          isUnVerified: !!result.isUnVerified,
-        });
+        dispatch(
+          showAlert({
+            type: "error",
+            title: result.message.title,
+            description: result.message.description,
+            isAutoClose: true,
+            autoCloseDuration: 10,
+            isFunctional: true,
+            isClosable: true,
+          })
+        );
         return;
+      } else {
+        dispatch(
+          showAlert({
+            type: result.message.type,
+            description: result.message.description,
+            title: result.message.title,
+            isAutoClose: false,
+            isFunctional: true,
+            isClosable: false,
+            functionalButtonText: "Ok",
+            onClickAction() {
+              navigate("/media-player/discovery");
+            },
+          })
+        );
       }
-
-      // success path
-      if (result.isUnVerified) {
-        setResponseError({
-          isError: true,
-          message: result.message || "Account not verified",
-          isUnVerified: true,
-        });
-        return;
-      }
-
-      // login service already stores token and sets user in redux
-      // navigate to discovery/home
-      navigate("/media-player/discovery");
     } catch (e: any) {
       setServerError(e?.message || "Something went wrong. Please try again.");
     }
@@ -249,18 +232,8 @@ const LoginPage = () => {
         if (result.isError) {
           setResponseError({
             isError: true,
-            message: result.message || "Google login failed",
-            isUnVerified: !!result.isUnVerified,
-          });
-          return;
-        }
-
-        // success path
-        if (result.isUnVerified) {
-          setResponseError({
-            isError: true,
-            message: result.message || "Account not verified",
-            isUnVerified: true,
+            message: result.message?.description || "Google login failed",
+            isUnVerified: false,
           });
           return;
         }

@@ -2,14 +2,14 @@
 select * from PodcastChannelStatusTracking
 select * from PodcastShow
 select * from PodcastShowReview
-select * from PodcastShowStatusTracking where podcastShowId = N'7C723A74-FD5E-4747-B7A5-FAD6FA3B6F31'
+select * from PodcastShowStatusTracking where podcastShowId = N'b06353ee-668a-4d71-86dc-dc7374a0fd9c'
 select * from Hashtag
 select * from PodcastChannelHashtag
 select * from PodcastShow
 select * from PodcastCategory
 select * from PodcastSubCategory
 select * from PodcastShowSubscriptionType
-select * from PodcastEpisode where id = N'7f6df5fc-fab5-425d-9afd-07ffd8fc8ca6'
+select * from PodcastEpisode where id = N'b06353ee-668a-4d71-86dc-dc7374a0fd9c'
 select * from PodcastEpisodeStatusTracking order by createdAt
 select * from PodcastEpisodeLicense
 
@@ -19,7 +19,8 @@ select * from PodcastEpisodePublishDuplicateDetection
 select * from PodcastEpisodeIllegalContentTypeMarking
 select * from PodcastBackgroundSoundTrack
 
-select * from PodcastEpisodeListenSession  where id = '402B7A6E-F61F-41EC-95CF-FFB83760DFD9'
+select * from PodcastEpisodeListenSession order by createdAt DESC
+where podcastEpisodeId = N'b06353ee-668a-4d71-86dc-dc7374a0fd9c' order by createdAt DESC
 select * from PodcastEpisodeListenSession order by createdAt DESC
 
 delete from PodcastEpisodeIllegalContentTypeMarking

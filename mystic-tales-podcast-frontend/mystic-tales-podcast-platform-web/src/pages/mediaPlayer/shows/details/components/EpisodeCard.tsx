@@ -3,7 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { IoPlay } from "react-icons/io5";
 import PlayingWave from "@/components/playingWave/PlayWave";
 import { MoreHorizontalIcon, Save } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { debouncePromise } from "@/core/utils/debouncePromise";
+import ActivityIndicator from "@/components/loader/ActivityIndicator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -158,82 +160,30 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
 
   const navigate = useNavigate();
 
-  const handlePlayPauseEpisode = async (episodeId: string) => {
-    if (!user) {
-      dispatch(
-        showAlert({
-          title: "Login Required",
-          description: "You need to login first to play an episode!",
-          type: "warning",
-          isAutoClose: false,
-          isFunctional: true,
-          isClosable: true,
-          functionalButtonText: "Login Now",
-          onClickAction: () => {
-            navigate("/auth/login");
-          },
-        })
-      );
-    } else {
-      // Check benefit registrations
-      if (
-        uiState.isPlaying &&
-        uiState.currentAudio &&
-        uiState.currentAudio.id === episode.Id
-      ) {
-        pause();
-        return;
-      } else if (
-        !uiState.isPlaying &&
-        uiState.currentAudio &&
-        uiState.currentAudio.id === episode.Id
-      ) {
-        play();
-        return;
-      } else {
-        const benefitData = await fetchBenefits({
-          PodcastEpisodeId: episodeId,
-        }).unwrap();
-        const benefitList =
-          benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
-        if (benefitList && benefitList.length > 0) {
-          const hasNonQuota = benefitList.some(
-            (s: any) => s?.Id === 1 || s?.Name === "Non-Quota Listening"
-          );
-          if (hasNonQuota) {
-            playEpisodeFromSpecifyShow({
-              audioId: episodeId,
-              benefitsList: benefitList,
-            });
-          } else {
-            // Check listen slots
-            const listenSlot = await triggerCheckListenSlot().unwrap();
-            if (listenSlot > 0) {
-              playEpisodeFromSpecifyShow({
-                audioId: episodeId,
-                benefitsList: benefitList,
-              });
-            } else {
-              dispatch(
-                showAlert({
-                  title: "No Listen Slots Left",
-                  description:
-                    "You have no remaining podcast listen slots. Please wait for your slots to renew.",
-                  type: "error",
-                  isAutoClose: true,
-                  autoCloseDuration: 10,
-                  isClosable: true,
-                })
-              );
-            }
-          }
+  // Tách phần cần debounce (gọi API) ra riêng
+  const playNewEpisode = useCallback(
+    async (episodeId: string) => {
+      const benefitData = await fetchBenefits({
+        PodcastEpisodeId: episodeId,
+      }).unwrap();
+      const benefitList =
+        benefitData.CurrentPodcastSubscriptionRegistrationBenefitList;
+
+      if (benefitList && benefitList.length > 0) {
+        const hasNonQuota = benefitList.some(
+          (s: any) => s?.Id === 1 || s?.Name === "Non-Quota Listening"
+        );
+        if (hasNonQuota) {
+          playEpisodeFromSpecifyShow({
+            audioId: episodeId,
+            benefitsList: benefitList,
+          });
         } else {
-          // No benefits, check listen slots
           const listenSlot = await triggerCheckListenSlot().unwrap();
           if (listenSlot > 0) {
             playEpisodeFromSpecifyShow({
               audioId: episodeId,
-              benefitsList: [],
+              benefitsList: benefitList,
             });
           } else {
             dispatch(
@@ -249,9 +199,76 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
             );
           }
         }
+      } else {
+        const listenSlot = await triggerCheckListenSlot().unwrap();
+        if (listenSlot > 0) {
+          playEpisodeFromSpecifyShow({
+            audioId: episodeId,
+            benefitsList: [],
+          });
+        } else {
+          dispatch(
+            showAlert({
+              title: "No Listen Slots Left",
+              description:
+                "You have no remaining podcast listen slots. Please wait for your slots to renew.",
+              type: "error",
+              isAutoClose: true,
+              autoCloseDuration: 10,
+              isClosable: true,
+            })
+          );
+        }
       }
-    }
-  };
+    },
+    [
+      fetchBenefits,
+      playEpisodeFromSpecifyShow,
+      triggerCheckListenSlot,
+      dispatch,
+    ]
+  );
+
+  // Memoize debounced function
+  const debouncedPlayNew = useMemo(
+    () => debouncePromise(playNewEpisode, 1000),
+    [playNewEpisode]
+  );
+
+  const handlePlayPauseEpisode = useCallback(
+    (episodeId: string) => {
+      if (!user) {
+        dispatch(
+          showAlert({
+            title: "Login Required",
+            description: "You need to login first to play an episode!",
+            type: "warning",
+            isAutoClose: false,
+            isFunctional: true,
+            isClosable: true,
+            functionalButtonText: "Login Now",
+            onClickAction: () => {
+              navigate("/auth/login");
+            },
+          })
+        );
+        return;
+      }
+
+      // Check if current episode is playing or paused
+      if (uiState.currentAudio && uiState.currentAudio.id === episodeId) {
+        if (uiState.isPlaying) {
+          pause();
+        } else {
+          play();
+        }
+      } else {
+        // Play new episode with debounce
+        debouncedPlayNew(episodeId);
+      }
+    },
+    [user, uiState, pause, play, debouncedPlayNew, dispatch, navigate]
+  );
 
   // Handle report episode
   const handleReportEpisode = async () => {
@@ -307,7 +324,7 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
   return (
     <div
       key={episode.Id}
-      onClick={() => navigate(`/media-player/episodes/details/${episode.Id}`)}
+      onClick={() => navigate(`/media-player/episodes/${episode.Id}`)}
       className="px-12 flex h-28 items-center gap-10 p-2 rounded-lg hover:bg-white/10 transition-colors group cursor-pointer"
     >
       <div className="relative aspect-square h-full bg-gray-700 rounded-lg overflow-hidden shrink-0">
@@ -317,32 +334,26 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
           className="w-full h-full aspect-square object-cover"
         />
 
-        {uiState.isPlaying ? (
-          uiState.currentAudio && uiState.currentAudio?.id === episode.Id ? (
-            <div className="absolute inset-0 flex bg-black/30 items-center justify-center">
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayPauseEpisode(episode.Id);
-                }}
-                className="p-3 rounded-full bg-mystic-green flex items-center justify-center hover:bg-mystic-green"
-              >
-                <PlayingWave />
-              </div>
+        {uiState.isLoadingSession && uiState.loadingAudioId === episode.Id ? (
+          <div className="absolute inset-0 flex bg-black/40 items-center justify-center">
+            <div className="p-3 rounded-full bg-mystic-green/80 flex items-center justify-center">
+              <ActivityIndicator size={20} color="#fff" />
             </div>
-          ) : (
-            <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayPauseEpisode(episode.Id);
-                }}
-                className="p-2 rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green"
-              >
-                <IoPlay size={25} color="#ffffff" />
-              </div>
+          </div>
+        ) : uiState.isPlaying &&
+          uiState.currentAudio &&
+          uiState.currentAudio?.id === episode.Id ? (
+          <div className="absolute inset-0 flex bg-black/30 items-center justify-center">
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePlayPauseEpisode(episode.Id);
+              }}
+              className="p-3 rounded-full bg-mystic-green flex items-center justify-center hover:bg-mystic-green cursor-pointer"
+            >
+              <PlayingWave />
             </div>
-          )
+          </div>
         ) : (
           <div className="absolute inset-0 hidden group-hover:inline-flex bg-black/30 items-center justify-center">
             <div
@@ -350,7 +361,11 @@ const EpisodeCard = ({ episode }: { episode: EpisodeFromAPI }) => {
                 e.stopPropagation();
                 handlePlayPauseEpisode(episode.Id);
               }}
-              className="p-2 rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green"
+              className={`p-2 rounded-full bg-gray-400 flex items-center justify-center hover:bg-mystic-green ${
+                uiState.isLoadingSession
+                  ? "cursor-not-allowed opacity-50"
+                  : "cursor-pointer"
+              }`}
             >
               <IoPlay size={25} color="#ffffff" />
             </div>

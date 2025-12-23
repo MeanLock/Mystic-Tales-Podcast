@@ -76,17 +76,21 @@ const state_creator = (table: any[]) => {
         field: "IsRejected",
         flex: 0.8,
         cellClass: "d-flex align-items-center",
+           valueGetter: (params: { data: any }) => {
+                  if (params.data.IsRejected === null) return "Pending";
+                  if (params.data.IsRejected) return "Rejected";
+                  return "Success";
+                },
         cellRenderer: (params: any) => {
           const status = {
             title: params.data.IsRejected === null ? "Pending" : params.data.IsRejected ? "Rejected" : "Success",
-            color: params.data.IsRejected === null ? "warning" : params.data.IsRejected ? "danger" : "success",
-            bg: "light",
+            color: params.data.IsRejected === null ? "#ffb300" : params.data.IsRejected ? "#ef5350" : "var(--secondary-green)",
+            bg: params.data.IsRejected === null ? "rgba(255, 179, 0, 0.07)" : params.data.IsRejected ? "rgba(251, 222, 227, 0.2)" : "rgba(173, 227, 57, 0.06)",
           }
           return (
-            <CCard
-              textColor={status.color}
-              style={{ width: "120px" }}
-              className={`text-center fw-bold rounded-pill px-2 border-2 border-${status.color} bg-${status.bg}`}
+           <CCard
+              style={{ width: '100px', color: `${status.color}`, background: `${status.bg}`, border: `2px solid ${status.color}` }}
+              className={`text-center fw-bold rounded-pill px-1 `}
             >
               {status.title}
             </CCard>

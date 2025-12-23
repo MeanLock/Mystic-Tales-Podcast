@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
- import 'quill/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 import './styles.scss';
 import { get, isEqual } from 'lodash';
 import { getChannelDetail, publishChannel, updateChannel } from '@/core/services/channel/channel.service';
@@ -532,19 +532,38 @@ const ChannelOverview = () => {
                                 }}
                             />
 
-                            <TextField
-                                id="filled-read-only-input"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Status"
-                                value={channelDetail.CurrentStatus.Name}
-                                className="channel-overview-page__input channel-overview-page__input--status"
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Chip
+                                    label={channelDetail.CurrentStatus.Name}
+                                    sx={{
+                                        // Glassmorphism effect
+                                        background: channelDetail.CurrentStatus.Id === 1
+                                            ? 'rgba(255, 193, 7, 0.2)'
+                                            : 'rgba(174, 227, 57, 0.2)',
+                                        backdropFilter: 'blur(10px)',
+                                        WebkitBackdropFilter: 'blur(10px)', // Safari support
+                                        minWidth: 150,
+                                        padding: '0 10px',
+                                        borderRadius: 50,
+                                        fontWeight: 700,
+                                        fontSize: '0.9rem',
+                                        // Border with gradient
+                                        border: channelDetail.CurrentStatus.Id === 1
+                                            ? '1.5px solid #ffb300'
+                                            : '1.5px solid #aee339',
+                                        color: channelDetail.CurrentStatus.Id === 1 ? '#ffb300' : '#aee339',
+                                        height: '44px',
+                                        boxShadow: channelDetail.CurrentStatus.Id === 1
+                                            ? '0 6px 32px rgba(255, 193, 7, 0.1)'
+                                            : '0 6px 32px rgba(174, 227, 57, 0.1)',
+                                        '& .MuiChip-label': {
+                                            padding: '0 12px',
+                                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
 
-                            />
+                                        },
+                                    }}
+                                />
+                            </Box>
                         </div>
 
                         <div className="channel-overview-page__row">

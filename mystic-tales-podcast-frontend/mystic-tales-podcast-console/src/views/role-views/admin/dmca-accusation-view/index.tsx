@@ -98,36 +98,45 @@ const show_state = (table: DMCAAccusation[], navigate: (path: string) => void) =
         headerName: "Created At",
         flex: 0.5,
         valueGetter: (params: { data: DMCAAccusation }) => formatDate(params.data.CreatedAt),
+         comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+          const dateA = new Date(nodeA.data.CreatedAt).getTime();
+          const dateB = new Date(nodeB.data.CreatedAt).getTime();
+          return dateA - dateB;
+        },
       },
       {
         headerName: "Status",
         cellClass: 'd-flex align-items-center justify-content-center',
         cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
         flex: 1.1,
+        valueGetter: (params: any) => {
+          return params.data?.CurrentStatus?.Name?.trim() || '';
+        },
         cellRenderer: (params: any) => {
           const status = params.data?.CurrentStatus?.Name?.trim() || '';
           let color = '#888';
           let bg = 'transparent';
           switch (status) {
             case 'Pending DMCA Notice Review':
-              color = '#ffc107'; bg = 'rgba(255, 193, 7, 0.1)'; // vàng cam tươi
+              color = '#ffb300'; bg = 'rgba(255, 179, 0, 0.07)'; // vàng cam tươi
               break;
             case 'Valid Counter Notice':
             case 'Valid Lawsuit Proof':
             case 'Podcaster Lawsuit Win':
             case 'Accuser Lawsuit Win':
             case 'Valid DMCA Notice':
-              color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)'; // xanh primary của bạn
+              color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)';
               break;
             case 'Invalid DMCA Notice':
             case 'Invalid Counter Notice':
             case 'Invalid Lawsuit Proof':
-              color = '#ef5350'; bg = 'rgba(255, 234, 237, 0.2)'; // đỏ dịu mắt
+            case 'Dismissed':
+              color = '#ef5350'; bg = 'rgba(251, 222, 227, 0.2)'; // đỏ dịu mắt
               break;
-               case 'Unresolved Dismissed':
+            case 'Unresolved Dismissed':
             case 'Direct Resolve Dismissed':
-           color = '#ef5350';
-                            bg = 'rgba(239, 83, 80, 0.15)';
+              color = '#ef5350';
+              bg = 'rgba(239, 83, 80, 0.15)';
               break;
             default:
               color = '#9e9e9e'; bg = 'rgba(158,158,158,0.15)'; // xám trung tính sáng
@@ -145,7 +154,7 @@ const show_state = (table: DMCAAccusation[], navigate: (path: string) => void) =
                 color,
                 background: bg,
                 textAlign: 'center',
-                border: `1.5px solid ${color}`,
+                border: `2px solid ${color}`,
               }}
             >
               {status}
@@ -190,37 +199,45 @@ const episode_state = (table: DMCAAccusation[], navigate: (path: string) => void
         headerName: "Created At",
         flex: 0.5,
         valueGetter: (params: { data: DMCAAccusation }) => formatDate(params.data.CreatedAt),
+        comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+          const dateA = new Date(nodeA.data.CreatedAt).getTime();
+          const dateB = new Date(nodeB.data.CreatedAt).getTime();
+          return dateA - dateB;
+        },
       },
       {
         headerName: "Status",
         cellClass: 'd-flex align-items-center justify-content-center',
         cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
         flex: 1.1,
+        valueGetter: (params: any) => {
+          return params.data?.CurrentStatus?.Name?.trim() || '';
+        },
         cellRenderer: (params: any) => {
           const status = params.data?.CurrentStatus?.Name?.trim() || '';
           let color = '#888';
           let bg = 'transparent';
           switch (status) {
             case 'Pending DMCA Notice Review':
-              color = '#ffc107'; bg = 'rgba(255, 193, 7, 0.1)'; // vàng cam tươi
+              color = '#ffb300'; bg = 'rgba(255, 179, 0, 0.07)'; // vàng cam tươi
               break;
             case 'Valid Counter Notice':
             case 'Valid Lawsuit Proof':
             case 'Podcaster Lawsuit Win':
             case 'Accuser Lawsuit Win':
             case 'Valid DMCA Notice':
-               color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)'; 
+              color = 'var(--secondary-green)'; bg = 'rgba(173, 227, 57, 0.06)';
               break;
             case 'Invalid DMCA Notice':
             case 'Invalid Counter Notice':
             case 'Invalid Lawsuit Proof':
             case 'Dismissed':
-              color = '#ef5350'; bg = 'rgba(255, 234, 237, 0.2)'; // đỏ dịu mắt
+              color = '#ef5350'; bg = 'rgba(251, 222, 227, 0.2)'; // đỏ dịu mắt
               break;
             case 'Unresolved Dismissed':
             case 'Direct Resolve Dismissed':
-            color = '#ef5350';
-                            bg = 'rgba(239, 83, 80, 0.15)';
+              color = '#ef5350';
+              bg = 'rgba(239, 83, 80, 0.15)';
               break;
             default:
               color = '#9e9e9e'; bg = 'rgba(158,158,158,0.15)'; // xám trung tính sáng
@@ -238,7 +255,7 @@ const episode_state = (table: DMCAAccusation[], navigate: (path: string) => void
                 color,
                 background: bg,
                 textAlign: 'center',
-                border: `1.5px solid ${color}`,
+                border: `2px solid ${color}`,
               }}
             >
               {status}

@@ -28,6 +28,23 @@ RUN dotnet publish "BookingManagementService.API.csproj" -c Release -o /app/publ
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
+# Install dependencies (curl + ffmpeg) - MUST be before USER command
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        ffmpeg \
+    && rm -rf /var/lib/apt/lists/* \
+    || (sleep 5 && apt-get update && apt-get install -y --fix-missing curl ffmpeg)
+
+# RUN apt-get update && \
+#     apt-get install -y \
+#         curl \
+#         ffmpeg \
+#     && rm -rf /var/lib/apt/lists/*
+
+# Verify FFmpeg installation (optional, helps catch issues early)
+RUN ffmpeg -version && ffprobe -version
+
 # Install curl cho health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 

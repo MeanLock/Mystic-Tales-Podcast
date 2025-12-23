@@ -39,51 +39,15 @@ const state_creator = (table: any[]) => {
             { headerName: "Show", field: "PodcastShow.Name", flex: 1.2 },
             { headerName: "Assigned Staff", field: "AssignedStaff.FullName", flex: 1.2 },
             {
-                headerName: "Status",
-                cellClass: 'd-flex align-items-center',
-                flex: 0.7,
-                cellRenderer: (params: { data: any }) => {
-                    let status = {
-                        title: '',
-                        color: '',
-                    };
-                    if (params.data.IsResolved) {
-                        status = {
-                            title: 'Resolved',
-                            color: 'success',
-                        };
-                    } else if (params.data.IsResolved === false) {
-                        status = {
-                            title: 'Rejected',
-                            color: 'danger',
-                        };
-                    } else if (params.data.IsResolved === null) {
-                        status = {
-                            title: 'Unresolved',
-                            color: 'warning',
-                        };
-                    } else {
-                        status = {
-                            title: 'Unresolved',
-                            color: 'warning',
-                        };
-                    }
-                    return (
-                        <CCard
-                            textColor={`${status.color}`}
-                            style={{ width: '100px' }}
-                            className={`text-center fw-bold rounded-pill px-1 border-2 border-${status.color} bg-light`}
-                        >
-                            {status.title}
-                        </CCard>
-                    );
-                },
-            },
-            {
                 headerName: "Created At",
                 field: "CreatedAt",
                 flex: 0.5,
                 valueGetter: (params: any) => formatDate(params.data.CreatedAt),
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    const dateA = new Date(nodeA.data.CreatedAt).getTime();
+                    const dateB = new Date(nodeB.data.CreatedAt).getTime();
+                    return dateA - dateB;
+                },
 
             },
             {
@@ -91,8 +55,63 @@ const state_creator = (table: any[]) => {
                 field: "UpdatedAt",
                 flex: 0.5,
                 valueGetter: (params: any) => formatDate(params.data.UpdatedAt),
-
+                comparator: (valueA: string, valueB: string, nodeA: any, nodeB: any) => {
+                    const dateA = new Date(nodeA.data.UpdatedAt).getTime();
+                    const dateB = new Date(nodeB.data.UpdatedAt).getTime();
+                    return dateA - dateB;
+                },
             },
+            {
+                headerName: "Status",
+                cellClass: 'd-flex align-items-center',
+                flex: 0.7,
+                  valueGetter: (params: { data: any }) => {
+                           if (params.data.IsResolved === false) return "Rejected";
+                           if (params.data.IsResolved) return "Resolved";
+                           return "Unresolved";
+                         },
+                cellRenderer: (params: { data: any }) => {
+                    let status = {
+                        title: '',
+                        color: '',
+                        bg: ''
+                    };
+                    if (params.data.IsResolved) {
+                        status = {
+                            title: 'Resolved',
+                            color: 'var(--secondary-green)',
+                            bg: 'rgba(173, 227, 57, 0.06)'
+                        };
+                    } else if (params.data.IsResolved === false) {
+                        status = {
+                            title: 'Rejected',
+                            color: '#ef5350',
+                            bg: 'rgba(251, 222, 227, 0.2)',
+                        };
+                    } else if (params.data.IsResolved === null) {
+                        status = {
+                            title: 'Unresolved',
+                            color: '#ffb300',
+                            bg: 'rgba(255, 179, 0, 0.07)'
+                        };
+                    } else {
+                        status = {
+                            title: 'Unresolved',
+                            color: '#ffb300',
+                            bg: 'rgba(255, 179, 0, 0.07)'
+                        };
+                    }
+                    return (
+                        <CCard
+                            style={{ width: '100px', color: `${status.color}`, background: `${status.bg}`, border: `2px solid ${status.color}` }}
+                            className={`text-center fw-bold rounded-pill px-1 `}
+                        >
+                            {status.title}
+                        </CCard>
+                    );
+                },
+            },
+
             {
                 headerName: "Action",
                 cellClass: 'd-flex justify-content-center py-0',

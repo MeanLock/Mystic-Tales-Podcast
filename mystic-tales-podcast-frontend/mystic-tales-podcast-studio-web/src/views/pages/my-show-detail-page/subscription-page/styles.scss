@@ -443,6 +443,142 @@
             }
         }
     }
+
+     &__description {
+        margin-top: 8px;
+
+        &-label {
+            color: #999999 !important;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        &-editor {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+            .ql-toolbar {
+                border: 1px solid #555 !important;
+                border-radius: 8px 8px 0 0;
+                padding: 12px !important;
+
+                .ql-formats {
+                    margin-right: 15px !important;
+                }
+
+                .ql-picker-label,
+                .ql-picker-item,
+                button {
+                    color: white !important;
+                    padding: 6px 8px !important;
+                    margin: 2px !important;
+                    height: 28px !important;
+
+                    &:hover {
+                        background-color: #555 !important;
+                    }
+
+                    &.ql-active {
+                        background-color: var(--primary-green) !important;
+
+                        .ql-stroke {
+                            stroke: black !important;
+                        }
+
+                    }
+                }
+
+                svg {
+                    font-size: large;
+                }
+
+                .ql-stroke {
+                    stroke: white !important;
+                }
+
+                .ql-fill {
+                    fill: white !important;
+                }
+
+                .ql-picker {
+                    color: white !important;
+                }
+
+                .ql-picker-options {
+                    background-color: #3a3a3a !important;
+                    border: 1px solid #555 !important;
+                    border-radius: 4px !important;
+                }
+            }
+
+            .ql-container {
+                background-color: #2a2a2a !important;
+                border: 2px solid #555 !important;
+                border-top: none !important;
+                border-radius: 0 0 8px 8px;
+                min-height: 100px !important;
+                font-size: 14px !important;
+
+                .ql-editor {
+                    color: white !important;
+                    font-family: 'Inter', sans-serif !important;
+                    padding: 16px !important;
+                    line-height: 1.6 !important;
+                    min-height: 180px !important;
+
+                    &.ql-blank::before {
+                        color: #999 !important;
+                        font-style: italic !important;
+                        font-size: 14px !important;
+                    }
+
+                    p,
+                    ol,
+                    ul {
+                        margin-bottom: 8px !important;
+                    }
+
+                    strong {
+                        font-weight: 600 !important;
+                    }
+
+                    em {
+                        font-style: italic !important;
+                    }
+
+                    u {
+                        text-decoration: underline !important;
+                    }
+
+                    a {
+                        color: var(--primary-green) !important;
+                    }
+                }
+
+                .ql-editor.ql-blank::before {
+                    content: 'Enter your channel description here...' !important;
+                }
+
+                .ql-tooltip {
+                    background-color: var(--primary-grey) !important;
+                    color: white !important;
+                    box-shadow: none !important;
+                    left: max(8px, var(--ql-tooltip-left, 8px)) !important;
+
+                }
+
+
+                .ql-preview,
+                .ql-remove,
+                .ql-action::after {
+                    color: var(--primary-green) !important;
+                }
+            }
+
+        }
+    }
 }
 
 

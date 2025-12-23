@@ -168,6 +168,8 @@ const NewMediaPlayerControlBar = () => {
           "isAutoPlay:",
           isAutoPlay
         );
+        // UPDATE LAST DURATION
+        await updateLastDurationOnce(state.duration);
         if (isNavigable && isAutoPlay) {
           await handleNavigate("Next");
         }

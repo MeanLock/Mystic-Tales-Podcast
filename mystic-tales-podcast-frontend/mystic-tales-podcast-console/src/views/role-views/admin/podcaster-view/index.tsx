@@ -48,9 +48,9 @@ const state_creator = (table: Podcaster[], handleDataChange: () => void) => {
         cellClass: 'd-flex align-items-center',
         flex: 0.7,
         valueGetter: (params: { data: Podcaster }) => {
-          if (params.data.DeactivatedAt !== null) return 0;
-          if (!params.data.PodcasterProfile.IsVerified) return 1;
-          return 2;
+          if (params.data.DeactivatedAt !== null) return "Deactivated";
+          if (params.data.PodcasterProfile.IsVerified) return "Verified";
+          return "Pending";
         },
         cellRenderer: (params: { data: Podcaster }) => {
           let status = {

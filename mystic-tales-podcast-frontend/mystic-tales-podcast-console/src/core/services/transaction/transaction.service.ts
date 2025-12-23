@@ -14,6 +14,7 @@ export const getTransactionList = async (instance: AxiosInstance) => {
 
     return response;
 }
+
 export const getReceiptUrl = async (instance: AxiosInstance, fileKey: string) => {
 
     const response = await callAxiosRestApi({
