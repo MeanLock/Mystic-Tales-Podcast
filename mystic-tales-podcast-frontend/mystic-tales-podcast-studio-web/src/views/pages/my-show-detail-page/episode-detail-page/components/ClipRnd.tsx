@@ -26,7 +26,7 @@ interface ClipRndProps {
     selectedClipId?: string | null
     onSelectClip?: (id: string) => void
     setClips: React.Dispatch<React.SetStateAction<Clip[]>>
-
+    onStopSegment?: () => void
 }
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
 let _ac: AudioContext
@@ -36,7 +36,7 @@ const getAC = () => {
 }
 let currentSegment: { src: AudioBufferSourceNode | null; clipId: string | null } = { src: null, clipId: null }
 
-export function ClipRnd({ clip, pps, rowH, isOriginal, onChange, allClips, selectedClipId, onSelectClip, setClips }: ClipRndProps) {
+export function ClipRnd({ clip, pps, rowH, isOriginal, onChange, allClips, selectedClipId, onSelectClip, setClips, onStopSegment }: ClipRndProps) {
     const visibleDur = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
     const width = Math.max(8, visibleDur * pps)
     const x = clip.start * pps
@@ -133,7 +133,12 @@ export function ClipRnd({ clip, pps, rowH, isOriginal, onChange, allClips, selec
                     }
             }
             dragHandleClassName={dragHandle}
-            onDragStart={() => { if (!isOriginal) stopSegment() }}
+            onDragStart={() => {
+                if (!isOriginal) {
+                    stopSegment()
+                    onStopSegment?.() // Dừng segment từ episode-audio
+                }
+            }} 
             onDragStop={(e, d) => {
                 const newStart = Math.max(0, d.x / pps);
 
@@ -154,8 +159,13 @@ export function ClipRnd({ clip, pps, rowH, isOriginal, onChange, allClips, selec
 
                 onChange({ start: newStart });
             }}
-            onResizeStart={() => { if (!isOriginal) stopSegment() }}
-            onResizeStop={(e, dir, ref, delta, pos) => {
+   onResizeStart={() => { 
+                if (!isOriginal) {
+                    stopSegment()
+                    onStopSegment?.() // Dừng segment từ episode-audio
+                }
+            }}
+                        onResizeStop={(e, dir, ref, delta, pos) => {
                 if (isOriginal) return;
                 const newWpx = ref.offsetWidth;
                 let newVisible = Math.max(minVisibleSec, newWpx / pps);
@@ -192,7 +202,10 @@ export function ClipRnd({ clip, pps, rowH, isOriginal, onChange, allClips, selec
                 isSelected={selectedClipId === clip.id}
                 onSelect={() => onSelectClip?.(clip.id)}
                 onNudgeViewport={(nextTrimStart) => {
-                    if (!isOriginal) stopSegment()
+                     if (!isOriginal) {
+                        stopSegment()
+                        onStopSegment?.() // Dừng segment từ episode-audio
+                    }
                     const visibleDur = Math.max(0, clip.duration - clip.trimStart - clip.trimEnd)
                     const nextTrimEnd = Math.max(0, clip.duration - visibleDur - nextTrimStart)
                     setClips(prev => prev.map(c =>
@@ -201,7 +214,10 @@ export function ClipRnd({ clip, pps, rowH, isOriginal, onChange, allClips, selec
                 }}
                 isSegmentPlaying={isSegmentPlaying}
                 onPlaySegment={(fromSec, durationSec) => playSegment(fromSec, durationSec)}
-                onStopSegment={() => stopSegment()}
+                    onStopSegment={() => {
+                    stopSegment()
+                    onStopSegment?.() // Dừng segment từ episode-audio
+                }}
             />
         </Rnd>
 
