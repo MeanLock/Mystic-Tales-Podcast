@@ -226,7 +226,7 @@ const LoginPage: FC<LoginPageProps> = (props) => {
                         }
                     });
 
-                        const res = await getAccountProfile(loginRequiredAxiosInstance);
+                        const res = await getAccountProfile(tempInstance);
 
                         if (!res?.success) {
                             toast.error("Login failed.");
