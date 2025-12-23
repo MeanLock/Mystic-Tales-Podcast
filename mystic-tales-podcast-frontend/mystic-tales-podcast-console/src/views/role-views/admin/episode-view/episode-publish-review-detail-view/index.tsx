@@ -7,14 +7,14 @@ import { toast } from "react-toastify"
 import { CheckCircle, XCircle, Warning, User, Calendar, FileText } from "phosphor-react"
 import { getEpisodePublishDetail, createEditRequire, acceptEpisodePublish } from "@/core/services/ReviewSession/review-session.service"
 import { PublishReview } from "@/core/types/publish-review"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import "./styles.scss"
 import Image from "@/views/components/common/image"
 import { getAudioEpisode } from "@/core/services/episode/episode.service"
 import Loading from "@/views/components/common/loading"
 import { formatDate } from "@/core/utils/date.util"
 import { adminAxiosInstance } from "@/core/api/rest-api/config/instances/v2"
-import { renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
+import { getTruncatedDescription, renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
 import { EmailOutlined } from "@mui/icons-material"
 import { SmartAudioPlayer } from "@/views/components/common/audio"
 
@@ -47,7 +47,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
     const [accepting, setAccepting] = useState(false)
     const [audioUrl, setAudioUrl] = useState<string | null>(null)
     const [audioSources, setAudioSources] = useState<Record<string, { url: string }>>({});
-
+   const navigate = useNavigate();
     const fetchDetail = async () => {
         setLoading(true);
         try {
@@ -336,7 +336,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                     </div>
                 )}
                 {PublishDetail.PodcastEpisode && (
-                    <div className="content-card">
+                    <div className="content-card" onClick={() => navigate(`/episode/${PublishDetail.PodcastEpisode.Id}`)}>
                         <Image
                             mainImageFileKey={PublishDetail.PodcastEpisode.MainImageFileKey}
                             alt={PublishDetail.PodcastEpisode.Name}
@@ -386,7 +386,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                     </div>
                 )}
                 {PublishDetail.PodcastChannel && (
-                    <div className="content-card">
+                    <div className="content-card" onClick={() => navigate(`/channel/${PublishDetail.PodcastChannel.Id}`)}>
                         <Image
                             mainImageFileKey={PublishDetail.PodcastChannel.MainImageFileKey}
                             alt={PublishDetail.PodcastChannel.Name}
@@ -396,6 +396,11 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                             <div className="content-card__body">
                                 <span className="content-card__type">Channel</span>
                                 <h3 className="content-card__title mb-0">{PublishDetail.PodcastChannel.Name}</h3>
+                                <div className="content-card__description"
+                                    dangerouslySetInnerHTML={{
+                                        __html: getTruncatedDescription(PublishDetail?.PodcastChannel.Description || "", 100),
+                                    }}
+                                />
                             </div>
                             <div className="flex-1 flex items-end mb-3 mx-3">
                                 <div
@@ -412,7 +417,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                     </div>
                 )}
                 {PublishDetail.PodcastShow && (
-                    <div className="content-card">
+                    <div className="content-card" onClick={() => navigate(`/show/${PublishDetail.PodcastShow.Id}`)}>
                         <Image
                             mainImageFileKey={PublishDetail.PodcastShow.MainImageFileKey}
                             alt={PublishDetail.PodcastShow.Name}
@@ -422,10 +427,11 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                             <div className="content-card__body">
                                 <span className="content-card__type">Show</span>
                                 <h3 className="content-card__title mb-0">{PublishDetail.PodcastShow.Name}</h3>
-                                <p className="content-card__description"> Release Date: {PublishDetail.PodcastShow.ReleaseDate}</p>
-                                {PublishDetail.PodcastChannel === null && (
-                                    <p className="content-card__description">Single Show</p>
-                                )}
+                                <div className="content-card__description"
+                                    dangerouslySetInnerHTML={{
+                                        __html: getTruncatedDescription(PublishDetail?.PodcastShow.Description || "", 100),
+                                    }}
+                                />
                             </div>
                             <div className="flex-1 flex items-end mb-3 mx-3">
                                 <div
@@ -523,8 +529,11 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                         </div>
                                     </div>
                                     {episode?.Description && (
-                                        <div className="publish-review-detail__duplicate-description">
-                                            {episode.Description}
+                                        <div className="publish-review-detail__duplicate-description"
+                                            dangerouslySetInnerHTML={{
+                                                __html: renderDescriptionHTML(episode?.Description || ""),
+                                            }}
+                                        >
                                         </div>
                                     )}
                                 </div>

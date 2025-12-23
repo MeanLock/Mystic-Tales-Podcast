@@ -19,7 +19,7 @@ import Loading from "@/views/components/common/loading"
 import { confirmAlert } from "@/core/utils/alert.util"
 import { useSagaPolling } from "@/hooks/useSagaPolling"
 import { set } from "lodash"
-import { renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
+import { getTruncatedDescription, renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
 import { SmartAudioPlayer } from "@/views/components/common/audio"
 
 export const PodcastIllegalContentTypes = [
@@ -344,9 +344,9 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                 <span className="content-card__type">Episode</span>
                                 <h3 className="content-card__title mb-0">{PublishDetail.PodcastEpisode.Name}</h3>
                                 <p className="content-card__description">Explicit Content: {PublishDetail.PodcastEpisode.ExplicitContent ? 'Yes' : 'No'}</p>
-                            
+
                             </div>
-                              <div className="px-3 pb-3 w-full">
+                            <div className="px-3 pb-3 w-full">
                                 <SmartAudioPlayer
                                     audioId={PublishDetail.PodcastEpisode.AudioFileKey}
                                     className="w-full"
@@ -382,7 +382,7 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                         </div>
                     </div>
                 )}
-              
+
                 {PublishDetail.PodcastChannel && PublishDetail.PodcastChannel.DeletedAt === null && (
                     <div className="content-card" onClick={() => navigate(`/channel/${PublishDetail.PodcastChannel.Id}`)}>
                         <Image
@@ -394,11 +394,11 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                             <div className="content-card__body">
                                 <span className="content-card__type">Channel</span>
                                 <h3 className="content-card__title mb-0">{PublishDetail.PodcastChannel.Name}</h3>
-                                <p className="content-card__description"
+                                <div className="content-card__description"
                                     dangerouslySetInnerHTML={{
-                                        __html: renderDescriptionHTML(PublishDetail.PodcastChannel.Description || ""),
+                                        __html: getTruncatedDescription(PublishDetail?.PodcastChannel.Description || "", 100),
                                     }}
-                                > </p>
+                                > </div>
                             </div>
                             <div className="flex-1 flex items-end mb-3 mx-3">
                                 <div
@@ -425,10 +425,11 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                             <div className="content-card__body">
                                 <span className="content-card__type">Show</span>
                                 <h3 className="content-card__title mb-0">{PublishDetail.PodcastShow.Name}</h3>
-                                <p className="content-card__description"> Release Date: {PublishDetail.PodcastShow.ReleaseDate}</p>
-                                {PublishDetail.PodcastChannel === null && (
-                                    <p className="content-card__description">Single Show</p>
-                                )}
+                                <div className="content-card__description"
+                                    dangerouslySetInnerHTML={{
+                                        __html: getTruncatedDescription(PublishDetail?.PodcastShow.Description || "", 100),
+                                    }}
+                                />
                             </div>
                             <div className="flex-1 flex items-end mb-3 mx-3">
                                 <div
@@ -525,8 +526,12 @@ const EpisodePublishDetail: React.FC<EpisodePublishDetailProps> = () => {
                                         </div>
                                     </div>
                                     {episode?.Description && (
-                                        <div className="publish-review-detail__duplicate-description">
-                                            {episode.Description}
+                                        <div className="publish-review-detail__duplicate-description"
+                                            dangerouslySetInnerHTML={{
+                                                __html: renderDescriptionHTML(episode?.Description || ""),
+                                            }}
+                                        >
+
                                         </div>
                                     )}
                                 </div>
