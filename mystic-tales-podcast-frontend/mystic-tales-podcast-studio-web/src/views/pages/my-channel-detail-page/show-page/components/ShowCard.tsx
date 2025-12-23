@@ -18,14 +18,16 @@ const ShowCard: FC<{ show: any }> = ({ show }) => {
         })();
         return () => { alive = false; };
     }, [show.MainImageFileKey]);
-   
+     const handleCardClick = () => {
+        const baseUrl = window.location.origin;
+        window.open(`${baseUrl}/show/${show.Id}/overview`, '_blank');
+    };
     return (
         <Card
             key={show.Id}
             className="my-show-page__show-card"
-            onClick={() => {
-                window.open(`/show/${show.Id}/overview`);
-            }}
+            onClick={handleCardClick}
+        
         >
             <div className="my-show-page__show-image-container relative">
                 <CardMedia

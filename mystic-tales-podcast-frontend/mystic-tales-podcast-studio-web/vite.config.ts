@@ -8,7 +8,7 @@ dotenv.config();
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: "./",
+  base: "/",
   css: {
     preprocessorOptions: {
       scss: {
@@ -27,6 +27,15 @@ export default defineConfig({
       src: path.resolve(__dirname, "src"),
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  optimizeDeps: {
+    include: ['quill']
+  },
+  build: {
+    commonjsOptions: {
+      include: [/quill/, /node_modules/],
+      transformMixedEsModules: true
+    }
   },
   server: {
     port: process.env.VITE_PORT ? Number(process.env.VITE_PORT) : 3000,

@@ -1,4 +1,4 @@
-import React, { createContext, FC, use, useEffect, useState } from 'react';
+import React, { createContext, FC, use, useEffect, useRef, useState } from 'react';
 import {
     Box,
     Typography,
@@ -25,6 +25,7 @@ import Loading from '@/views/components/common/loading';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/rootReducer';
 import EpisodeAudio from './epsiode-audio';
+import * as signalR from "@microsoft/signalr";
 
 
 interface EpisodeDetailViewProps { }
@@ -51,8 +52,10 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
     const [isPublishing, setIsPublishing] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const navigate = useNavigate();
+const token = authSlice.token ;
+ const connectionRef = useRef<signalR.HubConnection | null>(null);
 
-
+    const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
     const { startPolling } = useSagaPolling({
         timeoutSeconds: 120,
         intervalSeconds: 1,
@@ -252,7 +255,43 @@ const EpisodeDetail: FC<EpisodeDetailViewProps> = () => {
             setIsPublishing(false);
         }
     };
+  useEffect(() => {
+console.log("Setting up SignalR connection...", token);
+        // Build connection
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(`${REST_API_BASE_URL}/api/podcast-service/hubs/podcast-content-notification`, {
+                accessTokenFactory: () => {
+                    return token;
+                }
+            })
+            .withAutomaticReconnect()
+            .build();
 
+        connectionRef.current = connection;
+
+        // Register events
+        connection.on("PodcastEpisodeAudioProcessingCompletedNotification", async (data) => {
+            console.log("Audio processing :", data);
+
+            if (!data.IsSuccess) {
+                console.error("Audio processing failed:", data.ErrorMessage);
+                return;
+            }
+
+            alert(`Audio processing completed for Podcast ID: ${data}`);
+            await fetchEpisodeDetail?.();
+        });
+
+        // Start connection
+        connection.start()
+            .then(() => console.log("SignalR connected"))
+            .catch(err => console.error("SignalR connection error:", err));
+
+        // Cleanup
+        return () => {
+            connection.stop();
+        };
+    }, []);
 
 
     return (

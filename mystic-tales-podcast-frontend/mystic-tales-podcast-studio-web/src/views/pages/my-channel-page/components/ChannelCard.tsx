@@ -3,6 +3,7 @@ import { Favorite, PlayArrow } from '@mui/icons-material';
 import { Card, CardContent, CardMedia, Chip, Skeleton, Typography } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
 import notfound from "../../../../assets/notfound.png"
+import { Link } from 'react-router-dom';
 const ChannelCard: FC<{ channel: any }> = ({ channel }) => {
     const [imageUrl, setImageUrl] = useState<string>("");
 
@@ -18,11 +19,16 @@ const ChannelCard: FC<{ channel: any }> = ({ channel }) => {
         })();
         return () => { alive = false; };
     }, [channel.MainImageFileKey]);
-
+    const handleCardClick = () => {
+        console.log("Channel clicked:", channel.Id);
+        window.open(`/channel/${channel.Id}/overview`, "_blank");
+    };
     return (
-        <Card
+        <Link
             className="my-channel-page__channel-card"
-            onClick={() => window.open(`/channel/${channel.Id}/overview`)}
+            to={`/channel/${channel.Id}/overview`}
+            target="_blank"
+            rel="noopener noreferrer"
         >
             <div className="my-channel-page__channel-image-container relative">
                 {imageUrl ? (
@@ -59,7 +65,7 @@ const ChannelCard: FC<{ channel: any }> = ({ channel }) => {
                     />
                 </div>
             </CardContent>
-        </Card>
+        </Link>
     );
 };
 

@@ -2,9 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="shortcut icon" href="/src/assets/Image/Logo/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mystic Tales Podcast</title>
+
+    <!-- CSP rộng cho development -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;
+      script-src * 'unsafe-inline' 'unsafe-eval' data: blob:;
+      style-src * 'unsafe-inline' data:;
+      font-src * data: blob:;
+      img-src * data: blob:;
+      connect-src * data: blob:;
+      frame-src *;
+    " />
+    
   </head>
   <body>
     <div id="root"></div>

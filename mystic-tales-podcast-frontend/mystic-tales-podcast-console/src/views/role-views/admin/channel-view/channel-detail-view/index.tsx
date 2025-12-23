@@ -7,13 +7,14 @@ import { Typography, Chip } from '@mui/material';
 import Image from '@/views/components/common/image';
 import { formatDate } from '@/core/utils/date.util';
 import './styles.scss';
+import { renderDescriptionHTML } from '@/core/utils/htmlRender.utils';
 
 const ChannelDetailView = () => {
     const { id } = useParams<{ id: string }>();
     const [channelDetail, setChannelDetail] = React.useState<any | null>(null);
     const [loading, setLoading] = React.useState<boolean>(false);
     const navigate = useNavigate();
-    
+
     const fetchChannelDetail = async () => {
         setLoading(true);
         try {
@@ -111,7 +112,7 @@ const ChannelDetailView = () => {
                         <Typography variant="h5" className="channel-detail__section-title">
                             About This Channel
                         </Typography>
-                        
+
                         <div
                             className="channel-detail__description"
                             dangerouslySetInnerHTML={{ __html: channelDetail.Description }}
@@ -189,7 +190,11 @@ const ChannelDetailView = () => {
                                         return (
                                             <div key={sub.Id} className="channel-detail__subscription-card">
                                                 <h4>{sub.Name}</h4>
-                                                <p>{sub.Description || 'No description'}</p>
+                                                <div
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: renderDescriptionHTML(sub.Description || ""),
+                                                    }}
+                                                />
                                                 <div className="channel-detail__subscription-prices">
                                                     {latestPrices.map((price: any) => (
                                                         <div key={price.SubscriptionCycleType?.Id ?? price.SubscriptionCycleTypeId} className="channel-detail__price-item">
@@ -235,7 +240,7 @@ const ChannelDetailView = () => {
                                     </thead>
                                     <tbody>
                                         {channelDetail.ShowList.map((show: any) => (
-                                            <tr 
+                                            <tr
                                                 key={show.Id}
                                                 onClick={() => navigate(`/show/${show.Id}`)}
                                                 style={{ cursor: 'pointer' }}

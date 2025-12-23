@@ -9,7 +9,7 @@ import {
 import './styles.scss';
 import ProfileInfo from './profile-info';
 import BuddyAudio from './buddy-audio';
-import { getAccountProfile, getPodcasterProfile } from '@/core/services/account/account.service';
+import {  getPodcasterProfile } from '@/core/services/account/account.service';
 import { loginRequiredAxiosInstance } from '@/core/api/rest-api/config/instances/v2';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/rootReducer';

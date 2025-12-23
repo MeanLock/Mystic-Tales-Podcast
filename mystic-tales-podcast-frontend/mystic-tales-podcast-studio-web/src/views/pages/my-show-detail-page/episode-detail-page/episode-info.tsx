@@ -14,7 +14,6 @@ import {
 } from '@mui/material';
 import { Add, Explicit, PublishedWithChangesOutlined } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
- import 'quill/dist/quill.snow.css';
 import Modal_Button from '@/views/components/common/modal/ModalButton';
 import { useParams } from 'react-router-dom';
 import { Episode } from '@/core/types/episode';
@@ -35,6 +34,11 @@ import * as signalR from "@microsoft/signalr";
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/rootReducer';
 import LoadingProcessing from '@/views/components/common/loadingProcessing';
+import StatusChip from '@/views/components/common/statuschip';
+import { MetadataField } from '@/views/components/common/metadata';
+import { StatCard } from '@/views/components/common/statcard';
+import { Headphones } from 'phosphor-react';
+import { Save } from 'lucide-react';
 
 export const mockSubscriptionTypes = [
     { Id: 1, Name: "Free" },
@@ -67,7 +71,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     // const [loading, setLoading] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
-    
+
     const [reviewSession, setReviewSession] = useState<any>(null);
     const [reviewSessionLoading, setReviewSessionLoading] = useState<boolean>(false);
 
@@ -106,43 +110,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
     const token = authSlice2.token || "";
     const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
-    useEffect(() => {
-        // Build connection
-        console.log("Setting up SignalR connection...", token);
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`${REST_API_BASE_URL}/api/podcast-service/hubs/podcast-content-notification`, {
-                accessTokenFactory: () => {
-                    return token;
-                }
-            })
-            .withAutomaticReconnect()
-            .build();
-
-        connectionRef.current = connection;
-
-        // Register events
-        connection.on("PodcastEpisodeAudioProcessingCompletedNotification", async (data) => {
-            console.log("Audio processing :", data);
-
-            if (!data.IsSuccess) {
-                console.error("Audio processing failed:", data.ErrorMessage);
-                return;
-            }
-
-            //alert(`Audio processing completed for Podcast ID: ${data}`);
-            await refreshEpisode?.();
-        });
-
-        // Start connection
-        connection.start()
-            .then(() => console.log("SignalR connected"))
-            .catch(err => console.error("SignalR connection error:", err));
-
-        // Cleanup
-        return () => {
-            connection.stop();
-        };
-    }, []);
+  
 
     const fetchReviewSession = async () => {
         setReviewSessionLoading(true);
@@ -312,17 +280,17 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-             const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-                        if (!allowedTypes.includes(file.type)) {
-                            toast.error('Invalid file type. Allowed: JPG, JPEG, PNG, GIF, WEBP, SVG');
-                            return;
-                        }
-            
-                        const maxSize = 3 * 1024 * 1024;
-                        if (file.size > maxSize) {
-                            toast.error('Image file size must be less than 3MB');
-                            return;
-                        }
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                toast.error('Invalid file type. Allowed: JPG, JPEG, PNG, GIF, WEBP, SVG');
+                return;
+            }
+
+            const maxSize = 3 * 1024 * 1024;
+            if (file.size > maxSize) {
+                toast.error('Image file size must be less than 3MB');
+                return;
+            }
             setMainImageFile(file);
         }
     };
@@ -443,14 +411,14 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
 
     return (
         <div className="episode-info-page ">
-            {episodeDetail.CurrentStatus?.Id === 7 && (
+            {/* {episodeDetail.CurrentStatus?.Id === 7 && (
                 <div
                     className="flex items-center  px-3 py-2 mt-6 mb-10"
                     style={{ width: "fit-content" }}
                 >
 
                 </div>
-            )}
+            )} */}
             {episodeDetail.TakenDownReason && (
                 <div className="flex items-center gap-2 bg-red-100 border border-red-400  rounded px-3 py-2 mb-3 " style={{ width: "fit-content" }}>
                     <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -499,7 +467,7 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                 </div>
             )}
 
-            {episodeDetail.CurrentStatus?.Id !== 6 && episodeDetail.CurrentStatus?.Id !== 7 && episodeDetail.CurrentStatus?.Id !== 8 && (
+            {episodeDetail.CurrentStatus?.Id !== 6 && episodeDetail.CurrentStatus?.Id !== 7 && (
                 <div className="episode-info-page__actions mt-4">
                     {/* {(episodeDetail.CurrentStatus?.Id === 1 || episodeDetail.CurrentStatus?.Id === 2) && (
                         <Modal_Button
@@ -578,391 +546,308 @@ const EpisodeInfo: React.FC<EpisodeInfoProps> = ({ loading }) => {
                 </div>
             )}
 
-            {episodeDetail.CurrentStatus?.Id === 8 ? (
-                <div className="flex justify-center items-center h-100">
-              
-                    <LoadingProcessing  />
-                </div>
-            ) : (
-                <div className="episode-info-page__content">
-                    <div className="episode-info-page__form">
-                        <div className="episode-info-page__row">
-                            <TextField
-                                label="Name"
-                                value={episodeDetail.Name}
-                                variant="standard"
-                                onChange={(e) => setEpisodeDetail({ ...episodeDetail, Name: e.target.value })}
-                                className="episode-info-page__input episode-info-page__input--name"
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        '& fieldset': { borderColor: '#999999 !important' },
-                                        '&:hover fieldset': { borderColor: '#999999 !important' },
-                                        '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
-                                    },
-                                }}
-                            />
+            <div className="episode-info-page__content">
+                <div className="episode-info-page__form">
+                    <div className="episode-info-page__metadata-section rounded-xl mb-6">
+                        <div className="flex flex-wrap w-full justify-between  items-center gap-6 md:gap-8">
+                            <MetadataField label="Total Save" value={episodeDetail.TotalSave.toString()} />
+                            <MetadataField label="Listen Count" value={episodeDetail.ListenCount.toString()} />
+                            <MetadataField label="Is Released" value={episodeDetail.IsReleased ? "Yes" : "No"} />
+                            <MetadataField label="Release Date" value={formatDate(episodeDetail.ReleaseDate)} />
+                            <MetadataField label="Created At" value={formatDate(episodeDetail.CreatedAt)} />
+                            <MetadataField label="Updated At" value={formatDate(episodeDetail.UpdatedAt)} />
 
-                            <TextField
-                                id="filled-read-only-input"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Status"
-                                value={episodeDetail.CurrentStatus?.Name ?? ''}
-                                className="episode-info-page__input episode-info-page__input--status"
-
-                            />
-                        </div>
-                        <div className="episode-info-page__row">
-                            <TextField
-                                select
-                                label="Subscription Type"
-                                variant="standard"
-                                value={episodeDetail.PodcastEpisodeSubscriptionType.Id ?? 1}
-                                onChange={(e) => setEpisodeDetail({ ...episodeDetail, PodcastEpisodeSubscriptionType: { ...episodeDetail.PodcastEpisodeSubscriptionType, Id: e.target.value as unknown as number } })}
-                                className="episode-info-page__select"
-                            >
-                                {mockSubscriptionTypes.map((type) => (
-                                    <MenuItem
-                                        key={type.Id}
-                                        value={type.Id}
-                                        sx={{
-                                            '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
-
-                                        }}
-                                    >
-                                        {type.Name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                            <TextField
-                                select
-                                label="Explicit Content"
-                                variant="standard"
-                                value={episodeDetail.ExplicitContent ?? ''}
-                                onChange={(e) => setEpisodeDetail({ ...episodeDetail, ExplicitContent: e.target.value === 'true' })}
-                                className="episode-info-page__select"
-                            >
-                                <MenuItem value="true">True</MenuItem>
-                                <MenuItem value="false">False</MenuItem>
-                            </TextField>
-
-                            <TextField
-                                label="Season"
-                                value={episodeDetail.SeasonNumber}
-                                type="number"
-                                variant="standard"
-                                inputProps={{ min: 1 }}
-                                onChange={(e) => {
-                                    let val = e.target.value;
-                                    if (val === '' || Number(val) < 1) {
-                                        setEpisodeDetail({ ...episodeDetail, SeasonNumber: 1 });
-                                    } else {
-                                        setEpisodeDetail({ ...episodeDetail, SeasonNumber: Number(val) });
-                                    }
-                                }}
-                                className="episode-info-page__input episode-info-page__input--number"
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        '& fieldset': { borderColor: '#999999 !important' },
-                                        '&:hover fieldset': { borderColor: '#999999 !important' },
-                                        '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
-                                    },
-                                }}
-                            />
-                            <TextField
-                                label="Episode Order"
-                                value={episodeDetail.EpisodeOrder}
-                                type="number"
-                                variant="standard"
-                                inputProps={{ min: 1 }}
-                                onChange={(e) => {
-                                    let val = e.target.value;
-                                    if (val === '' || Number(val) < 1) {
-                                        setEpisodeDetail({ ...episodeDetail, EpisodeOrder: 1 });
-                                    } else {
-                                        setEpisodeDetail({ ...episodeDetail, EpisodeOrder: Number(val) });
-                                    }
-                                }}
-                                className="episode-info-page__input episode-info-page__input--number"
-                                sx={{
-                                    '& .MuiOutlinedInput-root': {
-                                        '& fieldset': { borderColor: '#999999 !important' },
-                                        '&:hover fieldset': { borderColor: '#999999 !important' },
-                                        '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
-                                    },
-                                }}
-                            />
-
-                        </div>
-
-                        <div className="episode-info-page__row">
-                            <TextField
-                                id="filled-read-only-input"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Show"
-                                value={episodeDetail.PodcastShow?.Name ?? ''}
-                                className="episode-info-page__input episode-info-page__input--show"
-
-                            />
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Is Released"
-                                value={episodeDetail.IsReleased ? 'Yes' : 'No'}
-                                className="episode-info-page__input-small"
-
-                            />
-                        </div>
-
-                        {/* Dates and Numbers Row */}
-                        <div className="episode-info-page__row">
-                            {episodeDetail.ReleaseDate != null && (
-                                <TextField
-                                    variant="filled"
-                                    slotProps={{
-                                        input: {
-                                            readOnly: true,
-                                        },
-                                    }}
-                                    label="Release Date"
-                                    value={formatDate(episodeDetail.ReleaseDate)}
-                                    className="episode-info-page__input-small"
-
-                                />
-                            )}
-                            <TextField
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Created At"
-                                value={formatDate(episodeDetail.CreatedAt)}
-                                className="episode-info-page__input-small"
-
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Updated At"
-                                value={formatDate(episodeDetail.UpdatedAt)}
-                                className="episode-info-page__input-small"
-
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Total Save"
-                                value={episodeDetail.TotalSave ?? 0}
-                                className="episode-info-page__input-small"
-
-                            />
-                            <TextField
-                                id="filled-helperText"
-                                variant="filled"
-                                slotProps={{
-                                    input: {
-                                        readOnly: true,
-                                    },
-                                }}
-                                label="Listen Count"
-                                value={episodeDetail.ListenCount ?? 0}
-                                className="episode-info-page__input-small"
-
-                            />
-                        </div>
-
-
-                        <div className="episode-info-page__hashtags">
-                            <div className="episode-info-page__hashtag-input ">
-                                <TextField
-                                    label="Add hashtag"
-                                    value={hashtagInput}
-                                    onChange={(e) => setHashtagInput(e.target.value)}
-                                    onKeyPress={handleHashtagKeyPress}
-                                    size="small"
-                                    className="episode-info-page__hashtag-field"
-                                    onFocus={() => {
-                                        if (hashtagInput.trim()) setOpenSuggest(true);
-                                    }}
-                                    InputProps={{
-                                        endAdornment: (
-                                            <InputAdornment position="end">
-                                                <IconButton
-                                                    onClick={() => handleAddHashtag(hashtagInput)}
-                                                    disabled={!hashtagInput.trim() || selectedHashtags.some(tag => tag.name === hashtagInput.trim())}
-                                                    size="small"
-                                                    sx={{ color: 'var(--primary-green)' }}
-                                                >
-                                                    <Add />
-                                                </IconButton>
-                                            </InputAdornment>
-                                        ),
-                                    }}
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            backgroundColor: '#2a2a2a',
-                                            color: 'white',
-                                            '& fieldset': { borderColor: '#444 !important' },
-                                            '&:hover fieldset': { borderColor: '#666 !important' },
-                                            '&.Mui-focused fieldset': { borderColor: 'var(--primary-green) !important' }
-                                        },
-                                        '& .MuiInputLabel-root': { color: '#888' },
-                                        '& .MuiInputLabel-root.Mui-focused': { color: 'var(--primary-green)' }
-                                    }}
-                                />
-                                {openSuggest && (suggestions.length > 0 || suggestLoading) && (
-                                    <Box
-                                        className="episode-info-page__hashtag-suggest"
-                                        sx={{
-                                            mt: 0.5,
-                                            maxHeight: 200,
-                                            overflowY: 'auto',
-                                            border: '1px solid #444',
-                                            borderRadius: 1,
-                                            background: '#1f1f1f',
-                                            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-                                        }}
-                                    >
-                                        {suggestLoading && (
-                                            <Box sx={{ p: 1.5, color: '#aaa', fontSize: 13 }}>Searching…</Box>
-                                        )}
-                                        {!suggestLoading && suggestions.map((opt) => (
-                                            <MenuItem
-                                                key={opt.id}
-                                                onClick={() => handleSelectSuggestion(opt)}
-                                                sx={{ fontSize: 14 }}
-                                            >
-                                                #{opt.name}
-                                            </MenuItem>
-                                        ))}
-                                    </Box>
-                                )}
-                            </div>
-                            <div className="episode-info-page__hashtag-chips">
-                                {selectedHashtags.map((tag, index) => (
-                                    <Chip
-                                        key={index}
-                                        label={tag.name}
-                                        onDelete={() => handleRemoveHashtag(tag)}
-                                        size="small"
-                                        sx={{
-                                            backgroundColor: 'var(--primary-green)',
-                                            color: 'black',
-                                            margin: '2px',
-                                            '& .MuiChip-deleteIcon': {
-                                                color: 'black',
-                                                '&:hover': { color: '#444' }
-                                            },
-                                            padding: '6px 4px',
-                                            boxShadow: '2px 6px 6px rgba(0, 0, 0, 0.7)'
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="episode-info-page__description">
-                            <Typography variant="body2" className="episode-info-page__description-label">
-                                Description
-                            </Typography>
-                            <div className="episode-info-page__description-editor">
-                                <div ref={quillRef} />
-                            </div>
 
                         </div>
                     </div>
-
-                    <div className="episode-info-page__preview">
-                        <div className="episode-info-page__main-image-container">
-                            {uploadImage ? (
-                                <img
-                                    src={uploadImage}
-                                    alt="Preview"
-                                    className="episode-info-page__main-image-file"
-                                />
-                            ) : (
-                                <Image
-                                    mainImageFileKey={episodeDetail.MainImageFileKey}
-                                    alt={episodeDetail.Name}
-                                    className="episode-info-page__main-image-file"
-                                />
-                            )}
-
-                            <Button
-                                className="episode-info-page__change-artwork-btn"
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                Change Artwork
-                            </Button>
-                        </div>
-
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleImageUpload}
-                            accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
-                            style={{ display: 'none' }}
+                    <div className="episode-info-page__row">
+                        <TextField
+                            label="Name"
+                            value={episodeDetail.Name}
+                            variant="standard"
+                            onChange={(e) => setEpisodeDetail({ ...episodeDetail, Name: e.target.value })}
+                            className="episode-info-page__input episode-info-page__input--name"
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    '& fieldset': { borderColor: '#999999 !important' },
+                                    '&:hover fieldset': { borderColor: '#999999 !important' },
+                                    '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
+                                },
+                            }}
                         />
 
-                        <Typography variant="h6" className="episode-info-page__preview-title">
-                            Preview
-                        </Typography>
-                        <Card className="episode-info-page__preview-card">
-                            <div className="episode-info-page__preview-image-container">
-                                <CardMedia
-                                    component="img"
-                                    image={previewImage}
-                                    alt={episodeDetail.Name}
-                                    className="episode-info-page__preview-bg-image"
-                                />
-                                <div className="episode-info-page__preview-overlay">
-                                    <div className="episode-info-page__preview-content">
-                                        <img
-                                            src={previewImage}
-                                            className="episode-info-page__preview-avatar"
-                                        />
-                                        <div className="episode-info-page__preview-info">
-                                            <Typography variant="h6" className="episode-info-page__preview-name">
-                                                {episodeDetail.Name}
-                                            </Typography>
-                                            <Typography variant="body2" className="episode-info-page__preview-subtitle"
+                        <StatusChip
+                            statusId={episodeDetail.CurrentStatus.Id}
+                            statusName={episodeDetail.CurrentStatus.Name}
+                            type="episode"
+                        />
+                    </div>
+                    <div className="episode-info-page__row">
+                        <TextField
+                            select
+                            label="Subscription Type"
+                            variant="standard"
+                            value={episodeDetail.PodcastEpisodeSubscriptionType.Id ?? 1}
+                            onChange={(e) => setEpisodeDetail({ ...episodeDetail, PodcastEpisodeSubscriptionType: { ...episodeDetail.PodcastEpisodeSubscriptionType, Id: e.target.value as unknown as number } })}
+                            className="episode-info-page__select"
+                        >
+                            {mockSubscriptionTypes.map((type) => (
+                                <MenuItem
+                                    key={type.Id}
+                                    value={type.Id}
+                                    sx={{
+                                        '& .MuiPaper-root': { backgroundColor: '#77898e9d' },
 
+                                    }}
+                                >
+                                    {type.Name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                        <TextField
+                            select
+                            label="Explicit Content"
+                            variant="standard"
+                            value={episodeDetail.ExplicitContent ?? ''}
+                            onChange={(e) => setEpisodeDetail({ ...episodeDetail, ExplicitContent: e.target.value === 'true' })}
+                            className="episode-info-page__select"
+                        >
+                            <MenuItem value="true">True</MenuItem>
+                            <MenuItem value="false">False</MenuItem>
+                        </TextField>
+                        <TextField
+                            label="Season"
+                            value={episodeDetail.SeasonNumber}
+                            type="number"
+                            variant="standard"
+                            inputProps={{ min: 1 }}
+                            onChange={(e) => {
+                                let val = e.target.value;
+                                if (val === '' || Number(val) < 1) {
+                                    setEpisodeDetail({ ...episodeDetail, SeasonNumber: 1 });
+                                } else {
+                                    setEpisodeDetail({ ...episodeDetail, SeasonNumber: Number(val) });
+                                }
+                            }}
+                            className="episode-info-page__input episode-info-page__input--number"
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    '& fieldset': { borderColor: '#999999 !important' },
+                                    '&:hover fieldset': { borderColor: '#999999 !important' },
+                                    '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
+                                },
+                            }}
+                        />
+                        <TextField
+                            label="Episode Order"
+                            value={episodeDetail.EpisodeOrder}
+                            type="number"
+                            variant="standard"
+                            inputProps={{ min: 1 }}
+                            onChange={(e) => {
+                                let val = e.target.value;
+                                if (val === '' || Number(val) < 1) {
+                                    setEpisodeDetail({ ...episodeDetail, EpisodeOrder: 1 });
+                                } else {
+                                    setEpisodeDetail({ ...episodeDetail, EpisodeOrder: Number(val) });
+                                }
+                            }}
+                            className="episode-info-page__input episode-info-page__input--number"
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    '& fieldset': { borderColor: '#999999 !important' },
+                                    '&:hover fieldset': { borderColor: '#999999 !important' },
+                                    '&.Mui-focused fieldset': { borderColor: '#999999 !important' }
+                                },
+                            }}
+                        />
+
+
+                    </div>
+
+                    <div className="episode-info-page__row">
+
+                        <TextField
+                            id="filled-read-only-input"
+                            variant="filled"
+                            slotProps={{
+                                input: {
+                                    readOnly: true,
+                                },
+                            }}
+                            label="Show"
+                            value={episodeDetail.PodcastShow?.Name ?? ''}
+                            className="episode-info-page__input--show"
+
+                        />
+                    </div>
+
+
+                    <div className="episode-info-page__hashtags">
+                        <div className="episode-info-page__hashtag-input ">
+                            <TextField
+                                label="Add hashtag"
+                                value={hashtagInput}
+                                onChange={(e) => setHashtagInput(e.target.value)}
+                                onKeyPress={handleHashtagKeyPress}
+                                size="small"
+                                className="episode-info-page__hashtag-field"
+                                onFocus={() => {
+                                    if (hashtagInput.trim()) setOpenSuggest(true);
+                                }}
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                onClick={() => handleAddHashtag(hashtagInput)}
+                                                disabled={!hashtagInput.trim() || selectedHashtags.some(tag => tag.name === hashtagInput.trim())}
+                                                size="small"
+                                                sx={{ color: 'var(--primary-green)' }}
                                             >
-                                            </Typography>
-                                        </div>
+                                                <Add />
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        backgroundColor: '#2a2a2a',
+                                        color: 'white',
+                                        '& fieldset': { borderColor: '#444 !important' },
+                                        '&:hover fieldset': { borderColor: '#666 !important' },
+                                        '&.Mui-focused fieldset': { borderColor: 'var(--primary-green) !important' }
+                                    },
+                                    '& .MuiInputLabel-root': { color: '#888' },
+                                    '& .MuiInputLabel-root.Mui-focused': { color: 'var(--primary-green)' }
+                                }}
+                            />
+                            {openSuggest && (suggestions.length > 0 || suggestLoading) && (
+                                <Box
+                                    className="episode-info-page__hashtag-suggest"
+                                    sx={{
+                                        mt: 0.5,
+                                        maxHeight: 200,
+                                        overflowY: 'auto',
+                                        border: '1px solid #444',
+                                        borderRadius: 1,
+                                        background: '#1f1f1f',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                                    }}
+                                >
+                                    {suggestLoading && (
+                                        <Box sx={{ p: 1.5, color: '#aaa', fontSize: 13 }}>Searching…</Box>
+                                    )}
+                                    {!suggestLoading && suggestions.map((opt) => (
+                                        <MenuItem
+                                            key={opt.id}
+                                            onClick={() => handleSelectSuggestion(opt)}
+                                            sx={{ fontSize: 14 }}
+                                        >
+                                            #{opt.name}
+                                        </MenuItem>
+                                    ))}
+                                </Box>
+                            )}
+                        </div>
+                        <div className="episode-info-page__hashtag-chips">
+                            {selectedHashtags.map((tag, index) => (
+                                <Chip
+                                    key={index}
+                                    label={tag.name}
+                                    onDelete={() => handleRemoveHashtag(tag)}
+                                    size="small"
+                                    sx={{
+                                        backgroundColor: 'var(--primary-green)',
+                                        color: 'black',
+                                        margin: '2px',
+                                        '& .MuiChip-deleteIcon': {
+                                            color: 'black',
+                                            '&:hover': { color: '#444' }
+                                        },
+                                        padding: '6px 4px',
+                                        boxShadow: '2px 6px 6px rgba(0, 0, 0, 0.7)'
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="episode-info-page__description">
+                        <Typography variant="body2" className="episode-info-page__description-label">
+                            Description
+                        </Typography>
+                        <div className="episode-info-page__description-editor">
+                            <div ref={quillRef} />
+                        </div>
+
+                    </div>
+                </div>
+
+                <div className="episode-info-page__preview">
+                    <div className="episode-info-page__main-image-container">
+                        {uploadImage ? (
+                            <img
+                                src={uploadImage}
+                                alt="Preview"
+                                className="episode-info-page__main-image-file"
+                            />
+                        ) : (
+                            <Image
+                                mainImageFileKey={episodeDetail.MainImageFileKey}
+                                alt={episodeDetail.Name}
+                                className="episode-info-page__main-image-file"
+                            />
+                        )}
+
+                        <Button
+                            className="episode-info-page__change-artwork-btn"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            Change Artwork
+                        </Button>
+                    </div>
+
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept=".jpg,.jpeg,.png,.gif,.webp,.svg"
+                        style={{ display: 'none' }}
+                    />
+
+                    <Typography variant="h6" className="episode-info-page__preview-title">
+                        Preview
+                    </Typography>
+                    <Card className="episode-info-page__preview-card">
+                        <div className="episode-info-page__preview-image-container">
+                            <CardMedia
+                                component="img"
+                                image={previewImage}
+                                alt={episodeDetail.Name}
+                                className="episode-info-page__preview-bg-image"
+                            />
+                            <div className="episode-info-page__preview-overlay">
+                                <div className="episode-info-page__preview-content">
+                                    <img
+                                        src={previewImage}
+                                        className="episode-info-page__preview-avatar"
+                                    />
+                                    <div className="episode-info-page__preview-info">
+                                        <Typography variant="h6" className="episode-info-page__preview-name">
+                                            {episodeDetail.Name}
+                                        </Typography>
+                                        <Typography variant="body2" className="episode-info-page__preview-subtitle"
+
+                                        >
+                                        </Typography>
                                     </div>
                                 </div>
                             </div>
-                        </Card>
-                    </div>
+                        </div>
+                    </Card>
                 </div>
-            )
-            }
+            </div>
+
         </div>
     );
 };

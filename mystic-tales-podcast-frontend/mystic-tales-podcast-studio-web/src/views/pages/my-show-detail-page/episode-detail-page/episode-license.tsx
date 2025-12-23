@@ -178,6 +178,14 @@ const EpisodeLicense = () => {
                     toast.error('Your account is currently under violation !!');
                     return;
                 }
+                if(episodeDetail.CurrentStatus.Id === 7){
+                    toast.error("This episode is removed. You can't upload license.");
+                    return;
+                }
+              if(episodeDetail.CurrentStatus.Id === 6){
+                    toast.error("This episode is taken down. You can't upload license.");
+                    return;
+                }
         try {
             setUploading(true);
             const filesToUpload = prepareLicenseFilesForUpload();
@@ -217,6 +225,14 @@ const EpisodeLicense = () => {
         }
     };
     const handleRemoveLicense = async (licenseId: string) => {
+         if(episodeDetail.CurrentStatus.Id === 7){
+                    toast.error("This episode is removed. You can't upload license.");
+                    return;
+                }
+              if(episodeDetail.CurrentStatus.Id === 6){
+                    toast.error("This episode is taken down. You can't upload license.");
+                    return;
+                }
         const alert = await confirmAlert("Are you sure to DELETE this license?");
         if (!alert.isConfirmed) return;
         setLoading(true);

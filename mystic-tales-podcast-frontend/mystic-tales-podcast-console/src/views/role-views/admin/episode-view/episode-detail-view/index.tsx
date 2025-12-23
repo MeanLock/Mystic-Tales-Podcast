@@ -9,6 +9,7 @@ import Image from '@/views/components/common/image';
 import { formatDate } from '@/core/utils/date.util';
 import { SmartAudioPlayer } from '@/views/components/common/audio';
 import './styles.scss';
+import { getTruncatedDescription } from '@/core/utils/htmlRender.utils';
 
 const EpisodeDetailView = () => {
     const { id } = useParams<{ id: string }>();
@@ -170,7 +171,9 @@ const EpisodeDetailView = () => {
                                 />
                                 <div className="episode-detail__show-info">
                                     <h4>{episodeDetail.PodcastShow.Name}</h4>
-                                    <p>{episodeDetail.PodcastShow.IsReleased ? 'Released' : 'Not Released'}</p>
+                                    <div
+                                        dangerouslySetInnerHTML={{ __html: getTruncatedDescription(episodeDetail.PodcastShow.Description, 15) }}
+                                   />
                                 </div>
                             </div>
                         </div>

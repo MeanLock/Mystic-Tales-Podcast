@@ -1398,43 +1398,7 @@ const connectionRef = useRef<signalR.HubConnection | null>(null);
     const token = authSlice2.token || "";
     const REST_API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
-    useEffect(() => {
-        // Build connection
-        console.log("Setting up SignalR connection...", token);
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl(`${REST_API_BASE_URL}/api/podcast-service/hubs/podcast-content-notification`, {
-                accessTokenFactory: () => {
-                    return token;
-                }
-            })
-            .withAutomaticReconnect()
-            .build();
-
-        connectionRef.current = connection;
-
-        // Register events
-        connection.on("PodcastEpisodeAudioProcessingCompletedNotification", async (data) => {
-            console.log("Audio processing :", data);
-
-            if (!data.IsSuccess) {
-                console.error("Audio processing failed:", data.ErrorMessage);
-                return;
-            }
-
-            //alert(`Audio processing completed for Podcast ID: ${data}`);
-            await refreshEpisode?.();
-        });
-
-        // Start connection
-        connection.start()
-            .then(() => console.log("SignalR connected"))
-            .catch(err => console.error("SignalR connection error:", err));
-
-        // Cleanup
-        return () => {
-            connection.stop();
-        };
-    }, []);
+   
     // if (!episodeDetail) {
     //     return (
     //         <div className="flex justify-center items-center h-100">
@@ -1726,7 +1690,7 @@ const connectionRef = useRef<signalR.HubConnection | null>(null);
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-semibold text-white">Selected:</span>
-                                            <span className="text-sm text-[#AEE339]" title={selectedClip.name}>{selectedClip.name}</span>
+                                            <span className="text-sm text-[#AEE339] font-semibold" title={selectedClip.name}>{selectedClip.name}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {/* Play/Stop */}

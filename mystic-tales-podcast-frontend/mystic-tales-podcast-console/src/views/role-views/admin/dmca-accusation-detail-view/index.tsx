@@ -17,6 +17,7 @@ import Modal_Button from "@/views/components/common/modal/ModalButton"
 import { Plus } from "phosphor-react"
 import CounterModal from "./CounterModal"
 import LawsuitModal from "./LawsuitModal"
+import { renderDescriptionHTML } from "@/core/utils/htmlRender.utils"
 
 
 
@@ -376,7 +377,11 @@ const DMCAAccusationDetailView: FC<DMCAAccusationDetailViewProps> = () => {
                                     <div className="content-card__body">
                                         <span className="content-card__type">Show</span>
                                         <h3 className="content-card__title">{DMCAAccusation.PodcastShow.Name}</h3>
-                                        {/* <p className="content-card__description">{DMCAAccusation.PodcastShow.Description}</p> */}
+                                        {/* <div className="content-card__description"
+                                        dangerouslySetInnerHTML={
+                                            { __html: get(DMCAAccusation.PodcastShow.Description) }
+                                        }
+                                        /> */}
                                         {/* <div className="content-card__stats">
                                     <span className="content-card__stat">{DMCAAccusation.PodcastShow.ListenCount.toLocaleString()} listens</span>
                                 </div> */}

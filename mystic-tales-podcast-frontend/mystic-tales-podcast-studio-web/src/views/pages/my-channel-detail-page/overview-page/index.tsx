@@ -18,7 +18,6 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { useQuill } from 'react-quilljs';
-import 'quill/dist/quill.snow.css';
 import './styles.scss';
 import { get, isEqual } from 'lodash';
 import { getChannelDetail, publishChannel, updateChannel } from '@/core/services/channel/channel.service';
@@ -553,9 +552,6 @@ const ChannelOverview = () => {
                                             : '1.5px solid #aee339',
                                         color: channelDetail.CurrentStatus.Id === 1 ? '#ffb300' : '#aee339',
                                         height: '44px',
-                                        boxShadow: channelDetail.CurrentStatus.Id === 1
-                                            ? '0 6px 32px rgba(255, 193, 7, 0.1)'
-                                            : '0 6px 32px rgba(174, 227, 57, 0.1)',
                                         '& .MuiChip-label': {
                                             padding: '0 12px',
                                             textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',

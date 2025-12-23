@@ -108,6 +108,9 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                 cellClass: 'd-flex align-items-center justify-content-center',
                 cellStyle: { display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
                 flex: 1.1,
+           valueGetter: (params: any) => {
+                    return params.data?.CurrentStatus?.Name?.trim() || '';
+                },
                 cellRenderer: (params: any) => {
                     const status = params.data?.CurrentStatus?.Name || '';
                     let color = '#888';
@@ -128,13 +131,13 @@ const state_creator = (table: any[], navigate: (path: string) => void) => {
                             color = '#AEE339'; bg = 'rgba(174, 227, 57, 0.2)'; // xanh primary của bạn
                             break;
                         case 'Taken Down':
-                            color = '#ef5350'; bg = 'rgba(255, 234, 237, 0.15)'; // đỏ dịu mắt
+                            color = '#f44336'; bg = 'rgba(244, 67, 54, 0.2)'; // đỏ dịu mắt
                             break;
                         case 'Removed':
-                            color = '#ef5350'; bg = 'rgba(255, 234, 237, 0.15)'; // đỏ dịu mắt
+                            color = '#f44336'; bg = 'rgba(244, 67, 54, 0.2)'; // đỏ dịu mắt
                             break;
                         default:
-                            color = '#ef5350'; bg = 'rgba(239, 83, 80, 0.15)'; // đỏ dịu mắt
+                            color = '#f44336'; bg = 'rgba(239, 83, 80, 0.15)'; // đỏ dịu mắt
                     }
 
                     return (
